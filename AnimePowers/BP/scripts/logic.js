@@ -1,12 +1,25 @@
 // منطق الرتب والـ XP — بدون أي اعتماد على ماينكرافت (يتفحص لحاله)
 
 export const RANKS = ["مبتدئ", "متدرب", "محارب", "نخبة", "قائد", "أسطورة", "السيد"];
-export const LEVELS_PER_RANK = 30;
+export const LEVELS_PER_RANK = 15;
 // من هاي الرتبة (index) وطالع: قتل وحش أقوى ما يرقيك بالقفزة
 export const HARD_RANK_FROM = 2;
 
 export function xpNeeded(level) {
-  return 20 + level * 6;
+  return 14 + level * 5;
+}
+
+// تقدم اللاعب نحو الرتبة الجاية: frac من 0 إلى 1 (يشمل خبرة الليفل الحالي)، وcur/need بالليفلات
+export function rankProgress(st) {
+  if (st.rank >= RANKS.length - 1) return { frac: 1, cur: LEVELS_PER_RANK, need: LEVELS_PER_RANK, max: true };
+  const cur = Math.max(0, st.level - st.rank * LEVELS_PER_RANK);
+  const frac = Math.min(1, (cur + st.xp / xpNeeded(st.level)) / LEVELS_PER_RANK);
+  return { frac, cur: Math.min(cur, LEVELS_PER_RANK), need: LEVELS_PER_RANK, max: false };
+}
+
+// زيادة الصحة مع الرتبة: كل رتبة +4 نقاط صحة (قلبين) عبر تأثير health_boost
+export function rankHealthBonus(rank) {
+  return Math.max(0, rank) * 4;
 }
 
 export function defaultState() {
@@ -76,7 +89,7 @@ export function monsterReward(st, monster) {
         res.xp = monster.xp * 3;
       }
     } else if (diff <= -3) {
-      res.xp = Math.max(1, Math.round(monster.xp * 0.25));
+      res.xp = Math.max(1, Math.round(monster.xp * 0.5));
     }
   }
   res.ups.push(...addXp(st, res.xp));

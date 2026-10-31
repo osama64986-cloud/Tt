@@ -318,7 +318,9 @@ function* execute(dim, ox, oy, oz, rot, plan, onChest) {
         const [x, z] = rotXZ(op[1], op[3], rot);
         const d = SEQ[(SEQ.indexOf(op[5]) + rot) % 4];
         const perm = BlockPermutation.resolve(op[4], { weirdo_direction: DIR_STATE[d], upside_down_bit: !!op[6] });
-        dim.setBlockPermutation({ x: ox + x, y: oy + op[2], z: oz + z }, perm);
+        const at = { x: ox + x, y: oy + op[2], z: oz + z };
+        if (typeof dim.setBlockPermutation === "function") dim.setBlockPermutation(at, perm);
+        else { const blk = dim.getBlock(at); if (blk) blk.setPermutation(perm); }
       } else if (op[0] === "chest") {
         const [x, z] = rotXZ(op[1], op[3], rot);
         const loc = { x: ox + x, y: oy + op[2], z: oz + z };
@@ -376,7 +378,10 @@ function saveReg(r) {
 let building = false;
 const announced = new Set();
 
-function chooseType() {
+// الضريح نادر وسيفه مهم، فإذا بُنيت 3 بنايات بدون ضريح نضمنه بالجاية (حتى ما يقعد اللاعب يدور عليه للأبد)
+const SHRINE_PITY = 3;
+function chooseType(reg = []) {
+  if (STRUCTURES.shrine && !reg.some((s) => s.type === "shrine") && reg.length >= SHRINE_PITY) return "shrine";
   const roll = Math.random();
   let acc = 0;
   for (const [k, v] of Object.entries(STRUCTURES)) { acc += v.weight; if (roll < acc) return k; }
@@ -392,7 +397,7 @@ export function setupStructures() {
         if (p.dimension.id !== "minecraft:overworld") continue;
         if (Math.random() > 0.5) continue;
         const reg = loadReg();
-        const type = chooseType();
+        const type = chooseType(reg);
         const spec = STRUCTURES[type];
         const site = pickSite(p.dimension, p.location, 56, 100, spec.half);
         if (!site) continue;

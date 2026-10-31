@@ -1,7 +1,7 @@
 import { world, system, ItemStack, MolangVariableMap, EntityDamageCause } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import {
-  RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL,
+  RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, rankProgress, rankHealthBonus,
 } from "./logic.js";
 import { setupStructures } from "./structures.js";
 
@@ -161,6 +161,7 @@ const MONSTERS = {
   "sh:shadow_hound": { rank: 0, xp: 16 },
   "sh:sand_scorpion": { rank: 0, xp: 24 },
 };
+const MONSTER_CAP = 4; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 
 // أسلحة الدفاع: ضرر إضافي فوق ضرر اليد، تشتغل حتى بدون قدرة
@@ -233,19 +234,23 @@ function rarityStars(key) {
 }
 function hudText(p, st, plain) {
   const pw = POWERS[st.power];
-  let l1;
-  if (pw) {
-    const r = rarityOf(st.power);
-    l1 = `§6◆ ${RANKS[st.rank]} §8│ ${pw.color}${pw.name} §8│ ${rarityStars(st.power)} §8│ §dLv ${st.plevel || 1}/${r.maxLv}`;
-  } else l1 = `§6◆ ${RANKS[st.rank]} §8│ §7بلا قدرة`;
-  let hp = "";
+  const rp = rankProgress(st);
+  let hp = "§c♥ --";
   try {
     const h = p.getComponent("minecraft:health");
-    hp = `§c♥ ${bar(h.currentValue / h.effectiveMax, 8, "§c", "§8", plain)} §f${Math.ceil(h.currentValue)}`;
+    hp = `§c♥ ${bar(h.currentValue / h.effectiveMax, 6, "§c", "§8", plain)} §f${Math.ceil(h.currentValue)}§7/${Math.ceil(h.effectiveMax)}`;
   } catch (e) { /* */ }
+  // سطر 1: الرتبة + تقدمها │ الصحة
+  const l1 = `§6◆ ${RANKS[st.rank]} ${bar(rp.frac, 6, "§6", "§8", plain)} §7${rp.max ? "أقصى" : `${rp.cur}/${rp.need}`} §8│ ${hp}`;
+  // سطر 2: ليفل اللاعب + خبرته │ القدرة وتطورها
   const need = xpNeeded(st.level);
-  const xp = `§bLv ${st.level} ${bar(st.xp / need, 8, "§b", "§8", plain)} §7${Math.floor((st.xp / need) * 100)}%`;
-  return `${l1}\n${hp} §8│ ${xp}`;
+  let l2 = `§bLv ${st.level} ${bar(st.xp / need, 6, "§b", "§8", plain)} §7${Math.floor((st.xp / need) * 100)}%`;
+  if (pw) {
+    const r = rarityOf(st.power), pl = st.plevel || 1;
+    const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
+    l2 += ` §8│ ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${bar(pfrac, 5, "§d", "§8", plain)}`;
+  } else l2 += " §8│ §7بلا قدرة";
+  return `${l1}\n${l2}`;
 }
 
 // شريط المهارات + نغمة خفيفة لما تخلص مهارة طويلة الكولداون
@@ -829,12 +834,26 @@ function announceUps(player, ups) {
     } else if (u.type === "rank") {
       sfxPlayer(player, "sh.rank_up");
       burst(player.dimension, headPos(player), 30, COLORS.gold, 3.5, 0.25);
-      notify(player, `§6ارتقيت إلى رتبة ${RANKS[u.rank]}!`, 100);
+      notify(player, `§6ارتقيت إلى رتبة ${RANKS[u.rank]}! §c+4 صحة`, 100);
+      applyVitality(player, true);
+      waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[رتبة] §fصارت رتبتك §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) system.runTimeout(() => rollPower(player), 60); } catch (e) { /* */ }
     }
   }
 }
+
+// صحة اللاعب تزيد مع الرتبة (+4 لكل رتبة) عبر health_boost يتجدد كل 5 ثواني
+function applyVitality(p, fill) {
+  try {
+    const st = getState(p);
+    const bonus = rankHealthBonus(st.rank);
+    if (bonus <= 0) { try { p.removeEffect("health_boost"); } catch (e) { /* */ } return; }
+    p.addEffect("health_boost", 600, { amplifier: Math.max(0, bonus / 4 - 1), showParticles: false });
+    if (fill) later(4, () => { try { const h = p.getComponent("minecraft:health"); h.resetToMaxValue(); } catch (e) { /* */ } });
+  } catch (e) { /* */ }
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) applyVitality(p, false); }, 100);
 
 const lastSkillUse = new Map();
 const SKILL_XP_WINDOW = 200; // 10 ثواني بعد استعمال المهارة
@@ -980,7 +999,7 @@ function raycastTarget(p, dist = 24) {
   hits.sort((a, b) => a.distance - b.distance);
   for (const h of hits) {
     const e = h.entity;
-    if (e.id === p.id || e.typeId === "sh:trainer") continue;
+    if (e.id === p.id || e.typeId === "sh:trainer" || isFriendly(e)) continue;
     let hp;
     try { hp = e.getComponent("minecraft:health"); } catch (err) { continue; }
     if (!hp) continue;
@@ -990,18 +1009,28 @@ function raycastTarget(p, dist = 24) {
 }
 
 // ───────────────────────── أدوات الأعداء ─────────────────────────
+// الأصدقاء اللي ما نأذيهم: قرويين، غولم، تاجر متجول، حيوانات أليفة (مروضة)، أو أي كيان بوسم sh_ignore
+function isFriendly(e) {
+  try {
+    if (e.hasTag("sh_ignore")) return true;
+    if (e.getComponent("minecraft:is_tamed")) return true;
+    const fam = e.getComponent("minecraft:type_family");
+    if (fam && (fam.hasTypeFamily("villager") || fam.hasTypeFamily("irongolem") || fam.hasTypeFamily("wandering_trader") || fam.hasTypeFamily("npc"))) return true;
+  } catch (err) { /* */ }
+  return false;
+}
 function enemiesNear(dim, center, r, excludeId) {
   let list = [];
   try {
     list = dim.getEntities({
       location: center, maxDistance: r,
-      excludeTypes: ["minecraft:player", "sh:trainer"],
+      excludeTypes: ["minecraft:player", "sh:trainer", "minecraft:villager_v2", "minecraft:villager", "minecraft:iron_golem", "minecraft:wandering_trader", "minecraft:npc", "minecraft:armor_stand"],
       excludeFamilies: ["inanimate"],
     });
   } catch (e) { return []; }
   return list.filter((e) => {
     if (e.id === excludeId) return false;
-    try { return !!e.getComponent("minecraft:health"); } catch (err) { return false; }
+    try { return !!e.getComponent("minecraft:health") && !isFriendly(e); } catch (err) { return false; }
   });
 }
 function nearestEnemy(e, r) {
@@ -1434,6 +1463,7 @@ Object.assign(SKILL_FN, {
       hurt(e, 5, p);
     }
     system.runTimeout(() => burst(p.dimension, c, 40, COLORS.white, 4, 0.3), 12);
+    groundBreak(p.dimension, c, 4, { crater: 0.4, cracks: 6, ttl: 300 });
     return true;
   },
 
@@ -1535,6 +1565,7 @@ Object.assign(SKILL_FN, {
     hurt(t, 9, p);
     pushAway(p.location, t, 2.4, 0.4);
     waveFx(t.dimension, t.location, 3, 4, 8);
+    groundBreak(t.dimension, t.location, 3, { cracks: 6, ttl: 160 });
     burst(t.dimension, headPos(t), 22, [0.8, 0.82, 0.9], 3.5, 0.24);
     sfx(p.dimension, "sh.cleaver_hit", t.location, 1.1, 0.7);
     shake(p, 0.2, 0.2);
@@ -1726,6 +1757,7 @@ function weaponActive(p, id) {
     }
     safeTeleport(p, last);
     sfx(dim, "sh.dagger_hit", o, 1, 0.6);
+    groundBreak(dim, { x: o.x + d.x * 2.4, y: o.y, z: o.z + d.z * 2.4 }, 2.8, { cracks: 5, ttl: 140 });
     ok = true;
   } else if (w.active === "quake") {
     for (const e of enemiesNear(dim, o, 4.8, p.id)) {
@@ -1734,6 +1766,7 @@ function weaponActive(p, id) {
       try { e.addEffect("slowness", 40, { amplifier: 2, showParticles: false }); } catch (err) { /* */ }
       burst(dim, e.location, 8, [0.6, 0.62, 0.58], 2, 0.25);
     }
+    groundBreak(dim, o, 4.6, { cracks: 8, ttl: 200 });
     ring(dim, o, 1.5, 18, 0, COLORS.teal, 0.3);
     ring(dim, o, 3.0, 28, 0.5, [0.6, 0.62, 0.58], 0.3);
     ring(dim, o, 4.5, 36, 1, COLORS.teal, 0.28);
@@ -2105,6 +2138,161 @@ Object.assign(SKILL_FN, {
 });
 
 
+// ───────────────────────── تكسير الأرض: حفر وشقوق مؤقتة + حطام متطاير ─────────────────────────
+// المهارات الثقيلة (نيزك، ثقب أسود، المستعر، لكمة الحديد، المطرقة...) تكسر سطح الأرض فعلاً:
+// حفرة بالمنتصف، شقوق شعاعية، وحلقة حطام. كل شي مؤقت: البلوكات ترجع لأصلها بعد بضع ثواني.
+// الأمان: بس بلوكات طبيعية (عشب، تراب، رمل، حجر...)، ما يلمس البنايات (30 بلوكة) ولا يحفر تحت لاعب.
+// لإيقاف تعديل البلوكات (بقاء الجزيئات بس): /scriptevent sh:scars off
+const SCAR_INFO = {
+  "minecraft:grass_block": { to: ["minecraft:coarse_dirt", "minecraft:gravel"], col: [0.42, 0.33, 0.2] },
+  "minecraft:dirt": { to: ["minecraft:coarse_dirt", "minecraft:gravel"], col: [0.45, 0.33, 0.2] },
+  "minecraft:coarse_dirt": { to: ["minecraft:gravel"], col: [0.45, 0.35, 0.25] },
+  "minecraft:podzol": { to: ["minecraft:coarse_dirt"], col: [0.4, 0.3, 0.18] },
+  "minecraft:mycelium": { to: ["minecraft:coarse_dirt"], col: [0.45, 0.35, 0.4] },
+  "minecraft:moss_block": { to: ["minecraft:coarse_dirt"], col: [0.3, 0.45, 0.2] },
+  "minecraft:mud": { to: ["minecraft:coarse_dirt"], col: [0.3, 0.25, 0.2] },
+  "minecraft:sand": { to: ["minecraft:gravel"], col: [0.85, 0.78, 0.5] },
+  "minecraft:red_sand": { to: ["minecraft:gravel"], col: [0.75, 0.4, 0.2] },
+  "minecraft:gravel": { to: ["minecraft:cobblestone"], col: [0.5, 0.5, 0.5] },
+  "minecraft:stone": { to: ["minecraft:cobblestone", "minecraft:gravel"], col: [0.55, 0.55, 0.55] },
+  "minecraft:andesite": { to: ["minecraft:gravel"], col: [0.55, 0.55, 0.55] },
+  "minecraft:diorite": { to: ["minecraft:gravel"], col: [0.7, 0.7, 0.7] },
+  "minecraft:granite": { to: ["minecraft:gravel"], col: [0.6, 0.4, 0.35] },
+  "minecraft:tuff": { to: ["minecraft:gravel"], col: [0.4, 0.42, 0.38] },
+  "minecraft:cobblestone": { to: ["minecraft:gravel"], col: [0.5, 0.5, 0.5] },
+  "minecraft:sandstone": { to: ["minecraft:gravel"], col: [0.85, 0.78, 0.5] },
+  "minecraft:red_sandstone": { to: ["minecraft:gravel"], col: [0.75, 0.4, 0.2] },
+  "minecraft:deepslate": { to: ["minecraft:cobbled_deepslate"], col: [0.25, 0.25, 0.28] },
+  "minecraft:netherrack": { to: ["minecraft:gravel"], col: [0.5, 0.2, 0.2] },
+};
+const SCAR_RESULT = new Set(["minecraft:air", "minecraft:coarse_dirt", "minecraft:gravel", "minecraft:cobblestone", "minecraft:cobbled_deepslate"]);
+const DIM_IDS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
+const SCAR_MAX = 700;
+const scars = new Map(); // "d|x|y|z" -> { d, x, y, z, type, at }
+let scarsDirty = false;
+const scarsEnabled = () => world.getDynamicProperty("sh_noscars") !== true;
+
+function scarSet(block, to, ttl) {
+  if (scars.size >= SCAR_MAX) return false;
+  const d = DIM_IDS.indexOf(block.dimension.id);
+  if (d < 0) return false;
+  const k = `${d}|${block.x}|${block.y}|${block.z}`;
+  const had = scars.get(k);
+  try { block.setType(to); } catch (e) { return false; }
+  if (had) had.at = system.currentTick + ttl;
+  else scars.set(k, { d, x: block.x, y: block.y, z: block.z, type: had ? had.type : block._orig || "minecraft:dirt", at: system.currentTick + ttl });
+  scarsDirty = true;
+  return true;
+}
+function restoreScars(all) {
+  const now = system.currentTick;
+  for (const [k, s] of [...scars]) {
+    if (!all && s.at > now) continue;
+    try {
+      const b = world.getDimension(DIM_IDS[s.d]).getBlock({ x: s.x, y: s.y, z: s.z });
+      if (!b) { s.at = now + 200; continue; } // الشنك مو محمل: نجرب بعدين
+      if (SCAR_RESULT.has(b.typeId)) b.setType(s.type); // إذا اللاعب غيّر البلوك نتركه
+      scars.delete(k);
+      scarsDirty = true;
+    } catch (e) { scars.delete(k); }
+  }
+}
+function saveScars() {
+  if (!scarsDirty) return;
+  scarsDirty = false;
+  try {
+    const now = system.currentTick;
+    const arr = [...scars.values()].slice(0, 450).map((s) => [s.d, s.x, s.y, s.z, s.type]);
+    world.setDynamicProperty("sh_scars", JSON.stringify(arr));
+  } catch (e) { /* */ }
+}
+system.runInterval(() => { restoreScars(false); }, 20);
+system.runInterval(saveScars, 100);
+// إذا انسدّت اللعبة والبلوكات مكسورة: نرجعها بعد التحميل
+system.runTimeout(() => {
+  try {
+    const raw = world.getDynamicProperty("sh_scars");
+    if (typeof raw !== "string") return;
+    for (const [d, x, y, z, type] of JSON.parse(raw)) scars.set(`${d}|${x}|${y}|${z}`, { d, x, y, z, type, at: system.currentTick + 40 });
+  } catch (e) { /* */ }
+}, 60);
+
+// أعلى بلوك سطح قرب مركز الانفجار + تسجيل أصله قبل التغيير
+function surfaceAt(dim, x, z, cy) {
+  try {
+    const top = dim.getTopmostBlock({ x, z });
+    if (!top || Math.abs(top.y - cy) > 3) return undefined;
+    const info = SCAR_INFO[top.typeId];
+    if (!info) return undefined;
+    const above = top.above(1);
+    if (!above || !above.isAir) return undefined;
+    return { top, info };
+  } catch (e) { return undefined; }
+}
+
+// c: المركز، r: نصف القطر. o: { crater: نسبة الحفرة (0 بدون)، cracks: عدد الشقوق، ttl: مدة بالتكات، height }
+function groundBreak(dim, c, r, o = {}) {
+  const ttl = o.ttl ?? 260, crater = o.crater ?? 0, nCrack = o.cracks ?? 7;
+  let visualOnly = !scarsEnabled();
+  try { if (getStructs().some((s) => Math.hypot(s.x - c.x, s.z - c.z) < 30)) visualOnly = true; } catch (e) { /* */ }
+  const players = world.getAllPlayers().filter((p) => p.dimension.id === dim.id);
+  const cols = [];
+  const R = Math.ceil(r);
+  for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+    const dist = Math.hypot(dx, dz);
+    if (dist <= r) cols.push({ dx, dz, dist });
+  }
+  cols.sort((a, b) => a.dist - b.dist); // من المركز للخارج: موجة تتوسع
+  const jitter = Math.random() * Math.PI * 2, sector = (Math.PI * 2) / Math.max(1, nCrack);
+  const cx = Math.floor(c.x), cz = Math.floor(c.z);
+  system.runJob((function* () {
+    let n = 0;
+    for (const col of cols) {
+      if (++n % 12 === 0) yield;
+      try {
+        const sf = surfaceAt(dim, cx + col.dx, cz + col.dz, c.y);
+        if (!sf) continue;
+        const { top, info } = sf;
+        const ang = Math.atan2(col.dz, col.dx) + jitter;
+        const k = ((ang / sector) % 1 + 1) % 1;
+        const arc = Math.min(k, 1 - k) * sector * col.dist;
+        const inCrater = crater > 0 && col.dist < r * crater;
+        const inRing = col.dist > r * 0.62 && Math.abs(col.dist - r * 0.72) < 0.55;
+        const inCrack = col.dist > 0.8 && arc < 0.5 + 0.12 * Math.sin(col.dist * 2.3);
+        const scatter = col.dist < r * 0.85 && Math.random() < 0.12;
+        if (!(inCrater || inRing || inCrack || scatter)) continue;
+        const loc = { x: top.x + 0.5, y: top.y + 1.05, z: top.z + 0.5 };
+        // حطام: قطع صغيرة ترتفع وتنزل
+        const cnt = inCrater ? 3 : 2;
+        for (let i = 0; i < cnt; i++) pix(dim, loc, { color: info.col, size: 0.13 + Math.random() * 0.12, life: 0.9 + Math.random() * 0.5, speed: 1.2 + Math.random() * 3.5, rise: -7 });
+        if (visualOnly) continue;
+        let to;
+        if (inCrater) {
+          const nearPlayer = players.some((p) => Math.hypot(p.location.x - loc.x, p.location.z - loc.z) < 2.2 && Math.abs(p.location.y - loc.y) < 3);
+          const below = top.below(1);
+          if (!nearPlayer && below && !below.isAir && !below.isLiquid) to = "minecraft:air";
+        }
+        if (!to) to = info.to[Math.floor(Math.random() * info.to.length)];
+        top._orig = top.typeId;
+        scarSet(top, to, ttl + Math.floor(col.dist * 3) + Math.floor(Math.random() * 40));
+      } catch (e) { /* */ }
+    }
+  })());
+}
+// خط شق مستقيم على الأرض (للشطرات الطويلة)
+function groundLine(dim, from, d, len, o = {}) {
+  const ttl = o.ttl ?? 160;
+  const visualOnly = !scarsEnabled();
+  for (let t = 0.5; t <= len; t += 0.8) {
+    const x = from.x + d.x * t, z = from.z + d.z * t;
+    const sf = surfaceAt(dim, Math.floor(x), Math.floor(z), from.y);
+    if (!sf) continue;
+    const loc = { x: sf.top.x + 0.5, y: sf.top.y + 1.05, z: sf.top.z + 0.5 };
+    for (let i = 0; i < 2; i++) pix(dim, loc, { color: sf.info.col, size: 0.14, life: 0.8, speed: 2, rise: -6 });
+    if (!visualOnly) { sf.top._orig = sf.top.typeId; scarSet(sf.top, sf.info.to[0], ttl + Math.floor(t * 4)); }
+  }
+}
+
 // ───────────────────────── سيد النجوم (قدرة خرافية) ─────────────────────────
 // 7 مهارات: نيزك، بئر الجاذبية، مدار النجوم، كوكبة، ومضة نجمية، ثقب أسود، المستعر الأعظم.
 // كل مهارة لها مؤثرات (جزيئات + كيانات الدوائر) وأصوات خاصة. الضرر ينقص للنص على البوسات.
@@ -2168,6 +2356,7 @@ Object.assign(SKILL_FN, {
       burst(dim, { x: c.x, y: c.y + 0.6, z: c.z }, 36, STAR_GOLD, 5, 0.3);
       for (let i = 0; i < 30; i++) pix(dim, { x: c.x, y: c.y + 0.4, z: c.z }, { color: i % 2 ? STAR_GOLD : [1, 0.5, 0.2], size: 0.24, life: 1.0, speed: 6, rise: -2 });
       for (const e of enemiesNear(dim, c, 4, p.id)) { hurtS(e, 14, p); pushAway(c, e, 1.1, 0.5); try { e.setOnFire(4, false); } catch (err) { /* */ } }
+      groundBreak(dim, c, 5, { crater: 0.5, cracks: 8, ttl: 400 });
       shake(p, 0.2, 0.2);
     });
     return true;
@@ -2176,6 +2365,7 @@ Object.assign(SKILL_FN, {
   gravwell(p) {
     const dim = p.dimension, c = aimPoint(p, 24), life = 80;
     spawnFx(dim, "circle", c, 2, 6, life + 6);
+    groundBreak(dim, c, 5, { cracks: 7, ttl: 160 });
     sfx(dim, "sh.gravwell", c, 1.2, 1);
     let t = 0;
     const h = system.runInterval(() => {
@@ -2307,6 +2497,7 @@ Object.assign(SKILL_FN, {
     const dim = p.dimension, g = aimPoint(p, 26), life = 120;
     const c = { x: g.x, y: g.y + 2.4, z: g.z };
     spawnFx(dim, "circle", g, 1, 4, life + 6);
+    groundBreak(dim, g, 6, { cracks: 9, ttl: 240 });
     sfx(dim, "sh.blackhole", g, 1.5, 1);
     shake(p, 0.1, 0.4);
     let t = 0;
@@ -2339,6 +2530,7 @@ Object.assign(SKILL_FN, {
             burst(dim, c, 24, STAR_WHITE, 6, 0.25);
             waveFx(dim, g, 10, 1, 14);
             waveFx(dim, g, 6, 4, 10);
+            groundBreak(dim, g, 9, { crater: 0.45, cracks: 10, ttl: 500 });
             for (const e of enemiesNear(dim, c, 9, p.id)) { hurtS(e, 16, p); pushAway(c, e, 1.6, 0.6); }
             shake(p, 0.3, 0.3);
           });
@@ -2380,6 +2572,7 @@ Object.assign(SKILL_FN, {
           waveFx(dim, p.location, 16, 0, 16);
           later(3, () => waveFx(dim, p.location, 13, 4, 14));
           later(6, () => waveFx(dim, p.location, 10, 2, 12));
+          groundBreak(dim, p.location, 13, { crater: 0.16, cracks: 12, ttl: 500 });
           for (const e of enemiesNear(dim, p.location, 14, p.id)) {
             hurtS(e, 28, p);
             pushAway(p.location, e, 2.2, 0.8);
@@ -2483,19 +2676,27 @@ system.runInterval(() => {
   }
 }, 8);
 
-// السنيك يبدل المهارة (يتفحص كل 2 تك: ضغطة جلوس جديدة وانت ماسك الكاتانا)
+// السنيك يبدل المهارة: حدث entityStartSneaking (مستقر من 2.10.0). إذا مو موجود نرجع للفحص الدوري.
 const sneakPrev = new Map();
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
-    try {
-      const sn = !!p.isSneaking, was = sneakPrev.get(p.id) || false;
-      sneakPrev.set(p.id, sn);
-      if (!sn || was) continue;
-      const held = inv(p).getItem(p.selectedSlotIndex);
-      if (held && held.typeId === KATANA) katanaCycle(p);
-    } catch (e) { /* */ }
-  }
-}, 2);
+function onSneakStart(p) {
+  try {
+    const held = inv(p).getItem(p.selectedSlotIndex);
+    if (held && held.typeId === KATANA) katanaCycle(p);
+  } catch (e) { /* */ }
+}
+if (world.afterEvents.entityStartSneaking) {
+  world.afterEvents.entityStartSneaking.subscribe((ev) => { if (ev.entity && ev.entity.typeId === "minecraft:player") onSneakStart(ev.entity); });
+} else {
+  system.runInterval(() => {
+    for (const p of world.getAllPlayers()) {
+      try {
+        const sn = !!p.isSneaking, was = sneakPrev.get(p.id) || false;
+        sneakPrev.set(p.id, sn);
+        if (sn && !was) onSneakStart(p);
+      } catch (e) { /* */ }
+    }
+  }, 2);
+}
 world.afterEvents.playerLeave.subscribe((ev) => { sneakPrev.delete(ev.playerId); });
 
 function katanaCycle(p) {
@@ -2663,6 +2864,7 @@ const KATANA_FN = [
     const start = { x: p.location.x + d.x * 1.2, y: p.location.y + 1.2, z: p.location.z + d.z * 1.2 };
     const hit = new Set();
     sfx(dim, "sh.kat_wave", p.location, 1.2, 1);
+    groundLine(dim, p.location, d, 18, { ttl: 140 });
     shake(p, 0.12, 0.12);
     let dist = 0;
     const h = system.runInterval(() => {
@@ -2740,6 +2942,7 @@ const KATANA_FN = [
       katanaSlash(dim, c, r, 90, 6, 3);
       spawnFx(dim, "circle", p.location, 1, 3.4, 16);
       waveFx(dim, p.location, 8, 1, 12);
+      groundBreak(dim, { x: p.location.x + d.x * 3, y: p.location.y, z: p.location.z + d.z * 3 }, 5, { cracks: 6, ttl: 200 });
       glow(dim, c, { color: [1, 1, 1], size: 2.4, life: 0.4 });
       shake(p, 0.3, 0.25);
       for (const e of enemiesNear(dim, p.location, 7, p.id)) {
@@ -2894,13 +3097,13 @@ system.runInterval(() => {
       const st = getState(p);
       if (p.dimension.id !== "minecraft:overworld") continue;
       const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_rank0"] });
-      if (near.length >= 2) continue;
-      if (Math.random() < 0.5) continue; // ظهور بطيء وطبيعي
+      if (near.length >= MONSTER_CAP) continue;
+      if (Math.random() < 0.35) continue;
       const id = RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
       spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, 26, 44);
     } catch (e) { /* */ }
   }
-}, 2400);
+}, 500); // كل 25 ثانية تقريباً (كانت كل دقيقتين، وكان الترقي بطيء جداً)
 
 
 
@@ -3423,6 +3626,7 @@ system.runInterval(() => {
 //   /scriptevent sh:unlock         يفتح كل مهارات قدرتك ويخلص التدريب
 //   /scriptevent sh:katlv 5        يضبط ليفل الكاتانا (1 إلى 5)
 //   /scriptevent sh:cdreset        يصفّر كل الكولداون
+//   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars off يوقف تعديل بلوكات الأرض
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
     const p = ev.sourceEntity;
@@ -3442,6 +3646,20 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aليفل الكاتانا: ${n}`);
+    } else if (ev.id === "sh:scars") {
+      world.setDynamicProperty("sh_noscars", msg === "off" ? true : undefined);
+      if (msg !== "off") restoreScars(true);
+      say(p, msg === "off" ? "§eتكسير الأرض: جزيئات فقط (بلوكات ما تتغير)" : "§aتكسير الأرض: شغال (مؤقت)");
+    } else if (ev.id === "sh:rank") {
+      const r = Math.min(RANKS.length - 1, Math.max(0, parseInt(msg, 10) || 0));
+      const st = getState(p);
+      st.rank = r; st.level = Math.max(st.level, r * LEVELS_PER_RANK); st.xp = 0;
+      saveState(p, st); applyVitality(p, true);
+      say(p, `§aالرتبة: ${RANKS[r]} (صحة +${rankHealthBonus(r)})`);
+    } else if (ev.id === "sh:xp") {
+      const st = getState(p);
+      const ups = addXp(st, Math.max(1, parseInt(msg, 10) || 100));
+      saveState(p, st); announceUps(p, ups);
     } else if (ev.id === "sh:cdreset") {
       cooldowns.clear(); weaponCd.clear();
       say(p, "§aتصفّر الكولداون");

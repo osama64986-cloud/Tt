@@ -2,17 +2,17 @@
   "format_version": 2,
   "header": {
     "name": "§6عالم القدرات §7- BP",
-    "description": "المحاسب وكاتب القوانين وسيد النجوم والمدرب",
+    "description": "المحاسب وكاتب القوانين وسيد النجوم والمدرب (متوافق مع 26.50+)",
     "uuid": "9faac67a-5fbd-4a0d-9297-0ee7b5538ab1",
     "version": [
       1,
-      7,
+      8,
       0
     ],
     "min_engine_version": [
       1,
-      21,
-      100
+      26,
+      50
     ]
   },
   "modules": [
@@ -40,11 +40,11 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "2.0.0"
+      "version": "2.10.0"
     },
     {
       "module_name": "@minecraft/server-ui",
-      "version": "2.0.0"
+      "version": "2.2.0"
     }
   ]
 }

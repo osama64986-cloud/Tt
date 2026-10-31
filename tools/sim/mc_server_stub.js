@@ -53,7 +53,7 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     },
     applyDamage(a) { this._hp -= a; stats.damage = (stats.damage || 0) + a; if (this._hp <= 0) { this._valid = false; } return true; },
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
-    addEffect(id) { effectLog.push(id); }, removeEffect() {}, getEffect() { return undefined; },
+    addEffect(id, dur, o) { effectLog.push(id); stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l) { this.location = { x: l.x, y: l.y, z: l.z }; }, remove() { this._valid = false; }, kill() { this._valid = false; },
     setProperty(k, v) { props[k] = v; }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
     setRotation() {}, getRotation() { return { x: 0, y: 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
@@ -73,15 +73,15 @@ function mkDim(id) {
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
     spawnItem() {},
-    getBlock(l) { return { isAir: true, isLiquid: false, location: l, getComponent: () => undefined }; },
+    getBlock(l) { const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: "minecraft:gravel", isAir: true, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
       return entities.filter((e) => e._valid && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
-    getTopmostBlock(l) { const b = { location: { x: l.x, y: 64, z: l.z }, isAir: false, above: () => ({ location: { x: l.x, y: 65, z: l.z }, isAir: true, above: () => b }), below: () => b, getComponent: () => undefined, permutation: {} }; return b; },
-    fillBlocks() {}, setBlockType() {}, runCommand() {}, runCommandAsync: async () => ({}),
+    getTopmostBlock(l) { const b = { x: Math.floor(l.x), y: 63, z: Math.floor(l.z), typeId: "minecraft:grass_block", location: { x: l.x, y: 63, z: l.z }, isAir: false, isLiquid: false, dimension: d, above: () => ({ isAir: true }), below: () => ({ isAir: false, isLiquid: false }), getComponent: () => undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
+    fillBlocks() {}, setBlockType() {}, setBlockPermutation() {}, runCommand() {}, runCommandAsync: async () => ({}),
   };
   return d;
 }
@@ -123,6 +123,7 @@ function baseState(power) {
   return { power, level: 5, xp: 0, rank: 1, training: power ? { [power]: { status: "done", kills: 3 } } : {}, gotBook: true, skills: {}, plevel: 10, pxp: 0, kills: {}, rolledRank: 1 };
 }
 function hold(typeId) { inventory[0] = typeId ? new ItemStack(typeId) : undefined; player.selectedSlotIndex = 0; }
+function addVillager() { const v = mkEntity('minecraft:villager_v2', { x: 0.5, y: 64, z: 3 }, dims.overworld, 20); v._types = ['villager']; const gc = v.getComponent.bind(v); v.getComponent = (n) => n === 'minecraft:type_family' ? { hasTypeFamily: (f) => f === 'villager' } : gc(n); entities.push(v); return v; }
 function spawnZombies(n = 4, near = false) {
   entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 20;
   for (let i = 0; i < n; i++) { const z = mkEntity("minecraft:zombie", near ? { x: (i - 1.5) * 0.8, y: 64, z: 3 + i * 0.9 } : { x: (i - 1.5) * 2, y: 64, z: 5 + i * 1.5 }, dims.overworld, 40); entities.push(z); }
@@ -174,15 +175,49 @@ export const __sim = {
       if (stats.particles - p0 === 0) failures.push(`katana mode ${m}: بدون جزيئات`);
       system_cd_reset();
     }
-    // تبديل بالسنيك
+    // تبديل بالسنيك (حدث entityStartSneaking)
     player.setDynamicProperty("sh_kmode", 0); hold("sh:dark_katana");
     const before = player.getDynamicProperty("sh_kmode");
-    advance(4); player.isSneaking = true; advance(4); player.isSneaking = false; advance(4);
+    advance(4); fire("entityStartSneaking", { entity: player }); advance(4);
     const after = player.getDynamicProperty("sh_kmode");
     console.log(`  سنيك: وضع ${before} → ${after}`);
     if (after !== 1) failures.push("السنيك ما بدّل مهارة الكاتانا");
+    // الأصدقاء: القروي ما ينضرب
+    {
+      setState(baseState("star")); spawnZombies(3, true); const v = addVillager(); const hp0 = v._hp;
+      player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 })); player.setDynamicProperty("sh_kmode", 6);
+      for (const it of ["sh:skill_supernova", "sh:dark_katana"]) { await useItem(it); advance(120); system_cd_reset(); }
+      console.log("\nالقروي بعد المهارات:", v._hp, "من", hp0);
+      if (v._hp !== hp0) failures.push("القروي انضرب بمهارة!");
+    }
+    // تكسير الأرض
+    {
+      const b0 = stats.blockSets || 0; setState(baseState("star")); spawnZombies(); await useItem("sh:skill_meteor"); advance(120); system_cd_reset();
+      await useItem("sh:skill_supernova"); advance(200); system_cd_reset();
+      console.log("بلوكات تغيرت بالتكسير:", (stats.blockSets || 0) - b0);
+      if ((stats.blockSets || 0) - b0 < 20) failures.push("تكسير الأرض ما غيّر بلوكات");
+      advance(1200);
+      console.log("بعد الانتظار، ترجع البلوكات (محاولات ترميم):", stats.blockSets - b0);
+    }
+    // تقدم الرتب: كم قتلة لكل رتبة (وحوش الرتبة 0 فقط)
+    {
+      setState({ ...baseState("iron"), level: 1, xp: 0, rank: 0 });
+      const types = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
+      let kills = 0, lastRank = 0; const marks = [];
+      for (let i = 0; i < 4000 && marks.length < 6; i++) {
+        const z = mkEntity(types[i % 4], { x: 0, y: 64, z: 3 }, dims.overworld);
+        fire("entityDie", { deadEntity: z, damageSource: { damagingEntity: player } }); kills++;
+        const st = JSON.parse(player.getDynamicProperty("sh"));
+        if (st.rank !== lastRank) { marks.push(`رتبة ${st.rank} بعد ${kills} قتلة (ليفل ${st.level})`); lastRank = st.rank; }
+      }
+      console.log("\nتقدم الرتب بقتل وحوش الرتبة 0 فقط:\n  " + (marks.join("\n  ") || "ما ارتقى"));
+      if (marks.length < 3) failures.push("الرتب ما تزداد بشكل كافي");
+      advance(110);
+      console.log("health_boost مطبّق:", stats.effects && stats.effects.health_boost, "amp:", stats.lastBoost);
+      if (!(stats.effects && stats.effects.health_boost)) failures.push("health_boost ما انطبق مع الرتبة");
+    }
     // خبرة الكاتانا
-    player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 1, xp: 0 }));
+    hold("sh:dark_katana"); player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 1, xp: 0 }));
     for (let i = 0; i < 6; i++) { const z = mkEntity("sh:sand_scorpion", { x: 0, y: 64, z: 3 }, dims.overworld); fire("entityDie", { deadEntity: z, damageSource: { damagingEntity: player } }); }
     const kat = JSON.parse(player.getDynamicProperty("sh_kat"));
     console.log("  بعد 6 قتلات عقرب:", kat);

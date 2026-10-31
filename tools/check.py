@@ -9,6 +9,7 @@
   6. كل sh:skill_* المذكور بالسكربت له ملف أيتم.
   7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
   8. كل كيان BP له كيان RP، وكل مفتاح اسم بملفات اللغة موجود بالعربي والإنجليزي.
+  8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
   9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
 """
 import glob
@@ -149,6 +150,36 @@ for e in sorted(bp_ents):
         continue
     if f"entity.{e}.name" not in langs["ar_SA"]:
         warnings.append(f"ما لقيت اسم عربي للكيان {e} بملف اللغة")
+
+# 8b) الأسلحة 3D (Attachables): الأيتم، الموديل، التكستشر، والحركات لازم تكون كلها موجودة
+anim_ids = set()
+for f in glob.glob(os.path.join(RP, "animations", "*.json")):
+    try:
+        anim_ids |= set(load(f).get("animations", {}).keys())
+    except Exception:  # noqa: BLE001
+        pass
+geo_ids = set()
+for f in glob.glob(os.path.join(RP, "models", "entity", "*.geo.json")):
+    try:
+        for g in load(f).get("minecraft:geometry", []):
+            geo_ids.add(g["description"]["identifier"])
+    except Exception:  # noqa: BLE001
+        pass
+for f in glob.glob(os.path.join(RP, "attachables", "*.json")):
+    d = load(f)["minecraft:attachable"]["description"]
+    if d["identifier"] not in item_ids:
+        err(f"{rel(f)}: الأيتم {d['identifier']} مو موجود")
+    for g in d.get("geometry", {}).values():
+        if g not in geo_ids:
+            err(f"{rel(f)}: الموديل {g} مو موجود")
+    for t in d.get("textures", {}).values():
+        if t.startswith("textures/misc"):
+            continue
+        if not os.path.exists(os.path.join(RP, t + ".png")):
+            err(f"{rel(f)}: التكستشر {t}.png ناقص")
+    for a in d.get("animations", {}).values():
+        if a not in anim_ids:
+            err(f"{rel(f)}: الحركة {a} مو معرّفة")
 
 # 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
 if node and "--no-sim" not in sys.argv:
