@@ -1,0 +1,33 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "sh:fx_crystal",
+   "materials": {
+    "default": "entity_alpha"
+   },
+   "textures": {
+    "c0": "textures/entity/sh_fx_crystal_0",
+    "c1": "textures/entity/sh_fx_crystal_1",
+    "c2": "textures/entity/sh_fx_crystal_2",
+    "c3": "textures/entity/sh_fx_crystal_3",
+    "c4": "textures/entity/sh_fx_crystal_4",
+    "c5": "textures/entity/sh_fx_crystal_5"
+   },
+   "geometry": {
+    "default": "geometry.sh_fx_crystal"
+   },
+   "animations": {
+    "fx": "animation.sh_fx.crystal"
+   },
+   "scripts": {
+    "animate": [
+     "fx"
+    ]
+   },
+   "render_controllers": [
+    "controller.render.sh_fx_crystal"
+   ]
+  }
+ }
+}

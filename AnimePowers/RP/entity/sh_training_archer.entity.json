@@ -1,0 +1,36 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:training_archer",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_archer"
+      },
+      "geometry": {
+        "default": "geometry.sh_archer"
+      },
+      "animations": {
+        "walk": "animation.sh_archer.walk",
+        "idle": "animation.sh_archer.idle",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "idle",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#6e1e26",
+        "overlay_color": "#ffb028"
+      }
+    }
+  }
+}

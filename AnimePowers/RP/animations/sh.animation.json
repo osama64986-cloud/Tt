@@ -1,0 +1,229 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sh.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation",
+            "query.target_y_rotation",
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_trainer.idle": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time*90)*0.15",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time*70)*2",
+            "math.sin(query.life_time*35)*8",
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.sin(query.life_time*90)*2",
+            0,
+            "-2 - math.sin(query.life_time*90)*1.5"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-math.sin(query.life_time*90)*2",
+            0,
+            "2 + math.sin(query.life_time*90)*1.5"
+          ]
+        }
+      }
+    },
+    "animation.sh_archer.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*38*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*-38*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            0,
+            "math.cos(query.modified_distance_moved*38.17)*3*query.modified_move_speed",
+            0
+          ]
+        },
+        "cape": {
+          "rotation": [
+            "12*query.modified_move_speed + math.sin(query.modified_distance_moved*38.17)*6*query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_trainer.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*40*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*-40*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*-30*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*30*query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_archer.idle": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time*80)*0.12",
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.sin(query.life_time*100)*1.5",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.sin(query.life_time*100 + 40)*2",
+            "math.sin(query.life_time*100)*2",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            "math.sin(query.life_time*30)*10",
+            "math.sin(query.life_time*55)*2"
+          ]
+        },
+        "cape": {
+          "rotation": [
+            "4 + math.sin(query.life_time*90)*3",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_archer.rest": {
+      "loop": true,
+      "bones": {
+        "arm_l": {
+          "rotation": [
+            -50,
+            -15,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            -30,
+            25,
+            0
+          ]
+        },
+        "fore_r": {
+          "rotation": [
+            -60,
+            0,
+            0
+          ]
+        },
+        "arrow": {
+          "scale": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_archer.draw": {
+      "loop": true,
+      "bones": {
+        "arm_l": {
+          "rotation": [
+            -90,
+            -8,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            -86,
+            100,
+            0
+          ]
+        },
+        "fore_r": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "arrow": {
+          "position": [
+            0,
+            8,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

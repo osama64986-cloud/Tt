@@ -1,0 +1,12 @@
+entity.sh:trainer.name=المدرب
+entity.sh:training_archer.name=رامي التدريب
+item.spawn_egg.entity.sh:trainer.name=بيضة المدرب
+item.spawn_egg.entity.sh:training_archer.name=بيضة رامي التدريب
+entity.sh:ember_imp.name=عفريت الرماد
+entity.sh:rust_guard.name=حارس الصخر
+item.spawn_egg.entity.sh:ember_imp.name=بيضة عفريت الرماد
+item.spawn_egg.entity.sh:rust_guard.name=بيضة حارس الصخر
+entity.sh:shadow_hound.name=ذئب الظل
+entity.sh:sand_scorpion.name=عقرب الرمل
+item.spawn_egg.entity.sh:shadow_hound.name=بيضة ذئب الظل
+item.spawn_egg.entity.sh:sand_scorpion.name=بيضة عقرب الرمل

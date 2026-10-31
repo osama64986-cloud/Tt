@@ -1,0 +1,23 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sh:xp_scroll_big",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "sh_scroll_big"
+        }
+      },
+      "minecraft:max_stack_size": 16,
+      "minecraft:display_name": {
+        "value": "§6لفافة خبرة كبيرة"
+      },
+      "minecraft:glint": true
+    }
+  }
+}

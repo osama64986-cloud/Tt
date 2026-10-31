@@ -1,0 +1,45 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:rust_guard",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_guard"
+      },
+      "geometry": {
+        "default": "geometry.sh_guard"
+      },
+      "animations": {
+        "walk": "animation.sh_guard.walk",
+        "look": "animation.sh.look",
+        "windup": "animation.sh_guard.windup",
+        "attack": "animation.sh_guard.slam",
+        "state": "controller.animation.sh_guard.state",
+        "idle": "animation.sh_guard.idle",
+        "close": "animation.sh_guard.sweep"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#7a462c",
+        "overlay_color": "#6ef0e6"
+      },
+      "particle_effects": {
+        "fx": "minecraft:basic_smoke_particle"
+      }
+    }
+  }
+}

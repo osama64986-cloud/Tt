@@ -1,0 +1,97 @@
+{
+ "format_version": "1.8.0",
+ "render_controllers": {
+  "controller.render.sh_fx_circle": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_portal": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_plate": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_crystal": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  }
+ }
+}

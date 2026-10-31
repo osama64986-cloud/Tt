@@ -1,0 +1,15 @@
+{
+  "BP": {
+    "header": "9faac67a-5fbd-4a0d-9297-0ee7b5538ab1",
+    "modules": [
+      "bbdb8485-036f-4180-932f-6612454e3e5e",
+      "73bf9aef-e8cf-430e-ad3d-1b970f55ccbe"
+    ]
+  },
+  "RP": {
+    "header": "23626314-a797-40ba-a405-8e75d9a904d8",
+    "modules": [
+      "e352b44b-459c-4866-a3e0-e1098790da82"
+    ]
+  }
+}

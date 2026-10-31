@@ -1,0 +1,98 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sh:ember_imp",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "is_experimental": false,
+      "properties": {
+        "sh:state": {
+          "type": "int",
+          "range": [
+            0,
+            3
+          ],
+          "default": 0,
+          "client_sync": true
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "sh_monster",
+          "sh_rank0"
+        ]
+      },
+      "minecraft:health": {
+        "value": 18,
+        "max": 18
+      },
+      "minecraft:collision_box": {
+        "width": 0.75,
+        "height": 1.65
+      },
+      "minecraft:movement": {
+        "value": 0.32
+      },
+      "minecraft:navigation.walk": {
+        "can_path_over_water": false,
+        "avoid_water": true,
+        "can_pass_doors": true
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:attack": {
+        "damage": 3
+      },
+      "minecraft:despawn": {
+        "despawn_from_distance": {
+          "min_distance": 48,
+          "max_distance": 64
+        }
+      },
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "speed_multiplier": 1.3,
+        "track_target": true
+      },
+      "minecraft:behavior.hurt_by_target": {
+        "priority": 1
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "must_see": false,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "player"
+            },
+            "max_dist": 20
+          }
+        ]
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 6,
+        "speed_multiplier": 0.8
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 7,
+        "look_distance": 8
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 8
+      }
+    }
+  }
+}

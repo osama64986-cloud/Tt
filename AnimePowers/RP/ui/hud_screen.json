@@ -1,0 +1,8 @@
+{
+  "namespace": "hud",
+  "hud_actionbar_text": {
+    "anchor_from": "top_middle",
+    "anchor_to": "top_middle",
+    "offset": [ 0, 4 ]
+  }
+}

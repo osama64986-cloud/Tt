@@ -1,0 +1,36 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:trainer",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_trainer"
+      },
+      "geometry": {
+        "default": "geometry.sh_trainer"
+      },
+      "animations": {
+        "idle": "animation.sh_trainer.idle",
+        "walk": "animation.sh_trainer.walk",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#2a2250",
+        "overlay_color": "#d6a840"
+      }
+    }
+  }
+}
