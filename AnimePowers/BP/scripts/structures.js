@@ -395,8 +395,9 @@ export function setupStructures(onGuardSpawn) {
     for (const p of world.getAllPlayers()) {
       try {
         if (p.dimension.id !== "minecraft:overworld") continue;
-        if (Math.random() > 0.5) continue;
         const reg = loadReg();
+        // أول بناية تنبني بسرعة (حتى ما يحس اللاعب العالم فاضي)، وبعدها بوتيرة هادئة
+        if (reg.length > 0 && Math.random() > 0.17) continue;
         const type = chooseType(reg);
         const spec = STRUCTURES[type];
         const site = pickSite(p.dimension, p.location, 56, 100, spec.half);
@@ -413,7 +414,7 @@ export function setupStructures(onGuardSpawn) {
         return;
       } catch (e) { building = false; }
     }
-  }, 1200);
+  }, 400);
 
   // كشف الموقع + إعادة ظهور الحراس
   system.runInterval(() => {

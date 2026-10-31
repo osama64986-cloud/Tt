@@ -495,7 +495,7 @@ const POWER_KEYS = ["iron", "wind", "echo", "crystal", "accountant", "borrower",
 
 // القدرة تجي عشوائيا، ويمكن ما تطلع لك أي قدرة (للتجربة: /tag @s add sh_menu يرجع قائمة الاختيار)
 const RANDOM_POWERS = true;
-const NO_POWER_CHANCE = 0.3;
+const NO_POWER_CHANCE = 0; // 0 = كل لاعب ياخذ قدرة من أول مرة (غيّرها 0.3 لو تريد احتمال "بلا قدرة" وتعاد القرعة بالرتبة الجاية)
 
 function grantPower(player, key) {
   const pw = POWERS[key];
@@ -515,7 +515,7 @@ function grantPower(player, key) {
 function rollPower(player) {
   const st = getState(player);
   if (st.power) return;
-  if (st.rolledRank === st.rank) {
+  if (NO_POWER_CHANCE > 0 && st.rolledRank === st.rank) {
     say(player, "§7[القدرة] §fما عندك قدرة. تعيد المحاولة لما ترتقي رتبة جديدة. هسه تطور بالأسلحة.");
     return;
   }
@@ -3117,6 +3117,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         s2.sawIntro = true;
         saveState(p, s2);
         introStory(p);
+        starterMonsters(p);
       }
       if (!st.power) openPowerMenu(p);
     } catch (e) { /* */ }
@@ -3195,20 +3196,25 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
 });
 
 // ───────────────────────── ظهور وحوش الرتبة الأولى ─────────────────────────
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
-    try {
-      const st = getState(p);
-      if (p.dimension.id !== "minecraft:overworld") continue;
-      const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_rank0"] });
-      if (near.length >= MONSTER_CAP) continue;
-      if (Math.random() < 0.4) continue;
-      const id = RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
-      const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, 26, 44);
-      if (m) scaleMonster(m, st.rank);
-    } catch (e) { /* */ }
-  }
-}, MONSTER_SPAWN_TICKS);
+// يظهرون قرب اللاعب بقوة تناسب رتبته. force = يتخطى الاحتمال (للبداية والاختبار).
+function trySpawnMonster(p, force) {
+  try {
+    if (p.dimension.id !== "minecraft:overworld") return undefined;
+    const st = getState(p);
+    const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_rank0"] });
+    if (near.length >= MONSTER_CAP + (force ? 2 : 0)) return undefined;
+    if (!force && Math.random() < 0.4) return undefined;
+    const id = RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+    const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, force ? 16 : 26, force ? 30 : 44);
+    if (m) scaleMonster(m, st.rank);
+    return m;
+  } catch (e) { return undefined; }
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) trySpawnMonster(p, false); }, MONSTER_SPAWN_TICKS);
+// وحوش البداية: بعد ما يدخل اللاعب بدقيقة (وبعد القدرة) يطلع له وحشين قريبين حتى ما يحس العالم فاضي
+function starterMonsters(p) {
+  for (let i = 0; i < 2; i++) later(40 + i * 30, () => trySpawnMonster(p, true));
+}
 
 
 
@@ -3731,6 +3737,7 @@ system.runInterval(() => {
 //   /scriptevent sh:unlock         يفتح كل مهارات قدرتك ويخلص التدريب
 //   /scriptevent sh:katlv 5        يضبط ليفل الكاتانا (1 إلى 5)
 //   /scriptevent sh:cdreset        يصفّر كل الكولداون
+//   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars off يوقف تعديل بلوكات الأرض
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
@@ -3751,6 +3758,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aليفل الكاتانا: ${n}`);
+    } else if (ev.id === "sh:spawn") {
+      let n = Math.min(6, Math.max(1, parseInt(msg, 10) || 2)), ok = 0;
+      for (let i = 0; i < n; i++) if (trySpawnMonster(p, true)) ok++;
+      say(p, `§aظهر ${ok} وحش قربك`);
     } else if (ev.id === "sh:scars") {
       world.setDynamicProperty("sh_noscars", msg === "off" ? true : undefined);
       if (msg !== "off") restoreScars(true);

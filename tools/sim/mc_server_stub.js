@@ -273,6 +273,19 @@ export const __sim = {
       if (mons.length > 3) failures.push("ظهور سريع: " + mons.length);
       if (mons.some((e) => e.getDynamicProperty("sh_tier") !== 4)) failures.push("الوحوش ما تدرجت برتبة اللاعب");
     }
+    // لاعب جديد كلياً: قدرة مضمونة + وحوش بداية + أول بناية بسرعة
+    {
+      player.setDynamicProperty("sh", undefined); world._dyn = {}; entities.length = 0; for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
+      fire("playerSpawn", { player, initialSpawn: true });
+      advance(1500); await new Promise((r) => setTimeout(r, 30));
+      const st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId)).length;
+      const reg = world._dyn.sh_structs ? JSON.parse(world._dyn.sh_structs).length : 0;
+      console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| وحوش بداية =", mons, "| بنايات =", reg, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"));
+      if (!st.power) failures.push("اللاعب الجديد ما أخذ قدرة");
+      if (mons < 1) failures.push("ما ظهرت وحوش بداية");
+      if (reg < 1) failures.push("ما انبنت أول بناية بسرعة");
+    }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
     fire("scriptEventReceive", { id: "sh:unlock", message: "", sourceEntity: player });
