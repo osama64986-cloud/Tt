@@ -2,11 +2,11 @@
   "format_version": 2,
   "header": {
     "name": "§6عالم القدرات §7- BP",
-    "description": "المحاسب وكاتب القوانين والمدرب",
+    "description": "المحاسب وكاتب القوانين وسيد النجوم والمدرب",
     "uuid": "9faac67a-5fbd-4a0d-9297-0ee7b5538ab1",
     "version": [
       1,
-      6,
+      7,
       0
     ],
     "min_engine_version": [

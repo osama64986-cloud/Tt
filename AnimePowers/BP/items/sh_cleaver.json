@@ -4,7 +4,7 @@
     "description": {
       "identifier": "sh:ember_cleaver",
       "menu_category": {
-        "category": "equipment"
+        "category": "none"
       }
     },
     "components": {

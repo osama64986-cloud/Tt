@@ -363,6 +363,248 @@
           "volume": 1.0
         }
       ]
+    },
+    "sh.meteor_fall": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/sh/meteor_fall",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.meteor_hit": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 64,
+      "sounds": [
+        {
+          "name": "sounds/sh/meteor_hit",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.gravwell": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/sh/gravwell",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.orbit": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/orbit",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.const_mark": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/const_mark",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.const_zap": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/sh/const_zap",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.stardash": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/sh/stardash",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.blackhole": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 64,
+      "sounds": [
+        {
+          "name": "sounds/sh/blackhole",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.blackhole_end": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 72,
+      "sounds": [
+        {
+          "name": "sounds/sh/blackhole_end",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.supernova_charge": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 56,
+      "sounds": [
+        {
+          "name": "sounds/sh/supernova_charge",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.supernova_boom": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 96,
+      "sounds": [
+        {
+          "name": "sounds/sh/supernova_boom",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.ready": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/sh/ready",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.compass": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/sh/compass",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.kat_step": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/sh/kat_step",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.kat_wave": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/sh/kat_wave",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.kat_storm": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/sh/kat_storm",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.kat_exec": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 64,
+      "sounds": [
+        {
+          "name": "sounds/sh/kat_exec",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.kat_levelup": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/sh/kat_levelup",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.trait_rock": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/trait_rock",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.trait_fangs": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/trait_fangs",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.trait_wings": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/trait_wings",
+          "volume": 1.0
+        }
+      ]
+    },
+    "sh.trait_eye": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/sh/trait_eye",
+          "volume": 1.0
+        }
+      ]
     }
   }
 }

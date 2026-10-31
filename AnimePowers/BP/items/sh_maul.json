@@ -4,7 +4,7 @@
     "description": {
       "identifier": "sh:stone_maul",
       "menu_category": {
-        "category": "equipment"
+        "category": "none"
       }
     },
     "components": {

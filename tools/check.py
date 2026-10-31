@@ -9,6 +9,7 @@
   6. كل sh:skill_* المذكور بالسكربت له ملف أيتم.
   7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
   8. كل كيان BP له كيان RP، وكل مفتاح اسم بملفات اللغة موجود بالعربي والإنجليزي.
+  9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
 """
 import glob
 import json
@@ -106,6 +107,10 @@ for sid in sorted(set(re.findall(r'"(sh:skill_[a-z_]+)"', js))):
 try:
     defs = load(os.path.join(RP, "sounds", "sound_definitions.json"))["sound_definitions"]
     for s in sorted(set(re.findall(r'"(sh\.[a-z_]+)"', js))):
+        if s.endswith("_"):  # بادئة صوت يكمّلها الكود (مثل sh.trait_ + id)
+            if not any(d.startswith(s) for d in defs):
+                err(f"ما كو أصوات تبدأ بـ {s}")
+            continue
         if s not in defs:
             err(f"صوت مستعمل وغير معرّف: {s}")
     for name, d in defs.items():
@@ -145,6 +150,12 @@ for e in sorted(bp_ents):
     if f"entity.{e}.name" not in langs["ar_SA"]:
         warnings.append(f"ما لقيت اسم عربي للكيان {e} بملف اللغة")
 
+# 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
+if node and "--no-sim" not in sys.argv:
+    r = subprocess.run([node, os.path.join(ROOT, "tools", "sim", "run_sim.mjs")], capture_output=True)
+    if r.returncode != 0:
+        err("المحاكي فشل:\n" + r.stdout.decode("utf-8", "replace")[-1800:] + r.stderr.decode("utf-8", "replace")[-600:])
+
 for w in warnings:
     print("تحذير:", w)
 if errors:
@@ -152,4 +163,4 @@ if errors:
     for e in errors:
         print(" -", e)
     sys.exit(1)
-print("الفحص نظيف: JSON، صياغة JS، UUID، النسخ، الأيتمات، الأصوات، الكيانات، اللغة.")
+print("الفحص نظيف: JSON، صياغة JS، UUID، النسخ، الأيتمات، الأصوات، الكيانات، اللغة، المحاكي.")

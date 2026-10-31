@@ -4,7 +4,7 @@
     "description": {
       "identifier": "sh:shadow_blade",
       "menu_category": {
-        "category": "equipment"
+        "category": "none"
       }
     },
     "components": {

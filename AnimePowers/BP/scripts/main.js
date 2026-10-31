@@ -41,9 +41,13 @@ const POWERS = {
     name: "متتبع الريح", color: "§a",
     desc: "سرعة وقفزات وعواصف، تتحرك أسرع من أي عدو.",
   },
+  star: {
+    name: "سيد النجوم", color: "§9",
+    desc: "تستدعي النجوم: نيازك وجاذبية ومدارات وكوكبات وثقوب سوداء، لحد المستعر الأعظم اللي يقلب المعركة.",
+  },
 };
 // ندرة كل قدرة: تحدد عدد مهاراتها وأعلى ليفل لها
-const POWER_RARITY = { iron: "common", wind: "uncommon", echo: "rare", crystal: "rare", accountant: "epic", borrower: "epic", distance: "legendary", law: "legendary" };
+const POWER_RARITY = { iron: "common", wind: "uncommon", star: "mythic", echo: "rare", crystal: "rare", accountant: "epic", borrower: "epic", distance: "legendary", law: "legendary" };
 const rarityOf = (key) => RARITIES.find((r) => r.key === POWER_RARITY[key]) || RARITIES[0];
 
 // مستويات فتح المهارات الخمس لكل قدرة
@@ -52,7 +56,7 @@ function mk(id, power, name, item, idx, cooldown, desc) {
   return { id, power, name, item, first: idx === 0, prev: null, cooldown, desc };
 }
 const SKILLS = {};
-const AIMED = new Set(["seal", "subtract", "transfer", "divide", "zero", "pull", "push", "swap", "fold", "echoseal", "prison"]);
+const AIMED = new Set(["seal", "subtract", "transfer", "divide", "zero", "pull", "push", "swap", "fold", "echoseal", "prison", "meteor", "gravwell", "blackhole"]);
 for (const s of [
   mk("seal", "accountant", "ختم الرقم", "sh:skill_seal", 0, 10, "تعلم عدو برقم 10. الرقم ينقص لحاله كل ثانيتين وكل ضربة تنقصه، وعند الصفر ينهار ويتضرر."),
   mk("subtract", "accountant", "طرح", "sh:skill_subtract", 1, 60, "تنقص 3 من رقم العدو (إذا ما معلم، تعلمه برقم 7)."),
@@ -94,6 +98,13 @@ for (const s of [
   mk("windwings", "borrower", "صفة الأجنحة", "sh:skill_windwings", 2, 360, "قفزة عالية وسقوط بطيء وسرعة 10 ثواني."),
   mk("huntereye", "borrower", "صفة عين الصياد", "sh:skill_huntereye", 3, 480, "رؤية بالليل وتعلم كل الأعداء القريبين، وضرباتك عليهم أقوى."),
   mk("adapt", "borrower", "التكيف", "sh:skill_adapt", 4, 900, "تدمج آخر صفتين استعملتهم (خلال 40 ثانية) وتشتغلان مع بعض بمدة أقصر."),
+  mk("meteor", "star", "نيزك", "sh:skill_meteor", 0, 80, "تنزل نيزك على المكان اللي تصوب عليه بعد ثانية، ضرر وحرق بمنطقة."),
+  mk("gravwell", "star", "بئر الجاذبية", "sh:skill_gravwell", 1, 300, "بئر يسحب الأعداء لنقطة 4 ثواني ويبطئهم ويأذيهم."),
+  mk("orbit", "star", "مدار النجوم", "sh:skill_orbit", 2, 500, "3 نجوم تدور حولك 10 ثواني وتضرب كل من يلمسها وتقللك الضرر."),
+  mk("constellation", "star", "كوكبة", "sh:skill_constellation", 3, 700, "تربط الأعداء القريبين بخطوط نجمية وبعد ثانيتين تصعقهم كلهم."),
+  mk("stardash", "star", "ومضة نجمية", "sh:skill_stardash", 4, 160, "اندفاع نجمي للأمام يضرب ويبطئ كل من بالطريق."),
+  mk("blackhole", "star", "ثقب أسود", "sh:skill_blackhole", 5, 1100, "ثقب أسود يسحب كل شي 6 ثواني ثم ينهار وينفجر بقوة."),
+  mk("supernova", "star", "المستعر الأعظم", "sh:skill_supernova", 6, 1800, "تشحن ثانيتين ثم انفجار نجمي هائل يضرب ويعمي كل الأعداء بمدى 14 بلوكة، وتضعف بعده."),
 ]) SKILLS[s.id] = s;
 {
   const last = {}, count = {};
@@ -106,6 +117,40 @@ for (const s of [
 }
 const ITEM_TO_SKILL = {};
 for (const s of Object.values(SKILLS)) ITEM_TO_SKILL[s.item] = s;
+
+// طريقة استعمال كل مهارة (تظهر بالـHUD وبنافذة الحالة)
+const SKILL_USAGE = {
+  seal: "صوّب على عدو واضغط استعمال: يتعلم برقم 10 وينقص لحاله، وكل ضربة تنقصه",
+  subtract: "صوّب على عدو واضغط استعمال: تنقص 3 من رقمه",
+  transfer: "صوّب على عدو معلّم: ينتقل رقمه لأقرب عدو",
+  divide: "صوّب على عدو معلّم: رقمه ينقسم بينه وبين أقرب عدو",
+  zero: "صوّب على عدو: إذا رقمه 5 أو أقل ينهار فورا",
+  shards: "استعمال: 3 شظايا. جلوس (سنيك) + استعمال: رمح بلور واحد قوي يخترق",
+  crystalshield: "استعمال: بلورات تدور حولك وتمتص الضرر",
+  prison: "صوّب على عدو: تسجنه ببلورات (يتجمد مكانه)",
+  burst: "استعمل شظايا البلور على الأعداء أول، ثم استعمل: تفجر كل البلورات",
+  spacerewind: "أول استعمال: يحفظ مكانك. ثاني استعمال: ترجع لنفس المكان",
+  spacecollapse: "استعمال: كل الأعداء القريبين يتجمعون بنقطة وحدة",
+  absolute: "استعمال: تفتح قائمة، اختر القانون اللي يمشي 5 ثواني",
+  adapt: "استعمل صفتين مختلفتين بالتتابع، بعدها استعمل التكيف لدمجهما",
+  weight: "استعمال: دائرة حولك تبطئ الأعداء وتأذيهم",
+  silence: "استعمال: دائرة تمنع الرماة من الرمي وتضعف ضرب الأعداء",
+  reflect: "استعمال: دائرة ترجع أي ضربة على اللي ضربك",
+  boundary: "استعمال: دائرة ما أحد يطلع منها",
+  time: "استعمال: كل الأعداء حواليك يتجمدون 3 ثواني",
+  meteor: "صوّب على المكان واضغط استعمال: دائرة تحذير ثم ينزل نيزك بعد ثانية",
+  gravwell: "صوّب على مكان: بئر يسحب الأعداء 4 ثواني ويبطئهم",
+  orbit: "استعمال: 3 نجوم تدور حولك 10 ثواني وتضرب كل من يلمسها",
+  constellation: "استعمال قرب أعداء (2 أو أكثر): تربطهم بخطوط نجمية ثم تصعقهم كلهم بعد ثانيتين",
+  stardash: "استعمال: اندفاع للأمام يضرب كل من بالطريق",
+  blackhole: "صوّب على مكان: ثقب أسود يسحب كل شي 6 ثواني ثم ينفجر",
+  supernova: "استعمال: اثبت ثانيتين ثم انفجار نجمي هائل (تضعف بعده 6 ثواني)",
+};
+function usageOf(s) {
+  if (SKILL_USAGE[s.id]) return SKILL_USAGE[s.id];
+  return AIMED.has(s.id) ? "صوّب على عدو واضغط استعمال" : "اضغط استعمال (تشتغل حواليك)";
+}
+
 
 // وحوش: rank -1 = وحش تدريب (بلا رتبة)
 const MONSTERS = {
@@ -168,61 +213,142 @@ function say(p, text) {
   try { p.sendMessage(text); } catch (e) { /* */ }
 }
 
-// ───────────────────────── واجهة اللاعب (أعلى الشاشة) ─────────────────────────
-// سطر صغير: الرتبة والقدرة وندرتها وليفلها، وبعده صحة وخبرة. تنعرض عبر شريط الأكشن وتتنقل لأعلى الشاشة بملف ui بالـRP.
-function bar(frac, len, on, off = "§8") {
+// ───────────────────────── واجهة اللاعب (HUD) ─────────────────────────
+// تنعرض عبر شريط الأكشن وتتنقل لأعلى الشاشة بملف ui بالـRP. الأسطر:
+//   1) الرتبة │ القدرة │ نجوم الندرة │ ليفل القدرة
+//   2) الصحة │ ليفل اللاعب + شريط الخبرة
+//   3) شريط المهارات: جاهزة ✔ / كولداون ثواني / مقفولة ✖ (المسكوكة بيدك بين أقواس)
+//   4) معلومات الأيتم اللي بيدك (مستوى المهارة وحالتها)
+//   5) تلميح طريقة الاستعمال (يظهر 6 ثواني بعد ما تمسك الأيتم)
+// أوسمة: sh_hud_off يطفي الواجهة | sh_hud_plain شريط بسيط إذا الرموز ما تنعرض عندك.
+function bar(frac, len, on, off = "§8", plain = false) {
   const n = Math.max(0, Math.min(len, Math.round(frac * len)));
-  return on + "|".repeat(n) + off + "|".repeat(len - n);
+  const ch = plain ? "|" : "█";
+  return on + ch.repeat(n) + off + ch.repeat(len - n);
 }
-function hudText(p, st) {
+const fmtSec = (ticks) => (ticks / 20).toFixed(ticks >= 200 ? 0 : 1);
+function rarityStars(key) {
+  const idx = RARITIES.findIndex((r) => r.key === POWER_RARITY[key]);
+  return rarityOf(key).color + "★".repeat(idx + 1) + "§8" + "★".repeat(RARITIES.length - idx - 1);
+}
+function hudText(p, st, plain) {
   const pw = POWERS[st.power];
   let l1;
   if (pw) {
     const r = rarityOf(st.power);
-    l1 = `§6${RANKS[st.rank]} §8- ${pw.color}${pw.name} ${r.color}${r.name} §d${st.plevel || 1}/${r.maxLv}`;
-  } else l1 = `§6${RANKS[st.rank]} §8- §7بلا قدرة`;
+    l1 = `§6◆ ${RANKS[st.rank]} §8│ ${pw.color}${pw.name} §8│ ${rarityStars(st.power)} §8│ §dLv ${st.plevel || 1}/${r.maxLv}`;
+  } else l1 = `§6◆ ${RANKS[st.rank]} §8│ §7بلا قدرة`;
   let hp = "";
   try {
     const h = p.getComponent("minecraft:health");
-    hp = `§c♥ ${bar(h.currentValue / h.effectiveMax, 10, "§c")} §f${Math.ceil(h.currentValue)}`;
+    hp = `§c♥ ${bar(h.currentValue / h.effectiveMax, 8, "§c", "§8", plain)} §f${Math.ceil(h.currentValue)}`;
   } catch (e) { /* */ }
-  const xp = `§bLv ${st.level} ${bar(st.xp / xpNeeded(st.level), 10, "§b")}`;
-  return `${l1}\n${hp}  ${xp}`;
+  const need = xpNeeded(st.level);
+  const xp = `§bLv ${st.level} ${bar(st.xp / need, 8, "§b", "§8", plain)} §7${Math.floor((st.xp / need) * 100)}%`;
+  return `${l1}\n${hp} §8│ ${xp}`;
 }
-function heldLine(p, st) {
+
+// شريط المهارات + نغمة خفيفة لما تخلص مهارة طويلة الكولداون
+const wasCooling = new Map();
+function skillStrip(p, st, heldId) {
+  if (!st.power) return "";
+  const now = system.currentTick;
+  const mine = Object.values(SKILLS).filter((s) => s.power === st.power);
+  const parts = mine.map((s, i) => {
+    const n = i + 1;
+    let txt;
+    if (!isSkillUnlocked(st, s)) txt = `§8${n}✖`;
+    else {
+      const key = `${p.id}:${s.id}`;
+      const left = (cooldowns.get(key) ?? 0) - now;
+      const cooling = left > 0;
+      if (wasCooling.get(key) && !cooling && s.cooldown >= 100) {
+        sfxPlayer(p, "sh.ready", 0.5);
+        const m = tempMsg.get(p.id);
+        if (!m || m.until <= now) notify(p, `§a✔ ${s.name} جاهزة`, 25);
+      }
+      wasCooling.set(key, cooling);
+      txt = cooling ? `§c${n}·${fmtSec(left)}` : `§a${n}✔`;
+    }
+    return heldId === s.id ? `§e[${txt}§e]` : txt;
+  });
+  return `§8مهارات: ${parts.join(" ")}`;
+}
+
+// معلومات الأيتم اللي بإيدك + تلميح طريقة الاستعمال
+const heldSeen = new Map();
+const WEAPON_USE = { bind: "يقيد أقرب عدو بنظرك", slam: "قوس نار قدامك", dash: "اندفاع للأمام", quake: "رجة أرض كبيرة", throw: "ترمي الرمح ويرجع لك" };
+function heldLine(p, st, plain) {
+  const now = system.currentTick;
   const held = inv(p).getItem(p.selectedSlotIndex);
-  if (!held) return "";
-  const sk = ITEM_TO_SKILL[held.typeId];
-  if (sk && st.power === sk.power) {
-    const left = (cooldowns.get(`${p.id}:${sk.id}`) ?? 0) - system.currentTick;
-    return `${POWERS[sk.power].color}${sk.name} §r| ${left > 0 ? `§7انتظر ${(left / 20).toFixed(1)}ث` : "§aجاهزة"}`;
+  const id = held ? held.typeId : "";
+  const seen = heldSeen.get(p.id);
+  if (!seen || seen.id !== id) heldSeen.set(p.id, { id, tick: now });
+  const showTip = now - heldSeen.get(p.id).tick < 120;
+  const none = { line: "", tip: "" };
+  if (!id) return none;
+  const stateOf = (left) => (left > 0 ? `§c⏳ ${fmtSec(left)}ث` : "§a✔ جاهزة");
+
+  const sk = ITEM_TO_SKILL[id];
+  if (sk) {
+    if (st.power !== sk.power) return { line: `§c${sk.name}: مو من قدرتك`, tip: "" };
+    const lv = skillLevel(st, sk.id);
+    const x = (st.skills && st.skills[sk.id] && st.skills[sk.id].xp) || 0;
+    const left = (cooldowns.get(`${p.id}:${sk.id}`) ?? 0) - now;
+    return {
+      skillId: sk.id,
+      line: `${POWERS[sk.power].color}${sk.name} §8│ §bمستوى ${lv} ${bar(x / skillXpNeeded(lv), 5, "§b", "§8", plain)} §8│ ${stateOf(left)}`,
+      tip: showTip ? `§7${usageOf(sk)}` : "",
+    };
   }
-  if (held.typeId === KATANA) {
-    const mode = katanaMode(p);
-    const left = (weaponCd.get(`${p.id}:katana${mode}`) ?? 0) - system.currentTick;
-    return `§5كاتانا الهاوية §r| §d${KATANA_MODES[mode].name} §r| ${left > 0 ? `§7انتظر ${(left / 20).toFixed(1)}ث` : "§aجاهزة"} §8(شفت: تبديل)`;
+  if (id === KATANA) {
+    const kat = getKat(p), mode = katanaMode(p), m = KATANA_MODES[mode];
+    const left = (weaponCd.get(`${p.id}:katana${mode}`) ?? 0) - now;
+    const open = KATANA_MODES.filter((x) => x.lv <= kat.lv).length;
+    const prog = kat.lv >= KAT_MAX ? "§6أقصى" : bar(kat.xp / KAT_NEED[kat.lv], 4, "§5", "§8", plain);
+    return {
+      line: `§5⚔ كاتانا §8Lv${kat.lv} ${prog} §8│ §d${m.name} §7(${mode + 1}/${open}) §8│ ${stateOf(left)}`,
+      tip: showTip ? "§7سنيك (جلوس): تبديل المهارة §8│ §7استعمال: تنفيذ" : "",
+    };
   }
-  const w = WEAPONS[held.typeId];
+  if (id === "sh:explorer_compass") {
+    const key = compassKey(p), tg = compassFind(p, key);
+    const nm = (COMPASS_TARGETS.find((t) => t.key === key) || COMPASS_TARGETS[5]).name;
+    const line = tg
+      ? `§6◎ ${tg.name} §8│ §f${Math.round(Math.hypot(tg.x - p.location.x, tg.z - p.location.z))}م §e${compassArrow(p, tg)}`
+      : `§6◎ ${nm} §8│ §7ما انكشفت بعد، استكشف أكثر`;
+    return { line, tip: showTip ? "§7استعمال: اختيار الوجهة §8│ §7سنيك+استعمال: خط إرشاد" : "" };
+  }
+  if (id === "sh:evolution_book") return { line: "§eكتاب التطور", tip: showTip ? "§7استعمال: المهارات، نافذة الحالة، الرتب" : "" };
+  if (id === "sh:monster_book") return { line: "§5كتاب الوحوش", tip: showTip ? "§7استعمال: معلومات الوحوش اللي قتلتها" : "" };
+  const w = WEAPONS[id];
   if (w && w.active) {
-    const left = (weaponCd.get(`${p.id}:${held.typeId}`) ?? 0) - system.currentTick;
-    return `§f${w.name} §r| ${left > 0 ? `§7انتظر ${(left / 20).toFixed(1)}ث` : "§aالمهارة جاهزة"}`;
+    const left = (weaponCd.get(`${p.id}:${id}`) ?? 0) - now;
+    return { line: `§f⚔ ${w.name} §8│ ${stateOf(left)}`, tip: showTip ? `§7استعمال: ${WEAPON_USE[w.active] || "مهارة السلاح"}` : "" };
   }
-  return "";
+  return none;
 }
 
 system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     try {
       if (p.hasTag("sh_hud_off")) continue;
+      const plain = p.hasTag("sh_hud_plain");
       const st = getState(p);
-      let text = hudText(p, st);
+      const h = heldLine(p, st, plain);
+      let text = hudText(p, st, plain);
+      const strip = skillStrip(p, st, h.skillId);
+      if (strip) text += "\n" + strip;
       const m = tempMsg.get(p.id);
-      const extra = m && m.until > system.currentTick ? m.text : heldLine(p, st);
-      if (extra) text += "\n" + extra;
+      if (m && m.until > system.currentTick) text += "\n" + m.text;
+      else {
+        if (h.line) text += "\n" + h.line;
+        if (h.tip) text += "\n" + h.tip;
+      }
       p.onScreenDisplay.setActionBar(text);
     } catch (e) { /* */ }
   }
-}, 10);
+}, 5);
 
 async function showForm(player, form) {
   for (let i = 0; i < 30; i++) {
@@ -248,6 +374,7 @@ POWER_COLOR.crystal = [1.0, 0.6, 0.85];
 POWER_COLOR.borrower = [1.0, 0.7, 0.2];
 POWER_COLOR.iron = [0.75, 0.78, 0.85];
 POWER_COLOR.wind = COLORS.green;
+POWER_COLOR.star = [0.5, 0.72, 1.0];
 
 function glow(dim, loc, o = {}) {
   try {
@@ -267,6 +394,23 @@ function glow(dim, loc, o = {}) {
 function burst(dim, loc, n, color, speed = 2.5, size = 0.2) {
   for (let i = 0; i < n; i++) glow(dim, loc, { color, speed, size, life: 0.6, rise: 0.5 });
 }
+
+// مربع بكسل صغير يتوهج (جزيء sh:pixel) — يعطي شكل شظايا مثل صورة السيف
+function pix(dim, loc, o = {}) {
+  try {
+    const c = o.color || COLORS.gold;
+    const m = new MolangVariableMap();
+    m.setFloat("variable.r", c[0]);
+    m.setFloat("variable.g", c[1]);
+    m.setFloat("variable.b", c[2]);
+    m.setFloat("variable.size", o.size ?? 0.14);
+    m.setFloat("variable.life", o.life ?? 0.7);
+    m.setFloat("variable.speed", o.speed ?? 0.0);
+    m.setFloat("variable.rise", o.rise ?? 0.0);
+    dim.spawnParticle("sh:pixel", loc, m);
+  } catch (e) { /* مكان غير محمل */ }
+}
+const later = (t, fn) => system.runTimeout(() => { try { fn(); } catch (e) { /* */ } }, Math.max(1, t));
 
 function ring(dim, c, r, n, phase, color, size = 0.2) {
   for (let i = 0; i < n; i++) {
@@ -326,7 +470,7 @@ function removeSkillItems(p) {
 }
 
 // ───────────────────────── القوائم ─────────────────────────
-const POWER_KEYS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law"];
+const POWER_KEYS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 
 // القدرة تجي عشوائيا، ويمكن ما تطلع لك أي قدرة (للتجربة: /tag @s add sh_menu يرجع قائمة الاختيار)
 const RANDOM_POWERS = true;
@@ -446,6 +590,36 @@ async function openMonsterBook(player) {
   await showForm(player, new ActionFormData().title("كتاب الوحوش").body(body).button("§aتمام"));
 }
 
+// ───────────────────────── نافذة الحالة ─────────────────────────
+// ملخص كامل: الرتبة والليفل والقدرة وكل مهارة (مستواها، حالتها، طريقة استعمالها) وتطور الكاتانا.
+async function showStatus(player) {
+  const st = getState(player);
+  const pw = POWERS[st.power];
+  let b = `§6◆ ${RANKS[st.rank]}§r  §bLv ${st.level}§r  §7(${st.xp}/${xpNeeded(st.level)} XP)\n${nextRankLine(st)}\n`;
+  if (pw) {
+    const r = rarityOf(st.power);
+    b += `\n${pw.color}${pw.name}§r ${rarityStars(st.power)}§r ${r.color}${r.name}§r\n§dليفل القدرة ${st.plevel || 1}/${r.maxLv}§r ${(st.plevel || 1) >= r.maxLv ? "§6(أقصى)" : `§7(${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}\n`;
+    const tr = st.training && st.training[st.power];
+    if (!tr || tr.status !== "done") b += "§e⚠ كمل تدريب المدرب حتى تنفتح باقي المهارات\n";
+    b += "\n§eالمهارات:§r\n";
+    Object.values(SKILLS).filter((s) => s.power === st.power).forEach((s, i) => {
+      if (isSkillUnlocked(st, s)) {
+        const lv = skillLevel(st, s.id), x = (st.skills[s.id] && st.skills[s.id].xp) || 0;
+        b += `§a${i + 1}. ${s.name}§r §bمستوى ${lv}§7 (${x}/${skillXpNeeded(lv)})\n§7   ${usageOf(s)}\n`;
+      } else {
+        b += `§8${i + 1}. ${s.name} §c(تنفتح عند ليفل القدرة ${s.unlock}${tr && tr.status === "done" ? "" : " + التدريب"})\n`;
+      }
+    });
+  } else b += "\n§7ما عندك قدرة. ترتقي رتبة جديدة وتعيد القرعة.\n";
+  if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
+    const k = getKat(player);
+    b += `\n§5⚔ كاتانا الهاوية§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(أقصى)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP، تزيد بقتل الأعداء وهي بيدك)`}\n`;
+    KATANA_MODES.forEach((m, i) => { b += `${m.lv <= k.lv ? "§d" : "§8"}${i + 1}. ${m.name}§r${m.lv <= k.lv ? "" : ` §c(ليفل ${m.lv})`}\n`; });
+    b += "§7السنيك: تبديل المهارة | استعمال: تنفيذ\n";
+  }
+  await showForm(player, new ActionFormData().title("نافذة الحالة").body(b).button("§aتمام"));
+}
+
 async function openBook(player) {
   const st = getState(player);
   if (!st.power) return openPowerMenu(player);
@@ -461,7 +635,7 @@ async function openBook(player) {
     if (isSkillUnlocked(st, s)) {
       const lv = skillLevel(st, s.id);
       const sk = st.skills[s.id] || { xp: 0 };
-      form.button(`§a${s.name} §bمستوى ${lv} §7(${sk.xp}/${skillXpNeeded(lv)}) §e${AIMED.has(s.id) ? "[تصويب]" : "[حولك]"}\n§7${s.desc}`);
+      form.button(`§a${s.name} §bمستوى ${lv} §7(${sk.xp}/${skillXpNeeded(lv)}) §e${AIMED.has(s.id) ? "[تصويب]" : "[حولك]"}\n§7${usageOf(s)}`);
     }
     else {
       const tr = st.training[st.power];
@@ -470,9 +644,11 @@ async function openBook(player) {
     }
   }
   form.button("§e[الرتب وطريقة الترقي]");
+  form.button("§b[نافذة الحالة وطريقة الاستعمال]");
   const r = await showForm(player, form);
   if (r.canceled) return;
   if (r.selection === mine.length) { showRanks(player); return; }
+  if (r.selection === mine.length + 1) { showStatus(player); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: مقفولة بعد`, 60); return; }
@@ -483,7 +659,7 @@ async function openBook(player) {
   giveItem(player, s.item);
   sfxPlayer(player, "sh.select", 0.7, 1.3);
   notify(player, `§aصارت بإيدك: ${s.name}`, 60);
-  say(player, `§e[${s.name}] §f${s.desc}\n§7الاستعمال: ${AIMED.has(s.id) ? "وجه نظرك على عدو وانت ماسكها واضغط استعمال" : "امسكها واضغط استعمال (تشتغل حواليك)"}. تقدر تاخذ أكثر من مهارة وتوزعها بالهوتبار.`);
+  say(player, `§e[${s.name}] §f${s.desc}\n§7الاستعمال: ${usageOf(s)}. تقدر تاخذ أكثر من مهارة وتوزعها بالهوتبار.`);
 }
 
 // ───────────────────────── المدرب ─────────────────────────
@@ -694,6 +870,10 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const info = MONSTERS[ev.deadEntity.typeId];
     const killer = ev.damageSource && ev.damageSource.damagingEntity;
     if (!killer || killer.typeId !== "minecraft:player") return;
+    try {
+      const held = inv(killer).getItem(killer.selectedSlotIndex);
+      if (held && held.typeId === KATANA) addKatXp(killer, info ? (Array.isArray(info.xp) ? info.xp[0] : info.xp) : 2);
+    } catch (e0) { /* */ }
     if (!info) {
       // الوحوش العادية: 1 XP لكل قتلة
       if (ev.deadEntity.typeId === "minecraft:player" || ev.deadEntity.typeId.startsWith("sh:")) return;
@@ -1727,7 +1907,7 @@ function applyTrait(p, id, m) {
   }
   ring(p.dimension, p.location, 1.3, 22, 0, col, 0.22);
   burst(p.dimension, headPos(p), 20, col, 2.5);
-  sfx(p.dimension, "sh.select", p.location, 1, id === "rock" ? 0.7 : id === "wings" ? 1.4 : 1);
+  sfx(p.dimension, "sh.trait_" + id, p.location, 1.1, 1);
   shake(p, 0.06, 0.1);
 }
 function recordTrait(p, id) {
@@ -1925,18 +2105,413 @@ Object.assign(SKILL_FN, {
 });
 
 
-// ───────────────────────── كاتانا الهاوية: ثلاث مهارات خارج المألوف ─────────────────────────
+// ───────────────────────── سيد النجوم (قدرة خرافية) ─────────────────────────
+// 7 مهارات: نيزك، بئر الجاذبية، مدار النجوم، كوكبة، ومضة نجمية، ثقب أسود، المستعر الأعظم.
+// كل مهارة لها مؤثرات (جزيئات + كيانات الدوائر) وأصوات خاصة. الضرر ينقص للنص على البوسات.
+const STAR_BLUE = [0.5, 0.72, 1.0], STAR_GOLD = [1.0, 0.85, 0.4], STAR_WHITE = [1, 1, 1], VOID_PURPLE = [0.5, 0.25, 0.95];
+function hurtS(e, n, by) { hurt(e, Math.max(1, Math.round(n * (BOSS_TYPES.has(e.typeId) ? 0.5 : 1))), by); }
+// نقطة التصويب: عدو بنظرك، أو بلوك، أو نقطة بالهواء
+function aimPoint(p, max = 28) {
+  const t = raycastTarget(p, max);
+  if (t) return { x: t.location.x, y: t.location.y, z: t.location.z };
+  try {
+    const hit = p.getBlockFromViewDirection({ maxDistance: max });
+    if (hit && hit.block) {
+      const b = hit.block.location, f = hit.faceLocation;
+      return { x: b.x + f.x, y: b.y + f.y, z: b.z + f.z };
+    }
+  } catch (e) { /* */ }
+  const o = eyePos(p), d = viewDir(p);
+  return { x: o.x + d.x * max * 0.7, y: o.y + d.y * max * 0.7 - 0.5, z: o.z + d.z * max * 0.7 };
+}
+function pixRing(dim, c, r, n, phase, color, size = 0.18, life = 0.7) {
+  for (let i = 0; i < n; i++) {
+    const a = phase + (i / n) * Math.PI * 2;
+    pix(dim, { x: c.x + Math.cos(a) * r, y: c.y, z: c.z + Math.sin(a) * r }, { color, size, life, rise: 0.3 });
+  }
+}
+function pixLine(dim, a, b, color, steps = 16, size = 0.14, life = 0.5) {
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    pix(dim, { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t }, { color, size, life });
+  }
+}
+function pullTo(c, e, force, up = 0.05) {
+  const dx = c.x - e.location.x, dz = c.z - e.location.z, l = Math.hypot(dx, dz) || 1;
+  try { e.applyKnockback({ x: (dx / l) * force, z: (dz / l) * force }, up); } catch (err) { /* */ }
+}
+
+Object.assign(SKILL_FN, {
+  // 1) نيزك: دائرة تحذير ثم نيزك ينزل من السماء
+  meteor(p) {
+    const dim = p.dimension, c = aimPoint(p, 32);
+    const top = { x: c.x + 5, y: c.y + 24, z: c.z - 5 };
+    spawnFx(dim, "circle", c, 0, 3.8, 30);
+    pixRing(dim, { x: c.x, y: c.y + 0.2, z: c.z }, 3.8, 30, 0, STAR_GOLD, 0.2);
+    sfx(dim, "sh.meteor_fall", c, 1.3, 1);
+    later(8, () => {
+      const steps = 10;
+      for (let i = 0; i <= steps; i++) {
+        later(i, () => {
+          const k = i / steps;
+          const loc = { x: top.x + (c.x - top.x) * k, y: top.y + (c.y - top.y) * k, z: top.z + (c.z - top.z) * k };
+          glow(dim, loc, { color: [1, 0.55, 0.2], size: 1.1, life: 0.4 });
+          glow(dim, loc, { color: [1, 0.95, 0.7], size: 0.6, life: 0.3 });
+          for (let j = 0; j < 4; j++) pix(dim, { x: loc.x + (Math.random() - 0.5) * 1.0, y: loc.y + (Math.random() - 0.5) * 1.0, z: loc.z + (Math.random() - 0.5) * 1.0 }, { color: STAR_GOLD, size: 0.22, life: 0.8, speed: 0.3, rise: -1 });
+        });
+      }
+    });
+    later(20, () => {
+      sfx(dim, "sh.meteor_hit", c, 1.5, 1);
+      waveFx(dim, c, 7, 0, 12);
+      glow(dim, c, { color: STAR_WHITE, size: 3, life: 0.35 });
+      burst(dim, { x: c.x, y: c.y + 0.6, z: c.z }, 36, STAR_GOLD, 5, 0.3);
+      for (let i = 0; i < 30; i++) pix(dim, { x: c.x, y: c.y + 0.4, z: c.z }, { color: i % 2 ? STAR_GOLD : [1, 0.5, 0.2], size: 0.24, life: 1.0, speed: 6, rise: -2 });
+      for (const e of enemiesNear(dim, c, 4, p.id)) { hurtS(e, 14, p); pushAway(c, e, 1.1, 0.5); try { e.setOnFire(4, false); } catch (err) { /* */ } }
+      shake(p, 0.2, 0.2);
+    });
+    return true;
+  },
+  // 2) بئر الجاذبية: يسحب الأعداء لنقطة 4 ثواني
+  gravwell(p) {
+    const dim = p.dimension, c = aimPoint(p, 24), life = 80;
+    spawnFx(dim, "circle", c, 2, 6, life + 6);
+    sfx(dim, "sh.gravwell", c, 1.2, 1);
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        for (let i = 0; i < 12; i++) {
+          const a = t * 0.3 + i * 0.52, r = 7.5 * (1 - ((i / 12 + t * 0.04) % 1));
+          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + 0.3 + r * 0.12, z: c.z + Math.sin(a) * r }, { color: i % 3 ? STAR_BLUE : STAR_WHITE, size: 0.2, life: 0.5 });
+        }
+        glow(dim, { x: c.x, y: c.y + 0.6, z: c.z }, { color: [0.3, 0.4, 1], size: 0.9, life: 0.3 });
+        for (const e of enemiesNear(dim, c, 7.5, p.id)) {
+          const d = Math.hypot(e.location.x - c.x, e.location.z - c.z);
+          pullTo(c, e, Math.min(0.5, 0.1 + 0.05 * (7.5 - d)));
+          try { e.addEffect("slowness", 20, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+          if (t % 10 === 0) hurtS(e, 2, p);
+        }
+        if (t >= life) {
+          system.clearRun(h);
+          burst(dim, { x: c.x, y: c.y + 0.6, z: c.z }, 24, STAR_BLUE, 4, 0.24);
+          waveFx(dim, c, 8, 2, 10);
+          sfx(dim, "sh.pull", c, 1, 0.7);
+        }
+      } catch (err) { system.clearRun(h); }
+    }, 2);
+    return true;
+  },
+  // 3) مدار النجوم: 3 نجوم تدور حولك وتضرب كل من يلمسها
+  orbit(p) {
+    const dim = p.dimension, life = 200, orbs = [], hitCd = new Map();
+    for (let i = 0; i < 3; i++) { const o = crystalEnt(dim, p.location, { x: 0, y: 1, z: 0 }, 0.8, life + 10, i % 2 ? 4 : 0); if (o) orbs.push(o); }
+    effect(p, "resistance", life, 0);
+    sfx(dim, "sh.orbit", p.location, 1.1, 1);
+    pixRing(dim, p.location, 2.3, 24, 0, STAR_GOLD, 0.22);
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        if (!valid(p) || t > life) {
+          system.clearRun(h);
+          for (const o of orbs) removeFx(o);
+          return;
+        }
+        for (let i = 0; i < 3; i++) {
+          const a = t * 0.18 + (i * Math.PI * 2) / 3;
+          const loc = { x: p.location.x + Math.cos(a) * 2.3, y: p.location.y + 1.0 + Math.sin(t * 0.1 + i) * 0.25, z: p.location.z + Math.sin(a) * 2.3 };
+          if (orbs[i] && valid(orbs[i])) { try { orbs[i].teleport(loc); } catch (err) { /* */ } }
+          glow(dim, loc, { color: i % 2 ? STAR_WHITE : STAR_GOLD, size: 0.5, life: 0.3 });
+          pix(dim, loc, { color: STAR_BLUE, size: 0.14, life: 0.5, speed: 0.4 });
+          for (const e of enemiesNear(dim, loc, 1.5, p.id)) {
+            if ((hitCd.get(e.id) ?? 0) > t) continue;
+            hitCd.set(e.id, t + 10);
+            hurtS(e, 4, p);
+            pushAway(p.location, e, 0.5, 0.2);
+            burst(dim, headPos(e), 6, STAR_GOLD, 2.5, 0.16);
+          }
+        }
+        if (t % 40 === 0) pixRing(dim, p.location, 2.3, 18, t * 0.1, STAR_BLUE, 0.14, 0.5);
+      } catch (err) { system.clearRun(h); for (const o of orbs) removeFx(o); }
+    }, 2);
+    return true;
+  },
+  // 4) كوكبة: توصل الأعداء بخطوط نجمية وبعد ثانيتين تصعقهم كلهم
+  constellation(p) {
+    const dim = p.dimension;
+    let list = enemiesNear(dim, p.location, 18, p.id).filter((e) => valid(e));
+    if (list.length < 2) { notify(p, "§cتحتاج عدوين قريبين على الأقل", 40); return false; }
+    list.sort((a, b) => Math.hypot(a.location.x - p.location.x, a.location.z - p.location.z) - Math.hypot(b.location.x - p.location.x, b.location.z - p.location.z));
+    list = list.slice(0, 6);
+    list.sort((a, b) => Math.atan2(a.location.z - p.location.z, a.location.x - p.location.x) - Math.atan2(b.location.z - p.location.z, b.location.x - p.location.x));
+    sfx(dim, "sh.const_mark", p.location, 1.2, 1);
+    for (const e of list) { followFx(e, 0, 60, 1.0); burst(dim, headPos(e), 10, STAR_GOLD, 2, 0.2); }
+    const draw = (bright) => {
+      for (let i = 0; i < list.length - 1; i++) {
+        const a = list[i], b = list[i + 1];
+        if (!valid(a) || !valid(b)) continue;
+        pixLine(dim, center3(a), center3(b), bright ? STAR_WHITE : STAR_BLUE, bright ? 24 : 12, bright ? 0.24 : 0.12, bright ? 0.6 : 0.45);
+      }
+    };
+    for (let k = 4; k <= 40; k += 6) later(k, () => draw(false));
+    later(44, () => {
+      draw(true);
+      const bonus = list.length >= 4 ? 4 : 0;
+      for (const e of list) {
+        if (!valid(e)) continue;
+        hurtS(e, 8 + bonus, p);
+        burst(dim, headPos(e), 14, STAR_WHITE, 3, 0.22);
+        glow(dim, headPos(e), { color: STAR_GOLD, size: 1.0, life: 0.35 });
+        sfx(dim, "sh.const_zap", e.location, 1, 1 + Math.random() * 0.2);
+      }
+      shake(p, 0.12, 0.15);
+    });
+    notify(p, `§9كوكبة من ${list.length} نجوم... الصعقة بعد ثانيتين`, 50);
+    return true;
+  },
+  // 5) ومضة نجمية: اندفاع للأمام يترك أثر نجوم ويضرب كل من بالطريق
+  stardash(p) {
+    const d = flatDir(p), from = { ...p.location };
+    let to;
+    for (const dist of [12, 10, 8, 6, 4, 2.5]) {
+      const dest = { x: from.x + d.x * dist, y: from.y, z: from.z + d.z * dist };
+      if (safeTeleport(p, dest, { x: dest.x + d.x * 3, y: dest.y, z: dest.z + d.z * 3 })) { to = dest; break; }
+    }
+    if (!to) { notify(p, "§cما كو مجال للاندفاع", 30); return false; }
+    const dim = p.dimension;
+    for (let i = 0; i <= 26; i++) {
+      const k = i / 26, loc = { x: from.x + (to.x - from.x) * k, y: from.y + 1.0, z: from.z + (to.z - from.z) * k };
+      glow(dim, loc, { color: STAR_WHITE, size: 0.5, life: 0.3 });
+      pix(dim, loc, { color: i % 2 ? STAR_GOLD : STAR_BLUE, size: 0.2, life: 0.9, speed: 0.8, rise: 0.2 });
+    }
+    const seg = { x: to.x - from.x, z: to.z - from.z }, sl = Math.hypot(seg.x, seg.z) || 1;
+    for (const e of enemiesNear(dim, from, sl + 4, p.id)) {
+      const vx = e.location.x - from.x, vz = e.location.z - from.z;
+      const proj = (vx * seg.x + vz * seg.z) / sl;
+      if (proj < -0.5 || proj > sl + 0.5) continue;
+      if (Math.abs(vx * seg.z - vz * seg.x) / sl > 1.8) continue;
+      hurtS(e, 9, p);
+      try { e.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+      burst(dim, headPos(e), 12, STAR_GOLD, 3, 0.22);
+    }
+    effect(p, "resistance", 20, 4);
+    spawnFx(dim, "circle", from, 4, 1.4, 14);
+    burst(dim, { x: to.x, y: to.y + 1, z: to.z }, 16, STAR_WHITE, 3, 0.22);
+    sfx(dim, "sh.stardash", to, 1.2, 1);
+    shake(p, 0.14, 0.15);
+    return true;
+  },
+  // 6) ثقب أسود: يسحب كل شي 6 ثواني ثم ينهار وينفجر
+  blackhole(p) {
+    const dim = p.dimension, g = aimPoint(p, 26), life = 120;
+    const c = { x: g.x, y: g.y + 2.4, z: g.z };
+    spawnFx(dim, "circle", g, 1, 4, life + 6);
+    sfx(dim, "sh.blackhole", g, 1.5, 1);
+    shake(p, 0.1, 0.4);
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        glow(dim, c, { color: [0.2, 0.08, 0.45], size: 1.6, life: 0.3 });
+        glow(dim, c, { color: [0.05, 0.02, 0.15], size: 0.9, life: 0.3 });
+        for (const [r, n, sp] of [[1.3, 10, 0.5], [2.2, 16, -0.36], [3.3, 22, 0.26]]) pixRing(dim, c, r, n, t * sp, r < 2 ? STAR_WHITE : VOID_PURPLE, 0.17, 0.4);
+        for (let i = 0; i < 6; i++) {
+          const a = Math.random() * Math.PI * 2, r = 9 * Math.random() + 3;
+          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + (Math.random() - 0.5) * 4, z: c.z + Math.sin(a) * r }, { color: VOID_PURPLE, size: 0.15, life: 0.4, speed: -2 });
+        }
+        for (const e of enemiesNear(dim, c, 12, p.id)) {
+          const d = Math.hypot(e.location.x - c.x, e.location.z - c.z);
+          pullTo(c, e, Math.min(0.65, 0.12 + 0.07 * (12 - d)), 0.08);
+          try { e.addEffect("slowness", 20, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+          if (d < 3 && t % 10 === 0) hurtS(e, 3, p);
+        }
+        if (t >= life) {
+          system.clearRun(h);
+          sfx(dim, "sh.blackhole_end", g, 1.6, 1);
+          for (let i = 0; i < 30; i++) {
+            const a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 3;
+            pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + (Math.random() - 0.5) * 3, z: c.z + Math.sin(a) * r }, { color: VOID_PURPLE, size: 0.2, life: 0.4, speed: -9 });
+          }
+          later(8, () => {
+            glow(dim, c, { color: STAR_WHITE, size: 4, life: 0.4 });
+            burst(dim, c, 50, VOID_PURPLE, 7, 0.3);
+            burst(dim, c, 24, STAR_WHITE, 6, 0.25);
+            waveFx(dim, g, 10, 1, 14);
+            waveFx(dim, g, 6, 4, 10);
+            for (const e of enemiesNear(dim, c, 9, p.id)) { hurtS(e, 16, p); pushAway(c, e, 1.6, 0.6); }
+            shake(p, 0.3, 0.3);
+          });
+        }
+      } catch (err) { system.clearRun(h); }
+    }, 2);
+    return true;
+  },
+  // 7) المستعر الأعظم: شحن ثانيتين ثم انفجار نجمي هائل (تضعف بعده)
+  supernova(p) {
+    const dim = p.dimension, charge = 40;
+    sfx(dim, "sh.supernova_charge", p.location, 1.5, 1);
+    effect(p, "slowness", charge + 10, 3);
+    effect(p, "resistance", charge + 10, 3);
+    notify(p, "§9§lالمستعر الأعظم... اثبت مكانك", 50);
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        if (!valid(p)) { system.clearRun(h); return; }
+        const c = { x: p.location.x, y: p.location.y + 1.0, z: p.location.z };
+        const k = t / charge;
+        for (let i = 0; i < 10; i++) {
+          const a = Math.random() * Math.PI * 2, r = 10 * (1 - k) + 1.2, up = (Math.random() - 0.3) * 3;
+          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + up, z: c.z + Math.sin(a) * r }, { color: i % 2 ? STAR_GOLD : STAR_WHITE, size: 0.18, life: 0.35, speed: -6 * (1 - k) - 1 });
+        }
+        glow(dim, c, { color: i2c(k), size: 0.6 + 2.2 * k, life: 0.25 });
+        pixRing(dim, { x: c.x, y: p.location.y + 0.2, z: c.z }, 1 + 3 * k, 20, t * 0.4, STAR_BLUE, 0.2, 0.3);
+        if (t % 10 === 0) shake(p, 0.05 + 0.12 * k, 0.12);
+        if (t >= charge) {
+          system.clearRun(h);
+          sfx(dim, "sh.supernova_boom", p.location, 2, 1);
+          shake(p, 0.5, 0.5);
+          glow(dim, c, { color: STAR_WHITE, size: 6, life: 0.5 });
+          burst(dim, c, 70, STAR_GOLD, 9, 0.34);
+          burst(dim, c, 50, STAR_WHITE, 7, 0.3);
+          for (let i = 0; i < 60; i++) pix(dim, c, { color: i % 3 ? STAR_BLUE : STAR_GOLD, size: 0.26, life: 1.4, speed: 10, rise: -1.5 });
+          for (let y = 0; y < 14; y += 1.2) pix(dim, { x: c.x, y: c.y + y, z: c.z }, { color: STAR_WHITE, size: 0.5, life: 0.8, rise: 1 });
+          waveFx(dim, p.location, 16, 0, 16);
+          later(3, () => waveFx(dim, p.location, 13, 4, 14));
+          later(6, () => waveFx(dim, p.location, 10, 2, 12));
+          for (const e of enemiesNear(dim, p.location, 14, p.id)) {
+            hurtS(e, 28, p);
+            pushAway(p.location, e, 2.2, 0.8);
+            try { e.addEffect("blindness", 60, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
+          }
+          effect(p, "weakness", 120, 1);
+          notify(p, "§9انفجرت النجمة. تعبت لست ثواني", 80);
+        }
+      } catch (err) { system.clearRun(h); }
+    }, 2);
+    return true;
+  },
+});
+// لون الشحن يتحول من الأزرق للذهبي للأبيض
+function i2c(k) { return k < 0.5 ? [0.4 + k, 0.6 + k * 0.4, 1.0] : [1.0, 0.85 + (k - 0.5) * 0.3, 0.4 + (k - 0.5) * 1.2]; }
+
+// ───────────────────────── كاتانا الهاوية: سلاح يتطور ومهاراته تتبدل بالسنيك ─────────────────────────
+// تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 5)، وكل ليفل يفتح مهارة جديدة.
+// السنيك (الجلوس) يبدل المهارة، والاستعمال ينفذها. المؤثرات: شظايا بكسل بنفسجية تحيط بالنصل.
 const KATANA = "sh:dark_katana";
+const KAT_MAX = 5;
+const KAT_NEED = [0, 40, 90, 160, 260]; // خبرة الانتقال من الليفل i إلى i+1
 const KATANA_MODES = [
-  { name: "الشطر", cd: 30, desc: "شطرة وحدة قوية تشق كل اللي قدامك" },
-  { name: "الضربة المزدوجة", cd: 60, desc: "قطعتين على شكل X على العدو اللي قدامك" },
-  { name: "الاختراق", cd: 100, desc: "تخترق جسم العدو وتطلع من ظهره وتشطر كل اللي بالطريق" },
+  { name: "الشطر", lv: 1, cd: 30, desc: "شطرة وحدة قوية تشق كل اللي قدامك" },
+  { name: "الضربة المزدوجة", lv: 1, cd: 60, desc: "قطعتين على شكل X على العدو اللي قدامك" },
+  { name: "الاختراق", lv: 1, cd: 100, desc: "تخترق جسم العدو وتطلع من ظهره وتشطر كل اللي بالطريق" },
+  { name: "خطوة الظل", lv: 2, cd: 80, desc: "تختفي وتظهر خلف العدو وتشطره من ظهره" },
+  { name: "موجة الهاوية", lv: 3, cd: 110, desc: "هلال بنفسجي يطير قدامك ويشق كل من يعترضه" },
+  { name: "عاصفة الشفرات", lv: 4, cd: 200, desc: "شفرات تدور حولك وتسحب وتقطع كل الأعداء القريبين" },
+  { name: "إعدام الهاوية", lv: 5, cd: 300, desc: "ضربة هائلة: تنهي أي عدو صحته أقل من 35% (البوسات مستثنين)" },
 ];
 const KATANA_PURPLE = [0.7, 0.35, 1.0];
+const KAT_PALETTE = [[0.7, 0.35, 1.0], [0.45, 0.35, 1.0], [0.95, 0.45, 1.0], [0.3, 0.5, 1.0], [1, 1, 1]];
+
+function getKat(p) {
+  try {
+    const raw = p.getDynamicProperty("sh_kat");
+    if (typeof raw === "string") { const k = JSON.parse(raw); return { lv: Math.min(KAT_MAX, Math.max(1, k.lv || 1)), xp: k.xp || 0 }; }
+  } catch (e) { /* */ }
+  return { lv: 1, xp: 0 };
+}
+function saveKat(p, k) { try { p.setDynamicProperty("sh_kat", JSON.stringify(k)); } catch (e) { /* */ } }
+function katLv(p) { return getKat(p).lv; }
+const kd = (p, base) => Math.round(base * (1 + 0.12 * (katLv(p) - 1)));
+function addKatXp(p, amount) {
+  const k = getKat(p);
+  if (k.lv >= KAT_MAX) return;
+  k.xp += amount;
+  while (k.lv < KAT_MAX && k.xp >= KAT_NEED[k.lv]) {
+    k.xp -= KAT_NEED[k.lv];
+    k.lv++;
+    sfxPlayer(p, "sh.kat_levelup", 1, 1);
+    katanaAura(p, 40, true);
+    const m = KATANA_MODES.filter((x) => x.lv === k.lv);
+    say(p, `§5[الكاتانا] §fتطورت للمستوى §d${k.lv}§f، ضررها زاد.` + (m.length ? ` §aمهارة جديدة: ${m.map((x) => x.name).join("، ")}§f. بدّل بالسنيك.` : ""));
+    notify(p, `§5الكاتانا ليفل ${k.lv}!`, 80);
+  }
+  if (k.lv >= KAT_MAX) k.xp = 0;
+  saveKat(p, k);
+}
 function katanaMode(p) {
   const v = p.getDynamicProperty("sh_kmode");
-  return typeof v === "number" && v >= 0 && v < KATANA_MODES.length ? v : 0;
+  if (typeof v !== "number" || v < 0 || v >= KATANA_MODES.length) return 0;
+  return KATANA_MODES[v].lv <= katLv(p) ? v : 0;
 }
+
+// موقع النصل التقريبي بيد اللاعب (للهالة)
+function bladePoint(p, u) {
+  const d = flatDir(p), r = katanaRight(d);
+  return { x: p.location.x + d.x * (0.5 + u * 0.55) + r.x * 0.38, y: p.location.y + 0.9 + u * 1.35, z: p.location.z + d.z * (0.5 + u * 0.55) + r.z * 0.38 };
+}
+// هالة شظايا بكسل بنفسجية حول النصل (مثل صورة "مهارة فعالة")
+function katanaAura(p, ticks, strong) {
+  let t = 0;
+  const h = system.runInterval(() => {
+    try {
+      t += 2;
+      if (!valid(p) || t > ticks) { system.clearRun(h); return; }
+      const n = strong ? 6 : 3;
+      for (let i = 0; i < n; i++) {
+        const b = bladePoint(p, Math.random());
+        pix(p.dimension, { x: b.x + (Math.random() - 0.5) * 0.5, y: b.y + (Math.random() - 0.5) * 0.3, z: b.z + (Math.random() - 0.5) * 0.5 },
+          { color: KAT_PALETTE[Math.floor(Math.random() * KAT_PALETTE.length)], size: 0.12 + Math.random() * 0.1, life: 0.5 + Math.random() * 0.5, speed: 0.5, rise: 0.6 });
+      }
+      if (strong) glow(p.dimension, bladePoint(p, 0.6), { color: KATANA_PURPLE, size: 0.6, life: 0.3 });
+    } catch (e) { system.clearRun(h); }
+  }, 2);
+}
+// هالة هادئة دائمة وانت ماسكها (تقوى مع الليفل)
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      const held = inv(p).getItem(p.selectedSlotIndex);
+      if (!held || held.typeId !== KATANA) continue;
+      const lv = katLv(p);
+      for (let i = 0; i < 1 + (lv >= 3 ? 1 : 0); i++) {
+        const b = bladePoint(p, 0.2 + Math.random() * 0.8);
+        pix(p.dimension, b, { color: KAT_PALETTE[Math.floor(Math.random() * 3)], size: 0.1, life: 0.9, speed: 0.2, rise: 0.4 });
+      }
+    } catch (e) { /* */ }
+  }
+}, 8);
+
+// السنيك يبدل المهارة (يتفحص كل 2 تك: ضغطة جلوس جديدة وانت ماسك الكاتانا)
+const sneakPrev = new Map();
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      const sn = !!p.isSneaking, was = sneakPrev.get(p.id) || false;
+      sneakPrev.set(p.id, sn);
+      if (!sn || was) continue;
+      const held = inv(p).getItem(p.selectedSlotIndex);
+      if (held && held.typeId === KATANA) katanaCycle(p);
+    } catch (e) { /* */ }
+  }
+}, 2);
+world.afterEvents.playerLeave.subscribe((ev) => { sneakPrev.delete(ev.playerId); });
+
+function katanaCycle(p) {
+  const lv = katLv(p), cur = katanaMode(p);
+  let next = cur;
+  for (let i = 1; i <= KATANA_MODES.length; i++) {
+    const idx = (cur + i) % KATANA_MODES.length;
+    if (KATANA_MODES[idx].lv <= lv) { next = idx; break; }
+  }
+  if (next === cur) { notify(p, "§7ما عندك غير مهارة وحدة مفتوحة. طور الكاتانا بقتل الوحوش", 50); return; }
+  p.setDynamicProperty("sh_kmode", next);
+  sfxPlayer(p, "sh.select", 0.8, 1.1 + next * 0.1);
+  notify(p, `§5${KATANA_MODES[next].name}§r: ${KATANA_MODES[next].desc}`, 70);
+  katanaAura(p, 10, false);
+}
+
 // خط قطع (جزيئات) يمر بنقطة c بزاوية angle داخل مستوى (right, up) ويرسم تدريجيا
 function katanaSlash(dim, c, right, angleDeg, len = 3.4, ticks = 3) {
   const a = (angleDeg * Math.PI) / 180;
@@ -1948,6 +2523,7 @@ function katanaSlash(dim, c, right, angleDeg, len = 3.4, ticks = 3) {
     system.runTimeout(() => {
       glow(dim, loc, { color: [1, 1, 1], size: 0.34, life: 0.25 });
       glow(dim, loc, { color: KATANA_PURPLE, size: 0.5, life: 0.55 });
+      pix(dim, loc, { color: KAT_PALETTE[i % KAT_PALETTE.length], size: 0.16, life: 0.7, speed: 1.2, rise: 0.3 });
     }, Math.floor((i / steps) * ticks));
   }
 }
@@ -1965,19 +2541,13 @@ function katanaTarget(p, max) {
   return best;
 }
 function katanaUse(p) {
-  if (p.isSneaking) {
-    const m = (katanaMode(p) + 1) % KATANA_MODES.length;
-    p.setDynamicProperty("sh_kmode", m);
-    sfxPlayer(p, "sh.select", 0.8, 1.2 + m * 0.2);
-    notify(p, `§5${KATANA_MODES[m].name}§r: ${KATANA_MODES[m].desc}`, 70);
-    return;
-  }
   const mode = katanaMode(p);
   const key = `${p.id}:katana${mode}`;
   const now = system.currentTick;
   if (now < (weaponCd.get(key) ?? 0)) { notify(p, `§7${KATANA_MODES[mode].name}: انتظر ${(((weaponCd.get(key) ?? 0) - now) / 20).toFixed(1)}ث`, 15); return; }
   let ok = false;
   try { ok = KATANA_FN[mode](p); } catch (e) { ok = false; }
+  if (ok) katanaAura(p, 30, true);
   weaponCd.set(key, now + (ok ? KATANA_MODES[mode].cd : 6));
 }
 function katanaRight(d) { return { x: -d.z, z: d.x }; }
@@ -1989,11 +2559,10 @@ const KATANA_FN = [
     katanaSlash(p.dimension, c, r, 35, 4.2, 3);
     sfx(p.dimension, "sh.dagger_hit", p.location, 1.1, 0.6);
     shake(p, 0.1, 0.12);
-    let n = 0;
     for (const e of enemiesNear(p.dimension, p.location, 5.2, p.id)) {
       const vx = e.location.x - p.location.x, vz = e.location.z - p.location.z, l = Math.hypot(vx, vz) || 1;
       if ((vx / l) * d.x + (vz / l) * d.z < 0.45) continue;
-      hurt(e, 11, p); pushAway(p.location, e, 0.5, 0.15); n++;
+      hurt(e, kd(p, 11), p); pushAway(p.location, e, 0.5, 0.15);
       burst(e.dimension, headPos(e), 12, KATANA_PURPLE, 3, 0.22);
     }
     return true;
@@ -2008,12 +2577,12 @@ const KATANA_FN = [
     try { t.addEffect("slowness", 25, { amplifier: 3, showParticles: false }); } catch (e) { /* */ }
     katanaSlash(p.dimension, c, r, 45, 3.2, 3);
     sfx(p.dimension, "sh.dagger_hit", t.location, 1.1, 0.8);
-    system.runTimeout(() => { if (valid(t)) hurt(t, 7, p); }, 1);
+    system.runTimeout(() => { if (valid(t)) hurt(t, kd(p, 7), p); }, 1);
     system.runTimeout(() => {
       if (!valid(t)) return;
       katanaSlash(p.dimension, c, r, -45, 3.2, 3);
       sfx(p.dimension, "sh.dagger_hit", t.location, 1.2, 1.1);
-      hurt(t, 8, p);
+      hurt(t, kd(p, 8), p);
       burst(t.dimension, headPos(t), 22, KATANA_PURPLE, 3.5, 0.26);
       glow(t.dimension, c, { color: [1, 1, 1], size: 0.9, life: 0.4 });
     }, 6);
@@ -2033,14 +2602,13 @@ const KATANA_FN = [
       if (safeTeleport(p, dest, { x: dest.x + ux * 3, y: dest.y, z: dest.z + uz * 3 })) { to = dest; break; }
     }
     const end = to || { x: t.location.x + ux * 0.5, y: t.location.y, z: t.location.z + uz * 0.5 };
-    // أثر الاختراق
     for (let i = 0; i <= 20; i++) {
       const k = i / 20;
       const loc = { x: from.x + (end.x - from.x) * k, y: from.y + 1.0, z: from.z + (end.z - from.z) * k };
       glow(p.dimension, loc, { color: [1, 1, 1], size: 0.4, life: 0.3 });
       glow(p.dimension, loc, { color: KATANA_PURPLE, size: 0.55, life: 0.8 });
+      pix(p.dimension, loc, { color: KAT_PALETTE[i % KAT_PALETTE.length], size: 0.16, life: 0.9, speed: 1, rise: 0.4 });
     }
-    // كل الأعداء على الخط ينشطرون
     const seg = { x: end.x - from.x, z: end.z - from.z }, sl = Math.hypot(seg.x, seg.z) || 1;
     const seen = new Set();
     for (const e of enemiesNear(p.dimension, from, sl + 4, p.id)) {
@@ -2050,7 +2618,7 @@ const KATANA_FN = [
       const proj = (vx * seg.x + vz * seg.z) / sl;
       if (proj < -0.5 || proj > sl + 0.5) continue;
       if (Math.abs(vx * seg.z - vz * seg.x) / sl > 1.4) continue;
-      hurt(e, 13, p);
+      hurt(e, kd(p, 13), p);
       burst(e.dimension, headPos(e), 20, KATANA_PURPLE, 3.5, 0.26);
       glow(e.dimension, headPos(e), { color: [1, 1, 1], size: 1.0, life: 0.4 });
     }
@@ -2058,6 +2626,133 @@ const KATANA_FN = [
     spawnFx(p.dimension, "circle", from, 1, 1.4, 14);
     sfx(p.dimension, "sh.fold", end, 1.1, 1.5);
     shake(p, 0.2, 0.2);
+    return true;
+  },
+  // 3: خطوة الظل — تظهر خلف العدو وتشطره
+  (p) => {
+    const t = katanaTarget(p, 10);
+    if (!t) { notify(p, "§cما كو عدو قدامك", 30); return false; }
+    const from = { ...p.location };
+    const dx = t.location.x - from.x, dz = t.location.z - from.z, l = Math.hypot(dx, dz) || 1;
+    const ux = dx / l, uz = dz / l;
+    let to;
+    for (const k of [1.6, 1.2, 2.2]) {
+      const dest = { x: t.location.x + ux * k, y: t.location.y, z: t.location.z + uz * k };
+      if (safeTeleport(p, dest, { x: t.location.x, y: dest.y, z: t.location.z })) { to = dest; break; }
+    }
+    if (!to) { notify(p, "§cما كو مكان خلف العدو", 30); return false; }
+    const dim = p.dimension;
+    for (let i = 0; i < 26; i++) pix(dim, { x: from.x + (Math.random() - 0.5) * 0.8, y: from.y + Math.random() * 1.9, z: from.z + (Math.random() - 0.5) * 0.8 }, { color: KAT_PALETTE[i % KAT_PALETTE.length], size: 0.2, life: 0.8, speed: 1.5, rise: 0.5 });
+    pixLine(dim, { x: from.x, y: from.y + 1, z: from.z }, { x: to.x, y: to.y + 1, z: to.z }, KATANA_PURPLE, 18, 0.16, 0.6);
+    const c = { x: t.location.x, y: t.location.y + 1.0, z: t.location.z };
+    katanaSlash(dim, c, katanaRight({ x: -ux, z: -uz }), 20, 3.2, 3);
+    later(2, () => {
+      if (!valid(t)) return;
+      hurt(t, kd(p, 12), p);
+      burst(dim, headPos(t), 20, KATANA_PURPLE, 3.5, 0.25);
+      glow(dim, c, { color: [1, 1, 1], size: 0.9, life: 0.35 });
+    });
+    effect(p, "resistance", 20, 3);
+    sfx(dim, "sh.kat_step", to, 1.1, 1);
+    shake(p, 0.1, 0.12);
+    return true;
+  },
+  // 4: موجة الهاوية — هلال يطير للأمام
+  (p) => {
+    const d = flatDir(p), r = katanaRight(d), dim = p.dimension;
+    const start = { x: p.location.x + d.x * 1.2, y: p.location.y + 1.2, z: p.location.z + d.z * 1.2 };
+    const hit = new Set();
+    sfx(dim, "sh.kat_wave", p.location, 1.2, 1);
+    shake(p, 0.12, 0.12);
+    let dist = 0;
+    const h = system.runInterval(() => {
+      try {
+        dist += 1.7;
+        const c = { x: start.x + d.x * dist, y: start.y, z: start.z + d.z * dist };
+        let blocked = false;
+        try { const b = dim.getBlock(c); blocked = !!(b && !b.isAir && !b.isLiquid); } catch (e) { /* */ }
+        if (dist > 22 || blocked) {
+          system.clearRun(h);
+          burst(dim, c, 14, KATANA_PURPLE, 3, 0.22);
+          return;
+        }
+        for (let i = -7; i <= 7; i++) {
+          const s = i * 0.3, back = Math.abs(s) * 0.5;
+          const loc = { x: c.x + r.x * s - d.x * back, y: c.y + (Math.abs(i) < 2 ? 0.1 : 0), z: c.z + r.z * s - d.z * back };
+          glow(dim, loc, { color: [1, 1, 1], size: 0.28, life: 0.2 });
+          pix(dim, loc, { color: KAT_PALETTE[Math.abs(i) % KAT_PALETTE.length], size: 0.18, life: 0.6, speed: 0.5, rise: 0.3 });
+        }
+        for (const e of enemiesNear(dim, c, 2.4, p.id)) {
+          if (hit.has(e.id)) continue;
+          hit.add(e.id);
+          hurt(e, kd(p, 10), p);
+          pushAway(p.location, e, 0.7, 0.2);
+          burst(dim, headPos(e), 14, KATANA_PURPLE, 3, 0.22);
+        }
+      } catch (err) { system.clearRun(h); }
+    }, 1);
+    return true;
+  },
+  // 5: عاصفة الشفرات — شفرات تدور وتسحب وتقطع
+  (p) => {
+    const dim = p.dimension;
+    sfx(dim, "sh.kat_storm", p.location, 1.2, 1);
+    effect(p, "resistance", 30, 2);
+    spawnFx(dim, "circle", p.location, 1, 3, 28);
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        if (!valid(p) || t > 26) { system.clearRun(h); return; }
+        const c = { x: p.location.x, y: p.location.y + 1.0, z: p.location.z };
+        const rad = 1.5 + t * 0.15;
+        for (let b = 0; b < 4; b++) {
+          const a = t * 0.55 + (b * Math.PI) / 2;
+          for (let k = 0; k < 5; k++) {
+            const rr = rad * (0.5 + k * 0.13), aa = a - k * 0.12;
+            const loc = { x: c.x + Math.cos(aa) * rr, y: c.y + Math.sin(t * 0.3 + b) * 0.3, z: c.z + Math.sin(aa) * rr };
+            glow(dim, loc, { color: [1, 1, 1], size: 0.22, life: 0.2 });
+            pix(dim, loc, { color: KAT_PALETTE[(b + k) % KAT_PALETTE.length], size: 0.16, life: 0.5, speed: 0.4 });
+          }
+        }
+        if (t % 6 === 0) {
+          for (const e of enemiesNear(dim, p.location, 5.2, p.id)) {
+            hurt(e, kd(p, 6), p);
+            pullTo(p.location, e, 0.35, 0.1);
+            burst(dim, headPos(e), 8, KATANA_PURPLE, 2.5, 0.2);
+          }
+          shake(p, 0.08, 0.1);
+        }
+      } catch (err) { system.clearRun(h); }
+    }, 2);
+    return true;
+  },
+  // 6: إعدام الهاوية — تحضير ثم ضربة تنهي الضعفاء
+  (p) => {
+    const dim = p.dimension, d = flatDir(p), r = katanaRight(d);
+    sfx(dim, "sh.kat_exec", p.location, 1.3, 1);
+    katanaAura(p, 16, true);
+    for (let i = 0; i < 4; i++) later(i * 3, () => pixRing(dim, { x: p.location.x, y: p.location.y + 0.2, z: p.location.z }, 4 - i, 20, i, KATANA_PURPLE, 0.18, 0.4));
+    later(14, () => {
+      const c = { x: p.location.x + d.x * 3, y: p.location.y + 1.3, z: p.location.z + d.z * 3 };
+      katanaSlash(dim, c, r, 40, 6.5, 3);
+      katanaSlash(dim, c, r, -40, 6.5, 3);
+      katanaSlash(dim, c, r, 90, 6, 3);
+      spawnFx(dim, "circle", p.location, 1, 3.4, 16);
+      waveFx(dim, p.location, 8, 1, 12);
+      glow(dim, c, { color: [1, 1, 1], size: 2.4, life: 0.4 });
+      shake(p, 0.3, 0.25);
+      for (const e of enemiesNear(dim, p.location, 7, p.id)) {
+        const vx = e.location.x - p.location.x, vz = e.location.z - p.location.z, l = Math.hypot(vx, vz) || 1;
+        if ((vx / l) * d.x + (vz / l) * d.z < 0.3) continue;
+        let low = false;
+        try { const hp = e.getComponent("minecraft:health"); low = hp.currentValue <= hp.effectiveMax * 0.35; } catch (err) { /* */ }
+        if (low && !BOSS_TYPES.has(e.typeId)) { hurt(e, 9999, p); burst(dim, headPos(e), 40, KATANA_PURPLE, 5, 0.3); notify(p, "§5إعدام!", 25); }
+        else hurt(e, kd(p, 18), p);
+        pushAway(p.location, e, 0.9, 0.3);
+        glow(dim, headPos(e), { color: [1, 1, 1], size: 1.2, life: 0.35 });
+      }
+    });
     return true;
   },
 ];
@@ -2594,28 +3289,95 @@ system.runInterval(() => {
 }, 4);
 
 
-// ───────────────────────── بوصلة المستكشف: تدلك على أقرب بناية والمدرب ─────────────────────────
-function useCompass(p) {
-  let reg = [];
-  try { const raw = world.getDynamicProperty("sh_structs"); if (typeof raw === "string") reg = JSON.parse(raw); } catch (e) { /* */ }
-  const names = { village: "القرية الساكورا", palace: "قصر الغروب", ruins: "خرائب المعبد", shrine: "ضريح السيف المظلم" };
-  let best, bd = 1e9;
-  for (const s of reg) {
-    const d = Math.hypot(s.x - p.location.x, s.z - p.location.z);
-    if (d < bd) { bd = d; best = s; }
+// ───────────────────────── بوصلة المستكشف: تختار وين تدلك ─────────────────────────
+// استعمال = قائمة اختيار الوجهة. وانت ماسكها الـHUD يعرض اتجاهها ومسافتها لحظياً.
+// سنيك + استعمال = خط إرشاد بالجزيئات نحو الوجهة المختارة.
+const COMPASS_TARGETS = [
+  { key: "shrine", name: "ضريح السيف المظلم" },
+  { key: "palace", name: "قصر الغروب" },
+  { key: "ruins", name: "خرائب المعبد" },
+  { key: "village", name: "قرية الساكورا" },
+  { key: "trainer", name: "المدرب" },
+  { key: "nearest", name: "الأقرب (أي وجهة)" },
+];
+const COMPASS_NAMES = { village: "قرية الساكورا", palace: "قصر الغروب", ruins: "خرائب المعبد", shrine: "ضريح السيف المظلم" };
+const structCache = { tick: -9999, list: [] };
+function getStructs() {
+  if (system.currentTick - structCache.tick > 100) {
+    structCache.tick = system.currentTick;
+    try { const raw = world.getDynamicProperty("sh_structs"); structCache.list = typeof raw === "string" ? JSON.parse(raw) : []; } catch (e) { structCache.list = []; }
   }
-  let tr;
-  try { tr = p.dimension.getEntities({ type: "sh:trainer", location: p.location, maxDistance: 300 })[0]; } catch (e) { /* */ }
-  if (!best && !tr) { notify(p, "§7ما لقيت شي قريب. تحرك بالعالم وجرب مرة ثانية", 60); return; }
-  const pick = tr && (!best || Math.hypot(tr.location.x - p.location.x, tr.location.z - p.location.z) < bd) ? { x: tr.location.x, z: tr.location.z, name: "المدرب" } : { x: best.x, z: best.z, name: names[best.type] || "بناية" };
-  const dx = pick.x - p.location.x, dz = pick.z - p.location.z, dist = Math.round(Math.hypot(dx, dz));
+  return structCache.list;
+}
+const trainerCache = new Map();
+function trainerPos(p) {
+  const c = trainerCache.get(p.id), now = system.currentTick;
+  if (c && now - c.tick < 40) return c.pos;
+  let pos;
+  try {
+    const t = p.dimension.getEntities({ type: "sh:trainer", location: p.location, maxDistance: 400 })[0];
+    if (t) pos = { x: t.location.x, z: t.location.z };
+  } catch (e) { /* */ }
+  trainerCache.set(p.id, { tick: now, pos });
+  return pos;
+}
+function compassKey(p) {
+  const v = p.getDynamicProperty("sh_ctarget");
+  return typeof v === "string" && COMPASS_TARGETS.some((t) => t.key === v) ? v : "nearest";
+}
+function compassFind(p, key) {
+  const dist = (o) => Math.hypot(o.x - p.location.x, o.z - p.location.z);
+  let best, bd = 1e9;
+  if (key !== "trainer") {
+    for (const s of getStructs()) {
+      if (key !== "nearest" && s.type !== key) continue;
+      const d = dist(s);
+      if (d < bd) { bd = d; best = { x: s.x, z: s.z, name: COMPASS_NAMES[s.type] || "بناية" }; }
+    }
+  }
+  if (key === "trainer" || key === "nearest") {
+    const t = trainerPos(p);
+    if (t && dist(t) < bd) best = { x: t.x, z: t.z, name: "المدرب" };
+  }
+  return best;
+}
+const ARROWS = { 0: "↑", 1: "↗", 2: "→", 3: "↘", 4: "↓", [-1]: "↖", [-2]: "←", [-3]: "↙", [-4]: "↓" };
+function compassArrow(p, tg) {
+  let rel = yawOf(p.location, tg) - p.getRotation().y;
+  rel = ((((rel + 180) % 360) + 360) % 360) - 180;
+  return ARROWS[Math.round(rel / 45)] || "↑";
+}
+function compassPulse(p) {
+  const key = compassKey(p), tg = compassFind(p, key);
+  if (!tg) { notify(p, "§7هالوجهة ما انكشفت بعد. تحرك بالعالم وجرب مرة ثانية", 60); return; }
+  const dx = tg.x - p.location.x, dz = tg.z - p.location.z, dist = Math.round(Math.hypot(dx, dz));
   const dirs = ["شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب", "شمال", "شمال شرق"];
-  const ang = (Math.atan2(dz, dx) * 180) / Math.PI;
-  const dir = dirs[((Math.round(ang / 45) % 8) + 8) % 8];
-  notify(p, `§6${pick.name}§r: ${dist} بلوكة باتجاه ال${dir}`, 100);
+  const dir = dirs[((Math.round((Math.atan2(dz, dx) * 180) / Math.PI / 45) % 8) + 8) % 8];
+  notify(p, `§6${tg.name}§r: ${dist} بلوكة باتجاه ال${dir}`, 100);
   const l = Math.hypot(dx, dz) || 1;
   for (let i = 1; i <= 10; i++) glow(p.dimension, { x: p.location.x + (dx / l) * i * 1.2, y: p.location.y + 1.2, z: p.location.z + (dz / l) * i * 1.2 }, { color: COLORS.gold, size: 0.2, life: 1.2, rise: 0.2 });
-  sfxPlayer(p, "sh.select", 0.7, 1.4);
+  sfxPlayer(p, "sh.compass", 0.8, 1);
+}
+async function openCompassMenu(p) {
+  const cur = compassKey(p);
+  const form = new ActionFormData().title("بوصلة المستكشف").body("§7اختر الوجهة اللي تريد البوصلة تدلك عليها. تنعرض أثناء ما تمسكها أعلى الشاشة.");
+  for (const t of COMPASS_TARGETS) {
+    const f = compassFind(p, t.key);
+    const d = f ? `§a${Math.round(Math.hypot(f.x - p.location.x, f.z - p.location.z))} بلوكة` : "§8ما انكشفت بعد";
+    form.button(`${t.key === cur ? "§6✔ " : "§f"}${t.name}\n${d}`);
+  }
+  const r = await showForm(p, form);
+  if (r.canceled) return;
+  const pick = COMPASS_TARGETS[r.selection];
+  if (!pick) return;
+  p.setDynamicProperty("sh_ctarget", pick.key);
+  sfxPlayer(p, "sh.compass", 0.8, 1.2);
+  if (compassFind(p, pick.key)) compassPulse(p);
+  else notify(p, `§7${pick.name}: ما انكشفت بعد. البنايات تظهر وانت تتحرك بالعالم`, 80);
+}
+function useCompass(p) {
+  if (p.isSneaking) compassPulse(p);
+  else openCompassMenu(p);
 }
 
 
@@ -2655,3 +3417,34 @@ system.runInterval(() => {
     }
   }
 }, 20);
+
+// ───────────────────────── أوامر التجربة (تحتاج صلاحية الأوامر) ─────────────────────────
+//   /scriptevent sh:power star     يعطيك القدرة (مفاتيحها: iron wind echo crystal accountant borrower distance law star)
+//   /scriptevent sh:unlock         يفتح كل مهارات قدرتك ويخلص التدريب
+//   /scriptevent sh:katlv 5        يضبط ليفل الكاتانا (1 إلى 5)
+//   /scriptevent sh:cdreset        يصفّر كل الكولداون
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+  try {
+    const p = ev.sourceEntity;
+    if (!p || p.typeId !== "minecraft:player") return;
+    const msg = (ev.message || "").trim();
+    if (ev.id === "sh:power") {
+      if (!POWERS[msg]) { say(p, `§cاستعمل: ${POWER_KEYS.join(" ")}`); return; }
+      grantPower(p, msg);
+    } else if (ev.id === "sh:unlock") {
+      const st = getState(p);
+      if (!st.power) { say(p, "§cما عندك قدرة"); return; }
+      st.training[st.power] = { status: "done", kills: TRAIN_NEED };
+      st.plevel = rarityOf(st.power).maxLv;
+      saveState(p, st);
+      say(p, "§aانفتحت كل المهارات. افتح كتاب التطور.");
+    } else if (ev.id === "sh:katlv") {
+      const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
+      saveKat(p, { lv: n, xp: 0 });
+      say(p, `§aليفل الكاتانا: ${n}`);
+    } else if (ev.id === "sh:cdreset") {
+      cooldowns.clear(); weaponCd.clear();
+      say(p, "§aتصفّر الكولداون");
+    }
+  } catch (e) { /* */ }
+});

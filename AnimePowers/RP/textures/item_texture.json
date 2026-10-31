@@ -145,6 +145,27 @@
     },
     "sh_katana": {
       "textures": "textures/items/sh_katana"
+    },
+    "sh_meteor": {
+      "textures": "textures/items/sh_meteor"
+    },
+    "sh_gravwell": {
+      "textures": "textures/items/sh_gravwell"
+    },
+    "sh_orbit": {
+      "textures": "textures/items/sh_orbit"
+    },
+    "sh_constellation": {
+      "textures": "textures/items/sh_constellation"
+    },
+    "sh_stardash": {
+      "textures": "textures/items/sh_stardash"
+    },
+    "sh_blackhole": {
+      "textures": "textures/items/sh_blackhole"
+    },
+    "sh_supernova": {
+      "textures": "textures/items/sh_supernova"
     }
   }
 }
