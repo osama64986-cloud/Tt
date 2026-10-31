@@ -340,6 +340,7 @@ function heldLine(p, st, plain) {
       : `§6◎ ${nm} §8│ §7ما انكشفت بعد، استكشف أكثر`;
     return { line, tip: showTip ? "§7استعمال: اختيار الوجهة §8│ §7سنيك+استعمال: خط إرشاد" : "" };
   }
+  if (id === "sh:skill_scroll") return { line: "§b✦ لفافة تطور المهارة", tip: showTip ? "§7استعمال: اختر مهارة وترتفع مستوى كامل" : "" };
   if (id === "sh:evolution_book") return { line: "§eكتاب التطور", tip: showTip ? "§7استعمال: المهارات، نافذة الحالة، الرتب" : "" };
   if (id === "sh:monster_book") return { line: "§5كتاب الوحوش", tip: showTip ? "§7استعمال: معلومات الوحوش اللي قتلتها" : "" };
   const w = WEAPONS[id];
@@ -478,8 +479,8 @@ function hasItem(p, typeId) {
   }
   return false;
 }
-function giveItem(p, typeId) {
-  const left = inv(p).addItem(new ItemStack(typeId, 1));
+function giveItem(p, typeId, amount = 1) {
+  const left = inv(p).addItem(new ItemStack(typeId, amount));
   if (left) p.dimension.spawnItem(left, p.location);
 }
 function removeSkillItems(p) {
@@ -833,7 +834,12 @@ async function trainerTalk(player) {
     const s2 = getState(player);
     s2.training[s2.power] = { status: "done", kills: tr.kills };
     const ups = addXp(s2, 15);
+    // أول تدريب لكل قدرة: 3 لفائف تطور مهارة هدية من المدرب
+    if (!s2.scrollGiven) s2.scrollGiven = {};
+    const reward = s2.scrollGiven[s2.power] ? 0 : 3;
+    s2.scrollGiven[s2.power] = true;
     saveState(player, s2);
+    if (reward) { giveItem(player, "sh:skill_scroll", reward); say(player, `§b[المدرب] §fخذ ${reward} لفائف تطور المهارة. استعملها وانت ماسكها وتختار المهارة اللي ترفع مستواها.`); }
     if (!hasItem(player, "sh:evolution_book")) giveItem(player, "sh:evolution_book");
     sfxPlayer(player, "sh.mission");
     say(player, `§e[المدرب] §fأحسنت! تعلمت أساسيات ${pw.color}${pw.name}§f. افتح كتاب التطور واختر مهارتك.`);
@@ -1175,6 +1181,48 @@ function waveFx(dim, c, rmax, color, dur = 14) {
       e.setProperty("sh:r", 1 + (rmax - 1) * (t / dur));
     } catch (err) { system.clearRun(h); }
   }, 2);
+}
+// قشرة الجسم المتحولة: كيان sh:fx_body يلبس اللاعب (حديد variant=0، حجر variant=1) ويتبعه بحركة أطراف وميل راس.
+// تظهر بنبضة تكبير، وتطلع شرارات كل ما اللاعب ينضرب. تنتهي بعد ticks.
+const bodyShells = new Map();
+function hpNow(e) { try { return e.getComponent("minecraft:health").currentValue; } catch (err) { return 0; } }
+function bodyShell(p, variant, ticks) {
+  try {
+    const old = bodyShells.get(p.id);
+    if (old) { removeFx(old.e); system.clearRun(old.h); bodyShells.delete(p.id); }
+    const dim = p.dimension;
+    const e = dim.spawnEntity("sh:fx_body", p.location);
+    e.setProperty("sh:v", variant);
+    e.setProperty("sh:r", 0.55);
+    const spark = variant === 0 ? [0.85, 0.9, 1.0] : [0.6, 0.62, 0.55];
+    // لحظة التحول: موجة + شرارات صاعدة بطول الجسم + وميض شاشة خفيف
+    ring(dim, p.location, 1.0, 22, 0, spark, 0.22);
+    waveFx(dim, p.location, 3, 4, 8);
+    for (let i = 0; i < 40; i++) pix(dim, { x: p.location.x + (Math.random() - 0.5) * 1.2, y: p.location.y + Math.random() * 2, z: p.location.z + (Math.random() - 0.5) * 1.2 }, { color: spark, size: 0.14, life: 0.9, speed: 0.8, rise: 1.8 });
+    try { p.camera.fade({ fadeColor: { red: spark[0], green: spark[1], blue: spark[2] }, fadeTime: { fadeInTime: 0.04, holdTime: 0.04, fadeOutTime: 0.25 } }); } catch (err) { /* */ }
+    let t = 0, lastHp = hpNow(p);
+    const h = system.runInterval(() => {
+      try {
+        t += 2;
+        if (!valid(p) || !valid(e) || t > ticks) {
+          system.clearRun(h); removeFx(e); bodyShells.delete(p.id);
+          if (valid(p)) { burst(p.dimension, headPos(p), 18, spark, 2.5, 0.2); sfx(p.dimension, "sh.cleaver_hit", p.location, 0.6, 1.6); }
+          return;
+        }
+        const rot = p.getRotation();
+        e.teleport(p.location, { rotation: { x: 0, y: rot.y } });
+        e.setProperty("sh:p", Math.max(-90, Math.min(90, rot.x)));
+        const v = p.getVelocity();
+        e.setProperty("sh:mv", Math.hypot(v.x, v.z) > 0.04 ? 1 : 0);
+        e.setProperty("sh:r", Math.min(1, 0.55 + t * 0.045));
+        const hp = hpNow(p);
+        if (hp < lastHp - 0.4) { burst(p.dimension, { x: p.location.x, y: p.location.y + 1.1, z: p.location.z }, 14, spark, 3, 0.16); sfx(p.dimension, "sh.dagger_hit", p.location, 0.7, 1.9); }
+        lastHp = hp;
+      } catch (err) { system.clearRun(h); removeFx(e); bodyShells.delete(p.id); }
+    }, 2);
+    bodyShells.set(p.id, { e, h });
+    return e;
+  } catch (err) { return undefined; }
 }
 // علامة تتبع الهدف فوق راسه
 function followFx(target, color, ticks, scale = 1) {
@@ -1636,7 +1684,8 @@ Object.assign(SKILL_FN, {
     ring(p.dimension, p.location, 1.1, 20, 0, COLORS.white, 0.2);
     burst(p.dimension, headPos(p), 20, [0.7, 0.72, 0.8], 2.5, 0.2);
     sfx(p.dimension, "sh.guard_slam", p.location, 0.8, 1.4);
-    notify(p, "§7جسمك صار حديد: مقاومة عالية", 50);
+    bodyShell(p, 0, 120);
+    notify(p, "§7جسمك تحوّل إلى حديد: مقاومة عالية 6 ثواني", 60);
     return true;
   },
   ironfist(p) {
@@ -2015,6 +2064,7 @@ function applyTrait(p, id, m) {
   if (id === "rock") {
     effect(p, "resistance", 200 * m, 1);
     effect(p, "slowness", 200 * m, 0);
+    bodyShell(p, 1, Math.round(200 * m));
     spawnFx(p.dimension, "circle", p.location, 4, 1.7, 40);
   } else if (id === "fangs") {
     fangsUntil.set(p.id, now + 160 * m);
@@ -3093,6 +3143,7 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (id === KATANA) { katanaUse(p); return; }
     if (WEAPONS[id] && WEAPONS[id].active) { weaponActive(p, id); return; }
     if (SCROLLS[id]) { useScroll(p, id); return; }
+    if (id === "sh:skill_scroll") { useSkillScroll(p); return; }
     if (id === "sh:explorer_compass") { useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
     const skill = ITEM_TO_SKILL[id];
@@ -3111,6 +3162,12 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         giveItem(p, "sh:evolution_book");
         st.gotBook = true;
         saveState(p, st);
+      }
+      if (!st.gotCompass) {
+        const s3 = getState(p);
+        s3.gotCompass = true;
+        saveState(p, s3);
+        if (!hasItem(p, "sh:explorer_compass")) giveItem(p, "sh:explorer_compass");
       }
       if (!st.sawIntro) {
         const s2 = getState(p);
@@ -3218,6 +3275,43 @@ function starterMonsters(p) {
 
 
 
+
+// ───────────────────────── لفافة تطور المهارة ─────────────────────────
+// ترفع مهارة تختارها مستوى كامل (غير القتل). تنحصل من المدرب بأول تدريب (3 لفائف)، أو من قائمة الكرييتف. ما تنحط بالصناديق.
+const SKILL_MAX_LV = 12;
+async function useSkillScroll(p) {
+  const st = getState(p);
+  if (!st.power) { notify(p, "§cما عندك قدرة", 40); return; }
+  const mine = Object.values(SKILLS).filter((s) => s.power === st.power && isSkillUnlocked(st, s));
+  if (!mine.length) { notify(p, "§cما عندك مهارة مفتوحة", 40); return; }
+  const form = new ActionFormData().title("لفافة تطور المهارة").body("§7اختر المهارة اللي تريد ترفع مستواها مستوى كامل. تنحرق لفافة وحدة.");
+  for (const s of mine) {
+    const lv = skillLevel(st, s.id);
+    form.button(lv >= SKILL_MAX_LV ? `§8${s.name} §7(أقصى مستوى ${SKILL_MAX_LV})` : `§a${s.name}\n§7مستوى ${lv} → §b${lv + 1}`);
+  }
+  const r = await showForm(p, form);
+  if (r.canceled) return;
+  const sk = mine[r.selection];
+  if (!sk) return;
+  const st2 = getState(p);
+  const lv = skillLevel(st2, sk.id);
+  if (lv >= SKILL_MAX_LV) { notify(p, `§7${sk.name} وصلت للحد الأقصى`, 40); return; }
+  const c = inv(p);
+  let slot = -1;
+  for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && it.typeId === "sh:skill_scroll") { slot = i; break; } }
+  if (slot < 0) return;
+  const it = c.getItem(slot);
+  if (it.amount > 1) { it.amount -= 1; c.setItem(slot, it); } else c.setItem(slot, undefined);
+  const cur = (st2.skills[sk.id] && st2.skills[sk.id].xp) || 0;
+  const ups = addSkillXp(st2, sk.id, Math.max(1, skillXpNeeded(lv) - cur));
+  saveState(p, st2);
+  announceUps(p, ups);
+  const col = POWER_COLOR[st2.power] || COLORS.gold;
+  ring(p.dimension, p.location, 1.2, 24, 0, col, 0.22);
+  for (let i = 0; i < 36; i++) pix(p.dimension, { x: p.location.x + (Math.random() - 0.5) * 1.4, y: p.location.y + Math.random() * 2, z: p.location.z + (Math.random() - 0.5) * 1.4 }, { color: i % 2 ? col : [1, 1, 1], size: 0.14, life: 0.9, speed: 0.7, rise: 1.8 });
+  sfxPlayer(p, "sh.kat_levelup", 0.9, 1.1);
+  notify(p, `§b${sk.name} صارت مستوى ${lv + 1}`, 70);
+}
 
 // ───────────────────────── لفائف الخبرة ─────────────────────────
 const SCROLLS = { "sh:xp_scroll_small": 60, "sh:xp_scroll_big": 250 };
@@ -3738,6 +3832,7 @@ system.runInterval(() => {
 //   /scriptevent sh:katlv 5        يضبط ليفل الكاتانا (1 إلى 5)
 //   /scriptevent sh:cdreset        يصفّر كل الكولداون
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
+//   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars off يوقف تعديل بلوكات الأرض
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
@@ -3758,6 +3853,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aليفل الكاتانا: ${n}`);
+    } else if (ev.id === "sh:weapons") {
+      for (const wid of [KATANA, ...Object.keys(WEAPONS).filter((k) => k !== KATANA)]) if (!hasItem(p, wid)) giveItem(p, wid);
+      giveItem(p, "sh:skill_scroll", 3);
+      say(p, "§aاستلمت كل الأسلحة (7) + 3 لفائف تطور مهارة");
     } else if (ev.id === "sh:spawn") {
       let n = Math.min(6, Math.max(1, parseInt(msg, 10) || 2)), ok = 0;
       for (let i = 0; i < n; i++) if (trySpawnMonster(p, true)) ok++;

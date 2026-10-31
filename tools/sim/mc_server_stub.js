@@ -92,6 +92,7 @@ const inventory = Array(36).fill(undefined);
 const player = mkEntity("minecraft:player", { x: 0, y: 64, z: 0 }, dims.overworld, 20);
 Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
+  camera: { fade() {} },
   onScreenDisplay: { setActionBar(t) { stats.actionBars.push(t); }, setTitle() {} },
   sendMessage(m) { stats.messages.push(String(m)); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
@@ -272,6 +273,51 @@ export const __sim = {
       if (mons.length === 0) failures.push("ما ظهرت وحوش بـ6 دقائق");
       if (mons.length > 3) failures.push("ظهور سريع: " + mons.length);
       if (mons.some((e) => e.getDynamicProperty("sh_tier") !== 4)) failures.push("الوحوش ما تدرجت برتبة اللاعب");
+    }
+    // لفافة تطور المهارة + أمر كل الأسلحة
+    {
+      const ui2 = (await import("@minecraft/server-ui")).sim;
+      setState(baseState("iron")); ui2.nextSelection = 0; inventory[0] = undefined;
+      fire("scriptEventReceive", { id: "sh:weapons", message: "", sourceEntity: player });
+      const wcount = inventory.filter((i) => i && ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"].includes(i.typeId)).length;
+      const idx = inventory.findIndex((i) => i && i.typeId === "sh:skill_scroll");
+      console.log("\nأمر الأسلحة: أسلحة =", wcount, "| لفائف =", idx >= 0 ? inventory[idx].amount : 0);
+      if (wcount !== 7) failures.push("sh:weapons ما أعطى 7 أسلحة");
+      player.selectedSlotIndex = idx; fire("itemUse", { source: player, itemStack: inventory[idx] });
+      await new Promise((r) => setTimeout(r, 30)); advance(3);
+      const st = JSON.parse(player.getDynamicProperty("sh"));
+      const lv = st.skills && st.skills.ironskin && st.skills.ironskin.lvl;
+      console.log("بعد اللفافة: مستوى جلد الحديد =", lv, "| لفائف باقية =", (inventory.find((i) => i && i.typeId === "sh:skill_scroll") || { amount: 0 }).amount);
+      if (lv !== 2) failures.push("لفافة التطور ما رفعت المهارة");
+      player.selectedSlotIndex = 0;
+    }
+    // مكافأة المدرب: أول تدريب = 3 لفائف
+    {
+      setState({ ...baseState("iron"), training: { iron: { status: "active", kills: 3 } } });
+      for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
+      const tr = mkEntity("sh:trainer", { x: 1, y: 64, z: 2 }, dims.overworld); entities.push(tr);
+      fire("playerInteractWithEntity", { player, target: tr, beforeItemStack: undefined, itemStack: undefined });
+      await new Promise((r) => setTimeout(r, 60)); advance(3);
+      const got = inventory.filter((i) => i && i.typeId === "sh:skill_scroll").reduce((a, i) => a + i.amount, 0);
+      console.log("\nمكافأة المدرب بأول تدريب: لفائف =", got);
+      if (got !== 3) failures.push("المدرب ما أعطى 3 لفائف بأول تدريب");
+      // ثاني مرة (قدرة نفسها) ما يعطي زيادة
+      const st = JSON.parse(player.getDynamicProperty("sh")); st.training.iron = { status: "active", kills: 3 }; player.setDynamicProperty("sh", JSON.stringify(st));
+      fire("playerInteractWithEntity", { player, target: tr }); await new Promise((r) => setTimeout(r, 60)); advance(3);
+      const got2 = inventory.filter((i) => i && i.typeId === "sh:skill_scroll").reduce((a, i) => a + i.amount, 0);
+      if (got2 !== 3) failures.push("المدرب كرر المكافأة");
+    }
+    // جسد الحديد: قشرة الجسم تظهر وتتبع اللاعب وتنتهي
+    {
+      setState(baseState("iron")); entities.length = 0; player.location = { x: 5, y: 64, z: 5 };
+      await useItem("sh:skill_ironskin"); advance(6);
+      const shell = entities.find((e) => e.typeId === "sh:fx_body");
+      const moved = shell && Math.hypot(shell.location.x - 5, shell.location.z - 5) < 0.5;
+      console.log("\nجسد الحديد: قشرة =", !!shell, "| تتبع اللاعب =", !!moved, "| نوع =", shell && shell.getProperty("sh:v"));
+      if (!shell) failures.push("قشرة جسد الحديد ما ظهرت");
+      advance(200);
+      if (entities.some((e) => e.typeId === "sh:fx_body" && e._valid)) failures.push("قشرة الحديد ما انتهت");
+      player.location = { x: 0, y: 64, z: 0 };
     }
     // لاعب جديد كلياً: قدرة مضمونة + وحوش بداية + أول بناية بسرعة
     {

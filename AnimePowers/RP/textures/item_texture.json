@@ -166,6 +166,9 @@
     },
     "sh_supernova": {
       "textures": "textures/items/sh_supernova"
+    },
+    "sh_skill_scroll": {
+      "textures": "textures/items/sh_skill_scroll"
     }
   }
 }

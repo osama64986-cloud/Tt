@@ -215,11 +215,16 @@ def cleaver():
 
 
 # ───────────────────────── لفائف الخبرة (لفافة ورق ملفوفة بشريط وختم) ─────────────────────────
-def scroll(name, big):
+def scroll(name, big, skill=False):
     PAPER_HI, PAPER, PAPER_LO, PAPER_DK = (250, 238, 196), (232, 208, 150), (186, 154, 100), (132, 102, 62)
     ROD, ROD_HI = ((170, 126, 52), (240, 200, 96)) if big else ((120, 78, 46), (176, 124, 76))
     RIB, RIB_HI = ((196, 40, 52), (255, 110, 100)) if big else ((46, 150, 82), (130, 230, 150))
+    if skill:
+        ROD, ROD_HI = (70, 100, 170), (170, 210, 255)
+        RIB, RIB_HI = (40, 110, 220), (130, 210, 255)
     SEAL, SEAL_HI = ((255, 150, 40), (255, 226, 130)) if big else ((236, 196, 70), (255, 244, 170))
+    if skill:
+        SEAL, SEAL_HI = (60, 190, 255), (200, 245, 255)
     half = 4.4 if big else 3.7
     L0, L1 = 3.5, 22.5 if big else 21.5
     fr = Frame(3.0 if big else 4.0, 29.0 if big else 28.0, 45)
@@ -268,11 +273,21 @@ def scroll(name, big):
         if (a - mid) + b * 0.0 < -0.6 and r > 1.4: return SEAL_HI
         return SEAL
     parts.append(seal)
+    if skill:  # سهم ترقية أبيض فوق الختم
+        ax = fr.x0 + fr.ux * mid
+        ay = fr.y0 + fr.uy * mid
+        cells = [(0, -2), (-1, -1), (0, -1), (1, -1), (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (0, 1), (0, 2)]
+        def arrow(x, y):
+            for dx, dy in cells:
+                if abs(x - (ax + dx + 0.5)) < 0.5 and abs(y - (ay + dy + 0.5)) < 0.5:
+                    return (255, 255, 255)
+            return None
+        parts.append(arrow)
     return render(parts, name)
 
 
 if __name__ == "__main__":
-    ims = [claws(), spear(), cleaver(), scroll("scroll_small", False), scroll("scroll_big", True)]
+    ims = [claws(), spear(), cleaver(), scroll("scroll_small", False), scroll("scroll_big", True), scroll("skill_scroll", True, True)]
     prev = os.environ.get("PREVIEW_DIR", "/tmp")
     S = 14
     sheet = Image.new("RGBA", (len(ims) * (N * S + 10), N * S + 10), (118, 118, 126, 255))

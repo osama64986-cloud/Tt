@@ -92,6 +92,27 @@
    "textures": [
     "Array.t[query.property('sh:c')]"
    ]
+  },
+  "controller.render.sh_fx_body": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.v0",
+      "Texture.v1",
+      "Texture.v0",
+      "Texture.v1"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:v')]"
+   ]
   }
  }
 }

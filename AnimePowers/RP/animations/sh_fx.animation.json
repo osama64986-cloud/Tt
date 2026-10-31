@@ -69,6 +69,49 @@
      ]
     }
    }
+  },
+  "animation.sh_fx.body": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": "query.property('sh:r')"
+    },
+    "head": {
+     "rotation": [
+      "query.property('sh:p')",
+      0,
+      0
+     ]
+    },
+    "arm_r": {
+     "rotation": [
+      "math.cos(query.life_time * 560.0) * 55.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      "-math.cos(query.life_time * 560.0) * 55.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "leg_r": {
+     "rotation": [
+      "-math.cos(query.life_time * 560.0) * 60.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "leg_l": {
+     "rotation": [
+      "math.cos(query.life_time * 560.0) * 60.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    }
+   }
   }
  }
 }
