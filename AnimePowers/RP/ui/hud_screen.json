@@ -1,8 +1,54 @@
 {
   "namespace": "hud",
+
+  "sh_player_doll": {
+    "type": "panel",
+    "size": [ 32, 48 ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "offset": [ 3, 3 ],
+    "layer": 2,
+    "controls": [
+      {
+        "doll_frame": {
+          "type": "image",
+          "texture": "textures/ui/hud_tip_text_background",
+          "size": [ "100%", "100%" ],
+          "layer": 1
+        }
+      },
+      {
+        "doll": {
+          "type": "custom",
+          "renderer": "hud_player_renderer",
+          "layer": 3,
+          "size": [ "100% - 4px", "100% - 4px" ],
+          "anchor_from": "center",
+          "anchor_to": "center"
+        }
+      }
+    ]
+  },
+
   "hud_actionbar_text": {
-    "anchor_from": "top_middle",
-    "anchor_to": "top_middle",
-    "offset": [ 0, 4 ]
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "offset": [ 38, 3 ]
+  },
+
+  "hud_actionbar_text/actionbar_message": {
+    "text_alignment": "left",
+    "anchor_from": "left_middle",
+    "anchor_to": "left_middle"
+  },
+
+  "root_panel": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_front",
+        "value": [ { "sh_doll@hud.sh_player_doll": {} } ]
+      }
+    ]
   }
 }

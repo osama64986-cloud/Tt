@@ -155,8 +155,13 @@ class Model:
                 x0, y0, z0 = ox - inf, oy - inf, oz - inf
                 x1, y1, z1 = ox + w + inf, oy + h + inf, oz + d + inf
                 fc = face_corners(x0, y0, z0, x1, y1, z1)
-                rects = face_rects(c["uv"][0], c["uv"][1], w, h, d)
+                if isinstance(c["uv"], dict):  # UV لكل وجه (مكعبات الإضافات)
+                    rects = {f: (c["uv"][f]["uv"][0], c["uv"][f]["uv"][1], c["uv"][f]["uv_size"][0], c["uv"][f]["uv_size"][1]) for f in c["uv"]}
+                else:
+                    rects = face_rects(c["uv"][0], c["uv"][1], w, h, d)
                 for fname in FACES:
+                    if fname not in rects:
+                        continue
                     pts = np.array(fc[fname], dtype=float)
                     # دوران المكعب نفسه
                     if "rotation" in c:

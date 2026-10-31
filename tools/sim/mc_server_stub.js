@@ -76,7 +76,7 @@ function mkDim(id) {
     getBlock(l) { const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: "minecraft:gravel", isAir: true, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!q.families || !q.families.includes('sh_rank0') || ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'].includes(e.typeId)) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
@@ -205,7 +205,7 @@ export const __sim = {
       const types = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
       let kills = 0, lastRank = 0; const marks = [];
       for (let i = 0; i < 4000 && marks.length < 6; i++) {
-        const z = mkEntity(types[i % 4], { x: 0, y: 64, z: 3 }, dims.overworld);
+        const z = mkEntity(types[i % 4], { x: 0, y: 64, z: 3 }, dims.overworld); z.setDynamicProperty("sh_tier", lastRank);
         fire("entityDie", { deadEntity: z, damageSource: { damagingEntity: player } }); kills++;
         const st = JSON.parse(player.getDynamicProperty("sh"));
         if (st.rank !== lastRank) { marks.push(`رتبة ${st.rank} بعد ${kills} قتلة (ليفل ${st.level})`); lastRank = st.rank; }
@@ -249,11 +249,30 @@ export const __sim = {
     const book = ui.formsShown[0];
     console.log("\nكتاب التطور: أزرار", book ? book.buttons.length : 0);
     const last = book ? book.buttons.length - 1 : 0;
-    ui.nextSelection = last; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 20));
+    ui.nextSelection = last - 1; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 20));
     const status = ui.formsShown.find((f) => f.title === "نافذة الحالة");
     console.log(status ? "نافذة الحالة تفتح ✔" : "نافذة الحالة ما فتحت");
     if (!status) failures.push("نافذة الحالة ما فتحت");
     else console.log(status.body.replace(/§./g, "").split("\n").slice(0, 14).join("\n"));
+    // حكاية العالم
+    {
+      ui.nextSelection = 99; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 30));
+      const lore = ui.formsShown.find((f) => f.title === "حكاية النجمة الساقطة");
+      console.log(lore ? "حكاية العالم تفتح ✔ (" + lore.buttons.length + " فصول)" : "حكاية العالم ما فتحت");
+      if (!lore) failures.push("حكاية العالم ما فتحت");
+      ui.nextSelection = 0;
+    }
+    // الظهور المتدرج
+    {
+      setState({ ...baseState("iron"), rank: 4, level: 60 }); entities.length = 0;
+      advance(7200);
+      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId));
+      const tiers = mons.map((e) => e.getDynamicProperty("sh_tier"));
+      console.log("وحوش ظهرت خلال 7200 تك (6 دقائق، الحد 3):", mons.length, "درجاتها:", tiers.join(","));
+      if (mons.length === 0) failures.push("ما ظهرت وحوش بـ6 دقائق");
+      if (mons.length > 3) failures.push("ظهور سريع: " + mons.length);
+      if (mons.some((e) => e.getDynamicProperty("sh_tier") !== 4)) failures.push("الوحوش ما تدرجت برتبة اللاعب");
+    }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
     fire("scriptEventReceive", { id: "sh:unlock", message: "", sourceEntity: player });

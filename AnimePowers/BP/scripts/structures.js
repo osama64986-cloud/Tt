@@ -110,10 +110,10 @@ class Plan {
 
 // ───────────────────────── المخططات ─────────────────────────
 export const STRUCTURES = {
-  village: { name: "القرية الساكورا", half: 14, weight: 0.3, guards: 0 },
-  palace: { name: "قصر الغروب", half: 20, weight: 0.2, guards: 4 },
-  ruins: { name: "خرائب المعبد", half: 11, weight: 0.35, guards: 3 },
-  shrine: { name: "ضريح السيف المظلم", half: 10, weight: 0.15, guards: 3 },
+  village: { name: "القرية الساكورا", half: 14, weight: 0.3, guards: 0, lore: "بيت أهل الفجر الأول، وهنا بدأت الحكاية." },
+  palace: { name: "قصر الغروب", half: 20, weight: 0.2, guards: 4, lore: "آخر ضوء سقط هنا قبل أن يسقط القصر." },
+  ruins: { name: "خرائب المعبد", half: 11, weight: 0.35, guards: 3, lore: "المعبد القديم، حيث وقعت الشظية الأولى." },
+  shrine: { name: "ضريح السيف المظلم", half: 10, weight: 0.15, guards: 3, lore: "الهاوية تنام تحت هذا الحجر." },
 };
 
 export function planVillage(seed) {
@@ -388,7 +388,7 @@ function chooseType(reg = []) {
   return "village";
 }
 
-export function setupStructures() {
+export function setupStructures(onGuardSpawn) {
   // بناء هيكل جديد قرب اللاعب (بعيد عن الهياكل الموجودة)
   system.runInterval(() => {
     if (building) return;
@@ -426,7 +426,7 @@ export function setupStructures() {
         const key = `${p.id}:${i}`;
         if (d < 30 && !announced.has(key)) {
           announced.add(key);
-          try { p.sendMessage(`§6[استكشاف] §fوصلت لـ ${STRUCTURES[s.type].name}`); } catch (e) { /* */ }
+          try { p.sendMessage(`§6[استكشاف] §fوصلت لـ ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
         }
         if (d < 40 && STRUCTURES[s.type].guards > 0) {
           try {
@@ -440,6 +440,7 @@ export function setupStructures() {
               if (!p.dimension.isChunkLoaded(loc)) continue;
               const e = p.dimension.spawnEntity(sp.type, loc);
               near.push(e);
+              try { if (onGuardSpawn) onGuardSpawn(e, p); } catch (e5) { /* */ }
             }
           } catch (e) { /* */ }
         }

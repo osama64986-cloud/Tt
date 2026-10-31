@@ -156,12 +156,28 @@ function usageOf(s) {
 const MONSTERS = {
   "sh:training_archer": { rank: -1, xp: [20, 50], training: true },
   // وحوش الرتبة الأولى (index 0 = مبتدئ)
-  "sh:ember_imp": { rank: 0, xp: 12 },
-  "sh:rust_guard": { rank: 0, xp: 20 },
-  "sh:shadow_hound": { rank: 0, xp: 16 },
-  "sh:sand_scorpion": { rank: 0, xp: 24 },
+  "sh:ember_imp": { rank: 0, xp: 18 },
+  "sh:rust_guard": { rank: 0, xp: 30 },
+  "sh:shadow_hound": { rank: 0, xp: 24 },
+  "sh:sand_scorpion": { rank: 0, xp: 36 },
 };
-const MONSTER_CAP = 4; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
+const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
+const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
+// ─── تدرج الصعوبة: الوحش يظهر بقوة تناسب رتبة اللاعب اللي قربه (حياة + ضرر + خبرة) ───
+const TIER_HP = 0.30, TIER_DMG = 0.15, TIER_XP = 0.30;
+function tierOf(e) { try { const v = e.getDynamicProperty("sh_tier"); return typeof v === "number" ? v : 0; } catch (err) { return 0; } }
+function scaleMonster(e, rank) {
+  try {
+    if (!e || !rank) return;
+    e.setDynamicProperty("sh_tier", rank);
+    const hp = e.getComponent("minecraft:health");
+    const extra = Math.round(hp.effectiveMax * TIER_HP * rank);
+    e.addEffect("health_boost", 1000000, { amplifier: Math.max(0, Math.min(250, Math.round(extra / 4) - 1)), showParticles: false });
+    if (rank >= 3) e.addEffect("strength", 1000000, { amplifier: 0, showParticles: false });
+    later(2, () => { try { e.getComponent("minecraft:health").resetToMaxValue(); } catch (err) { /* */ } });
+  } catch (err) { /* */ }
+}
+const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floor(tier / 2));
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 
 // أسلحة الدفاع: ضرر إضافي فوق ضرر اليد، تشتغل حتى بدون قدرة
@@ -576,6 +592,45 @@ async function showRanks(player) {
   await showForm(player, new ActionFormData().title("الرتب").body(body).button("§aتمام"));
 }
 
+// ───────────────────────── حكاية العالم: «النجمة الساقطة» ─────────────────────────
+// 7 فصول، فصل لكل رتبة. الفصل ينفتح لما توصل رتبته (حتى تكون الرتب لها معنى بالحكاية).
+const LORE_TITLE = "حكاية النجمة الساقطة";
+const LORE = [
+  ["الليلة التي سقطت فيها النجمة",
+    "قبل ألف عام، حين كان الليل أطول من أي ليل، انشقّت السماء وسقطت نجمة عظيمة اسمها «سِراج الفجر». ارتجّت الأرض سبع مرات، وتناثر قلب النجمة إلى سبع شظايا، وكل شظية وقعت بمكان وأيقظت فيه قوة.\n\nمن لمس شظية صار يحمل «قدرة»، ومن حمل قدرة سمّوه حامل الشظية. أنت لمست أثرها الأول يا مبتدئ، فاذهب للمدرب: هو آخر من بقي يعرف الطريق."],
+  ["أهل الفجر",
+    "اجتمع حاملو الشظايا وأسسوا «أهل الفجر»، جماعة تحفظ القدرات من الأيدي الخطأ. رسموا سبع مراتب بعدد الشظايا: مبتدئ، متدرب، محارب، نخبة، قائد، أسطورة، ثم السيد.\n\nما كانت الرتبة تُنال بالنسب ولا بالمال، بل بما تهزمه وما تتعلمه. بنوا قرية الساكورا أول بيت لهم، وزرعوا حولها أشجارها الوردية حتى يتذكروا أن الجمال يستحق الحماية."],
+  ["الهاوية",
+    "لكن النجمة لم تسقط وحدها. كان خلفها فراغ أسود يتبعها كما يتبع الظل صاحبه: «الهاوية». كل ما تلمسه الهاوية يفقد لونه ثم اسمه.\n\nومن بقاياها ظهرت المخلوقات التي تقاتلها الآن: عفريت الرماد وُلد من رماد القرى المحروقة، وحارس الصخر كان يحرس المعبد حتى نسي ماذا يحرس، وذئب الظل يعوي على أثر النجمة، وعقرب الرمل سمّه من ذيل الهاوية نفسها."],
+  ["قصر الغروب",
+    "حين اشتد الهجوم تحصّن أهل الفجر في قصر على حافة الأفق وسمّوه «قصر الغروب»، لأن آخر ضوء في أيامهم كان يسقط عليه. قاتل فيه القادة الأخيرون برمح من نور الشمس.\n\nسقط القصر، لكن الهاوية دفعت الثمن: تراجعت إلى الأعماق، وبقي الرمح عند من نجا. ما زالت أبراجه تحمل صناديق ما استطاع الحراس أن يحملوها معهم."],
+  ["كاتانا الهاوية",
+    "النور وحده لم يكفِ لإغلاق الهاوية. فصنع آخر حدّاد من أهل الفجر سيفاً من ظلامها نفسه: «كاتانا الهاوية». كل ضربة بها تأخذ شيئاً منك، وكل نصر بها يزيدها حدّة.\n\nدفنها في «ضريح السيف المظلم» تحت حراسة حرّاس لا ينامون، وقال: «لا يرفعها إلا من يقدر أن يحملها ولا تحمله». من يطلبها يجد البوصلة طريقه، والبوصلة بين يديك."],
+  ["سيد النجوم",
+    "يُقال إن شظية واحدة، السابعة، لم تُمنح لأحد. بقيت نائمة في السماء تنتظر من يستحقها: «سيد النجوم»، الذي لا يحمل قدرة بل يحمل سماء كاملة. نيازك تنزل بإشارة منه، والجاذبية تنحني له، وثقوب سوداء تُفتح وتُغلق بكلمة.\n\nما عرف التاريخ منهم أكثر من ثلاثة، وكلهم اختفوا في اللحظة التي أطلقوا فيها المستعر الأعظم."],
+  ["قلب الهاوية",
+    "أنت الآن «السيد». وهذه الحقيقة التي ما أخبرك بها المدرب: الهاوية ليست عدواً من الخارج، بل هي قلب النجمة الذي سقط منها وما زال يبحث عن جسده. كل ما قتلته كان نداءً منه.\n\nتقدر أن تغلقه إلى الأبد، أو أن تعيده إلى مكانه فتُشرق النجمة من جديد. اختيارك سيكتب الفصل الأخير.\n\n§7(الفصل الأخير يجي بتحديث قادم)"],
+];
+async function openLore(player) {
+  const st = getState(player);
+  const form = new ActionFormData().title(LORE_TITLE).body(`§7فصل لكل رتبة. رتبتك: §e${RANKS[st.rank]}§7 (${Math.min(LORE.length, st.rank + 1)}/${LORE.length} فصول مفتوحة)`);
+  LORE.forEach((c, i) => form.button(i <= st.rank ? `§d${i + 1}. ${c[0]}` : `§8${i + 1}. §c[مقفول] رتبة ${RANKS[i]}`));
+  const r = await showForm(player, form);
+  if (r.canceled) return;
+  const i = r.selection;
+  if (i > st.rank) { notify(player, `§7هذا الفصل ينفتح عند رتبة ${RANKS[i]}`, 60); return; }
+  await showForm(player, new ActionFormData().title(`${i + 1}. ${LORE[i][0]}`).body(LORE[i][1]).button("§aرجوع"));
+  return openLore(player);
+}
+function introStory(player) {
+  try {
+    player.onScreenDisplay.setTitle("§l§9عالم القدرات", { subtitle: `§7${LORE_TITLE}`, fadeInDuration: 20, stayDuration: 100, fadeOutDuration: 30 });
+  } catch (e) { /* */ }
+  sfxPlayer(player, "sh.orbit", 0.8, 0.8);
+  say(player, `§9[حكاية] §f${LORE[0][1].split("\n")[0]}`);
+  say(player, "§7افتح كتاب التطور > [حكاية العالم] لقراءة باقي الفصول، وكل رتبة جديدة تفتح فصلاً.");
+}
+
 // ───────────────────────── كتاب الوحوش ─────────────────────────
 const MONSTER_INFO = [
   ["sh:training_archer", "رامي التدريب", "بلا رتبة", "سهم بأثر بنفسجي. قريب منه يضعف، وقانون الصمت يمنعه من الرمي."],
@@ -650,10 +705,12 @@ async function openBook(player) {
   }
   form.button("§e[الرتب وطريقة الترقي]");
   form.button("§b[نافذة الحالة وطريقة الاستعمال]");
+  form.button("§d[حكاية العالم]");
   const r = await showForm(player, form);
   if (r.canceled) return;
   if (r.selection === mine.length) { showRanks(player); return; }
   if (r.selection === mine.length + 1) { showStatus(player); return; }
+  if (r.selection === mine.length + 2) { openLore(player); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: مقفولة بعد`, 60); return; }
@@ -836,6 +893,7 @@ function announceUps(player, ups) {
       burst(player.dimension, headPos(player), 30, COLORS.gold, 3.5, 0.25);
       notify(player, `§6ارتقيت إلى رتبة ${RANKS[u.rank]}! §c+4 صحة`, 100);
       applyVitality(player, true);
+      if (LORE[u.rank]) say(player, `§d[حكاية] انفتح فصل جديد: «${LORE[u.rank][0]}». افتح كتاب التطور > [حكاية العالم]`);
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[رتبة] §fصارت رتبتك §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) system.runTimeout(() => rollPower(player), 60); } catch (e) { /* */ }
@@ -908,7 +966,12 @@ world.afterEvents.entityDie.subscribe((ev) => {
       grantSkillXp(killer, amount);
       return;
     }
-    handleKill(killer, info);
+    let kinfo = info;
+    try {
+      const tier = tierOf(ev.deadEntity);
+      if (tier > 0 && info.rank >= 0 && !Array.isArray(info.xp)) kinfo = { ...info, rank: effRank(info, tier), xp: Math.round(info.xp * (1 + TIER_XP * tier)) };
+    } catch (e4) { /* */ }
+    handleKill(killer, kinfo);
     try {
       const sk = getState(killer);
       sk.kills = sk.kills || {};
@@ -1042,8 +1105,25 @@ function nearestEnemy(e, r) {
   return best;
 }
 function dist2d(a, b) { return Math.hypot(a.x - b.x, a.z - b.z); }
+// ضرر المهارة يكبر مع: مستوى المهارة (+4% لكل مستوى)، ليفل القدرة (+3%)، الرتبة (+1%)، أقصى 1.8x
+const dmgMulCache = new Map();
+function skillDmgMul(by) {
+  if (!by || by.typeId !== "minecraft:player") return 1;
+  const now = system.currentTick;
+  const u = lastSkillUse.get(by.id);
+  if (!u || now - u.tick > 200) return 1;
+  const c = dmgMulCache.get(by.id);
+  if (c && c.tick === now) return c.mul;
+  let mul = 1;
+  try {
+    const s = getState(by);
+    mul = Math.min(1.8, 1 + 0.04 * (skillLevel(s, u.id) - 1) + 0.03 * ((s.plevel || 1) - 1) + 0.01 * s.rank);
+  } catch (err) { /* */ }
+  dmgMulCache.set(by.id, { tick: now, mul });
+  return mul;
+}
 function hurt(e, amount, by) {
-  try { e.applyDamage(amount, { cause: EntityDamageCause.entityAttack, damagingEntity: by }); } catch (err) { /* */ }
+  try { e.applyDamage(amount * skillDmgMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); } catch (err) { /* */ }
 }
 function viewDir(p) {
   try { return p.getViewDirection(); } catch (e) { return { x: 0, y: 0, z: 1 }; }
@@ -1665,6 +1745,12 @@ function weaponActive(p, id) {
       const a = Math.atan2(d.z, d.x) - 1.0 + (i / 24) * 2.0;
       for (const r of [1.6, 2.6, 3.6]) glow(dim, { x: o.x + Math.cos(a) * r, y: o.y + 1.0, z: o.z + Math.sin(a) * r }, { color: COLORS.orange, size: 0.22, life: 0.5, rise: 0.8 });
     }
+    // قوس جمر: شرارات وحطام متوهج
+    for (let i = 0; i < 46; i++) {
+      const a = Math.atan2(d.z, d.x) - 1.0 + Math.random() * 2.0, r = 1.3 + Math.random() * 3.0;
+      pix(dim, { x: o.x + Math.cos(a) * r, y: o.y + 0.8 + Math.random() * 1.0, z: o.z + Math.sin(a) * r }, { color: i % 3 ? COLORS.orange : COLORS.gold, size: 0.12 + Math.random() * 0.12, life: 0.8, speed: 1.6, rise: 1.6 });
+    }
+    glow(dim, { x: o.x + d.x * 2.2, y: o.y + 1.0, z: o.z + d.z * 2.2 }, { color: [1, 0.9, 0.6], size: 1.4, life: 0.25 });
     sfx(dim, "sh.cleaver_hit", o, 1.2, 0.7);
     shake(p, 0.15, 0.2);
     ok = true;
@@ -1686,6 +1772,12 @@ function weaponActive(p, id) {
     ring(dim, { x: best.location.x, y: best.location.y + 0.2, z: best.location.z }, 0.9, 16, 0, COLORS.gold, 0.22);
     ring(dim, { x: best.location.x, y: best.location.y + 1.0, z: best.location.z }, 0.7, 14, 1, COLORS.white, 0.18);
     burst(dim, headPos(best), 14, COLORS.gold, 2, 0.2);
+    // شروق: خطوط شمس تنتشر من العدو
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      const bc = { x: best.location.x, y: best.location.y + 1.0, z: best.location.z };
+      pixLine(dim, bc, { x: bc.x + Math.cos(a) * 2.0, y: bc.y + Math.sin(a * 2) * 0.5, z: bc.z + Math.sin(a) * 2.0 }, i % 2 ? COLORS.gold : [1, 0.55, 0.25], 7, 0.13, 0.55);
+    }
     // سلاسل ضوئية تدور حول العدو 5 ثواني
     let n = 0;
     const tgt = best;
@@ -1722,6 +1814,7 @@ function weaponActive(p, id) {
         // رمح من جزيئات: رأس أبيض/أحمر وذيل
         const fx = out ? v : { x: 0, y: 0, z: 0 };
         glow(dim, pos, { color: COLORS.white, size: 0.3, life: 0.3 });
+        pix(dim, pos, { color: i2c(0.55 + (dist / MAXD) * 0.4), size: 0.15, life: 0.7, speed: 0.6, rise: 0.4 });
         glow(dim, { x: pos.x - fx.x * 0.4, y: pos.y - fx.y * 0.4, z: pos.z - fx.z * 0.4 }, { color: COLORS.red, size: 0.22, life: 0.4 });
         glow(dim, { x: pos.x - fx.x * 0.8, y: pos.y - fx.y * 0.8, z: pos.z - fx.z * 0.8 }, { color: COLORS.red, size: 0.16, life: 0.4 });
         for (const e of enemiesNear(dim, pos, 1.5, p.id)) {
@@ -1754,6 +1847,7 @@ function weaponActive(p, id) {
       }
       glow(dim, { x: pos.x, y: pos.y + 1, z: pos.z }, { color: COLORS.purple, size: 0.3, life: 0.5 });
       glow(dim, { x: pos.x, y: pos.y + 0.5, z: pos.z }, { color: COLORS.blue, size: 0.2, life: 0.4 });
+      for (let j = 0; j < 3; j++) pix(dim, { x: pos.x + (Math.random() - 0.5) * 0.6, y: pos.y + Math.random() * 1.9, z: pos.z + (Math.random() - 0.5) * 0.6 }, { color: [0.55, 0.4, 1], size: 0.16, life: 0.9, speed: 0.5, rise: 0.3 });
     }
     safeTeleport(p, last);
     sfx(dim, "sh.dagger_hit", o, 1, 0.6);
@@ -1767,6 +1861,10 @@ function weaponActive(p, id) {
       burst(dim, e.location, 8, [0.6, 0.62, 0.58], 2, 0.25);
     }
     groundBreak(dim, o, 4.6, { cracks: 8, ttl: 200 });
+    for (let i = 0; i < 40; i++) {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * 4.4;
+      pix(dim, { x: o.x + Math.cos(a) * r, y: o.y + 0.2, z: o.z + Math.sin(a) * r }, { color: i % 2 ? [0.55, 0.57, 0.52] : COLORS.teal, size: 0.2, life: 1.0, speed: 2.2, rise: -1 });
+    }
     ring(dim, o, 1.5, 18, 0, COLORS.teal, 0.3);
     ring(dim, o, 3.0, 28, 0.5, [0.6, 0.62, 0.58], 0.3);
     ring(dim, o, 4.5, 36, 1, COLORS.teal, 0.28);
@@ -3014,6 +3112,12 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         st.gotBook = true;
         saveState(p, st);
       }
+      if (!st.sawIntro) {
+        const s2 = getState(p);
+        s2.sawIntro = true;
+        saveState(p, s2);
+        introStory(p);
+      }
       if (!st.power) openPowerMenu(p);
     } catch (e) { /* */ }
   }, 60);
@@ -3098,12 +3202,13 @@ system.runInterval(() => {
       if (p.dimension.id !== "minecraft:overworld") continue;
       const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_rank0"] });
       if (near.length >= MONSTER_CAP) continue;
-      if (Math.random() < 0.35) continue;
+      if (Math.random() < 0.4) continue;
       const id = RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
-      spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, 26, 44);
+      const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, 26, 44);
+      if (m) scaleMonster(m, st.rank);
     } catch (e) { /* */ }
   }
-}, 500); // كل 25 ثانية تقريباً (كانت كل دقيقتين، وكان الترقي بطيء جداً)
+}, MONSTER_SPAWN_TICKS);
 
 
 
@@ -3186,7 +3291,7 @@ function nearestPlayer(e, maxD) {
 }
 
 function hurtPlayer(pl, amount, by) {
-  try { pl.applyDamage(amount, { cause: EntityDamageCause.entityAttack, damagingEntity: by }); } catch (err) { /* */ }
+  try { pl.applyDamage(amount * (1 + TIER_DMG * tierOf(by)), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); } catch (err) { /* */ }
 }
 
 function setMState(e, v) { try { e.setProperty("sh:state", v); } catch (err) { /* */ } }
@@ -3354,7 +3459,7 @@ system.runInterval(() => {
   }
 }, 2);
 
-try { setupStructures(); } catch (e) { /* */ }
+try { setupStructures((e, pl) => scaleMonster(e, getState(pl).rank)); } catch (e) { /* */ }
 
 
 
@@ -3605,7 +3710,7 @@ system.runInterval(() => {
           if (!near) continue;
           const st = getState(near);
           let col = "§f", tag = "";
-          const rk = info.rank;
+          const rk = info.rank >= 0 ? effRank(info, tierOf(e)) : info.rank;
           if (rk < 0) { col = "§7"; tag = "تدريب"; }
           else {
             const diff = rk - st.rank;
