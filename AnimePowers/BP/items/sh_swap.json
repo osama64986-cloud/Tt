@@ -15,7 +15,7 @@
       },
       "minecraft:max_stack_size": 1,
       "minecraft:display_name": {
-        "value": "§3تبديل"
+        "value": "§3Swap"
       }
     }
   }

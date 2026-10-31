@@ -1,6 +1,6 @@
 // منطق الرتب والـ XP — بدون أي اعتماد على ماينكرافت (يتفحص لحاله)
 
-export const RANKS = ["مبتدئ", "متدرب", "محارب", "نخبة", "قائد", "أسطورة", "السيد"];
+export const RANKS = ["Novice", "Trainee", "Warrior", "Elite", "Commander", "Legend", "Master"];
 export const LEVELS_PER_RANK = 15;
 // من هاي الرتبة (index) وطالع: قتل وحش أقوى ما يرقيك بالقفزة
 export const HARD_RANK_FROM = 2;
@@ -98,12 +98,12 @@ export function monsterReward(st, monster) {
 
 // ───────── ندرة القدرات: كل قدرة لها ندرة تحدد عدد مهاراتها وأعلى ليفل لها ─────────
 export const RARITIES = [
-  { key: "common", name: "شائعة", color: "§7", skills: 2, maxLv: 4, weight: 34 },
-  { key: "uncommon", name: "غير شائعة", color: "§a", skills: 3, maxLv: 5, weight: 26 },
-  { key: "rare", name: "نادرة", color: "§9", skills: 4, maxLv: 6, weight: 18 },
-  { key: "epic", name: "ملحمية", color: "§5", skills: 5, maxLv: 7, weight: 13 },
-  { key: "legendary", name: "أسطورية", color: "§6", skills: 6, maxLv: 8, weight: 7 },
-  { key: "mythic", name: "خرافية", color: "§c", skills: 7, maxLv: 10, weight: 2 },
+  { key: "common", name: "Common", color: "§7", skills: 2, maxLv: 4, weight: 34 },
+  { key: "uncommon", name: "Uncommon", color: "§a", skills: 3, maxLv: 5, weight: 26 },
+  { key: "rare", name: "Rare", color: "§9", skills: 4, maxLv: 6, weight: 18 },
+  { key: "epic", name: "Epic", color: "§5", skills: 5, maxLv: 7, weight: 13 },
+  { key: "legendary", name: "Legendary", color: "§6", skills: 6, maxLv: 8, weight: 7 },
+  { key: "mythic", name: "Mythic", color: "§c", skills: 7, maxLv: 10, weight: 2 },
 ];
 
 // ليفل القدرة اللي تنفتح عنده المهارة رقم idx (الأولى دائما 1، والأخيرة عند الحد الأقصى)

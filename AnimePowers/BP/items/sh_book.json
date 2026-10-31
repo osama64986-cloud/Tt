@@ -15,7 +15,7 @@
       },
       "minecraft:max_stack_size": 1,
       "minecraft:display_name": {
-        "value": "§6كتاب التطور"
+        "value": "§6Evolution Book"
       },
       "minecraft:glint": true
     }

@@ -286,8 +286,36 @@ def scroll(name, big, skill=False):
     return render(parts, name)
 
 
+# ───────────────────────── شظية النجمة (Star Shard) ─────────────────────────
+def star_shard():
+    def tri(p, a, b, c):
+        def sgn(p1, p2, p3):
+            return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+        d1, d2, d3 = sgn(p, a, b), sgn(p, b, c), sgn(p, c, a)
+        neg = d1 < 0 or d2 < 0 or d3 < 0
+        pos = d1 > 0 or d2 > 0 or d3 > 0
+        return not (neg and pos)
+    A, B, C, D, E, M = (17, 2), (25, 12), (19, 30), (8, 19), (11, 8), (16.5, 14)
+    facets = [((A, B, M), (225, 250, 255)), ((B, C, M), (60, 130, 235)), ((C, D, M), (30, 70, 170)), ((D, E, M), (110, 190, 250)), ((E, A, M), (255, 255, 255))]
+    def crystal(x, y):
+        for (a, b, m), col in facets:
+            if tri((x, y), a, b, m):
+                # لمعة ذهبية على الحافة العلوية اليمنى
+                return col
+        return None
+    def sparkle(cx, cy, col):
+        def f(x, y):
+            dx, dy = abs(x - cx), abs(y - cy)
+            if (dx < 0.6 and dy < 2.0) or (dy < 0.6 and dx < 2.0):
+                return col
+            return None
+        return f
+    parts = [crystal, sparkle(5.5, 6.5, (255, 232, 140)), sparkle(27.5, 22.5, (255, 255, 255)), sparkle(26.5, 4.5, (255, 214, 110))]
+    return render(parts, "star_shard")
+
+
 if __name__ == "__main__":
-    ims = [claws(), spear(), cleaver(), scroll("scroll_small", False), scroll("scroll_big", True), scroll("skill_scroll", True, True)]
+    ims = [claws(), spear(), cleaver(), scroll("scroll_small", False), scroll("scroll_big", True), scroll("skill_scroll", True, True), star_shard()]
     prev = os.environ.get("PREVIEW_DIR", "/tmp")
     S = 14
     sheet = Image.new("RGBA", (len(ims) * (N * S + 10), N * S + 10), (118, 118, 126, 255))

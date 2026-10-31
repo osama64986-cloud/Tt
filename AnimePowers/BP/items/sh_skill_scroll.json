@@ -16,7 +16,7 @@
       "minecraft:max_stack_size": 16,
       "minecraft:glint": true,
       "minecraft:display_name": {
-        "value": "§bلفافة تطور المهارة"
+        "value": "§bSkill Upgrade Scroll"
       }
     }
   }

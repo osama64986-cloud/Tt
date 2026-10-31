@@ -15,7 +15,7 @@
       },
       "minecraft:max_stack_size": 16,
       "minecraft:display_name": {
-        "value": "§6لفافة خبرة كبيرة"
+        "value": "§6Large XP Scroll"
       },
       "minecraft:glint": true
     }

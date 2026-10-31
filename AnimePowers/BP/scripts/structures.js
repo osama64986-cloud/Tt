@@ -241,10 +241,10 @@ class Plan {
 
 // ───────────────────────── المخططات ─────────────────────────
 export const STRUCTURES = {
-  village: { name: "القرية الساكورا", half: 22, weight: 0.3, guards: 0, lore: "بيت أهل الفجر الأول، وهنا بدأت الحكاية." },
-  palace: { name: "قصر الغروب", half: 26, weight: 0.2, guards: 4, lore: "آخر ضوء سقط هنا قبل أن يسقط القصر." },
-  ruins: { name: "خرائب المعبد", half: 14, weight: 0.35, guards: 3, lore: "المعبد القديم، حيث وقعت الشظية الأولى." },
-  shrine: { name: "ضريح السيف المظلم", half: 13, weight: 0.15, guards: 3, lore: "الهاوية تنام تحت هذا الحجر." },
+  village: { name: "Sakura Village", half: 22, weight: 0.3, guards: 0, lore: "The Order of Dawn's first home, where the story began." },
+  palace: { name: "Sunset Palace", half: 26, weight: 0.2, guards: 4, lore: "The last light fell here before the palace fell." },
+  ruins: { name: "Temple Ruins", half: 14, weight: 0.35, guards: 3, lore: "The ancient temple, where the first shard landed." },
+  shrine: { name: "Dark Sword Shrine", half: 13, weight: 0.15, guards: 3, lore: "The Abyss sleeps beneath this stone." },
 };
 
 // قرية الساكورا (45×45): توري، شارع رئيسي، 6 بيوت بشرفات، ساحة تشوزويا، معبد صغير، بركة كوي وجسر، حديقة حصى، باغودا، أكشاك سوق
@@ -615,9 +615,9 @@ export function setupStructures(onGuardSpawn) {
         // نخبر اللاعب وين طلعت البناية (حتى ما يدور بدون فايدة)
         try {
           const dx = site.x - p.location.x, dz = site.z - p.location.z;
-          const dirs = ["شرق", "جنوب شرق", "جنوب", "جنوب غرب", "غرب", "شمال غرب", "شمال", "شمال شرق"];
+          const dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
           const dir = dirs[((Math.round((Math.atan2(dz, dx) * 180) / Math.PI / 45) % 8) + 8) % 8];
-          p.sendMessage(`§6[استكشاف] §fظهرت بناية قريبة: §e${spec.name}§f على بعد ${Math.round(Math.hypot(dx, dz))} بلوكة باتجاه ال${dir}. §7استعمل بوصلة المستكشف.`);
+          p.sendMessage(`§6[Explore] §fA structure appeared nearby: §e${spec.name}§f, ${Math.round(Math.hypot(dx, dz))} blocks to the ${dir}. §7Use the Explorer's Compass.`);
           if (!p.getDynamicProperty("sh_ctarget")) p.setDynamicProperty("sh_ctarget", type);
         } catch (e6) { /* */ }
         building = true;
@@ -639,7 +639,7 @@ export function setupStructures(onGuardSpawn) {
         const key = `${p.id}:${i}`;
         if (d < 30 && !announced.has(key)) {
           announced.add(key);
-          try { p.sendMessage(`§6[استكشاف] §fوصلت لـ ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
+          try { p.sendMessage(`§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
         }
         if (d < 40 && STRUCTURES[s.type].guards > 0) {
           try {

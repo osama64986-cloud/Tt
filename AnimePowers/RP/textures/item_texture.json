@@ -169,6 +169,9 @@
     },
     "sh_skill_scroll": {
       "textures": "textures/items/sh_skill_scroll"
+    },
+    "sh_star_shard": {
+      "textures": "textures/items/sh_star_shard"
     }
   }
 }

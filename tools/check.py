@@ -8,7 +8,7 @@
   5. كل أيتم له أيقونة بـ item_texture.json وملف الصورة موجود.
   6. كل sh:skill_* المذكور بالسكربت له ملف أيتم.
   7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
-  8. كل كيان BP له كيان RP، وكل مفتاح اسم بملفات اللغة موجود بالعربي والإنجليزي.
+  8. كل كيان BP له كيان RP، وكل مفتاح اسم موجود بملف اللغة الإنجليزي.
   8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
   9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
 """
@@ -136,20 +136,24 @@ for e in sorted(rp_ents - bp_ents):
 
 langs = {}
 for code in ("ar_SA", "en_US"):
+    path = os.path.join(RP, "texts", f"{code}.lang")
+    if not os.path.exists(path):
+        continue
     keys = set()
-    with open(os.path.join(RP, "texts", f"{code}.lang"), encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         for line in fh:
             if "=" in line and not line.startswith("#"):
                 keys.add(line.split("=", 1)[0].strip())
     langs[code] = keys
-if langs["ar_SA"] != langs["en_US"]:
-    diff = sorted(langs["ar_SA"] ^ langs["en_US"])
-    err(f"مفاتيح اللغة مختلفة بين ar_SA و en_US: {diff}")
+if "en_US" not in langs:
+    err("ملف اللغة en_US ناقص")
+if "ar_SA" in langs and langs["ar_SA"] != langs.get("en_US"):
+    err(f"مفاتيح اللغة مختلفة بين ar_SA و en_US: {sorted(langs['ar_SA'] ^ langs.get('en_US', set()))}")
 for e in sorted(bp_ents):
     if "fx_" in e:
         continue
-    if f"entity.{e}.name" not in langs["ar_SA"]:
-        warnings.append(f"ما لقيت اسم عربي للكيان {e} بملف اللغة")
+    if f"entity.{e}.name" not in langs.get("en_US", set()):
+        warnings.append(f"ما لقيت اسم للكيان {e} بملف اللغة")
 
 # 8b) الأسلحة 3D (Attachables): الأيتم، الموديل، التكستشر، والحركات لازم تكون كلها موجودة
 anim_ids = set()

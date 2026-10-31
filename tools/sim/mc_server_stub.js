@@ -72,7 +72,7 @@ function mkDim(id) {
     spawnParticle() { stats.particles++; },
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
-    spawnItem() {},
+    spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
     getBlock(l) { const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: "minecraft:gravel", isAir: true, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
@@ -251,14 +251,14 @@ export const __sim = {
     console.log("\nكتاب التطور: أزرار", book ? book.buttons.length : 0);
     const last = book ? book.buttons.length - 1 : 0;
     ui.nextSelection = last - 1; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 20));
-    const status = ui.formsShown.find((f) => f.title === "نافذة الحالة");
+    const status = ui.formsShown.find((f) => f.title === "Status Window");
     console.log(status ? "نافذة الحالة تفتح ✔" : "نافذة الحالة ما فتحت");
     if (!status) failures.push("نافذة الحالة ما فتحت");
     else console.log(status.body.replace(/§./g, "").split("\n").slice(0, 14).join("\n"));
     // حكاية العالم
     {
       ui.nextSelection = 99; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 30));
-      const lore = ui.formsShown.find((f) => f.title === "حكاية النجمة الساقطة");
+      const lore = ui.formsShown.find((f) => f.title === "The Tale of the Fallen Star");
       console.log(lore ? "حكاية العالم تفتح ✔ (" + lore.buttons.length + " فصول)" : "حكاية العالم ما فتحت");
       if (!lore) failures.push("حكاية العالم ما فتحت");
       ui.nextSelection = 0;
@@ -319,18 +319,36 @@ export const __sim = {
       if (entities.some((e) => e.typeId === "sh:fx_body" && e._valid)) failures.push("قشرة الحديد ما انتهت");
       player.location = { x: 0, y: 64, z: 0 };
     }
-    // لاعب جديد كلياً: قدرة مضمونة + وحوش بداية + أول بناية بسرعة
+    // لاعب جديد كلياً: شظية تسقط، سحب بالشظية، وحوش بداية، أول بناية بسرعة
     {
-      player.setDynamicProperty("sh", undefined); world._dyn = {}; entities.length = 0; for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
+      player.setDynamicProperty("sh", undefined); world._dyn = {}; entities.length = 0; stats.items = []; for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
       fire("playerSpawn", { player, initialSpawn: true });
       advance(1500); await new Promise((r) => setTimeout(r, 30));
-      const st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+      let st = JSON.parse(player.getDynamicProperty("sh") || "{}");
       const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId)).length;
       const reg = world._dyn.sh_structs ? JSON.parse(world._dyn.sh_structs).length : 0;
-      console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| وحوش بداية =", mons, "| بنايات =", reg, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"));
-      if (!st.power) failures.push("اللاعب الجديد ما أخذ قدرة");
+      const dropped = (stats.items || []).filter((t) => t === "sh:star_shard").length;
+      console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| شظية سقطت =", dropped, "| وحوش بداية =", mons, "| بنايات =", reg, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"), "| بوصلة =", inventory.some((i) => i && i.typeId === "sh:explorer_compass"));
+      if (st.power) failures.push("اللاعب الجديد ياخذ قدرة بدون شظية");
+      if (dropped < 1) failures.push("الشظية ما سقطت");
       if (mons < 1) failures.push("ما ظهرت وحوش بداية");
       if (reg < 1) failures.push("ما انبنت أول بناية بسرعة");
+      // يلقط الشظية ويستعملها
+      inventory[3] = new ItemStack("sh:star_shard"); player.selectedSlotIndex = 3;
+      fire("itemUse", { source: player, itemStack: inventory[3] });
+      advance(40);
+      st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+      if (st.power) failures.push("السحب خلص بدون أنيميشن");
+      advance(220); await new Promise((r) => setTimeout(r, 30));
+      st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+      console.log("بعد السحب: قدرة =", st.power, "| شظية باقية =", inventory.some((i) => i && i.typeId === "sh:star_shard"));
+      if (!st.power) failures.push("السحب بالشظية ما أعطى قدرة");
+      if (inventory.some((i) => i && i.typeId === "sh:star_shard")) failures.push("الشظية ما انحرقت");
+      // استعمال شظية ثانية وانت عندك قدرة ما يغير شي
+      inventory[4] = new ItemStack("sh:star_shard"); const keep = st.power;
+      fire("itemUse", { source: player, itemStack: inventory[4] }); advance(250);
+      if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("الشظية غيرت قدرة موجودة");
+      player.selectedSlotIndex = 0;
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
