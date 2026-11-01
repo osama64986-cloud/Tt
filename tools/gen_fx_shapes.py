@@ -761,6 +761,34 @@ def _(S):
         S.box((0, 0, 4.4 + k * 2.2), (w, w, 2.2), (70, 160, 40), flat=True)
 
 
+# ───────────────────────── بلورة معبد النجمة (لون لكل ندرة) ─────────────────────────
+DRAW_COLORS = {
+    "common": ((150, 156, 170), (215, 220, 232), (255, 255, 255)),
+    "uncommon": ((50, 170, 80), (130, 240, 150), (230, 255, 235)),
+    "rare": ((40, 100, 220), (120, 180, 255), (230, 245, 255)),
+    "epic": ((120, 50, 210), (190, 130, 255), (245, 230, 255)),
+    "legendary": ((210, 140, 20), (255, 215, 90), (255, 250, 220)),
+    "mythic": ((200, 30, 50), (255, 110, 120), (255, 230, 230)),
+    "void": ((24, 18, 34), (70, 50, 100), (140, 110, 200)),
+}
+
+
+def draw_crystal(S, base, hi, white):
+    """بلورة كبيرة عائمة: شوكة طويلة بالنص (مثمنة)، 4 شوكات جانبية مايلة، وحلقة شظايا صغيرة حواليها. قاعدتها y=0."""
+    for y, w in ((0, 3.0), (3, 6.5), (7, 8.0), (11, 8.6), (16, 8.0), (21, 6.6), (26, 4.8), (30, 3.0), (33, 1.6)):
+        col = base if y in (0, 3) else (hi if y < 26 else white)
+        S.box((0, y + 2.6, 0), (w, 5.2 if y < 30 else 3.2, w), col, top=white)
+        S.box((0, y + 2.6, 0), (w * 0.72, 5.2 if y < 30 else 3.2, w * 0.72), mix(col, WHITE, 0.15), rot=[0, 45, 0], top=white)
+    for i in range(4):
+        bn = S.bone(f"dc{i}", rot=[0, i * 90 + 45, 0])
+        spike_up(S, (0, 6, 4.2), 15, 4.0, [base, hi, white], tilt=-28, bone=bn, n=4)
+    ring(S, (0, 14, 0), 13, 10, (2.0, 2.0, 2.0), hi, col2=white)
+
+
+for _k, (_b, _h, _w) in DRAW_COLORS.items():
+    shape(f"draw_{_k}", ground=True)(lambda S, b=_b, h=_h, w=_w: draw_crystal(S, b, h, w))
+
+
 # ───────────────────────── الإخراج ─────────────────────────
 EXTRA_ANIMS = {
     "wings": {"wl": {"rotation": [0, 0, "-18 - math.sin(q.life_time * 640) * 28"]}, "wr": {"rotation": [0, 0, "18 + math.sin(q.life_time * 640) * 28"]}},
@@ -789,7 +817,7 @@ def write(path, data, compact=True):
 
 def main():
     shapes = build()
-    assert len(shapes) <= 64
+    assert len(shapes) <= 128
     write(os.path.join(RP, "models", "entity", "sh_fx_shapes.geo.json"),
           {"format_version": "1.12.0", "minecraft:geometry": [s.geometry() for s in shapes]})
     img = Image.new("RGBA", (ATLAS_W, ATLAS_W), (0, 0, 0, 0))
@@ -804,7 +832,7 @@ def main():
             "description": {
                 "identifier": "sh:fx_shape", "is_spawnable": False, "is_summonable": True, "is_experimental": False,
                 "properties": {
-                    "sh:v": {"type": "int", "range": [0, 63], "default": 0, "client_sync": True},
+                    "sh:v": {"type": "int", "range": [0, 127], "default": 0, "client_sync": True},
                     "sh:r": {"type": "float", "range": [0, 40], "default": 1, "client_sync": True},
                     "sh:p": {"type": "float", "range": [-180, 180], "default": 0, "client_sync": True},
                     "sh:a": {"type": "float", "range": [-360, 360], "default": 0, "client_sync": True},

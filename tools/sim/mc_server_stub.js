@@ -353,35 +353,53 @@ export const __sim = {
       if (entities.some((e) => e.typeId === "sh:fx_body" && e._valid)) failures.push("قشرة الحديد ما انتهت");
       player.location = { x: 0, y: 64, z: 0 };
     }
-    // لاعب جديد كلياً: شظية تسقط، سحب بالشظية، وحوش بداية، أول بناية بسرعة
+    // لاعب جديد كلياً: معبد النجمة يطلع قربه، يدوس على البلورة ← سحب بألوان الندرة ← قدرة
     {
       player.setDynamicProperty("sh", undefined); world._dyn = {}; entities.length = 0; stats.items = []; for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
+      player.location = { x: 0, y: 64, z: 0 };
       fire("playerSpawn", { player, initialSpawn: true });
       advance(1500); await new Promise((r) => setTimeout(r, 30));
       let st = JSON.parse(player.getDynamicProperty("sh") || "{}");
       const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId)).length;
-      const reg = world._dyn.sh_structs ? JSON.parse(world._dyn.sh_structs).length : 0;
-      const dropped = (stats.items || []).filter((t) => t === "sh:star_shard").length;
-      console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| شظية سقطت =", dropped, "| وحوش بداية =", mons, "| بنايات =", reg, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"), "| بوصلة =", inventory.some((i) => i && i.typeId === "sh:explorer_compass"));
-      if (st.power) failures.push("اللاعب الجديد ياخذ قدرة بدون شظية");
-      if (dropped < 1) failures.push("الشظية ما سقطت");
+      const reg = world._dyn.sh_structs ? JSON.parse(world._dyn.sh_structs) : [];
+      const temple = reg.find((r) => r.type === "temple");
+      console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| معبد =", temple ? `${temple.x},${temple.y},${temple.z}` : "لا", "| وحوش بداية =", mons, "| بنايات =", reg.length, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"));
+      if (st.power) failures.push("اللاعب الجديد ياخذ قدرة بدون المعبد");
+      if (!temple) failures.push("معبد النجمة ما انبنى");
       if (mons < 1) failures.push("ما ظهرت وحوش بداية");
-      if (reg < 1) failures.push("ما انبنت أول بناية بسرعة");
-      // يلقط الشظية ويستعملها
-      inventory[3] = new ItemStack("sh:star_shard"); player.selectedSlotIndex = 3;
-      fire("itemUse", { source: player, itemStack: inventory[3] });
-      advance(40);
+      if (temple) {
+        player.location = { x: temple.x + 0.5, y: temple.y + 8, z: temple.z + 30 }; advance(120);
+        const crystal0 = entities.find((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") >= 58 && e.getProperty("sh:v") <= 64);
+        if (!crystal0) failures.push("بلورة المعبد ما ظهرت");
+        // يدوس على اللوحة الذهبية (نشيل وحوش البداية حتى ما يقتلون اللاعب الوهمي بنص السحب)
+        entities.forEach((e) => { if (e.typeId !== "sh:fx_shape" && e.typeId !== "minecraft:player") e._valid = false; });
+        player._hp = 400; player._valid = true;
+        player.location = { x: temple.x + 0.5, y: temple.y + 1, z: temple.z + 0.5 };
+        const seen = new Set();
+        for (let i = 0; i < 5; i++) { advance(8); for (const e of entities) if (e.typeId === "sh:fx_shape" && e._valid) { const v = e.getProperty("sh:v"); if (v >= 58 && v <= 64) seen.add(v); } }
+        st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+        if (st.power) failures.push("السحب خلص بدون أنيميشن");
+        for (let i = 0; i < 20; i++) { advance(8); for (const e of entities) if (e.typeId === "sh:fx_shape" && e._valid) { const v = e.getProperty("sh:v"); if (v >= 58 && v <= 64) seen.add(v); } }
+        player.location = { x: temple.x + 3.5, y: temple.y + 1, z: temple.z + 3.5 };
+        advance(300); await new Promise((r) => setTimeout(r, 30));
+        st = JSON.parse(player.getDynamicProperty("sh") || "{}");
+        console.log("بعد الدوس على البلورة: قدرة =", st.power, "| ألوان البلورة اللي ظهرت =", [...seen].sort().join(","));
+        if (!st.power && !st.powerless) { failures.push("الدوس على البلورة ما أعطى قدرة"); console.log("  رسائل:", stats.messages.slice(-6).map((m) => m.replace(/§./g, "")).join(" || ")); }
+        if (seen.size < 3) failures.push("لون البلورة ما يتغير أثناء السحب");
+        // الدوس مرة ثانية ما يغير القدرة
+        const keep = st.power;
+        player.location = { x: temple.x + 0.5, y: temple.y + 1, z: temple.z + 0.5 }; advance(300);
+        if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("البلورة غيرت قدرة موجودة");
+      }
+      // بلا قدرة (Unbound): قوة وسرعة
+      const effs0 = effectLog.length;
+      fire("scriptEventReceive", { id: "sh:power", message: "unbound", sourceEntity: player }); advance(120);
       st = JSON.parse(player.getDynamicProperty("sh") || "{}");
-      if (st.power) failures.push("السحب خلص بدون أنيميشن");
-      advance(220); await new Promise((r) => setTimeout(r, 30));
-      st = JSON.parse(player.getDynamicProperty("sh") || "{}");
-      console.log("بعد السحب: قدرة =", st.power, "| شظية باقية =", inventory.some((i) => i && i.typeId === "sh:star_shard"));
-      if (!st.power) failures.push("السحب بالشظية ما أعطى قدرة");
-      if (inventory.some((i) => i && i.typeId === "sh:star_shard")) failures.push("الشظية ما انحرقت");
-      // استعمال شظية ثانية وانت عندك قدرة ما يغير شي
-      inventory[4] = new ItemStack("sh:star_shard"); const keep = st.power;
-      fire("itemUse", { source: player, itemStack: inventory[4] }); advance(250);
-      if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("الشظية غيرت قدرة موجودة");
+      const effs = effectLog.slice(effs0);
+      console.log("Unbound:", st.powerless, "| تأثيرات =", [...new Set(effs)].join(" "));
+      if (!st.powerless) failures.push("Unbound ما تفعّل");
+      if ((!effs.includes("strength") || !effs.includes("speed"))) failures.push("Unbound ما ياخذ قوة وسرعة");
+      player.location = { x: 0, y: 64, z: 0 };
       player.selectedSlotIndex = 0;
     }
     // ميزات النجمة الساقطة: الكوكبة، سقوط النجوم، الصاعد، الرد النجمي، والـHUD المرسوم
@@ -413,14 +431,19 @@ export const __sim = {
         player.location = { x: rs.x + 4, y: 64, z: rs.z };
         const waves = [];
         for (let w = 1; w <= 3; w++) {
-          advance(w === 1 ? 40 : 140);
-          const mobs = entities.filter((e) => e._valid && e._tags.has("sh_rift"));
+          // ننتظر لحد ما تطلع الموجة كاملة (توقيت فحص الصدع كل 20 تك يختلف حسب اللي قبله)
+          let mobs = [];
+          for (let k = 0, seen = -1; k < 30; k++) {
+            advance(20);
+            mobs = entities.filter((e) => e._valid && e._tags.has("sh_rift"));
+            if (mobs.length && (w < 3 || mobs.some((e) => e._tags.has("sh_rift_boss")))) { if (seen < 0) seen = k; else if (k - seen >= 3) break; }
+          }
           const boss = mobs.find((e) => e._tags.has("sh_rift_boss"));
           waves.push(`موجة ${w}: ${mobs.length} وحش${boss ? " + زعيم «" + boss.nameTag.replace(/§./g, "") + "»" : ""}`);
           if (!mobs.length) { failures.push(`موجة ${w} ما طلعت`); break; }
           if (w === 3 && !boss) failures.push("الزعيم ما طلع بالموجة 3");
           if (w < 3) mobs.forEach((e) => { e._valid = false; });
-          else { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
+          else if (boss) { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
         }
         console.log("  " + waves.join("\n  "));
         advance(40);

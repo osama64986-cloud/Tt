@@ -90,7 +90,7 @@ def render(vox, size=900, yaw=35):
 if __name__ == "__main__":
     src, out = sys.argv[1], sys.argv[2]
     os.makedirs(out, exist_ok=True)
-    for name in ("village", "palace", "ruins", "shrine"):
+    for name in ("village", "palace", "ruins", "shrine", "temple"):
         plan = json.load(open(os.path.join(src, f"plan_{name}.json")))
         vox = build(plan)
         render(vox, size=1100, yaw=35).save(os.path.join(out, f"{name}.png"))

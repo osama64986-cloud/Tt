@@ -67,7 +67,14 @@
     "s54": "geometry.sh_shape_slash_teal",
     "s55": "geometry.sh_shape_slash_venom",
     "s56": "geometry.sh_shape_fireball",
-    "s57": "geometry.sh_shape_venom_glob"
+    "s57": "geometry.sh_shape_venom_glob",
+    "s58": "geometry.sh_shape_draw_common",
+    "s59": "geometry.sh_shape_draw_uncommon",
+    "s60": "geometry.sh_shape_draw_rare",
+    "s61": "geometry.sh_shape_draw_epic",
+    "s62": "geometry.sh_shape_draw_legendary",
+    "s63": "geometry.sh_shape_draw_mythic",
+    "s64": "geometry.sh_shape_draw_void"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

@@ -4,7 +4,7 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures } from "./structures.js";
+import { setupStructures, buildTemple, findTemple } from "./structures.js";
 import { SHAPE } from "./shapes.js";
 
 // ───────────────────────── البيانات ─────────────────────────
@@ -279,7 +279,7 @@ function hudArt(p, st) {
     const r = rarityOf(st.power), pl = st.plevel || 1;
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
     l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
-  } else l2 += "  §7No power yet";
+  } else l2 += st.powerless ? "  §8§lUnbound §r§c+STR §b+SPD" : "  §7No power: find the Star Temple";
   const l3 = riftHudLine(p, false);
   return l3 ? `${l1}\n${l2}\n${l3}` : `${l1}\n${l2}`;
 }
@@ -380,7 +380,7 @@ function heldLine(p, st, plain) {
       : `§6◎ ${nm} §8│ §7Not discovered yet, explore more`;
     return { line, tip: showTip ? "§7Use: choose destination §8│ §7Sneak + use: guide line" : "" };
   }
-  if (id === "sh:star_shard") return { line: "§b✦ Star Shard", tip: showTip ? (st.power ? "§7You already carry a power" : "§7Use: start your power draw") : "" };
+  if (id === "sh:star_shard") return { line: "§b✦ Star Shard", tip: showTip ? (st.power ? "§7You already carry a power" : "§7Use: points you to the Star Temple") : "" };
   if (id === "sh:skill_scroll") return { line: "§b✦ Skill Upgrade Scroll", tip: showTip ? "§7Use: pick a skill and raise it a full level" : "" };
   if (id === "sh:evolution_book") return { line: "§eEvolution Book", tip: showTip ? "§7Use: skills, status window, ranks, story" : "" };
   if (id === "sh:monster_book") return { line: "§5Monster Book", tip: showTip ? "§7Use: info on the monsters you have killed" : "" };
@@ -560,12 +560,14 @@ const POWER_KEYS = ["iron", "wind", "echo", "crystal", "accountant", "borrower",
 
 // القدرة تجي عشوائيا، ويمكن ما تطلع لك أي قدرة (للتجربة: /tag @s add sh_menu يرجع قائمة الاختيار)
 const RANDOM_POWERS = true;
-const NO_POWER_CHANCE = 0; // 0 = كل لاعب ياخذ قدرة من أول مرة (غيّرها 0.3 لو تريد احتمال "بلا قدرة" وتعاد القرعة بالرتبة الجاية)
+// احتمال "بلا قدرة" (Unbound) وقت السحب بالمعبد: 0.5% (أقل من أندر قدرة). بدالها الجسم يقوى ويسرع مع الرتبة.
+const NO_POWER_CHANCE = 0.005;
 
 function grantPower(player, key) {
   const pw = POWERS[key];
   const st = getState(player);
   st.power = key;
+  st.powerless = false;
   saveState(player, st);
   sfxPlayer(player, "sh.select");
   burst(player.dimension, headPos(player), 24, POWER_COLOR[key], 3);
@@ -577,31 +579,7 @@ function grantPower(player, key) {
   if (t) say(player, `§e[Trainer] §f${describeDir(player, t)}`);
 }
 
-function rollPower(player) {
-  const st = getState(player);
-  if (st.power) return;
-  if (NO_POWER_CHANCE > 0 && st.rolledRank === st.rank) {
-    say(player, "§7[Power] §fYou have no power yet. Use a Star Shard to draw one.");
-    return;
-  }
-  st.rolledRank = st.rank;
-  saveState(player, st);
-  sfxPlayer(player, "sh.select", 0.8, 0.8);
-  if (Math.random() < NO_POWER_CHANCE) {
-    notify(player, "§7No power drawn", 80);
-    say(player, "§7[Power] §fNo power this time. Use a Star Shard to draw.");
-    return;
-  }
-  let total = 0;
-  for (const k of POWER_KEYS) total += rarityOf(k).weight;
-  let roll = Math.random() * total, pick = POWER_KEYS[0];
-  for (const k of POWER_KEYS) { roll -= rarityOf(k).weight; if (roll <= 0) { pick = k; break; } }
-  grantPower(player, pick);
-}
-
-// ───────────────────────── Star Shard: سحب القدرة ─────────────────────────
-// شظية تسقط من السماء قربك مرة وحدة بأول دخول. تلقطها وتستعملها فيبدأ السحب (شاشة تدور على القدرات ثم تنكشف قدرتك).
-// القرعة موزونة بالندرة. الشظية تنحرق فقط وقت ما تنكشف القدرة. إذا ضاعت تنرجع لجردك بالدخول الجاي.
+// القرعة موزونة بالندرة (تنستعمل بالمعبد)
 const drawing = new Set();
 function pickPowerKey() {
   let total = 0;
@@ -618,101 +596,159 @@ function removeOne(p, typeId) {
   }
   return false;
 }
-// نيزك صغير يهبط 3 بلوكات قدامك ويترك الشظية + عمود ضوء يدلك عليها
-function shardMeteor(p) {
+// ───────────────────────── معبد النجمة: السحب بالدوس على البلورة ─────────────────────────
+// أول ما تدخل بدون قدرة يطلع معبد قريب منك (أو يدلك على الموجود). بنصه لوحة ذهبية فوقها بلورة كبيرة:
+// تدوس على اللوحة يبدي السحب، ولون البلورة يتقلب بين الندرات (أبيض شائع ← أخضر ← أزرق ← بنفسجي ← ذهبي ← أحمر خرافي)
+// ويوقف على لون قدرتك. نادراً جداً (0.5%) البلورة تنطفي: "بلا قدرة" (Unbound) بجسم أقوى وأسرع.
+const DRAW_VARIANTS = ["draw_common", "draw_uncommon", "draw_rare", "draw_epic", "draw_legendary", "draw_mythic"];
+const RAR_RGB = [[0.85, 0.87, 0.92], [0.4, 0.95, 0.5], [0.45, 0.65, 1], [0.7, 0.45, 1], [1, 0.8, 0.3], [1, 0.3, 0.35]];
+const templeFx = new Map(); // "x,y,z" -> { e, mode, v, until }
+let templeBusy = false;
+function templeCenter(t) { return { x: t.x + 0.5, y: t.y + 1, z: t.z + 0.5 }; }
+function templeKey(t) { return `${t.x},${t.y},${t.z}`; }
+function rarityIndexOf(key) { return Math.max(0, RARITIES.findIndex((r) => r.key === rarityOf(key).key)); }
+function needsDraw(st) { return !st.power && !st.powerless; }
+function guideTemple(p, t) {
   try {
-    const dim = p.dimension, d = flatDir(p);
-    const land = { x: p.location.x + d.x * 3, y: p.location.y, z: p.location.z + d.z * 3 };
-    try { const top = dim.getTopmostBlock({ x: Math.floor(land.x), z: Math.floor(land.z) }); if (top) land.y = top.y + 1; } catch (e) { /* */ }
-    const from = { x: land.x + 14, y: land.y + 40, z: land.z - 14 };
-    sfx(dim, "sh.meteor_fall", land, 1.2, 0.9);
-    say(p, "§b[Fallen Star] §fSomething is falling from the sky...");
-    for (let i = 0; i <= 20; i++) {
-      later(i, () => {
-        const k = i / 20;
-        const loc = { x: from.x + (land.x - from.x) * k, y: from.y + (land.y - from.y) * k, z: from.z + (land.z - from.z) * k };
-        glow(dim, loc, { color: [0.7, 0.9, 1], size: 1.0, life: 0.35 });
-        for (let j = 0; j < 3; j++) pix(dim, { x: loc.x + (Math.random() - 0.5), y: loc.y + (Math.random() - 0.5), z: loc.z + (Math.random() - 0.5) }, { color: j % 2 ? [1, 0.9, 0.5] : [0.6, 0.85, 1], size: 0.2, life: 0.8, speed: 0.4, rise: -1 });
-      });
-    }
-    later(21, () => {
-      sfx(dim, "sh.meteor_hit", land, 0.9, 1.5);
-      glow(dim, land, { color: [1, 1, 1], size: 2.4, life: 0.35 });
-      burst(dim, { x: land.x, y: land.y + 0.4, z: land.z }, 30, [0.6, 0.85, 1], 4, 0.26);
-      waveFx(dim, land, 5, 2, 12);
-      shake(p, 0.18, 0.2);
-      try { dim.spawnItem(new ItemStack("sh:star_shard", 1), { x: land.x, y: land.y + 0.3, z: land.z }); } catch (e) { /* */ }
-      say(p, "§b[Fallen Star] §fA §bStar Shard§f landed nearby. Pick it up and §eUSE§f it to draw your power.");
-      notify(p, "§bFind the glowing Star Shard and use it", 120);
-      // عمود ضوء يظهر 60 ثانية أو لين ما تلقط الشظية
-      let n = 0;
-      const h = system.runInterval(() => {
-        try {
-          if (!valid(p) || n++ > 60 || hasItem(p, "sh:star_shard") || getState(p).power) { system.clearRun(h); return; }
-          for (let y = 0; y < 12; y += 1.5) pix(dim, { x: land.x, y: land.y + y, z: land.z }, { color: y % 3 ? [0.6, 0.85, 1] : [1, 0.95, 0.7], size: 0.25, life: 1.2, rise: 1.5 });
-        } catch (e) { system.clearRun(h); }
-      }, 20);
-    });
+    const c = templeCenter(t), dx = c.x - p.location.x, dz = c.z - p.location.z, dist = Math.round(Math.hypot(dx, dz));
+    const dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
+    const dir = dirs[((Math.round((Math.atan2(dz, dx) * 180) / Math.PI / 45) % 8) + 8) % 8];
+    say(p, `§b[Star Temple] §f${dist} blocks to the ${dir}. Walk inside and §estep on the golden plate§f under the crystal to awaken your power.`);
+    notify(p, "§bFollow the light to the Star Temple", 100);
+    p.setDynamicProperty("sh_ctarget", "temple");
   } catch (e) { /* */ }
 }
-function ensureShard(p) {
+function ensureTemple(p) {
   try {
-    const st = getState(p);
-    if (st.power || hasItem(p, "sh:star_shard")) return;
-    giveItem(p, "sh:star_shard");
-    say(p, "§b[Fallen Star] §fA new Star Shard found you. Use it to draw your power.");
-  } catch (e) { /* */ }
+    if (!needsDraw(getState(p)) || p.dimension.id !== "minecraft:overworld") return;
+    const t = findTemple(p.location, 180);
+    if (t) { guideTemple(p, t); return; }
+    if (templeBusy) return;
+    templeBusy = true;
+    say(p, "§b[Fallen Star] §fThe ground trembles... a §bStar Temple§f rises nearby. The heart of the fallen star waits inside.");
+    sfxPlayer(p, "sh.supernova_charge", 0.8, 0.6);
+    shake(p, 0.15, 1.2);
+    buildTemple(p, (rec) => { templeBusy = false; if (valid(p)) guideTemple(p, rec); });
+  } catch (e) { templeBusy = false; }
 }
-// السحب: عناوين تدور (تبطأ تدريجياً) ثم تنكشف القدرة حسب ندرتها
-async function useStarShard(p) {
-  const st = getState(p);
-  if (st.power) { notify(p, "§7You already carry a power. A shard can only awaken one.", 60); return; }
-  if (drawing.has(p.id)) return;
+// البلورة: تتبنى وقت يكون لاعب قريب، وبالراحة تتقلب ألوانها ببطء
+system.runInterval(() => {
+  const now = system.currentTick;
+  let temples = [];
+  try { temples = getStructs().filter((s) => s.type === "temple"); } catch (e) { /* */ }
+  for (const t of temples) {
+    try {
+      const dim = world.getDimension("minecraft:overworld"), c = templeCenter(t);
+      const near = world.getAllPlayers().filter((q) => q.dimension.id === dim.id && Math.hypot(q.location.x - c.x, q.location.z - c.z) < 56);
+      const k = templeKey(t);
+      let f = templeFx.get(k);
+      if (!near.length) { if (f) { removeFx(f.e); templeFx.delete(k); } continue; }
+      if (!f) { f = { e: undefined, mode: "idle", v: 0, until: 0 }; templeFx.set(k, f); }
+      if (f.mode === "show" && now > f.until) f.mode = "idle";
+      if (f.mode === "idle" && now % 40 === 0) f.v = (f.v + 1) % DRAW_VARIANTS.length;
+      const name = f.v === -1 ? "draw_void" : DRAW_VARIANTS[f.v];
+      const at = { x: c.x, y: c.y + 1.3 + Math.sin(now * 0.05) * 0.12, z: c.z };
+      if (!f.e || !valid(f.e)) f.e = shapeFx(dim, name, at, { r: 1.15, s: f.mode === "draw" ? 240 : 25, life: 1100 });
+      else { moveShape(f.e, at); setShape(f.e, "sh:v", SHAPE[name]); setShape(f.e, "sh:s", f.mode === "draw" ? 240 : 25); }
+      if (now % 10 === 0) {
+        const col = f.v === -1 ? [0.4, 0.3, 0.6] : RAR_RGB[f.v];
+        glow(dim, { x: c.x + (Math.random() - 0.5) * 2, y: c.y + 0.3, z: c.z + (Math.random() - 0.5) * 2 }, { color: col, size: 0.22, life: 1.4, rise: 1.2 });
+      }
+      // عمود ضوء يدل اللاعبين اللي بعدهم بدون قدرة
+      if (now % 20 === 0 && near.some((q) => needsDraw(getState(q)))) {
+        for (let y = 6; y < 22; y += 2) glow(dim, { x: c.x, y: c.y + y, z: c.z }, { color: [0.6, 0.85, 1], size: 0.35, life: 1.1, rise: 1 });
+      }
+    } catch (e) { /* */ }
+  }
+}, 2);
+// الدوس على اللوحة الذهبية يبدي السحب
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      if (drawing.has(p.id) || p.dimension.id !== "minecraft:overworld") continue;
+      const st = getState(p);
+      if (!needsDraw(st)) continue;
+      const t = findTemple(p.location, 12);
+      if (!t) continue;
+      const c = templeCenter(t);
+      if (Math.hypot(p.location.x - c.x, p.location.z - c.z) < 0.85 && Math.abs(p.location.y - c.y) < 1.3) startDraw(p, t);
+    } catch (e) { /* */ }
+  }
+}, 4);
+// السحب: العناوين تتقلب، والبلورة تتلون حسب ندرة كل قدرة، وتوقف على لون قدرتك
+function startDraw(p, t) {
+  const k = templeKey(t);
+  const f = templeFx.get(k) || { e: undefined, mode: "idle", v: 0, until: 0 };
+  templeFx.set(k, f);
+  f.mode = "draw";
   drawing.add(p.id);
-  const key = pickPowerKey();
-  const frames = 20, offset = Math.floor(Math.random() * POWER_KEYS.length);
-  let t = 8;
-  sfxPlayer(p, "sh.supernova_charge", 0.8, 1.2);
-  const dim = p.dimension;
+  const unbound = Math.random() < NO_POWER_CHANCE;
+  const key = unbound ? null : pickPowerKey();
+  const frames = 22, offset = Math.floor(Math.random() * POWER_KEYS.length);
+  const dim = p.dimension, c = templeCenter(t);
+  let last = 8;
+  sfxPlayer(p, "sh.supernova_charge", 0.9, 1.1);
+  try { p.camera.fade({ fadeColor: { red: 0.7, green: 0.85, blue: 1 }, fadeTime: { fadeInTime: 0.1, holdTime: 0.1, fadeOutTime: 0.6 } }); } catch (e) { /* */ }
   for (let i = 0; i < frames; i++) {
     const at = Math.floor(8 + i * 1.5 + i * i * 0.2);
-    t = at;
+    last = at;
     later(at, () => {
-      if (!valid(p)) { drawing.delete(p.id); return; }
-      const k = POWER_KEYS[(i + offset) % POWER_KEYS.length];
-      const pw = POWERS[k], rar = rarityOf(k);
+      if (!valid(p)) return;
+      const kk = POWER_KEYS[(i + offset) % POWER_KEYS.length];
+      const pw = POWERS[kk], rar = rarityOf(kk);
+      f.v = rarityIndexOf(kk);
       try { p.onScreenDisplay.setTitle(`${pw.color}${pw.name}`, { subtitle: `${rar.color}${rar.name}`, fadeInDuration: 0, stayDuration: 6, fadeOutDuration: 0 }); } catch (e) { /* */ }
       sfxPlayer(p, "sh.tick", 0.7, 0.8 + i * 0.04);
-      pixRing(dim, { x: p.location.x, y: p.location.y + 0.3 + (i % 5) * 0.4, z: p.location.z }, 1.4, 14, i * 0.5, POWER_COLOR[k] || COLORS.gold, 0.16, 0.5);
+      glow(dim, { x: c.x, y: c.y + 2.2, z: c.z }, { color: RAR_RGB[f.v], size: 0.6, life: 0.4 });
     });
   }
-  later(t + 14, () => {
+  later(last + 16, () => {
     drawing.delete(p.id);
+    f.mode = "show"; f.until = system.currentTick + 240;
     if (!valid(p)) return;
     const s2 = getState(p);
-    if (s2.power) return;
-    if (!removeOne(p, "sh:star_shard")) return;
+    if (!needsDraw(s2)) return;
+    if (unbound) {
+      f.v = -1;
+      s2.powerless = true;
+      saveState(p, s2);
+      applyVitality(p, true);
+      try { p.onScreenDisplay.setTitle("§8§lUNBOUND", { subtitle: "§7The crystal stays dark... your body answers instead", fadeInDuration: 8, stayDuration: 90, fadeOutDuration: 24 }); } catch (e) { /* */ }
+      sfxPlayer(p, "sh.blackhole_end", 1, 0.7);
+      popShape(dim, "nova", { x: c.x, y: c.y + 2, z: c.z }, 0.3, 2.2, 10, { s: 300 });
+      say(p, "§8[Unbound] §fThe star gave you no power: one in two hundred. Instead your body refuses to break: §cstronger §fand §bfaster§f, and it grows with every rank. The Trainer has nothing to teach you; fight with weapons and your own fists.");
+      return;
+    }
     grantPower(p, key);
-    const pw = POWERS[key], rar = rarityOf(key);
-    const idx = RARITIES.findIndex((r) => r.key === rar.key);
+    const pw = POWERS[key], rar = rarityOf(key), idx = rarityIndexOf(key);
+    f.v = idx;
     try { p.onScreenDisplay.setTitle(`§l${pw.color}${pw.name}`, { subtitle: `${rar.color}${rar.name}  ${rarityStars(key)}`, fadeInDuration: 6, stayDuration: 80, fadeOutDuration: 24 }); } catch (e) { /* */ }
-    const col = POWER_COLOR[key] || COLORS.gold;
-    waveFx(dim, p.location, 6 + idx, 0, 14);
-    burst(dim, headPos(p), 30 + idx * 14, col, 4 + idx * 0.6, 0.28);
-    for (let i = 0; i < 20 + idx * 12; i++) pix(dim, headPos(p), { color: i % 2 ? col : [1, 1, 1], size: 0.18, life: 1.2, speed: 4 + idx, rise: -1 });
+    const col = RAR_RGB[idx];
+    popShape(dim, "nova", { x: c.x, y: c.y + 2.2, z: c.z }, 0.3, 1.6 + idx * 0.4, 10, { s: 300, ease: "out" });
+    waveFx(dim, c, 6 + idx, 0, 14);
+    burst(dim, { x: c.x, y: c.y + 2.2, z: c.z }, 20 + idx * 10, col, 4 + idx * 0.6, 0.28);
     sfxPlayer(p, idx >= 4 ? "sh.supernova_boom" : idx >= 2 ? "sh.rank_up" : "sh.level_up", idx >= 4 ? 0.9 : 1, 1);
     if (idx >= 2) shake(p, 0.1 + idx * 0.05, 0.4);
-    if (idx >= 4) later(10, () => waveFx(dim, p.location, 12, 4, 16));
   });
+}
+// توافق قديم: الشظية صارت تدلك على المعبد
+function ensureShard(p) { ensureTemple(p); }
+function useStarShard(p) {
+  const st = getState(p);
+  if (!needsDraw(st)) { notify(p, "§7The shard is silent. Your fate is already drawn.", 60); return; }
+  ensureTemple(p);
 }
 
 async function openPowerMenu(player) {
   const st0 = getState(player);
   if (st0.power) return openBook(player);
+  if (st0.powerless) {
+    await showForm(player, new ActionFormData().title("Unbound").body("§8The crystal stayed dark for you.§r\n\nYou carry no power, but your body grows with your rank:\n§c+ Strength§7 (more at Warrior and Legend)\n§b+ Speed§7 (more at Elite)\n§7+ Resistance at Commander\n\nFight with the mod's weapons and the Pendulum Strike.").button("§aOK"));
+    return;
+  }
   if (!player.hasTag("sh_menu")) {
-    // السحب يتم بالشظية (Star Shard). إذا ضاعت نعطيك وحدة جديدة
-    ensureShard(player);
-    notify(player, "§bUse your Star Shard to draw your power", 100);
+    // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو)
+    ensureTemple(player);
     return;
   }
 
@@ -774,19 +810,19 @@ async function showRanks(player) {
 const LORE_TITLE = "The Tale of the Fallen Star";
 const LORE = [
   ["The Night the Star Fell",
-    "A thousand years ago, when the night was longer than any night, the sky split open and a great star named \"Siraj al-Fajr\" fell. The earth shook seven times and the heart of the star scattered into seven shards, and every shard that landed awakened a power there.\n\nWhoever touched a shard came to carry a \"power\", and whoever carried a power was called a Shardbearer. You have touched its first trace, Novice. Go to the Trainer: the last one who still knows the way."],
+    "A thousand years ago, on the longest night the world remembers, a great star named \"Siraj al-Fajr\" fell from the sky. Its heart did not burn out: it froze into a crystal and sank into the earth, and wherever its light reached, temples grew around it.\n\nWhoever steps into that light draws a power, and the crystal shows its worth in color: white for common, then green, blue, violet, gold, and the red of the rarest. Once in two hundred souls the crystal stays dark. Those are the Unbound: no power answers them, so their own bodies grow stronger instead."],
   ["The Order of Dawn",
-    "The Shardbearers gathered and founded the \"Order of Dawn\", a brotherhood that keeps the powers from the wrong hands. They drew seven ranks, one for each shard: Novice, Trainee, Warrior, Elite, Commander, Legend, then the Master.\n\nA rank was never earned by birth or by money, but by what you defeat and what you learn. They built Sakura Village as their first home and planted pink trees around it so they would remember that beauty deserves protection."],
+    "The first who carried powers founded the \"Order of Dawn\" to keep them from the wrong hands. They set seven ranks, one for each night the star burned: Novice, Trainee, Warrior, Elite, Commander, Legend, and Master.\n\nNo rank was ever given by birth or gold, only by what you defeat and what you learn. The Trainer is the last of the Order who still teaches. They built Sakura Village as their first home and planted pink trees so they would remember that beauty deserves protection."],
   ["The Abyss",
-    "But the star did not fall alone. Behind it followed a black void, as a shadow follows its owner: \"the Abyss\". Whatever the Abyss touches loses its color, then its name.\n\nFrom its remains came the creatures you fight now: the Ember Imp was born from the ashes of burned villages, the Rust Guard guarded the temple until it forgot what it guarded, the Shadow Hound howls on the star's trail, and the Sand Scorpion's venom comes from the Abyss's own tail."],
+    "But the star did not fall alone. A black void followed it as a shadow follows its owner: \"the Abyss\". Whatever it touches loses its color, then its name.\n\nFrom it came the creatures you fight: the Ember Imp was born from the ashes of burned villages, the Rust Guard watched a temple until it forgot what it guarded, the Shadow Hound hunts on the star's old trail, and the Sand Scorpion carries the Abyss's own venom in its tail."],
+  ["The Rifts",
+    "The Abyss still breathes through wounds in the world: the Rifts. They open without warning, spread rot around them, and spill out waves of its creatures. At the end of each wave stands a Warden, and the color of the Rift tells its rank: blue for the Lowly, violet for the Vile, crimson for the Dread, and black-gold for the Cataclysm.\n\nSeal a Rift by defeating its Warden. Leave it open, and the Warden walks free."],
   ["Sunset Palace",
-    "When the attack grew fierce, the Order of Dawn fortified themselves in a palace on the edge of the horizon and called it \"Sunset Palace\", because the last light of their days fell upon it. The final commanders fought there with a spear of sunlight.\n\nThe palace fell, but the Abyss paid the price: it retreated into the depths, and the spear stayed with those who survived. Its towers still hold chests the guards could not carry away."],
+    "When the Abyss came for the Order, its last commanders made their stand in a palace on the edge of the horizon, \"Sunset Palace\", where the final light of their days fell. They fought with a spear of sunlight and a maul of living stone.\n\nThe palace fell, but the Abyss paid for it and sank back into the deep. Its towers still hide the weapons the guards could not carry away. Weapons remember: the more you fight with one, the more it gives back."],
   ["The Abyss Katana",
-    "Light alone was not enough to close the Abyss. So the last smith of the Order forged a sword from its own darkness: \"the Abyss Katana\". Every strike with it takes something from you, and every victory makes it sharper.\n\nHe buried it in the \"Dark Sword Shrine\" under guards who never sleep, and said: \"Only one who can carry it without being carried by it may lift it.\" Those who seek it will find the compass leads the way, and the compass is in your hands."],
-  ["Star Sovereign",
-    "It is said that one shard, the seventh, was given to no one. It slept in the sky waiting for the one who deserves it: the \"Star Sovereign\", who does not carry a power but a whole sky. Meteors fall at their signal, gravity bows to them, and black holes open and close at a word.\n\nHistory knew no more than three of them, and all vanished at the moment they unleashed the Supernova."],
+    "Light alone could not close the Abyss, so the last smith of the Order forged a blade from its own darkness: \"the Abyss Katana\". Every victory makes it sharper, and every strike takes a little of you.\n\nHe buried it in the \"Dark Sword Shrine\" beneath guards who never sleep and said: \"Only one who can carry it without being carried by it may lift it.\" The Explorer's Compass knows the way."],
   ["The Heart of the Abyss",
-    "You are now the \"Master\". And this is the truth the Trainer never told you: the Abyss is not an enemy from outside, it is the heart of the star that fell from it and still searches for its body. Everything you killed was a call from it.\n\nYou can close it forever, or return it to its place and let the star rise again. Your choice will write the final chapter.\n\n§7(The final chapter arrives in a future update)"],
+    "You are the \"Master\" now, and here is what the Trainer never said: the Abyss is not an enemy from outside. It is the rest of the fallen star, still searching for its heart, the crystal in the temples. Every Rift is it reaching out; every creature is its call.\n\nYou can close it forever, or return the heart and let the star rise again. Your choice will write the final chapter.\n\n§7(The final chapter arrives in a future update)"],
 ];
 async function openLore(player) {
   const st = getState(player);
@@ -847,7 +883,7 @@ async function showStatus(player) {
         b += `§8${i + 1}. ${s.name} §c(unlocks at power level ${s.unlock}${tr && tr.status === "done" ? "" : " + training"})\n`;
       }
     });
-  } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
+  } else b += st.powerless ? "\n§8Unbound§7: no power. Your body grows stronger and faster with each rank.\n" : "\n§7You have no power yet. Step on the crystal in the Star Temple.\n";
   b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy once: a light starts swinging above it and a meter appears at the top. Hit it again when the light passes the green mark (the middle of the meter). Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
@@ -969,7 +1005,8 @@ async function trainerTalk(player) {
   const st = getState(player);
   sfxPlayer(player, "sh.talk");
   if (!st.power) {
-    notify(player, "§7Open the Evolution Book or use your Star Shard first", 80);
+    notify(player, st.powerless ? "§7You are Unbound: I have no power to train. Fight on." : "§7Go to the Star Temple and step on its crystal first", 80);
+    if (st.powerless) return;
     return openPowerMenu(player);
   }
   const pw = POWERS[st.power];
@@ -1080,7 +1117,7 @@ function announceUps(player, ups) {
       if (LORE[u.rank]) say(player, `§d[Story] A new chapter unlocked: "${LORE[u.rank][0]}". Open the Evolution Book > [World Story]`);
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
-      try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
+      try { if (needsDraw(getState(player))) later(60, () => ensureTemple(player)); } catch (e) { /* */ }
       if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7No item needed. Hit an enemy once: a small light starts swinging above its head and a meter appears at the top of your screen. Hit the same enemy again when the light passes the middle (green mark). Each perfect hit makes the next swing faster and the strike stronger. Practice: /scriptevent sh:pendulum"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
     }
   }
@@ -1090,6 +1127,11 @@ function announceUps(player, ups) {
 function applyVitality(p, fill) {
   try {
     const st = getState(p);
+    if (st.powerless) {
+      p.addEffect("strength", 140, { amplifier: st.rank >= 5 ? 2 : st.rank >= 2 ? 1 : 0, showParticles: false });
+      p.addEffect("speed", 140, { amplifier: st.rank >= 3 ? 1 : 0, showParticles: false });
+      if (st.rank >= 4) p.addEffect("resistance", 140, { amplifier: 0, showParticles: false });
+    }
     const bonus = rankHealthBonus(st.rank);
     if (bonus <= 0) { try { p.removeEffect("health_boost"); } catch (e) { /* */ } return; }
     p.addEffect("health_boost", 600, { amplifier: Math.max(0, bonus / 4 - 1), showParticles: false });
@@ -3975,8 +4017,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
       }
       if (!st.power) {
         const s4 = getState(p);
-        if (!s4.shardDropped) { s4.shardDropped = true; saveState(p, s4); later(100, () => shardMeteor(p)); }
-        else ensureShard(p);
+        if (needsDraw(s4)) later(100, () => ensureTemple(p));
       }
     } catch (e) { /* */ }
   }, 60);
@@ -4664,11 +4705,12 @@ const COMPASS_TARGETS = [
   { key: "palace", name: "Sunset Palace" },
   { key: "ruins", name: "Temple Ruins" },
   { key: "village", name: "Sakura Village" },
+  { key: "temple", name: "Star Temple" },
   { key: "trainer", name: "Trainer" },
   { key: "rift", name: "Open Rift" },
   { key: "nearest", name: "Nearest (any destination)" },
 ];
-const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine" };
+const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple" };
 const structCache = { tick: -9999, list: [] };
 function getStructs() {
   if (system.currentTick - structCache.tick > 100) {
@@ -4805,7 +4847,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     if (!p || p.typeId !== "minecraft:player") return;
     const msg = (ev.message || "").trim();
     if (ev.id === "sh:power") {
-      if (!POWERS[msg]) { say(p, `§cUse: ${POWER_KEYS.join(" ")}`); return; }
+      if (msg === "unbound") { const st = getState(p); st.power = null; st.powerless = true; saveState(p, st); applyVitality(p, true); say(p, "§8You are Unbound"); return; }
+      if (!POWERS[msg]) { say(p, `§cUse: ${POWER_KEYS.join(" ")} unbound`); return; }
       grantPower(p, msg);
     } else if (ev.id === "sh:unlock") {
       const st = getState(p);
@@ -4824,8 +4867,11 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }
 
-    } else if (ev.id === "sh:shard") {
-      giveItem(p, "sh:star_shard"); say(p, "§bStar Shard added");
+    } else if (ev.id === "sh:shard" || ev.id === "sh:temple") {
+      if (msg === "here" || ev.id === "sh:temple") { buildTemple(p, (rec) => guideTemple(p, rec)); say(p, "§bA Star Temple is rising near you"); }
+      else ensureTemple(p);
+    } else if (ev.id === "sh:redraw") {
+      const st = getState(p); st.power = null; st.powerless = false; saveState(p, st); removeSkillItems(p); say(p, "§bYour power was released. Step on a temple crystal to draw again.");
     } else if (ev.id === "sh:weapons") {
       for (const wid of [KATANA, ...Object.keys(WEAPONS).filter((k) => k !== KATANA)]) if (!hasItem(p, wid)) giveItem(p, wid);
       giveItem(p, "sh:skill_scroll", 3);
