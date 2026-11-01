@@ -109,99 +109,67 @@
     "default": {
      "transitions": [
       {
-       "blades": "query.property('sh:state') == 1"
+       "beam": "query.property('sh:state') == 1"
       },
       {
-       "gaze": "query.property('sh:state') == 2"
+       "thorns": "query.property('sh:state') == 2"
       },
       {
-       "talon": "query.property('sh:state') == 3"
-      },
-      {
-       "vanish": "query.property('sh:state') == 4"
+       "breath": "query.property('sh:state') == 3"
       }
      ],
      "blend_transition": 0.18
     },
-    "blades": {
+    "beam": {
      "animations": [
-      "blades"
+      "beam"
      ],
      "transitions": [
       {
        "default": "query.property('sh:state') == 0"
       },
       {
-       "gaze": "query.property('sh:state') == 2"
+       "thorns": "query.property('sh:state') == 2"
       },
       {
-       "talon": "query.property('sh:state') == 3"
-      },
-      {
-       "vanish": "query.property('sh:state') == 4"
+       "breath": "query.property('sh:state') == 3"
       }
      ],
-     "blend_transition": 0.12
+     "blend_transition": 0.14
     },
-    "gaze": {
+    "thorns": {
      "animations": [
-      "gaze"
+      "thorns"
      ],
      "transitions": [
       {
        "default": "query.property('sh:state') == 0"
       },
       {
-       "blades": "query.property('sh:state') == 1"
+       "beam": "query.property('sh:state') == 1"
       },
       {
-       "talon": "query.property('sh:state') == 3"
-      },
-      {
-       "vanish": "query.property('sh:state') == 4"
+       "breath": "query.property('sh:state') == 3"
       }
      ],
-     "blend_transition": 0.12
+     "blend_transition": 0.14
     },
-    "talon": {
+    "breath": {
      "animations": [
-      "talon"
+      "breath"
      ],
      "transitions": [
       {
        "default": "query.property('sh:state') == 0"
       },
       {
-       "blades": "query.property('sh:state') == 1"
+       "beam": "query.property('sh:state') == 1"
       },
       {
-       "gaze": "query.property('sh:state') == 2"
-      },
-      {
-       "vanish": "query.property('sh:state') == 4"
+       "thorns": "query.property('sh:state') == 2"
       }
      ],
-     "blend_transition": 0.12
-    },
-    "vanish": {
-     "animations": [
-      "vanish"
-     ],
-     "transitions": [
-      {
-       "default": "query.property('sh:state') == 0"
-      },
-      {
-       "blades": "query.property('sh:state') == 1"
-      },
-      {
-       "gaze": "query.property('sh:state') == 2"
-      },
-      {
-       "talon": "query.property('sh:state') == 3"
-      }
-     ],
-     "blend_transition": 0.12
+     "blend_transition": 0.14
     }
    }
   }

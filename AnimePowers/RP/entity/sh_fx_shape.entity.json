@@ -75,7 +75,11 @@
     "s62": "geometry.sh_shape_draw_legendary",
     "s63": "geometry.sh_shape_draw_mythic",
     "s64": "geometry.sh_shape_draw_void",
-    "s65": "geometry.sh_shape_slash_silver"
+    "s65": "geometry.sh_shape_slash_silver",
+    "s66": "geometry.sh_shape_beam_orange",
+    "s67": "geometry.sh_shape_seer_thorn",
+    "s68": "geometry.sh_shape_root_spike",
+    "s69": "geometry.sh_shape_soul_orb"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

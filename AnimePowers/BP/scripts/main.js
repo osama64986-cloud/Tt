@@ -873,8 +873,8 @@ const MONSTER_INFO = [
   ["sh:ember_imp", "Ember Imp", "Lowly to Cataclysm", "Close: a red circle marks where it will pounce, then it rakes you with fiery claws. Far (7-13 blocks): it charges a fireball and lobs it; a red circle shows where it lands, so move!"],
   ["sh:rust_guard", "Rust Guard", "Lowly to Cataclysm", "A red circle grows around it before its ground slam, so step out. Up close it sweeps with crystal fists. Far (6-14 blocks): it tears out a boulder and throws it; dodge the red circle."],
   ["sh:shadow_hound", "Shadow Hound", "Lowly to Cataclysm", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
-  ["sh:gloomhorn", "Gloomhorn", "Grim to Cataclysm", "A spectral stag with an open ribcage and a beating heart inside. It scrapes the ground and a red line shows where it will CHARGE, so step aside. From afar its antler lanterns spit homing soul fire. Too close and it rears up: a circle grows, then it STOMPS and roots you in place."],
-  ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one great eye and a halo of blades. It raises its arms and throws its HALO BLADES one after another. It can vanish and step out of a mirror behind you to rake you. When a thin amber line links its eye to you, MOVE: the JUDGEMENT GAZE follows you, locks, and then fires."],
+  ["sh:gloomhorn", "Gloomhorn", "Grim to Cataclysm", "A spectral stag with an open ribcage and a beating heart inside. It scrapes the ground and a red line shows where it will CHARGE, so step aside. From afar its antler lanterns release homing SOUL ORBS. Too close and it rears up: a circle grows, then it STOMPS and spectral ROOTS burst from the ground and bind you."],
+  ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one round eye. When it raises its hand in front of the eye, an ORANGE BEAM gathers: the aim locks a moment before it fires, so sidestep. From 6-7 blocks away it lifts its arms and THORNS erupt from the ground one after another toward you, then ring where you stood. Up close it exhales a FROST BREATH: your screen freezes like powder snow and you slow down, but you can still fight."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -5168,7 +5168,10 @@ function gloomTick(e, st) {
     }
     if (st.t >= 20) {
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
-      for (const sx of [-1, 1]) soulOrbs.push({ dim, pos: { x: L.x + r.x * sx * 1.1 + f.x * 0.6, y: L.y + 2.7, z: L.z + r.z * sx * 1.1 + f.z * 0.6 }, tgt: tp, by: e, life: 80 });
+      for (const sx of [-1, 1]) {
+        const pos = { x: L.x + r.x * sx * 1.1 + f.x * 0.6, y: L.y + 2.7, z: L.z + r.z * sx * 1.1 + f.z * 0.6 };
+        soulOrbs.push({ dim, pos, tgt: tp, by: e, life: 80, fx: shapeFx(dim, "soul_orb", pos, { r: 0.42, s: 260, life: 90 }) });
+      }
       sfx(dim, "sh.blackhole", L, 1, 1.4);
       grimEnd(e, st, 60);
     }
@@ -5177,7 +5180,16 @@ function gloomTick(e, st) {
   if (st.skill === "stomp") {
     if (st.t === 12) {
       sfx(dim, "sh.guard_slam", L, 1.5, 0.6); sfx(dim, "sh.collapse", L, 0.9, 0.8);
-      waveFx(dim, L, 6, 1, 14); rockBurst(dim, L, 10, 1);
+      waveFx(dim, L, 6, 1, 14); rockBurst(dim, L, 6, 0.9);
+      for (const [rr, n, dl] of [[2.6, 7, 0], [4.8, 11, 3]]) {
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rr, x = L.x + Math.cos(a) * rr, z = L.z + Math.sin(a) * rr, y = groundAt(dim, x, z, L.y);
+          later(dl + (i % 3), () => {
+            const rs = shapeFx(dim, "root_spike", { x, y: y - 0.7, z }, { r: 0.3, yaw: Math.random() * 360, p: (Math.random() - 0.5) * 20, life: 30 });
+            if (rs) tween(5, 1, (q) => { setShape(rs, "sh:r", 0.3 + 0.6 * q); moveShape(rs, { x, y: y - 0.7 + 0.7 * q, z }); });
+          });
+        }
+      }
       for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; for (const rr of [2.5, 4.5]) glow(dim, { x: L.x + Math.cos(a) * rr, y: L.y + 0.2, z: L.z + Math.sin(a) * rr }, { color: VIOLET, size: 0.3, life: 1.2, rise: 1.6 }); }
       for (const pl of dim.getPlayers({ location: L, maxDistance: 6 })) {
         hurtPlayer(pl, 7, e);
@@ -5194,23 +5206,51 @@ system.runInterval(() => {
     const o = soulOrbs[i];
     try {
       o.life -= 2;
-      if (o.life <= 0 || !o.tgt || !valid(o.tgt)) { burst(o.dim, o.pos, 6, SOUL, 1.5, 0.15); soulOrbs.splice(i, 1); continue; }
+      if (o.life <= 0 || !o.tgt || !valid(o.tgt)) { burst(o.dim, o.pos, 6, SOUL, 1.5, 0.15); removeFx(o.fx); soulOrbs.splice(i, 1); continue; }
       const c = center3(o.tgt), dx = c.x - o.pos.x, dy = c.y - o.pos.y, dz = c.z - o.pos.z, l = Math.hypot(dx, dy, dz) || 1;
       if (l < 1.1) {
         hurtPlayer(o.tgt, 6, valid(o.by) ? o.by : undefined);
         try { o.tgt.addEffect("slowness", 60, { amplifier: 1 }); } catch (err) { /* */ }
         burst(o.dim, o.pos, 18, SOUL, 3, 0.22); popShape(o.dim, "nova", o.pos, 0.2, 1.0, 6, { s: 400 });
-        sfx(o.dim, "sh.blackhole_end", o.pos, 1, 1.5); soulOrbs.splice(i, 1); continue;
+        sfx(o.dim, "sh.blackhole_end", o.pos, 1, 1.5); removeFx(o.fx); soulOrbs.splice(i, 1); continue;
       }
       const sp = 0.55;
       o.pos = { x: o.pos.x + dx / l * sp, y: o.pos.y + dy / l * sp, z: o.pos.z + dz / l * sp };
+      moveShape(o.fx, o.pos);
       glow(o.dim, o.pos, { color: SOUL, size: 0.45, life: 0.25 });
       glow(o.dim, o.pos, { color: [0.9, 1, 1], size: 0.2, life: 0.4 });
     } catch (err) { soulOrbs.splice(i, 1); }
   }
 }, 2);
 
-// ── الرائي الأجوف: شفرات الهالة، خطوة المرآة، نظرة الحكم ──
+// ── الرائي الأجوف: الشعاع البرتقالي، أشواك الأرض، زفير التجميد ──
+const ORANGE = [1.0, 0.55, 0.12], ICE = [[0.92, 0.97, 1.0], [0.72, 0.88, 1.0], [0.52, 0.74, 1.0], [0.85, 0.95, 1.0]];
+const frostBlocks = new Map();   // "dim|x,y,z" -> { dim, pos, until }  ثلج ناعم مؤقت حول اللاعب المتجمد
+function freezePlayer(pl) {
+  // الثلج الناعم الحقيقي يخلي شاشة اللاعب تتجمد (مثل لما يطب بيه) ويبطئه، وينشال قبل ما يوصل للضرر
+  const dim = pl.dimension, now = system.currentTick;
+  for (const dy of [0, 1]) {
+    const pos = { x: Math.floor(pl.location.x), y: Math.floor(pl.location.y) + dy, z: Math.floor(pl.location.z) };
+    const key = `${dim.id}|${pos.x},${pos.y},${pos.z}`;
+    try {
+      const b = dim.getBlock(pos);
+      if (!b) continue;
+      if (b.typeId === "minecraft:powder_snow") { const f = frostBlocks.get(key); if (f) f.until = now + 70; continue; }
+      if (!b.isAir) continue;
+      b.setType("minecraft:powder_snow");
+      frostBlocks.set(key, { dim, pos, until: now + 70 });
+    } catch (e) { /* */ }
+  }
+  try { pl.addEffect("slowness", 60, { amplifier: 2, showParticles: false }); } catch (e) { /* */ }
+}
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const [key, f] of frostBlocks) {
+    if (now < f.until) continue;
+    try { const b = f.dim.getBlock(f.pos); if (b && b.typeId === "minecraft:powder_snow") b.setType("minecraft:air"); } catch (e) { /* */ }
+    frostBlocks.delete(key);
+  }
+}, 5);
 function seerTick(e, st) {
   const dim = e.dimension, L = e.location;
   if (Math.random() < 0.3) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.8, y: L.y + 0.3, z: L.z + (Math.random() - 0.5) * 0.8 }, { color: VIOLET, size: 0.14, life: 0.8, rise: 0.4 });
@@ -5219,81 +5259,112 @@ function seerTick(e, st) {
     if (st.cd > 0) return;
     const np = nearestPlayer(e, 24);
     if (!np) { st.cd = 10; return; }
-    st.target = np.p; st.t = 0;
+    st.target = np.p; st.t = 0; st.phase = 1;
     const r = Math.random();
-    if (np.d <= 3.5) { st.skill = "talon"; st.phase = 1; st.hit = 0; setMState(e, 3); }
-    else if (np.d <= 14 && r < 0.3) { st.skill = "mirror"; st.phase = 1; setMState(e, 4); shapeFx(dim, "afterimage", { ...L }, { r: 1.1, yaw: yawOf(L, np.p.location), life: 16 }); sfx(dim, "sh.kat_step", L, 1, 0.7); }
-    else if (r < 0.65) { st.skill = "blades"; st.phase = 1; st.shot = 0; setMState(e, 1); sfx(dim, "sh.chorus", L, 1, 1.2); }
-    else { st.skill = "gaze"; st.phase = 1; setMState(e, 2); sfx(dim, "sh.const_mark", L, 1, 0.6); }
+    if (np.d >= 2 && np.d <= 8 && (np.d < 5 ? r < 0.65 : r < 0.3)) { st.skill = "breath"; setMState(e, 3); sfx(dim, "sh.chorus", L, 1, 0.5); st.frozen = new Set(); }
+    else if (np.d <= 9.5) { st.skill = "thorns"; setMState(e, 2); sfx(dim, "sh.guard_windup", L, 1, 1.3); }
+    else if (np.d <= 22) { st.skill = "beam"; setMState(e, 1); sfx(dim, "sh.supernova_charge", L, 0.7, 1.4); }
+    else { st.phase = 0; st.cd = 10; }
     return;
   }
   const tp = valid(st.target) ? st.target : undefined;
   st.t += 2;
-  const eye = (to) => { const f = fwdTo(L, to); return { x: L.x + f.x * 0.35, y: L.y + 2.45, z: L.z + f.z * 0.35 }; };
-  if (st.skill === "blades") {
-    if (st.t >= 16 && st.shot < 3 && (st.t - 16) % 6 === 0 && tp) {
-      st.shot++;
-      const f = fwdTo(L, tp.location), r = { x: -f.z, z: f.x }, side = st.shot === 2 ? 0 : st.shot === 1 ? -1 : 1;
-      const from = { x: L.x - f.x * 0.4 + r.x * side * 1.3, y: L.y + 2.6 + (side === 0 ? 0.8 : 0), z: L.z - f.z * 0.4 + r.z * side * 1.3 };
-      const to = center3(tp);
-      const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
-      flyShape(dim, "slash_violet", from, { x: dx / l, y: dy / l, z: dz / l }, 1.3, l + 1.5, { r: 0.55, w: 1400 }, undefined, () => {
-        for (const pl of dim.getPlayers({ location: to, maxDistance: 1.6 })) { hurtPlayer(pl, 5, valid(e) ? e : undefined); burst(dim, center3(pl), 8, VIOLET, 2, 0.18); }
-      });
-      sfx(dim, "sh.kat_wave", from, 0.8, 1.5);
+  // ── 1) الشعاع البرتقالي: الكف قدام العين، يتجمع ثانية، التصويب يثبت قبل الإطلاق بثلث ثانية ──
+  if (st.skill === "beam") {
+    if (tp && st.t <= 14) st.aim = center3(tp);
+    const f = st.aim ? fwdTo(L, st.aim) : { x: 0, z: 1 };
+    const hand = { x: L.x + f.x * 0.95, y: L.y + 2.3, z: L.z + f.z * 0.95 };
+    if (st.t < 20) {
+      for (let i = 0; i < 3; i++) {
+        const a = Math.random() * Math.PI * 2, rr = 0.9 - st.t * 0.04;
+        pix(dim, { x: hand.x + Math.cos(a) * rr, y: hand.y + Math.sin(a) * rr, z: hand.z }, { color: i % 2 ? ORANGE : [1, 0.85, 0.5], size: 0.16, life: 0.25, speed: 0.1 });
+      }
+      if (st.t >= 14) glow(dim, hand, { color: ORANGE, size: 0.5, life: 0.2 });
     }
-    if (st.t >= 34) grimEnd(e, st, 60);
+    if (st.t === 20 && st.aim) {
+      const dx = st.aim.x - hand.x, dy = st.aim.y - hand.y, dz = st.aim.z - hand.z, l = Math.hypot(dx, dy, dz) || 1;
+      const d = { x: dx / l, y: dy / l, z: dz / l };
+      let len = 0;
+      for (let k = 1; k <= 22; k++) { if (!airAt(dim, hand.x + d.x * k, hand.y + d.y * k, hand.z + d.z * k)) break; len = k; }
+      len = Math.max(len, 1);
+      const yaw = dirYaw(d), pitch = dirPitch(d);
+      for (let k = 0; k < len; k++) shapeFx(dim, "beam_orange", { x: hand.x + d.x * (k + 0.5), y: hand.y + d.y * (k + 0.5), z: hand.z + d.z * (k + 0.5) }, { r: 1, yaw, p: pitch, life: 10 });
+      const end = { x: hand.x + d.x * len, y: hand.y + d.y * len, z: hand.z + d.z * len };
+      popShape(dim, "nova", end, 0.2, 1.1, 6, { s: 400 });
+      burst(dim, end, 16, ORANGE, 3, 0.2);
+      sfx(dim, "sh.supernova_boom", L, 0.8, 1.7);
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 24 })) {
+        if (segDist(center3(pl), hand, end) > 0.95) continue;
+        hurtPlayer(pl, 9, e);
+        try { pl.setOnFire(4, true); } catch (err) { /* */ }
+        shake(pl, 0.25, 0.3); notify(pl, "§6The Seer's beam burns you!", 40);
+      }
+    }
+    if (st.t >= 30) grimEnd(e, st, 70);
     return;
   }
-  if (st.skill === "gaze") {
-    if (tp && st.t <= 20) st.aim = center3(tp);
-    if (st.aim) {
-      const a = eye(st.aim), dir = { x: st.aim.x - a.x, y: st.aim.y - a.y, z: st.aim.z - a.z }, l = Math.hypot(dir.x, dir.y, dir.z) || 1;
-      const b = { x: a.x + dir.x / l * 24, y: a.y + dir.y / l * 24, z: a.z + dir.z / l * 24 };
-      if (st.t < 30 && st.t % 2 === 0) pixLine(dim, a, b, st.t > 20 ? WARN : AMBER, 30, 0.1, 0.2);
-      if (st.t === 30) {
-        for (const [c, sz] of [[[1, 0.95, 0.75], 0.32], [VIOLET, 0.2]]) pixLine(dim, a, b, c, 60, sz, 0.6);
-        popShape(dim, "nova", a, 0.2, 1.2, 6, { s: 400 });
-        sfx(dim, "sh.supernova_boom", L, 0.9, 1.6);
-        for (const pl of dim.getPlayers({ location: L, maxDistance: 26 })) {
-          if (segDist(center3(pl), a, b) > 1.1) continue;
-          hurtPlayer(pl, 10, e);
-          try { pl.setOnFire(3, true); } catch (err) { /* */ }
-          shake(pl, 0.3, 0.3); notify(pl, "§6The Judgement Gaze burns you!", 40);
+  // ── 2) أشواك الأرض: من بعد 5-9 بلوكات، شوكات تطلع ورا بعض بخط لمكانك، وحلقة حواليك بالأخير ──
+  if (st.skill === "thorns") {
+    if (st.t === 10 && tp) { st.spot = { ...tp.location }; st.from = { ...L }; st.n = 0; }
+    if (st.spot && st.t >= 12) {
+      const f = fwdTo(st.from, st.spot), dist = Math.min(11, Math.hypot(st.spot.x - st.from.x, st.spot.z - st.from.z) + 1);
+      const k = (st.t - 12) / 2;
+      const thorn = (x, z, delay) => {
+        const y = groundAt(dim, x, z, st.from.y);
+        glow(dim, { x, y: y + 0.1, z }, { color: VIOLET, size: 0.35, life: 0.3, rise: 0.4 });
+        later(delay, () => {
+          const s2 = shapeFx(dim, "seer_thorn", { x, y: y - 0.6, z }, { r: 0.3, yaw: Math.random() * 360, life: 18 });
+          if (s2) tween(5, 1, (q) => { setShape(s2, "sh:r", 0.3 + 0.75 * q); moveShape(s2, { x, y: y - 0.6 + 0.6 * q, z }); });
+          for (let i = 0; i < 4; i++) pix(dim, { x: x + (Math.random() - 0.5), y: y + 0.2, z: z + (Math.random() - 0.5) }, { color: i % 2 ? VIOLET : [0.9, 0.75, 1], size: 0.16, life: 0.5, speed: 1.2, rise: 1.0 });
+          sfx(dim, "sh.guard_slam", { x, y, z }, 0.5, 1.6);
+          for (const pl of dim.getPlayers({ location: { x, y: y + 1, z }, maxDistance: 1.4 })) {
+            const hc = st.hitT ? (st.hitT.get(pl.id) || 0) : 2;
+            if (hc >= 2) continue;
+            if (st.hitT) st.hitT.set(pl.id, hc + 1);
+            hurtPlayer(pl, 6, valid(e) ? e : undefined);
+            try { pl.applyKnockback({ x: 0, z: 0 }, 0.55); } catch (err) { /* */ }
+            notify(pl, "§5Thorns erupt beneath you!", 30);
+          }
+        });
+      };
+      if (!st.hitT) st.hitT = new Map();
+      const along = 1.5 + k;
+      if (along <= dist) thorn(st.from.x + f.x * along, st.from.z + f.z * along, 4);
+      else if (!st.ring) {
+        st.ring = true;
+        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; thorn(st.spot.x + Math.cos(a) * 1.6, st.spot.z + Math.sin(a) * 1.6, 6 + (i % 2) * 2); }
+      }
+    }
+    if (st.t >= 44) { st.ring = false; st.spot = undefined; st.hitT = undefined; grimEnd(e, st, 70); }
+    return;
+  }
+  // ── 3) زفير التجميد: مخروط بكسلات ثلجية مزرقة، والشاشة تتجمد مثل الثلج الناعم + بطء، بدون ضرر وبدون تجميد كامل ──
+  if (st.skill === "breath") {
+    if (tp && st.t <= 30) st.aim = center3(tp);
+    if (st.t >= 8 && st.t <= 46 && st.aim) {
+      const mouth = { x: L.x, y: L.y + 2.2, z: L.z }, f = fwdTo(L, st.aim);
+      mouth.x += f.x * 0.55; mouth.z += f.z * 0.55;
+      const dy = (st.aim.y - mouth.y) / Math.max(1, Math.hypot(st.aim.x - mouth.x, st.aim.z - mouth.z));
+      for (let i = 0; i < 12; i++) {
+        const dd = 0.4 + Math.random() * 8, spread = dd * 0.32, side = (Math.random() - 0.5) * 2 * spread, up = (Math.random() - 0.5) * spread;
+        pix(dim, { x: mouth.x + f.x * dd - f.z * side, y: mouth.y + dy * dd + up, z: mouth.z + f.z * dd + f.x * side }, { color: ICE[i % 4], size: 0.15 + Math.random() * 0.06, life: 0.5, speed: 0.4, rise: -0.1 });
+      }
+      if (st.t % 6 === 0) { try { dim.spawnParticle("minecraft:snowflake_particle", { x: mouth.x + f.x * 2, y: mouth.y, z: mouth.z + f.z * 2 }); } catch (err) { /* */ } }
+      if (st.t % 4 === 0) {
+        for (const pl of dim.getPlayers({ location: L, maxDistance: 9 })) {
+          const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+          if ((vx / l) * f.x + (vz / l) * f.z < 0.86) continue;          // داخل مخروط ~30°
+          freezePlayer(pl);
+          if (!st.frozen.has(pl.id)) {
+            st.frozen.add(pl.id);
+            try { pl.camera.fade({ fadeColor: { red: 0.75, green: 0.9, blue: 1 }, fadeTime: { fadeInTime: 0.1, holdTime: 0.15, fadeOutTime: 0.7 } }); } catch (err) { /* */ }
+            notify(pl, "§bFrost Breath! You are freezing...", 50);
+            sfx(dim, "sh.blackhole_end", pl.location, 0.6, 1.8);
+          }
         }
       }
     }
-    if (st.t >= 36) grimEnd(e, st, 80);
-    return;
-  }
-  if (st.skill === "mirror") {
-    if (st.t === 6 && tp) {
-      const spot = behindSpot(tp, L);
-      if (spot) { safeTeleport(e, spot, tp.location); shapeFx(dim, "afterimage", spot, { r: 1.1, yaw: yawOf(spot, tp.location), life: 10 }); }
-      setMState(e, 3); st.hit = 0; sfx(dim, "sh.kat_step", e.location, 1.1, 1.2);
-    }
-    if (st.t >= 10 && st.hit === 0) {
-      st.hit = 1;
-      for (const pl of dim.getPlayers({ location: e.location, maxDistance: 3.2 })) {
-        hurtPlayer(pl, 7, e);
-        try { pl.addEffect("blindness", 40, { amplifier: 0 }); } catch (err) { /* */ }
-        notify(pl, "§5It stepped out of a mirror behind you!", 40);
-      }
-      popShape(dim, "claw_marks", center3(e), 0.6, 1.2, 6, { yaw: dirYaw({ ...fwdTo(e.location, tp ? tp.location : L), y: 0 }) });
-    }
-    if (st.t >= 22) grimEnd(e, st, 70);
-    return;
-  }
-  if (st.skill === "talon") {
-    for (const at of [6, 10]) {
-      if (st.t === at) {
-        const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
-        popShape(dim, "claw_marks", { x: L.x + f.x * 1.3, y: L.y + 1.4, z: L.z + f.z * 1.3 }, 0.6, 1.1, 6, { yaw: dirYaw({ x: -f.x, y: 0, z: -f.z }), a: at === 6 ? 30 : -30 });
-        sfx(dim, "sh.dagger_hit", L, 1, 0.8);
-        for (const pl of dim.getPlayers({ location: L, maxDistance: 3.3 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 0.6, 0.2); }
-      }
-    }
-    if (st.t >= 14) grimEnd(e, st, 40);
+    if (st.t >= 50) grimEnd(e, st, 90);
   }
 }
 system.runInterval(() => {

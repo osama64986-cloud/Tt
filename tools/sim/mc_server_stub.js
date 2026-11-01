@@ -571,10 +571,11 @@ export const __sim = {
     // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
     {
       console.log("\nوحوش Grim:");
-      const want = { "sh:gloomhorn": { 3: "ضربة الجذور", 2: "الاندفاع", 4: "فوانيس الروح" }, "sh:hollow_seer": { 3: "المخالب", 1: "شفرات الهالة", 2: "نظرة الحكم", 4: "خطوة المرآة" } };
+      const want = { "sh:gloomhorn": { 3: "ضربة الجذور", 2: "الاندفاع", 4: "فوانيس الروح" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "أشواك الأرض", 3: "زفير التجميد" } };
+      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
-        for (const [dist, ticks] of [[2.5, 400], [9, 2400]]) {
+        for (const [dist, ticks] of plans[type]) {
           entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
           const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 90); entities.push(m);
           const d0 = stats.damage || 0;
@@ -584,12 +585,25 @@ export const __sim = {
             if (Math.hypot(m.location.x, m.location.z - dist) > 0.01 && t % 60 === 0) m.location = { x: 0, y: 64, z: dist };   // يرجع لمكانه (الاندفاع والمرآة يحركونه)
           }
           const dmg = Math.round((stats.damage || 0) - d0);
-          if (dist < 3) dmgNear = dmg; else dmgFar = dmg;
+          if (dist < 5) dmgNear = dmg; else dmgFar = dmg;
         }
         const names = Object.entries(want[type]).map(([k, v]) => `${v} ${seenStates.has(Number(k)) ? "✔" : "✖"}`).join(" | ");
         console.log(`  ${type.padEnd(16)} ${names} | ضرر قريب ${dmgNear} بعيد ${dmgFar}`);
         for (const [k, v] of Object.entries(want[type])) if (!seenStates.has(Number(k))) failures.push(`${type}: مهارة ${v} ما طلعت`);
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
+      }
+      {
+        entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
+        const sets0 = stats.blockSets || 0, d0 = stats.damage || 0;
+        const m = mkEntity("sh:hollow_seer", { x: 0, y: 64, z: 3 }, dims.overworld, 90); entities.push(m);
+        let breathSeen = false;
+        for (let t = 0; t < 3000 && !breathSeen; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === 3) breathSeen = true; }
+        const dBefore = stats.damage || 0; advance(60);
+        const snowSet = (stats.blockSets || 0) - sets0, breathDmg = Math.round((stats.damage || 0) - dBefore);
+        console.log(`  زفير التجميد: ثلج ناعم انحط = ${snowSet > 0 ? "✔" : "✖"} | ضرر وقت الزفير ${breathDmg}`);
+        if (breathSeen && snowSet === 0) failures.push("زفير التجميد ما جمّد الشاشة (ثلج ناعم)");
+        if (breathDmg > 0) failures.push("زفير التجميد صار يضر (لازم بس يبطئ)");
+        entities.length = 0; advance(120);
       }
       player._hp = 20; player._max = 20; player._valid = true; entities.length = 0;
     }

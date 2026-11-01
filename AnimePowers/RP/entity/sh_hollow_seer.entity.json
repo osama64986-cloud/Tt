@@ -14,10 +14,9 @@
       },
       "animations": {
         "idle": "animation.sh_hollow_seer.idle",
-        "blades": "animation.sh_hollow_seer.blades",
-        "gaze": "animation.sh_hollow_seer.gaze",
-        "talon": "animation.sh_hollow_seer.talon",
-        "vanish": "animation.sh_hollow_seer.vanish",
+        "beam": "animation.sh_hollow_seer.beam",
+        "thorns": "animation.sh_hollow_seer.thorns",
+        "breath": "animation.sh_hollow_seer.breath",
         "state": "controller.animation.sh_hollow_seer.state",
         "look": "animation.sh.look"
       },
