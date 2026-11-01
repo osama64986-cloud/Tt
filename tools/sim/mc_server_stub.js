@@ -57,7 +57,7 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
     addEffect(id, dur, o) { effectLog.push(id); stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l) { this.location = { x: l.x, y: l.y, z: l.z }; }, remove() { this._valid = false; }, kill() { this._valid = false; },
-    setProperty(k, v) { props[k] = v; }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
+    setProperty(k, v) { props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
     setRotation() {}, getRotation() { return { x: 0, y: 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },
@@ -573,8 +573,11 @@ export const __sim = {
       console.log("\nوحوش Grim:");
       const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" } };
       const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]] };
+      const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["beam_orange", "root_spike", "soul_orb"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
+        stats.shapeV = {};
         for (const [dist, ticks] of plans[type]) {
           entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
           const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 90); entities.push(m);
@@ -590,6 +593,9 @@ export const __sim = {
         const names = Object.entries(want[type]).map(([k, v]) => `${v} ${seenStates.has(Number(k)) ? "✔" : "✖"}`).join(" | ");
         console.log(`  ${type.padEnd(16)} ${names} | ضرر قريب ${dmgNear} بعيد ${dmgFar}`);
         for (const [k, v] of Object.entries(want[type])) if (!seenStates.has(Number(k))) failures.push(`${type}: مهارة ${v} ما طلعت`);
+        const shp = wantShapes[type].map((n) => `${n}×${stats.shapeV[SHP[n]] || 0}`).join(" ");
+        console.log(`  ${"".padEnd(16)} أشكال انرسمت: ${shp}`);
+        for (const n of wantShapes[type]) if (!stats.shapeV[SHP[n]]) failures.push(`${type}: الشكل ${n} ما انرسم`);
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }
       {

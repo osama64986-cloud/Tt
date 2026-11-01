@@ -1621,10 +1621,29 @@ function flyShape(dim, name, from, d, speed, maxDist, o = {}, onStep, onEnd) {
       dist += speed;
       pos.x = from.x + d.x * dist; pos.y = from.y + d.y * dist; pos.z = from.z + d.z * dist;
       let blocked = false;
-      try { const b = dim.getBlock({ x: Math.floor(pos.x), y: Math.floor(pos.y), z: Math.floor(pos.z) }); blocked = !!(b && !b.isAir && !b.isLiquid); } catch (err) { /* */ }
+      blocked = !airAt(dim, pos.x, pos.y, pos.z);
       const stop = blocked || dist >= maxDist || (onStep && onStep(pos, dist));
       moveShape(e, pos, yaw);
       if (stop) { system.clearRun(h); removeFx(e); if (onEnd) onEnd({ ...pos }, blocked); }
+    } catch (err) { system.clearRun(h); removeFx(e); }
+  }, 1);
+  return e;
+}
+// شكل يركض على الأرض ويتبع ارتفاعها (يصعد/ينزل بلوكة)، يوقف عند الجدار: onStep(pos) يرجع true حتى يوقف
+function runShape(dim, name, from, d, speed, maxDist, o = {}, onStep, onEnd) {
+  const yaw = dirYaw(d);
+  const e = shapeFx(dim, name, from, { ...o, yaw, life: Math.ceil(maxDist / speed) + 6 });
+  let dist = 0;
+  const pos = { ...from };
+  const h = system.runInterval(() => {
+    try {
+      dist += speed;
+      const x = from.x + d.x * dist, z = from.z + d.z * dist, gy = groundAt(dim, x, z, pos.y);
+      const wall = gy - pos.y > 1.2 || !airAt(dim, x, gy + 0.5, z) || !airAt(dim, x, gy + 1.5, z);
+      if (!wall) { pos.x = x; pos.z = z; pos.y = pos.y + (Math.max(pos.y - 3, gy) - pos.y) * 0.6; }
+      const stop = wall || dist >= maxDist || (onStep && onStep(pos, dist));
+      moveShape(e, pos, yaw);
+      if (stop) { system.clearRun(h); removeFx(e); if (onEnd) onEnd({ ...pos }, wall); }
     } catch (err) { system.clearRun(h); removeFx(e); }
   }, 1);
   return e;
@@ -4539,7 +4558,14 @@ function dangerZone(dim, loc, r, ticks) {
   return f;
 }
 function groundAt(dim, x, z, nearY) {
-  try { const t = dim.getTopmostBlock({ x: Math.floor(x), z: Math.floor(z) }); if (t && Math.abs(t.y + 1 - nearY) < 6) return t.y + 1; } catch (e) { /* */ }
+  try {
+    const t = dim.getTopmostBlock({ x: Math.floor(x), z: Math.floor(z) });
+    if (t) {
+      let y = t.y;
+      while (y > t.y - 4 && airAt(dim, x, y + 0.5, z)) y--;      // العشب والورد وطبقة الثلج مو أرض
+      if (Math.abs(y + 1 - nearY) < 6) return y + 1;
+    }
+  } catch (e) { /* */ }
   return nearY;
 }
 function playersNear(dim, loc, r) { try { return dim.getPlayers({ location: loc, maxDistance: r }); } catch (e) { return []; } }
@@ -5106,8 +5132,15 @@ function useCompass(p) {
 const SOUL = [0.4, 0.9, 1.0], AMBER = [1.0, 0.7, 0.2], WARN = [1.0, 0.25, 0.3];
 const gst = new Map();          // حالة كل وحش
 function fwdTo(from, to) { const dx = to.x - from.x, dz = to.z - from.z, l = Math.hypot(dx, dz) || 1; return { x: dx / l, z: dz / l }; }
+// بلوكات تنعبر (عشب، ورد، شتلات، طبقة ثلج، مشاعل...). Block.isSolid تجريبي بس (مو موجود بالنسخة المستقرة) فنعرفها بالاسم.
+const PASSABLE_RE = /(^|:|_)(short_grass|tall_grass|grass$|fern|large_fern|flower|tulip|dandelion|poppy|orchid|allium|azure_bluet|oxeye_daisy|cornflower|lily_of_the_valley|wither_rose|rose_bush|peony|lilac|sunflower|pitcher_plant|torchflower|pink_petals|wildflowers|leaf_litter|bush|deadbush|sapling|propagule|vine|snow_layer|torch|lantern|carpet|button|lever|rail|sign|banner|brown_mushroom$|red_mushroom$|fungus|roots$|sprouts|sugar_cane|kelp|seagrass|sea_pickle|wheat|carrots|potatoes|beetroot|melon_stem|pumpkin_stem|sweet_berry_bush|cocoa|nether_wart|pressure_plate|redstone_wire|redstone_torch|tripwire|string$|glow_lichen|sculk_vein|hanging_roots|cave_vines|spore_blossom|frame|web|structure_void|light_block|firefly_bush|cactus_flower)/;
 function airAt(dim, x, y, z) {
-  try { const b = dim.getBlock({ x: Math.floor(x), y: Math.floor(y), z: Math.floor(z) }); return !b || b.isAir || b.isLiquid || !b.isSolid; } catch (e) { return false; }
+  try {
+    const b = dim.getBlock({ x: Math.floor(x), y: Math.floor(y), z: Math.floor(z) });
+    if (!b || b.isAir || b.isLiquid) return true;
+    if (typeof b.isSolid === "boolean") return !b.isSolid;
+    return PASSABLE_RE.test(b.typeId);
+  } catch (e) { return false; }
 }
 function segDist(p, a, b) {
   const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, l2 = abx * abx + aby * aby + abz * abz || 1;
@@ -5187,17 +5220,17 @@ function gloomTick(e, st) {
     if (st.t <= 16) {
       if (!st.sp) {
         st.sp = shapeFx(dim, "spirit_stag", front, { r: 0.1, yaw, life: 24 });
-        tween(14, 1, (q) => setShape(st.sp, "sh:r", 0.1 + 0.9 * q));
+        tween(14, 1, (q) => setShape(st.sp, "sh:r", 0.1 + 1.4 * q));
       } else moveShape(st.sp, front, yaw);
       for (let i = 0; i < 3; i++) { const s = Math.random(); pix(dim, { x: H.x + (front.x - H.x) * s, y: H.y + (front.y + 1 - H.y) * s, z: H.z + (front.z - H.z) * s }, { color: i % 2 ? SOUL : [0.9, 1, 1], size: 0.15, life: 0.35, speed: 0.3 }); }
       glow(dim, H, { color: SOUL, size: 0.45, life: 0.2 });
     }
     const run = (from, dir, r, dmg) => {
       const hitS = new Set();
-      flyShape(dim, "spirit_stag", from, dir, 0.9, 18, { r }, (pos) => {
+      runShape(dim, "spirit_stag", from, dir, 0.9, 18, { r }, (pos) => {
         pix(dim, { x: pos.x, y: pos.y + 0.05, z: pos.z }, { color: SOUL, size: 0.18, life: 1.8, speed: 0 });     // آثار حوافر مضيئة
         glow(dim, { x: pos.x, y: pos.y + 1, z: pos.z }, { color: SOUL, size: 0.25, life: 0.4, rise: 0.4 });
-        for (const pl of dim.getPlayers({ location: { x: pos.x, y: pos.y + 1, z: pos.z }, maxDistance: 1.6 })) {
+        for (const pl of dim.getPlayers({ location: { x: pos.x, y: pos.y + 1, z: pos.z }, maxDistance: 1.3 + r * 0.4 })) {
           if (hitS.has(pl.id)) continue;
           hitS.add(pl.id); hurtPlayer(pl, dmg, valid(e) ? e : undefined);
           try { pl.applyKnockback({ x: dir.x * 1.4, z: dir.z * 1.4 }, 0.5); } catch (err) { /* */ }
@@ -5210,13 +5243,13 @@ function gloomTick(e, st) {
     };
     if (st.t === 18) {
       removeFx(st.sp); st.sp = undefined;
-      run(front, { x: f.x, y: 0, z: f.z }, 1.0, 8);
+      run(front, { x: f.x, y: 0, z: f.z }, 1.5, 8);
       sfx(dim, "sh.stardash", L, 1.1, 1.3);
     }
     if (st.t === 26) {
       for (const sx of [-1, 1]) {
         const ang = Math.atan2(f.z, f.x) + sx * 0.42, dir = { x: Math.cos(ang), y: 0, z: Math.sin(ang) };
-        run({ x: L.x + dir.x * 1.2, y: L.y, z: L.z + dir.z * 1.2 }, dir, 0.65, 5);
+        run({ x: L.x + dir.x * 1.6, y: L.y, z: L.z + dir.z * 1.6 }, dir, 1.0, 5);
       }
       sfx(dim, "sh.stardash", L, 0.9, 1.6);
     }
@@ -5336,7 +5369,7 @@ function seerTick(e, st) {
       for (let k = 1; k <= 22; k++) { if (!airAt(dim, hand.x + d.x * k, hand.y + d.y * k, hand.z + d.z * k)) break; len = k; }
       len = Math.max(len, 1);
       const yaw = dirYaw(d), pitch = dirPitch(d);
-      for (let k = 0; k < len; k++) shapeFx(dim, "beam_orange", { x: hand.x + d.x * (k + 0.5), y: hand.y + d.y * (k + 0.5), z: hand.z + d.z * (k + 0.5) }, { r: 1, yaw, p: pitch, life: 10 });
+      for (let k = 0; k * 1.43 < len; k++) { const m = Math.min(len - 0.3, k * 1.43 + 0.715); shapeFx(dim, "beam_orange", { x: hand.x + d.x * m, y: hand.y + d.y * m, z: hand.z + d.z * m }, { r: 1.4, yaw, p: pitch, life: 10 }); }
       const end = { x: hand.x + d.x * len, y: hand.y + d.y * len, z: hand.z + d.z * len };
       popShape(dim, "nova", end, 0.2, 1.1, 6, { s: 400 });
       burst(dim, end, 16, ORANGE, 3, 0.2);
@@ -5361,8 +5394,8 @@ function seerTick(e, st) {
         const y = groundAt(dim, x, z, st.from.y);
         glow(dim, { x, y: y + 0.1, z }, { color: VIOLET, size: 0.35, life: 0.3, rise: 0.4 });
         later(delay, () => {
-          const s2 = shapeFx(dim, "root_spike", { x, y: y - 0.7, z }, { r: 0.3, yaw: Math.random() * 360, p: (Math.random() - 0.5) * 16, life: 22 });
-          if (s2) tween(5, 1, (q) => { setShape(s2, "sh:r", 0.3 + 0.7 * q); moveShape(s2, { x, y: y - 0.7 + 0.7 * q, z }); });
+          const s2 = shapeFx(dim, "root_spike", { x, y: y - 1.2, z }, { r: 0.4, yaw: Math.random() * 360, p: (Math.random() - 0.5) * 16, life: 22 });
+          if (s2) tween(5, 1, (q) => { setShape(s2, "sh:r", 0.4 + 1.4 * q); moveShape(s2, { x, y: y - 1.2 + 1.2 * q, z }); });
           for (let i = 0; i < 4; i++) pix(dim, { x: x + (Math.random() - 0.5), y: y + 0.2, z: z + (Math.random() - 0.5) }, { color: i % 2 ? [0.45, 0.32, 0.25] : [0.45, 0.92, 1], size: 0.16, life: 0.5, speed: 1.2, rise: 1.0 });
           sfx(dim, "sh.guard_slam", { x, y, z }, 0.5, 1.6);
           for (const pl of dim.getPlayers({ location: { x, y: y + 1, z }, maxDistance: 1.4 })) {
@@ -5380,19 +5413,19 @@ function seerTick(e, st) {
       if (along <= dist) thorn(st.from.x + f.x * along, st.from.z + f.z * along, 4);
       else if (!st.ring) {
         st.ring = true;
-        // قفص الجذور: 6 جذور حوالين مكانك، رؤوسها تنحني لك (محسوبة: الراس يوقف 0.7 بلوكة منك بمستوى الصدر، يلفك وما يخترقك)
+        // قفص الجذور: 6 جذور حوالين مكانك، رؤوسها تنحني لك (محسوبة: r=1.7 ونصف قطر 1.75 → الراس يوقف 0.72 بلوكة منك بارتفاع 1.7، يلفك وما يخترقك)
         const P = st.spot;
         for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2, x = P.x + Math.cos(a) * 1.5, z = P.z + Math.sin(a) * 1.5, y = groundAt(dim, x, z, P.y);
+          const a = (i / 6) * Math.PI * 2, x = P.x + Math.cos(a) * 1.75, z = P.z + Math.sin(a) * 1.75, y = groundAt(dim, x, z, P.y);
           glow(dim, { x, y: y + 0.1, z }, { color: [0.45, 0.92, 1], size: 0.35, life: 0.3, rise: 0.4 });
           later(6 + i, () => {
-            const rs = shapeFx(dim, "root_spike", { x, y: y - 0.8, z }, { r: 0.25, yaw: dirYaw({ x: P.x - x, y: 0, z: P.z - z }), life: 50 });
-            if (rs) tween(6, 1, (q) => { setShape(rs, "sh:r", 0.25 + 1.05 * q); moveShape(rs, { x, y: y - 0.8 + 0.8 * q, z }); });
+            const rs = shapeFx(dim, "root_spike", { x, y: y - 1.0, z }, { r: 0.3, yaw: dirYaw({ x: P.x - x, y: 0, z: P.z - z }), life: 50 });
+            if (rs) tween(6, 1, (q) => { setShape(rs, "sh:r", 0.3 + 1.4 * q); moveShape(rs, { x, y: y - 1.0 + 1.0 * q, z }); });
           });
         }
         later(12, () => {
           sfx(dim, "sh.guard_slam", P, 0.8, 0.7);
-          for (const pl of dim.getPlayers({ location: P, maxDistance: 1.9 })) {
+          for (const pl of dim.getPlayers({ location: P, maxDistance: 2.1 })) {
             try { pl.addEffect("slowness", 50, { amplifier: 4 }); pl.addEffect("weakness", 50, { amplifier: 0 }); } catch (err) { /* */ }
             hurtPlayer(pl, 4, valid(e) ? e : undefined);
             notify(pl, "§5A cage of roots closes around you!", 40);
@@ -5407,8 +5440,8 @@ function seerTick(e, st) {
   if (st.skill === "breath") {
     if (tp && st.t <= 30) st.aim = center3(tp);
     {
-      const f0 = st.aim ? fwdTo(L, st.aim) : { x: 0, z: 1 }, op = { x: L.x + f0.x * 1.15, y: L.y + 2.2, z: L.z + f0.z * 1.15 };
-      if (st.t === 2) { st.orb = shapeFx(dim, "soul_orb", op, { r: 0.1, s: 360, life: 52 }); tween(8, 1, (q) => setShape(st.orb, "sh:r", 0.1 + 0.42 * q)); }
+      const f0 = st.aim ? fwdTo(L, st.aim) : { x: 0, z: 1 }, op = { x: L.x + f0.x * 1.4, y: L.y + 2.2, z: L.z + f0.z * 1.4 };
+      if (st.t === 2) { st.orb = shapeFx(dim, "soul_orb", op, { r: 0.1, s: 360, life: 52 }); tween(8, 1, (q) => setShape(st.orb, "sh:r", 0.1 + 0.85 * q)); }
       else if (st.orb && st.t < 48) moveShape(st.orb, op);
       if (st.t < 8) for (let i = 0; i < 3; i++) { const a = Math.random() * 6.28; pix(dim, { x: op.x + Math.cos(a) * 0.9, y: op.y + Math.sin(a) * 0.9, z: op.z }, { color: ICE[i], size: 0.15, life: 0.3, speed: 0.1 }); }
       if (st.t === 48 && st.orb) {      // الكرة تتكسر شظايا
@@ -5419,7 +5452,7 @@ function seerTick(e, st) {
     }
     if (st.t >= 8 && st.t <= 46 && st.aim) {
       const mouth = { x: L.x, y: L.y + 2.2, z: L.z }, f = fwdTo(L, st.aim);
-      mouth.x += f.x * 1.45; mouth.z += f.z * 1.45;                         // الزفير يطلع من كرة الجليد
+      mouth.x += f.x * 1.9; mouth.z += f.z * 1.9;                         // الزفير يطلع من كرة الجليد
       const dy = (st.aim.y - mouth.y) / Math.max(1, Math.hypot(st.aim.x - mouth.x, st.aim.z - mouth.z));
       for (let i = 0; i < 12; i++) {
         const dd = 0.4 + Math.random() * 8, spread = dd * 0.32, side = (Math.random() - 0.5) * 2 * spread, up = (Math.random() - 0.5) * spread;
