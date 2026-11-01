@@ -21,6 +21,8 @@ COL = [
     ("andesite", (140, 140, 140)), ("planks", (140, 100, 60)), ("fence", (110, 80, 50)), ("glass", (200, 220, 230)),
     ("barrel", (120, 90, 50)), ("hay", (200, 170, 40)), ("melon", (100, 160, 50)), ("pumpkin", (220, 120, 20)),
     ("chest", (160, 110, 40)), ("iron_bars", (150, 150, 155)), ("lightning", (200, 120, 60)), ("azalea", (80, 140, 60)),
+    ("diorite", (214, 212, 208)), ("calcite", (226, 226, 220)), ("sandstone", (226, 210, 160)), ("beacon", (140, 230, 240)),
+    ("lily_of_the_valley", (245, 245, 240)), ("oxeye", (250, 245, 210)), ("tulip", (240, 240, 235)), ("sea_lantern", (200, 236, 230)),
     ("waterlily", (40, 140, 60)), ("bamboo", (140, 170, 60)), ("campfire", (240, 120, 30)), ("torch", (255, 200, 80)),
 ]
 
@@ -90,7 +92,7 @@ def render(vox, size=900, yaw=35):
 if __name__ == "__main__":
     src, out = sys.argv[1], sys.argv[2]
     os.makedirs(out, exist_ok=True)
-    for name in ("village", "palace", "ruins", "shrine", "temple"):
+    for name in ("village", "palace", "ruins", "shrine", "temple", "lightshrine"):
         plan = json.load(open(os.path.join(src, f"plan_{name}.json")))
         vox = build(plan)
         render(vox, size=1100, yaw=35).save(os.path.join(out, f"{name}.png"))

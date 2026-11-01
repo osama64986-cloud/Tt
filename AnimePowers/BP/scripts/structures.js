@@ -130,9 +130,10 @@ class Plan {
 
   // توري: عمودان أحمران، عارضة سفلية، كاساغي أسود علوي بنهايات مرفوعة
   torii(cx, z, half, h, black = false) {
-    const col = black ? "minecraft:polished_blackstone_bricks" : "minecraft:red_concrete";
-    const top = black ? "minecraft:polished_blackstone_bricks" : "minecraft:black_concrete";
-    const slab = black ? "minecraft:polished_blackstone_brick_slab" : "minecraft:black_concrete";
+    const light = black === "light";
+    const col = light ? "minecraft:white_concrete" : black ? "minecraft:polished_blackstone_bricks" : "minecraft:red_concrete";
+    const top = light ? "minecraft:gold_block" : black ? "minecraft:polished_blackstone_bricks" : "minecraft:black_concrete";
+    const slab = light ? "minecraft:quartz_block" : black ? "minecraft:polished_blackstone_brick_slab" : "minecraft:black_concrete";
     this.box(cx - half, 0, z, cx - half, h, z, col);
     this.box(cx + half, 0, z, cx + half, h, z, col);
     this.set(cx - half, 0, z, "minecraft:stone_bricks"); this.set(cx + half, 0, z, "minecraft:stone_bricks");
@@ -140,7 +141,7 @@ class Plan {
     this.box(cx - half - 1, h + 1, z, cx + half + 1, h + 1, z, top);
     this.box(cx - half - 2, h + 2, z, cx + half + 2, h + 2, z, slab);
     this.set(cx - half - 3, h + 3, z, slab); this.set(cx + half + 3, h + 3, z, slab);
-    this.hang(cx, h - 3, z, black ? "minecraft:soul_lantern" : "minecraft:lantern");
+    this.hang(cx, h - 3, z, black && !light ? "minecraft:soul_lantern" : "minecraft:lantern");
   }
 
   // شجرة ساكورا: جذع مائل بفروع وتاج مدوّر وبتلات على الأرض
@@ -245,7 +246,8 @@ export const STRUCTURES = {
   village: { name: "Sakura Village", half: 22, weight: 0.3, guards: 0, lore: "The Order of Dawn's first home, where the story began." },
   palace: { name: "Sunset Palace", half: 26, weight: 0.2, guards: 4, lore: "The last light fell here before the palace fell." },
   ruins: { name: "Temple Ruins", half: 14, weight: 0.35, guards: 3, lore: "The ancient temple, where the first shard landed." },
-  shrine: { name: "Dark Sword Shrine", half: 13, weight: 0.15, guards: 3, lore: "The Abyss sleeps beneath this stone." },
+  shrine: { name: "Dark Sword Shrine", half: 13, weight: 0.15, guards: 3, unique: true, lore: "The Abyss sleeps beneath this stone." },
+  lightshrine: { name: "Light Sword Shrine", half: 13, weight: 0.12, guards: 3, unique: true, lore: "The light the Abyss could never swallow sleeps beneath this beam." },
 };
 
 // قرية الساكورا (45×45): توري، شارع رئيسي، 6 بيوت بشرفات، ساحة تشوزويا، معبد صغير، بركة كوي وجسر، حديقة حصى، باغودا، أكشاك سوق
@@ -449,6 +451,63 @@ export function planShrine(seed) {
   return P;
 }
 
+// ضريح سيف النور (عكس ضريح السيف المظلم): منصات متدرجة من كوارتز أبيض، توريان أبيضان بسقف ذهب،
+// بركتان مضيئتان من تحت، فوانيس حجر أبيض، زهور بيضاء، ومنارة (beacon) فوق هرم ذهب يطلع منها عمود نور للسما.
+// صندوق السيف قدام المنارة. ينبني مرة وحدة بالعالم.
+export function planLightShrine(seed) {
+  const P = new Plan(seed);
+  const r = P.r;
+  const QB = "minecraft:quartz_bricks", DW = "minecraft:diorite_wall";
+  P.ground(-13, -13, 13, 13, 12, "minecraft:grass_block");
+  P.box(-12, -1, -12, 12, -1, 12, "minecraft:smooth_quartz");
+  for (let x = -12; x <= 12; x++) for (let z = -12; z <= 12; z++) if (r() < 0.14) P.set(x, -1, z, "minecraft:calcite");
+  // ممر بحواف ذهبية فاتحة
+  P.box(-1, -1, 4, 1, -1, 12, QB);
+  P.box(-2, -1, 4, -2, -1, 12, "minecraft:smooth_sandstone"); P.box(2, -1, 4, 2, -1, 12, "minecraft:smooth_sandstone");
+  // بركتان مضيئتان (فانوس بحري تحت الماء)
+  for (const sx of [-1, 1]) {
+    P.box(sx * 6 - 2, -1, 5, sx * 6 + 2, -1, 10, "minecraft:polished_diorite");
+    P.box(sx * 6 - 1, -2, 6, sx * 6 + 1, -2, 9, "minecraft:sea_lantern");
+    P.box(sx * 6 - 1, -1, 6, sx * 6 + 1, -1, 9, WATER);
+    P.set(sx * 6, 0, 7, "minecraft:lantern");
+  }
+  // سور واطي أبيض مع فتحة البوابة
+  for (let i = -12; i <= 12; i++) {
+    P.set(i, 0, -12, DW); P.set(-12, 0, i, DW); P.set(12, 0, i, DW);
+    if (Math.abs(i) > 2) P.set(i, 0, 12, DW);
+  }
+  // توريان أبيضان بسقف ذهب
+  P.torii(0, 12, 3, 6, "light");
+  P.torii(0, 8, 2, 5, "light");
+  // المنصة المتدرجة
+  P.box(-5, 0, -5, 5, 0, 5, QB);
+  P.box(-4, 1, -4, 4, 1, 4, "minecraft:smooth_quartz");
+  P.box(-3, 2, -3, 3, 2, 3, "minecraft:chiseled_quartz_block");
+  for (const x of [-1, 0, 1]) { P.stair(x, 0, 6, "minecraft:quartz_stairs", "n"); P.stair(x, 1, 5, "minecraft:quartz_stairs", "n"); }
+  // هرم ذهب 3×3 ومنارة فوقه (عمود نور للسما)، وصندوق السيف قدامها
+  P.box(-1, 3, -1, 1, 3, 1, "minecraft:gold_block");
+  P.set(0, 4, 0, "minecraft:beacon");
+  P.chest(0, 3, 2, "lightshrine");
+  for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) P.box(x, 3, z, x, 4, z, "minecraft:end_rod");
+  // أعمدة الأركان وفوانيس
+  for (const [x, z] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) { P.box(x, 0, z, x, 4, z, "minecraft:quartz_pillar"); P.set(x, 5, z, "minecraft:lantern"); }
+  for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) { P.box(x, 1, z, x, 4, z, DW); P.set(x, 5, z, "minecraft:lantern"); }
+  // فوانيس حجر أبيض على جانبي الممر + زجاج أبيض حول المنصة
+  for (const z of [5, 7, 9, 11]) for (const x of [-3, 3]) { P.set(x, 0, z, QB); P.set(x, 1, z, DW); P.set(x, 2, z, "minecraft:lantern"); P.set(x, 3, z, "minecraft:quartz_block"); }
+  for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) P.box(x, 3, z, x, 5, z, "minecraft:white_stained_glass");
+  // زهور بيضاء بالأطراف
+  const flowers = ["minecraft:lily_of_the_valley", "minecraft:oxeye_daisy", "minecraft:white_tulip"];
+  for (let i = 0; i < 26; i++) {
+    const x = Math.floor(r() * 21) - 10, z = Math.floor(r() * 21) - 10;
+    if (Math.abs(x) <= 6 && Math.abs(z) <= 6) continue;
+    if (Math.abs(x) <= 3 && z > 3) continue;
+    if (Math.abs(Math.abs(x) - 6) <= 2 && z >= 5 && z <= 10) continue;
+    P.set(x, -1, z, "minecraft:grass_block"); P.set(x, 0, z, flowers[i % 3]);
+  }
+  P.mob(-4, 0, -4, "sh:rust_guard"); P.mob(4, 0, -4, "sh:rust_guard"); P.mob(0, 0, 8, "sh:ember_imp");
+  return P;
+}
+
 // ───────────────────────── معبد النجمة: مكان سحب القدرة ─────────────────────────
 // قاعة 15×15 بارتفاع 6 فوق منصة حجرية: أرضية مصقولة، ممر للمركز بين قناتي ماء، أعمدة بفوانيس معلقة وأماثيست،
 // فتحة سماوية فوق البلورة، وبالنص لوحة ضغط ذهبية فوقها بلورة كبيرة (كيان 3D) يتغير لونها حسب ندرة القدرة.
@@ -554,7 +613,7 @@ export function planTemple(seed) {
   return P;
 }
 
-const PLANNERS = { village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine, temple: planTemple };
+const PLANNERS = { village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine, temple: planTemple, lightshrine: planLightShrine };
 // يرجع أقرب معبد مسجل (أو لا شي)
 export function findTemple(pos, maxD = 1e9) {
   let best, bd = maxD;
@@ -600,12 +659,13 @@ export function buildTemple(p, onDone) {
 const LOOT = {
   // الأسلحة صارت نادرة: المضمون بس صندوق معبد القرية الصغير (سلاح عشوائي) وضريح السيف (الكاتانا)
   house: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
-  hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul|sh:silver_oath", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
+  hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
   ruins_small: [["sh:xp_scroll_small", 1, 2, 1.0], ["pick:sh:ember_cleaver|sh:sunset_spear", 1, 1, 0.08], ["minecraft:iron_ingot", 2, 5, 0.7]],
   ruins: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.12], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
-  palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:silver_oath", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
+  palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
+  lightshrine: [["sh:silver_oath", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
   shrine: [["sh:dark_katana", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.6], ["minecraft:diamond", 1, 2, 0.5]],
-  altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:silver_oath", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
+  altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
 };
 
 function fillChest(block, key) {
@@ -728,10 +788,15 @@ const announced = new Set();
 // الضريح نادر وسيفه مهم، فإذا بُنيت 3 بنايات بدون ضريح نضمنه بالجاية (حتى ما يقعد اللاعب يدور عليه للأبد)
 const SHRINE_PITY = 2;
 function chooseType(reg = []) {
-  if (STRUCTURES.shrine && !reg.some((s) => s.type === "shrine") && reg.length >= SHRINE_PITY) return "shrine";
+  const has = (t) => reg.some((s) => s.type === t);
+  if (!has("shrine") && reg.length >= SHRINE_PITY) return "shrine";
+  if (!has("lightshrine") && has("shrine") && reg.length >= SHRINE_PITY + 2) return "lightshrine";
   const roll = Math.random();
   let acc = 0;
-  for (const [k, v] of Object.entries(STRUCTURES)) { acc += v.weight; if (roll < acc) return k; }
+  for (const [k, v] of Object.entries(STRUCTURES)) {
+    acc += v.weight;
+    if (roll < acc) return v.unique && has(k) ? "village" : k;   // الضريحين مرة وحدة بالعالم
+  }
   return "village";
 }
 

@@ -202,9 +202,9 @@ const WEAPONS = {
   "sh:ember_cleaver": { extra: 9, sound: "sh.cleaver_hit", color: "orange", knock: 1.2, name: "Ember Cleaver", cleave: 4, heavy: 1,
     desc: "Every hit cleaves several enemies. Use: Ember Arc. Sneak + use: Inferno Spin. Weakness: slows you while held." },
   // قاتل الظل: ينتقل خلف العدو ويضربه
-  // سيف القسم الفضي: متوازن، كل رابع ضربة "بريق" يعمي ويضرب أكثر
-  "sh:silver_oath": { extra: 5, sound: "sh.dagger_hit", color: "white", knock: 0.3, name: "Silver Oath", special: "glint",
-    desc: "Balanced. Every fourth hit in a row is a Glint (bonus damage and a flash that blinds). Use: Oath Cleave. Sneak + use: Silver Step." },
+  // سيف النور (Oath of Light): عكس كاتانا الهاوية، بضريح سيف النور. كل رابع ضربة "بريق" يعمي ويضرب أكثر
+  "sh:silver_oath": { extra: 5, sound: "sh.dagger_hit", color: "white", knock: 0.3, name: "Oath of Light", special: "glint",
+    desc: "The sword of light, the Abyss Katana's opposite. Every fourth hit in a row is a Glint (bonus damage and a flash that blinds). Use: Oath Cleave. Sneak + use: Silver Step." },
   "sh:shadow_blade": { extra: 2, sound: "sh.dagger_hit", color: "purple", knock: 0.0, name: "Shadow Blade", fast: true,
     desc: "Every hit repeats quickly. Use: Shadow Ambush (appear behind the enemy and stab it). Sneak + use: Phantom Strike (shadows hit every enemy around)." },
   // كاتانا الهاوية: أقوى سلاح، مهارتين تكبر مع ليفلها
@@ -834,7 +834,7 @@ const LORE = [
   ["Sunset Palace",
     "When the Abyss came for the Order, its last commanders made their stand in a palace on the edge of the horizon, \"Sunset Palace\", where the final light of their days fell. They fought with a spear of sunlight and a maul of living stone.\n\nThe palace fell, but the Abyss paid for it and sank back into the deep. Its towers still hide the weapons the guards could not carry away. Weapons remember: the more you fight with one, the more it gives back."],
   ["The Abyss Katana",
-    "Light alone could not close the Abyss, so the last smith of the Order forged a blade from its own darkness: \"the Abyss Katana\". Every victory makes it sharper, and every strike takes a little of you.\n\nHe buried it in the \"Dark Sword Shrine\" beneath guards who never sleep and said: \"Only one who can carry it without being carried by it may lift it.\" The Explorer's Compass knows the way."],
+    "Light alone could not close the Abyss, so the last smith of the Order forged a blade from its own darkness: \"the Abyss Katana\". Every victory makes it sharper, and every strike takes a little of you.\n\nHe buried it in the \"Dark Sword Shrine\" beneath guards who never sleep and said: \"Only one who can carry it without being carried by it may lift it.\" The Explorer's Compass knows the way.\n\nThe smith's apprentice could not sleep while only darkness guarded the world. From the last light of the fallen star she forged its opposite: \"the Oath of Light\", a silver sword that never dulls. It rests in the \"Light Sword Shrine\", beneath a beam that rises to the sky. Whoever holds both blades holds the balance of the world."],
   ["The Heart of the Abyss",
     "You are the \"Master\" now, and here is what the Trainer never said: the Abyss is not an enemy from outside. It is the rest of the fallen star, still searching for its heart, the crystal in the temples. Every Rift is it reaching out; every creature is its call.\n\nYou can close it forever, or return the heart and let the star rise again. Your choice will write the final chapter.\n\n§7(The final chapter arrives in a future update)"],
 ];
@@ -1843,7 +1843,7 @@ function closeRift(victory, killer) {
   const drops = ["sh:xp_scroll_big", "sh:xp_scroll_small", "sh:xp_scroll_small"];
   for (let i = 0; i < Math.floor(t.skill); i++) drops.push("sh:skill_scroll");
   if (Math.random() < t.skill % 1) drops.push("sh:skill_scroll");
-  if (Math.random() < t.weapon) drops.push(["sh:dawn_dagger", "sh:shadow_blade", "sh:shadow_claws", "sh:ember_cleaver", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath"][Math.floor(Math.random() * 7)]);
+  if (Math.random() < t.weapon) drops.push(["sh:dawn_dagger", "sh:shadow_blade", "sh:shadow_claws", "sh:ember_cleaver", "sh:stone_maul", "sh:sunset_spear"][Math.floor(Math.random() * 6)]);
   drops.push(...Array(1 + r.tier).fill(r.tier >= 2 ? "minecraft:diamond" : "minecraft:emerald"));
   later(14, () => { for (const id of drops) { try { dim.spawnItem(new ItemStack(id, 1), { x: r.x + (Math.random() - 0.5), y: r.y + 1, z: r.z + (Math.random() - 0.5) }); } catch (e) { /* */ } } });
   for (const q of world.getAllPlayers()) {
@@ -4981,6 +4981,7 @@ system.runInterval(() => {
 // سنيك + استعمال = خط إرشاد بالجزيئات نحو الوجهة المختارة.
 const COMPASS_TARGETS = [
   { key: "shrine", name: "Dark Sword Shrine" },
+  { key: "lightshrine", name: "Light Sword Shrine" },
   { key: "palace", name: "Sunset Palace" },
   { key: "ruins", name: "Temple Ruins" },
   { key: "village", name: "Sakura Village" },
@@ -4989,7 +4990,7 @@ const COMPASS_TARGETS = [
   { key: "rift", name: "Open Rift" },
   { key: "nearest", name: "Nearest (any destination)" },
 ];
-const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple" };
+const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple", lightshrine: "Light Sword Shrine" };
 const structCache = { tick: -9999, list: [] };
 function getStructs() {
   if (system.currentTick - structCache.tick > 100) {
