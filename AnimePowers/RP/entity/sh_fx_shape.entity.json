@@ -81,11 +81,11 @@
     "s68": "geometry.sh_shape_root_spike",
     "s69": "geometry.sh_shape_soul_orb",
     "s70": "geometry.sh_shape_spirit_stag",
-    "s71": "geometry.sh_shape_quill",
-    "s72": "geometry.sh_shape_foxfire",
-    "s73": "geometry.sh_shape_fire_pillar",
-    "s74": "geometry.sh_shape_light_lance",
-    "s75": "geometry.sh_shape_ghost_sword"
+    "s71": "geometry.sh_shape_foxfire",
+    "s72": "geometry.sh_shape_fire_pillar",
+    "s73": "geometry.sh_shape_light_lance",
+    "s74": "geometry.sh_shape_ghost_sword",
+    "s75": "geometry.sh_shape_magma_pillar"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

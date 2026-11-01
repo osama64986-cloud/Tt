@@ -235,25 +235,6 @@ def deer_charge(out):
     return S.render((0, 1.0, 3.2), yaw=-62, pitch=20, dist=9)
 
 
-def quill_volley(out):
-    S = Scene(); S.ground(0, 5)
-    S.model(mon("quillback"), pose(["animation.sh_quillback.idle", "animation.sh_quillback.volley"], 0.5), (0, 0, 0), (0, 1))
-    S.player((0, 0, 9), (0, -1))
-    for i in range(-2, 3):                                   # 5 شوكات بمروحة 0.2 راديان، r=1.5
-        a = math.pi / 2 + i * 0.2; d = (math.cos(a), math.sin(a)); k = 4.0
-        S.shape("quill", (d[0] * k, 0.9, d[1] * k), d, 1.5)
-    return S.render((0, 1.0, 4), yaw=-60, pitch=22, dist=11)
-
-
-def quill_roll(out):
-    S = Scene(); S.ground(0, 4)
-    S.model(mon("quillback"), pose(["animation.sh_quillback.roll"], 0.07), (0, 0, 2.5), (0, 1))
-    S.player((0, 0, 7), (0, -1))
-    for k in range(6):
-        S.cube((0.2 * (-1) ** k, 0.2, 0.2 + k * 0.4), 0.25, (255, 150, 40), True)
-    return S.render((0, 1.0, 3.5), yaw=-62, pitch=20, dist=9)
-
-
 def fox_volley(out):
     S = Scene(); S.ground(0, 6)
     S.model(mon("veilfox"), pose(["animation.sh_veilfox.idle", "animation.sh_veilfox.volley"], 0.6), (0, 0, 0), (0, 1))
@@ -317,13 +298,54 @@ def sword_katana(out):
     return S.render((0, 1.2, 3), yaw=-50, pitch=20, dist=8)
 
 
+def mam_stomp(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("magmamoth"), pose(["animation.sh_magmamoth.stomp"], 0.82), (0, 0, 0), (0, 1))
+    S.player((0, 0, 9), (0, -1))
+    for r, n in ((4.2, 36), (6.6, 52)):                             # حلقة الموجة (لهب ملوّن + حمم)
+        for i in range(n):
+            a = i / n * math.tau
+            S.cube((math.cos(a) * r, 0.15, math.sin(a) * r), 0.22, (255, 106, 20) if i % 2 else (255, 200, 64), True)
+    return S.render((0, 1.5, 3), yaw=-62, pitch=34, dist=15)
+
+
+def mam_breath(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("magmamoth"), pose(["animation.sh_magmamoth.breath"], 0.8), (0, 0, 0), (0, 1))
+    S.player((0, 0, 10), (0, -1))
+    for i in range(260):                                             # مخروط النار من الفوهة
+        dd = 0.5 + rnd.random() * 11; sp = dd * 0.16
+        S.cube(((rnd.random() - 0.5) * sp * 2, 4.4 - dd * 0.28 + (rnd.random() - 0.5) * sp * 2, -0.0 + 2.2 + dd * 0.96), 0.2, (255, 106, 20) if i % 2 else (255, 200, 64), True)
+    return S.render((0, 2.0, 5), yaw=-62, pitch=18, dist=16)
+
+
+def mam_charge(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("magmamoth"), pose(["animation.sh_magmamoth.run"], 0.05), (0, 0, 0), (0, 1))
+    S.player((0, 0, 8.5), (0, -1))
+    for k in range(10):
+        S.cube((0.8 * (-1) ** k, 0.15, -2.5 - k * 0.5), 0.3, (255, 106, 20), True)
+    S.shape("nova", (0, 1.2, 5.6), (0, 1), 1.2)
+    return S.render((0, 1.8, 3), yaw=-62, pitch=20, dist=16)
+
+
+def mam_eruption(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("magmamoth"), pose(["animation.sh_magmamoth.eruption"], 0.9), (0, 0, 0), (0, 1))
+    S.player((0, 0, 7), (0, -1))
+    for n, (rr, cnt) in enumerate(((4.4, 6), (7.0, 8), (9.5, 10))):
+        for i in range(cnt):
+            a = i / cnt * math.tau + n
+            S.shape("magma_pillar", (math.cos(a) * rr, 0, math.sin(a) * rr), (0, 1), 1.3)
+    return S.render((0, 1.8, 3), yaw=-60, pitch=30, dist=18)
+
+
 if __name__ == "__main__":
     out = sys.argv[1]; os.makedirs(out, exist_ok=True)
     scenes = [("الرائي: جذور الأرض + قفص الجذور", seer_roots), ("الرائي: زفير التجميد من كرة الجليد", seer_frost),
               ("الرائي: الشعاع البرتقالي", seer_beam), ("الغزال: روح الغزال", deer_spirit),
               ("الغزال: الاندفاع والنطح", deer_charge), ("الغزال: نبض القلب + سلاسل الروح", deer_heart),
-              ("شوكاني: رشقة الشوك", quill_volley), ("شوكاني: الكرة اللاحمة", quill_roll),
-              ("ثعلب الحجاب: رشقة نار الثعلب", fox_volley), ("ثعلب الحجاب: عاصفة الأذيال", fox_storm), ("ثعلب الحجاب: قفزة المرآة", fox_pounce),
+              ("ثعلب الحجاب: رشقة نار الثعلب", fox_volley), ("ماغماموث: دكة الماغما", mam_stomp), ("ماغماموث: نفخة الجحيم", mam_breath), ("ماغماموث: الاندفاع", mam_charge), ("ماغماموث: الثوران", mam_eruption), ("ثعلب الحجاب: عاصفة الأذيال", fox_storm), ("ثعلب الحجاب: قفزة المرآة", fox_pounce),
               ("سيف النور", sword_light), ("شادو بليد", sword_shadow), ("كاتانا الهاوية", sword_katana)]
     for name, fn in scenes:
         im = fn(out); fname = os.path.join(out, fn.__name__ + ".png"); im.save(fname); print(fname)

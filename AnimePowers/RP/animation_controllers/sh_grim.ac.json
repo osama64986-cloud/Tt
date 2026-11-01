@@ -173,76 +173,6 @@
     }
    }
   },
-  "controller.animation.sh_quillback.state": {
-   "initial_state": "default",
-   "states": {
-    "default": {
-     "transitions": [
-      {
-       "volley": "query.property('sh:state') == 1"
-      },
-      {
-       "roll": "query.property('sh:state') == 2"
-      },
-      {
-       "burst": "query.property('sh:state') == 3"
-      }
-     ],
-     "blend_transition": 0.18
-    },
-    "volley": {
-     "animations": [
-      "volley"
-     ],
-     "transitions": [
-      {
-       "default": "query.property('sh:state') == 0"
-      },
-      {
-       "roll": "query.property('sh:state') == 2"
-      },
-      {
-       "burst": "query.property('sh:state') == 3"
-      }
-     ],
-     "blend_transition": 0.12
-    },
-    "roll": {
-     "animations": [
-      "roll"
-     ],
-     "transitions": [
-      {
-       "default": "query.property('sh:state') == 0"
-      },
-      {
-       "volley": "query.property('sh:state') == 1"
-      },
-      {
-       "burst": "query.property('sh:state') == 3"
-      }
-     ],
-     "blend_transition": 0.12
-    },
-    "burst": {
-     "animations": [
-      "burst"
-     ],
-     "transitions": [
-      {
-       "default": "query.property('sh:state') == 0"
-      },
-      {
-       "volley": "query.property('sh:state') == 1"
-      },
-      {
-       "roll": "query.property('sh:state') == 2"
-      }
-     ],
-     "blend_transition": 0.12
-    }
-   }
-  },
   "controller.animation.sh_veilfox.state": {
    "initial_state": "default",
    "states": {
@@ -256,6 +186,9 @@
       },
       {
        "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
       }
      ],
      "blend_transition": 0.18
@@ -273,6 +206,9 @@
       },
       {
        "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
       }
      ],
      "blend_transition": 0.12
@@ -290,6 +226,9 @@
       },
       {
        "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
       }
      ],
      "blend_transition": 0.12
@@ -307,9 +246,243 @@
       },
       {
        "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
       }
      ],
      "blend_transition": 0.12
+    },
+    "veil": {
+     "animations": [
+      "veil"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  },
+  "controller.animation.sh_magmamoth.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "stomp": {
+     "animations": [
+      "stomp"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "breath": {
+     "animations": [
+      "breath"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "run": {
+     "animations": [
+      "run"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "eruption": {
+     "animations": [
+      "eruption"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "armor": {
+     "animations": [
+      "armor"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lower": {
+     "animations": [
+      "lower"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
     }
    }
   }

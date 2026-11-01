@@ -19,7 +19,8 @@
         "look": "animation.sh.look",
         "volley": "animation.sh_veilfox.volley",
         "pounce": "animation.sh_veilfox.pounce",
-        "storm": "animation.sh_veilfox.storm"
+        "storm": "animation.sh_veilfox.storm",
+        "veil": "animation.sh_veilfox.veil"
       },
       "scripts": {
         "animate": [

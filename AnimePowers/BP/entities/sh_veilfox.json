@@ -11,7 +11,7 @@
      "type": "int",
      "range": [
       0,
-      3
+      4
      ],
      "default": 0,
      "client_sync": true
@@ -26,12 +26,12 @@
     ]
    },
    "minecraft:health": {
-    "value": 78,
-    "max": 78
+    "value": 95,
+    "max": 95
    },
    "minecraft:collision_box": {
-    "width": 1.0,
-    "height": 1.7
+    "width": 1.1,
+    "height": 1.8
    },
    "minecraft:movement": {
     "value": 0.34
