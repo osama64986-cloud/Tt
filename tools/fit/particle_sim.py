@@ -18,7 +18,7 @@ import re
 import numpy as np
 from PIL import Image
 
-VP = os.environ.get("SH_VANILLA_PARTICLES", "/tmp/claude-0/-home-user-Tt/0411a7b6-807a-5373-b9a7-bb7ee38240a7/scratchpad/vanilla_p")
+VP = os.environ.get("SH_VANILLA_PARTICLES") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "vanilla_particles")
 DEF_DIR = os.path.join(VP, "all") if os.path.isdir(os.path.join(VP, "all")) else os.path.join(VP, "particles")
 
 # ───────────── Molang مصغّر ─────────────
