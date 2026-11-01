@@ -387,8 +387,9 @@ function heldLine(p, st, plain) {
   const ws = WEAPON_SKILLS[id];
   if (ws) {
     const l0 = (weaponCd.get(`${p.id}:${id}:0`) ?? 0) - now, l1 = (weaponCd.get(`${p.id}:${id}:1`) ?? 0) - now;
-    return { line: `§f⚔ §e${ws[0].name} ${mini(l0)} §8│ §7S: §e${ws[1].name} ${mini(l1)}`,
-      tip: showTip ? `§7Use: ${ws[0].name} §8│ §7Sneak + use: ${ws[1].name}` : "" };
+    const wk = getWlv(p, id), lk = wk.lv < 2;
+    return { line: `§f⚔ §6Lv${wk.lv}${wk.lv >= WLV_MAX ? "★" : ""} §e${ws[0].name} ${mini(l0)} §8│ §7S: ${lk ? `§8${ws[1].name} (Lv2)` : `§e${ws[1].name} ${mini(l1)}`}`,
+      tip: showTip ? `§7Use: ${ws[0].name} §8│ §7Sneak + use: ${ws[1].name}${wk.lv < WLV_MAX ? ` §8│ §7XP ${wk.xp}/${WLV_NEED[wk.lv]}` : ""}` : "" };
   }
   return none;
 }
@@ -481,7 +482,7 @@ function pix(dim, loc, o = {}) {
   try {
     if (++pixBudget > 70) return; // حد أعلى بالتك الواحد
     const sz = Math.min(0.16, (o.size ?? 0.14) * 0.6);
-    if (nearEye(dim, loc, 1.6)) return;
+    if (nearEye(dim, loc, o.eye ?? 1.6)) return;
     const c = o.color || COLORS.gold;
     const m = new MolangVariableMap();
     m.setFloat("variable.r", c[0]);
@@ -884,6 +885,16 @@ async function showStatus(player) {
     });
   } else b += st.powerless ? "\n§8Unbound§7: no power. Your body grows stronger and faster with each rank.\n" : "\n§7You have no power yet. Step on the crystal in the Star Temple.\n";
   b += `\n${riftStatusText(player)}\n§fRhythm Strike§7: ${st.rank >= RHY_RANK ? `hit enemies in a steady beat, like a drum. Your first two hits set the beat; keep hitting on it and each hit plays a rising note. 4th hit in rhythm = Rhythm, 7th = Crescendo, 10th = Finale. Best: ${st.rhyBest || 0}` : `§cunlocks at rank ${RANKS[RHY_RANK]}`}\n`;
+  {
+    const all = wlvAll(player), ids = Object.keys(WEAPON_SKILLS).filter((id) => all[id] || hasItem(player, id));
+    if (ids.length) {
+      b += "\n§e⚔ Weapon levels§r §7(grow by hitting and killing with each weapon)\n";
+      for (const id of ids) {
+        const k = getWlv(player, id);
+        b += `§f${WEAPONS[id] ? WEAPONS[id].name : id}§r §6Lv ${k.lv}/${WLV_MAX}${k.lv >= WLV_MAX ? " §6(AWAKENED)" : ` §7(${k.xp}/${WLV_NEED[k.lv]} XP) next: ${WLV_PERKS[k.lv + 1]}`}\n`;
+      }
+    }
+  }
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1175,7 +1186,9 @@ world.afterEvents.entityDie.subscribe((ev) => {
     if (!killer || killer.typeId !== "minecraft:player") return;
     try {
       const held = inv(killer).getItem(killer.selectedSlotIndex);
-      if (held && held.typeId === KATANA) addKatXp(killer, info ? (Array.isArray(info.xp) ? info.xp[0] : info.xp) : 2);
+      const kx = info ? (Array.isArray(info.xp) ? info.xp[0] : info.xp) : 2;
+      if (held && held.typeId === KATANA) addKatXp(killer, kx);
+      else if (held && WEAPON_SKILLS[held.typeId]) addWeaponXp(killer, held.typeId, kx);
     } catch (e0) { /* */ }
     if (!info) {
       // الوحوش العادية: 1 XP لكل قتلة
@@ -1402,7 +1415,7 @@ function skillHitXp(by, target) {
   } catch (err) { /* */ }
 }
 function hurt(e, amount, by) {
-  try { e.applyDamage(amount * skillDmgMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
+  try { e.applyDamage(amount * skillDmgMul(by) * weaponSkillMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
 }
 function viewDir(p) {
   try { return p.getViewDirection(); } catch (e) { return { x: 0, y: 0, z: 1 }; }
@@ -2670,6 +2683,7 @@ system.runInterval(() => {
 }, 20);
 
 const comboMap = new Map();
+const wHitXpAt = new Map();
 const weaponCd = new Map();
 
 // كل سلاح له مهارتين: الاستعمال = الأولى، السنيك + الاستعمال = الثانية
@@ -2707,6 +2721,93 @@ function groundY(dim, x, z, y) {
   }
   return undefined;
 }
+
+// ═════════════════════════ تلفيل الأسلحة (كل الأسلحة ما عدا الكاتانا اللي إلها نظامها) ═════════════════════════
+// كل سلاح يكبر لحاله: خبرة من الضرب (1 كل نص ثانية) ومن القتل وانت ماسكه. 5 ليفلات:
+//  Lv1 المهارة الأولى | Lv2 تنفتح المهارة الثانية (سنيك) +10% ضرر | Lv3 +20% وتصحى الهالة
+//  Lv4 +30% وتبريد المهارات أقل 20% | Lv5 (مستيقظ) +45% ضرر، المهارات أقوى 25%، هالة كاملة
+const WLV_MAX = 5, WLV_NEED = [0, 30, 70, 130, 210];
+const WLV_DMG = [1, 1, 1.1, 1.2, 1.3, 1.45], WLV_SKILL = [1, 1, 1.05, 1.1, 1.15, 1.4];
+const WLV_PERKS = ["", "Skill 1 (use)", "Skill 2 (sneak + use) unlocks, +10% damage", "+20% damage, the weapon's aura awakens", "+30% damage, skill cooldowns 20% shorter", "AWAKENED: +45% damage, skills hit 25% harder, full aura"];
+// هالة كل سلاح (مثل الصور): ذهب يلتف، لهب، ريح زرقاء، هالة خضراء، رونات حمراء، ظل بنفسجي
+const WEAPON_AURA = {
+  "sh:dawn_dagger": { style: "swirl", cols: [[1, 0.85, 0.35], [1, 0.95, 0.65], [1, 1, 0.9]] },
+  "sh:ember_cleaver": { style: "flame", cols: [[1, 0.35, 0.08], [1, 0.62, 0.15], [1, 0.88, 0.45]] },
+  "sh:shadow_blade": { style: "wind", cols: [[0.45, 0.8, 1], [0.75, 0.93, 1], [1, 1, 1]] },
+  "sh:stone_maul": { style: "motes", cols: [[0.25, 0.85, 0.45], [0.55, 1, 0.65], [0.85, 1, 0.9]] },
+  "sh:sunset_spear": { style: "runes", cols: [[0.95, 0.15, 0.15], [1, 0.45, 0.35], [1, 0.85, 0.8]] },
+  "sh:shadow_claws": { style: "motes", cols: [[0.6, 0.4, 1], [0.8, 0.65, 1], [0.95, 0.9, 1]] },
+};
+function wlvAll(p) { try { const raw = p.getDynamicProperty("sh_wlv"); return typeof raw === "string" ? JSON.parse(raw) : {}; } catch (e) { return {}; } }
+function getWlv(p, id) { const k = wlvAll(p)[id] || {}; return { lv: Math.min(WLV_MAX, Math.max(1, k.lv || 1)), xp: k.xp || 0 }; }
+function setWlv(p, id, k) { try { const all = wlvAll(p); all[id] = k; p.setDynamicProperty("sh_wlv", JSON.stringify(all)); } catch (e) { /* */ } }
+function wlvOf(p, id) { return getWlv(p, id).lv; }
+function addWeaponXp(p, id, amount) {
+  if (!WEAPON_SKILLS[id]) return;
+  const k = getWlv(p, id);
+  if (k.lv >= WLV_MAX) return;
+  k.xp += amount;
+  const name = (WEAPONS[id] && WEAPONS[id].name) || id;
+  while (k.lv < WLV_MAX && k.xp >= WLV_NEED[k.lv]) {
+    k.xp -= WLV_NEED[k.lv];
+    k.lv++;
+    sfxPlayer(p, k.lv >= WLV_MAX ? "sh.kat_levelup" : "sh.level_up", 1, k.lv >= WLV_MAX ? 0.9 : 1.2);
+    say(p, `§e[${name}] §fLevel §e${k.lv}§f: ${WLV_PERKS[k.lv]}.`);
+    notify(p, k.lv >= WLV_MAX ? `§6§l${name} AWAKENED` : `§e${name} Lv ${k.lv}`, 70);
+    weaponAuraBurst(p, id, 30);
+  }
+  if (k.lv >= WLV_MAX) k.xp = 0;
+  setWlv(p, id, k);
+}
+const wBoost = new Map(); // pid -> { until, mul }  مضاعف ضرر مهارة السلاح لفترة قصيرة بعد التفعيل
+function weaponSkillMul(by) {
+  if (!by || by.typeId !== "minecraft:player") return 1;
+  const b = wBoost.get(by.id);
+  return b && system.currentTick <= b.until ? b.mul : 1;
+}
+// نقطة الهالة: على النصل/الرأس حسب طول السلاح
+function weaponAuraPoint(p, id, u) {
+  const tip = id === "sh:sunset_spear" ? 1.6 : id === "sh:stone_maul" ? 1.3 : 1.15;
+  return bladePoint(p, 0.25 + u * (tip - 0.25));
+}
+function weaponAuraTick(p, id, lv, t, strong) {
+  const a = WEAPON_AURA[id];
+  if (!a) return;
+  const dim = p.dimension, n = strong ? 3 : lv >= 5 ? 3 : lv >= 3 ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    const u = Math.random(), b = weaponAuraPoint(p, id, id === "sh:stone_maul" ? 0.85 + u * 0.15 : u);
+    const col = a.cols[Math.floor(Math.random() * a.cols.length)];
+    if (a.style === "swirl" || a.style === "wind") {
+      const ang = t * (a.style === "wind" ? 0.9 : 0.5) + i * 2.1, r = a.style === "wind" ? 0.32 : 0.22;
+      pix(dim, { x: b.x + Math.cos(ang) * r, y: b.y + (a.style === "wind" ? 0.05 : 0.1), z: b.z + Math.sin(ang) * r }, { color: col, size: 0.14, life: 0.5, speed: a.style === "wind" ? 0.9 : 0.2, rise: 0.2, eye: 0.7 });
+    } else if (a.style === "flame") {
+      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.15, y: b.y + 0.05, z: b.z + (Math.random() - 0.5) * 0.15 }, { color: col, size: 0.17, life: 0.55, speed: 0.15, rise: 1.4, eye: 0.7 });
+    } else if (a.style === "runes") {
+      pix(dim, b, { color: col, size: 0.13, life: 0.7, speed: 0.1, rise: 0.3, eye: 0.7 });
+    } else {
+      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.5, y: b.y + (Math.random() - 0.5) * 0.4, z: b.z + (Math.random() - 0.5) * 0.5 }, { color: col, size: 0.15, life: 0.8, speed: 0.15, rise: 0.5, eye: 0.7 });
+    }
+  }
+}
+function weaponAuraBurst(p, id, ticks) {
+  let t = 0;
+  const h = system.runInterval(() => {
+    try { t += 2; if (!valid(p) || t > ticks) { system.clearRun(h); return; } weaponAuraTick(p, id, WLV_MAX, t, true); } catch (e) { system.clearRun(h); }
+  }, 2);
+}
+// الهالة وانت ماسك السلاح: خفيفة بالبداية، تصحى بـLv3، وكاملة بـLv5
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const p of world.getAllPlayers()) {
+    try {
+      const held = inv(p).getItem(p.selectedSlotIndex);
+      if (!held || !WEAPON_AURA[held.typeId]) continue;
+      const lv = wlvOf(p, held.typeId);
+      if (lv < 3 && now % 12 !== 0) continue;
+      weaponAuraTick(p, held.typeId, lv, now / 4, false);
+    } catch (e) { /* */ }
+  }
+}, 4);
 
 const WEAPON_SKILLS = {
   "sh:ember_cleaver": [
@@ -2972,11 +3073,14 @@ function weaponActive(p, id) {
   const sk = list[idx];
   const key = `${p.id}:${id}:${idx}`;
   const now = system.currentTick;
+  const wl = id === KATANA ? 0 : wlvOf(p, id);
+  if (id !== KATANA && idx === 1 && wl < 2) { notify(p, `§7${sk.name} §cunlocks at weapon Lv 2 §8(${getWlv(p, id).xp}/${WLV_NEED[1]} XP)`, 40); return; }
+  if (id !== KATANA) wBoost.set(p.id, { until: now + 80, mul: WLV_SKILL[wl] });
   const ready = weaponCd.get(key) ?? 0;
   if (now < ready) { notify(p, `§7${sk.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15); return; }
   let ok = false;
   try { ok = sk.fn(p); } catch (e) { ok = false; }
-  if (ok) { weaponCd.set(key, now + (typeof sk.cd === "function" ? sk.cd(p) : sk.cd)); notify(p, `§f⚔ ${sk.name}`, 20); }
+  if (ok) { const cd = typeof sk.cd === "function" ? sk.cd(p) : sk.cd; weaponCd.set(key, now + Math.round(cd * (wl >= 4 ? 0.8 : 1))); notify(p, `§f⚔ ${sk.name}`, 20); }
   else weaponCd.set(key, now + 6);
 }
 
@@ -4049,6 +4153,11 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     const hp = target.getComponent("minecraft:health");
     if (!hp) return;
     let extra = w.extra;
+    if (WEAPON_SKILLS[held.typeId]) {
+      extra = Math.round(extra * WLV_DMG[wlvOf(p, held.typeId)]);
+      const now = system.currentTick;
+      if (now - (wHitXpAt.get(p.id) ?? -99) >= 10 && !isFriendly(target)) { wHitXpAt.set(p.id, now); addWeaponXp(p, held.typeId, 1); }
+    }
     if (w.special === "combo") {
       const c = comboMap.get(p.id) || { n: 0, t: -999 };
       c.n = system.currentTick - c.t < 60 ? c.n + 1 : 1;
@@ -4869,6 +4978,12 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       st.plevel = rarityOf(st.power).maxLv;
       saveState(p, st);
       say(p, "§aAll skills unlocked. Open the Evolution Book.");
+    } else if (ev.id === "sh:wlv") {
+      const held = inv(p).getItem(p.selectedSlotIndex);
+      if (!held || !WEAPON_SKILLS[held.typeId]) { say(p, "§cHold one of the mod's weapons (not the katana: use sh:katlv)"); return; }
+      const n = Math.min(WLV_MAX, Math.max(1, parseInt(msg, 10) || 1));
+      setWlv(p, held.typeId, { lv: n, xp: 0 });
+      say(p, `§aWeapon level: ${n}`);
     } else if (ev.id === "sh:katlv") {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });

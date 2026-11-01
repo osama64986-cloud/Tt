@@ -170,6 +170,31 @@ export const __sim = {
     }
     // الأسلحة: كل سلاح مهارتين (استعمال / سنيك + استعمال)
     setState(baseState("star")); player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 }));
+    // تلفيل الأسلحة: بـLv1 المهارة الثانية مقفولة
+    {
+      player.setDynamicProperty("sh_wlv", undefined);
+      spawnZombies(4, true); player.isSneaking = true;
+      const d0 = stats.damage || 0; await useItem("sh:ember_cleaver"); advance(60); player.isSneaking = false;
+      const locked = Math.round((stats.damage || 0) - d0);
+      // خبرة من الضرب والقتل ترفع الليفل
+      hold("sh:ember_cleaver"); spawnZombies(1, true); const z = entities[0]; z._hp = 4000; z._max = 4000;
+      for (let i = 0; i < 40; i++) { fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(11); }
+      const lvHit = JSON.parse(player.getDynamicProperty("sh_wlv") || "{}")["sh:ember_cleaver"];
+      fire("entityDie", { deadEntity: mkEntity("sh:rust_guard", { x: 0, y: 64, z: 2 }, dims.overworld, 40), damageSource: { damagingEntity: player } });
+      const lvKill = JSON.parse(player.getDynamicProperty("sh_wlv") || "{}")["sh:ember_cleaver"];
+      // ضرر الضربة العادية يكبر مع الليفل
+      const hitDmg = async (lv) => { player.setDynamicProperty("sh_wlv", JSON.stringify({ "sh:ember_cleaver": { lv, xp: 0 } })); const d = stats.damage || 0; fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(1); return Math.round((stats.damage || 0) - d); };
+      const dm1 = await hitDmg(1), dm5 = await hitDmg(5);
+      const p0 = stats.particles; advance(40); const aura = stats.particles - p0;
+      console.log(`\nتلفيل الأسلحة: مهارة 2 بـLv1 = ${locked > 0 ? "مفتوحة ✖" : "مقفولة ✔"} | بعد 40 ضربة: Lv${lvHit && lvHit.lv} (${lvHit && lvHit.xp} XP) | بعد قتلة: Lv${lvKill && lvKill.lv} | ضرر الضربة Lv1=${dm1} Lv5=${dm5} | هالة Lv5 جزيئات=${aura}`);
+      if (locked > 0) failures.push("المهارة الثانية للسلاح مفتوحة بـLv1");
+      if (!lvHit || lvHit.lv < 2) failures.push("السلاح ما يتلفل من الضرب");
+      if (!(dm5 > dm1)) failures.push("ضرر السلاح ما يكبر مع الليفل");
+      if (aura < 5) failures.push("هالة السلاح ما تطلع");
+      hold("");
+      const all = {}; for (const id of ["sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"]) all[id] = { lv: 5, xp: 0 };
+      player.setDynamicProperty("sh_wlv", JSON.stringify(all)); system_cd_reset();
+    }
     console.log("\nالأسلحة (مهارة 1 | مهارة 2):");
     for (const wid of ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"]) {
       const row = [];
