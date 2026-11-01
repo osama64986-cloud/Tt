@@ -4,7 +4,8 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple } from "./structures.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath } from "./structures.js";
+import { setupDash } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 
 // ───────────────────────── البيانات ─────────────────────────
@@ -1290,6 +1291,11 @@ function handleKill(player, info) {
 world.afterEvents.entityDie.subscribe((ev) => {
   try {
     try { if (ev.deadEntity.getDynamicProperty("sh_clone") === 1) return; } catch (e00) { /* */ }
+    try {
+      let tagged = true;                                                  // وحش طبيعي من نفس النوع ما يحسب (لو قدرنا نقرا الوسوم)
+      try { tagged = ev.deadEntity.hasTag("sh_boss"); } catch (e02) { tagged = true; }
+      onShrineBossDeath(ev.deadEntity.typeId, ev.deadEntity.location, ev.deadEntity.dimension, tagged);
+    } catch (e01) { /* */ }   // حراس الضريحين: لما يموت الاثنان يظهر صندوق السيف
     if (ev.deadEntity.typeId === "sh:magmamoth") {            // موت الماموث: انفجار حمم وصخور
       const dl = ev.deadEntity.location, dm = ev.deadEntity.dimension;
       vanillaFx(dm, "minecraft:huge_explosion_emitter", { x: dl.x, y: dl.y + 1.5, z: dl.z });
@@ -5031,6 +5037,7 @@ system.runInterval(() => {
 }, 2);
 
 try { setupStructures((e, pl) => scaleMonster(e, getState(pl).rank)); } catch (e) { /* */ }
+try { setupDash(); } catch (e) { /* */ }
 
 
 

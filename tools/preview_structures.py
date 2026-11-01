@@ -33,6 +33,7 @@ COL = [
     ("diorite", (214, 212, 208)), ("calcite", (226, 226, 220)), ("sandstone", (226, 210, 160)), ("beacon", (140, 230, 240)),
     ("lily_of_the_valley", (245, 245, 240)), ("oxeye", (250, 245, 210)), ("tulip", (240, 240, 235)), ("sea_lantern", (200, 236, 230)),
     ("waterlily", (40, 140, 60)), ("bamboo", (140, 170, 60)), ("campfire", (240, 120, 30)), ("torch", (255, 200, 80)),
+    ("netherite", (62, 54, 58)), ("obsidian", (22, 16, 36)), ("amethyst", (150, 108, 196)), ("yellow_stained", (240, 220, 90)), ("purple_stained", (150, 60, 200)),
 ]
 
 

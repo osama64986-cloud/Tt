@@ -88,10 +88,10 @@ function mkDim(id) {
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
-    getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
+    getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
@@ -99,7 +99,7 @@ function mkDim(id) {
       return [player];
     },
     getTopmostBlock(l) { const b = { x: Math.floor(l.x), y: 63, z: Math.floor(l.z), typeId: "minecraft:grass_block", location: { x: l.x, y: 63, z: l.z }, isAir: false, isLiquid: false, dimension: d, above: () => ({ isAir: true }), below: () => ({ isAir: false, isLiquid: false }), getComponent: () => undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
-    fillBlocks() {}, setBlockType() {}, setBlockPermutation() {}, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
+    fillBlocks() {}, setBlockType(l, t) { (stats.setTypes = stats.setTypes || []).push([Math.floor(l.x), Math.floor(l.y), Math.floor(l.z), t]); }, setBlockPermutation() {}, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   };
   return d;
 }
@@ -115,6 +115,8 @@ Object.assign(player, {
   sendMessage(m) { stats.messages.push(String(m)); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   getRotation() { return { x: 0, y: 0 }; },
+  inputInfo: { getMovementVector: () => player._mv || { x: 0, y: 0 } },
+  getVelocity: () => player._vel || { x: 0, y: 0, z: 0 },
   getEntitiesFromViewDirection() { return entities.filter((e) => e._valid && e.typeId.startsWith("minecraft:zombie")).map((e, i) => ({ entity: e, distance: 4 + i })); },
   getBlockFromViewDirection() { return { block: { location: { x: 0, y: 63, z: 8 } }, faceLocation: { x: 0.5, y: 1, z: 0.5 } }; },
   getComponent(n) {
@@ -641,6 +643,72 @@ export const __sim = {
         entities.length = 0; advance(120);
       }
       player._hp = 20; player._max = 20; player._valid = true; entities.length = 0;
+    }
+    // ضريحا السيف: حارسان يظهران، وموتهما (الاثنين) يطلّع صندوق السيف المناسب
+    {
+      console.log("\nضريحا السيف:");
+      for (const [type, bosses, sword] of [["lightshrine", ["sh:veilfox", "sh:magmamoth"], "sh:silver_oath"], ["shrine", ["sh:gloomhorn", "sh:hollow_seer"], "sh:dark_katana"]]) {
+        entities.forEach((x) => (x._valid = false)); entities.length = 0;
+        player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
+        world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 14, y: 64, z: 14, type, rot: 0, seed: 7, v: 2, ok: 1 }]));
+        stats.setTypes = []; stats.chestItems = [];
+        advance(420);
+        const alive = (t) => entities.filter((e) => e._valid && e.typeId === t && e._tags.has("sh_boss")).length;      // نعد الحراس بس (وحوش الطبيعة من نفس النوع ما تحسب)
+        const spawned = bosses.every((t) => alive(t) === 1);
+        advance(420);
+        const noDup = bosses.every((t) => alive(t) === 1);              // ما يتكرر ظهورهم
+        const chest0 = stats.setTypes.some((q) => q[3] === "minecraft:chest");
+        const kill = (t) => { const e = entities.find((x) => x._valid && x.typeId === t && x._tags.has("sh_boss")); e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); };
+        kill(bosses[0]);
+        const afterOne = stats.setTypes.some((q) => q[3] === "minecraft:chest");
+        advance(420);                                                    // الأول ما يرجع، الثاني يبقى
+        const respawnDead = alive(bosses[0]) > 0;
+        kill(bosses[1]);
+        const chest = stats.setTypes.filter((q) => q[3] === "minecraft:chest");
+        const gotSword = stats.chestItems.includes(sword);
+        const wr = JSON.parse(world.getDynamicProperty("sh_structs"))[0];
+        console.log(`  ${type.padEnd(12)} حارسان ${spawned ? "✔" : "✖"} | بدون تكرار ${noDup ? "✔" : "✖"} | صندوق قبل الموت ${chest0 || afterOne ? "✖" : "✔(ما في)"} | الميت ما يرجع ${respawnDead ? "✖" : "✔"} | صندوق بعد موتهما ${chest.length === 1 ? "✔" : "✖"} (${chest[0] ? chest[0].slice(0, 3).join(",") : "-"}) | السيف ${gotSword ? "✔" : "✖"} (${sword}) | ختم مكسور ${wr.c ? "✔" : "✖"}`);
+        if (!spawned) failures.push(`${type}: الحارسان ما ظهروا`);
+        if (!noDup) failures.push(`${type}: الحراس يتكررون`);
+        if (chest0 || afterOne) failures.push(`${type}: صندوق ظهر قبل موت الاثنين`);
+        if (respawnDead) failures.push(`${type}: حارس ميت رجع`);
+        if (chest.length !== 1) failures.push(`${type}: الصندوق ما ظهر (أو تكرر) بعد موتهما`);
+        if (!gotSword) failures.push(`${type}: السيف ${sword} مو بالصندوق`);
+      }
+      entities.forEach((x) => (x._valid = false)); entities.length = 0; world.setDynamicProperty("sh_structs", "[]");
+      player._hp = 20; player._max = 20; player._valid = true;
+    }
+    // الداش: ضغطتين على يمين/يسار/خلف
+    {
+      console.log("\nالداش:");
+      const tap = (v, n = 3) => { player._mv = v; advance(n); };
+      const idle = (n = 3) => { player._mv = { x: 0, y: 0 }; advance(n); };
+      const dbl = (v) => { tap(v); idle(); tap(v); idle(10); };       // ضغطة، إفلات، ضغطة، ثم نخلي الداش يخلص
+      const at = () => ({ x: player.location.x, z: player.location.z });
+      const reset = () => { player.location = { x: 0, y: 64, z: 0 }; };
+      const s0 = stats.particles;
+      reset(); advance(40);
+      let a = at(); dbl({ x: 1, y: 0 }); let b = at();
+      const dx1 = b.x - a.x, dz1 = b.z - a.z;
+      const side1 = Math.abs(Math.abs(dx1) - 6) < 0.6 && Math.abs(dz1) < 0.5;
+      reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();                  // ضمن الكول داون (1.8 ثانية): ما يشتغل
+      const blocked = Math.hypot(b.x - a.x, b.z - a.z) < 0.5;
+      advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
+      const back = Math.abs(b.z - a.z + 6) < 0.6 && Math.abs(b.x - a.x) < 0.5;     // خلف = عكس اتجاه البصر (+z)
+      advance(60);
+      // معايرة: جهاز x موجب عنده = يمين (السرعة تبين يمين لما x موجب)
+      reset(); player._vel = { x: -0.2, y: 0, z: 0 }; tap({ x: 1, y: 0 }, 14); player._vel = { x: 0, y: 0, z: 0 }; idle(40);
+      reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();
+      const calibrated = b.x - a.x < -5.4;                                // يمين (نسبة للبصر +z) = -x
+      player._mv = { x: 0, y: 0 };
+      console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | كول داون 1.8 ثانية ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
+      if (!side1) failures.push(`الداش جانبي ما اشتغل أو المسافة غلط (${dx1.toFixed(1)},${dz1.toFixed(1)})`);
+      if (!blocked) failures.push("الداش اشتغل ضمن الكول داون");
+      if (!back) failures.push("داش الخلف ما اشتغل");
+      if (!calibrated) failures.push("معايرة اتجاه الداش ما اشتغلت");
+      const dashSrc = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8");
+      if (/spawnParticle|MolangVariableMap/.test(dashSrc)) failures.push("الداش لازم بدون جزيئات");
+      reset();
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

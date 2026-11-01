@@ -10,7 +10,8 @@
   7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
   8. كل كيان BP له كيان RP، وكل مفتاح اسم موجود بملف اللغة الإنجليزي.
   8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
-  9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
+  9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD والضريحين والداش على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
+ 10. المخططات: قرية الساكورا (check_village.py) وضريحا السيف (check_shrines.py).
 """
 import glob
 import json
@@ -202,6 +203,9 @@ if node:
             r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_village.py"), os.path.join(td, "plan_village.json")], capture_output=True)
             if r.returncode != 0:
                 err("فحص قرية الساكورا فشل:\n" + r.stdout.decode("utf-8", "replace")[-1500:])
+            r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_shrines.py"), td], capture_output=True)   # ضريحا السيف: 45×45، أعمدة، مفتوح للسما، بدون صناديق، منارة، وصول
+            if r.returncode != 0:
+                err("فحص ضريحي السيف فشل:\n" + r.stdout.decode("utf-8", "replace")[-1800:])
 
 for w in warnings:
     print("تحذير:", w)

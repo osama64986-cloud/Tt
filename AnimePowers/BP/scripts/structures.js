@@ -1,6 +1,7 @@
 // هياكل الاستكشاف: بيوت يابانية، قصر، خرائب معبد. تنبني بالسكربت قرب اللاعب وهو يتحرك.
 import { world, system, BlockPermutation, BlockVolume, ItemStack } from "@minecraft/server";
 import { buildSakuraVillage, SAKURA_HALF } from "./sakura.js";
+import { buildLightShrine, buildDarkShrine, SHRINE_HALF } from "./shrines.js";
 
 // ───────────────────────── مساعدات الأوامر ─────────────────────────
 // op: ["box",x1,y1,z1,x2,y2,z2,id] | ["set",x,y,z,id] | ["stair",x,y,z,id,dir,upside] | ["perm",x,y,z,id,states]
@@ -29,6 +30,8 @@ class Plan {
   perm(x, y, z, id, states) { this.ops.push(["perm", x, y, z, id, states]); }
   chest(x, y, z, key) { this.ops.push(["chest", x, y, z, key]); }
   mob(x, y, z, type) { this.spawns.push({ x, y, z, type }); }
+  // موقع صندوق الجائزة: ما ينبني وقت البناء، بس يظهر لما يموت الحراس (إسم مفتاح الغنائم)
+  reward(x, y, z, key) { this.rewardAt = { x, y, z, key }; }
   hang(x, y, z, id = "minecraft:lantern") { this.perm(x, y, z, id, { hanging: true }); }
 
   // أرضية الموقع: تنظيف الهواء + أساس
@@ -252,8 +255,8 @@ export const STRUCTURES = {
   village: { name: "Sakura Village", half: SAKURA_HALF, weight: 0.3, guards: 0, lore: "The Order of Dawn's first home, where the story began." },
   palace: { name: "Sunset Palace", half: 26, weight: 0.2, guards: 4, lore: "The last light fell here before the palace fell." },
   ruins: { name: "Temple Ruins", half: 14, weight: 0.35, guards: 3, lore: "The ancient temple, where the first shard landed." },
-  shrine: { name: "Dark Sword Shrine", half: 13, weight: 0.15, guards: 3, unique: true, lore: "The Abyss sleeps beneath this stone." },
-  lightshrine: { name: "Light Sword Shrine", half: 13, weight: 0.12, guards: 3, unique: true, lore: "The light the Abyss could never swallow sleeps beneath this beam." },
+  shrine: { name: "Dark Sword Shrine", half: SHRINE_HALF, weight: 0.15, guards: 0, bosses: ["sh:gloomhorn", "sh:hollow_seer"], unique: true, lore: "The Abyss sleeps beneath this stone. Defeat its two guardians to break the seal." },
+  lightshrine: { name: "Light Sword Shrine", half: SHRINE_HALF, weight: 0.12, guards: 0, bosses: ["sh:veilfox", "sh:magmamoth"], unique: true, lore: "The light the Abyss could never swallow sleeps beneath this beam. Defeat its two guardians to break the seal." },
 };
 
 // قرية الساكورا (77×77) من صورة المرجع: التفاصيل بـ sakura.js
@@ -368,108 +371,9 @@ export function planRuins(seed) {
   return P;
 }
 
-// ضريح السيف المظلم: منصات متدرجة من حجر أسود، توريان أسودان، بركتان، أعمدة فوانيس، دكة الكاتانا
-export function planShrine(seed) {
-  const P = new Plan(seed);
-  const r = P.r;
-  const BB = "minecraft:polished_blackstone_bricks", BW = "minecraft:polished_blackstone_brick_wall";
-  P.ground(-13, -13, 13, 13, 10, "minecraft:coarse_dirt");
-  P.box(-12, -1, -12, 12, -1, 12, BB);
-  for (let x = -12; x <= 12; x++) for (let z = -12; z <= 12; z++) if (r() < 0.16) P.set(x, -1, z, "minecraft:cracked_polished_blackstone_bricks");
-  // ممر بحواف بنفسجية
-  P.box(-1, -1, 4, 1, -1, 12, "minecraft:polished_blackstone");
-  P.box(-2, -1, 4, -2, -1, 12, "minecraft:purple_concrete"); P.box(2, -1, 4, 2, -1, 12, "minecraft:purple_concrete");
-  // بركتان عاكستان على جانبي الممر
-  for (const sx of [-1, 1]) {
-    P.box(sx * 6 - 2, -1, 5, sx * 6 + 2, -1, 10, "minecraft:blackstone");
-    P.box(sx * 6 - 1, -2, 6, sx * 6 + 1, -1, 9, WATER);
-    P.set(sx * 6, 0, 7, "minecraft:soul_lantern");
-  }
-  // سور واطي مع فتحة البوابة
-  for (let i = -12; i <= 12; i++) {
-    P.set(i, 0, -12, BW); P.set(-12, 0, i, BW); P.set(12, 0, i, BW);
-    if (Math.abs(i) > 2) P.set(i, 0, 12, BW);
-  }
-  // توريان أسودان (خارجي كبير وداخلي أصغر)
-  P.torii(0, 12, 3, 6, true);
-  P.torii(0, 8, 2, 5, true);
-  // درجان للمنصة المركزية ثم الدكة
-  P.box(-5, 0, -5, 5, 0, 5, BB);
-  P.box(-4, 1, -4, 4, 1, 4, "minecraft:polished_blackstone");
-  P.box(-3, 2, -3, 3, 2, 3, "minecraft:chiseled_polished_blackstone");
-  for (const x of [-1, 0, 1]) { P.stair(x, 0, 6, "minecraft:polished_blackstone_brick_stairs", "n"); P.stair(x, 1, 5, "minecraft:polished_blackstone_brick_stairs", "n"); }
-  P.box(-1, 3, -1, 1, 3, 1, "minecraft:crying_obsidian");
-  P.chest(0, 4, 0, "shrine");
-  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.box(x, 4, z, x, 6, z, "minecraft:end_rod");
-  // أعمدة الأركان بفوانيس الروح + أعمدة المنصة
-  for (const [x, z] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) { P.box(x, 0, z, x, 4, z, BW); P.set(x, 5, z, "minecraft:soul_lantern"); }
-  for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) { P.box(x, 1, z, x, 4, z, "minecraft:polished_blackstone_brick_wall"); P.set(x, 5, z, "minecraft:soul_lantern"); }
-  // فوانيس حجر أسود على جانبي الممر + أعمدة بلور بنفسجي حول الدكة
-  for (const z of [5, 7, 9, 11]) for (const x of [-3, 3]) { P.set(x, 0, z, BB); P.set(x, 1, z, BW); P.set(x, 2, z, "minecraft:soul_lantern"); P.set(x, 3, z, "minecraft:polished_blackstone_brick_slab"); }
-  for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) P.box(x, 3, z, x, 5, z, "minecraft:purple_stained_glass");
-  // مجامر ومواقد
-  P.set(-8, 0, 0, "minecraft:soul_campfire"); P.set(8, 0, 0, "minecraft:soul_campfire");
-  for (const z of [-8, 0]) { P.set(-8, 0, z, "minecraft:soul_torch"); P.set(8, 0, z, "minecraft:soul_torch"); }
-  P.mob(-4, 0, -4, "sh:shadow_hound"); P.mob(4, 0, -4, "sh:shadow_hound"); P.mob(0, 0, 8, "sh:rust_guard");
-  return P;
-}
-
-// ضريح سيف النور (عكس ضريح السيف المظلم): منصات متدرجة من كوارتز أبيض، توريان أبيضان بسقف ذهب،
-// بركتان مضيئتان من تحت، فوانيس حجر أبيض، زهور بيضاء، ومنارة (beacon) فوق هرم ذهب يطلع منها عمود نور للسما.
-// صندوق السيف قدام المنارة. ينبني مرة وحدة بالعالم.
-export function planLightShrine(seed) {
-  const P = new Plan(seed);
-  const r = P.r;
-  const QB = "minecraft:quartz_bricks", DW = "minecraft:diorite_wall";
-  P.ground(-13, -13, 13, 13, 12, "minecraft:grass_block");
-  P.box(-12, -1, -12, 12, -1, 12, "minecraft:smooth_quartz");
-  for (let x = -12; x <= 12; x++) for (let z = -12; z <= 12; z++) if (r() < 0.14) P.set(x, -1, z, "minecraft:calcite");
-  // ممر بحواف ذهبية فاتحة
-  P.box(-1, -1, 4, 1, -1, 12, QB);
-  P.box(-2, -1, 4, -2, -1, 12, "minecraft:smooth_sandstone"); P.box(2, -1, 4, 2, -1, 12, "minecraft:smooth_sandstone");
-  // بركتان مضيئتان (فانوس بحري تحت الماء)
-  for (const sx of [-1, 1]) {
-    P.box(sx * 6 - 2, -1, 5, sx * 6 + 2, -1, 10, "minecraft:polished_diorite");
-    P.box(sx * 6 - 1, -2, 6, sx * 6 + 1, -2, 9, "minecraft:sea_lantern");
-    P.box(sx * 6 - 1, -1, 6, sx * 6 + 1, -1, 9, WATER);
-    P.set(sx * 6, 0, 7, "minecraft:lantern");
-  }
-  // سور واطي أبيض مع فتحة البوابة
-  for (let i = -12; i <= 12; i++) {
-    P.set(i, 0, -12, DW); P.set(-12, 0, i, DW); P.set(12, 0, i, DW);
-    if (Math.abs(i) > 2) P.set(i, 0, 12, DW);
-  }
-  // توريان أبيضان بسقف ذهب
-  P.torii(0, 12, 3, 6, "light");
-  P.torii(0, 8, 2, 5, "light");
-  // المنصة المتدرجة
-  P.box(-5, 0, -5, 5, 0, 5, QB);
-  P.box(-4, 1, -4, 4, 1, 4, "minecraft:smooth_quartz");
-  P.box(-3, 2, -3, 3, 2, 3, "minecraft:chiseled_quartz_block");
-  for (const x of [-1, 0, 1]) { P.stair(x, 0, 6, "minecraft:quartz_stairs", "n"); P.stair(x, 1, 5, "minecraft:quartz_stairs", "n"); }
-  // هرم ذهب 3×3 ومنارة فوقه (عمود نور للسما)، وصندوق السيف قدامها
-  P.box(-1, 3, -1, 1, 3, 1, "minecraft:gold_block");
-  P.set(0, 4, 0, "minecraft:beacon");
-  P.chest(0, 3, 2, "lightshrine");
-  for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) P.box(x, 3, z, x, 4, z, "minecraft:end_rod");
-  // أعمدة الأركان وفوانيس
-  for (const [x, z] of [[-11, -11], [11, -11], [-11, 11], [11, 11]]) { P.box(x, 0, z, x, 4, z, "minecraft:quartz_pillar"); P.set(x, 5, z, "minecraft:lantern"); }
-  for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) { P.box(x, 1, z, x, 4, z, DW); P.set(x, 5, z, "minecraft:lantern"); }
-  // فوانيس حجر أبيض على جانبي الممر + زجاج أبيض حول المنصة
-  for (const z of [5, 7, 9, 11]) for (const x of [-3, 3]) { P.set(x, 0, z, QB); P.set(x, 1, z, DW); P.set(x, 2, z, "minecraft:lantern"); P.set(x, 3, z, "minecraft:quartz_block"); }
-  for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) P.box(x, 3, z, x, 5, z, "minecraft:white_stained_glass");
-  // زهور بيضاء بالأطراف
-  const flowers = ["minecraft:lily_of_the_valley", "minecraft:oxeye_daisy", "minecraft:white_tulip"];
-  for (let i = 0; i < 26; i++) {
-    const x = Math.floor(r() * 21) - 10, z = Math.floor(r() * 21) - 10;
-    if (Math.abs(x) <= 6 && Math.abs(z) <= 6) continue;
-    if (Math.abs(x) <= 3 && z > 3) continue;
-    if (Math.abs(Math.abs(x) - 6) <= 2 && z >= 5 && z <= 10) continue;
-    P.set(x, -1, z, "minecraft:grass_block"); P.set(x, 0, z, flowers[i % 3]);
-  }
-  P.mob(-4, 0, -4, "sh:rust_guard"); P.mob(4, 0, -4, "sh:rust_guard"); P.mob(0, 0, 8, "sh:ember_imp");
-  return P;
-}
+// ضريحا السيف: ساحتا قتال 45×45 مفتوحتان للسما (التفاصيل بـ shrines.js). بدون صناديق: الصندوق يظهر لما يموت الحارسان.
+export function planShrine(seed) { const P = new Plan(seed); buildDarkShrine(P); return P; }
+export function planLightShrine(seed) { const P = new Plan(seed); buildLightShrine(P); return P; }
 
 // ───────────────────────── معبد النجمة: مكان سحب القدرة ─────────────────────────
 // قاعة 15×15 بارتفاع 6 فوق منصة حجرية: أرضية مصقولة، ممر للمركز بين قناتي ماء، أعمدة بفوانيس معلقة وأماثيست،
@@ -754,15 +658,83 @@ function pickSite(dim, center, minD, maxD, half) {
 }
 
 // ───────────────────────── السجل والتشغيل ─────────────────────────
+let migrating = false;
 function loadReg() {
   try {
     const raw = world.getDynamicProperty("sh_structs");
-    if (typeof raw === "string") return JSON.parse(raw);
+    if (typeof raw === "string") { const r = JSON.parse(raw); if (!migrating) { migrating = true; try { return migrateReg(r); } finally { migrating = false; } } return r; }
   } catch (e) { /* */ }
   return [];
 }
 function saveReg(r) {
   try { world.setDynamicProperty("sh_structs", JSON.stringify(r)); } catch (e) { /* */ }
+}
+// الضريحان القديمان (قبل 1.28.0: بحجم 27×27 وصندوق جاهز) ننساهن من السجل حتى ينبنون الجداد 45×45 بحراسهم (المباني القديمة تبقى بالعالم)
+function migrateReg(r) {
+  const out = r.filter((s) => !((s.type === "shrine" || s.type === "lightshrine") && !s.v));
+  if (out.length !== r.length) saveReg(out);
+  return out;
+}
+function markBuilt(x, z, type) {
+  const reg = loadReg();
+  const e = reg.find((s) => s.x === x && s.z === z && s.type === type);
+  if (e) { e.ok = 1; saveReg(reg); }
+}
+let guardHook;
+// الحارسان القويان: نظهر اللي ما انقتل وما هو موجود (إذا تبخر بالبعد نعيده). النوع يتحدد من خطة الضريح (plan.spawns)
+function ensureBosses(p, s) {
+  const plan = PLANNERS[s.type](s.seed);
+  const dim = p.dimension, centre = { x: s.x, y: s.y + 1, z: s.z }, dead = s.kt || [];
+  for (const sp of plan.spawns) {
+    if (dead.includes(sp.type)) continue;
+    if (dim.getEntities({ type: sp.type, tags: ["sh_boss"], location: centre, maxDistance: 45 }).length) continue;
+    const [x, z] = rotXZ(sp.x, sp.z, s.rot);
+    const loc = { x: s.x + x + 0.5, y: s.y + sp.y, z: s.z + z + 0.5 };
+    if (!dim.isChunkLoaded(loc)) continue;
+    const e = dim.spawnEntity(sp.type, loc);
+    try { e.addTag("sh_boss"); } catch (e4) { /* */ }               // نميّز الحارس عن وحوش الطبيعة من نفس النوع
+    try { if (guardHook) guardHook(e, p); } catch (e5) { /* */ }
+  }
+}
+// يستدعيه main.js لما يموت أي وحش: إذا كان من حراس ضريح قريب نسجله، ولما يموت الاثنان يظهر صندوق السيف بمكان الجائزة
+export function onShrineBossDeath(typeId, loc, dim, tagged = true) {
+  if (!tagged || !dim || dim.id !== "minecraft:overworld") return;
+  const reg = loadReg();
+  for (const s of reg) {
+    const spec = STRUCTURES[s.type];
+    if (!spec || !spec.bosses || s.c || !spec.bosses.includes(typeId)) continue;
+    if (Math.hypot(s.x - loc.x, s.z - loc.z) > 36) continue;
+    s.kt = s.kt || [];
+    if (s.kt.includes(typeId)) continue;
+    s.kt.push(typeId);
+    if (s.kt.length >= spec.bosses.length) { s.c = 1; saveReg(reg); openSeal(dim, s); }
+    else {
+      saveReg(reg);
+      for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 70 })) { try { p.sendMessage("§6[Shrine] §fOne guardian has fallen. §7The seal still holds: defeat the other one."); } catch (e) { /* */ } }
+    }
+    return;
+  }
+}
+// الختم ينكسر: صندوق السيف يظهر قدام المنارة، مع أصوات وجزيئات ماينكرافت
+function openSeal(dim, s) {
+  const plan = PLANNERS[s.type](s.seed), rw = plan.rewardAt;
+  if (!rw) return;
+  const [x, z] = rotXZ(rw.x, rw.z, s.rot);
+  const loc = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
+  dim.setBlockType(loc, "minecraft:chest");
+  const b = dim.getBlock(loc);
+  if (b) fillChest(b, rw.key);
+  const c = { x: loc.x + 0.5, y: loc.y + 0.6, z: loc.z + 0.5 };
+  try {
+    dim.spawnParticle("minecraft:large_explosion", c);
+    dim.spawnParticle("minecraft:totem_particle", c);
+    dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
+    dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.0 });
+  } catch (e) { /* */ }
+  const sword = s.type === "lightshrine" ? "Oath of Light" : "Abyss Katana";
+  for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 80 })) {
+    try { p.sendMessage(`§6[Shrine] §fBoth guardians are defeated. §eThe seal breaks!\n§7A chest appeared before the beam: it holds the §f${sword}§7.`); } catch (e) { /* */ }
+  }
 }
 
 let building = false;
@@ -784,6 +756,7 @@ function chooseType(reg = []) {
 }
 
 export function setupStructures(onGuardSpawn) {
+  guardHook = onGuardSpawn;
   // بناء هيكل جديد قرب اللاعب (بعيد عن الهياكل الموجودة)
   system.runInterval(() => {
     if (building) return;
@@ -803,7 +776,7 @@ export function setupStructures(onGuardSpawn) {
         const seed = Math.floor(Math.random() * 1e9);
         const rot = Math.floor(Math.random() * 4);
         const plan = PLANNERS[type](seed);
-        reg.push({ x: site.x, y: site.y, z: site.z, type, rot, seed });
+        reg.push({ x: site.x, y: site.y, z: site.z, type, rot, seed, v: 2 });
         saveReg(reg);
         // نخبر اللاعب وين طلعت البناية (حتى ما يدور بدون فايدة)
         try {
@@ -815,7 +788,7 @@ export function setupStructures(onGuardSpawn) {
         } catch (e6) { /* */ }
         building = true;
         const gen = execute(p.dimension, site.x, site.y, site.z, rot, plan, fillChest);
-        const job = system.runJob((function* () { try { yield* gen; } finally { building = false; } })());
+        const job = system.runJob((function* () { try { yield* gen; } finally { building = false; markBuilt(site.x, site.z, type); } })());
         return;
       } catch (e) { building = false; }
     }
@@ -833,6 +806,10 @@ export function setupStructures(onGuardSpawn) {
         if (d < 30 && !announced.has(key)) {
           announced.add(key);
           try { p.sendMessage(`§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
+        }
+        if (STRUCTURES[s.type].bosses) {                                    // الضريحان: حارسان قويان فقط لحد ما ينكسر الختم
+          if (s.ok && !s.c && d < 50) { try { ensureBosses(p, s); } catch (e) { /* */ } }
+          continue;
         }
         if (d < 40 && STRUCTURES[s.type].guards > 0) {
           try {
