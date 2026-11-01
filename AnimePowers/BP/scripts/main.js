@@ -4385,8 +4385,25 @@ function runMonsterSkills() {
 }
 system.runInterval(runMonsterSkills, 4);
 
-// الرامي: وضعية السحب لما يكون لاعب قريب، ووضعية الإطلاق لحظة ما يطلع السهم
-const archerRelease = new Map();
+// الرامي: الرمي صار بالسكربت حتى الحركة والسهم يكونون متزامنين 100%:
+// تصويب (يرفع القوس) ← سحب الوتر 1.3 ثانية وهو يلف عليك ← إطلاق السهم بنفس لحظة حركة الإطلاق ← يجهز السهم الجاي.
+const archerAI = new Map();
+function archerSilenced(e) { return zones.some((z) => z.kind === "silence" && z.silenced.has(e.id)); }
+function archerShoot(e, tp) {
+  const dim = e.dimension;
+  const from = { x: e.location.x, y: e.location.y + 1.5, z: e.location.z };
+  const to = { x: tp.location.x, y: tp.location.y + 1.1, z: tp.location.z };
+  const dx = to.x - from.x, dz = to.z - from.z, flat = Math.hypot(dx, dz) || 1;
+  const dy = to.y - from.y + flat * 0.06;
+  const l = Math.hypot(dx, dy, dz) || 1, speed = 1.7;
+  const start = { x: from.x + (dx / flat) * 0.8, y: from.y, z: from.z + (dz / flat) * 0.8 };
+  let ar;
+  try { ar = dim.spawnEntity("minecraft:arrow", start); } catch (err) { return; }
+  try { const pr = ar.getComponent("minecraft:projectile"); if (pr) { pr.owner = e; pr.shoot({ x: (dx / l) * speed, y: (dy / l) * speed, z: (dz / l) * speed }); } else ar.applyImpulse({ x: (dx / l) * speed, y: (dy / l) * speed, z: (dz / l) * speed }); }
+  catch (err) { try { ar.applyImpulse({ x: (dx / l) * speed, y: (dy / l) * speed, z: (dz / l) * speed }); } catch (err2) { /* */ } }
+  try { dim.playSound("random.bow", from, { volume: 1, pitch: 0.9 + Math.random() * 0.2 }); } catch (err) { /* */ }
+  burst(dim, start, 8, [0.62, 0.35, 1], 2.5, 0.16);
+}
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -4395,13 +4412,32 @@ system.runInterval(() => {
     try { list = dim.getEntities({ type: "sh:training_archer" }); } catch (e) { continue; }
     for (const e of list) {
       try {
-        if ((archerRelease.get(e.id) ?? 0) > system.currentTick) continue;
-        const near = dim.getPlayers({ location: e.location, maxDistance: 18 }).length > 0;
-        setMState(e, near ? 1 : 0);
-      } catch (err) { /* */ }
+        let st = archerAI.get(e.id);
+        if (!st) { st = { phase: "rest", t: 0, cd: 20 }; archerAI.set(e.id, st); }
+        const np = nearestPlayer(e, 16);
+        if (!np || archerSilenced(e)) { if (st.phase !== "rest") { st.phase = "rest"; setMState(e, 0); } continue; }
+        const tp = np.p;
+        if (st.phase !== "rest" && st.phase !== "aim") { try { e.setRotation({ x: 0, y: yawOf(e.location, tp.location) }); } catch (err) { /* */ } }
+        st.t += 2;
+        if (st.phase === "rest" || st.phase === "aim") {
+          if (st.phase === "rest") { st.phase = "aim"; setMState(e, 3); }
+          st.cd -= 2;
+          if (st.cd <= 0 && np.d > 1.5) { st.phase = "draw"; st.t = 0; setMState(e, 1); try { dim.playSound("random.click", e.location, { volume: 0.4, pitch: 1.6 }); } catch (err) { /* */ } }
+        } else if (st.phase === "draw") {
+          // شحنة بنفسجية تكبر عند القوس (تحذير: السهم جاي)
+          if (st.t % 4 === 0) {
+            const f = flatDir(e), k = st.t / 26;
+            glow(dim, { x: e.location.x + f.x * 0.9, y: e.location.y + 1.45, z: e.location.z + f.z * 0.9 }, { color: [0.62 + 0.3 * k, 0.35 + 0.4 * k, 1], size: 0.12 + 0.22 * k, life: 0.3 });
+          }
+          if (st.t >= 26) { archerShoot(e, tp); st.phase = "release"; st.t = 0; setMState(e, 2); }
+        } else if (st.phase === "release") {
+          if (st.t >= 10) { st.phase = "aim"; st.cd = 24 + Math.random() * 30; setMState(e, 3); }
+        }
+      } catch (err) { archerAI.delete(e.id); }
     }
   }
-}, 10);
+}, 2);
+world.afterEvents.entityDie.subscribe((ev) => { try { archerAI.delete(ev.deadEntity.id); } catch (e) { /* */ } });
 
 
 // ───────────────────────── الرامي: سهمه يظهر ويترك أثر ─────────────────────────
@@ -4421,13 +4457,7 @@ system.runInterval(() => {
           if (!seenArrows.has(ar.id)) {
             seenArrows.add(ar.id);
             if (Math.hypot(L.x - a.location.x, L.z - a.location.z) > 3) continue;
-            // وميض عند إطلاق السهم + الرامي يسوي حركة الإطلاق
-            setMState(a, 2);
-            archerRelease.set(a.id, system.currentTick + 10);
-            later(10, () => { if (valid(a)) setMState(a, 1); });
-            burst(dim, L, 10, [0.62, 0.35, 1], 2.5, 0.16);
             ring(dim, L, 0.6, 10, 0, [0.62, 0.35, 1], 0.15);
-            sfx(dim, "sh.imp_windup", L, 0.5, 1.8);
             if (seenArrows.size > 200) seenArrows.clear();
           }
           const sp = ar.getVelocity();

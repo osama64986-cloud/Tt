@@ -475,15 +475,21 @@ export const __sim = {
         if (dmg <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }
       player._hp = 20; player._max = 20;
-      // الرامي: يسحب لما تقرب ويسوي حركة الإطلاق لما يطلع السهم
-      entities.length = 0;
+      // الرامي: تصويب ← سحب ← إطلاق (والسهم يطلع بنفس لحظة الإطلاق) ← تصويب
+      entities.length = 0; player._valid = true; player.location = { x: 0, y: 64, z: 0 };
       const a = mkEntity("sh:training_archer", { x: 0, y: 64, z: 8 }, dims.overworld, 14); entities.push(a);
-      advance(12); const aim = a.getProperty("sh:state");
-      const ar = mkEntity("minecraft:arrow", { x: 0, y: 65, z: 7 }, dims.overworld, 1); entities.push(ar);
-      advance(3); const rel = a.getProperty("sh:state");
-      advance(14); const back = a.getProperty("sh:state");
-      console.log("  الرامي: تصويب =", aim, "| إطلاق =", rel, "| رجع يصوب =", back);
-      if (aim !== 1 || rel !== 2 || back !== 1) failures.push("حالات أنميشن الرامي غلط");
+      const seq = []; let arrowsAtRelease = 0, arrows = 0;
+      for (let t = 0; t < 200; t += 2) {
+        advance(2);
+        const v = a.getProperty("sh:state");
+        if (seq[seq.length - 1] !== v) seq.push(v);
+        const n = entities.filter((e) => e.typeId === "minecraft:arrow").length;
+        if (n > arrows && v === 2) arrowsAtRelease++;
+        arrows = n;
+      }
+      console.log("  الرامي: تسلسل الحالات", seq.join("→"), "| أسهم =", arrows, "| أسهم طلعت لحظة الإطلاق =", arrowsAtRelease);
+      if (!seq.includes(3) || !seq.includes(1) || !seq.includes(2)) failures.push("الرامي ما يمر بالتصويب والسحب والإطلاق");
+      if (arrows < 2 || arrowsAtRelease !== arrows) failures.push("سهم الرامي مو متزامن ويا حركة الإطلاق");
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

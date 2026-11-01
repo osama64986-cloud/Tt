@@ -19,7 +19,8 @@
         "rest": "animation.sh_archer.rest",
         "draw": "animation.sh_archer.draw",
         "release": "animation.sh_archer.release",
-        "state": "controller.animation.sh_archer.state"
+        "state": "controller.animation.sh_archer.state",
+        "aim": "animation.sh_archer.aim"
       },
       "scripts": {
         "animate": [

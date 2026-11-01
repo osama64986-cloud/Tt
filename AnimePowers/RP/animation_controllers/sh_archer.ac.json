@@ -10,13 +10,33 @@
           ],
           "transitions": [
             {
+              "aim": "query.property('sh:state') == 3"
+            },
+            {
               "draw": "query.property('sh:state') == 1"
             },
             {
               "release": "query.property('sh:state') == 2"
             }
           ],
-          "blend_transition": 0.15
+          "blend_transition": 0.2
+        },
+        "aim": {
+          "animations": [
+            "aim"
+          ],
+          "transitions": [
+            {
+              "draw": "query.property('sh:state') == 1"
+            },
+            {
+              "release": "query.property('sh:state') == 2"
+            },
+            {
+              "default": "query.property('sh:state') == 0"
+            }
+          ],
+          "blend_transition": 0.2
         },
         "draw": {
           "animations": [
@@ -27,10 +47,13 @@
               "release": "query.property('sh:state') == 2"
             },
             {
+              "aim": "query.property('sh:state') == 3"
+            },
+            {
               "default": "query.property('sh:state') == 0"
             }
           ],
-          "blend_transition": 0.2
+          "blend_transition": 0.12
         },
         "release": {
           "animations": [
@@ -38,13 +61,16 @@
           ],
           "transitions": [
             {
-              "draw": "query.property('sh:state') == 1 && query.all_animations_finished"
+              "draw": "query.property('sh:state') == 1"
             },
             {
-              "default": "query.property('sh:state') == 0 && query.all_animations_finished"
+              "aim": "query.property('sh:state') == 3"
+            },
+            {
+              "default": "query.property('sh:state') == 0"
             }
           ],
-          "blend_transition": 0.05
+          "blend_transition": 0.04
         }
       }
     }
