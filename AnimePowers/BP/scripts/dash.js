@@ -1,4 +1,5 @@
 // الداش: ضغطتين سريعتين على يمين أو يسار أو خلف = داش بنفس الاتجاه (حسب وين تباوع). كول داون 1.8 ثانية، وبدون أي جزيئات (صوت خفيف بس).
+// ينفتح أول ما اللاعب يحصل أول رتبة (يترقى من Novice إلى Trainee)، ويبقى له للأبد (علم sh_dash على اللاعب، حتى لو انعادت حالته).
 // يقرا حركة اللاعب من player.inputInfo.getMovementVector() (x يمين/يسار، y قدام/خلف) كل تك:
 //  • يشتغل على لوحة المفاتيح وشاشة اللمس (جويستك) وعلى يد التحكم (عتبات ضغط/إفلات مع تأخير حتى ما يتلخبط).
 //  • ما نعرف اتجاه إشارة x,y بالضبط عند كل جهاز، فنعايرها تلقائياً: لما اللاعب يتحرك فعلاً نقارن إشارة المتجه بإشارة سرعته نسبة لاتجاه البصر
@@ -16,6 +17,21 @@ export const DASH = {
 };
 const DIRS = ["left", "right", "back"];
 const SOFT = /(grass|fern|flower|tulip|dandelion|poppy|orchid|allium|azure_bluet|daisy|cornflower|lily|rose|peony|lilac|sapling|carpet|torch|button|pressure_plate|sign|rail|vine|cane|web|petals|snow_layer|mushroom|sweet_berry|crop|wheat|carrots|potatoes|beetroot|melon_stem|pumpkin_stem|redstone_wire|tripwire|lever|flower_pot|candle)/;
+
+export const DASH_FROM_RANK = 1;     // أول رتبة تنكسب: Trainee (الرتبة 0 Novice يبدأ فيها اللاعب)
+const unlocked = (p) => { try { return p.getDynamicProperty("sh_dash") === 1; } catch (e) { return false; } };
+// يتحقق كل نص ثانية من رتبة اللاعب (حالته محفوظة بـ sh)؛ أول ما توصل DASH_FROM_RANK نحط العلم الدائم ونخبره
+function checkUnlock(p) {
+  try {
+    const raw = p.getDynamicProperty("sh");
+    const rank = typeof raw === "string" ? (JSON.parse(raw).rank || 0) : 0;
+    if (rank < DASH_FROM_RANK) return false;
+    p.setDynamicProperty("sh_dash", 1);
+    try { p.sendMessage("§6[Dash] §fDash unlocked! §7Double-tap §eleft§7, §eright§7 or §eback§7 to dash that way. It stays with you forever. (1.8 s cooldown)"); } catch (e) { /* */ }
+    try { p.playSound("sh.ready", { volume: 0.9, pitch: 1.2 }); } catch (e) { /* */ }
+    return true;
+  } catch (e) { return false; }
+}
 
 const state = new Map();   // player.id → { down, last, released, cd, vx, vy, plan }
 const stOf = (p) => {
@@ -98,6 +114,7 @@ export function setupDash() {
     for (const p of world.getAllPlayers()) {
       try {
         const s = stOf(p);
+        if (!unlocked(p)) { if (now % 10 === 0) checkUnlock(p); s.plan = null; continue; }   // مقفول لحد أول رتبة
         if (s.plan) stepDash(p, s);
         let v;
         try { v = p.inputInfo.getMovementVector(); } catch (e) { continue; }
@@ -125,12 +142,4 @@ export function setupDash() {
     }
   }, 1);
   world.afterEvents.playerLeave.subscribe((ev) => { try { state.delete(ev.playerId); } catch (e) { /* */ } });
-  // تلميح مرة وحدة
-  world.afterEvents.playerSpawn.subscribe((ev) => {
-    try {
-      if (!ev.initialSpawn || ev.player.getDynamicProperty("sh_dashhint")) return;
-      ev.player.setDynamicProperty("sh_dashhint", 1);
-      system.runTimeout(() => { try { ev.player.sendMessage("§6[Dash] §fDouble-tap §eleft§f, §eright§f or §eback§f to dash that way. §7(1.8 s cooldown)"); } catch (e) { /* */ } }, 100);
-    } catch (e) { /* */ }
-  });
 }

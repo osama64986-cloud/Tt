@@ -687,8 +687,16 @@ export const __sim = {
       const at = () => ({ x: player.location.x, z: player.location.z });
       const reset = () => { player.location = { x: 0, y: 64, z: 0 }; };
       const s0 = stats.particles;
-      reset(); advance(40);
+      // مقفول عند الرتبة 0 (Novice)
+      setState({ ...baseState("star"), rank: 0 }); player.setDynamicProperty("sh_dash", undefined); reset(); advance(14);
       let a = at(); dbl({ x: 1, y: 0 }); let b = at();
+      const lockedOk = Math.hypot(b.x - a.x, b.z - a.z) < 0.5;
+      // أول رتبة (Trainee) تفتحه ويجي إشعار، والعلم يبقى
+      const m0 = stats.messages.length;
+      setState({ ...baseState("star"), rank: 1 }); advance(14);
+      const unlockMsg = stats.messages.slice(m0).some((q) => /Dash unlocked/.test(q)) && player.getDynamicProperty("sh_dash") === 1;
+      reset(); advance(40);
+      a = at(); dbl({ x: 1, y: 0 }); b = at();
       const dx1 = b.x - a.x, dz1 = b.z - a.z;
       const side1 = Math.abs(Math.abs(dx1) - 6) < 0.6 && Math.abs(dz1) < 0.5;
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();                  // ضمن الكول داون (1.8 ثانية): ما يشتغل
@@ -701,6 +709,13 @@ export const __sim = {
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();
       const calibrated = b.x - a.x < -5.4;                                // يمين (نسبة للبصر +z) = -x
       player._mv = { x: 0, y: 0 };
+      // دائم: حتى لو رجعت الرتبة 0 (مثلاً ريسيت) يبقى الداش
+      setState({ ...baseState("star"), rank: 0 }); advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
+      const forever = Math.abs(b.z - a.z + 6) < 0.6;
+      console.log(`  مقفول قبل أول رتبة ${lockedOk ? "✔" : "✖"} | ينفتح بأول رتبة + إشعار ${unlockMsg ? "✔" : "✖"} | يبقى للأبد ${forever ? "✔" : "✖"}`);
+      if (!lockedOk) failures.push("الداش اشتغل قبل أول رتبة");
+      if (!unlockMsg) failures.push("الداش ما انفتح بأول رتبة (أو ما جاء إشعار)");
+      if (!forever) failures.push("الداش اختفى بعد ما انفتح");
       console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | كول داون 1.8 ثانية ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
       if (!side1) failures.push(`الداش جانبي ما اشتغل أو المسافة غلط (${dx1.toFixed(1)},${dz1.toFixed(1)})`);
       if (!blocked) failures.push("الداش اشتغل ضمن الكول داون");

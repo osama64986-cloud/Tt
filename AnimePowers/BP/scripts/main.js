@@ -901,7 +901,8 @@ async function showRanks(player) {
   body += `\n§bNormal promotion:§f every ${LEVELS_PER_RANK} levels you gain a rank.\n`;
   body += `§bJump:§f if you kill a monster two or more ranks above you, you rank up instantly (for the first ranks, up to ${RANKS[HARD_RANK_FROM]}).\n`;
   body += `§bAfterwards:§f killing a stronger monster gives triple experience but does not rank you up.\n`;
-  body += "§bWeak:§f a monster three ranks below you gives half the experience.\n\n";
+  body += "§bWeak:§f a monster three ranks below you gives half the experience.\n";
+  body += `§bDash:§f unlocks the moment you earn your first rank (${RANKS[1]}) and stays with you forever: double-tap left, right or back to dash that way.\n\n`;
   body += "§7Experience comes from: killing monsters, XP scrolls, and some structure chests.";
   await showForm(player, new ActionFormData().title("Ranks").body(body).button("§aOK"));
 }
