@@ -19,14 +19,16 @@
         "attack": "animation.sh_imp.pounce",
         "state": "controller.animation.sh_imp.state",
         "idle": "animation.sh_imp.idle",
-        "close": "animation.sh_imp.rake"
+        "close": "animation.sh_imp.rake",
+        "wings": "animation.sh_imp.wings"
       },
       "scripts": {
         "animate": [
           "idle",
           "walk",
           "state",
-          "look"
+          "look",
+          "wings"
         ],
         "scale": "1.25"
       },

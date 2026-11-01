@@ -63,7 +63,11 @@
     "s50": "geometry.sh_shape_rift_blue",
     "s51": "geometry.sh_shape_rift_violet",
     "s52": "geometry.sh_shape_rift_crimson",
-    "s53": "geometry.sh_shape_rift_abyss"
+    "s53": "geometry.sh_shape_rift_abyss",
+    "s54": "geometry.sh_shape_slash_teal",
+    "s55": "geometry.sh_shape_slash_venom",
+    "s56": "geometry.sh_shape_fireball",
+    "s57": "geometry.sh_shape_venom_glob"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

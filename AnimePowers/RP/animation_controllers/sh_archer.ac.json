@@ -11,6 +11,9 @@
           "transitions": [
             {
               "draw": "query.property('sh:state') == 1"
+            },
+            {
+              "release": "query.property('sh:state') == 2"
             }
           ],
           "blend_transition": 0.15
@@ -21,10 +24,27 @@
           ],
           "transitions": [
             {
+              "release": "query.property('sh:state') == 2"
+            },
+            {
               "default": "query.property('sh:state') == 0"
             }
           ],
-          "blend_transition": 0.15
+          "blend_transition": 0.2
+        },
+        "release": {
+          "animations": [
+            "release"
+          ],
+          "transitions": [
+            {
+              "draw": "query.property('sh:state') == 1 && query.all_animations_finished"
+            },
+            {
+              "default": "query.property('sh:state') == 0 && query.all_animations_finished"
+            }
+          ],
+          "blend_transition": 0.05
         }
       }
     }

@@ -458,6 +458,33 @@ export const __sim = {
       if (wrong > 0) failures.push("ضربة البندول صارت بتوقيت غلط");
       if (chainOk < 3) failures.push("ضربة البندول ما اشتغلت بالتوقيت الصح");
     }
+    // الوحوش: كل وحش يستعمل مهارته الخاصة الجديدة ويضرب
+    {
+      const SH = (await import("node:fs")).readFileSync(path.join(root, "AnimePowers/BP/scripts/shapes.js"), "utf8");
+      const sid = (n) => Number((SH.match(new RegExp('"' + n + '": (\\d+)')) || [])[1]);
+      const cases = [["sh:ember_imp", 9, "fireball"], ["sh:rust_guard", 9, "rock_chunk"], ["sh:shadow_hound", 7, "fang_jaw"], ["sh:sand_scorpion", 8, "slash_venom"]];
+      console.log("\nمهارات الوحوش الخاصة:");
+      for (const [type, dist, shape] of cases) {
+        entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 400; player._max = 400; player._valid = true;
+        const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 60); entities.push(m);
+        const d0 = stats.damage || 0; let seen = 0; const zones0 = stats.spawned;
+        for (let t = 0; t < 600; t += 2) { advance(2); if (entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
+        const dmg = Math.round((stats.damage || 0) - d0);
+        console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}`);
+        if (!seen) failures.push(`${type}: المهارة الخاصة (${shape}) ما طلعت`);
+        if (dmg <= 0) failures.push(`${type}: ما ضرب اللاعب`);
+      }
+      player._hp = 20; player._max = 20;
+      // الرامي: يسحب لما تقرب ويسوي حركة الإطلاق لما يطلع السهم
+      entities.length = 0;
+      const a = mkEntity("sh:training_archer", { x: 0, y: 64, z: 8 }, dims.overworld, 14); entities.push(a);
+      advance(12); const aim = a.getProperty("sh:state");
+      const ar = mkEntity("minecraft:arrow", { x: 0, y: 65, z: 7 }, dims.overworld, 1); entities.push(ar);
+      advance(3); const rel = a.getProperty("sh:state");
+      advance(14); const back = a.getProperty("sh:state");
+      console.log("  الرامي: تصويب =", aim, "| إطلاق =", rel, "| رجع يصوب =", back);
+      if (aim !== 1 || rel !== 2 || back !== 1) failures.push("حالات أنميشن الرامي غلط");
+    }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
     fire("scriptEventReceive", { id: "sh:unlock", message: "", sourceEntity: player });

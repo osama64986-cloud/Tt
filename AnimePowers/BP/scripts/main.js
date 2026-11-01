@@ -809,11 +809,11 @@ function introStory(player) {
 
 // ───────────────────────── كتاب الوحوش ─────────────────────────
 const MONSTER_INFO = [
-  ["sh:training_archer", "Training Archer", "Unranked", "An arrow with a violet trail. It weakens up close, and the Law of Silence stops it from shooting."],
-  ["sh:ember_imp", "Ember Imp", "Novice", "It warns you with a red line, then leaps at you and scratches with its claws."],
-  ["sh:rust_guard", "Rust Guard", "Novice", "Huge and slow. It slams the ground and sweeps with its claws. Stay away while it winds up."],
-  ["sh:shadow_hound", "Shadow Hound", "Novice", "It howls and slows you, then bites twice quickly. Hit it before the howl."],
-  ["sh:sand_scorpion", "Sand Scorpion", "Novice", "Its green tail strikes from a fair distance and poisons you. Do not stand in front of it when it raises its tail."],
+  ["sh:training_archer", "Training Archer", "Unranked", "It draws when you come close and recoils as it shoots a violet-trailed arrow. It weakens up close, and the Law of Silence stops it from shooting."],
+  ["sh:ember_imp", "Ember Imp", "Novice", "Close: a red circle marks where it will pounce, then it rakes you with fiery claws. Far (7-13 blocks): it charges a fireball and lobs it; a red circle shows where it lands, so move!"],
+  ["sh:rust_guard", "Rust Guard", "Novice", "A red circle grows around it before its ground slam, so step out. Up close it sweeps with crystal fists. Far (6-14 blocks): it tears out a boulder and throws it; dodge the red circle."],
+  ["sh:shadow_hound", "Shadow Hound", "Novice", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
+  ["sh:sand_scorpion", "Sand Scorpion", "Novice", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
   const st = getState(player);
@@ -1476,13 +1476,16 @@ function portalFx(dim, loc, color, r, from, to, life = 24) {
 // ───────────────────────── أشكال المهارات 3D (كيان sh:fx_shape) ─────────────────────────
 // كل شكل موديل مصنوع بـ tools/gen_fx_shapes.py (بلورات، قبضة، أجنحة، أرقام، ساعة، نيزك...).
 // o: { r حجم، yaw، p ميل (سالب = الراس للأعلى)، a لفة، s دوران Y بالثانية، w لفة بالثانية، life مدة بالتكات }
-const SHAPE_CAP = 70;
-let shapeCount = 0;
+// الحد يحسب الأشكال الحية فعلاً (الشكل اللي انشال قبل وقته يفرغ مكانه فوراً)
+const SHAPE_CAP = 90;
+const liveShapes = new Set();
 function shapeFx(dim, name, loc, o = {}) {
-  if (shapeCount >= SHAPE_CAP || SHAPE[name] === undefined) return undefined;
+  if (SHAPE[name] === undefined) return undefined;
+  if (liveShapes.size >= SHAPE_CAP) { for (const x of liveShapes) if (!valid(x)) liveShapes.delete(x); }
+  if (liveShapes.size >= SHAPE_CAP) return undefined;
   try {
     const e = dim.spawnEntity("sh:fx_shape", { x: loc.x, y: loc.y, z: loc.z });
-    shapeCount++;
+    liveShapes.add(e);
     e.setProperty("sh:v", SHAPE[name]);
     if (o.r !== undefined) e.setProperty("sh:r", Math.max(0, Math.min(40, o.r)));
     if (o.p) e.setProperty("sh:p", Math.max(-180, Math.min(180, o.p)));
@@ -1491,7 +1494,7 @@ function shapeFx(dim, name, loc, o = {}) {
     if (o.w) e.setProperty("sh:w", o.w);
     if (o.yaw !== undefined) { try { e.setRotation({ x: 0, y: o.yaw }); } catch (err) { /* */ } }
     const life = o.life ?? 40;
-    system.runTimeout(() => { shapeCount = Math.max(0, shapeCount - 1); removeFx(e); }, Math.max(1, life));
+    system.runTimeout(() => { liveShapes.delete(e); removeFx(e); }, Math.max(1, life));
     return e;
   } catch (err) { return undefined; }
 }
@@ -4116,15 +4119,12 @@ function closeHit(dim, e, tp, type, idx) {
   let fx = 0, fz = 1;
   if (tp) { fx = tp.location.x - e.location.x; fz = tp.location.z - e.location.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; }
   if (type === "sh:ember_imp") {
-    const o = tp ? { x: tp.location.x, y: tp.location.y + 1.2, z: tp.location.z } : { x: e.location.x + fx * 1.3, y: e.location.y + 1, z: e.location.z + fz * 1.3 };
-    slashFx(dim, o, fx, fz, idx % 2 === 1);
+    const o = tp ? { x: tp.location.x, y: tp.location.y + 1.1, z: tp.location.z } : { x: e.location.x + fx * 1.3, y: e.location.y + 1, z: e.location.z + fz * 1.3 };
+    popShape(dim, "slash_fire", o, 0.4, 0.8, 5, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: idx % 2 ? 40 : -40 });
     sfx(dim, "sh.imp_pounce", e.location, 0.8, 1.2 + idx * 0.15);
   } else {
-    for (let i = 0; i <= 22; i++) {
-      const a = Math.atan2(fz, fx) - 1.2 + (i / 22) * 2.4;
-      for (const r of [1.6, 2.2, 2.8]) glow(dim, { x: e.location.x + Math.cos(a) * r, y: e.location.y + 1.3, z: e.location.z + Math.sin(a) * r }, { color: [1, 1, 1], size: 0.16, life: 0.4 });
-    }
-    burst(dim, { x: e.location.x + fx * 1.8, y: e.location.y + 0.2, z: e.location.z + fz * 1.8 }, 10, [0.6, 0.62, 0.58], 2, 0.25);
+    popShape(dim, "slash_teal", { x: e.location.x + fx * 1.4, y: e.location.y + 1.3, z: e.location.z + fz * 1.4 }, 0.8, 1.8, 6, { yaw: dirYaw({ x: fx, y: 0, z: fz }), p: 90, ease: "out" });
+    rockBurst(dim, { x: e.location.x + fx * 1.8, y: e.location.y, z: e.location.z + fz * 1.8 }, 2, 0.7);
     sfx(dim, "sh.guard_slam", e.location, 0.9, 1.3);
   }
   for (const pl of dim.getPlayers({ location: e.location, maxDistance: cfg.trig + 0.6 })) {
@@ -4149,6 +4149,124 @@ function hurtPlayer(pl, amount, by) {
 }
 
 function setMState(e, v) { try { e.setProperty("sh:state", v); } catch (err) { /* */ } }
+// دائرة تحذير حمراء على الأرض قبل الضربات الكبيرة (اللاعب الشاطر يلحق يهرب)
+function dangerZone(dim, loc, r, ticks) {
+  const f = spawnFx(dim, "circle", { x: loc.x, y: loc.y, z: loc.z }, 5, r, ticks);
+  if (f) tween(ticks, 2, (k) => setShape(f, "sh:r", r * (0.35 + 0.65 * k)));
+  return f;
+}
+function groundAt(dim, x, z, nearY) {
+  try { const t = dim.getTopmostBlock({ x: Math.floor(x), z: Math.floor(z) }); if (t && Math.abs(t.y + 1 - nearY) < 6) return t.y + 1; } catch (e) { /* */ }
+  return nearY;
+}
+function playersNear(dim, loc, r) { try { return dim.getPlayers({ location: loc, maxDistance: r }); } catch (e) { return []; } }
+// مسار مقوس (قذيفة ترتفع وتنزل) من a إلى b خلال ticks
+function arcShape(dim, name, a, b, ticks, h, o, onLand) {
+  const e = shapeFx(dim, name, a, { ...o, life: ticks + 4 });
+  tween(ticks, 1, (k) => {
+    const pos = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k + Math.sin(Math.PI * k) * h, z: a.z + (b.z - a.z) * k };
+    const d = { x: b.x - a.x, y: (b.y - a.y) + Math.cos(Math.PI * k) * h * Math.PI, z: b.z - a.z }, l = Math.hypot(d.x, d.y, d.z) || 1;
+    moveShape(e, pos, dirYaw(d)); setShape(e, "sh:p", dirPitch({ x: d.x / l, y: d.y / l, z: d.z / l }));
+  }, () => { removeFx(e); onLand && onLand(); });
+}
+function endSpecial(st, e, cd) { st.phase = 0; st.cd = cd + Math.random() * 40; st.target = undefined; if (valid(e)) setMState(e, 0); }
+// عفريت الرماد: كرة نار تطير بقوس وتنفجر (من 7 لـ 13 بلوكة)
+function impEmberBolt(e, tp, st) {
+  const dim = e.dimension;
+  st.phase = 4; setMState(e, 1);
+  sfx(dim, "sh.imp_windup", e.location, 1, 0.8);
+  const hold = followShape(e, "fireball", 16, { r: 0.35, s: 500, dy: 0.5 });
+  tween(16, 2, (k) => setShape(hold, "sh:r", 0.35 + 0.45 * k));
+  later(16, () => {
+    if (!valid(e) || !valid(tp)) { endSpecial(st, e, 60); return; }
+    setMState(e, 2);
+    const a = { ...headPos(e), y: headPos(e).y + 0.4 }, b = { x: tp.location.x, y: groundAt(dim, tp.location.x, tp.location.z, tp.location.y), z: tp.location.z };
+    dangerZone(dim, b, 2.2, 18);
+    sfx(dim, "sh.imp_pounce", e.location, 1, 0.7);
+    arcShape(dim, "fireball", a, b, 18, 2.5, { r: 0.8, w: 600 }, () => {
+      popShape(dim, "nova", { ...b, y: b.y + 0.4 }, 0.3, 1.4, 6);
+      for (let i = 0; i < 10; i++) glow(dim, b, { color: i % 2 ? COLORS.orange : COLORS.gold, size: 0.3, life: 0.8, speed: 3, rise: 1 });
+      sfx(dim, "sh.meteor_hit", b, 0.8, 1.4);
+      for (const pl of playersNear(dim, b, 2.4)) { hurtPlayer(pl, 4, e); try { pl.setOnFire(3, true); } catch (err) { /* */ } pushAway(b, pl, 0.6, 0.3); }
+    });
+    later(8, () => endSpecial(st, e, 80));
+  });
+}
+// حارس الصدأ: يقلع صخرة ويرميها بقوس (من 6 لـ 14 بلوكة)
+function guardRockThrow(e, tp, st) {
+  const dim = e.dimension;
+  st.phase = 4; setMState(e, 1);
+  sfx(dim, "sh.guard_windup", e.location, 1, 0.8);
+  rockBurst(dim, e.location, 3, 0.7);
+  const rock = followShape(e, "rock_chunk", 24, { r: 1.0, s: 200, dy: 1.6 });
+  tween(24, 2, (k) => setShape(rock, "sh:r", 1.0 + 1.0 * k));
+  later(24, () => {
+    if (!valid(e) || !valid(tp)) { endSpecial(st, e, 60); return; }
+    setMState(e, 2);
+    const a = { ...headPos(e), y: headPos(e).y + 1.6 }, b = { x: tp.location.x, y: groundAt(dim, tp.location.x, tp.location.z, tp.location.y), z: tp.location.z };
+    dangerZone(dim, b, 2.6, 20);
+    sfx(dim, "sh.guard_slam", e.location, 0.9, 1.4);
+    arcShape(dim, "rock_chunk", a, b, 20, 4, { r: 2.0, w: 300, a: 30 }, () => {
+      rockBurst(dim, b, 6, 1.2);
+      waveFx(dim, b, 3, 3, 8);
+      sfx(dim, "sh.guard_slam", b, 1.2, 0.8);
+      for (const pl of playersNear(dim, b, 2.6)) { hurtPlayer(pl, 6, e); pushAway(b, pl, 1.6, 0.5); shake(pl, 0.25, 0.3); }
+    });
+    later(10, () => endSpecial(st, e, 100));
+  });
+}
+// ذئب الظل: يختفي بدخان بنفسجي ويطلع خلفك ويعض (من 4 لـ 10 بلوكات)
+function houndShadowLeap(e, tp, st) {
+  const dim = e.dimension;
+  st.phase = 4; setMState(e, 1);
+  try { dim.playSound("mob.wolf.growl", e.location, { volume: 1.2, pitch: 0.6 }); } catch (err) { /* */ }
+  for (let i = 0; i < 12; i++) glow(dim, { x: e.location.x + (Math.random() - 0.5), y: e.location.y + Math.random(), z: e.location.z + (Math.random() - 0.5) }, { color: VIOLET, size: 0.3, life: 0.8, rise: 1 });
+  later(10, () => {
+    if (!valid(e) || !valid(tp)) { endSpecial(st, e, 60); return; }
+    const from = { ...e.location }, dest = behindSpot(tp, e.location);
+    if (!dest) { endSpecial(st, e, 40); return; }
+    for (let i = 0; i < 16; i++) glow(dim, { x: from.x + (Math.random() - 0.5), y: from.y + Math.random() * 1.2, z: from.z + (Math.random() - 0.5) }, { color: [0.1, 0.05, 0.2], size: 0.35, life: 1, rise: 0.4 });
+    safeTeleport(e, dest, tp.location);
+    setMState(e, 3);
+    sfx(dim, "sh.kat_step", dest, 0.9, 0.7);
+    later(4, () => {
+      if (!valid(e) || !valid(tp)) return;
+      popShape(dim, "fang_jaw", center3(tp), 0.9, 1.3, 9, { yaw: yawOf(tp.location, e.location) });
+      if (dist2d(e.location, tp.location) < 3) { hurtPlayer(tp, 4, e); try { tp.addEffect("slowness", 40, { amplifier: 1 }); } catch (err) { /* */ } }
+      sfx(dim, "sh.dagger_hit", tp.location, 1, 0.7);
+    });
+    later(14, () => endSpecial(st, e, 90));
+  });
+}
+// عقرب الرمل: يغوص بالأرض ويطلع تحتك (من 5 لـ 12 بلوكة)
+function scorpionBurrow(e, tp, st) {
+  const dim = e.dimension;
+  st.phase = 4; setMState(e, 1);
+  sfx(dim, "sh.guard_windup", e.location, 0.8, 1.6);
+  rockBurst(dim, e.location, 4, 0.7);
+  try { e.addEffect("invisibility", 34, { amplifier: 0, showParticles: false }); e.addEffect("slowness", 34, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
+  let lock;
+  const tick = system.runInterval(() => {
+    try {
+      if (!valid(e) || !valid(tp)) return;
+      const L = lock || tp.location;
+      glow(dim, { x: L.x + (Math.random() - 0.5) * 1.5, y: L.y + 0.1, z: L.z + (Math.random() - 0.5) * 1.5 }, { color: [0.75, 0.6, 0.35], size: 0.25, life: 0.6, rise: 0.8 });
+    } catch (err) { /* */ }
+  }, 3);
+  later(14, () => { if (valid(tp)) { lock = { ...tp.location }; dangerZone(dim, lock, 1.8, 16); sfx(dim, "sh.guard_windup", lock, 0.7, 1.9); } });
+  later(30, () => {
+    system.clearRun(tick);
+    if (!valid(e) || !lock) { endSpecial(st, e, 60); return; }
+    safeTeleport(e, lock);
+    try { e.removeEffect("invisibility"); } catch (err) { /* */ }
+    setMState(e, 2);
+    rockBurst(dim, lock, 6, 1.3);
+    popShape(dim, "slash_venom", { ...lock, y: lock.y + 1 }, 0.6, 1.8, 6, { p: 90, s: 600 });
+    sfx(dim, "sh.guard_slam", lock, 1, 1.3);
+    for (const pl of playersNear(dim, lock, 2.0)) { hurtPlayer(pl, 6, e); try { pl.addEffect("poison", 100, { amplifier: 0 }); pl.applyKnockback({ x: 0, z: 0 }, 0.9); } catch (err) { /* */ } }
+    later(12, () => endSpecial(st, e, 110));
+  });
+}
 
 
 function ambientFx(dim, e, type) {
@@ -4177,7 +4295,7 @@ function runMonsterSkills() {
           if (st.phase === 0) {
             st.cd -= 4;
             if (st.cd > 0) continue;
-            const np = nearestPlayer(e, cfg.range[1]);
+            const np = nearestPlayer(e, Math.max(cfg.range[1], 14));
             const cl = CLOSE[type];
             if (cl && np && np.d < cl.trig && Math.random() < cl.chance) {
               st.phase = 3; st.t = 0; st.hit = 0; st.target = np.p;
@@ -4185,12 +4303,18 @@ function runMonsterSkills() {
               sfx(dim, type === "sh:ember_imp" ? "sh.imp_windup" : "sh.guard_windup", e.location, 0.8, 1.2);
               continue;
             }
-            if (!np || np.d < cfg.range[0]) { st.cd = 10; continue; }
+            if (np && type === "sh:ember_imp" && np.d >= 7 && np.d <= 13 && Math.random() < 0.45) { st.target = np.p; impEmberBolt(e, np.p, st); continue; }
+            if (np && type === "sh:rust_guard" && np.d >= 6 && np.d <= 14 && Math.random() < 0.6) { st.target = np.p; guardRockThrow(e, np.p, st); continue; }
+            if (!np || np.d < cfg.range[0] || np.d > cfg.range[1]) { st.cd = 10; continue; }
             st.phase = 1; st.t = 0; st.target = np.p;
+            // تحذير: العفريت يأشر على مكان انقضاضه، والحارس يرسم دائرة الضربة
+            if (type === "sh:ember_imp") dangerZone(dim, np.p.location, 1.6, cfg.windup + cfg.hold);
+            else dangerZone(dim, e.location, 4, cfg.windup);
             setMState(e, 1);
             sfx(dim, type === "sh:ember_imp" ? "sh.imp_windup" : "sh.guard_windup", e.location, 1);
             continue;
           }
+          if (st.phase === 4) continue; // مهارة خاصة شغالة
           if (st.phase === 1) {
             st.t += 4;
             if (type === "sh:ember_imp") {
@@ -4200,8 +4324,8 @@ function runMonsterSkills() {
                 const tx = st.target.location.x - e.location.x, tz = st.target.location.z - e.location.z, tl = Math.hypot(tx, tz) || 1;
                 for (let k = 1; k <= 6; k++) glow(dim, { x: e.location.x + (tx / tl) * k * 0.7, y: e.location.y + 0.15, z: e.location.z + (tz / tl) * k * 0.7 }, { color: COLORS.red, size: 0.12, life: 0.3 });
               }
-            } else {
-              ring(dim, e.location, 4 * Math.min(1, st.t / cfg.windup), 26, st.t * 0.1, COLORS.teal, 0.24);
+            } else if (st.t % 8 === 0) {
+              rockBurst(dim, e.location, 1, 0.5);
             }
             if (st.t >= cfg.windup) {
               st.phase = 2; st.t = 0;
@@ -4221,11 +4345,9 @@ function runMonsterSkills() {
                   pushAway(e.location, pl, 2.2, 0.5);
                   shake(pl, 0.25, 0.3);
                 }
-                ring(dim, e.location, 1.5, 20, 0, COLORS.teal, 0.3);
-                ring(dim, e.location, 3, 30, 0.5, COLORS.green, 0.3);
-                ring(dim, e.location, 4.5, 36, 1, COLORS.teal, 0.28);
-                burst(dim, e.location, 24, [0.6, 0.62, 0.58], 4, 0.3);
-                burst(dim, e.location, 12, COLORS.teal, 3, 0.2);
+                waveFx(dim, e.location, 4.5, 3, 10);
+                rockBurst(dim, e.location, 6, 1.3);
+                for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; popShape(dim, "crystal_gem", { x: e.location.x + Math.cos(a) * 2.2, y: e.location.y + 0.4, z: e.location.z + Math.sin(a) * 2.2 }, 0.4, 1.4, 8, { s: 400 }); }
               }
             }
             continue;
@@ -4263,7 +4385,8 @@ function runMonsterSkills() {
 }
 system.runInterval(runMonsterSkills, 4);
 
-// الرامي: وضعية السحب لما يكون لاعب قريب
+// الرامي: وضعية السحب لما يكون لاعب قريب، ووضعية الإطلاق لحظة ما يطلع السهم
+const archerRelease = new Map();
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -4272,6 +4395,7 @@ system.runInterval(() => {
     try { list = dim.getEntities({ type: "sh:training_archer" }); } catch (e) { continue; }
     for (const e of list) {
       try {
+        if ((archerRelease.get(e.id) ?? 0) > system.currentTick) continue;
         const near = dim.getPlayers({ location: e.location, maxDistance: 18 }).length > 0;
         setMState(e, near ? 1 : 0);
       } catch (err) { /* */ }
@@ -4297,7 +4421,10 @@ system.runInterval(() => {
           if (!seenArrows.has(ar.id)) {
             seenArrows.add(ar.id);
             if (Math.hypot(L.x - a.location.x, L.z - a.location.z) > 3) continue;
-            // وميض عند إطلاق السهم
+            // وميض عند إطلاق السهم + الرامي يسوي حركة الإطلاق
+            setMState(a, 2);
+            archerRelease.set(a.id, system.currentTick + 10);
+            later(10, () => { if (valid(a)) setMState(a, 1); });
             burst(dim, L, 10, [0.62, 0.35, 1], 2.5, 0.16);
             ring(dim, L, 0.6, 10, 0, [0.62, 0.35, 1], 0.15);
             sfx(dim, "sh.imp_windup", L, 0.5, 1.8);
@@ -4366,8 +4493,11 @@ system.runInterval(() => {
           if (st.phase === 0) {
             st.cd -= 4;
             if (st.cd > 0) continue;
-            const np = nearestPlayer(e, hound ? 14 : 5);
+            const np = nearestPlayer(e, hound ? 14 : 12);
             if (!np) { st.cd = 10; continue; }
+            if (hound && np.d >= 4 && np.d <= 10 && Math.random() < 0.4) { st.target = np.p; houndShadowLeap(e, np.p, st); continue; }
+            if (!hound && np.d >= 5 && np.d <= 12 && Math.random() < 0.5) { st.target = np.p; scorpionBurrow(e, np.p, st); continue; }
+            if (!hound && np.d > 5) { st.cd = 8; continue; }
             if (np.d < 2.4) {
               st.phase = 3; st.t = 0; st.hit = 0; st.target = np.p; setMState(e, 3);
               sfx(dim, "sh.imp_windup", L, 0.7, hound ? 0.7 : 1.4);
@@ -4377,6 +4507,7 @@ system.runInterval(() => {
             } else st.cd = 8;
             continue;
           }
+          if (st.phase === 4) continue; // مهارة خاصة شغالة
           const tp = valid(st.target) ? st.target : undefined;
           if (st.phase === 1) {
             st.t += 4;
@@ -4401,13 +4532,13 @@ system.runInterval(() => {
                   notify(pl, "§5The howl slows you!", 40);
                   shake(pl, 0.12, 0.4);
                 }
-              } else if (tp) {
+              } else if (tp && dist2d(tp.location, L) <= 5) {
                 // ضربة الذيل: خط أخضر من الإبرة للهدف + تسمم
                 try { e.applyImpulse({ x: (tp.location.x - L.x) * 0.12, y: 0.2, z: (tp.location.z - L.z) * 0.12 }); } catch (err) { /* */ }
-                const hx = L.x, hy = L.y + 1.9, hz = L.z;
-                line(dim, { x: hx, y: hy, z: hz }, headPos(tp), VENOM);
-                ring(dim, { x: tp.location.x, y: tp.location.y + 1, z: tp.location.z }, 0.8, 14, 0, VENOM, 0.2);
-                burst(dim, headPos(tp), 18, VENOM, 3, 0.2);
+                const from = { x: L.x, y: L.y + 1.9, z: L.z }, to = center3(tp);
+                const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
+                flyShape(dim, "venom_glob", from, { x: dx / l, y: dy / l, z: dz / l }, 1.4, l, { r: 0.6, w: 500 });
+                popShape(dim, "slash_venom", to, 0.5, 1.2, 6, { yaw: yawOf(tp.location, L), a: 60 });
                 sfx(dim, "sh.imp_pounce", L, 0.9, 1.5);
                 for (const pl of dim.getPlayers({ location: L, maxDistance: 4 })) {
                   hurtPlayer(pl, 5, e);
@@ -4435,8 +4566,8 @@ system.runInterval(() => {
               let fx = 0, fz = 1;
               if (tp) { fx = tp.location.x - L.x; fz = tp.location.z - L.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; }
               const o = { x: L.x + fx * 1.4, y: L.y + 0.8, z: L.z + fz * 1.4 };
-              if (hound) slashFx(dim, o, fx, fz, st.hit % 2 === 0);
-              else { ring(dim, o, 0.8, 14, 0, VENOM, 0.16); burst(dim, o, 10, [0.8, 0.6, 0.3], 2.5, 0.2); }
+              if (hound) popShape(dim, st.hit % 2 ? "claw_marks" : "fang_jaw", o, 0.7, 1.1, 7, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: st.hit % 2 ? 25 : 0 });
+              else popShape(dim, "slash_venom", o, 0.4, 0.9, 5, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: -30 });
               sfx(dim, "sh.guard_slam", L, 0.6, hound ? 1.6 : 1.0);
               for (const pl of dim.getPlayers({ location: L, maxDistance: 2.8 })) {
                 hurtPlayer(pl, hound ? 3 : 5, e); pushAway(L, pl, hound ? 0.5 : 1.2, 0.2);

@@ -42,6 +42,13 @@ class Mod:
                 "uv": {"north": m, "south": m, "east": m, "west": m, "up": t, "down": m}}
         self.bones[bone].setdefault("cubes", []).append(cube)
 
+    def bone(self, name, parent, pivot):
+        """عظمة جديدة (للأجزاء المتحركة مثل الأجنحة)."""
+        b = {"name": name, "parent": parent, "pivot": list(pivot), "cubes": []}
+        self.g["bones"].append(b)
+        self.bones[name] = b
+        return name
+
     def save(self):
         strip_h = 16
         out = Image.new("RGBA", (self.w, self.h + strip_h), (0, 0, 0, 0))
@@ -81,6 +88,18 @@ def imp():
     # صخور جمر على الأكتاف
     for sx in (-1, 1):
         m.box("body", sx * 5.2 - 1.0, 15.2, -1.2, 2.0, 1.6, 2.4, ROCK, top=EMB)
+    # أجنحة غشائية صغيرة (عظمتين تتحركن بالأنميشن)
+    MEMB, MEMB_HI = (70, 34, 30), (120, 52, 34)
+    for sx, name in ((1, "wing_l"), (-1, "wing_r")):
+        m.bone(name, "body", (sx * 1.6, 11.6, 2.4))
+        x0 = sx * 1.6
+        m.box(name, min(x0, x0 + sx * 10.5), 11.0, 2.2, 10.5, 1.2, 1.2, ROCK, top=EMB)      # عظمة الجناح
+        m.box(name, min(x0 + sx * 10.0, x0 + sx * 11.8), 11.4, 2.0, 1.8, 2.2, 1.6, EMB)        # مخلب الطرف
+        for k, (L, h) in enumerate(((3.2, 4.4), (3.0, 6.2), (3.0, 5.0), (2.2, 3.4))):
+            xa = x0 + sx * (0.6 + k * 2.5)
+            m.box(name, min(xa, xa + sx * L), 11.0 - h, 2.45, L, h, 0.5, MEMB if k % 2 else MEMB_HI)
+            m.box(name, min(xa, xa + sx * 0.5), 11.0 - h, 2.4, 0.5, h, 0.6, ROCK)              # ضلع
+        m.box(name, min(x0 + sx * 3.6, x0 + sx * 9.4), 4.8, 2.5, 5.8, 0.5, 0.45, EMB)          # حافة متوهجة
     return m.save()
 
 
@@ -108,6 +127,17 @@ def guard():
         m.box("body", sx * 3.6 - 1.3, 20.0, 6.7, 2.6, 2.0, 2.6, STONE_LO, top=STONE_HI)
         m.box("body", sx * 3.6 - 0.8, 22.0, 7.2, 1.6, 6.5, 1.6, TEAL, top=TEAL_HI)
         m.box("body", sx * 3.6 - 0.4, 28.5, 7.6, 0.8, 1.6, 0.8, TEAL_W)
+    # بلورات تركواز على القبضات (الضربة من هنا)
+    for arm, x0 in (("arm_l", 6.4), ("arm_r", -12.8)):
+        for k, (dx, hh) in enumerate(((0.6, 2.8), (2.6, 3.6), (4.4, 2.6))):
+            m.box(arm, x0 + dx, 12.6, -4.6, 1.5, hh, 1.4, TEAL if k != 1 else TEAL_HI)
+            m.box(arm, x0 + dx + 0.3, 12.6 + hh, -4.4, 0.9, 0.9, 0.9, TEAL_W)
+        m.box(arm, x0 - 0.2, 12.0, -3.4, 6.8, 0.9, 6.8, STONE_HI)
+    # طحلب يغطي الأكتاف ويتدلى
+    for arm, x0 in (("arm_l", 5.0), ("arm_r", -14.2)):
+        m.box(arm, x0, 27.5, -4.6, 9.2, 0.9, 9.2, MOSS)
+        for k in range(4):
+            m.box(arm, x0 + 0.6 + k * 2.4, 25.2 - (k % 2) * 0.9, -4.7, 1.2, 2.4 + (k % 2) * 0.9, 0.4, MOSS)
     # حزام حجري بمسامير طحلبية
     m.box("body", -6.8, 13.0, -4.3, 13.6, 1.2, 0.6, STONE_LO)
     for x in (-5.5, -2.0, 1.5, 5.0):
@@ -133,6 +163,10 @@ def hound():
     for sx in (-1, 1):
         m.box("body", sx * 3.5 - 0.5, 9.6, -6.4, 1.0, 1.6, 1.0, VIO_HI)
         m.box("body", sx * 3.7 - 0.4, 8.2, -6.0, 0.8, 1.4, 0.8, VIO)
+    # مخالب عظمية بالأرجل الأمامية
+    for leg, x0 in (("leg_fl", 0.8), ("leg_fr", -4.0)):
+        for k in range(3):
+            m.box(leg, x0 + 0.3 + k * 1.05, 0.0, -7.6, 0.55, 0.9, 0.9, (236, 228, 214))
     # لهب شبحي بنهاية الذيل
     m.box("tail3", -0.9, 13.4, 14.6, 1.8, 2.8, 1.8, VIO)
     m.box("tail3", -0.55, 16.0, 14.9, 1.1, 2.0, 1.1, VIO_HI)
@@ -160,6 +194,10 @@ def scorpion():
         m.box(bone, sx * 3.5 - 0.4, 3.6, -14.0, 0.8, 1.2, 0.8, CHI_LO)
         m.box(bone, sx * 4.8 - 0.4, 4.4, -12.6, 0.8, 1.4, 0.8, CHI_HI)
         m.box(bone, sx * 3.5 - 0.3, 5.4, -11.2, 0.6, 1.0, 0.6, CHI_LO)
+    # أشواك على الكماشات
+    for claw, x0 in (("claw_l", 2.9), ("claw_r", -6.3)):
+        for k in range(3):
+            m.box(claw, x0 + 0.5 + k * 1.0, 5.6, -12.8 + k * 1.1, 0.6, 1.0 + (k == 1) * 0.6, 0.6, CHI_HI)
     # عقد الذيل: حلقات بارزة
     for b in ("tail2", "tail3", "tail4"):
         bb = m.bones[b]
@@ -169,6 +207,26 @@ def scorpion():
     return m.save()
 
 
+# ───────────── رامي التدريب: جعبة أسهم، حزام بإبزيم، كتافات، واقي ساعد ─────────────
+def archer():
+    m = Mod("archer")
+    LEATHER, LEATHER_HI, GOLD = (92, 58, 34), (130, 86, 50), (226, 176, 60)
+    VIO, VIO_HI, WOOD = (84, 50, 150), (140, 100, 220), (120, 84, 50)
+    m.box("body", 0.6, 17.0, 3.9, 3.2, 9.0, 2.6, LEATHER, top=LEATHER_HI)          # جعبة على الظهر (فوق الكاب)
+    m.box("body", 0.4, 25.6, 3.7, 3.6, 0.8, 3.0, GOLD)
+    m.box("body", 0.4, 18.0, 3.7, 3.6, 0.6, 3.0, GOLD)
+    for k in range(4):
+        x = 0.9 + k * 0.75
+        m.box("body", x, 26.0, 4.6 + (k % 2) * 0.5, 0.4, 3.4 + (k % 2) * 0.9, 0.4, WOOD)
+        m.box("body", x - 0.2, 29.0 + (k % 2) * 0.9, 4.4 + (k % 2) * 0.5, 0.8, 1.3, 0.8, VIO_HI)
+    m.box("body", -4.3, 14.6, -2.5, 8.6, 1.1, 5.0, LEATHER)                         # حزام
+    m.box("body", -0.8, 14.4, -2.8, 1.6, 1.5, 0.4, GOLD)                             # إبزيم
+    m.box("arm_l", 4.6, 22.0, -1.6, 2.9, 1.6, 3.2, VIO, top=VIO_HI)                 # كتافات
+    m.box("arm_r", -7.5, 22.0, -1.6, 2.9, 1.6, 3.2, VIO, top=VIO_HI)
+    m.box("arm_l", 4.85, 12.9, -1.15, 2.3, 2.6, 2.3, LEATHER_HI)                    # واقي الساعد (يد القوس)
+    return m.save()
+
+
 if __name__ == "__main__":
-    for fn in (imp, guard, hound, scorpion):
+    for fn in (imp, guard, hound, scorpion, archer):
         print(fn.__name__, "colors:", fn())
