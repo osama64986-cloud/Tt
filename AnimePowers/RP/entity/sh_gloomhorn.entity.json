@@ -17,7 +17,7 @@
         "walk": "animation.sh_gloomhorn.walk",
         "windup": "animation.sh_gloomhorn.windup",
         "charge": "animation.sh_gloomhorn.charge",
-        "stomp": "animation.sh_gloomhorn.stomp",
+        "heartbeat": "animation.sh_gloomhorn.heartbeat",
         "lanterns": "animation.sh_gloomhorn.lanterns",
         "state": "controller.animation.sh_gloomhorn.state",
         "look": "animation.sh.look"

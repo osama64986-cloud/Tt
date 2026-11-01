@@ -571,7 +571,7 @@ export const __sim = {
     // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
     {
       console.log("\nوحوش Grim:");
-      const want = { "sh:gloomhorn": { 3: "ضربة الجذور", 2: "الاندفاع", 4: "فوانيس الروح" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "أشواك الأرض", 3: "زفير التجميد" } };
+      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" } };
       const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;

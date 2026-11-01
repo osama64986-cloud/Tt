@@ -13,7 +13,7 @@
        "charge": "query.property('sh:state') == 2"
       },
       {
-       "stomp": "query.property('sh:state') == 3"
+       "heartbeat": "query.property('sh:state') == 3"
       },
       {
        "lanterns": "query.property('sh:state') == 4"
@@ -33,7 +33,7 @@
        "charge": "query.property('sh:state') == 2"
       },
       {
-       "stomp": "query.property('sh:state') == 3"
+       "heartbeat": "query.property('sh:state') == 3"
       },
       {
        "lanterns": "query.property('sh:state') == 4"
@@ -53,7 +53,7 @@
        "windup": "query.property('sh:state') == 1"
       },
       {
-       "stomp": "query.property('sh:state') == 3"
+       "heartbeat": "query.property('sh:state') == 3"
       },
       {
        "lanterns": "query.property('sh:state') == 4"
@@ -61,9 +61,9 @@
      ],
      "blend_transition": 0.12
     },
-    "stomp": {
+    "heartbeat": {
      "animations": [
-      "stomp"
+      "heartbeat"
      ],
      "transitions": [
       {
@@ -96,7 +96,7 @@
        "charge": "query.property('sh:state') == 2"
       },
       {
-       "stomp": "query.property('sh:state') == 3"
+       "heartbeat": "query.property('sh:state') == 3"
       }
      ],
      "blend_transition": 0.12
