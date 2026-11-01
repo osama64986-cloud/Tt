@@ -117,12 +117,13 @@ def spike_up(S, base, length, w0, cols, tilt=0.0, bone="body", n=5, tip=None, tw
         cy = base[1] + h * k + h / 2
         c = (base[0], cy, base[2])
         rot = [tilt, 0, 0] if tilt else None
+        # اللوح الثاني أقصر شوية (0.94) حتى ما تتطابق وجوهه العلوية/السفلية مع الأول (يمنع وميض البكسلات)
         if tilt or not twist:
-            S.box(c, (w, h * 1.02, w * 0.55), col, bone=bone, rot=rot, pivot=base)
-            S.box(c, (w * 0.55, h * 1.02, w), mul(col, 0.92), bone=bone, rot=rot, pivot=base)
+            S.box(c, (w, h, w * 0.55), col, bone=bone, rot=rot, pivot=base)
+            S.box(c, (w * 0.55, h * 0.94, w), mul(col, 0.92), bone=bone, rot=rot, pivot=base)
         else:
-            S.box(c, (w, h * 1.02, w), col, bone=bone)
-            S.box(c, (w * 0.72, h * 1.02, w * 0.72), mix(col, (255, 255, 255), 0.25), bone=bone, rot=[0, 45, 0])
+            S.box(c, (w, h, w), col, bone=bone)
+            S.box(c, (w * 0.72, h * 0.94, w * 0.72), mix(col, (255, 255, 255), 0.25), bone=bone, rot=[0, 45, 0])
     tcol = tip or mix(cols[-1], (255, 255, 255), 0.6)
     tw = max(0.5, w0 * 0.16)
     c = (base[0], base[1] + length + 0.6, base[2])
@@ -151,9 +152,9 @@ def disc_rows(S, center, r, depth, col, step=2.0, axis="z", col2=None):
         w = 2 * math.sqrt(max(0.0, r * r - y * y))
         cc = col2 if (col2 and k % 2) else col
         if axis == "z":
-            S.box((center[0], center[1] + y, center[2]), (w, step * 1.02, depth), cc)
+            S.box((center[0], center[1] + y, center[2]), (w, step, depth), cc)
         else:
-            S.box((center[0], center[1], center[2] + y), (w, depth, step * 1.02), cc)
+            S.box((center[0], center[1], center[2] + y), (w, depth, step), cc)
         y += step
         k += 1
 
@@ -353,7 +354,7 @@ def _(S):
             x = side * (3 + k * 2.1)
             L = 6 + k * 1.3
             S.box((x, 1.2 - L / 2, 1.2), (1.9, L, 0.8), WHITE, bone=wing)
-            S.box((x, 1.2 - L + 1.2, 1.25), (1.9, 2.4, 0.9), WIND, bone=wing)
+            S.box((x, 1.2 - L + 1.1, 1.2), (2.1, 2.4, 1.0), WIND, bone=wing)   # طرف الريشة يلفها (أعرض وأوطى شوية)
         for k in range(5):
             x = side * (4 + k * 2.4)
             S.box((x, -0.6, 0.5), (2.2, 3.5, 0.9), WIND_HI, bone=wing)
@@ -396,7 +397,7 @@ def glyph(S, rows, col, back):
             x = (c - 1) * cell        # +X = يمين المشاهد باللعبة (نفس قراءة الرقم)
             y = (2 - r) * cell
             S.box((x, y, 0), (3.7, 3.7, 3.0), col, top=GOLD_HI if col == GOLD else None)
-            S.box((x, y, 1.8), (4.6, 4.6, 1.0), back)
+            S.box((x, y, 1.8), (cell, cell, 1.0), back)
 
 
 for _d in "0123456789":
@@ -557,8 +558,8 @@ def _(S):
 @shape("hunter_eye")
 def _(S):
     for y, w in ((-4, 6), (-2, 12), (0, 16), (2, 12), (4, 6)):
-        S.box((0, y, 0.8), (w + 1.6, 2.2, 1.2), (60, 36, 10))
-        S.box((0, y, 0), (w, 2.05, 1.6), (250, 244, 228))
+        S.box((0, y, 0.8), (w + 1.6, 2.0, 1.2), (60, 36, 10))
+        S.box((0, y, 0), (w, 2.0, 1.6), (250, 244, 228))
     for y, w in ((-2.4, 4), (-0.8, 6), (0.8, 6), (2.4, 4)):
         S.box((0, y, -0.9), (w, 1.65, 0.8), AMBER, top=GOLD_HI)
     S.box((0, 0, -1.4), (1.2, 6.2, 0.6), (10, 6, 4), flat=True)
@@ -650,8 +651,8 @@ def _(S):
             t = (k - 6) / 6
             w = 0.5 + 2.6 * (1 - t * t)
             y = t * 13
-            S.box((x + 1.2 * t * t, y, 0.6), (w + 1.2, 2.3, 1.2), (150, 30, 70))
-            S.box((x + 1.2 * t * t, y, -0.2), (w * 0.55, 2.2, 1.0), (255, 235, 245), flat=True)
+            S.box((x + 1.2 * t * t, y, 0.6), (w + 1.2, 13 / 6, 1.2), (150, 30, 70))
+            S.box((x + 1.2 * t * t, y, -0.2), (w * 0.55, 13 / 6, 1.0), (255, 235, 245), flat=True)
 
 
 @shape("spear_proj")
@@ -720,15 +721,16 @@ def _crack(S, bone, edge, hi, core, k=1.0, thick=0.0):
     n = len(xs)
     for i in range(n - 1):
         y0 = (-24 + i * 48 / (n - 1)) * k
-        h = (48 / (n - 1) + 0.6) * k
+        h = (48 / (n - 1)) * k
         t = abs((i + 0.5) / (n - 1) - 0.5) * 2
         w = (1.2 + 6.5 * (1 - t ** 1.6)) * k
         x = (xs[i] + xs[i + 1]) / 2 * k
         yc = y0 + h / 2
         d = 1.2 + (thick * max(0.0, 1 - abs(yc) / 7.5) if thick else 0)
+        # الطبقات الداخلية أقصر شوية من فوق وجوه (0.06 و 0.12) حتى ما تتطابق وجوهها العلوية والسفلية مع الحافة
         S.box((x, yc, 0), (w + 2.4, h, d), edge, bone=bone)
-        S.box((x, yc, 0), (w + 0.9, h, d + 0.4), hi, bone=bone, flat=True)
-        S.box((x, yc, 0), (w, h, d + 1.0), core, bone=bone, flat=True)
+        S.box((x, yc, 0), (w + 0.9, h - 0.12, d + 0.4), hi, bone=bone, flat=True)
+        S.box((x, yc, 0), (w, h - 0.24, d + 1.0), core, bone=bone, flat=True)
 
 
 def rift(S, edge, hi, core):
@@ -750,7 +752,7 @@ def rift(S, edge, hi, core):
     _crack(S, "crack_b", edge, hi, core, 0.7, thick=11.0)
     for (y, side, L) in ((-10, 1, 6), (4, -1, 7), (14, 1, 5)):
         for k in range(int(L)):
-            S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.3, 1.1, 0.9), edge if k % 2 else hi, bone="crack_a", flat=True)
+            S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.3, 1.1, 0.9 if k % 2 else 0.8), edge if k % 2 else hi, bone="crack_a", flat=True)
     # حلقة نور مايلة حول الكرة (تدور ببطء)
     S.bone("orbit_b", pivot=(0, 0, 0), rot=[20, 0, 0])
     for i in range(20):

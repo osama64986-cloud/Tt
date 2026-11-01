@@ -86,8 +86,8 @@ class Weapon:
             back = wd - edge
             cb = col_back(t)
             ce = shine if (shine and k % 4 == 1) else col_edge(t)
-            self.box(off - wd / 2 + back / 2, y + k * h, 0, back, h * 1.02, th, cb, top=cb)
-            self.box(off + wd / 2 - edge / 2, y + k * h, 0, edge, h * 1.02, th * 0.78, ce, top=ce)
+            self.box(off - wd / 2 + back / 2, y + k * h, 0, back, h, th, cb, top=cb)
+            self.box(off + wd / 2 - edge / 2, y + k * h, 0, edge, h, th * 0.78, ce, top=ce)
         if tip:
             self.box(off_fn(1) + 0.15, y + length, 0, tip[0], tip[1], tip[2], tip[3])
 
@@ -151,7 +151,7 @@ def katana():
     w.box(0, 5.4, 0, 1.9, 1.0, 1.5, TSUBA, top=GOLD)
     for k in range(8):
         y = 6.4 + k * 1.4
-        w.box(0, y, 0, 1.6, 1.42, 1.25, ITO if k % 2 == 0 else ITO_HI)
+        w.box(0, y, 0, 1.6, 1.4, 1.25, ITO if k % 2 == 0 else ITO_HI)
         for sz in (-1, 1):
             w.box(0, y + 0.35, sz * 0.665, 0.55, 0.7, 0.08, SAME)
     for k in (2, 5):   # مينوكي ذهبي تحت اللف
@@ -159,11 +159,12 @@ def katana():
         w.box(0.0, 6.4 + k * 1.4 + 0.2, -0.685, 0.8, 0.5, 0.12, GOLD)
     w.box(0, 17.6, 0, 1.8, 0.5, 1.45, GOLD, top=GOLD_HI)          # فوتشي
     # تسوبا دائرية رفيعة (مثمنة) بحافة ذهب
-    w.box(0, 18.1, 0, 4.4, 0.6, 3.0, TSUBA, top=TSUBA_HI)
-    w.box(0, 18.1, 0, 3.0, 0.6, 4.4, TSUBA, top=TSUBA_HI)
-    w.box(0, 18.1, 0, 3.8, 0.6, 3.8, TSUBA, top=TSUBA_HI)
-    for (x, z) in ((2.2, 0), (-2.2, 0), (0, 2.2), (0, -2.2)):
-        w.box(x, 18.1, z, 0.35 if x else 1.2, 0.62, 1.2 if x else 0.35, GOLD)
+    w.box(0, 18.1, 0, 3.0, 0.6, 3.0, TSUBA, top=TSUBA_HI)               # قلب التسوبا
+    for sx in (-1, 1):                                                    # أذرع (جنب القلب، مو داخله) = شكل مثمن
+        w.box(sx * 1.85, 18.1, 0, 0.7, 0.6, 2.0, TSUBA, top=TSUBA_HI)
+        w.box(0, 18.1, sx * 1.85, 2.0, 0.6, 0.7, TSUBA, top=TSUBA_HI)
+        w.box(sx * 2.375, 18.1, 0, 0.35, 0.6, 1.2, GOLD)                  # حافة ذهب برا الذراع
+        w.box(0, 18.1, sx * 2.375, 1.2, 0.6, 0.35, GOLD)
     w.box(0, 18.7, 0, 1.3, 1.3, 1.0, GOLD, top=GOLD_HI)            # هاباكي
     # النصل: رفيع (عرض 1.5 ← 1.1)، سمك 0.6، انحناء خفيف، الحد (يمين) بخط هامون متموج
     y0, L, n = 20.0, 27.0, 18
@@ -174,11 +175,11 @@ def katana():
         wd = 1.5 - 0.4 * t
         yy = y0 + k * h
         mune = wd * 0.45
-        w.box(off - wd / 2 + mune / 2, yy, 0, mune, h * 1.03, 0.62, lerp(MUNE, STEEL, 0.3 + 0.4 * t), top=STEEL_HI)
+        w.box(off - wd / 2 + mune / 2, yy, 0, mune, h, 0.62, lerp(MUNE, STEEL, 0.3 + 0.4 * t), top=STEEL_HI)
         ham = 0.32 + 0.12 * math.sin(k * 1.7)
-        w.box(off + wd / 2 - (wd - mune) / 2, yy, 0, wd - mune, h * 1.03, 0.5, STEEL)
-        w.box(off + wd / 2 - ham / 2 - 0.05, yy, 0, ham, h * 1.03, 0.54, HAMON if k % 3 else HAMON_HI)
-        w.box(off + wd / 2 - 0.06, yy, 0, 0.12, h * 1.03, 0.4, EDGE_W)
+        w.box(off + wd / 2 - (wd - mune) / 2, yy, 0, wd - mune, h, 0.5, STEEL)
+        w.box(off + wd / 2 - ham / 2 - 0.05, yy, 0, ham, h, 0.54, HAMON if k % 3 else HAMON_HI)
+        w.box(off + wd / 2 + 0.06, yy, 0, 0.12, h, 0.4, EDGE_W)          # الحد الأبيض برا النصل
     # كيساكي: الرأس المائل
     tx = 1.6
     w.box(tx - 0.15, y0 + L, 0, 1.0, 0.8, 0.55, STEEL_HI)
@@ -187,7 +188,7 @@ def katana():
     # خط الشيناغي (حافة لامعة على ظهر النصل)
     for k in range(0, n, 2):
         t = k / (n - 1)
-        w.box(1.6 * t * t - 0.55, y0 + k * h, 0, 0.12, h * 2, 0.66, STEEL_HI)
+        w.box(1.6 * t * t - 0.55, y0 + k * h + 0.05, 0, 0.12, h * 2 - 0.1, 0.66, STEEL_HI)
     w.save()
     return w
 
@@ -209,7 +210,7 @@ def dagger():
     w.box(0, 13.9, 0, 4.6, 0.8, 1.5, GOLD, top=GOLD_HI)
     for sx in (-1, 1):
         w.box(sx * 2.3, 14.5, 0, 0.7, 0.9, 1.2, GOLD_LO)
-    w.box(0, 14.0, 0.8, 0.9, 0.7, 0.2, SUN_A); w.box(0, 14.0, -0.8, 0.9, 0.7, 0.2, SUN_A)
+    w.box(0, 14.0, 0.8, 0.9, 0.6, 0.2, SUN_A); w.box(0, 14.0, -0.8, 0.9, 0.6, 0.2, SUN_A)
     # النصل: 10 بكسل، حدين يضيقون لرأس حاد، وخط وسطي (fuller)
     y0, L, n = 14.7, 10.0, 8
     h = L / n
@@ -219,12 +220,12 @@ def dagger():
         wd = max(0.5, wd)
         yy = y0 + k * h
         off = 1.3 * t * t                                   # ميلان خفيف للطرف
-        w.box(off, yy, 0, wd, h * 1.03, 0.55, STEEL, top=STEEL_HI)
+        w.box(off, yy, 0, wd, h, 0.55, STEEL, top=STEEL_HI)
         for sx in (-1, 1):
-            w.box(off + sx * (wd / 2 + 0.1), yy, 0, 0.2, h * 1.03, 0.4, STEEL_HI)   # الحدين: جنب النصل مو داخله
+            w.box(off + sx * (wd / 2 + 0.1), yy, 0, 0.2, h, 0.4, STEEL_HI)   # الحدين: جنب النصل مو داخله
         if t < 0.75:
-            w.box(off, yy, 0.31, 0.35, h * 1.03, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
-            w.box(off, yy, -0.31, 0.35, h * 1.03, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
+            w.box(off, yy, 0.31, 0.35, h, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
+            w.box(off, yy, -0.31, 0.35, h, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
     w.box(1.3, y0 + L, 0, 0.3, 0.6, 0.3, STEEL_HI)
     w.save()
     return w
@@ -245,8 +246,8 @@ def cleaver():
     w.box(0, 16.9, 0, 4.0, 1.3, 3.2, IRON, top=IRON_HI)
     # حارس جمر
     w.box(0, 18.2, 0, 5.4, 1.2, 3.0, IRON_LO, top=IRON)
-    w.box(0, 18.4, 1.6, 1.4, 1.0, 0.4, EMB_HI)
-    w.box(0, 18.4, -1.6, 1.4, 1.0, 0.4, EMB_HI)
+    w.box(0, 18.4, 1.6, 1.4, 0.9, 0.4, EMB_HI)
+    w.box(0, 18.4, -1.6, 1.4, 0.9, 0.4, EMB_HI)
     # شفرة عريضة من أعمدة (محيط منحني: بطن أمامي وقطع مائل بالأعلى)
     cols = 9
     x0 = -3.0
@@ -256,9 +257,9 @@ def cleaver():
         t = i / (cols - 1)
         hh = heights[i]
         base = lerp(IRON_LO, IRON, 0.3 + 0.5 * t)
-        w.box(x, 19.4, 0, 0.80, hh, 1.5 - 0.35 * t, base, top=IRON_HI)
-        if i >= cols - 3:  # حد الجمر المتوهج
-            w.box(x + 0.05, 19.4 + 0.2, 0, 0.7, hh - 0.2, 1.2, lerp(EMB, EMB_HI, (i - (cols - 3)) / 2))
+        w.box(x, 19.4, 0, 0.78, hh, 1.5 - 0.35 * t, base, top=IRON_HI)
+        if i >= cols - 3:  # حد الجمر المتوهج (أضيق من العمود حتى ما تتطابق الوجوه)
+            w.box(x, 19.4 + 0.2, 0, 0.6, hh - 0.2, 1.2, lerp(EMB, EMB_HI, (i - (cols - 3)) / 2))
             w.box(x, 19.4 + hh - 0.5, 0, 0.8, 0.6, 1.0, EMB_W)
     # ظهر سميك بمسامير
     w.box(-3.65, 19.2, 0, 1.3, 12.2, 2.6, IRON_LO, top=IRON)
@@ -282,7 +283,7 @@ def cleaver():
             w.box(x + math.sin(i + k) * 0.25, base + k * hh / 4, 0, ww, hh / 4 + 0.05, ww * 0.9, FL[k])
     for i, yy in enumerate((22.0, 25.5, 29.0)):
         for k in range(3):
-            w.box(3.7 + k * 0.45, yy + k * 0.8, 0, 0.7 - k * 0.15, 0.9, 0.6, FL[k + 1])
+            w.box(3.7 + k * 0.45, yy + k * 0.8, 0, 0.7 - k * 0.15, 0.9, 0.6 - k * 0.12, FL[k + 1])
     w.save()
     return w
 
@@ -322,10 +323,10 @@ def shadow_blade():
         wd = 3.0 - 0.9 * t - (1.4 * (t - 0.82) / 0.18 if t > 0.82 else 0)
         wd = max(0.7, wd)
         yy = y0 + k * h
-        w.box(0, yy, 0, wd, h * 1.02, 0.9, lerp(STEEL_LO, STEEL, 0.4 + 0.5 * t), top=STEEL_HI)
+        w.box(0, yy, 0, wd, h, 0.9, lerp(STEEL_LO, STEEL, 0.4 + 0.5 * t), top=STEEL_HI)
         for sx in (-1, 1):
-            w.box(sx * (wd / 2 - 0.25), yy, 0, 0.5, h * 1.02, 0.6, STEEL_HI if k % 3 else SILV_HI)
-        w.box(0, yy, 0, 0.5, h * 1.02, 1.05, CORE if k % 4 else CORE_W)
+            w.box(sx * (wd / 2 + 0.15), yy, 0, 0.3, h, 0.6, STEEL_HI if k % 3 else SILV_HI)
+        w.box(0, yy, 0, 0.5, h, 1.05, CORE if k % 4 else CORE_W)
     w.box(0, y0 + L, 0, 0.6, 1.1, 0.6, CORE_W)
     # شرائط الريح: لولب من شرائح رفيعة تلتف حول النصل
     for k in range(22):
@@ -370,8 +371,8 @@ def claws():
             z = -2.6 * t ** 2.2                          # انحناء الخطاف
             wd = 0.85 - 0.45 * t
             yy = 17.1 + k * h - 1.2 * t ** 3            # الطرف ينزل شوية مع الانحناء
-            w.box(x, yy, z + 0.2, wd, h * 1.05, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
-            w.box(x, yy, z - 0.22, wd * 0.8, h * 1.05, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)   # الحد الداخلي
+            w.box(x, yy, z + 0.2, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
+            w.box(x, yy, z - 0.22, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)   # الحد الداخلي
         w.box(x, 17.1 + L - 1.2, -2.9, 0.35, 0.7, 0.5, EDGE_W)
     w.save()
     return w
@@ -452,7 +453,7 @@ def spear():
     for k, wd in enumerate(widths):
         w.box(0, y, 0, wd, 1.5, 1.0, WHITE if k % 2 == 0 else WHITE_HI, top=WHITE_HI)
         for sx in (-1, 1):
-            w.box(sx * (wd / 2 - 0.2), y, 0, 0.4, 1.5, 0.7, WHITE_LO)
+            w.box(sx * (wd / 2 + 0.15), y, 0, 0.3, 1.5, 0.7, WHITE_LO)
         y += 1.5
     w.box(0, y, 0, 0.5, 1.0, 0.5, WHITE_HI)
     # رونات حمراء محفورة على الوجهين (خط بالنص وعلامات جانبية)
@@ -461,7 +462,7 @@ def spear():
         for k in range(8):
             w.box(0, ry + 0.3 + k * 1.5, sz * 0.55, 0.45, 1.1, 0.16, RED if k % 2 else RED_HI)
         for (dx, yy, ww, hh) in ((-1.0, 3.4, 0.9, 0.4), (1.0, 3.4, 0.9, 0.4), (-1.2, 6.2, 0.5, 1.2), (1.2, 6.2, 0.5, 1.2), (0.0, 9.6, 1.4, 0.4)):
-            w.box(dx, ry + yy, sz * 0.55, ww, hh, 0.16, RED)
+            w.box(dx, ry + yy, sz * 0.54, ww, hh, 0.14, RED)
     # الشريطة الحمراء: تطلع من تحت الرأس وتتموج لتحت وللجنب
     for k in range(14):
         t = k / 13
@@ -564,8 +565,10 @@ def silver_oath():
     # بلورة نور تحت رأس القبضة، أشعة ذهب حول جوهرة الحارس، ريشتين بكل طرف من الحارس، نقاط ذهب على النصل، وبريق دافئ
     w.box(0, 3.9, 0, 0.7, 0.7, 0.7, LIGHT_HI)
     # رأس قبضة دائري (مثمن) + قبضة جلد أبيض
-    w.box(0, 4.6, 0, 2.6, 1.6, 1.8, SIL, top=SIL_HI)
-    w.box(0, 4.6, 0, 1.8, 1.6, 2.6, SIL, top=SIL_HI)
+    w.box(0, 4.6, 0, 1.8, 1.6, 1.8, SIL, top=SIL_HI)
+    for sx in (-1, 1):
+        w.box(sx * 1.1, 4.6, 0, 0.4, 1.6, 1.2, SIL, top=SIL_HI)
+        w.box(0, 4.6, sx * 1.1, 1.2, 1.6, 0.4, SIL, top=SIL_HI)
     w.box(0, 6.2, 0, 1.6, 0.6, 1.6, PGOLD)
     wrap(w, 6.8, 7, 1.4, 1.7, GRIP_A, GRIP_B)
     w.box(0, 16.6, 0, 2.2, 0.6, 2.2, PGOLD, top=PGOLD_HI)
@@ -606,7 +609,8 @@ def silver_oath():
     for i, (x, y, z) in enumerate(((-3.6, 25, 0.8), (3.8, 30, -0.8), (-3.0, 36, -0.6), (3.2, 41, 0.9), (0.0, 47.5, 0.0))):
         c = WHITE if i % 2 == 0 else LIGHT_HI
         w.box(x, y, z, 0.9, 0.3, 0.3, c)
-        w.box(x, y - 0.3, z, 0.3, 0.9, 0.3, c)
+        w.box(x, y - 0.3, z, 0.3, 0.3, 0.36, c)
+        w.box(x, y + 0.3, z, 0.3, 0.3, 0.36, c)
     w.save()
     return w
 
