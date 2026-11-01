@@ -2107,8 +2107,19 @@ Object.assign(SKILL_FN, {
   windrun(p) {
     try { p.addEffect("speed", 100, { amplifier: 2, showParticles: false }); } catch (e) { return false; }
     sfx(p.dimension, "sh.push", p.location, 0.8, 1.5);
-    // إعصار صغير يلف حول رجليك وانت تركض
+    // إعصار صغير يلف حول رجليك، وشفرات ريح تتخلف وراك وانت تركض
     followShape(p, "tornado", 100, { r: 0.45, s: 900, feet: true, dy: 0 });
+    popShape(p.dimension, "wind_crescent", { x: p.location.x, y: p.location.y + 0.3, z: p.location.z }, 0.6, 2.2, 8, { p: 0, s: 600 });
+    let t = 0;
+    const h = system.runInterval(() => {
+      try {
+        t += 6;
+        if (!valid(p) || t > 100) { system.clearRun(h); return; }
+        const d = flatDir(p), v = p.getVelocity();
+        if (Math.hypot(v.x, v.z) < 0.05) return;
+        popShape(p.dimension, "wind_crescent", { x: p.location.x - d.x * 1.2, y: p.location.y + 0.8, z: p.location.z - d.z * 1.2 }, 1.0, 0.3, 10, { yaw: dirYaw({ ...d, y: 0 }) });
+      } catch (e) { system.clearRun(h); }
+    }, 6);
     return true;
   },
   windleap(p) {
@@ -2642,8 +2653,10 @@ function applyTrait(p, id, m) {
     effect(p, "jump_boost", 200 * m, 1);
     effect(p, "speed", 200 * m, 1);
     wingsOn(p, Math.round(200 * m));
+    popShape(p.dimension, "tornado", p.location, 0.4, 1.3, 10, { s: 1000 });
   } else if (id === "eye") {
     effect(p, "night_vision", 300 * m, 0);
+    popShape(p.dimension, "hunter_eye", { x: p.location.x, y: p.location.y + 3, z: p.location.z }, 0.4, 2.2, 12, { yaw: dirYaw({ ...flatDir(p), y: 0 }) + 180 });
     const list = enemiesNear(p.dimension, p.location, 24, p.id).slice(0, 10);
     for (const e of list) {
       huntMarks.set(e.id, { pid: p.id, until: now + 200 * m });
