@@ -192,11 +192,11 @@ export const __sim = {
       if (!(dm5 > dm1)) failures.push("ضرر السلاح ما يكبر مع الليفل");
       if (aura < 5) failures.push("هالة السلاح ما تطلع");
       hold("");
-      const all = {}; for (const id of ["sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"]) all[id] = { lv: 5, xp: 0 };
+      const all = {}; for (const id of ["sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath"]) all[id] = { lv: 5, xp: 0 };
       player.setDynamicProperty("sh_wlv", JSON.stringify(all)); system_cd_reset();
     }
     console.log("\nالأسلحة (مهارة 1 | مهارة 2):");
-    for (const wid of ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"]) {
+    for (const wid of ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath"]) {
       const row = [];
       for (const sneak of [false, true]) {
         spawnZombies(4, true); player.isSneaking = sneak;
@@ -338,10 +338,10 @@ export const __sim = {
       const ui2 = (await import("@minecraft/server-ui")).sim;
       setState(baseState("iron")); ui2.nextSelection = 0; inventory[0] = undefined;
       fire("scriptEventReceive", { id: "sh:weapons", message: "", sourceEntity: player });
-      const wcount = inventory.filter((i) => i && ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"].includes(i.typeId)).length;
+      const wcount = inventory.filter((i) => i && ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath"].includes(i.typeId)).length;
       const idx = inventory.findIndex((i) => i && i.typeId === "sh:skill_scroll");
       console.log("\nأمر الأسلحة: أسلحة =", wcount, "| لفائف =", idx >= 0 ? inventory[idx].amount : 0);
-      if (wcount !== 7) failures.push("sh:weapons ما أعطى 7 أسلحة");
+      if (wcount !== 8) failures.push("sh:weapons ما أعطى 8 أسلحة");
       player.selectedSlotIndex = idx; fire("itemUse", { source: player, itemStack: inventory[idx] });
       await new Promise((r) => setTimeout(r, 30)); advance(3);
       const st = JSON.parse(player.getDynamicProperty("sh"));

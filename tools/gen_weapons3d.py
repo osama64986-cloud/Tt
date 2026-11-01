@@ -32,6 +32,7 @@ HOLD = {
     "shadow_claws": {"fp": {**TRIDENT_FP, "scale": 0.95}, "tp": {**TRIDENT_TP, "scale": 0.95}},
     "stone_maul": {"fp": {**TRIDENT_FP, "scale": 0.74}, "tp": {**TRIDENT_TP, "scale": 0.74}},
     "sunset_spear": {"fp": {**TRIDENT_FP, "scale": 0.68}, "tp": {**TRIDENT_TP, "scale": 0.68}},
+    "silver_oath": {"fp": {**TRIDENT_FP, "scale": 0.8}, "tp": {**TRIDENT_TP, "scale": 0.8}},
 }
 
 
@@ -548,7 +549,53 @@ def preview(weapons, out, cell=360):
     sheet.save(out)
 
 
-ALL = [katana, dagger, cleaver, shadow_blade, claws, maul, spear]
+# ───────────────────────── سيف القسم الفضي (مثل الصورة: سيف فضي ببريق أبيض) ─────────────────────────
+def silver_oath():
+    """سيف طويل فضي لامع: نصل عريض مستقيم بحدين وحافة وسطية مرتفعة، حارس فضي بأطراف ذهبية شاحبة
+    وجوهرة بيضاء، قبضة جلد أبيض ملفوفة، رأس قبضة دائري، وبريق أبيض (نجيمات صغيرة) يطفو حوله."""
+    w = Weapon("silver_oath")
+    SIL, SIL_HI, SIL_LO = (196, 204, 220), (244, 248, 255), (140, 148, 168)
+    RIDGE, WHITE = (226, 232, 246), (255, 255, 255)
+    PGOLD, PGOLD_HI = (214, 196, 140), (246, 232, 180)
+    GRIP_A, GRIP_B = (232, 228, 220), (190, 184, 174)
+    GEM, GEM_HI = (220, 240, 255), (255, 255, 255)
+    # رأس قبضة دائري (مثمن) + قبضة جلد أبيض
+    w.box(0, 4.6, 0, 2.6, 1.6, 1.8, SIL, top=SIL_HI)
+    w.box(0, 4.6, 0, 1.8, 1.6, 2.6, SIL, top=SIL_HI)
+    w.box(0, 6.2, 0, 1.6, 0.6, 1.6, PGOLD)
+    wrap(w, 6.8, 7, 1.4, 1.7, GRIP_A, GRIP_B)
+    w.box(0, 16.6, 0, 2.2, 0.6, 2.2, PGOLD, top=PGOLD_HI)
+    # الحارس: عارضة فضية مستقيمة بأطراف ذهبية تنحني للنصل، وجوهرة بيضاء بالنص
+    w.box(0, 17.2, 0, 9.0, 1.2, 2.0, SIL, top=SIL_HI)
+    for sx in (-1, 1):
+        w.box(sx * 5.0, 17.2, 0, 1.0, 1.2, 2.2, PGOLD, top=PGOLD_HI)
+        w.box(sx * 5.0, 18.4, 0, 1.0, 1.0, 1.6, PGOLD_HI)
+    w.box(0, 17.3, 1.1, 1.4, 1.0, 0.2, GEM)
+    w.box(0, 17.3, -1.1, 1.4, 1.0, 0.2, GEM)
+    w.box(0, 18.4, 0, 1.6, 0.8, 1.4, SIL_LO)                          # ريكاسو
+    # النصل: عريض مستقيم، حدين لامعين جنب النصل، وحافة وسطية بيضاء (على الوجهين، برا الوجه)
+    y0, L, n = 19.2, 26.0, 13
+    h = L / n
+    for k in range(n):
+        t = k / (n - 1)
+        wd = 3.2 - 0.6 * t - (2.0 * (t - 0.8) / 0.2 if t > 0.8 else 0)
+        wd = max(0.6, wd)
+        yy = y0 + k * h
+        w.box(0, yy, 0, wd, h, 0.8, lerp(SIL_LO, SIL, 0.5 + 0.4 * t), top=SIL_HI)
+        for sx in (-1, 1):
+            w.box(sx * (wd / 2 + 0.15), yy, 0, 0.3, h, 0.5, SIL_HI if k % 3 else WHITE)
+        for sz in (-1, 1):
+            w.box(0, yy, sz * 0.45, 0.5, h, 0.1, RIDGE if k % 2 else WHITE)
+    w.box(0, y0 + L, 0, 0.5, 0.8, 0.5, WHITE)
+    # بريق أبيض: نجيمات صغيرة (+) تطفو حول النصل
+    for (x, y, z) in ((-3.6, 25, 0.8), (3.8, 30, -0.8), (-3.0, 36, -0.6), (3.2, 41, 0.9), (0.0, 47.5, 0.0)):
+        w.box(x, y, z, 0.9, 0.3, 0.3, WHITE)
+        w.box(x, y - 0.3, z, 0.3, 0.9, 0.3, WHITE)
+    w.save()
+    return w
+
+
+ALL = [katana, dagger, cleaver, shadow_blade, claws, maul, spear, silver_oath]
 
 if __name__ == "__main__":
     ws = [fn() for fn in ALL]

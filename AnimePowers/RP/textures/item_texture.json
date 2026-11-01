@@ -172,6 +172,9 @@
     },
     "sh_star_shard": {
       "textures": "textures/items/sh_star_shard"
+    },
+    "sh_silver": {
+      "textures": "textures/items/sh_silver"
     }
   }
 }

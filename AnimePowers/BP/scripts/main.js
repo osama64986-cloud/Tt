@@ -202,6 +202,9 @@ const WEAPONS = {
   "sh:ember_cleaver": { extra: 9, sound: "sh.cleaver_hit", color: "orange", knock: 1.2, name: "Ember Cleaver", cleave: 4, heavy: 1,
     desc: "Every hit cleaves several enemies. Use: Ember Arc. Sneak + use: Inferno Spin. Weakness: slows you while held." },
   // قاتل الظل: ينتقل خلف العدو ويضربه
+  // سيف القسم الفضي: متوازن، كل رابع ضربة "بريق" يعمي ويضرب أكثر
+  "sh:silver_oath": { extra: 5, sound: "sh.dagger_hit", color: "white", knock: 0.3, name: "Silver Oath", special: "glint",
+    desc: "Balanced. Every fourth hit in a row is a Glint (bonus damage and a flash that blinds). Use: Oath Cleave. Sneak + use: Silver Step." },
   "sh:shadow_blade": { extra: 2, sound: "sh.dagger_hit", color: "purple", knock: 0.0, name: "Shadow Blade", fast: true,
     desc: "Every hit repeats quickly. Use: Shadow Ambush (appear behind the enemy and stab it). Sneak + use: Phantom Strike (shadows hit every enemy around)." },
   // كاتانا الهاوية: أقوى سلاح، مهارتين تكبر مع ليفلها
@@ -1840,7 +1843,7 @@ function closeRift(victory, killer) {
   const drops = ["sh:xp_scroll_big", "sh:xp_scroll_small", "sh:xp_scroll_small"];
   for (let i = 0; i < Math.floor(t.skill); i++) drops.push("sh:skill_scroll");
   if (Math.random() < t.skill % 1) drops.push("sh:skill_scroll");
-  if (Math.random() < t.weapon) drops.push(["sh:dawn_dagger", "sh:shadow_blade", "sh:shadow_claws", "sh:ember_cleaver", "sh:stone_maul", "sh:sunset_spear"][Math.floor(Math.random() * 6)]);
+  if (Math.random() < t.weapon) drops.push(["sh:dawn_dagger", "sh:shadow_blade", "sh:shadow_claws", "sh:ember_cleaver", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath"][Math.floor(Math.random() * 7)]);
   drops.push(...Array(1 + r.tier).fill(r.tier >= 2 ? "minecraft:diamond" : "minecraft:emerald"));
   later(14, () => { for (const id of drops) { try { dim.spawnItem(new ItemStack(id, 1), { x: r.x + (Math.random() - 0.5), y: r.y + 1, z: r.z + (Math.random() - 0.5) }); } catch (e) { /* */ } } });
   for (const q of world.getAllPlayers()) {
@@ -2811,6 +2814,7 @@ const WLV_PERKS = ["", "Skill 1 (use)", "Skill 2 (sneak + use) unlocks, +10% dam
 const WEAPON_AURA = {
   "sh:dawn_dagger": { style: "swirl", cols: [[1, 0.85, 0.35], [1, 0.95, 0.65], [1, 1, 0.9]] },
   "sh:ember_cleaver": { style: "flame", cols: [[1, 0.35, 0.08], [1, 0.62, 0.15], [1, 0.88, 0.45]] },
+  "sh:silver_oath": { style: "sparkle", cols: [[1, 1, 1], [0.86, 0.9, 1], [0.95, 0.9, 0.7]] },
   "sh:shadow_blade": { style: "wind", cols: [[0.45, 0.8, 1], [0.75, 0.93, 1], [1, 1, 1]] },
   "sh:stone_maul": { style: "motes", cols: [[0.25, 0.85, 0.45], [0.55, 1, 0.65], [0.85, 1, 0.9]] },
   "sh:sunset_spear": { style: "runes", cols: [[0.95, 0.15, 0.15], [1, 0.45, 0.35], [1, 0.85, 0.8]] },
@@ -2860,6 +2864,9 @@ function weaponAuraTick(p, id, lv, t, strong) {
       pix(dim, { x: b.x + Math.cos(ang) * r, y: b.y + (a.style === "wind" ? 0.05 : 0.1), z: b.z + Math.sin(ang) * r }, { color: col, size: 0.14, life: 0.5, speed: a.style === "wind" ? 0.9 : 0.2, rise: 0.2, eye: 0.7 });
     } else if (a.style === "flame") {
       pix(dim, { x: b.x + (Math.random() - 0.5) * 0.15, y: b.y + 0.05, z: b.z + (Math.random() - 0.5) * 0.15 }, { color: col, size: 0.17, life: 0.55, speed: 0.15, rise: 1.4, eye: 0.7 });
+    } else if (a.style === "sparkle") {
+      // نجيمات بيضاء: تلمع وتختفي بسرعة بأماكن عشوائية على النصل
+      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.3, y: b.y, z: b.z + (Math.random() - 0.5) * 0.3 }, { color: col, size: 0.12 + Math.random() * 0.06, life: 0.35, speed: 0.05, rise: 0.1, eye: 0.7 });
     } else if (a.style === "runes") {
       pix(dim, b, { color: col, size: 0.13, life: 0.7, speed: 0.1, rise: 0.3, eye: 0.7 });
     } else {
@@ -2954,6 +2961,65 @@ const WEAPON_SKILLS = {
         sfx(t.dimension, "sh.dagger_hit", t.location, 1, 1.2 + i * 0.08);
         if (last) { popShape(t.dimension, "star5", center3(t), 0.4, 1.6, 7, { yaw: yawOf(t.location, p.location), w: 400 }); shake(p, 0.15, 0.15); }
       });
+      return true;
+    } },
+  ],
+  "sh:silver_oath": [
+    { name: "Oath Cleave", cd: 140, desc: "A wide silver crescent in front of you that pushes enemies back", fn(p) {
+      const dim = p.dimension, o = p.location, d = flatDir(p);
+      const c = { x: o.x + d.x * 1.6, y: o.y + 1.0, z: o.z + d.z * 1.6 };
+      popShape(dim, "slash_silver", c, 1.0, 2.8, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, ease: "out" });
+      later(2, () => popShape(dim, "slash_silver", { x: c.x + d.x * 0.6, y: c.y - 0.2, z: c.z + d.z * 0.6 }, 0.8, 2.4, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, a: 14, ease: "out" }));
+      let n = 0;
+      for (const e of enemiesNear(dim, o, 5, p.id)) {
+        if (!inFront(p, e, 0.2)) continue;
+        hurt(e, 9, p); n++;
+        pushAway(o, e, 1.3, 0.35);
+        effect(e, "weakness", 60, 0);
+        for (let i = 0; i < 4; i++) pix(dim, { x: e.location.x + (Math.random() - 0.5), y: e.location.y + 0.6 + Math.random(), z: e.location.z + (Math.random() - 0.5) }, { color: COLORS.white, size: 0.18, life: 0.5, speed: 1.2 });
+      }
+      for (let i = 0; i < 14; i++) {
+        const a = Math.atan2(d.z, d.x) - 1.1 + (i / 13) * 2.2, r = 2.2 + Math.random() * 2;
+        pix(dim, { x: o.x + Math.cos(a) * r, y: o.y + 1 + Math.random() * 0.6, z: o.z + Math.sin(a) * r }, { color: i % 3 ? COLORS.white : [0.95, 0.9, 0.7], size: 0.16, life: 0.6, speed: 0.6, rise: 0.4 });
+      }
+      sfx(dim, "sh.kat_wave", o, 1.0, 1.4);
+      shake(p, 0.08, 0.15);
+      return true;
+    } },
+    { name: "Silver Step", cd: 200, desc: "Dash 6 blocks forward through enemies, cutting each one you pass", fn(p) {
+      const dim = p.dimension, d = flatDir(p), from = { ...p.location };
+      let to = { ...from };
+      for (let k = 1; k <= 6; k++) {
+        const q = { x: from.x + d.x * k, y: from.y, z: from.z + d.z * k };
+        try {
+          const b1 = dim.getBlock({ x: Math.floor(q.x), y: Math.floor(q.y), z: Math.floor(q.z) });
+          const b2 = dim.getBlock({ x: Math.floor(q.x), y: Math.floor(q.y) + 1, z: Math.floor(q.z) });
+          if (!b1 || !b2 || !b1.isAir || !b2.isAir) break;
+        } catch (e) { break; }
+        to = q;
+      }
+      if (Math.hypot(to.x - from.x, to.z - from.z) < 1) { notify(p, "§7No room to dash", 20); return false; }
+      shapeFx(dim, "afterimage", from, { r: 1.0, yaw: dirYaw({ ...d, y: 0 }), life: 14 });
+      safeTeleport(p, to, { x: to.x + d.x, y: to.y, z: to.z + d.z });
+      const len = Math.hypot(to.x - from.x, to.z - from.z), hit = new Set();
+      for (let i = 0; i <= 10; i++) {
+        const t = i / 10, pt = { x: from.x + (to.x - from.x) * t, y: from.y + 1, z: from.z + (to.z - from.z) * t };
+        pix(dim, pt, { color: i % 2 ? COLORS.white : [0.86, 0.9, 1], size: 0.18, life: 0.7, speed: 0.3, rise: 0.3 });
+        for (const e of enemiesNear(dim, pt, 1.6, p.id)) {
+          if (hit.has(e.id)) continue;
+          hit.add(e.id);
+          later(2 + hit.size * 2, () => {
+            if (!valid(e)) return;
+            hurt(e, 8, p);
+            slashOn(dim, "slash_silver", center3(e), from, hit.size % 2 ? 35 : -35, 1.1);
+            effect(e, "slowness", 40, 1);
+            sfx(dim, "sh.dagger_hit", e.location, 1, 1.4);
+          });
+        }
+      }
+      sfx(dim, "sh.kat_step", to, 1.1, 1.3);
+      effect(p, "resistance", 20, 1);
+      if (!hit.size) notify(p, `§7Silver Step: ${len.toFixed(0)} blocks`, 15);
       return true;
     } },
   ],
@@ -4246,6 +4312,20 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         burst(target.dimension, headPos(target), 18, COLORS.gold, 3.5, 0.2);
         sfx(target.dimension, "sh.dagger_hit", target.location, 1.1, 1.5);
         notify(p, "§6Dawn Strike!", 20);
+      }
+      comboMap.set(p.id, c);
+    }
+    if (w.special === "glint") {
+      const c = comboMap.get(p.id) || { n: 0, t: -999 };
+      c.n = system.currentTick - c.t < 60 ? c.n + 1 : 1;
+      c.t = system.currentTick;
+      if (c.n >= 4) {
+        extra += 7; c.n = 0;
+        try { target.addEffect("blindness", 25, { amplifier: 0, showParticles: false }); } catch (e) { /* */ }
+        const hc = headPos(target);
+        for (let i = 0; i < 12; i++) pix(target.dimension, { x: hc.x + (Math.random() - 0.5) * 0.8, y: hc.y + (Math.random() - 0.5) * 0.8, z: hc.z + (Math.random() - 0.5) * 0.8 }, { color: i % 3 ? COLORS.white : [0.95, 0.9, 0.7], size: 0.2, life: 0.4, speed: 1.8 });
+        sfx(target.dimension, "sh.dagger_hit", target.location, 1.1, 1.8);
+        notify(p, "§f§lGlint!", 20);
       }
       comboMap.set(p.id, c);
     }

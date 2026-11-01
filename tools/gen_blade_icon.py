@@ -119,7 +119,30 @@ def claws_icon():
     _save(px, os.path.join(ROOT, "AnimePowers", "RP", "textures", "items", "sh_claws.png"))
 
 
+def silver_icon():
+    """سيف فضي طويل قطري بحارس بأطراف ذهبية شاحبة، قبضة بيضاء، وبريق أبيض حواليه."""
+    S, S_HI, S_LO, WH = (196, 204, 220), (244, 248, 255), (130, 138, 160), (255, 255, 255)
+    PG, GRIP_A, GRIP_B = (214, 196, 140), (232, 228, 220), (170, 164, 156)
+    px = {}
+    put = lambda x, y, c: px.__setitem__((x, y), c) if 0 <= x < 32 and 0 <= y < 32 else None
+    for i in range(17):
+        x, y = 11 + i, 20 - i
+        put(x, y, WH if i % 4 == 0 else S_HI)
+        put(x - 1, y, S_LO); put(x, y + 1, S); put(x + 1, y + 1, S_HI if i > 13 else S)
+    put(28, 3, WH); put(29, 2, WH)
+    for k in range(-4, 5):
+        put(9 + k, 21 + k, PG if abs(k) >= 3 else S)
+    put(9, 21, (220, 240, 255))
+    for i in range(6):
+        put(8 - i, 23 + i, GRIP_A if i % 2 else GRIP_B); put(7 - i, 23 + i, GRIP_B)
+    put(1, 30, S); put(2, 29, S_HI); put(1, 29, PG)
+    for (x, y) in ((18, 7), (25, 13), (14, 11)):
+        put(x, y, WH); put(x - 1, y, WH); put(x + 1, y, WH); put(x, y - 1, WH); put(x, y + 1, WH)
+    _save(px, os.path.join(ROOT, "AnimePowers", "RP", "textures", "items", "sh_silver.png"))
+
+
 if __name__ == "__main__":
     main()
     dagger_icon()
     claws_icon()
+    silver_icon()

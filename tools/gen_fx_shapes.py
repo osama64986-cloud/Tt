@@ -839,6 +839,11 @@ for _k, (_b, _h, _w) in DRAW_COLORS.items():
     shape(f"draw_{_k}", ground=True)(lambda S, b=_b, h=_h, w=_w: draw_crystal(S, b, h, w))
 
 
+@shape("slash_silver")
+def _(S):
+    crescent(S, (150, 160, 184), (214, 222, 240), (255, 255, 255))
+
+
 # ───────────────────────── الإخراج ─────────────────────────
 
 
