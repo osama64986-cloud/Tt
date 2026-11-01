@@ -4426,10 +4426,10 @@ system.runInterval(() => {
         } else if (st.phase === "draw") {
           // شحنة بنفسجية تكبر عند القوس (تحذير: السهم جاي)
           if (st.t % 4 === 0) {
-            const f = flatDir(e), k = st.t / 26;
+            const f = flatDir(e), k = Math.max(0, (st.t - 15) / 17);
             glow(dim, { x: e.location.x + f.x * 0.9, y: e.location.y + 1.45, z: e.location.z + f.z * 0.9 }, { color: [0.62 + 0.3 * k, 0.35 + 0.4 * k, 1], size: 0.12 + 0.22 * k, life: 0.3 });
           }
-          if (st.t >= 26) { archerShoot(e, tp); st.phase = "release"; st.t = 0; setMState(e, 2); }
+          if (st.t >= 32) { archerShoot(e, tp); st.phase = "release"; st.t = 0; setMState(e, 2); }
         } else if (st.phase === "release") {
           if (st.t >= 10) { st.phase = "aim"; st.cd = 24 + Math.random() * 30; setMState(e, 3); }
         }

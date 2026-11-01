@@ -197,6 +197,7 @@ export const __sim = {
     }
     // تكسير الأرض
     {
+      fire("scriptEventReceive", { id: "sh:rift", message: "close", sourceEntity: player }); advance(80); // صدع طبيعي ممكن يغير بلوكات بنص القياس
       const bz = stats.blockSets || 0; setState(baseState("star")); spawnZombies(); await useItem("sh:skill_meteor"); advance(120); system_cd_reset();
       console.log("بلوكات تلونت بدون تفعيل (لازم 0):", (stats.blockSets || 0) - bz);
       if ((stats.blockSets || 0) - bz !== 0) failures.push("الأرض تتلون وهي مطفية");
