@@ -80,7 +80,8 @@
     "fx": "animation.sh_fx.shape",
     "wings": "animation.sh_fx.shape_wings",
     "clock": "animation.sh_fx.shape_clock",
-    "fang_jaw": "animation.sh_fx.shape_fang_jaw"
+    "fang_jaw": "animation.sh_fx.shape_fang_jaw",
+    "rift": "animation.sh_fx.shape_rift"
    },
    "scripts": {
     "animate": [
@@ -93,6 +94,9 @@
      },
      {
       "fang_jaw": "q.property('sh:v') == 35"
+     },
+     {
+      "rift": "q.property('sh:v') == 50 || q.property('sh:v') == 51 || q.property('sh:v') == 52 || q.property('sh:v') == 53"
      }
     ]
    },

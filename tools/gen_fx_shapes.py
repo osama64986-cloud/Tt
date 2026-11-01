@@ -697,6 +697,13 @@ def _(S):
             S.box((0, 0, 11), (4.6, 2.6, 1.2), GOLD_HI, rot=[0, i * 360 / 14, 0], pivot=(0, 0, 0))
 
 
+EXTRA_ANIMS = {
+    "wings": {"wl": {"rotation": [0, 0, "-18 - math.sin(q.life_time * 640) * 28"]}, "wr": {"rotation": [0, 0, "18 + math.sin(q.life_time * 640) * 28"]}},
+    "clock": {"hand_m": {"rotation": [0, 0, "q.life_time * 900"]}, "hand_h": {"rotation": [0, 0, "q.life_time * 75"]}},
+    "fang_jaw": {"jaw_u": {"rotation": ["-math.max(0, 38 - q.life_time * 230)", 0, 0]}, "jaw_l": {"rotation": ["math.max(0, 38 - q.life_time * 230)", 0, 0]}},
+}
+
+
 # ───────────────────────── الصدع: شق متعرج بقلب أسود وحافة متوهجة بلون رتبته ─────────────────────────
 RIFT_COLORS = {
     "blue": ((70, 160, 255), (200, 235, 255), (6, 12, 40)),
@@ -706,24 +713,67 @@ RIFT_COLORS = {
 }
 
 
-def rift(S, edge, hi, core):
-    """شق عمودي (يواجه -Z) طوله 3 بلوكات: عمود فقري متعرج، عرض أكبر بالنص، شقوق جانبية وشظايا عائمة."""
+def _crack(S, bone, edge, hi, core, k=1.0, thick=0.0):
+    """شق متعرج عمودي داخل bone (يواجه -Z): حافة متوهجة، لمعة، وقلب غامق.
+    thick = عمق إضافي بالنص حتى الشق يقطع الكرة ويبين على وجهها من قدام وورا."""
     xs = [0, -2, -3.5, -2, 1, 3, 2, -1, -3, -2, 1, 2.5, 1, 0]
     n = len(xs)
     for i in range(n - 1):
-        y0 = -24 + i * 48 / (n - 1)
-        h = 48 / (n - 1) + 0.6
+        y0 = (-24 + i * 48 / (n - 1)) * k
+        h = (48 / (n - 1) + 0.6) * k
         t = abs((i + 0.5) / (n - 1) - 0.5) * 2
-        w = 1.4 + 7.5 * (1 - t ** 1.6)
-        x = (xs[i] + xs[i + 1]) / 2
-        S.box((x, y0 + h / 2, 0), (w + 2.6, h, 1.4), edge)
-        S.box((x, y0 + h / 2, 0), (w + 1.0, h, 1.8), hi, flat=True)
-        S.box((x, y0 + h / 2, 0), (w, h, 2.4), core, flat=True)
-    for (y, side, L) in ((-10, 1, 7), (4, -1, 8), (14, 1, 5)):
+        w = (1.2 + 6.5 * (1 - t ** 1.6)) * k
+        x = (xs[i] + xs[i + 1]) / 2 * k
+        yc = y0 + h / 2
+        d = 1.2 + (thick * max(0.0, 1 - abs(yc) / 7.5) if thick else 0)
+        S.box((x, yc, 0), (w + 2.4, h, d), edge, bone=bone)
+        S.box((x, yc, 0), (w + 0.9, h, d + 0.4), hi, bone=bone, flat=True)
+        S.box((x, yc, 0), (w, h, d + 1.0), core, bone=bone, flat=True)
+
+
+def rift(S, edge, hi, core):
+    """صدع ثلاثي الأبعاد يبين حلو من كل الجهات:
+    كرة فراغ غامقة يقطعها شق متوهج (من قدام وورا)، شق ثاني متصالب يبين من الجنب،
+    حلقة نور مايلة حول الكرة، وحلقة شظايا تدور بالعكس.
+    الأنيميشن (rift): الصدع كله يرتفع وينزل ببطء، والحلقات تدور، والكرة تتنفس شوية."""
+    dark = mix(core, edge, 0.18)
+    S.bone("core", pivot=(0, 0, 0))
+    S.box((0, 0, 0), (8.5, 10.5, 8.5), dark, bone="core", flat=True)
+    S.box((0, 0, 0), (8.5, 10.5, 8.5), dark, bone="core", rot=[0, 45, 0], flat=True)
+    S.box((0, 0, 0), (10, 7.5, 10), core, bone="core", rot=[0, 22.5, 0], flat=True)
+    S.box((0, 0, 0), (10, 7.5, 10), core, bone="core", rot=[0, 67.5, 0], flat=True)
+    S.box((0, 0, 0), (6, 12.5, 6), core, bone="core", rot=[0, 22.5, 0], flat=True)
+    # الشقين: أمامي كبير يقطع الكرة، وجانبي أصغر
+    S.bone("crack_a", pivot=(0, 0, 0))
+    _crack(S, "crack_a", edge, hi, core, 1.0, thick=11.5)
+    S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 90, 0])
+    _crack(S, "crack_b", edge, hi, core, 0.7, thick=11.0)
+    for (y, side, L) in ((-10, 1, 6), (4, -1, 7), (14, 1, 5)):
         for k in range(int(L)):
-            S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.4, 1.2, 1.0), edge if k % 2 else hi, flat=True)
-    for (x, y, z, sz) in ((-11, 6, -3, 2.2), (10, -8, 2, 1.8), (-8, -16, 4, 1.6), (12, 15, -2, 2.0), (-13, 18, 1, 1.4), (9, 2, -5, 1.2)):
-        S.box((x, y, z), (sz, sz, sz), hi, rot=[0, 45, 0])
+            S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.3, 1.1, 0.9), edge if k % 2 else hi, bone="crack_a", flat=True)
+    # حلقة نور مايلة حول الكرة (تدور ببطء)
+    S.bone("orbit_b", pivot=(0, 0, 0), rot=[20, 0, 0])
+    for i in range(20):
+        ang = math.radians(i * 18)
+        S.box((math.cos(ang) * 8.6, 0, math.sin(ang) * 8.6), (2.8, 0.7, 2.8), hi if i % 2 else edge, bone="orbit_b", rot=[0, -i * 18, 0], flat=True)
+    # شظايا تطفو حواليه بارتفاعات مختلفة (تدور بالعكس)
+    S.bone("orbit_a", pivot=(0, 0, 0))
+    for i in range(7):
+        ang = i * 360 / 7
+        x, z = math.cos(math.radians(ang)) * 14, math.sin(math.radians(ang)) * 14
+        y = math.sin(i * 1.9) * 9
+        sz = 1.5 + (i % 3) * 0.5
+        S.box((x, y, z), (sz, sz * 1.7, sz), hi if i % 2 else edge, bone="orbit_a", rot=[0, 45, 0])
+        S.box((x, y + sz * 1.3, z), (sz * 0.5, sz * 0.8, sz * 0.5), mix(hi, (255, 255, 255), 0.5), bone="orbit_a", flat=True)
+
+
+EXTRA_ANIMS["rift"] = {
+    "tilt": {"position": [0, "math.sin(q.life_time * 80) * 2.4", 0]},
+    "orbit_a": {"rotation": [0, "q.life_time * 34", 0]},
+    "orbit_b": {"rotation": [0, "-q.life_time * 22", 0]},
+    "core": {"scale": "1 + math.sin(q.life_time * 150) * 0.05"},
+}
+EXTRA_ANIM_SHAPES = {"rift": [f"rift_{k}" for k in RIFT_COLORS]}
 
 
 for _k, (_e, _h, _c) in RIFT_COLORS.items():
@@ -790,11 +840,6 @@ for _k, (_b, _h, _w) in DRAW_COLORS.items():
 
 
 # ───────────────────────── الإخراج ─────────────────────────
-EXTRA_ANIMS = {
-    "wings": {"wl": {"rotation": [0, 0, "-18 - math.sin(q.life_time * 640) * 28"]}, "wr": {"rotation": [0, 0, "18 + math.sin(q.life_time * 640) * 28"]}},
-    "clock": {"hand_m": {"rotation": [0, 0, "q.life_time * 900"]}, "hand_h": {"rotation": [0, 0, "q.life_time * 75"]}},
-    "fang_jaw": {"jaw_u": {"rotation": ["-math.max(0, 38 - q.life_time * 230)", 0, 0]}, "jaw_l": {"rotation": ["math.max(0, 38 - q.life_time * 230)", 0, 0]}},
-}
 
 
 def build():
@@ -859,7 +904,8 @@ def main():
     animate = ["fx"]
     for key, bones in EXTRA_ANIMS.items():
         anims[key] = f"animation.sh_fx.shape_{key}"
-        animate.append({key: f"q.property('sh:v') == {names.index(key)}"})
+        ids = [names.index(n) for n in EXTRA_ANIM_SHAPES.get(key, [key])]
+        animate.append({key: " || ".join(f"q.property('sh:v') == {i}" for i in ids)})
     write(os.path.join(RP, "entity", "sh_fx_shape.entity.json"), {
         "format_version": "1.10.0",
         "minecraft:client_entity": {"description": {

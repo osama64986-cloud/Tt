@@ -196,6 +196,35 @@
      ]
     }
    }
+  },
+  "animation.sh_fx.shape_rift": {
+   "loop": true,
+   "bones": {
+    "tilt": {
+     "position": [
+      0,
+      "math.sin(q.life_time * 80) * 2.4",
+      0
+     ]
+    },
+    "orbit_a": {
+     "rotation": [
+      0,
+      "q.life_time * 34",
+      0
+     ]
+    },
+    "orbit_b": {
+     "rotation": [
+      0,
+      "-q.life_time * 22",
+      0
+     ]
+    },
+    "core": {
+     "scale": "1 + math.sin(q.life_time * 150) * 0.05"
+    }
+   }
   }
  }
 }

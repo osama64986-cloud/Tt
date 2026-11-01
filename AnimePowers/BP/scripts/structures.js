@@ -452,66 +452,105 @@ export function planShrine(seed) {
 // ───────────────────────── معبد النجمة: مكان سحب القدرة ─────────────────────────
 // قاعة 15×15 بارتفاع 6 فوق منصة حجرية: أرضية مصقولة، ممر للمركز بين قناتي ماء، أعمدة بفوانيس معلقة وأماثيست،
 // فتحة سماوية فوق البلورة، وبالنص لوحة ضغط ذهبية فوقها بلورة كبيرة (كيان 3D) يتغير لونها حسب ندرة القدرة.
+// معبد النجمة الكبير (31×31 + ساحة قدام): قاعة 23×23 بعلو 8، شرفة بأعمدة حواليها، سقف ياباني بسبع طبقات،
+// شبابيك بألوان الندرات الست (أبيض، أخضر، أزرق، بنفسجي، ذهبي، أحمر)، خندق ماء مضيء حول البلورة بأربع جسور،
+// أعمدة أميثست بالزوايا، مكتبة ومذبح بالصدر، وفتحة سماوية فوق البلورة. المدخل جنوب (+z) ويتوجه للاعب وقت البناء.
 export function planTemple(seed) {
   const P = new Plan(seed);
-  P.ground(-11, -11, 11, 14, 15, "minecraft:grass_block");
-  // المنصة + درج المدخل (جنوب)
-  P.box(-9, -1, -9, 9, -1, 9, "minecraft:stone_bricks");
-  P.box(-8, 0, -8, 8, 0, 8, "minecraft:polished_deepslate");
-  for (let x = -2; x <= 2; x++) P.stair(x, 0, 9, "minecraft:stone_brick_stairs", "n");
-  P.box(-2, -1, 10, 2, -1, 12, "minecraft:polished_andesite");
-  // الأرضية: ممر كوارتز من المدخل للمركز، قناتين ماء، حلقة حول الدكة
-  P.box(-1, 0, 2, 1, 0, 8, "minecraft:smooth_quartz");
-  for (const x of [-3, 3]) { P.box(x, 0, 3, x, 0, 7, WATER); P.box(x, -1, 3, x, -1, 7, "minecraft:sea_lantern"); }
-  for (let a = 0; a < 24; a++) {
-    const ang = (a / 24) * Math.PI * 2;
-    P.set(Math.round(Math.cos(ang) * 3.6), 0, Math.round(Math.sin(ang) * 3.6), "minecraft:chiseled_quartz_block");
-  }
-  // الدكة: بلوك أماثيست بالنص، حوله طوب أسود مصقول، وفوقه لوحة ضغط ذهبية (تدوس عليها يبدي السحب)
-  P.box(-1, 0, -1, 1, 0, 1, "minecraft:polished_blackstone_bricks");
-  P.set(0, 0, 0, "minecraft:amethyst_block");
-  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) P.set(x, 1, z, "minecraft:polished_blackstone_brick_wall");
-  for (const [x, z] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) P.set(x, 1, z, "minecraft:polished_blackstone_brick_slab");
-  P.set(0, 1, 0, "minecraft:light_weighted_pressure_plate");
-  // الجدران: أبيض بأعمدة خشب غامق، نوافذ زجاج سماوي، فتحة المدخل
-  P.box(-8, 1, -8, 8, 6, -8, "minecraft:smooth_quartz"); P.box(-8, 1, 8, 8, 6, 8, "minecraft:smooth_quartz");
-  P.box(-8, 1, -8, -8, 6, 8, "minecraft:smooth_quartz"); P.box(8, 1, -8, 8, 6, 8, "minecraft:smooth_quartz");
-  for (const v of [-8, -4, 0, 4, 8]) {
-    for (const w of [-8, 8]) { P.box(v, 1, w, v, 6, w, "minecraft:dark_oak_log"); P.box(w, 1, v, w, 6, v, "minecraft:dark_oak_log"); }
-  }
-  for (const v of [-6, -2, 2, 6]) {
-    for (const w of [-8, 8]) {
-      if (!(w === 8 && (v === -2 || v === 2))) P.box(v - 1, 2, w, v + 1, 4, w, "minecraft:light_blue_stained_glass_pane");
-      P.box(w, 2, v - 1, w, 4, v + 1, "minecraft:light_blue_stained_glass_pane");
+  P.ground(-17, -17, 17, 21, 18, "minecraft:grass_block");
+  // القاعدة والشرفة
+  P.box(-14, -1, -14, 14, -1, 14, "minecraft:stone_bricks");
+  P.box(-13, 0, -13, 13, 0, 13, "minecraft:polished_deepslate");
+  P.box(-14, 0, -14, 14, 0, -14, "minecraft:stone_brick_slab"); P.box(-14, 0, 14, 14, 0, 14, "minecraft:stone_brick_slab");
+  P.box(-14, 0, -14, -14, 0, 14, "minecraft:stone_brick_slab"); P.box(14, 0, -14, 14, 0, 14, "minecraft:stone_brick_slab");
+  for (let x = -3; x <= 3; x++) { P.stair(x, 0, 14, "minecraft:stone_brick_stairs", "n"); P.stair(x, -1, 15, "minecraft:stone_brick_stairs", "n"); }
+  P.box(-3, -1, 16, 3, -1, 21, "minecraft:polished_andesite");
+  P.box(-1, -1, 16, 1, -1, 21, "minecraft:smooth_quartz");
+  // أعمدة الشرفة
+  for (const k of [-12, -8, -4, 0, 4, 8, 12]) {
+    for (const w of [-13, 13]) {
+      if (!(w === 13 && Math.abs(k) < 4)) P.box(k, 1, w, k, 8, w, "minecraft:dark_oak_log");
+      P.box(w, 1, k, w, 8, k, "minecraft:dark_oak_log");
     }
   }
-  P.box(-1, 1, 8, 1, 4, 8, AIR);
-  P.box(-2, 5, 8, 2, 5, 8, "minecraft:dark_oak_planks");
-  // الأعمدة الداخلية + فوانيس معلقة + أماثيست
-  for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) {
-    P.box(x, 1, z, x, 6, z, "minecraft:stripped_dark_oak_log");
-    P.set(x, 1, z - 1 * Math.sign(z), "minecraft:amethyst_cluster");
-    P.set(x - 1 * Math.sign(x), 1, z, "minecraft:amethyst_cluster");
+  P.box(-13, 8, -13, 13, 8, -13, "minecraft:dark_oak_planks"); P.box(-13, 8, 13, 13, 8, 13, "minecraft:dark_oak_planks");
+  P.box(-13, 8, -13, -13, 8, 13, "minecraft:dark_oak_planks"); P.box(13, 8, -13, 13, 8, 13, "minecraft:dark_oak_planks");
+  // الأرضية الداخلية: كوارتز بخطوط شعاعية غامقة
+  P.box(-10, 0, -10, 10, 0, 10, "minecraft:smooth_quartz");
+  for (let k = -10; k <= 10; k++) { P.set(k, 0, k, "minecraft:polished_deepslate"); P.set(k, 0, -k, "minecraft:polished_deepslate"); }
+  P.box(-1, 0, 7, 1, 0, 13, "minecraft:quartz_bricks");
+  // جدران القاعة: كوارتز أبيض بأعمدة بلوط غامق، وشبابيك بألوان الندرات
+  P.box(-11, 1, -11, 11, 8, -11, "minecraft:smooth_quartz"); P.box(-11, 1, 11, 11, 8, 11, "minecraft:smooth_quartz");
+  P.box(-11, 1, -11, -11, 8, 11, "minecraft:smooth_quartz"); P.box(11, 1, -11, 11, 8, 11, "minecraft:smooth_quartz");
+  const cols = [-11, -8, -4, 0, 4, 8, 11];
+  for (const v of cols) for (const w of [-11, 11]) { P.box(v, 1, w, v, 8, w, "minecraft:dark_oak_log"); P.box(w, 1, v, w, 8, v, "minecraft:dark_oak_log"); }
+  const glass = ["white", "lime", "light_blue", "purple", "yellow", "red"].map((c) => `minecraft:${c}_stained_glass_pane`);
+  const gaps = [[-10, -9], [-7, -5], [-3, -1], [1, 3], [5, 7], [9, 10]];
+  gaps.forEach(([g1, g2], i) => {
+    P.box(-11, 2, g1, -11, 6, g2, glass[i]); P.box(11, 2, -g2, 11, 6, -g1, glass[i]);
+    P.box(g1, 2, -11, g2, 6, -11, glass[i]);
+    if (i === 0 || i === 1 || i === 4 || i === 5) P.box(g1, 2, 11, g2, 6, 11, glass[i]);
+  });
+  P.box(-11, 8, -11, 11, 8, 11, "minecraft:dark_oak_planks");
+  // المدخل: قوس عريض
+  P.box(-2, 1, 11, 2, 5, 11, AIR);
+  P.box(-3, 6, 11, 3, 6, 11, "minecraft:dark_oak_planks");
+  P.stair(-2, 5, 11, "minecraft:dark_oak_stairs", "e", true); P.stair(2, 5, 11, "minecraft:dark_oak_stairs", "w", true);
+  P.hang(0, 5, 12, "minecraft:soul_lantern");
+  // الخندق المضيء حول الدكة بأربع جسور
+  for (let x = -7; x <= 7; x++) {
+    for (let z = -7; z <= 7; z++) {
+      const r = Math.hypot(x, z);
+      if (r < 4.6 || r > 6.4) continue;
+      if (Math.abs(x) <= 1 || Math.abs(z) <= 1) { P.set(x, 0, z, "minecraft:quartz_bricks"); continue; }
+      P.set(x, 0, z, WATER); P.set(x, -1, z, "minecraft:sea_lantern");
+    }
   }
-  for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3], [0, -6], [-6, 0], [6, 0]]) { P.set(x, 6, z, "minecraft:chain"); P.hang(x, 5, z, "minecraft:soul_lantern"); }
-  // زوايا: أصص زهور ورفوف كتب صغيرة
-  for (const [x, z] of [[-7, -7], [7, -7], [-7, 7], [7, 7]]) { P.set(x, 1, z, "minecraft:bookshelf"); P.set(x, 2, z, "minecraft:flower_pot"); }
-  P.box(-7, 1, -7, 7, 1, -7, "minecraft:purple_carpet"); P.set(0, 1, -7, "minecraft:enchanting_table");
-  P.set(-1, 1, -7, "minecraft:candle"); P.set(1, 1, -7, "minecraft:candle");
-  // السقف: خشب داخلي، فتحة سماوية زجاج فوق البلورة، وسقف ياباني متدرج
-  P.box(-8, 7, -8, 8, 7, 8, "minecraft:dark_oak_planks");
-  P.box(-1, 7, -1, 1, 7, 1, "minecraft:light_blue_stained_glass");
-  P.roof(-8, -8, 8, 8, 8, 5, "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tiles", "minecraft:deepslate_tile_slab");
-  P.box(-1, 7, -1, 1, 13, 1, AIR);
-  P.box(-1, 8, -1, 1, 13, 1, "minecraft:light_blue_stained_glass");
-  P.set(0, 14, 0, "minecraft:gold_block");
-  // خارج: توري، فوانيس حجر، ساكورا صغيرة
-  P.torii(0, 13, 3, 5);
-  P.toro(-4, 11); P.toro(4, 11);
-  for (const [x, z] of [[-10, -10], [10, -10], [-10, 10], [10, 10]]) {
-    P.box(x, 0, z, x, 3, z, "minecraft:cherry_log");
-    P.box(x - 1, 3, z - 1, x + 1, 4, z + 1, "minecraft:cherry_leaves");
+  for (let a = 0; a < 32; a++) {
+    const ang = (a / 32) * Math.PI * 2, x = Math.round(Math.cos(ang) * 7), z = Math.round(Math.sin(ang) * 7);
+    if (Math.abs(x) > 1 && Math.abs(z) > 1) P.set(x, 0, z, "minecraft:chiseled_quartz_block");
   }
+  // الدكة: أماثيست بالنص ولوحة ذهبية فوقه، وحوله طوب أسود وأعمدة صغيرة بقضبان نور
+  P.box(-2, 0, -2, 2, 0, 2, "minecraft:polished_blackstone_bricks");
+  P.box(-1, 0, -1, 1, 0, 1, "minecraft:chiseled_polished_blackstone");
+  P.set(0, 0, 0, "minecraft:amethyst_block");
+  P.set(0, 1, 0, "minecraft:light_weighted_pressure_plate");
+  for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) { P.set(x, 1, z, "minecraft:polished_blackstone_brick_wall"); P.perm(x, 2, z, "minecraft:end_rod", { facing_direction: 1 }); }
+  for (const [x, z] of [[0, -2], [0, 2], [-2, 0], [2, 0]]) P.set(x, 1, z, "minecraft:polished_blackstone_brick_slab");
+  // أعمدة أميثست بالزوايا (تتوهج بعناقيد)
+  for (const [x, z] of [[-8, -8], [8, -8], [-8, 8], [8, 8]]) {
+    P.box(x, 1, z, x, 7, z, "minecraft:amethyst_block");
+    P.set(x, 1, z - Math.sign(z), "minecraft:amethyst_cluster"); P.set(x - Math.sign(x), 1, z, "minecraft:amethyst_cluster");
+    P.set(x, 4, z - Math.sign(z), "minecraft:large_amethyst_bud"); P.set(x - Math.sign(x), 4, z, "minecraft:large_amethyst_bud");
+    P.hang(x - Math.sign(x), 7, z - Math.sign(z), "minecraft:soul_lantern");
+  }
+  // فوانيس معلقة بسلاسل بحلقة حول البلورة
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * Math.PI * 2 + Math.PI / 8, x = Math.round(Math.cos(ang) * 6), z = Math.round(Math.sin(ang) * 6);
+    P.set(x, 7, z, "minecraft:chain"); P.hang(x, 6, z, a % 2 ? "minecraft:soul_lantern" : "minecraft:lantern");
+  }
+  // صدر القاعة (شمال): مذبح بطاولة سحر ومنابر ورفوف كتب وشموع وسجاد بنفسجي
+  P.box(-6, 0, -10, 6, 0, -9, "minecraft:polished_blackstone_bricks");
+  P.box(-6, 1, -10, 6, 1, -9, "minecraft:purple_carpet");
+  P.set(0, 1, -10, "minecraft:enchanting_table");
+  P.set(-2, 1, -10, "minecraft:lectern"); P.set(2, 1, -10, "minecraft:lectern");
+  for (const x of [-4, -1, 1, 4]) P.perm(x, 1, -9, "minecraft:purple_candle", { candles: 3, lit: true });
+  P.box(-10, 1, -10, -7, 4, -10, "minecraft:bookshelf"); P.box(7, 1, -10, 10, 4, -10, "minecraft:bookshelf");
+  // جوانب: رفوف كتب تحت الشبابيك وأصص زهور
+  for (const w of [-10, 10]) { P.box(w, 1, -6, w, 1, 6, "minecraft:bookshelf"); for (const z of [-6, -2, 2, 6]) P.set(w, 2, z, "minecraft:flower_pot"); }
+  for (const [x, z] of [[-10, 10], [10, 10]]) { P.set(x, 1, z, "minecraft:azalea_leaves"); P.set(x, 2, z, "minecraft:flowering_azalea_leaves"); }
+  // السقف: سبع طبقات، فتحة سماوية زجاج فوق البلورة وقبة فانوس ذهبية
+  P.roof(-13, -13, 13, 13, 9, 7, "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tiles", "minecraft:deepslate_tile_slab");
+  P.box(-11, 9, -11, 11, 9, 11, "minecraft:dark_oak_planks");
+  P.box(-1, 8, -1, 1, 17, 1, AIR);
+  P.box(-1, 9, -1, 1, 16, 1, "minecraft:light_blue_stained_glass");
+  P.eave(-2, -2, 2, 2, 17, "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tile_slab");
+  P.box(-1, 19, -1, 1, 19, 1, "minecraft:gold_block");
+  P.set(0, 20, 0, "minecraft:lightning_rod");
+  // الساحة القدامية: توري، فوانيس حجر، ساكورا
+  P.torii(0, 19, 4, 6);
+  for (const x of [-5, 5]) { P.toro(x, 17); P.toro(x, 21); }
+  for (const [x, z] of [[-15, -15], [15, -15], [-15, 17], [15, 17]]) P.cherry(x, z, 6);
   return P;
 }
 
@@ -526,22 +565,30 @@ export function findTemple(pos, maxD = 1e9) {
   }
   return best;
 }
-// يبني معبد قريب من اللاعب (12-28 بلوكة، أو قدامه إذا الأرض مو مستوية)، ويرجع موقعه
+// يبني المعبد مرة وحدة بالعالم، قريب من اللاعب (المدخل على بعد ~6-12 بلوكة) ومتوجه له
+export const TEMPLE_HALF = 18;
 export function buildTemple(p, onDone) {
   const dim = p.dimension;
-  let site = pickSite(dim, p.location, 14, 28, 12) || pickSite(dim, p.location, 10, 40, 11);
+  const reg0 = loadReg();
+  const free = (st) => st && !reg0.some((r) => Math.hypot(r.x - st.x, r.z - st.z) < 55);
+  let site;
+  for (let i = 0; i < 6 && !site; i++) { const st = pickSite(dim, p.location, 22, i < 3 ? 27 : 36, i < 3 ? TEMPLE_HALF : TEMPLE_HALF - 2); if (free(st)) site = st; }
   if (!site) {
     const v = p.getViewDirection(), l = Math.hypot(v.x, v.z) || 1;
-    const x = Math.floor(p.location.x + (v.x / l) * 16), z = Math.floor(p.location.z + (v.z / l) * 16);
+    const x = Math.floor(p.location.x + (v.x / l) * 24), z = Math.floor(p.location.z + (v.z / l) * 24);
     let y = Math.floor(p.location.y);
     try { const top = dim.getTopmostBlock({ x, z }); if (top) y = top.y + 1; } catch (e) { /* */ }
     site = { x, y, z };
   }
+  // المدخل (+z بالخطة) يتوجه للاعب: rot0 = +z، rot1 = -x، rot2 = -z، rot3 = +x
+  const dx = p.location.x - site.x, dz = p.location.z - site.z;
+  const rot = Math.abs(dz) >= Math.abs(dx) ? (dz > 0 ? 0 : 2) : (dx < 0 ? 1 : 3);
   const reg = loadReg();
-  const rot = Math.floor(Math.random() * 4), seed = Math.floor(Math.random() * 1e9);
+  const seed = Math.floor(Math.random() * 1e9);
   const rec = { x: site.x, y: site.y, z: site.z, type: "temple", rot, seed };
   reg.push(rec);
   saveReg(reg);
+  try { world.setDynamicProperty("sh_temple_built", true); } catch (e) { /* */ }
   const gen = execute(dim, site.x, site.y, site.z, rot, planTemple(seed), fillChest);
   system.runJob((function* () { try { yield* gen; } finally { try { if (onDone) onDone(rec); } catch (e) { /* */ } } })());
   return rec;

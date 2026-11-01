@@ -619,11 +619,12 @@ function guideTemple(p, t) {
 function ensureTemple(p) {
   try {
     if (!needsDraw(getState(p)) || p.dimension.id !== "minecraft:overworld") return;
-    const t = findTemple(p.location, 180);
+    // المعبد ينبني مرة وحدة بالعالم: إذا موجود (بأي مسافة) ندلك عليه
+    const t = findTemple(p.location);
     if (t) { guideTemple(p, t); return; }
     if (templeBusy) return;
     templeBusy = true;
-    say(p, "§b[Fallen Star] §fThe ground trembles... a §bStar Temple§f rises nearby. The heart of the fallen star waits inside.");
+    say(p, "§b[Fallen Star] §fThe ground trembles... a great §bStar Temple§f rises right in front of you. It appears only once in this world. The heart of the fallen star waits inside.");
     sfxPlayer(p, "sh.supernova_charge", 0.8, 0.6);
     shake(p, 0.15, 1.2);
     buildTemple(p, (rec) => { templeBusy = false; if (valid(p)) guideTemple(p, rec); });
@@ -1852,7 +1853,7 @@ system.runInterval(() => {
     if (!near.length) { if (rift.age > RIFT_LIFE && rift.phase !== "battle") closeRift(false); return; }
     // الشكل: شق كبير يكبر ويه الفساد
     const c = { x: rift.x, y: rift.y + 2.2, z: rift.z };
-    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + rift.r * 0.08, s: 18, life: 1100 });
+    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + rift.r * 0.08, s: 10, life: 1100 });
     else setShape(rift.ent, "sh:r", 1.2 + rift.r * 0.08);
     for (let i = 0; i < 4; i++) {
       const a = Math.random() * Math.PI * 2, rr = 1 + Math.random() * rift.r;
