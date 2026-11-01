@@ -1,0 +1,89 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "sh:fx_shape",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "default": "textures/entity/sh_fx_shapes"
+   },
+   "geometry": {
+    "s0": "geometry.sh_shape_crystal_spike",
+    "s1": "geometry.sh_shape_crystal_lance",
+    "s2": "geometry.sh_shape_crystal_gem",
+    "s3": "geometry.sh_shape_crystal_cluster",
+    "s4": "geometry.sh_shape_crystal_cage",
+    "s5": "geometry.sh_shape_crystal_plate",
+    "s6": "geometry.sh_shape_crystal_nova",
+    "s7": "geometry.sh_shape_iron_fist",
+    "s8": "geometry.sh_shape_wind_crescent",
+    "s9": "geometry.sh_shape_tornado",
+    "s10": "geometry.sh_shape_wings",
+    "s11": "geometry.sh_shape_sound_ring",
+    "s12": "geometry.sh_shape_echo_glyph",
+    "s13": "geometry.sh_shape_digit_0",
+    "s14": "geometry.sh_shape_digit_1",
+    "s15": "geometry.sh_shape_digit_2",
+    "s16": "geometry.sh_shape_digit_3",
+    "s17": "geometry.sh_shape_digit_4",
+    "s18": "geometry.sh_shape_digit_5",
+    "s19": "geometry.sh_shape_digit_6",
+    "s20": "geometry.sh_shape_digit_7",
+    "s21": "geometry.sh_shape_digit_8",
+    "s22": "geometry.sh_shape_digit_9",
+    "s23": "geometry.sh_shape_sym_minus",
+    "s24": "geometry.sh_shape_sym_divide",
+    "s25": "geometry.sh_shape_arrow_gold",
+    "s26": "geometry.sh_shape_arrow_blue",
+    "s27": "geometry.sh_shape_weight",
+    "s28": "geometry.sh_shape_rune_pillar",
+    "s29": "geometry.sh_shape_mirror",
+    "s30": "geometry.sh_shape_clock",
+    "s31": "geometry.sh_shape_gavel",
+    "s32": "geometry.sh_shape_padlock",
+    "s33": "geometry.sh_shape_space_cube",
+    "s34": "geometry.sh_shape_hourglass",
+    "s35": "geometry.sh_shape_fang_jaw",
+    "s36": "geometry.sh_shape_hunter_eye",
+    "s37": "geometry.sh_shape_meteor",
+    "s38": "geometry.sh_shape_star5",
+    "s39": "geometry.sh_shape_black_hole",
+    "s40": "geometry.sh_shape_vortex",
+    "s41": "geometry.sh_shape_nova",
+    "s42": "geometry.sh_shape_slash_violet",
+    "s43": "geometry.sh_shape_slash_fire",
+    "s44": "geometry.sh_shape_slash_gold",
+    "s45": "geometry.sh_shape_claw_marks",
+    "s46": "geometry.sh_shape_spear_proj",
+    "s47": "geometry.sh_shape_afterimage",
+    "s48": "geometry.sh_shape_rock_chunk",
+    "s49": "geometry.sh_shape_sun_chain"
+   },
+   "animations": {
+    "fx": "animation.sh_fx.shape",
+    "wings": "animation.sh_fx.shape_wings",
+    "clock": "animation.sh_fx.shape_clock",
+    "fang_jaw": "animation.sh_fx.shape_fang_jaw"
+   },
+   "scripts": {
+    "animate": [
+     "fx",
+     {
+      "wings": "q.property('sh:v') == 10"
+     },
+     {
+      "clock": "q.property('sh:v') == 30"
+     },
+     {
+      "fang_jaw": "q.property('sh:v') == 35"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.sh_fx_shape"
+   ]
+  }
+ }
+}

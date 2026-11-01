@@ -112,6 +112,90 @@
      ]
     }
    }
+  },
+  "animation.sh_fx.shape": {
+   "loop": true,
+   "bones": {
+    "spin": {
+     "rotation": [
+      0,
+      "query.life_time * query.property('sh:s')",
+      0
+     ],
+     "scale": "query.property('sh:r') * math.min(1.0, 0.3 + query.life_time * 7.0)"
+    },
+    "tilt": {
+     "rotation": [
+      "query.property('sh:p')",
+      0,
+      0
+     ]
+    },
+    "roll": {
+     "rotation": [
+      0,
+      0,
+      "query.property('sh:a') + query.life_time * query.property('sh:w')"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_wings": {
+   "loop": true,
+   "bones": {
+    "wl": {
+     "rotation": [
+      0,
+      0,
+      "-18 - math.sin(q.life_time * 640) * 28"
+     ]
+    },
+    "wr": {
+     "rotation": [
+      0,
+      0,
+      "18 + math.sin(q.life_time * 640) * 28"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_clock": {
+   "loop": true,
+   "bones": {
+    "hand_m": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 900"
+     ]
+    },
+    "hand_h": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 75"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_fang_jaw": {
+   "loop": true,
+   "bones": {
+    "jaw_u": {
+     "rotation": [
+      "-math.max(0, 38 - q.life_time * 230)",
+      0,
+      0
+     ]
+    },
+    "jaw_l": {
+     "rotation": [
+      "math.max(0, 38 - q.life_time * 230)",
+      0,
+      0
+     ]
+    }
+   }
   }
  }
 }

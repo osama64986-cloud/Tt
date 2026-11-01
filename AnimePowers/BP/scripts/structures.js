@@ -451,16 +451,17 @@ export function planShrine(seed) {
 const PLANNERS = { village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine };
 
 // ───────────────────────── الغنائم ─────────────────────────
-// "pick:a|b|c" = يختار واحد عشوائي من القائمة. الأسلحة كثر ظهوراً ببنايات المود (الحد الأدنى سلاح بكل قصر وبكل معبد صغير).
+// "pick:a|b|c" = يختار واحد عشوائي من القائمة.
 // ملاحظة: لفائف تطور المهارات ما تنحط بالصناديق (من المدرب أو الكرييتف بس).
 const LOOT = {
-  house: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["sh:dawn_dagger", 1, 1, 0.2], ["sh:shadow_blade", 1, 1, 0.15], ["sh:shadow_claws", 1, 1, 0.15], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
-  hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
-  ruins_small: [["sh:xp_scroll_small", 1, 2, 1.0], ["pick:sh:ember_cleaver|sh:sunset_spear", 1, 1, 0.5], ["minecraft:iron_ingot", 2, 5, 0.7]],
-  ruins: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.55], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
-  palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.4], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
+  // الأسلحة صارت نادرة: المضمون بس صندوق معبد القرية الصغير (سلاح عشوائي) وضريح السيف (الكاتانا)
+  house: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
+  hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
+  ruins_small: [["sh:xp_scroll_small", 1, 2, 1.0], ["pick:sh:ember_cleaver|sh:sunset_spear", 1, 1, 0.08], ["minecraft:iron_ingot", 2, 5, 0.7]],
+  ruins: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.12], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
+  palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
   shrine: [["sh:dark_katana", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.6], ["minecraft:diamond", 1, 2, 0.5]],
-  altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["sh:dawn_dagger", 1, 1, 0.5], ["sh:shadow_blade", 1, 1, 0.5], ["sh:shadow_claws", 1, 1, 0.45], ["sh:stone_maul", 1, 1, 0.4], ["sh:sunset_spear", 1, 1, 0.4], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
+  altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
 };
 
 function fillChest(block, key) {

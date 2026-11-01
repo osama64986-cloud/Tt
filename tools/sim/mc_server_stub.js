@@ -73,7 +73,7 @@ function mkDim(id) {
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
-    getBlock(l) { const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: "minecraft:gravel", isAir: true, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
+    getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
       return entities.filter((e) => e._valid && (!q.families || !q.families.includes('sh_rank0') || ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'].includes(e.typeId)) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
@@ -81,7 +81,7 @@ function mkDim(id) {
     },
     getPlayers() { return [player]; },
     getTopmostBlock(l) { const b = { x: Math.floor(l.x), y: 63, z: Math.floor(l.z), typeId: "minecraft:grass_block", location: { x: l.x, y: 63, z: l.z }, isAir: false, isLiquid: false, dimension: d, above: () => ({ isAir: true }), below: () => ({ isAir: false, isLiquid: false }), getComponent: () => undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
-    fillBlocks() {}, setBlockType() {}, setBlockPermutation() {}, runCommand() {}, runCommandAsync: async () => ({}),
+    fillBlocks() {}, setBlockType() {}, setBlockPermutation() {}, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   };
   return d;
 }
@@ -165,40 +165,47 @@ export const __sim = {
       if (r.particles === 0 && r.fx === 0) failures.push(`${r.id}: بدون مؤثرات بصرية`);
       if (r.sounds === 0) failures.push(`${r.id}: بدون صوت`);
     }
-    // كاتانا
+    // الأسلحة: كل سلاح مهارتين (استعمال / سنيك + استعمال)
     setState(baseState("star")); player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 }));
-    console.log("\nكاتانا:");
-    for (let m = 0; m < 7; m++) {
-      spawnZombies(4, true); player.setDynamicProperty("sh_kmode", m);
-      const p0 = stats.particles, s0 = stats.sounds, d0 = stats.damage || 0;
-      await useItem("sh:dark_katana"); advance(120);
-      console.log(`  وضع ${m}: جزيئات ${stats.particles - p0} أصوات ${stats.sounds - s0} ضرر ${Math.round((stats.damage || 0) - d0)}`);
-      if (stats.particles - p0 === 0) failures.push(`katana mode ${m}: بدون جزيئات`);
-      system_cd_reset();
+    console.log("\nالأسلحة (مهارة 1 | مهارة 2):");
+    for (const wid of ["sh:dark_katana", "sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear"]) {
+      const row = [];
+      for (const sneak of [false, true]) {
+        spawnZombies(4, true); player.isSneaking = sneak;
+        const p0 = stats.particles, s0 = stats.sounds, d0 = stats.damage || 0, f0 = stats.spawned, b0 = stats.broken || 0;
+        await useItem(wid); advance(120);
+        const dmg = Math.round((stats.damage || 0) - d0), shapes = stats.spawned - f0;
+        row.push(`شكل ${shapes} ضرر ${dmg}${(stats.broken || 0) - b0 ? " بلوكات " + ((stats.broken || 0) - b0) : ""}`);
+        if (dmg <= 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون ضرر`);
+        if (shapes === 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون أشكال`);
+        if (stats.sounds - s0 === 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون صوت`);
+        if (wid === "sh:stone_maul" && (stats.broken || 0) - b0 === 0) failures.push(`المطرقة ما كسرت بلوكات (مهارة ${sneak ? 2 : 1})`);
+        system_cd_reset();
+      }
+      player.isSneaking = false;
+      console.log(`  ${wid.padEnd(18)} ${row.join(" | ")}`);
     }
-    // تبديل بالسنيك (حدث entityStartSneaking)
-    player.setDynamicProperty("sh_kmode", 0); hold("sh:dark_katana");
-    const before = player.getDynamicProperty("sh_kmode");
-    advance(4); fire("entityStartSneaking", { entity: player }); advance(4);
-    const after = player.getDynamicProperty("sh_kmode");
-    console.log(`  سنيك: وضع ${before} → ${after}`);
-    if (after !== 1) failures.push("السنيك ما بدّل مهارة الكاتانا");
     // الأصدقاء: القروي ما ينضرب
     {
       setState(baseState("star")); spawnZombies(3, true); const v = addVillager(); const hp0 = v._hp;
-      player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 })); player.setDynamicProperty("sh_kmode", 6);
+      player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 }));
       for (const it of ["sh:skill_supernova", "sh:dark_katana"]) { await useItem(it); advance(120); system_cd_reset(); }
       console.log("\nالقروي بعد المهارات:", v._hp, "من", hp0);
       if (v._hp !== hp0) failures.push("القروي انضرب بمهارة!");
     }
     // تكسير الأرض
     {
-      const b0 = stats.blockSets || 0; setState(baseState("star")); spawnZombies(); await useItem("sh:skill_meteor"); advance(120); system_cd_reset();
+      const bz = stats.blockSets || 0; setState(baseState("star")); spawnZombies(); await useItem("sh:skill_meteor"); advance(120); system_cd_reset();
+      console.log("بلوكات تلونت بدون تفعيل (لازم 0):", (stats.blockSets || 0) - bz);
+      if ((stats.blockSets || 0) - bz !== 0) failures.push("الأرض تتلون وهي مطفية");
+      world._dyn.sh_scars_on = true;
+      const b0 = stats.blockSets || 0; spawnZombies(); await useItem("sh:skill_meteor"); advance(120); system_cd_reset();
       await useItem("sh:skill_supernova"); advance(200); system_cd_reset();
       console.log("بلوكات تغيرت بالتكسير:", (stats.blockSets || 0) - b0);
       if ((stats.blockSets || 0) - b0 < 20) failures.push("تكسير الأرض ما غيّر بلوكات");
       advance(1200);
       console.log("بعد الانتظار، ترجع البلوكات (محاولات ترميم):", stats.blockSets - b0);
+      world._dyn.sh_scars_on = undefined;
     }
     // تقدم الرتب: كم قتلة لكل رتبة (وحوش الرتبة 0 فقط)
     {
@@ -216,6 +223,29 @@ export const __sim = {
       advance(110);
       console.log("health_boost مطبّق:", stats.effects && stats.effects.health_boost, "amp:", stats.lastBoost);
       if (!(stats.effects && stats.effects.health_boost)) failures.push("health_boost ما انطبق مع الرتبة");
+    }
+    // تطور القدرة: ليفل اللاعب العالي يرفع القدرة، والقتل يكمل
+    {
+      setState({ ...baseState("crystal"), level: 44, rank: 2, plevel: 2, pxp: 105 });
+      fire("scriptEventReceive", { id: "sh:xp", message: "5", sourceEntity: player });
+      let st = JSON.parse(player.getDynamicProperty("sh"));
+      console.log("\nتطور القدرة: لاعب ليفل 44 كان عالق Lv2 → صار Lv", st.plevel);
+      if (st.plevel < 6) failures.push("ليفل القدرة ما لحق بليفل اللاعب");
+      setState({ ...baseState("crystal"), level: 3, rank: 0, plevel: 1, pxp: 0 });
+      let kills = 0;
+      for (; kills < 60; kills++) {
+        const z = mkEntity("sh:shadow_hound", { x: 0, y: 64, z: 3 }, dims.overworld);
+        fire("entityDie", { deadEntity: z, damageSource: { damagingEntity: player } });
+        st = JSON.parse(player.getDynamicProperty("sh"));
+        if (st.plevel >= 4) break;
+      }
+      console.log("  من Lv1 إلى Lv4 بـ", kills + 1, "قتلة");
+      if (st.plevel < 4) failures.push("تطور القدرة بطيء جداً");
+      const sk = { ...baseState("crystal"), skills: { shards: { lvl: 12, xp: 0 } } };
+      setState(sk); spawnZombies(); await useItem("sh:skill_shards"); advance(60);
+      st = JSON.parse(player.getDynamicProperty("sh"));
+      if (st.skills.shards.lvl > 12) failures.push("المهارة عبرت الحد الأقصى 12");
+      system_cd_reset();
     }
     // خبرة الكاتانا
     hold("sh:dark_katana"); player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 1, xp: 0 }));

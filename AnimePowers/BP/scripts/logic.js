@@ -38,6 +38,7 @@ export function checkPromotion(st) {
 
 // مستوى المهارة نفسها (غير ليفل اللاعب): يزيد من استعمالها بقتل الأعداء
 export const SKILL_UNLOCK_LEVEL = 3;
+export const SKILL_MAX_LV = 12;
 export function skillXpNeeded(level) {
   return 30 + level * 20;
 }
@@ -48,12 +49,14 @@ export function addSkillXp(st, id, amount) {
   if (!st.skills) st.skills = {};
   const sk = st.skills[id] || (st.skills[id] = { lvl: 1, xp: 0 });
   const ups = [];
+  if (sk.lvl >= SKILL_MAX_LV) { sk.lvl = SKILL_MAX_LV; sk.xp = 0; return ups; }
   sk.xp += amount;
-  while (sk.xp >= skillXpNeeded(sk.lvl)) {
+  while (sk.lvl < SKILL_MAX_LV && sk.xp >= skillXpNeeded(sk.lvl)) {
     sk.xp -= skillXpNeeded(sk.lvl);
     sk.lvl++;
     ups.push({ type: "skill", id, level: sk.lvl });
   }
+  if (sk.lvl >= SKILL_MAX_LV) sk.xp = 0;
   return ups;
 }
 
@@ -112,16 +115,23 @@ export function unlockLevel(idx, n, maxLv) {
   return 1 + Math.round((idx * (maxLv - 1)) / (n - 1));
 }
 
+// خبرة ليفل القدرة (كانت 40+35×ليفل وتجي بس من 30% من القتل، فكانت تبين واكفة)
 export function powerXpNeeded(level) {
-  return 40 + level * 35;
+  return 30 + level * 15;
+}
+// أقل ليفل قدرة حسب ليفل اللاعب: القدرة تكبر وياك حتى لو ما استعملت مهاراتها كثير
+export function powerFloor(level, maxLv) {
+  return Math.max(1, Math.min(maxLv, 1 + Math.floor((Math.max(1, level) - 1) / 6)));
 }
 
 export function addPowerXp(st, amount, maxLv) {
   const ups = [];
   if (!st.plevel) st.plevel = 1;
   if (!st.pxp) st.pxp = 0;
-  if (st.plevel >= maxLv) return ups;
-  st.pxp += amount;
+  const floor = powerFloor(st.level || 1, maxLv);
+  while (st.plevel < floor) { st.plevel++; ups.push({ type: "plevel", level: st.plevel }); }
+  if (st.plevel >= maxLv) { st.pxp = 0; return ups; }
+  st.pxp += Math.max(0, amount);
   while (st.plevel < maxLv && st.pxp >= powerXpNeeded(st.plevel)) {
     st.pxp -= powerXpNeeded(st.plevel);
     st.plevel++;
