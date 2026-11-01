@@ -173,12 +173,15 @@ const MONSTERS = {
   "sh:rust_guard": { rank: 0, xp: 30 },
   "sh:shadow_hound": { rank: 0, xp: 24 },
   "sh:sand_scorpion": { rank: 0, xp: 36 },
+  // وحوش الرتبة الثانية (Grim): أقوى بكثير، ثلاث مهارات لكل وحش
+  "sh:gloomhorn": { rank: 1, xp: 70 },
+  "sh:hollow_seer": { rank: 1, xp: 80 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
 // ─── تدرج الصعوبة: الوحش يظهر بقوة تناسب رتبة اللاعب اللي قربه (حياة + ضرر + خبرة) ───
 const TIER_HP = 0.30, TIER_DMG = 0.15, TIER_XP = 0.30;
-function tierOf(e) { try { const v = e.getDynamicProperty("sh_tier"); return typeof v === "number" ? v : 0; } catch (err) { return 0; } }
+function tierOf(e) { if (!e) return 0; try { const v = e.getDynamicProperty("sh_tier"); return typeof v === "number" ? v : 0; } catch (err) { return 0; } }
 function scaleMonster(e, rank) {
   try {
     if (!e || !rank) return;
@@ -192,6 +195,12 @@ function scaleMonster(e, rank) {
 }
 const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floor(tier / 2));
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
+const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer"];
+// وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
+function riftMobType() {
+  if (rift && rift.tier >= 1 && Math.random() < 0.3) return GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)];
+  return RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+}
 
 // أسلحة الدفاع: ضرر إضافي فوق ضرر اليد، تشتغل حتى بدون قدرة
 const WEAPONS = {
@@ -864,6 +873,8 @@ const MONSTER_INFO = [
   ["sh:ember_imp", "Ember Imp", "Lowly to Cataclysm", "Close: a red circle marks where it will pounce, then it rakes you with fiery claws. Far (7-13 blocks): it charges a fireball and lobs it; a red circle shows where it lands, so move!"],
   ["sh:rust_guard", "Rust Guard", "Lowly to Cataclysm", "A red circle grows around it before its ground slam, so step out. Up close it sweeps with crystal fists. Far (6-14 blocks): it tears out a boulder and throws it; dodge the red circle."],
   ["sh:shadow_hound", "Shadow Hound", "Lowly to Cataclysm", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
+  ["sh:gloomhorn", "Gloomhorn", "Grim to Cataclysm", "A spectral stag with an open ribcage and a beating heart inside. It scrapes the ground and a red line shows where it will CHARGE, so step aside. From afar its antler lanterns spit homing soul fire. Too close and it rears up: a circle grows, then it STOMPS and roots you in place."],
+  ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one great eye and a halo of blades. It raises its arms and throws its HALO BLADES one after another. It can vanish and step out of a mirror behind you to rake you. When a thin amber line links its eye to you, MOVE: the JUDGEMENT GAZE follows you, locks, and then fires."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -1243,7 +1254,9 @@ world.afterEvents.entityDie.subscribe((ev) => {
         : t === "sh:ember_imp" ? (roll < 0.3 ? "sh:xp_scroll_small" : null)
         : t === "sh:shadow_hound" ? (roll < 0.3 ? "sh:xp_scroll_small" : null)
         : t === "sh:sand_scorpion" ? (roll < 0.35 ? "sh:xp_scroll_small" : roll < 0.42 ? "sh:xp_scroll_big" : null)
-        : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null) : null;
+        : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null)
+        : t === "sh:gloomhorn" ? (roll < 0.45 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.75 ? "sh:skill_scroll" : null)
+        : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
       if (drop) ev.deadEntity.dimension.spawnItem(new ItemStack(drop, 1), ev.deadEntity.location);
     } catch (e2) { /* */ }
   } catch (e) { /* */ }
@@ -1808,10 +1821,10 @@ function riftStartWave(n) {
   const dim = world.getDimension(rift.dim);
   popShape(dim, "nova", { x: rift.x, y: rift.y + 2.2, z: rift.z }, 0.3, 1.6, 8, { s: 300 });
   if (n === 3) {
-    later(20, () => { if (rift) { riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], true); for (let i = 0; i < 2; i++) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false); } });
+    later(20, () => { if (rift) { riftSpawnMob(riftMobType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
   } else {
     const count = t.waves[n - 1];
-    for (let i = 0; i < count; i++) later(i * 6, () => { if (rift) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false); });
+    for (let i = 0; i < count; i++) later(i * 6, () => { if (rift) riftSpawnMob(riftMobType(), false); });
   }
   riftSave();
 }
@@ -1826,7 +1839,7 @@ function riftBossPulse(boss) {
     try { q.applyDamage(3 + rift.tier * 2, { cause: EntityDamageCause.entityAttack, damagingEntity: boss }); } catch (e) { /* */ }
     pushAway(boss.location, q, 1.4, 0.45);
   }
-  if (rift.tier >= 2 && riftMobs().length < 6) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false);
+  if (rift.tier >= 2 && riftMobs().length < 6) riftSpawnMob(riftMobType(), false);
 }
 function closeRift(victory, killer) {
   if (!rift) return;
@@ -1896,7 +1909,7 @@ system.runInterval(() => {
       if (riftPlayersNear(RIFT_ENGAGE).length) { rift.phase = "battle"; riftStartWave(1); }
       else if (rift.age > RIFT_LIFE) {
         // ما أحد سده: ينفجر ويطلق زعيمه بالعالم
-        const b = riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], true);
+        const b = riftSpawnMob(riftMobType(), true);
         for (const q of world.getAllPlayers()) say(q, `${t.col}§l[${t.name}]§r §cThe rift erupted. Its warden now roams the land.`);
         if (b) { try { b.removeTag("sh_rift"); } catch (e) { /* */ } }
         closeRift(false);
@@ -4384,10 +4397,11 @@ function trySpawnMonster(p, force) {
   try {
     if (p.dimension.id !== "minecraft:overworld") return undefined;
     const st = getState(p);
-    const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_rank0"] });
+    const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_monster"] });
     if (near.length >= MONSTER_CAP + (force ? 2 : 0)) return undefined;
     if (!force && Math.random() < 0.4) return undefined;
-    const id = RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+    const grim = st.rank >= 1 && !force && Math.random() < 0.25;
+    const id = grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
     const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, force ? 16 : 26, force ? 30 : 44);
     if (m) scaleMonster(m, st.rank);
     return m;
@@ -5088,7 +5102,219 @@ function useCompass(p) {
 
 
 // ───────────────────────── رؤية الرتب: رتبة الوحش فوق راسه بلون حسب خطره عليك ─────────────────────────
-const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion" };
+// ═════════════════════════ وحوش رتبة Grim: القرن القاتم والرائي الأجوف ═════════════════════════
+const SOUL = [0.4, 0.9, 1.0], AMBER = [1.0, 0.7, 0.2], WARN = [1.0, 0.25, 0.3];
+const gst = new Map();          // حالة كل وحش
+const soulOrbs = [];            // كرات فوانيس الروح الطايرة
+function fwdTo(from, to) { const dx = to.x - from.x, dz = to.z - from.z, l = Math.hypot(dx, dz) || 1; return { x: dx / l, z: dz / l }; }
+function airAt(dim, x, y, z) {
+  try { const b = dim.getBlock({ x: Math.floor(x), y: Math.floor(y), z: Math.floor(z) }); return !b || b.isAir || b.isLiquid || !b.isSolid; } catch (e) { return false; }
+}
+function segDist(p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, l2 = abx * abx + aby * aby + abz * abz || 1;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * abx + (p.y - a.y) * aby + (p.z - a.z) * abz) / l2));
+  return Math.hypot(p.x - (a.x + abx * t), p.y - (a.y + aby * t), p.z - (a.z + abz * t));
+}
+function grimEnd(e, st, cd) { st.phase = 0; st.skill = ""; st.t = 0; st.cd = cd + Math.random() * cd * 0.5; setMState(e, 0); }
+
+// ── القرن القاتم: اندفاع القرون، فوانيس الروح، ضربة الجذور ──
+function gloomTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  if (Math.random() < 0.35) glow(dim, { x: L.x + (Math.random() - 0.5) * 1.2, y: L.y + 1.2 + Math.random() * 0.8, z: L.z + (Math.random() - 0.5) * 1.2 }, { color: Math.random() < 0.5 ? SOUL : VIOLET, size: 0.12, life: 0.9, rise: 0.6 });
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 22);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0;
+    if (np.d < 5.5) { st.skill = "stomp"; st.phase = 1; setMState(e, 3); dangerZone(dim, L, 6, 12); sfx(dim, "sh.guard_windup", L, 1.1, 0.6); }
+    else if (np.d <= 16 && Math.random() < 0.6) { st.skill = "charge"; st.phase = 1; setMState(e, 1); sfx(dim, "sh.imp_windup", L, 1.2, 0.5); }
+    else if (np.d <= 22) { st.skill = "lanterns"; st.phase = 1; setMState(e, 4); sfx(dim, "sh.chorus", L, 1, 0.6); }
+    else st.cd = 10;
+    return;
+  }
+  const tp = valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  if (st.skill === "charge") {
+    if (st.phase === 1) {
+      if (tp && st.t <= 12) st.dir = fwdTo(L, tp.location);
+      const d = st.dir || { x: 0, z: 1 };
+      if (st.t % 4 === 0) pixLine(dim, { x: L.x, y: L.y + 0.15, z: L.z }, { x: L.x + d.x * 11, y: L.y + 0.15, z: L.z + d.z * 11 }, WARN, 22, 0.16, 0.3);
+      if (st.t >= 18) { st.phase = 2; st.t = 0; st.hit = new Set(); setMState(e, 2); sfx(dim, "sh.stardash", L, 1.2, 0.6); }
+      return;
+    }
+    const d = st.dir || { x: 0, z: 1 };
+    const nx = L.x + d.x * 0.9, nz = L.z + d.z * 0.9;
+    if (st.t > 22 || !airAt(dim, nx, L.y + 0.5, nz) || !airAt(dim, nx, L.y + 1.6, nz)) {
+      waveFx(dim, L, 4, 1, 10); rockBurst(dim, L, 5, 0.8); sfx(dim, "sh.guard_slam", L, 1.1, 0.8);
+      grimEnd(e, st, 70); return;
+    }
+    try { e.teleport({ x: nx, y: L.y, z: nz }, { facingLocation: { x: nx + d.x, y: L.y + 1, z: nz + d.z } }); } catch (err) { /* */ }
+    glow(dim, { x: L.x, y: L.y + 1.4, z: L.z }, { color: SOUL, size: 0.3, life: 0.5, rise: 0.2 });
+    for (const pl of dim.getPlayers({ location: e.location, maxDistance: 2.0 })) {
+      if (st.hit.has(pl.id)) continue;
+      st.hit.add(pl.id);
+      hurtPlayer(pl, 9, e);
+      try { pl.applyKnockback({ x: d.x * 1.6, z: d.z * 1.6 }, 0.65); } catch (err) { /* */ }
+      shake(pl, 0.25, 0.3); notify(pl, "§bThe Gloomhorn's charge!", 30);
+      popShape(dim, "nova", center3(pl), 0.3, 1.2, 6, { s: 400 });
+    }
+    return;
+  }
+  if (st.skill === "lanterns") {
+    for (const sx of [-1, 1]) {
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
+      glow(dim, { x: L.x + r.x * sx * 1.1 + f.x * 0.6, y: L.y + 2.7, z: L.z + r.z * sx * 1.1 + f.z * 0.6 }, { color: SOUL, size: 0.35, life: 0.4 });
+    }
+    if (st.t >= 20) {
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
+      for (const sx of [-1, 1]) soulOrbs.push({ dim, pos: { x: L.x + r.x * sx * 1.1 + f.x * 0.6, y: L.y + 2.7, z: L.z + r.z * sx * 1.1 + f.z * 0.6 }, tgt: tp, by: e, life: 80 });
+      sfx(dim, "sh.blackhole", L, 1, 1.4);
+      grimEnd(e, st, 60);
+    }
+    return;
+  }
+  if (st.skill === "stomp") {
+    if (st.t === 12) {
+      sfx(dim, "sh.guard_slam", L, 1.5, 0.6); sfx(dim, "sh.collapse", L, 0.9, 0.8);
+      waveFx(dim, L, 6, 1, 14); rockBurst(dim, L, 10, 1);
+      for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; for (const rr of [2.5, 4.5]) glow(dim, { x: L.x + Math.cos(a) * rr, y: L.y + 0.2, z: L.z + Math.sin(a) * rr }, { color: VIOLET, size: 0.3, life: 1.2, rise: 1.6 }); }
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 6 })) {
+        hurtPlayer(pl, 7, e);
+        try { pl.addEffect("slowness", 60, { amplifier: 3 }); pl.addEffect("weakness", 60, { amplifier: 0 }); } catch (err) { /* */ }
+        notify(pl, "§5Spectral roots bind you!", 40); shake(pl, 0.3, 0.4);
+      }
+    }
+    if (st.t >= 20) grimEnd(e, st, 70);
+  }
+}
+// كرات الروح: تلاحق اللاعب ببطء وتنفجر (بطء + ضرر)
+system.runInterval(() => {
+  for (let i = soulOrbs.length - 1; i >= 0; i--) {
+    const o = soulOrbs[i];
+    try {
+      o.life -= 2;
+      if (o.life <= 0 || !o.tgt || !valid(o.tgt)) { burst(o.dim, o.pos, 6, SOUL, 1.5, 0.15); soulOrbs.splice(i, 1); continue; }
+      const c = center3(o.tgt), dx = c.x - o.pos.x, dy = c.y - o.pos.y, dz = c.z - o.pos.z, l = Math.hypot(dx, dy, dz) || 1;
+      if (l < 1.1) {
+        hurtPlayer(o.tgt, 6, valid(o.by) ? o.by : undefined);
+        try { o.tgt.addEffect("slowness", 60, { amplifier: 1 }); } catch (err) { /* */ }
+        burst(o.dim, o.pos, 18, SOUL, 3, 0.22); popShape(o.dim, "nova", o.pos, 0.2, 1.0, 6, { s: 400 });
+        sfx(o.dim, "sh.blackhole_end", o.pos, 1, 1.5); soulOrbs.splice(i, 1); continue;
+      }
+      const sp = 0.55;
+      o.pos = { x: o.pos.x + dx / l * sp, y: o.pos.y + dy / l * sp, z: o.pos.z + dz / l * sp };
+      glow(o.dim, o.pos, { color: SOUL, size: 0.45, life: 0.25 });
+      glow(o.dim, o.pos, { color: [0.9, 1, 1], size: 0.2, life: 0.4 });
+    } catch (err) { soulOrbs.splice(i, 1); }
+  }
+}, 2);
+
+// ── الرائي الأجوف: شفرات الهالة، خطوة المرآة، نظرة الحكم ──
+function seerTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  if (Math.random() < 0.3) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.8, y: L.y + 0.3, z: L.z + (Math.random() - 0.5) * 0.8 }, { color: VIOLET, size: 0.14, life: 0.8, rise: 0.4 });
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 24);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0;
+    const r = Math.random();
+    if (np.d <= 3.5) { st.skill = "talon"; st.phase = 1; st.hit = 0; setMState(e, 3); }
+    else if (np.d <= 14 && r < 0.3) { st.skill = "mirror"; st.phase = 1; setMState(e, 4); shapeFx(dim, "afterimage", { ...L }, { r: 1.1, yaw: yawOf(L, np.p.location), life: 16 }); sfx(dim, "sh.kat_step", L, 1, 0.7); }
+    else if (r < 0.65) { st.skill = "blades"; st.phase = 1; st.shot = 0; setMState(e, 1); sfx(dim, "sh.chorus", L, 1, 1.2); }
+    else { st.skill = "gaze"; st.phase = 1; setMState(e, 2); sfx(dim, "sh.const_mark", L, 1, 0.6); }
+    return;
+  }
+  const tp = valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  const eye = (to) => { const f = fwdTo(L, to); return { x: L.x + f.x * 0.35, y: L.y + 2.45, z: L.z + f.z * 0.35 }; };
+  if (st.skill === "blades") {
+    if (st.t >= 16 && st.shot < 3 && (st.t - 16) % 6 === 0 && tp) {
+      st.shot++;
+      const f = fwdTo(L, tp.location), r = { x: -f.z, z: f.x }, side = st.shot === 2 ? 0 : st.shot === 1 ? -1 : 1;
+      const from = { x: L.x - f.x * 0.4 + r.x * side * 1.3, y: L.y + 2.6 + (side === 0 ? 0.8 : 0), z: L.z - f.z * 0.4 + r.z * side * 1.3 };
+      const to = center3(tp);
+      const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
+      flyShape(dim, "slash_violet", from, { x: dx / l, y: dy / l, z: dz / l }, 1.3, l + 1.5, { r: 0.55, w: 1400 }, undefined, () => {
+        for (const pl of dim.getPlayers({ location: to, maxDistance: 1.6 })) { hurtPlayer(pl, 5, valid(e) ? e : undefined); burst(dim, center3(pl), 8, VIOLET, 2, 0.18); }
+      });
+      sfx(dim, "sh.kat_wave", from, 0.8, 1.5);
+    }
+    if (st.t >= 34) grimEnd(e, st, 60);
+    return;
+  }
+  if (st.skill === "gaze") {
+    if (tp && st.t <= 20) st.aim = center3(tp);
+    if (st.aim) {
+      const a = eye(st.aim), dir = { x: st.aim.x - a.x, y: st.aim.y - a.y, z: st.aim.z - a.z }, l = Math.hypot(dir.x, dir.y, dir.z) || 1;
+      const b = { x: a.x + dir.x / l * 24, y: a.y + dir.y / l * 24, z: a.z + dir.z / l * 24 };
+      if (st.t < 30 && st.t % 2 === 0) pixLine(dim, a, b, st.t > 20 ? WARN : AMBER, 30, 0.1, 0.2);
+      if (st.t === 30) {
+        for (const [c, sz] of [[[1, 0.95, 0.75], 0.32], [VIOLET, 0.2]]) pixLine(dim, a, b, c, 60, sz, 0.6);
+        popShape(dim, "nova", a, 0.2, 1.2, 6, { s: 400 });
+        sfx(dim, "sh.supernova_boom", L, 0.9, 1.6);
+        for (const pl of dim.getPlayers({ location: L, maxDistance: 26 })) {
+          if (segDist(center3(pl), a, b) > 1.1) continue;
+          hurtPlayer(pl, 10, e);
+          try { pl.setOnFire(3, true); } catch (err) { /* */ }
+          shake(pl, 0.3, 0.3); notify(pl, "§6The Judgement Gaze burns you!", 40);
+        }
+      }
+    }
+    if (st.t >= 36) grimEnd(e, st, 80);
+    return;
+  }
+  if (st.skill === "mirror") {
+    if (st.t === 6 && tp) {
+      const spot = behindSpot(tp, L);
+      if (spot) { safeTeleport(e, spot, tp.location); shapeFx(dim, "afterimage", spot, { r: 1.1, yaw: yawOf(spot, tp.location), life: 10 }); }
+      setMState(e, 3); st.hit = 0; sfx(dim, "sh.kat_step", e.location, 1.1, 1.2);
+    }
+    if (st.t >= 10 && st.hit === 0) {
+      st.hit = 1;
+      for (const pl of dim.getPlayers({ location: e.location, maxDistance: 3.2 })) {
+        hurtPlayer(pl, 7, e);
+        try { pl.addEffect("blindness", 40, { amplifier: 0 }); } catch (err) { /* */ }
+        notify(pl, "§5It stepped out of a mirror behind you!", 40);
+      }
+      popShape(dim, "claw_marks", center3(e), 0.6, 1.2, 6, { yaw: dirYaw({ ...fwdTo(e.location, tp ? tp.location : L), y: 0 }) });
+    }
+    if (st.t >= 22) grimEnd(e, st, 70);
+    return;
+  }
+  if (st.skill === "talon") {
+    for (const at of [6, 10]) {
+      if (st.t === at) {
+        const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+        popShape(dim, "claw_marks", { x: L.x + f.x * 1.3, y: L.y + 1.4, z: L.z + f.z * 1.3 }, 0.6, 1.1, 6, { yaw: dirYaw({ x: -f.x, y: 0, z: -f.z }), a: at === 6 ? 30 : -30 });
+        sfx(dim, "sh.dagger_hit", L, 1, 0.8);
+        for (const pl of dim.getPlayers({ location: L, maxDistance: 3.3 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 0.6, 0.2); }
+      }
+    }
+    if (st.t >= 14) grimEnd(e, st, 40);
+  }
+}
+system.runInterval(() => {
+  for (const dimId of ["overworld", "nether", "the_end"]) {
+    let dim;
+    try { dim = world.getDimension(dimId); } catch (e) { continue; }
+    for (const type of GRIM_TYPES) {
+      let list = [];
+      try { list = dim.getEntities({ type }); } catch (e) { continue; }
+      for (const e of list) {
+        try {
+          let st = gst.get(e.id);
+          if (!st) { st = { phase: 0, t: 0, cd: 30 + Math.random() * 40, skill: "" }; gst.set(e.id, st); }
+          if (type === "sh:gloomhorn") gloomTick(e, st); else seerTick(e, st);
+        } catch (err) { gst.delete(e.id); }
+      }
+    }
+  }
+}, 2);
+
+const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer" };
 system.runInterval(() => {
   const players = world.getAllPlayers();
   if (!players.length) return;

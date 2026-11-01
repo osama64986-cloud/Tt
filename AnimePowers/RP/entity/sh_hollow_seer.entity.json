@@ -1,0 +1,41 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:hollow_seer",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_hollow_seer"
+      },
+      "geometry": {
+        "default": "geometry.sh_hollow_seer"
+      },
+      "animations": {
+        "idle": "animation.sh_hollow_seer.idle",
+        "blades": "animation.sh_hollow_seer.blades",
+        "gaze": "animation.sh_hollow_seer.gaze",
+        "talon": "animation.sh_hollow_seer.talon",
+        "vanish": "animation.sh_hollow_seer.vanish",
+        "state": "controller.animation.sh_hollow_seer.state",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "state",
+          "look"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#2a2058",
+        "overlay_color": "#ffb43c"
+      }
+    }
+  }
+}

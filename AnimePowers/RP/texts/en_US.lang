@@ -10,3 +10,7 @@ entity.sh:shadow_hound.name=Shadow Hound
 entity.sh:sand_scorpion.name=Sand Scorpion
 item.spawn_egg.entity.sh:shadow_hound.name=Shadow Hound Egg
 item.spawn_egg.entity.sh:sand_scorpion.name=Sand Scorpion Egg
+entity.sh:gloomhorn.name=Gloomhorn
+item.spawn_egg.entity.sh:gloomhorn.name=Gloomhorn Egg
+entity.sh:hollow_seer.name=Hollow Seer
+item.spawn_egg.entity.sh:hollow_seer.name=Hollow Seer Egg

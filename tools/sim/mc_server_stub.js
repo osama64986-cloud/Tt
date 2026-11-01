@@ -78,7 +78,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || !q.families.includes('sh_rank0') || ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'].includes(e.typeId)) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
@@ -567,6 +567,31 @@ export const __sim = {
       console.log("  الرامي: تسلسل الحالات", seq.join("→"), "| أسهم =", arrows, "| أسهم طلعت لحظة الإطلاق =", arrowsAtRelease);
       if (!seq.includes(3) || !seq.includes(1) || !seq.includes(2)) failures.push("الرامي ما يمر بالتصويب والسحب والإطلاق");
       if (arrows < 2 || arrowsAtRelease !== arrows) failures.push("سهم الرامي مو متزامن ويا حركة الإطلاق");
+    }
+    // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
+    {
+      console.log("\nوحوش Grim:");
+      const want = { "sh:gloomhorn": { 3: "ضربة الجذور", 2: "الاندفاع", 4: "فوانيس الروح" }, "sh:hollow_seer": { 3: "المخالب", 1: "شفرات الهالة", 2: "نظرة الحكم", 4: "خطوة المرآة" } };
+      for (const type of Object.keys(want)) {
+        const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
+        for (const [dist, ticks] of [[2.5, 400], [9, 2400]]) {
+          entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
+          const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 90); entities.push(m);
+          const d0 = stats.damage || 0;
+          for (let t = 0; t < ticks; t += 2) {
+            advance(2); seenStates.add(m.getProperty("sh:state"));
+            player.location = { x: 0, y: 64, z: 0 };
+            if (Math.hypot(m.location.x, m.location.z - dist) > 0.01 && t % 60 === 0) m.location = { x: 0, y: 64, z: dist };   // يرجع لمكانه (الاندفاع والمرآة يحركونه)
+          }
+          const dmg = Math.round((stats.damage || 0) - d0);
+          if (dist < 3) dmgNear = dmg; else dmgFar = dmg;
+        }
+        const names = Object.entries(want[type]).map(([k, v]) => `${v} ${seenStates.has(Number(k)) ? "✔" : "✖"}`).join(" | ");
+        console.log(`  ${type.padEnd(16)} ${names} | ضرر قريب ${dmgNear} بعيد ${dmgFar}`);
+        for (const [k, v] of Object.entries(want[type])) if (!seenStates.has(Number(k))) failures.push(`${type}: مهارة ${v} ما طلعت`);
+        if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
+      }
+      player._hp = 20; player._max = 20; player._valid = true; entities.length = 0;
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

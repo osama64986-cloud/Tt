@@ -1,0 +1,209 @@
+{
+ "format_version": "1.10.0",
+ "animation_controllers": {
+  "controller.animation.sh_gloomhorn.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "stomp": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "windup": {
+     "animations": [
+      "windup"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "stomp": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "charge": {
+     "animations": [
+      "charge"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "stomp": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "stomp": {
+     "animations": [
+      "stomp"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lanterns": {
+     "animations": [
+      "lanterns"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "stomp": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  },
+  "controller.animation.sh_hollow_seer.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "blades": "query.property('sh:state') == 1"
+      },
+      {
+       "gaze": "query.property('sh:state') == 2"
+      },
+      {
+       "talon": "query.property('sh:state') == 3"
+      },
+      {
+       "vanish": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "blades": {
+     "animations": [
+      "blades"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "gaze": "query.property('sh:state') == 2"
+      },
+      {
+       "talon": "query.property('sh:state') == 3"
+      },
+      {
+       "vanish": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "gaze": {
+     "animations": [
+      "gaze"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "blades": "query.property('sh:state') == 1"
+      },
+      {
+       "talon": "query.property('sh:state') == 3"
+      },
+      {
+       "vanish": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "talon": {
+     "animations": [
+      "talon"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "blades": "query.property('sh:state') == 1"
+      },
+      {
+       "gaze": "query.property('sh:state') == 2"
+      },
+      {
+       "vanish": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "vanish": {
+     "animations": [
+      "vanish"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "blades": "query.property('sh:state') == 1"
+      },
+      {
+       "gaze": "query.property('sh:state') == 2"
+      },
+      {
+       "talon": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  }
+ }
+}
