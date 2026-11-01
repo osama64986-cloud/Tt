@@ -9,6 +9,15 @@ import sys
 from PIL import Image, ImageDraw
 
 COL = [
+    ("cherry_planks", (226, 150, 160)), ("cherry_slab", (226, 150, 160)), ("cherry_stairs", (226, 150, 160)), ("cherry_wood", (110, 74, 82)),
+    ("spruce", (110, 80, 50)), ("pink_carpet", (240, 130, 170)), ("pink_wool", (240, 130, 170)), ("white_carpet", (235, 235, 235)),
+    ("iron_chain", (80, 80, 90)), ("mossy_cobblestone", (100, 130, 80)), ("clay", (140, 150, 170)), ("farmland", (100, 64, 40)),
+    ("wheat", (200, 180, 60)), ("carrots", (230, 130, 40)), ("potatoes", (190, 170, 60)), ("beetroot", (150, 40, 60)), ("bed", (200, 40, 50)),
+    ("crafting_table", (160, 110, 60)), ("furnace", (120, 120, 125)), ("bookshelf", (140, 100, 60)), ("moss_block", (90, 130, 50)),
+    ("peony", (240, 130, 190)), ("lilac", (200, 150, 220)), ("short_grass", (96, 150, 64)), ("fern", (80, 140, 60)), ("allium", (190, 120, 220)),
+    ("cornflower", (90, 120, 230)), ("pink_tulip", (245, 140, 180)), ("flowering_azalea", (230, 140, 190)), ("lectern", (150, 110, 60)),
+    ("composter", (110, 80, 40)), ("loom", (170, 130, 80)), ("cartography", (150, 110, 70)), ("carved_pumpkin", (230, 130, 20)), ("grass_path", (170, 140, 80)),
+    ("polished_andesite", (150, 150, 150)), ("door", (110, 80, 50)),
     ("water", (60, 110, 200)), ("lava", (230, 90, 20)), ("cherry_leaves", (246, 170, 196)), ("pink_petals", (250, 190, 210)),
     ("cherry_log", (120, 80, 90)), ("dark_oak", (70, 50, 30)), ("red_nether", (130, 30, 40)), ("red_concrete", (190, 40, 36)),
     ("red_wool", (200, 50, 50)), ("white_wool", (235, 235, 235)), ("red_carpet", (180, 30, 30)), ("green_carpet", (90, 140, 60)),
@@ -53,6 +62,8 @@ def build(plan, rot=0):
             vox[(x, y, z)] = bid
         elif k == "chest":
             vox[(op[1], op[2], op[3])] = "minecraft:chest"
+        elif k == "bed":
+            vox[(op[1], op[2], op[3])] = "minecraft:bed"; vox[(op[4], op[2], op[5])] = "minecraft:bed"
     return vox
 
 

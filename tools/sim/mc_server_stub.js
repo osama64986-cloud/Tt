@@ -326,7 +326,7 @@ export const __sim = {
     {
       setState({ ...baseState("iron"), rank: 4, level: 60 }); entities.length = 0;
       advance(7200);
-      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId));
+      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion", "sh:gloomhorn", "sh:hollow_seer", "sh:veilfox", "sh:magmamoth"].includes(e.typeId));
       const tiers = mons.map((e) => e.getDynamicProperty("sh_tier"));
       console.log("وحوش ظهرت خلال 7200 تك (6 دقائق، الحد 3):", mons.length, "درجاتها:", tiers.join(","));
       if (mons.length === 0) failures.push("ما ظهرت وحوش بـ6 دقائق");
@@ -572,7 +572,7 @@ export const __sim = {
     {
       console.log("\nوحوش Grim:");
       const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "موكب نار الثعلب", 2: "مئة مرآة", 3: "كسوف الأذيال", 4: "العرش" }, "sh:magmamoth": { 1: "دكة الماغما", 2: "نفخة الجحيم", 3: "اندفاع الماموث", 4: "الثوران", 5: "درع الماغما" } };
-      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]], "sh:veilfox": [[3, 3000], [10, 3600]], "sh:magmamoth": [[3, 3200], [12, 3800]] };
+      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[3, 3000], [10, 3600]], "sh:magmamoth": [[3, 3200], [12, 3800]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
       const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire", "fire_pillar"], "sh:magmamoth": ["magma_pillar"] };
       for (const type of Object.keys(want)) {

@@ -191,6 +191,18 @@ if node and "--no-sim" not in sys.argv:
     if r.returncode != 0:
         err("المحاكي فشل:\n" + r.stdout.decode("utf-8", "replace")[-1800:] + r.stderr.decode("utf-8", "replace")[-600:])
 
+# قرية الساكورا: أسماء بلوكات وحالاتها حقيقية، صندوقين لكل بيت، سرير وطاولة صناعة وفرن، والوصول للداخل والعلية، والأشجار ما تخرب المباني
+if node:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        r = subprocess.run([node, os.path.join(ROOT, "tools", "sim", "dump_plans.mjs"), td], capture_output=True)
+        if r.returncode != 0:
+            err("طباعة المخططات فشلت:\n" + r.stderr.decode("utf-8", "replace")[-600:])
+        else:
+            r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_village.py"), os.path.join(td, "plan_village.json")], capture_output=True)
+            if r.returncode != 0:
+                err("فحص قرية الساكورا فشل:\n" + r.stdout.decode("utf-8", "replace")[-1500:])
+
 for w in warnings:
     print("تحذير:", w)
 if errors:

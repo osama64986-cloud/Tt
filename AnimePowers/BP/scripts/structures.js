@@ -1,5 +1,6 @@
 // هياكل الاستكشاف: بيوت يابانية، قصر، خرائب معبد. تنبني بالسكربت قرب اللاعب وهو يتحرك.
 import { world, system, BlockPermutation, BlockVolume, ItemStack } from "@minecraft/server";
+import { buildSakuraVillage, SAKURA_HALF } from "./sakura.js";
 
 // ───────────────────────── مساعدات الأوامر ─────────────────────────
 // op: ["box",x1,y1,z1,x2,y2,z2,id] | ["set",x,y,z,id] | ["stair",x,y,z,id,dir,upside] | ["perm",x,y,z,id,states]
@@ -16,7 +17,12 @@ function rng(seed) {
 }
 
 class Plan {
-  constructor(seed) { this.ops = []; this.spawns = []; this.r = rng(seed); }
+  constructor(seed) { this.ops = []; this.spawns = []; this.r = rng(seed); this.occ = new Set(); }
+  // خلايا محجوزة (أبنية، مسارات، ماء): الزهور والأشجار تتجنبها
+  reserve(x1, z1, x2, z2) { for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) for (let z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) this.occ.add(`${x},${z}`); }
+  free(x, z) { return !this.occ.has(`${x},${z}`); }
+  // سرير: القدم (fx,y,fz) والراس (hx,y,hz). التنفيذ يجرب اتجاهات الحالة حتى يثبت الزوج
+  bed(fx, y, fz, hx, hz) { this.ops.push(["bed", fx, y, fz, hx, hz]); }
   box(x1, y1, z1, x2, y2, z2, id) { this.ops.push(["box", x1, y1, z1, x2, y2, z2, id]); }
   set(x, y, z, id) { this.ops.push(["set", x, y, z, id]); }
   stair(x, y, z, id, dir, upside = false) { this.ops.push(["stair", x, y, z, id, dir, upside]); }
@@ -243,60 +249,17 @@ class Plan {
 // ───────────────────────── المخططات ─────────────────────────
 export const STRUCTURES = {
   temple: { name: "Star Temple", weight: 0, half: 12, guards: 0, lore: "The fallen star's heart rests in this crystal. Step on the golden plate to awaken your power." },
-  village: { name: "Sakura Village", half: 22, weight: 0.3, guards: 0, lore: "The Order of Dawn's first home, where the story began." },
+  village: { name: "Sakura Village", half: SAKURA_HALF, weight: 0.3, guards: 0, lore: "The Order of Dawn's first home, where the story began." },
   palace: { name: "Sunset Palace", half: 26, weight: 0.2, guards: 4, lore: "The last light fell here before the palace fell." },
   ruins: { name: "Temple Ruins", half: 14, weight: 0.35, guards: 3, lore: "The ancient temple, where the first shard landed." },
   shrine: { name: "Dark Sword Shrine", half: 13, weight: 0.15, guards: 3, unique: true, lore: "The Abyss sleeps beneath this stone." },
   lightshrine: { name: "Light Sword Shrine", half: 13, weight: 0.12, guards: 3, unique: true, lore: "The light the Abyss could never swallow sleeps beneath this beam." },
 };
 
-// قرية الساكورا (45×45): توري، شارع رئيسي، 6 بيوت بشرفات، ساحة تشوزويا، معبد صغير، بركة كوي وجسر، حديقة حصى، باغودا، أكشاك سوق
+// قرية الساكورا (77×77) من صورة المرجع: التفاصيل بـ sakura.js
 export function planVillage(seed) {
   const P = new Plan(seed);
-  P.ground(-22, -22, 22, 22, 17);
-  const PATH = "minecraft:dirt_path";
-  // الشارع الرئيسي + فروع تصل لكل باب
-  P.box(-1, -1, -21, 1, -1, 17, PATH);
-  for (const [x1, z1, x2, z2] of [[-6, -16, -2, -14], [2, -15, 6, -13], [-6, -4, -2, -2], [2, -3, 6, -1], [-6, 7, -2, 9], [2, 8, 6, 10]]) P.box(x1, -1, z1, x2, -1, z2, PATH);
-  // بوابة توري كبيرة + درج حجري
-  P.torii(0, -21, 3, 6);
-  P.stair(-1, -1, -22, "minecraft:stone_brick_stairs", "s"); P.stair(0, -1, -22, "minecraft:stone_brick_stairs", "s"); P.stair(1, -1, -22, "minecraft:stone_brick_stairs", "s");
-  for (const z of [-19, -11, 3, 11]) { P.toro(-2, z); P.toro(2, z); }
-  // البيوت (باب كل بيت يواجه الشارع)
-  P.house(-17, -19, -7, -10, "e", { loot: "house" });
-  P.house(7, -19, 17, -9, "w", { loot: "house" });
-  P.house(-15, -6, -7, 1, "e", { loot: "house" });
-  P.house(7, -5, 14, 1, "w", { loot: "house", wall: "minecraft:smooth_quartz" });
-  P.house(-14, 5, -7, 11, "e", { loot: "house" });
-  P.house(7, 6, 16, 12, "w", { loot: "house", wall: "minecraft:smooth_quartz" });
-  // أكشاك السوق قرب المدخل
-  P.stall(3, -9, 5, -7); P.stall(-5, -9, -3, -7);
-  // ساحة بحجر وتشوزويا وبنشات
-  P.box(-5, -1, 12, 5, -1, 17, "minecraft:stone_bricks");
-  P.box(-4, -1, 13, 4, -1, 16, "minecraft:polished_andesite");
-  P.chozuya(0, 14);
-  P.stair(-3, 0, 16, "minecraft:dark_oak_stairs", "n"); P.stair(3, 0, 16, "minecraft:dark_oak_stairs", "n");
-  P.toro(-5, 12); P.toro(5, 12); P.toro(-5, 17); P.toro(5, 17);
-  // معبد صغير (هوكورا) نهاية الشارع: درج، 4 أعمدة حمراء، سقف أحمر، صندوق قرابين
-  P.box(-4, -1, 18, 4, -1, 22, "minecraft:stone_bricks");
-  for (const x of [-1, 0, 1]) P.stair(x, 0, 18, "minecraft:stone_brick_stairs", "s");
-  P.box(-3, 0, 19, 3, 0, 22, "minecraft:stone_bricks");
-  for (const [x, z] of [[-2, 20], [2, 20], [-2, 22], [2, 22]]) P.box(x, 1, z, x, 4, z, "minecraft:red_concrete");
-  P.box(-2, 1, 22, 2, 3, 22, "minecraft:dark_oak_planks");
-  P.box(-2, 1, 20, -2, 3, 22, "minecraft:dark_oak_planks"); P.box(2, 1, 20, 2, 3, 22, "minecraft:dark_oak_planks");
-  P.box(-1, 1, 21, 1, 3, 21, AIR);
-  P.roof(-2, 20, 2, 22, 5, 2, "minecraft:red_nether_brick_stairs", "minecraft:red_nether_brick_slab", "minecraft:red_nether_brick_slab");
-  P.chest(0, 1, 22, "hokora");
-  P.hang(0, 3, 21);
-  // بركة كوي + جسر + شجرة فوقها
-  P.pond(9, 14, 20, 21);
-  P.bridgeX(8, 21, 17);
-  P.cherry(21, 13); P.toro(8, 13); P.toro(8, 21);
-  // حديقة حصى + باغودا
-  P.karesansui(-9, 14, -6, 20);
-  P.pagoda(-16, 17, 3, 3);
-  // أشجار ساكورا موزعة
-  for (const [x, z] of [[-4, -17], [4, -17], [-4, 5], [4, 5], [-20, -8], [20, -6], [-20, 7], [20, 4], [-20, -20], [20, -20]]) P.cherry(x, z);
+  buildSakuraVillage(P);
   return P;
 }
 
@@ -659,6 +622,7 @@ export function buildTemple(p, onDone) {
 const LOOT = {
   // الأسلحة صارت نادرة: المضمون بس صندوق معبد القرية الصغير (سلاح عشوائي) وضريح السيف (الكاتانا)
   house: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
+  pantry: [["minecraft:bread", 3, 6, 0.9], ["minecraft:cooked_chicken", 2, 4, 0.7], ["minecraft:apple", 2, 4, 0.8], ["minecraft:carrot", 3, 6, 0.6], ["minecraft:potato", 3, 6, 0.6], ["minecraft:honey_bottle", 1, 2, 0.3]],
   hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
   ruins_small: [["sh:xp_scroll_small", 1, 2, 1.0], ["pick:sh:ember_cleaver|sh:sunset_spear", 1, 1, 0.08], ["minecraft:iron_ingot", 2, 5, 0.7]],
   ruins: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.12], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
@@ -703,6 +667,11 @@ function fillBig(dim, from, to, id) {
   }
 }
 
+function setPerm(dim, at, perm) {
+  if (typeof dim.setBlockPermutation === "function") dim.setBlockPermutation(at, perm);
+  else { const blk = dim.getBlock(at); if (blk) blk.setPermutation(perm); }
+}
+
 function* execute(dim, ox, oy, oz, rot, plan, onChest) {
   let count = 0;
   for (const op of plan.ops) {
@@ -728,6 +697,20 @@ function* execute(dim, ox, oy, oz, rot, plan, onChest) {
         const at = { x: ox + x, y: oy + op[2], z: oz + z };
         if (typeof dim.setBlockPermutation === "function") dim.setBlockPermutation(at, perm);
         else { const blk = dim.getBlock(at); if (blk) blk.setPermutation(perm); }
+      } else if (op[0] === "bed") {
+        const [fx, fz] = rotXZ(op[1], op[3], rot), [hx, hz] = rotXZ(op[4], op[5], rot);
+        const F = { x: ox + fx, y: oy + op[2], z: oz + fz }, Hh = { x: ox + hx, y: oy + op[2], z: oz + hz };
+        const ddx = hx - fx, ddz = hz - fz;
+        const guess = ddz > 0 ? 0 : ddx < 0 ? 1 : ddz < 0 ? 2 : 3;     // الراس جنوباً=0، غرباً=1، شمالاً=2، شرقاً=3 (وإذا ما ثبت نجرب الباقي)
+        for (let k = 0; k < 4; k++) {
+          const d = (guess + k) % 4;
+          setPerm(dim, F, BlockPermutation.resolve("minecraft:bed", { direction: d, head_piece_bit: false, occupied_bit: false }));
+          setPerm(dim, Hh, BlockPermutation.resolve("minecraft:bed", { direction: d, head_piece_bit: true, occupied_bit: false }));
+          yield; yield; yield;
+          const a1 = dim.getBlock(F), b1 = dim.getBlock(Hh);
+          if (a1 && b1 && a1.typeId === "minecraft:bed" && b1.typeId === "minecraft:bed") break;
+          dim.setBlockType(F, AIR); dim.setBlockType(Hh, AIR);
+        }
       } else if (op[0] === "chest") {
         const [x, z] = rotXZ(op[1], op[3], rot);
         const loc = { x: ox + x, y: oy + op[2], z: oz + z };
