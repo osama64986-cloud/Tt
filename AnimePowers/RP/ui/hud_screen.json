@@ -3,18 +3,17 @@
 
   "sh_player_doll": {
     "type": "panel",
-    "size": [ 32, 48 ],
+    "size": [ 36, 50 ],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
-    "offset": [ 3, 3 ],
+    "offset": [ 2, 2 ],
     "layer": 2,
     "controls": [
       {
         "doll_frame": {
           "type": "image",
-          "texture": "textures/ui/hud_tip_text_background",
+          "texture": "textures/ui/sh_hud_portrait",
           "size": [ "100%", "100%" ],
-          "alpha": 0.45,
           "layer": 1
         }
       },
@@ -23,7 +22,8 @@
           "type": "custom",
           "renderer": "live_player_renderer",
           "layer": 3,
-          "size": [ "100% - 4px", "100% - 4px" ],
+          "size": [ "100% - 6px", "100% - 7px" ],
+          "offset": [ 0, -1 ],
           "anchor_from": "center",
           "anchor_to": "center"
         }
@@ -34,13 +34,16 @@
   "hud_actionbar_text": {
     "anchor_from": "top_left",
     "anchor_to": "top_left",
-    "offset": [ 38, 3 ]
+    "offset": [ 39, 2 ],
+    "texture": "textures/ui/sh_hud_panel",
+    "size": [ "100%c + 16px", "100%c + 9px" ]
   },
 
   "hud_actionbar_text/actionbar_message": {
     "text_alignment": "left",
     "anchor_from": "left_middle",
-    "anchor_to": "left_middle"
+    "anchor_to": "left_middle",
+    "offset": [ 8, 0 ]
   },
 
   "root_panel": {

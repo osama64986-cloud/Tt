@@ -35,6 +35,8 @@ export const EntityDamageCause = new Proxy({}, { get: (t, k) => String(k) });
 export const BlockPermutation = { resolve: () => ({}) };
 export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
 export const GameMode = new Proxy({}, { get: (t, k) => String(k) });
+export const HudElement = { PaperDoll: 0, Armor: 1, ToolTips: 2, TouchControls: 3, Crosshair: 4, Hotbar: 5, Health: 6, ProgressBar: 7, Hunger: 8, AirBubbles: 9, HorseHealth: 10, StatusEffects: 11, ItemText: 12 };
+export const HudVisibility = { Hide: 0, Reset: 1 };
 
 export const stats = { particles: 0, sounds: 0, spawned: 0, soundIds: new Set(), actionBars: [], messages: [] };
 let effectLog = [];
@@ -93,7 +95,7 @@ const player = mkEntity("minecraft:player", { x: 0, y: 64, z: 0 }, dims.overworl
 Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
   camera: { fade() {} },
-  onScreenDisplay: { setActionBar(t) { stats.actionBars.push(t); }, setTitle() {} },
+  onScreenDisplay: { setActionBar(t) { stats.actionBars.push(t); }, setTitle(t) { (stats.titles = stats.titles || []).push(t); }, setHudVisibility(v, els) { stats.hudHidden = v === 0 ? els : []; } },
   sendMessage(m) { stats.messages.push(String(m)); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   getRotation() { return { x: 0, y: 0 }; },
@@ -379,6 +381,48 @@ export const __sim = {
       fire("itemUse", { source: player, itemStack: inventory[4] }); advance(250);
       if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("الشظية غيرت قدرة موجودة");
       player.selectedSlotIndex = 0;
+    }
+    // ميزات جوجوتسو: الطاقة، الوميض الأسود، التوسع الإقليمي، والـHUD المرسوم
+    {
+      for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
+      setState({ ...baseState("crystal"), rank: 2, level: 35 });
+      advance(110);
+      console.log("\nقلوب ماينكرافت مخفية:", JSON.stringify(stats.hudHidden));
+      if (!(stats.hudHidden || []).includes(6)) failures.push("قلوب ماينكرافت ما انخفت");
+      stats.actionBars.length = 0; hold(""); advance(10);
+      const bar = stats.actionBars[stats.actionBars.length - 1] || "";
+      const glyphs = [...bar].filter((ch) => ch.charCodeAt(0) >= 0xE500 && ch.charCodeAt(0) <= 0xE5FF).length;
+      console.log("رموز مرسومة بالـHUD:", glyphs, "| أسطر:", bar.split("\n").length);
+      if (glyphs < 25) failures.push("الـHUD ما يستعمل الرسومات");
+      // الوميض الأسود المضمون
+      spawnZombies(1, true); const z = entities[0]; const hp0 = z._hp;
+      fire("scriptEventReceive", { id: "sh:blackflash", message: "", sourceEntity: player });
+      stats.titles = []; const f0 = stats.spawned;
+      fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(10);
+      console.log("الوميض الأسود: ضرر", hp0 - z._hp, "| أشكال", stats.spawned - f0, "| عنوان", (stats.titles || []).join(","));
+      if (!(stats.titles || []).some((t) => t.includes("BLACK"))) failures.push("الوميض الأسود ما اشتغل");
+      // التوسع الإقليمي
+      fire("scriptEventReceive", { id: "sh:energy", message: "100", sourceEntity: player });
+      const has = inventory.some((i) => i && i.typeId === "sh:skill_domain");
+      spawnZombies(4, true); stats.titles = []; const d0 = stats.damage || 0, s0 = stats.spawned;
+      await useItem("sh:skill_domain"); advance(5);
+      const dome = entities.find((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") >= 50 && e.getProperty("sh:v") <= 58);
+      advance(250);
+      console.log("التوسع: أيتم =", has, "| قبة =", !!dome, "| عنوان =", (stats.titles || [])[0], "| ضرر =", Math.round((stats.damage || 0) - d0), "| أشكال =", stats.spawned - s0);
+      if (!has) failures.push("أيتم التوسع ما انعطى");
+      if (!dome) failures.push("قبة التوسع ما ظهرت");
+      if ((stats.damage || 0) - d0 <= 0) failures.push("التوسع ما ضرب");
+      // سنيك = تدفق عكسي
+      fire("scriptEventReceive", { id: "sh:energy", message: "50", sourceEntity: player });
+      player._hp = 5; player.isSneaking = true; await useItem("sh:skill_domain"); player.isSneaking = false; advance(2);
+      console.log("التدفق العكسي: صحة", player._hp);
+      if (player._hp < 13) failures.push("التدفق العكسي ما شفى");
+      for (const pw of ["iron", "wind", "echo", "accountant", "borrower", "distance", "law", "star"]) {
+        setState({ ...baseState(pw), rank: 2, level: 35 }); spawnZombies(3, true);
+        fire("scriptEventReceive", { id: "sh:energy", message: "100", sourceEntity: player });
+        const dd = stats.damage || 0; await useItem("sh:skill_domain"); advance(250);
+        if ((stats.damage || 0) - dd <= 0) failures.push(`توسع ${pw} ما ضرب`);
+      }
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

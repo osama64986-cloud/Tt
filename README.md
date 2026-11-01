@@ -1,6 +1,6 @@
 # Anime Powers (عالم القدرات)
 
-مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.12.1**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
+مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.13.0**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
 الشرح الكامل للمود بالعراقي بملف [`MOD_GUIDE.md`](MOD_GUIDE.md).
 
 ## الهيكل
@@ -8,7 +8,7 @@
 ```
 AnimePowers/BP   حزمة السلوك (سكربتات، كيانات، أيتمات)
 AnimePowers/RP   حزمة الموارد (موديلات، تكستشر، أصوات، لغة)
-tools/           (gen_fx_shapes.py أشكال المهارات 3D، gen_book_icons.py أيقونات الكتب، gen_skill_hands.py مهارات ما تطلع بالإيد، gen_weapons3d.py أسلحة 3D، gen_icons2d.py أيقونات، gen_monster_mods.py تحسين الوحوش) فحص + تغليف + محاكي (tools/sim) + مولدات الأصول + أدوات الوحوش (mobkit, render)
+tools/           (gen_fx_shapes.py أشكال المهارات 3D، gen_book_icons.py أيقونات الكتب، gen_skill_hands.py مهارات ما تطلع بالإيد، gen_hud_art.py رسومات الـHUD، gen_weapons3d.py أسلحة 3D، gen_icons2d.py أيقونات، gen_monster_mods.py تحسين الوحوش) فحص + تغليف + محاكي (tools/sim) + مولدات الأصول + أدوات الوحوش (mobkit, render)
 extend*.py       مولدات الموديلات والتكستشرات (تشغّل من جذر المشروع)
 ```
 
@@ -36,4 +36,4 @@ JSON سليم، صياغة JS، UUID مطابقة للقفل، تطابق الن
 الأصوات (معرّفة وملفاتها موجودة)، تطابق كيانات BP وRP، وأن كل كيان له اسم بملف اللغة الإنجليزي (en_US). كل نصوص اللعبة إنجليزية.
 ويشغّل المحاكي (`node`) على عالم وهمي. المحاكي ما يغني عن اختبار اللعبة الحقيقية.
 
-للتجربة داخل اللعبة: `/scriptevent sh:shard` (شظية نجمة جديدة للسحب)، `/scriptevent sh:power star` ثم `/scriptevent sh:unlock`، `/scriptevent sh:weapons` (كل الأسلحة + لفائف).
+للتجربة داخل اللعبة: `/scriptevent sh:shard` (شظية نجمة جديدة للسحب)، `/scriptevent sh:power star` ثم `/scriptevent sh:unlock`، `/scriptevent sh:weapons` (كل الأسلحة + لفائف)، `/scriptevent sh:energy 100` (طاقة كاملة للتوسع)، `/scriptevent sh:blackflash` (الضربة الجاية وميض أسود).
