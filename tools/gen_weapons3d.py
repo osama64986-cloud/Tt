@@ -50,6 +50,9 @@ class Weapon:
         self.ident = ident
         self.cubes = []
         self.palette = []
+        self.binding = "q.item_slot_to_bone_name(c.item_slot)"
+        self.pivot = [0, 24, 0]
+        self.hold = True        # False = بدون حركة مسك (السلاح ينلبس على الذراع)
 
     def _idx(self, rgb):
         rgba = tuple(int(round(v)) for v in rgb[:3]) + (255,)
@@ -102,7 +105,7 @@ class Weapon:
             "minecraft:geometry": [{
                 "description": {"identifier": f"geometry.sh_w_{self.ident}", "texture_width": 16, "texture_height": 16,
                                 "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1, 0]},
-                "bones": [{"name": "sh_weapon", "binding": "q.item_slot_to_bone_name(c.item_slot)", "pivot": [0, 24, 0], "cubes": self.cubes}],
+                "bones": [{"name": "sh_weapon", "binding": self.binding, "pivot": self.pivot, "cubes": self.cubes}],
             }],
         }
         os.makedirs(os.path.join(RP, "models", "entity"), exist_ok=True)
@@ -115,8 +118,8 @@ class Weapon:
                 "materials": {"default": "entity_alphatest", "enchanted": "entity_alphatest_glint"},
                 "textures": {"default": f"textures/models/sh_w_{self.ident}", "enchanted": "textures/misc/enchanted_item_glint"},
                 "geometry": {"default": f"geometry.sh_w_{self.ident}"},
-                "animations": {"hold_first_person": f"animation.sh.hold_{self.ident}_fp", "hold_third_person": f"animation.sh.hold_{self.ident}_tp"},
-                "scripts": {"animate": [{"hold_first_person": "context.is_first_person == 1.0"}, {"hold_third_person": "context.is_first_person == 0.0"}]},
+                **({"animations": {"hold_first_person": f"animation.sh.hold_{self.ident}_fp", "hold_third_person": f"animation.sh.hold_{self.ident}_tp"},
+                    "scripts": {"animate": [{"hold_first_person": "context.is_first_person == 1.0"}, {"hold_third_person": "context.is_first_person == 0.0"}]}} if self.hold else {}),
                 "render_controllers": ["controller.render.item_default"],
             }},
         }
@@ -341,42 +344,43 @@ def shadow_blade():
 
 # ───────────────────────── مخالب الظل (كاتار بثلاث شفرات) ─────────────────────────
 def claws():
-    """مخالب يد حقيقية: واقي ساعد جلدي بصفائح وأحزمة يلبس على اليد، صفيحة مفاصل بجواهر،
-    وثلاث شفرات متوازية تطلع من المفاصل وتنحني مثل خطاف بالطرف (منحنية للأمام)."""
+    """مخالب تنلبس على الإيد: الموديل مربوط بعظمة الذراع اليمنى (rightArm) ومبني بإحداثيات ذراع اللاعب
+    (الذراع: x من -8 إلى -4، y من 12 (الكف) إلى 24 (الكتف)، z من -2 إلى 2، والقدام = -z).
+    واقي ساعد يلف الذراع بأحزمة وصفائح، صفيحة مفاصل على الكف، وثلاث شفرات تطلع من المفاصل لتحت وتنحني لقدام."""
     w = Weapon("shadow_claws")
+    w.binding = "'rightArm'"
+    w.pivot = [-5, 22, 0]
+    w.hold = False
     LEATH, LEATH_HI = (58, 44, 52), (84, 64, 74)
     PLATE, PLATE_HI = (40, 36, 58), (76, 70, 104)
     STRAP, BUCKLE = (100, 60, 150), (200, 170, 255)
     BLD, BLD_HI, EDGE_W = (62, 50, 100), (150, 120, 230), (236, 228, 255)
     GEM = (170, 110, 255)
-    # واقي الساعد (يغطي مكان اليد)
-    w.box(0, 4.0, 0, 3.6, 10.0, 2.6, LEATH, top=LEATH_HI)
-    for yy in (5.0, 8.4, 11.8):                       # أحزمة بإبزيم
-        w.box(0, yy, 0, 3.9, 0.8, 2.9, STRAP)
-        w.box(1.95, yy - 0.1, 0, 0.3, 1.0, 1.0, BUCKLE)
-    for yy in (6.2, 9.6):                             # صفائح معدن على الظهر
-        w.box(0, yy, 1.35, 3.2, 1.8, 0.3, PLATE, top=PLATE_HI)
-    # صفيحة المفاصل: عريضة، عليها 3 جواهر، ومنها تطلع الشفرات
-    w.box(0, 14.0, 0, 5.4, 1.6, 3.0, PLATE, top=PLATE_HI)
-    w.box(0, 15.6, 0, 5.0, 0.6, 2.4, PLATE_HI)
-    for x in (-1.8, 0.0, 1.8):
-        w.box(x, 14.4, 1.55, 0.9, 0.8, 0.3, GEM)
-        w.box(x, 16.2, 0, 1.1, 0.9, 1.3, PLATE)      # قاعدة كل شفرة
-    # الشفرات: متوازية، طويلة، تنحني للأمام (z) وتضيق لرأس خطافي
-    for x, L in ((-1.8, 12.5), (0.0, 14.5), (1.8, 12.5)):
-        n = 11
+    cx = -6.0                                                     # نص الذراع
+    # واقي الساعد يلف الذراع (أعرض منها شوية من كل جهة)
+    w.box(cx, 13.0, 0, 5.2, 6.2, 5.2, LEATH, top=LEATH_HI)
+    for yy in (13.6, 16.0, 18.4):                                 # أحزمة (أعرض من الواقي، مو بنفس وجهه)
+        w.box(cx, yy, 0, 5.6, 0.6, 5.6, STRAP)
+    w.box(cx - 2.95, 15.4, 0, 0.3, 1.6, 1.6, BUCKLE)              # إبزيم على الجهة الخارجية
+    w.box(cx - 2.75, 14.3, 0, 0.3, 4.0, 3.2, PLATE, top=PLATE_HI)  # صفيحة على ظهر الساعد
+    # صفيحة المفاصل على الكف + جواهر قدام
+    w.box(cx, 11.2, 0, 4.8, 1.8, 4.8, PLATE, top=PLATE_HI)
+    for x in (-1.3, 0.0, 1.3):
+        w.box(cx + x, 11.6, -2.55, 0.8, 0.9, 0.3, GEM)
+    # الشفرات: من تحت الكف (y=11.2) لتحت، وتنحني لقدام (-z) مثل الخطاف
+    for x, L in ((-1.3, 11.0), (0.0, 12.5), (1.3, 11.0)):
+        n = 10
         h = L / n
         for k in range(n):
             t = k / (n - 1)
-            z = -2.6 * t ** 2.2                          # انحناء الخطاف
-            wd = 0.85 - 0.45 * t
-            yy = 17.1 + k * h - 1.2 * t ** 3            # الطرف ينزل شوية مع الانحناء
-            w.box(x, yy, z + 0.2, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
-            w.box(x, yy, z - 0.22, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)   # الحد الداخلي
-        w.box(x, 17.1 + L - 1.2, -2.9, 0.35, 0.7, 0.5, EDGE_W)
+            z = -0.2 - 2.6 * t ** 2.2
+            wd = 0.8 - 0.4 * t
+            y = 11.2 - (k + 1) * h + 0.6 * t ** 3
+            w.box(cx + x, y, z, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
+            w.box(cx + x, y, z - 0.425, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)   # الحد (قدام الشفرة، جنبها مو داخلها)
+        w.box(cx + x, 11.2 - L + 0.6 - 0.7, -0.2 - 2.6 - 0.2, 0.35, 0.7, 0.4, EDGE_W)
     w.save()
     return w
-
 
 # ───────────────────────── مطرقة الصخر ─────────────────────────
 def maul():

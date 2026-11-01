@@ -195,9 +195,33 @@ def scorpion():
     return m.save()
 
 
+# تلوين منطقة UV صندوقية (box UV) لمكعب بالتكستشر: عرضها 2*(w+d) وارتفاعها d+h
+def recolor_box_uv(tex, u, v, size, col, hi=None):
+    w, h, d = (max(1, int(round(x + 0.49))) for x in size)
+    for y in range(v, v + d + h):
+        for x in range(u, u + 2 * (w + d)):
+            if 0 <= x < tex.width and 0 <= y < tex.height:
+                top = y < v + d
+                c = hi if (hi and (top or (x + y) % 3 == 0)) else col
+                tex.putpixel((x, y), (*c, 255))
+
+
 # ───────────── رامي التدريب: جعبة أسهم، حزام بإبزيم، كتافات، واقي ساعد ─────────────
 def archer():
     m = Mod("archer")
+    # القوس كان بنفسجي مثل العباءة فيختفي بيها: صار خشب بني بأطراف ذهب، مقبض جلد، ووتر أبيض
+    WOOD_BOW, WOOD_HI, GOLD_T, GRIP, STRING = (124, 80, 40), (168, 116, 62), (228, 180, 70), (70, 42, 26), (236, 232, 220)
+    for c in m.bones["bow"]["cubes"]:
+        u, v = c["uv"]
+        sz = c["size"]
+        if sz[2] > 15:                                   # الوتر
+            recolor_box_uv(m.tex, u, v, sz, STRING)
+        elif u in (183, 0):                              # المقبض
+            recolor_box_uv(m.tex, u, v, sz, GRIP, GOLD_T)
+        elif u == 28:                                    # طرفي القوس
+            recolor_box_uv(m.tex, u, v, sz, GOLD_T, (255, 226, 130))
+        else:                                            # الأذرع الخشبية
+            recolor_box_uv(m.tex, u, v, sz, WOOD_BOW, WOOD_HI)
     LEATHER, LEATHER_HI, GOLD = (92, 58, 34), (130, 86, 50), (226, 176, 60)
     VIO, VIO_HI, WOOD = (84, 50, 150), (140, 100, 220), (120, 84, 50)
     m.box("body", 0.6, 17.0, 3.9, 3.2, 9.0, 2.6, LEATHER, top=LEATHER_HI)          # جعبة على الظهر (فوق الكاب)
