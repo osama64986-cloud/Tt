@@ -847,7 +847,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n${riftStatusText(player)}\n`;
+  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: hit an enemy, then hit it again exactly when the pendulum passes its lowest point. T = 2π·√(L/g), L = your distance to the enemy. Best chain: ${st.pendBest || 0}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1862,6 +1862,58 @@ function riftStatusText(p) {
   const t = riftTier();
   return `${t.col}${t.name}§7 open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
 }
+
+// ═════════════════════════ ضربة البندول (بدون أيتم، توقيت بس) ═════════════════════════
+// مبنية على معادلة البندول البسيط: T = 2π·√(L / g)، و g = 9.8.
+//  * أي ضربة عادية (إيد أو سلاح) لعدو = "إفلات" البندول. طوله L = المسافة بينك وبين العدو لحظتها (1.2 إلى 4 بلوكات).
+//  * البندول يعبر أوطى نقطة بالأوقات T/4، 3T/4، 5T/4 من لحظة الإفلات.
+//  * إذا ضربت نفس العدو بالضبط لحظة العبور (هامش تكة وحدة = 0.05 ثانية) = ضربة البندول.
+//  * كل نجاح ورا الثاني: البندول يقصر ربع (يسرع) والضرر يكبر. الغلط يصفر السلسلة ويبدي بندول جديد.
+//  * ماكو أي مؤشر يساعدك؛ بس إذا قربت (±3 تكات) يطلع دخان خفيف حتى تتعلم. المؤثرات كلها جزيئات ماينكرافت الأصلية.
+const PEND_G = 9.8, PEND_WINDOW = 1.0, PEND_NEAR = 3.0;
+const pend = new Map(); // pid -> { tid, start, L, chain }
+const pendDebug = new Set();
+function pendPeriodTicks(L) { return 2 * Math.PI * Math.sqrt(L / PEND_G) * 20; }
+function vanillaFx(dim, id, loc) { try { dim.spawnParticle(id, loc); } catch (e) { /* */ } }
+function pendulumStrike(p, t, chain) {
+  const dim = t.dimension, c = center3(t), st = getState(p);
+  const dmg = Math.round((6 + 1.5 * st.rank) * (1 + 0.5 * (chain - 1)));
+  try { t.applyDamage(dmg, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
+  pushAway(p.location, t, 1.2 + 0.3 * chain, 0.35);
+  effect(t, "slowness", 30 + 10 * chain, Math.min(4, chain));
+  vanillaFx(dim, "minecraft:critical_hit_emitter", c);
+  vanillaFx(dim, "minecraft:knockback_roar_particle", { x: t.location.x, y: t.location.y + 0.3, z: t.location.z });
+  if (chain >= 2) vanillaFx(dim, "minecraft:sonic_explosion", c);
+  if (chain >= 3) vanillaFx(dim, "minecraft:huge_explosion_emitter", c);
+  for (let i = 0; i < 6; i++) vanillaFx(dim, "minecraft:electric_spark_particle", { x: c.x + (Math.random() - 0.5), y: c.y + (Math.random() - 0.5), z: c.z + (Math.random() - 0.5) });
+  try { dim.playSound("random.anvil_land", t.location, { volume: 0.7, pitch: 0.8 + chain * 0.15 }); } catch (e) { /* */ }
+  shake(p, 0.1 + 0.05 * chain, 0.15);
+  notify(p, `§f§lPENDULUM${chain > 1 ? ` §e×${chain}` : ""}`, 25);
+  if (chain > (st.pendBest || 0)) { st.pendBest = chain; saveState(p, st); }
+}
+world.afterEvents.entityHitEntity.subscribe((ev) => {
+  try {
+    const p = ev.damagingEntity, t = ev.hitEntity;
+    if (!p || p.typeId !== "minecraft:player" || !t || t.typeId === "sh:trainer" || isFriendly(t) || !t.getComponent("minecraft:health")) return;
+    const now = system.currentTick, cur = pend.get(p.id);
+    const L = Math.max(1.2, Math.min(4, Math.hypot(t.location.x - p.location.x, t.location.y - p.location.y, t.location.z - p.location.z)));
+    if (cur && cur.tid === t.id) {
+      const T = pendPeriodTicks(cur.L), dt = now - cur.start;
+      // أقرب عبور لأوطى نقطة: T/4 + k·T/2 (أول 3 عبورات بس)
+      const k = Math.max(0, Math.min(2, Math.round((dt - T / 4) / (T / 2))));
+      const err = Math.abs(dt - (T / 4 + (k * T) / 2));
+      if (pendDebug.has(p.id)) notify(p, `§7Pendulum L=${cur.L.toFixed(2)} T=${(T / 20).toFixed(2)}s · off by ${(err / 20).toFixed(2)}s`, 40);
+      if (err <= PEND_WINDOW) {
+        const chain = cur.chain + 1;
+        pendulumStrike(p, t, chain);
+        pend.set(p.id, { tid: t.id, start: now, L: Math.max(0.5, cur.L * 0.75), chain });
+        return;
+      }
+      if (err <= PEND_NEAR) vanillaFx(t.dimension, "minecraft:basic_smoke_particle", center3(t));
+    }
+    pend.set(p.id, { tid: t.id, start: now, L, chain: 0 });
+  } catch (e) { /* */ }
+});
 
 // إخفاء قلوب ماينكرافت تحت (القلوب صارت فوق بالـHUD) ومجسمها الأصلي اللي كان يطلع فوق مجسمنا
 function hideVanillaHud(p) {
@@ -4536,6 +4588,7 @@ system.runInterval(() => {
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:shard          يعطيك شظية نجمة (للسحب)
+//   /scriptevent sh:pendulum       وضع تدريب ضربة البندول (يطلع لك فرق توقيتك)
 //   /scriptevent sh:rift blue      يفتح صدع قربك (blue violet crimson abyss) | sh:rift close يسده
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars on يشغل تلوين الأرض المؤقت (مطفي افتراضياً)
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
@@ -4557,6 +4610,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aKatana level: ${n}`);
+    } else if (ev.id === "sh:pendulum") {
+      if (pendDebug.has(p.id)) { pendDebug.delete(p.id); say(p, "§7Pendulum practice: off"); } else { pendDebug.add(p.id); say(p, "§ePendulum practice: on (shows how far off your timing was)"); }
     } else if (ev.id === "sh:rift") {
       if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }

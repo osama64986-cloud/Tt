@@ -429,6 +429,32 @@ export const __sim = {
         if (!loot.includes("sh:xp_scroll_big")) failures.push("مكافآت الصدع ما نزلت");
       }
     }
+    // ضربة البندول: بدون أيتم، توقيت بس (T = 2π√(L/g))
+    {
+      setState({ ...baseState("iron"), rank: 1 }); hold("");
+      spawnZombies(1, true); const z = entities[0]; z._hp = 400; z._max = 400;
+      const hitAt = () => fire("entityHitEntity", { damagingEntity: player, hitEntity: z });
+      const T = (L) => 2 * Math.PI * Math.sqrt(Math.max(1.2, Math.min(4, L)) / 9.8) * 20;
+      const L0 = Math.hypot(z.location.x - player.location.x, z.location.y - player.location.y, z.location.z - player.location.z);
+      const res = [];
+      // 1) توقيت غلط: ما تصير
+      let p0 = stats.particles; const hz = z._hp; hitAt(); advance(Math.round(T(L0) / 4) + 5); hitAt();
+      const wrong = hz - z._hp;
+      res.push(`غلط بـ5 تكات: ضرر ${wrong}`);
+      // 2) توقيت صح (السلسلة تبدي من الضربة الأخيرة)
+      let L = Math.max(1.2, Math.min(4, L0)), chainOk = 0;
+      for (let c = 1; c <= 3; c++) {
+        const d0 = stats.damage || 0; p0 = stats.particles; stats.actionBars.length = 0;
+        advance(Math.round(T(L) / 4) - (c > 1 ? 1 : 0)); hitAt(); advance(1);
+        const ok = (stats.damage || 0) - d0 > 0;
+        res.push(`سلسلة ${c}: ${ok ? "✔" : "✖"} ضرر ${Math.round((stats.damage || 0) - d0)} جزيئات ${stats.particles - p0} (T=${(T(L) / 20).toFixed(2)}ث)`);
+        if (ok) chainOk++;
+        L = Math.max(0.5, L * 0.75);
+      }
+      console.log("\nضربة البندول:\n  " + res.join("\n  "));
+      if (wrong > 0) failures.push("ضربة البندول صارت بتوقيت غلط");
+      if (chainOk < 3) failures.push("ضربة البندول ما اشتغلت بالتوقيت الصح");
+    }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
     fire("scriptEventReceive", { id: "sh:unlock", message: "", sourceEntity: player });
