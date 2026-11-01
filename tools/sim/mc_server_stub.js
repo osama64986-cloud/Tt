@@ -576,7 +576,7 @@ export const __sim = {
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         for (const [dist, ticks] of plans[type]) {
-          entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
+          entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
           const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 90); entities.push(m);
           const d0 = stats.damage || 0;
           for (let t = 0; t < ticks; t += 2) {
@@ -593,7 +593,7 @@ export const __sim = {
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }
       {
-        entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
+        entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
         const sets0 = stats.blockSets || 0, d0 = stats.damage || 0;
         const m = mkEntity("sh:hollow_seer", { x: 0, y: 64, z: 3 }, dims.overworld, 90); entities.push(m);
         let breathSeen = false;

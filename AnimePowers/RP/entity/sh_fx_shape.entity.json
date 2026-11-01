@@ -79,7 +79,8 @@
     "s66": "geometry.sh_shape_beam_orange",
     "s67": "geometry.sh_shape_seer_thorn",
     "s68": "geometry.sh_shape_root_spike",
-    "s69": "geometry.sh_shape_soul_orb"
+    "s69": "geometry.sh_shape_soul_orb",
+    "s70": "geometry.sh_shape_spirit_stag"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",
