@@ -225,6 +225,16 @@ def archer():
             recolor_box_uv(m.tex, u, v, sz, TIP, TIP_HI)
         else:                                            # الأذرع
             recolor_box_uv(m.tex, u, v, sz, LIMB, LIMB_HI)
+    # الوتر: ينقسم لنصين (عظمتين) يدورن من طرفي القوس حتى نصه ينسحب للخلف ويه السهم (شكل V وقت الشد)
+    STR = [c for c in m.bones["bow"]["cubes"] if c["size"][2] > 15][0]
+    m.bones["bow"]["cubes"].remove(STR)
+    sx0, sy0 = STR["origin"][0], STR["origin"][1]                  # 5.9, 14.97 (الوتر 0.2×0.2)
+    z_top, z_bot = STR["origin"][2], STR["origin"][2] + STR["size"][2]
+    ymid = sy0 + 0.1
+    m.bone("string_up", "bow", (6.0, ymid, z_top))
+    m.box("string_up", sx0, sy0, z_top, 0.2, 0.2, -z_top, STRING)              # من الطرف الفوقاني للنص (z=0)
+    m.bone("string_dn", "bow", (6.0, ymid, z_bot))
+    m.box("string_dn", sx0, sy0, 0.0, 0.2, 0.2, z_bot, STRING)                 # من النص للطرف الجوة
     # السهم اللي بالقوس (يطلع بس وقت السحب): بنفسجي
     SHAFT, HEAD, FLETCH = (78, 44, 132), (226, 210, 255), (156, 96, 246)
     for c in m.bones["arrow"]["cubes"]:
