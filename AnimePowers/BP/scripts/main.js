@@ -847,7 +847,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy, then hit it again exactly when the pendulum passes its lowest point. T = 2π·√(L/g), L = your distance to the enemy. Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
+  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy once, then hit it again after a short pause at just the right moment. Closer = shorter pause (about 0.7s at 2 blocks). Keep the same distance. Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1080,7 +1080,7 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
-      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7Hit an enemy, then hit it again exactly when the pendulum passes its lowest point: T = 2π·√(L/g), L = your distance to it (2 blocks ≈ 0.71s). No item needed. Practice: /scriptevent sh:pendulum"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
+      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7No item needed. Hit an enemy once, wait a short moment, then hit it again at just the right time. Standing closer makes the wait shorter (about 0.7s at 2 blocks). Each perfect hit makes the next one faster and stronger. Practice mode: /scriptevent sh:pendulum (tells you if you were early or late)"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
     }
   }
 }
@@ -1908,7 +1908,10 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
       // أقرب عبور لأوطى نقطة: T/4 + k·T/2 (أول 3 عبورات بس)
       const k = Math.max(0, Math.min(2, Math.round((dt - T / 4) / (T / 2))));
       const err = Math.abs(dt - (T / 4 + (k * T) / 2));
-      if (pendDebug.has(p.id)) notify(p, `§7Pendulum L=${cur.L.toFixed(2)} T=${(T / 20).toFixed(2)}s · off by ${(err / 20).toFixed(2)}s`, 40);
+      if (pendDebug.has(p.id)) {
+        const signed = dt - (T / 4 + (k * T) / 2);
+        notify(p, err <= PEND_WINDOW ? "§a§lPERFECT timing" : signed < 0 ? `§eToo early §7by ${(err / 20).toFixed(2)}s, wait a bit longer` : `§cToo late §7by ${(err / 20).toFixed(2)}s, hit a bit sooner`, 40);
+      }
       if (err <= PEND_WINDOW) {
         const chain = cur.chain + 1;
         pendulumStrike(p, t, chain);
@@ -4775,7 +4778,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aKatana level: ${n}`);
     } else if (ev.id === "sh:pendulum") {
-      if (pendDebug.has(p.id)) { pendDebug.delete(p.id); say(p, "§7Pendulum practice: off"); } else { pendDebug.add(p.id); say(p, "§ePendulum practice: on (shows how far off your timing was)"); }
+      if (pendDebug.has(p.id)) { pendDebug.delete(p.id); say(p, "§7Pendulum practice: off"); } else { pendDebug.add(p.id); say(p, "§ePendulum practice: on (tells you if you hit too early or too late)"); }
     } else if (ev.id === "sh:rift") {
       if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }
