@@ -70,6 +70,7 @@ class Rig:
         self.mats = list(mats.keys())
         self.mat_def = mats
         self.seed = seed
+        self.sc = (1.0, 1.0, 1.0)      # تحجيم x,y,z للهندسة (للماموث: أعرض وأقصر)
         self.rnd = random.Random(seed)
         n = len(self.mats)
         self.cols = 4
@@ -77,6 +78,7 @@ class Rig:
         self.tw, self.th = self.cols * TILE, self.rows * TILE
 
     def bone(self, name, parent=None, pivot=(0, 0, 0), rotation=None):
+        pivot = (pivot[0] * self.sc[0], pivot[1] * self.sc[1], pivot[2] * self.sc[2])
         b = {"name": name, "pivot": [round(v, 3) for v in pivot], "cubes": []}
         if parent:
             b["parent"] = parent
@@ -91,6 +93,9 @@ class Rig:
 
     def box(self, bone, o, s, mat, rot=None, pivot=None, top=None):
         """o = الزاوية الدنيا، s = الحجم، mat = المادة (top = مادة الوجه الفوقاني اختياري)."""
+        sx, sy, sz = self.sc
+        o = (o[0] * sx, o[1] * sy, o[2] * sz); s = (s[0] * sx, s[1] * sy, s[2] * sz)
+        if pivot is not None: pivot = (pivot[0] * sx, pivot[1] * sy, pivot[2] * sz)
         w, h, d = s
         def face(m, fw, fh, salt):
             tx, ty = self._tile(m)
@@ -506,6 +511,7 @@ def magmamoth():
         "ember": ("glow", (255, 120, 24), (255, 232, 140)),
     }
     R = Rig("sh_magmamoth", M, seed=41)
+    R.sc = (1.12, 0.9, 1.0)           # جسم أعرض (+12%) وارتفاع كلي ~3.8 بلوكة
     rnd = random.Random(5)
     R.bone("root", pivot=(0, 0, 0))
     R.bone("body", "root", (0, 34, 0))
@@ -566,7 +572,7 @@ def magmamoth():
     # ── الخرطوم: سلسلة عظام تنزل وتنحني، حلقات جمر، وفوهة ──
     R.bone("trunk0", "head", (0, 36.0, -46.0), rotation=[6, 0, 0])
     parent, y, z = "trunk0", 36.0, -46.0
-    for k, (w, L) in enumerate(((11.0, 11.0), (10.0, 11.0), (9.0, 10.0), (8.0, 10.0), (7.0, 9.0))):
+    for k, (w, L) in enumerate(((11.0, 9.0), (10.0, 9.0), (9.0, 8.0), (8.0, 8.0), (7.0, 7.0))):
         nm = f"trunk{k}"
         if k: R.bone(nm, parent, (0, y, z), rotation=[10, 0, 0])
         R.box(nm, (-w / 2, y - L, z - w / 2), (w, L, w), "rock_rd" if k % 2 == 0 else "rock")

@@ -571,10 +571,10 @@ export const __sim = {
     // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
     {
       console.log("\nوحوش Grim:");
-      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "موكب نار الثعلب", 2: "مئة مرآة", 3: "كسوف الأذيال", 4: "العرش" }, "sh:magmamoth": { 1: "دكة الماغما", 2: "نفخة الجحيم", 3: "اندفاع الماموث", 4: "الثوران", 5: "درع الماغما" } };
-      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[3, 3000], [10, 3600]], "sh:magmamoth": [[3, 3200], [12, 3800]] };
+      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "ثعبان نار الثعلب", 2: "دوّامة المرايا", 3: "مطر الشمس", 4: "رفع القمر" }, "sh:magmamoth": { 1: "دكة الشقوق", 2: "كنس الجحيم", 3: "اندفاع الأنياب", 4: "القصف البركاني", 5: "درع الماغما" } };
+      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[4, 3600], [12, 3600]], "sh:magmamoth": [[4, 3600], [12, 4200]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire", "fire_pillar"], "sh:magmamoth": ["magma_pillar"] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         stats.shapeV = {}; stats.pById = {};

@@ -246,15 +246,34 @@ def fox_volley(out):
     return S.render((0, 1.4, 4), yaw=-58, pitch=20, dist=12)
 
 
-def fox_storm(out):
+def fox_serpent(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("veilfox"), pose(["animation.sh_veilfox.idle", "animation.sh_veilfox.volley"], 0.6), (0, 0, 0), (0, 1))
+    S.player((0, 0, 14), (0, -1))
+    for i in range(9):                                        # قطار الألسنة بتعرّج جيبي (سعة 2.4)
+        sv = 18 - i * 1.4
+        S.shape("foxfire", (2.4 * math.sin(sv * 0.5), 0.7, sv), (0, 1), 0.8)
+    return S.render((0, 1.0, 8), yaw=-62, pitch=40, dist=17)
+
+
+def fox_carousel(out):
+    S = Scene(); S.ground(0, 4)
+    S.player((0, 0, 5), (0, -1))
+    for j in range(4):                                        # 4 ثعالب تدور حول اللاعب بنصف قطر 3.5
+        a = j * math.pi / 2 + 0.4
+        x, z = math.cos(a) * 3.5, 5 + math.sin(a) * 3.5
+        S.model(mon("veilfox"), pose(["animation.sh_veilfox.idle"], 0.5 + j * 0.2), (x, 0, z), (-math.cos(a), -math.sin(a)))
+    return S.render((0, 1.4, 5), yaw=-58, pitch=34, dist=14)
+
+
+def fox_shower(out):
     S = Scene(); S.ground(0, 5)
     S.model(mon("veilfox"), pose(["animation.sh_veilfox.storm"], 0.3), (0, 0, 0), (0, 1))
     S.player((0, 0, 8), (0, -1))
-    for n, (rr, cnt) in enumerate(((2.4, 8), (4.9, 12), (7.4, 16))):
-        for i in range(cnt):
-            a = i / cnt * math.tau + (n + 1) * 0.3
-            S.shape("fire_pillar", (math.cos(a) * rr, 0, math.sin(a) * rr), (0, 1), 1.05 if n < 2 else 0.5)
-    return S.render((0, 1.5, 3), yaw=-60, pitch=34, dist=15)
+    for i in range(14):                                       # قطرات نار ثعلب تهطل حول اللاعب
+        x = 0.5 + (i * 2.3 % 11) - 5.5; z = 8 + ((i * 3.7) % 9) - 4.5; y = 0.5 + (i % 5) * 1.3
+        S.shape("foxfire", (x, y, z), (0, 1), 0.6)
+    return S.render((0, 2.0, 5), yaw=-62, pitch=24, dist=17)
 
 
 def fox_pounce(out):
@@ -329,15 +348,16 @@ def mam_charge(out):
     return S.render((0, 1.8, 3), yaw=-62, pitch=20, dist=16)
 
 
-def mam_eruption(out):
+def mam_bombard(out):
     S = Scene(); S.ground(0, 6)
     S.model(mon("magmamoth"), pose(["animation.sh_magmamoth.eruption"], 0.9), (0, 0, 0), (0, 1))
-    S.player((0, 0, 7), (0, -1))
-    for n, (rr, cnt) in enumerate(((4.4, 6), (7.0, 8), (9.5, 10))):
-        for i in range(cnt):
-            a = i / cnt * math.tau + n
-            S.shape("magma_pillar", (math.cos(a) * rr, 0, math.sin(a) * rr), (0, 1), 1.3)
-    return S.render((0, 1.8, 3), yaw=-60, pitch=30, dist=18)
+    S.player((0, 0, 9), (0, -1))
+    for i in range(10):                                       # قذائف نار بقوس فوق الميدان
+        t = i / 9; x = (t - 0.5) * 12; z = 2 + t * 10; y = 3 + 9 * math.sin(math.pi * ((i * 0.37) % 1))
+        S.shape("fireball", (x, y, z), (0, 1), 1.1)
+    for k in range(10):
+        S.cube((0.5 * (-1) ** k, 0.2, 7 + k * 0.4), 0.3, (255, 120, 30), True)
+    return S.render((0, 3.0, 5), yaw=-60, pitch=28, dist=19)
 
 
 if __name__ == "__main__":
@@ -345,7 +365,7 @@ if __name__ == "__main__":
     scenes = [("الرائي: جذور الأرض + قفص الجذور", seer_roots), ("الرائي: زفير التجميد من كرة الجليد", seer_frost),
               ("الرائي: الشعاع البرتقالي", seer_beam), ("الغزال: روح الغزال", deer_spirit),
               ("الغزال: الاندفاع والنطح", deer_charge), ("الغزال: نبض القلب + سلاسل الروح", deer_heart),
-              ("ثعلب الحجاب: رشقة نار الثعلب", fox_volley), ("ماغماموث: دكة الماغما", mam_stomp), ("ماغماموث: نفخة الجحيم", mam_breath), ("ماغماموث: الاندفاع", mam_charge), ("ماغماموث: الثوران", mam_eruption), ("ثعلب الحجاب: عاصفة الأذيال", fox_storm), ("ثعلب الحجاب: قفزة المرآة", fox_pounce),
+              ("ثعلب الحجاب: رشقة نار الثعلب", fox_volley), ("ماغماموث: دكة الماغما", mam_stomp), ("ماغماموث: نفخة الجحيم", mam_breath), ("ماغماموث: الاندفاع", mam_charge), ("ماغماموث: القصف البركاني", mam_bombard), ("ثعلب الحجاب: ثعبان نار الثعلب", fox_serpent), ("ثعلب الحجاب: دوّامة المرايا", fox_carousel), ("ثعلب الحجاب: مطر الشمس", fox_shower),
               ("سيف النور", sword_light), ("شادو بليد", sword_shadow), ("كاتانا الهاوية", sword_katana)]
     for name, fn in scenes:
         im = fn(out); fname = os.path.join(out, fn.__name__ + ".png"); im.save(fname); print(fname)
