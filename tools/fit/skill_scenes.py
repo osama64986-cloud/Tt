@@ -235,10 +235,95 @@ def deer_charge(out):
     return S.render((0, 1.0, 3.2), yaw=-62, pitch=20, dist=9)
 
 
+def quill_volley(out):
+    S = Scene(); S.ground(0, 5)
+    S.model(mon("quillback"), pose(["animation.sh_quillback.idle", "animation.sh_quillback.volley"], 0.5), (0, 0, 0), (0, 1))
+    S.player((0, 0, 9), (0, -1))
+    for i in range(-2, 3):                                   # 5 شوكات بمروحة 0.2 راديان، r=1.5
+        a = math.pi / 2 + i * 0.2; d = (math.cos(a), math.sin(a)); k = 4.0
+        S.shape("quill", (d[0] * k, 0.9, d[1] * k), d, 1.5)
+    return S.render((0, 1.0, 4), yaw=-60, pitch=22, dist=11)
+
+
+def quill_roll(out):
+    S = Scene(); S.ground(0, 4)
+    S.model(mon("quillback"), pose(["animation.sh_quillback.roll"], 0.07), (0, 0, 2.5), (0, 1))
+    S.player((0, 0, 7), (0, -1))
+    for k in range(6):
+        S.cube((0.2 * (-1) ** k, 0.2, 0.2 + k * 0.4), 0.25, (255, 150, 40), True)
+    return S.render((0, 1.0, 3.5), yaw=-62, pitch=20, dist=9)
+
+
+def fox_volley(out):
+    S = Scene(); S.ground(0, 6)
+    S.model(mon("veilfox"), pose(["animation.sh_veilfox.idle", "animation.sh_veilfox.volley"], 0.6), (0, 0, 0), (0, 1))
+    S.player((0, 0, 11), (0, -1))
+    for i in range(5):                                         # الكرات فوق ظهره بقوس (r=0.65)
+        a = (i - 2) * 0.55
+        S.shape("foxfire", (math.sin(a) * 2.2, 2.7 + math.cos(a) * 0.4, 0), (0, 1), 0.65)
+    S.shape("foxfire", (0, 2.1, 5.0), (0, 1), 0.65)            # كرة منطلقة
+    return S.render((0, 1.4, 4), yaw=-58, pitch=20, dist=12)
+
+
+def fox_storm(out):
+    S = Scene(); S.ground(0, 5)
+    S.model(mon("veilfox"), pose(["animation.sh_veilfox.storm"], 0.3), (0, 0, 0), (0, 1))
+    S.player((0, 0, 8), (0, -1))
+    for n, (rr, cnt) in enumerate(((2.4, 8), (4.9, 12), (7.4, 16))):
+        for i in range(cnt):
+            a = i / cnt * math.tau + (n + 1) * 0.3
+            S.shape("fire_pillar", (math.cos(a) * rr, 0, math.sin(a) * rr), (0, 1), 1.05 if n < 2 else 0.5)
+    return S.render((0, 1.5, 3), yaw=-60, pitch=34, dist=15)
+
+
+def fox_pounce(out):
+    S = Scene(); S.ground(0, 4)
+    S.model(mon("veilfox"), pose(["animation.sh_veilfox.pounce"], 0.2), (0, 0, 3), (0, -1))
+    S.player((0, 0, 4.5), (0, 1))
+    for i in (-1, 0, 1):
+        S.shape("slash_violet", (0, 1.0 + i * 0.35, 4.5), (0, 1), 1.4, 90 + i * 28, i * 20)
+    for sx in (-1, 1):
+        S.shape("afterimage", (sx * 1.3, 0, -3.5), (0, 1), 0.9)
+    return S.render((0, 1.2, 2.5), yaw=-58, pitch=18, dist=11)
+
+
+def sword_light(out):
+    S = Scene(); S.ground(0, 5)
+    S.player((0, 0, 0), (0, 1))
+    S.shape("slash_silver", (0, 1.0, 1.6), (0, 1), 2.4, 90)
+    for dist, off in ((3.6, 0), (5.4, -1.7), (5.4, 1.7)):
+        S.shape("light_lance", (off, 0, dist), (0, 1), 1.25)
+    return S.render((0, 1.4, 3), yaw=-55, pitch=22, dist=9.5)
+
+
+def sword_shadow(out):
+    S = Scene(); S.ground(0, 4)
+    S.player((0, 0, 3), (0, -1))                              # العدو
+    for i in range(3):
+        a = i * 2.0944 + 0.5
+        S.shape("ghost_sword", (3 * 0 + math.cos(a) * 1.8, 0, 3 + math.sin(a) * 1.8), (0, 1), 1.1)
+    S.shape("slash_violet", (0, 1.0, 3), (0, 1), 1.5, 90 + 45, 45)
+    S.shape("slash_violet", (0, 1.0, 3), (0, 1), 1.5, 90 - 45, -45)
+    S.shape("afterimage", (0, 0, 7), (0, -1), 1.0)
+    return S.render((0, 1.2, 3), yaw=-55, pitch=22, dist=8.5)
+
+
+def sword_katana(out):
+    S = Scene(); S.ground(0, 4)
+    S.player((0, 0, 3), (0, -1))
+    S.shape("ghost_sword", (0, 0, 3), (0, 1), 1.9)
+    S.shape("slash_violet", (0, 1.0, 3), (0, 1), 1.5, 90 + 45, 45)
+    S.shape("slash_violet", (0, 1.0, 3), (0, 1), 1.5, 90 - 45, -45)
+    return S.render((0, 1.2, 3), yaw=-50, pitch=20, dist=8)
+
+
 if __name__ == "__main__":
     out = sys.argv[1]; os.makedirs(out, exist_ok=True)
     scenes = [("الرائي: جذور الأرض + قفص الجذور", seer_roots), ("الرائي: زفير التجميد من كرة الجليد", seer_frost),
               ("الرائي: الشعاع البرتقالي", seer_beam), ("الغزال: روح الغزال", deer_spirit),
-              ("الغزال: الاندفاع والنطح", deer_charge), ("الغزال: نبض القلب + سلاسل الروح", deer_heart)]
+              ("الغزال: الاندفاع والنطح", deer_charge), ("الغزال: نبض القلب + سلاسل الروح", deer_heart),
+              ("شوكاني: رشقة الشوك", quill_volley), ("شوكاني: الكرة اللاحمة", quill_roll),
+              ("ثعلب الحجاب: رشقة نار الثعلب", fox_volley), ("ثعلب الحجاب: عاصفة الأذيال", fox_storm), ("ثعلب الحجاب: قفزة المرآة", fox_pounce),
+              ("سيف النور", sword_light), ("شادو بليد", sword_shadow), ("كاتانا الهاوية", sword_katana)]
     for name, fn in scenes:
         im = fn(out); fname = os.path.join(out, fn.__name__ + ".png"); im.save(fname); print(fname)

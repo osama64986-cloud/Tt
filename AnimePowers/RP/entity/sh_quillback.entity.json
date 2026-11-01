@@ -1,0 +1,42 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:quillback",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_quillback"
+      },
+      "geometry": {
+        "default": "geometry.sh_quillback"
+      },
+      "animations": {
+        "idle": "animation.sh_quillback.idle",
+        "walk": "animation.sh_quillback.walk",
+        "state": "controller.animation.sh_quillback.state",
+        "look": "animation.sh.look",
+        "volley": "animation.sh_quillback.volley",
+        "roll": "animation.sh_quillback.roll",
+        "burst": "animation.sh_quillback.burst"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#3a2a32",
+        "overlay_color": "#ff9628"
+      }
+    }
+  }
+}

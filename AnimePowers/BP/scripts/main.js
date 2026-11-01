@@ -173,9 +173,11 @@ const MONSTERS = {
   "sh:rust_guard": { rank: 0, xp: 30 },
   "sh:shadow_hound": { rank: 0, xp: 24 },
   "sh:sand_scorpion": { rank: 0, xp: 36 },
+  "sh:quillback": { rank: 0, xp: 26 },
   // وحوش الرتبة الثانية (Grim): أقوى بكثير، ثلاث مهارات لكل وحش
   "sh:gloomhorn": { rank: 1, xp: 70 },
   "sh:hollow_seer": { rank: 1, xp: 80 },
+  "sh:veilfox": { rank: 1, xp: 90 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
@@ -194,8 +196,8 @@ function scaleMonster(e, rank) {
   } catch (err) { /* */ }
 }
 const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floor(tier / 2));
-const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
-const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer"];
+const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion", "sh:quillback"];
+const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
 function riftMobType() {
   if (rift && rift.tier >= 1 && Math.random() < 0.3) return GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)];
@@ -916,6 +918,8 @@ const MONSTER_INFO = [
   ["sh:shadow_hound", "Shadow Hound", "Lowly to Cataclysm", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
   ["sh:gloomhorn", "Gloomhorn", "Grim to Cataclysm", "A spectral stag with an open ribcage and a floating heart. It scrapes the ground, then CHARGES and RAMS you with its antlers, so step aside. From afar its heart glows and a SPIRIT STAG bursts from its chest and gallops at you, followed by two more. Up close its heart BEATS three times: each beat sends a wave along the ground (JUMP over it), and the last one binds you with SOUL CHAINS that drain your life. Run more than 10 blocks to break them."],
   ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one round eye. When it raises its hand in front of the eye, an ORANGE BEAM gathers: the aim locks a moment before it fires, so sidestep. From 6-7 blocks away it lifts its arms and ROOTS erupt from the ground one after another toward you, then a CAGE OF ROOTS curls around you. Up close an ICE ORB forms before its face and it exhales a FROST BREATH: your screen freezes like powder snow and you slow down, but you can still fight."],
+  ["sh:quillback", "Quillback", "Lowly to Cataclysm", "An abyssal hedgehog with glowing amber quills. From 4-14 blocks it rears up and shoots a FAN of five quills (they slow you). From 3-10 blocks it curls into a ball and ROLLS over you. Too close and its spines burst outward in a ring."],
+  ["sh:veilfox", "Veilfox", "Grim to Cataclysm", "A spirit fox with three flame-tipped tails and a white mask. It raises its tails and launches FOXFIRE orbs one after another. It vanishes in smoke and POUNCES from behind with a triple slash. Up close it rears and its tails lash out THREE WAVES of foxfire pillars."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -1297,6 +1301,8 @@ world.afterEvents.entityDie.subscribe((ev) => {
         : t === "sh:sand_scorpion" ? (roll < 0.35 ? "sh:xp_scroll_small" : roll < 0.42 ? "sh:xp_scroll_big" : null)
         : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null)
         : t === "sh:gloomhorn" ? (roll < 0.45 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.75 ? "sh:skill_scroll" : null)
+        : t === "sh:quillback" ? (roll < 0.32 ? "sh:xp_scroll_small" : roll < 0.38 ? "sh:xp_scroll_big" : null)
+        : t === "sh:veilfox" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : null)
         : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
       if (drop) ev.deadEntity.dimension.spawnItem(new ItemStack(drop, 1), ev.deadEntity.location);
     } catch (e2) { /* */ }
@@ -2972,6 +2978,39 @@ system.runInterval(() => {
   }
 }, 4);
 
+// يوقع شكل (رمح نور، سيف شبح) من 7 بلوكات فوق للأرض بتسارع خلال fall تك، ويبقى life تك. يرجع الكيان
+function dropShape(dim, name, x, y, z, r, fall, life, yaw) {
+  const e = shapeFx(dim, name, { x, y: y + 7, z }, { r, yaw: yaw ?? Math.random() * 360, life: fall + life });
+  if (e) tween(fall, 1, (q) => moveShape(e, { x, y: y + 7 * (1 - q * q), z }));
+  return e;
+}
+// رمح نور ينزل على مكان: يضرب القريب منه عند الوصول
+function lanceStrike(p, x, z, dmg, delay = 0) {
+  const dim = p.dimension, y = groundAt(dim, x, z, p.location.y);
+  later(delay, () => {
+    if (!valid(p)) return;
+    dropShape(dim, "light_lance", x, y, z, 1.25, 4, 10);
+    later(4, () => {
+      for (const e of enemiesNear(dim, { x, y, z }, 1.9, p.id)) { hurt(e, dmg, p); effect(e, "weakness", 50, 0); }
+      burst(dim, { x, y: y + 0.4, z }, 14, [1, 0.93, 0.7], 3.5);
+      ring(dim, { x, y, z }, 1.4, 14, 0, [1, 0.95, 0.8], 0.2);
+      sfx(dim, "sh.kat_wave", { x, y, z }, 0.7, 1.9);
+    });
+  });
+}
+// سيف شبح ينزل على مكان (زينة + ضربة اختيارية)
+function ghostSword(p, x, z, dmg, delay = 0, r = 1.2) {
+  const dim = p.dimension, y = groundAt(dim, x, z, p.location.y);
+  later(delay, () => {
+    if (!valid(p)) return;
+    dropShape(dim, "ghost_sword", x, y, z, r, 3, 12);
+    later(3, () => {
+      if (dmg > 0) for (const e of enemiesNear(dim, { x, y, z }, 1.7, p.id)) hurt(e, dmg, p);
+      burst(dim, { x, y: y + 0.3, z }, 10, [0.7, 0.45, 1], 3);
+      sfx(dim, "sh.dagger_hit", { x, y, z }, 0.7, 0.7);
+    });
+  });
+}
 const WEAPON_SKILLS = {
   "sh:ember_cleaver": [
     { name: "Ember Arc", cd: 160, desc: "An arc of fire in front of you", fn(p) {
@@ -3062,6 +3101,9 @@ const WEAPON_SKILLS = {
       }
       sfx(dim, "sh.kat_wave", o, 1.0, 1.4);
       shake(p, 0.08, 0.15);
+      // رماح نور تنزل من السما قدامك بشكل مثلث، وحدة ورا وحدة
+      const rr = katanaRight(d);
+      [[3.6, 0, 3], [5.4, -1.7, 6], [5.4, 1.7, 9]].forEach(([dist, off, dl]) => lanceStrike(p, o.x + d.x * dist + rr.x * off, o.z + d.z * dist + rr.z * off, 4, dl));
       return true;
     } },
     { name: "Silver Step", cd: 200, desc: "Dash 6 blocks forward through enemies, cutting each one you pass", fn(p) {
@@ -3078,7 +3120,9 @@ const WEAPON_SKILLS = {
       }
       if (Math.hypot(to.x - from.x, to.z - from.z) < 1) { notify(p, "§7No room to dash", 20); return false; }
       shapeFx(dim, "afterimage", from, { r: 1.0, yaw: dirYaw({ ...d, y: 0 }), life: 14 });
+      ring(dim, { x: from.x, y: from.y, z: from.z }, 1.2, 14, 0, [1, 0.95, 0.8], 0.2);
       safeTeleport(p, to, { x: to.x + d.x, y: to.y, z: to.z + d.z });
+      ring(dim, { x: to.x, y: to.y, z: to.z }, 1.2, 14, 0, [1, 0.95, 0.8], 0.2);
       const len = Math.hypot(to.x - from.x, to.z - from.z), hit = new Set();
       for (let i = 0; i <= 10; i++) {
         const t = i / 10, pt = { x: from.x + (to.x - from.x) * t, y: from.y + 1, z: from.z + (to.z - from.z) * t };
@@ -3089,6 +3133,7 @@ const WEAPON_SKILLS = {
           later(2 + hit.size * 2, () => {
             if (!valid(e)) return;
             hurt(e, 8, p);
+            lanceStrike(p, e.location.x, e.location.z, 4, 1);
             slashOn(dim, "slash_silver", center3(e), from, hit.size % 2 ? 35 : -35, 1.1);
             effect(e, "slowness", 40, 1);
             sfx(dim, "sh.dagger_hit", e.location, 1, 1.4);
@@ -3111,6 +3156,7 @@ const WEAPON_SKILLS = {
       shapeFx(dim, "afterimage", from, { r: 1.0, yaw: dirYaw({ ...flatDir(p), y: 0 }), life: 16 });
       safeTeleport(p, dest, t.location);
       sfx(dim, "sh.kat_step", dest, 1.1, 1.1);
+      for (let i = 0; i < 3; i++) { const a = i * 2.0944 + 0.5; ghostSword(p, t.location.x + Math.cos(a) * 1.8, t.location.z + Math.sin(a) * 1.8, 0, 2 + i, 1.1); }
       later(1, () => {
         if (!valid(t)) return;
         hurt(t, 8, p);
@@ -3139,8 +3185,17 @@ const WEAPON_SKILLS = {
         hurt(e, 7, p);
         effect(e, "weakness", 60, 0);
         slashOn(dim, "slash_violet", center3(e), spot, i % 2 ? 40 : -40, 1.1);
+        ghostSword(p, e.location.x, e.location.z, 3, 1, 1.4);
         sfx(dim, "sh.dagger_hit", e.location, 1, 1.0 + i * 0.1);
       }));
+      // الخاتمة: ثمانية سيوف شبح تنزل بحلقة حواليك وموجة بنفسجية
+      later(list.length * 4 + 6, () => {
+        if (!valid(p)) return;
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; ghostSword(p, p.location.x + Math.cos(a) * 3.6, p.location.z + Math.sin(a) * 3.6, 0, i % 4, 1.1); }
+        waveFx(dim, p.location, 5, 1, 12);
+        for (const e of enemiesNear(dim, p.location, 4.8, p.id)) { hurt(e, 3, p); pushAway(p.location, e, 0.8, 0.25); }
+        sfx(dim, "sh.kat_wave", p.location, 1, 0.8);
+      });
       return true;
     } },
   ],
@@ -4211,6 +4266,7 @@ function katCrescent(p, roll, delay) {
     const hit = new Set(), rad = 1.8 + 0.15 * lv;
     sfx(dim, "sh.kat_wave", p.location, 1.1, 1 + delay * 0.03);
     flyShape(dim, "slash_violet", from, dir, 1.4, 18 + 2 * lv, { r: 1.6 + 0.2 * lv, p: 90, a: roll }, (pos) => {
+      glow(dim, { x: pos.x - dir.x * 0.8, y: pos.y + (Math.random() - 0.5) * 1.2, z: pos.z - dir.z * 0.8 }, { color: KATANA_PURPLE, size: 0.2, life: 0.6 });
       for (const e of enemiesNear(dim, pos, rad, p.id)) {
         if (hit.has(e.id)) continue;
         hit.add(e.id);
@@ -4248,6 +4304,7 @@ function katExecute(p, t, chainsLeft) {
       popShape(dim, "slash_violet", c, 1.0, 3.0, 7, { yaw: yawOf(c, p.location), a: 90 });
       notify(p, "§5EXECUTED!", 25);
     } else hurt(t, kd(p, 8), p);
+    ghostSword(p, t.location.x, t.location.z, 0, 0, 1.9);
     sfx(dim, "sh.kat_exec", t.location, 1.1, 1.2);
     shake(p, 0.18, 0.15);
     if (chainsLeft > 0) {
@@ -5519,25 +5576,198 @@ function seerTick(e, st) {
     if (st.t >= 50) grimEnd(e, st, 90);
   }
 }
+// ═════════════════════════ شوكاني (Quillback، Lowly) وثعلب الحجاب (Veilfox، Grim) ═════════════════════════
+const FOXV = [0.62, 0.45, 1.0], FOXC = [0.35, 0.8, 1.0], QAMBER = [1.0, 0.6, 0.15];
+// يرمي شوكة قنفذ بأمان: يضرب أول لاعب بطريقها (ضرر + بطء)
+function fireQuill(dim, e, from, dir, dmg) {
+  const hit = new Set();
+  flyShape(dim, "quill", from, dir, 0.95, 14, { r: 1.5 }, (pos) => {
+    for (const pl of dim.getPlayers({ location: { x: pos.x, y: pos.y, z: pos.z }, maxDistance: 1.3 })) {
+      if (hit.has(pl.id) || Math.abs(pl.location.y + 1 - pos.y) > 1.6) continue;
+      hit.add(pl.id); hurtPlayer(pl, dmg, valid(e) ? e : undefined);
+      try { pl.addEffect("slowness", 40, { amplifier: 1 }); } catch (err) { /* */ }
+      burst(dim, pos, 6, QAMBER, 2); return true;
+    }
+    return false;
+  }, (pos) => burst(dim, pos, 4, QAMBER, 1.5));
+}
+function quillTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 16);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0;
+    const r = Math.random();
+    if (np.d < 3) { st.skill = "burst"; st.phase = 1; setMState(e, 3); }
+    else if (np.d <= 10 && r < 0.5) { st.skill = "roll"; st.phase = 1; setMState(e, 2); sfx(dim, "sh.imp_windup", L, 0.7, 1.5); }
+    else if (np.d <= 14) { st.skill = "volley"; st.phase = 1; setMState(e, 1); }
+    else st.cd = 10;
+    return;
+  }
+  const tp = valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  // ── 1) رشقة الشوك: يشيل شوكه ويرمي 5 شوكات بمروحة ──
+  if (st.skill === "volley") {
+    if (tp && st.t <= 14) st.aim = center3(tp);
+    if (st.t === 16 && st.aim) {
+      const f = fwdTo(L, st.aim), ang0 = Math.atan2(f.z, f.x), from = { x: L.x + f.x * 0.8, y: L.y + 0.9, z: L.z + f.z * 0.8 };
+      const dy = (st.aim.y - from.y) / Math.max(2, Math.hypot(st.aim.x - from.x, st.aim.z - from.z));
+      for (let i = -2; i <= 2; i++) {
+        const a = ang0 + i * 0.2, dv = { x: Math.cos(a), y: dy, z: Math.sin(a) }, l = Math.hypot(dv.x, dv.y, dv.z);
+        fireQuill(dim, e, from, { x: dv.x / l, y: dv.y / l, z: dv.z / l }, 3);
+      }
+      sfx(dim, "random.bow", L, 0.9, 1.5); burst(dim, from, 8, QAMBER, 2.5);
+    }
+    if (st.t >= 26) grimEnd(e, st, 55);
+    return;
+  }
+  // ── 2) الكرة اللاحمة: يتكور ويتدحرج 8 بلوكات ويضرب اللي بطريقه ──
+  if (st.skill === "roll") {
+    if (st.t < 10) { if (tp) st.dir = fwdTo(L, tp.location); return; }
+    const d = st.dir || { x: 0, z: 1 };
+    if (st.t === 10) { st.hit = new Set(); sfx(dim, "sh.stardash", L, 0.9, 1.6); }
+    const nx = L.x + d.x * 0.7, nz = L.z + d.z * 0.7;
+    if (st.t > 34 || !airAt(dim, nx, L.y + 0.5, nz) || !airAt(dim, nx, L.y + 1.2, nz)) { rockBurst(dim, L, 4, 0.7); burst(dim, { x: L.x, y: L.y + 0.8, z: L.z }, 10, QAMBER, 2.5); grimEnd(e, st, 60); return; }
+    try { e.teleport({ x: nx, y: groundAt(dim, nx, nz, L.y), z: nz }, { facingLocation: { x: nx + d.x, y: L.y + 1, z: nz + d.z } }); } catch (err) { /* */ }
+    pix(dim, { x: L.x, y: L.y + 0.2, z: L.z }, { color: QAMBER, size: 0.14, life: 0.5, speed: 1 });
+    vanillaFx(dim, "minecraft:basic_smoke_particle", { x: L.x, y: L.y + 0.1, z: L.z });
+    for (const pl of dim.getPlayers({ location: L, maxDistance: 1.7 })) {
+      if (st.hit.has(pl.id)) continue;
+      st.hit.add(pl.id); hurtPlayer(pl, 5, e);
+      try { pl.applyKnockback({ x: d.x * 1.3, z: d.z * 1.3 }, 0.5); } catch (err) { /* */ }
+      burst(dim, center3(pl), 10, QAMBER, 3); notify(pl, "§6The Quillback rolls over you!", 30); shake(pl, 0.2, 0.25);
+    }
+    return;
+  }
+  // ── 3) انفجار الشوك: يخلي الشوك يطلع بحلقة من 10 شوكات ويدفع القريب ──
+  if (st.skill === "burst") {
+    if (st.t === 10) {
+      const from = { x: L.x, y: L.y + 0.9, z: L.z };
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; fireQuill(dim, e, from, { x: Math.cos(a), y: 0, z: Math.sin(a) }, 3); }
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 2.8 })) { hurtPlayer(pl, 4, e); pushAway(L, pl, 1.1, 0.4); }
+      burst(dim, from, 18, QAMBER, 4); ring(dim, { x: L.x, y: L.y + 0.2, z: L.z }, 1.8, 18, 0, QAMBER, 0.2);
+      sfx(dim, "sh.guard_slam", L, 0.8, 1.7);
+    }
+    if (st.t >= 24) grimEnd(e, st, 65);
+  }
+}
+function veilTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  if (Math.random() < 0.4) glow(dim, { x: L.x + (Math.random() - 0.5) * 1.0, y: L.y + 1.4 + Math.random() * 0.8, z: L.z + 1.2 * (Math.random() - 0.5) }, { color: Math.random() < 0.5 ? FOXV : FOXC, size: 0.12, life: 0.8, rise: 0.6 });
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 22);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0;
+    const r = Math.random();
+    if (np.d < 5 && r < 0.7) { st.skill = "storm"; st.phase = 1; setMState(e, 3); sfx(dim, "sh.chorus", L, 1, 0.6); }
+    else if (np.d >= 3.5 && np.d <= 13 && r < 0.55) { st.skill = "pounce"; st.phase = 1; setMState(e, 2); }
+    else if (np.d <= 20) { st.skill = "volley"; st.phase = 1; setMState(e, 1); sfx(dim, "sh.chorus", L, 0.9, 1.3); st.orbs = []; }
+    else st.cd = 10;
+    return;
+  }
+  const tp = valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  // ── 1) رشقة نار الثعلب: 5 كرات تتجمع فوق ظهره (كل وحدة تتأرجح) وتنطلق وحدة ورا وحدة نحو مكانك ──
+  if (st.skill === "volley") {
+    const base = (i) => { const a = (i - 2) * 0.55; return { x: L.x + Math.sin(a) * 2.2 * Math.cos(e.getRotation().y * Math.PI / 180) + 0, y: L.y + 2.7 + Math.cos(a) * 0.4 + Math.sin(st.t * 0.3 + i) * 0.15, z: L.z + Math.sin(a) * 2.2 * Math.sin(e.getRotation().y * Math.PI / 180) }; };
+    if (st.t === 2) {
+      st.orbs = [0, 1, 2, 3, 4].map((i) => shapeFx(dim, "foxfire", base(i), { r: 0.1, s: 200, life: 80 }));
+      tween(10, 1, (q) => (st.orbs || []).forEach((o) => setShape(o, "sh:r", 0.1 + 0.85 * q)));
+    }
+    (st.orbs || []).forEach((o, i) => { if (o && !st.sent?.has(i)) { moveShape(o, base(i)); if (st.t % 4 === 0) glow(dim, base(i), { color: FOXC, size: 0.15, life: 0.4 }); } });
+    if (!st.sent) st.sent = new Set();
+    for (let i = 0; i < 5; i++) {
+      if (st.t === 16 + i * 5 && tp && !st.sent.has(i)) {
+        st.sent.add(i); const o = st.orbs[i], from = base(i); removeFx(o);
+        const c = center3(tp), dx = c.x - from.x, dy = c.y - from.y, dz = c.z - from.z, l = Math.hypot(dx, dy, dz) || 1, hit = new Set();
+        flyShape(dim, "foxfire", from, { x: dx / l, y: dy / l, z: dz / l }, 0.65, 22, { r: 0.95, s: 200 }, (pos) => {
+          glow(dim, pos, { color: i % 2 ? FOXV : FOXC, size: 0.2, life: 0.5 });
+          for (const pl of dim.getPlayers({ location: pos, maxDistance: 1.2 })) {
+            if (hit.has(pl.id)) continue;
+            hit.add(pl.id); hurtPlayer(pl, 5, valid(e) ? e : undefined); try { pl.setOnFire(2, true); } catch (err) { /* */ }
+            burst(dim, pos, 12, FOXC, 3); return true;
+          }
+          return false;
+        }, (pos) => { burst(dim, pos, 8, FOXV, 2.5); sfx(dim, "sh.blackhole_end", pos, 0.6, 1.8); });
+        sfx(dim, "sh.pull", from, 0.7, 1.6);
+      }
+    }
+    if (st.t >= 52) { (st.orbs || []).forEach(removeFx); st.orbs = undefined; st.sent = undefined; grimEnd(e, st, 70); }
+    return;
+  }
+  // ── 2) قفزة المرآة: يختفي بدخان بنفسجي ويخلي ظلين، ويطلع وراك بضربة ثلاثية من أذياله ──
+  if (st.skill === "pounce") {
+    if (st.t === 2) {
+      burst(dim, { x: L.x, y: L.y + 1, z: L.z }, 16, FOXV, 3);
+      for (const sx of [-1, 1]) popShape(dim, "afterimage", { x: L.x + sx * 1.3, y: L.y, z: L.z }, 0.9, 1.0, 14, { yaw: e.getRotation().y });
+      try { e.addEffect("invisibility", 18, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
+      sfx(dim, "sh.kat_step", L, 0.9, 1.4);
+    }
+    if (st.t === 12 && tp) {
+      const dest = behindSpot(tp, L);
+      if (dest) { burst(dim, { x: L.x, y: L.y + 1, z: L.z }, 10, FOXV, 3); safeTeleport(e, dest, tp.location); sfx(dim, "sh.kat_step", dest, 1, 0.8); st.landed = true; }
+    }
+    if (st.t === 16 && tp && st.landed) {
+      const c = center3(tp), yaw = yawOf(e.location, tp.location);
+      for (let i = -1; i <= 1; i++) later(i + 1, () => popShape(dim, "slash_violet", { x: c.x, y: c.y + i * 0.35, z: c.z }, 0.6, 1.6, 7, { p: 90 + i * 28, a: yaw * 0 + i * 20, s: 0 }));
+      if (dist2d(e.location, tp.location) < 3.5) {
+        hurtPlayer(tp, 8, e); pushAway(e.location, tp, 1.2, 0.5);
+        try { tp.addEffect("weakness", 60, { amplifier: 0 }); } catch (err) { /* */ }
+        notify(tp, "§dThe Veilfox slashes you from behind!", 40); shake(tp, 0.3, 0.3);
+      }
+      burst(dim, c, 18, FOXC, 4); sfx(dim, "sh.dagger_hit", c, 1, 0.9);
+    }
+    if (st.t >= 28) { st.landed = false; grimEnd(e, st, 80); }
+    return;
+  }
+  // ── 3) عاصفة الأذيال: يوقف على رجليه الورا وأذياله تنفرش، وتطلع 3 موجات حلقات أعمدة نار تتوسع ──
+  if (st.skill === "storm") {
+    if (st.t === 8 || st.t === 18 || st.t === 28) {
+      const n = (st.t - 8) / 10 + 1, rr = 2.4 + 2.5 * (n - 1), cnt = 8 + 4 * (n - 1), C = { x: L.x, y: L.y, z: L.z }, hitS = new Set();
+      sfx(dim, "sh.guard_slam", C, 0.9, 1.1 + 0.2 * n);
+      ring(dim, { x: C.x, y: C.y + 0.15, z: C.z }, rr, cnt * 2, 0, n === 2 ? FOXC : FOXV, 0.2);
+      for (let i = 0; i < cnt; i++) {
+        const a = (i / cnt) * Math.PI * 2 + n * 0.3, x = C.x + Math.cos(a) * rr, z = C.z + Math.sin(a) * rr, y = groundAt(dim, x, z, C.y);
+        later(i % 3, () => {
+          const f = shapeFx(dim, "fire_pillar", { x, y: y - 0.4, z }, { r: 0.3, yaw: Math.random() * 360, life: 18 });
+          if (f) tween(5, 1, (q) => { setShape(f, "sh:r", 0.3 + 0.75 * q); moveShape(f, { x, y: y - 0.4 + 0.4 * q, z }); });
+          vanillaFx(dim, "minecraft:lava_particle", { x, y: y + 0.3, z });
+          for (const pl of dim.getPlayers({ location: { x, y: y + 1, z }, maxDistance: 1.5 })) {
+            if (hitS.has(pl.id)) continue;
+            hitS.add(pl.id); hurtPlayer(pl, 4 + n, valid(e) ? e : undefined);
+            try { pl.setOnFire(2, true); pl.applyKnockback({ x: 0, z: 0 }, 0.55); } catch (err) { /* */ }
+            notify(pl, "§dFoxfire pillars erupt!", 30);
+          }
+        });
+      }
+    }
+    if (st.t >= 44) grimEnd(e, st, 85);
+  }
+}
+const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:quillback": quillTick, "sh:veilfox": veilTick };
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
     try { dim = world.getDimension(dimId); } catch (e) { continue; }
-    for (const type of GRIM_TYPES) {
+    for (const type of Object.keys(CUSTOM_TICK)) {
       let list = [];
       try { list = dim.getEntities({ type }); } catch (e) { continue; }
       for (const e of list) {
         try {
           let st = gst.get(e.id);
           if (!st) { st = { phase: 0, t: 0, cd: 30 + Math.random() * 40, skill: "" }; gst.set(e.id, st); }
-          if (type === "sh:gloomhorn") gloomTick(e, st); else seerTick(e, st);
+          CUSTOM_TICK[type](e, st);
         } catch (err) { gst.delete(e.id); }
       }
     }
   }
 }, 2);
 
-const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer" };
+const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:quillback": "Quillback", "sh:veilfox": "Veilfox" };
 system.runInterval(() => {
   const players = world.getAllPlayers();
   if (!players.length) return;

@@ -78,7 +78,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:quillback'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:quillback','sh:gloomhorn','sh:hollow_seer','sh:veilfox'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
@@ -385,7 +385,7 @@ export const __sim = {
       fire("playerSpawn", { player, initialSpawn: true });
       advance(1500); await new Promise((r) => setTimeout(r, 30));
       let st = JSON.parse(player.getDynamicProperty("sh") || "{}");
-      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"].includes(e.typeId)).length;
+      const mons = entities.filter((e) => ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion", "sh:quillback"].includes(e.typeId)).length;
       const reg = world._dyn.sh_structs ? JSON.parse(world._dyn.sh_structs) : [];
       const temple = reg.find((r) => r.type === "temple");
       console.log("\nلاعب جديد بعد دقيقة و15ث: قدرة =", st.power, "| معبد =", temple ? `${temple.x},${temple.y},${temple.z}` : "لا", "| وحوش بداية =", mons, "| بنايات =", reg.length, "| كتاب =", inventory.some((i) => i && i.typeId === "sh:evolution_book"));
@@ -545,7 +545,7 @@ export const __sim = {
         entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 400; player._max = 400; player._valid = true;
         const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 60); entities.push(m);
         const d0 = stats.damage || 0; let seen = 0; const zones0 = stats.spawned;
-        for (let t = 0; t < 600; t += 2) { advance(2); if (entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
+        for (let t = 0; t < 1500; t += 2) { advance(2); if (entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
         const dmg = Math.round((stats.damage || 0) - d0);
         console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}`);
         if (!seen) failures.push(`${type}: المهارة الخاصة (${shape}) ما طلعت`);
@@ -571,10 +571,10 @@ export const __sim = {
     // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
     {
       console.log("\nوحوش Grim:");
-      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" } };
-      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]] };
+      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:quillback": { 1: "رشقة الشوك", 2: "الكرة اللاحمة", 3: "انفجار الشوك" }, "sh:veilfox": { 1: "رشقة نار الثعلب", 2: "قفزة المرآة", 3: "عاصفة الأذيال" } };
+      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]], "sh:quillback": [[2, 900], [8, 1800]], "sh:veilfox": [[3, 1500], [10, 2200]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:quillback": ["quill"], "sh:veilfox": ["foxfire", "fire_pillar"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         stats.shapeV = {}; stats.pById = {};

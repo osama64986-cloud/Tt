@@ -172,6 +172,146 @@
      "blend_transition": 0.14
     }
    }
+  },
+  "controller.animation.sh_quillback.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "roll": "query.property('sh:state') == 2"
+      },
+      {
+       "burst": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "volley": {
+     "animations": [
+      "volley"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "roll": "query.property('sh:state') == 2"
+      },
+      {
+       "burst": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "roll": {
+     "animations": [
+      "roll"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "burst": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "burst": {
+     "animations": [
+      "burst"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "roll": "query.property('sh:state') == 2"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  },
+  "controller.animation.sh_veilfox.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "volley": {
+     "animations": [
+      "volley"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "pounce": {
+     "animations": [
+      "pounce"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "storm": {
+     "animations": [
+      "storm"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
   }
  }
 }
