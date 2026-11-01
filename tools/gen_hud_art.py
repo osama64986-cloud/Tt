@@ -1,6 +1,6 @@
 """رسومات الـHUD: ورقة رموز (glyph_E5) تنحط داخل نص الأكشن بار + إطار مزخرف للوحة + إطار لمجسم اللاعب.
-الرموز: قلوب، أشرطة مرسومة (رتبة/خبرة/قدرة/طاقة)، شارات الرتب السبع، شعارات القدرات التسع، أيقونات حالة المهارة،
-أيقونة الطاقة الملعونة، التوسع الإقليمي والوميض الأسود. الرمز رقم i = الحرف U+E500+i.
+الرموز: قلوب، أشرطة مرسومة (رتبة/خبرة/قدرة)، نجوم الكوكبة (مضوية/مطفية/مكتملة)، شارات الرتب السبع، شعارات القدرات التسع،
+أيقونات حالة المهارة، ختم النجمة والرد النجمي. الرمز رقم i = الحرف U+E500+i.
 التشغيل: python3 tools/gen_hud_art.py [مجلد_معاينة]
 """
 import math
@@ -16,10 +16,10 @@ OUTLINE = (16, 10, 20, 255)
 
 # أرقام الرموز (لازم تطابق GLYPH بالسكربت)
 G = {
-    "heart": 0, "heart_half": 1, "heart_empty": 2, "energy": 3,
-    "en_full": 4, "en_empty": 5, "gold_full": 6, "gold_empty": 7, "xp_full": 8, "xp_empty": 9,
-    "pw_full": 10, "pw_empty": 11, "en_max": 12, "hp_full": 13, "hp_empty": 14,
-    "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "domain": 53, "flash": 54, "sep": 55,
+    "heart": 0, "heart_half": 1, "heart_empty": 2, "const": 3,
+    "star_lit": 4, "star_dim": 5, "gold_full": 6, "gold_empty": 7, "xp_full": 8, "xp_empty": 9,
+    "pw_full": 10, "pw_empty": 11, "star_blaze": 12, "hp_full": 13, "hp_empty": 14,
+    "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "sigil": 53, "counter": 54, "sep": 55,
 }
 POWER_ORDER = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"]
 
@@ -106,25 +106,51 @@ def seg(base, hi, lo, filled=True, glow=False):
     return c.outline()
 
 
-def energy_icon():
-    """شعلة طاقة ملعونة: بنفسجي غامق بقلب أزرق فاتح."""
+STAR = [
+    "......X......",
+    ".....XWX.....",
+    ".....XWX.....",
+    "....XWWWX....",
+    "XXXXXWWWXXXXX",
+    ".XWWWWWWWWWX.",
+    "..XWWWWWWWX..",
+    "...XWWWWWX...",
+    "...XWWXWWX...",
+    "..XWWX.XWWX..",
+    "..XWX...XWX..",
+    ".XX.......XX.",
+]
+
+
+def star_glyph(kind):
+    """نجمة الكوكبة: lit ذهبية بقلب أبيض، dim مطفية، blaze بيضاء متوهجة (الكوكبة كاملة)."""
     c = Cell()
-    rows = [
-        ".......A.......",
-        "......AA.......",
-        ".....AAB...A...",
-        "....AABB..AA...",
-        "...AABBB.AAB...",
-        "...ABBBBAABB...",
-        "..AABBCBBBBB...",
-        "..ABBCCCBBBBA..",
-        "..ABBCCWCCBBA..",
-        "..ABBCWWWCBBA..",
-        "..AABCCWCCBAA..",
-        "...AABBCBBAA...",
-        "....AAABAAA....",
-    ]
-    c.mask(rows, {"A": (70, 20, 120), "B": (130, 60, 230), "C": (110, 170, 255), "W": (235, 245, 255)}, 0, 1)
+    if kind == "lit":
+        pal = {"X": (200, 130, 20), "W": (255, 214, 80)}
+    elif kind == "dim":
+        pal = {"X": (40, 38, 58), "W": (66, 64, 92)}
+    else:
+        pal = {"X": (255, 170, 60), "W": (255, 250, 220)}
+    c.mask(STAR, pal, 1, 2)
+    if kind == "lit":
+        c.put(7, 7, (255, 255, 240)); c.put(7, 8, (255, 245, 200))
+    if kind == "blaze":
+        for (x, y) in ((0, 0), (14, 0), (0, 14), (14, 14), (7, 0)):
+            c.put(x, y, (255, 230, 150))
+    return c.outline()
+
+
+def const_icon():
+    """أيقونة الكوكبة: 4 نجوم صغيرة موصولة بخطوط."""
+    c = Cell()
+    pts = [(2, 11), (6, 6), (11, 9), (13, 3)]
+    for (a, b) in zip(pts, pts[1:]):
+        for k in range(12):
+            t = k / 11
+            c.put(round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t), (110, 120, 190))
+    for (x, y) in pts:
+        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+            c.put(x + dx, y + dy, (255, 236, 150) if (dx, dy) == (0, 0) else (255, 196, 60))
     return c.outline()
 
 
@@ -251,26 +277,21 @@ def icon(kind):
         for k in range(9):
             c.put(4 + k, 11 - k, (230, 236, 250)); c.put(5 + k, 11 - k, (160, 170, 200))
         c.rect(3, 10, 6, 10, (236, 180, 50)); c.rect(4, 9, 4, 12, (236, 180, 50)); c.put(2, 13, (120, 60, 30)); c.put(3, 12, (120, 60, 30))
-    elif kind == "domain":  # قبة بعين
-        for i in range(40):
-            a = math.pi + i / 39 * math.pi
-            c.put(round(7.5 + math.cos(a) * 7), round(12 + math.sin(a) * 9), (170, 90, 255))
-        c.rect(1, 12, 14, 12, (170, 90, 255))
-        c.mask([".XXX.", "XWKWX", ".XXX."], {"X": (230, 220, 255), "W": (255, 255, 255), "K": (20, 0, 30)}, 5, 7)
-    elif kind == "flash":  # برق أسود بحافة حمرة
-        rows = ["......XX", ".....XX.", "....XX..", "...XXXXX", "....XX..", "...XX...", "..XX....", ".XX.....", "XX......"]
-        for y, row in enumerate(rows):
-            for x, ch in enumerate(row):
-                if ch == "X":
-                    c.put(4 + x, 3 + y, (10, 0, 6))
-        out = dict(c.px)
-        for (x, y) in c.px:
-            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                q = (x + dx, y + dy)
-                if q not in c.px and 0 <= q[0] < C and 0 <= q[1] < C:
-                    out[q] = (230, 30, 40, 255)
-        c.px = out
-        return c
+    elif kind == "sigil":  # ختم النجمة: قرص بحافة ذهب و7 نقاط ونجمة بالنص
+        for y in range(16):
+            for x in range(16):
+                d = math.hypot(x - 7.5, y - 7.5)
+                if d < 7:
+                    c.put(x, y, (236, 180, 50) if d > 5.8 else (26, 22, 60))
+        for i in range(7):
+            a = -math.pi / 2 + i * 2 * math.pi / 7
+            c.put(round(7.5 + math.cos(a) * 4.2), round(7.5 + math.sin(a) * 4.2), (255, 236, 150))
+        c.mask([".X.", "XWX", ".X."], {"X": (255, 196, 60), "W": (255, 255, 240)}, 6, 6)
+    elif kind == "counter":  # سيفين متقاطعين وشرارة نجمة
+        for k in range(10):
+            c.put(3 + k, 12 - k, (220, 226, 240)); c.put(12 - k, 12 - k, (220, 226, 240))
+        c.rect(2, 12, 4, 12, (180, 120, 50)); c.rect(11, 12, 13, 12, (180, 120, 50))
+        c.mask(["..X..", ".XWX.", "XWWWX", ".XWX.", "..X.."], {"X": (255, 196, 60), "W": (255, 250, 220)}, 5, 0)
     elif kind == "sep":
         c.mask(["X", "X", "X", "X", "X", "X", "X", "X"], {"X": (120, 100, 70)}, 7, 4)
         c.put(7, 3, (236, 180, 50)); c.put(7, 12, (236, 180, 50))
@@ -281,10 +302,10 @@ def icon(kind):
 def build_sheet():
     cells = {}
     cells[G["heart"]] = heart("full"); cells[G["heart_half"]] = heart("half"); cells[G["heart_empty"]] = heart("empty")
-    cells[G["energy"]] = energy_icon()
-    cells[G["en_full"]] = seg((150, 70, 255), (190, 130, 255), (80, 30, 170))
-    cells[G["en_empty"]] = seg(None, None, None, filled=False)
-    cells[G["en_max"]] = seg((220, 200, 255), (245, 235, 255), (150, 90, 255), glow=True)
+    cells[G["const"]] = const_icon()
+    cells[G["star_lit"]] = star_glyph("lit")
+    cells[G["star_dim"]] = star_glyph("dim")
+    cells[G["star_blaze"]] = star_glyph("blaze")
     cells[G["gold_full"]] = seg((236, 180, 50), (255, 236, 140), (170, 110, 20))
     cells[G["gold_empty"]] = seg(None, None, None, filled=False)
     cells[G["xp_full"]] = seg((70, 210, 255), (170, 240, 255), (30, 120, 200))
@@ -297,7 +318,7 @@ def build_sheet():
         cells[G["rank0"] + r] = crest(r)
     for i, k in enumerate(POWER_ORDER):
         cells[G["power0"] + i] = emblem(k)
-    for k in ("ready", "cool", "lock", "held", "sword", "domain", "flash", "sep"):
+    for k in ("ready", "cool", "lock", "held", "sword", "sigil", "counter", "sep"):
         cells[G[k]] = icon(k)
     sheet = Image.new("RGBA", (C * 16, C * 16), (0, 0, 0, 0))
     for idx, cell in cells.items():
@@ -405,7 +426,7 @@ def preview(sheet, out):
     lines = [
         [("g", G["rank0"] + 2), ("t", " Warrior ", (255, 200, 60)), *[("g", G["gold_full"])] * 4, *[("g", G["gold_empty"])] * 2, ("t", " 7/15  ", (170, 170, 170)), *[("g", G["heart"])] * 7, ("g", G["heart_half"]), *[("g", G["heart_empty"])] * 2, ("t", " 31/40", (255, 90, 90))],
         [("t", "Lv 44 ", (90, 220, 255)), *[("g", G["xp_full"])] * 2, *[("g", G["xp_empty"])] * 3, ("t", " 7%  ", (170, 170, 170)), ("g", G["power0"] + 3), ("t", " Crystal Lord ", (255, 120, 220)), ("t", "Lv6/6 ", (255, 120, 255)), *[("g", G["pw_full"])] * 5],
-        [("g", G["energy"]), ("t", " ", (0, 0, 0)), *[("g", G["en_max"])] * 10, ("t", " 100% ", (255, 120, 255)), ("g", G["domain"]), ("t", " DOMAIN READY", (255, 120, 255))],
+        [("g", G["const"]), ("t", " ", (0, 0, 0)), *[("g", G["star_lit"])] * 5, *[("g", G["star_dim"])] * 2, ("t", " 5/7  ", (255, 210, 90)), ("g", G["sigil"]), ("t", " ASCENDANT 8.4s", (255, 210, 90))],
         [("t", "Skills ", (170, 170, 170)), ("g", G["held"]), ("g", G["ready"]), ("t", "1  ", (90, 255, 90)), ("g", G["cool"]), ("t", "2 3.4  ", (255, 90, 90)), ("g", G["ready"]), ("t", "3  ", (90, 255, 90)), ("g", G["lock"]), ("t", "4", (120, 120, 120))],
     ]
     d = ImageDraw.Draw(img)

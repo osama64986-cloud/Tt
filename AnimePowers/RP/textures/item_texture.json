@@ -173,8 +173,8 @@
     "sh_star_shard": {
       "textures": "textures/items/sh_star_shard"
     },
-    "sh_domain": {
-      "textures": "textures/items/sh_domain"
+    "sh_star_sigil": {
+      "textures": "textures/items/sh_star_sigil"
     }
   }
 }

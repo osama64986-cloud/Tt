@@ -60,16 +60,7 @@
     "s47": "geometry.sh_shape_afterimage",
     "s48": "geometry.sh_shape_rock_chunk",
     "s49": "geometry.sh_shape_sun_chain",
-    "s50": "geometry.sh_shape_dome_iron",
-    "s51": "geometry.sh_shape_dome_wind",
-    "s52": "geometry.sh_shape_dome_echo",
-    "s53": "geometry.sh_shape_dome_crystal",
-    "s54": "geometry.sh_shape_dome_accountant",
-    "s55": "geometry.sh_shape_dome_borrower",
-    "s56": "geometry.sh_shape_dome_distance",
-    "s57": "geometry.sh_shape_dome_law",
-    "s58": "geometry.sh_shape_dome_star",
-    "s59": "geometry.sh_shape_black_flash"
+    "s50": "geometry.sh_shape_star_halo"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

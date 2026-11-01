@@ -382,7 +382,7 @@ export const __sim = {
       if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("الشظية غيرت قدرة موجودة");
       player.selectedSlotIndex = 0;
     }
-    // ميزات جوجوتسو: الطاقة، الوميض الأسود، التوسع الإقليمي، والـHUD المرسوم
+    // ميزات النجمة الساقطة: الكوكبة، سقوط النجوم، الصاعد، الرد النجمي، والـHUD المرسوم
     {
       for (let i = 0; i < inventory.length; i++) inventory[i] = undefined;
       setState({ ...baseState("crystal"), rank: 2, level: 35 });
@@ -394,34 +394,49 @@ export const __sim = {
       const glyphs = [...bar].filter((ch) => ch.charCodeAt(0) >= 0xE500 && ch.charCodeAt(0) <= 0xE5FF).length;
       console.log("رموز مرسومة بالـHUD:", glyphs, "| أسطر:", bar.split("\n").length);
       if (glyphs < 25) failures.push("الـHUD ما يستعمل الرسومات");
-      // الوميض الأسود المضمون
+      // الكوكبة: مهارات مختلفة تضوي، نفس المهارة مرتين ما تضوي
+      const lit = () => { const b2 = stats.actionBars[stats.actionBars.length - 1] || ""; return [...b2].filter((ch) => ch.charCodeAt(0) === 0xE504 || ch.charCodeAt(0) === 0xE50C).length; };
+      fire("scriptEventReceive", { id: "sh:stars", message: "0", sourceEntity: player });
+      spawnZombies(4, true); await useItem("sh:skill_shards"); system_cd_reset(); advance(6);
+      await useItem("sh:skill_shards"); system_cd_reset(); advance(6);
+      const afterSame = lit();
+      await useItem("sh:skill_crystalshield"); system_cd_reset(); advance(6);
+      const afterDiff = lit();
+      console.log("الكوكبة: بعد نفس المهارة مرتين =", afterSame, "| بعد مهارة ثانية =", afterDiff);
+      if (afterSame !== 1 || afterDiff !== 2) failures.push("الكوكبة ما تشتغل صح (التنويع)");
+      const starEnts = entities.filter((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") === 38).length;
+      if (starEnts < 2) failures.push("نجوم الكوكبة ما تطلع فوق الراس");
+      // الرد النجمي: عدو يضربك ثم تضربه خلال ثانية
       spawnZombies(1, true); const z = entities[0]; const hp0 = z._hp;
-      fire("scriptEventReceive", { id: "sh:blackflash", message: "", sourceEntity: player });
-      stats.titles = []; const f0 = stats.spawned;
-      fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(10);
-      console.log("الوميض الأسود: ضرر", hp0 - z._hp, "| أشكال", stats.spawned - f0, "| عنوان", (stats.titles || []).join(","));
-      if (!(stats.titles || []).some((t) => t.includes("BLACK"))) failures.push("الوميض الأسود ما اشتغل");
-      // التوسع الإقليمي
-      fire("scriptEventReceive", { id: "sh:energy", message: "100", sourceEntity: player });
-      const has = inventory.some((i) => i && i.typeId === "sh:skill_domain");
+      fire("entityHurt", { hurtEntity: player, damage: 2, damageSource: { damagingEntity: z } }); advance(5);
+      fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(5);
+      console.log("الرد النجمي: ضرر", hp0 - z._hp, "| نجوم", lit());
+      if (hp0 - z._hp <= 0) failures.push("الرد النجمي ما اشتغل");
+      // سقوط النجوم + الصاعد
+      fire("scriptEventReceive", { id: "sh:stars", message: "7", sourceEntity: player });
+      const has = inventory.some((i) => i && i.typeId === "sh:skill_starfall");
       spawnZombies(4, true); stats.titles = []; const d0 = stats.damage || 0, s0 = stats.spawned;
-      await useItem("sh:skill_domain"); advance(5);
-      const dome = entities.find((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") >= 50 && e.getProperty("sh:v") <= 58);
-      advance(250);
-      console.log("التوسع: أيتم =", has, "| قبة =", !!dome, "| عنوان =", (stats.titles || [])[0], "| ضرر =", Math.round((stats.damage || 0) - d0), "| أشكال =", stats.spawned - s0);
-      if (!has) failures.push("أيتم التوسع ما انعطى");
-      if (!dome) failures.push("قبة التوسع ما ظهرت");
-      if ((stats.damage || 0) - d0 <= 0) failures.push("التوسع ما ضرب");
-      // سنيك = تدفق عكسي
-      fire("scriptEventReceive", { id: "sh:energy", message: "50", sourceEntity: player });
-      player._hp = 5; player.isSneaking = true; await useItem("sh:skill_domain"); player.isSneaking = false; advance(2);
-      console.log("التدفق العكسي: صحة", player._hp);
-      if (player._hp < 13) failures.push("التدفق العكسي ما شفى");
+      await useItem("sh:skill_starfall"); advance(80);
+      const halo = entities.some((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") === 50);
+      stats.actionBars.length = 0; advance(6);
+      const asc = (stats.actionBars[stats.actionBars.length - 1] || "").includes("ASCENDANT");
+      console.log("سقوط النجوم: ختم =", has, "| عنوان =", (stats.titles || [])[0], "| ضرر =", Math.round((stats.damage || 0) - d0), "| أشكال =", stats.spawned - s0, "| هالة =", halo, "| صاعد بالـHUD =", asc);
+      if (!has) failures.push("ختم النجمة ما انعطى");
+      if ((stats.damage || 0) - d0 <= 0) failures.push("سقوط النجوم ما ضرب");
+      if (!halo || !asc) failures.push("حالة الصاعد ما اشتغلت");
+      const d1 = stats.damage || 0; await useItem("sh:skill_burst"); system_cd_reset(); await useItem("sh:skill_shards"); advance(30);
+      if ((stats.damage || 0) - d1 <= 0) failures.push("المهارة وانت صاعد ما ضربت");
+      advance(260);
+      // ضوء النجمة (سنيك)
+      fire("scriptEventReceive", { id: "sh:stars", message: "3", sourceEntity: player });
+      player._hp = 5; player.isSneaking = true; await useItem("sh:skill_starfall"); player.isSneaking = false; advance(14);
+      console.log("ضوء النجمة: صحة", player._hp);
+      if (player._hp < 11) failures.push("ضوء النجمة ما شفى");
       for (const pw of ["iron", "wind", "echo", "accountant", "borrower", "distance", "law", "star"]) {
         setState({ ...baseState(pw), rank: 2, level: 35 }); spawnZombies(3, true);
-        fire("scriptEventReceive", { id: "sh:energy", message: "100", sourceEntity: player });
-        const dd = stats.damage || 0; await useItem("sh:skill_domain"); advance(250);
-        if ((stats.damage || 0) - dd <= 0) failures.push(`توسع ${pw} ما ضرب`);
+        fire("scriptEventReceive", { id: "sh:stars", message: "7", sourceEntity: player });
+        const dd = stats.damage || 0; await useItem("sh:skill_starfall"); advance(300);
+        if ((stats.damage || 0) - dd <= 0) failures.push(`سقوط نجوم ${pw} ما ضرب`);
       }
     }
     // أوامر التجربة

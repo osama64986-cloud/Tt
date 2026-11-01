@@ -251,8 +251,8 @@ function rarityStars(key) {
   return rarityOf(key).color + "★".repeat(idx + 1) + "§8" + "★".repeat(RARITIES.length - idx - 1);
 }
 // ───── رموز الـHUD المرسومة (RP/font/glyph_E5.png من tools/gen_hud_art.py): الرمز i = U+E500+i ─────
-const GI = { heart: 0, heart_half: 1, heart_empty: 2, energy: 3, en_full: 4, en_empty: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
-  pw_full: 10, pw_empty: 11, en_max: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, domain: 53, flash: 54, sep: 55 };
+const GI = { heart: 0, heart_half: 1, heart_empty: 2, constel: 3, star_lit: 4, star_dim: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
+  pw_full: 10, pw_empty: 11, star_blaze: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, sigil: 53, counter: 54, sep: 55 };
 const GLYPH_POWERS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 const GL = (i) => String.fromCharCode(0xE500 + i);
 function gbar(frac, n, full, empty) {
@@ -280,10 +280,10 @@ function hudArt(p, st) {
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
     l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
   } else l2 += "  §7No power yet";
-  const en = getEnergy(p), dom = inDomain(p);
-  let l3 = `§f${GL(GI.energy)} ${gbar(en / 100, 10, en >= 100 ? GI.en_max : GI.en_full, GI.en_empty)} §d${Math.floor(en)}%`;
-  if (dom) l3 += ` §f${GL(GI.domain)} §5§l${DOMAINS[dom.power].name} §r§7${fmtSec(dom.until - system.currentTick)}s`;
-  else if (en >= 100 && domainUnlocked(st)) l3 += ` §f${GL(GI.domain)} §d§lDOMAIN READY`;
+  const n = cst(p).n, asc = ascendant(p);
+  let l3 = `§f${GL(GI.constel)} ${n >= STAR_MAX ? "§f" + GL(GI.star_blaze).repeat(STAR_MAX) : gbar(n / STAR_MAX, STAR_MAX, GI.star_lit, GI.star_dim)} §e${n}/${STAR_MAX}`;
+  if (asc) l3 += `  §f${GL(GI.sigil)} §e§lASCENDANT §r§7${fmtSec(asc.until - system.currentTick)}s`;
+  else if (n >= STAR_MAX && starfallUnlocked(st)) l3 += `  §f${GL(GI.sigil)} §e§lSTARFALL READY`;
   return `${l1}\n${l2}\n${l3}`;
 }
 function hudText(p, st, plain) {
@@ -378,9 +378,9 @@ function heldLine(p, st, plain) {
       : `§6◎ ${nm} §8│ §7Not discovered yet, explore more`;
     return { line, tip: showTip ? "§7Use: choose destination §8│ §7Sneak + use: guide line" : "" };
   }
-  if (id === DOMAIN_ITEM) {
-    const en = Math.floor(getEnergy(p));
-    return { line: `§f${plain ? "" : GL(GI.domain) + " "}§5§lDomain Expansion§r §7│ §d${en}%${en >= 100 ? " §aREADY" : ""} §7│ S: §aReverse Flow`, tip: showTip ? "§7Use: open your domain (100 energy) §8│ §7Sneak + use: heal (40 energy)" : "" };
+  if (id === SIGIL_ITEM) {
+    const n = cst(p).n;
+    return { line: `§f${plain ? "" : GL(GI.sigil) + " "}§e§lStar Sigil§r §7│ §e${n}/7${n >= STAR_MAX ? " §aREADY" : ""} §7│ S: §aStarlight Mend`, tip: showTip ? "§7Use: Starfall Descent (7 stars) §8│ §7Sneak + use: heal (3 stars)" : "" };
   }
   if (id === "sh:star_shard") return { line: "§b✦ Star Shard", tip: showTip ? (st.power ? "§7You already carry a power" : "§7Use: start your power draw") : "" };
   if (id === "sh:skill_scroll") return { line: "§b✦ Skill Upgrade Scroll", tip: showTip ? "§7Use: pick a skill and raise it a full level" : "" };
@@ -849,7 +849,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n§dCursed energy: ${Math.floor(getEnergy(player))}/100§r §7(fills by fighting)\n${domainUnlocked(st) ? `§5Domain: ${st.power ? DOMAINS[st.power].name : "-"}§7 (use the Domain item at 100%)` : "§8Domain Expansion: unlocks at rank Trainee"}\n§0Black Flash§7: any melee hit can become a Black Flash (huge damage + energy). Total: ${st.flashes || 0}\n`;
+  b += `\n§e✦ Constellation: ${cst(player).n}/7§r §7(each different skill, weapon skill, kill or counter lights a star; repeating the same move does not)\n${starfallUnlocked(st) ? "§eStarfall Descent§7: use the Star Sigil with 7 stars. They fall on your strongest enemies, then you become Ascendant for 12 seconds." : "§8Starfall Descent: unlocks at rank Trainee"}\n§eStarlit Counter§7: when an enemy hits you a star glints over it; hit it back within one second. Counters: ${st.counters || 0}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -883,16 +883,16 @@ async function openBook(player) {
       form.button(`§8${s.name}\n§c${need}`);
     }
   }
-  form.button(domainUnlocked(st) ? "§5[Domain Expansion]\n§7Take the item, needs full cursed energy" : "§8[Domain Expansion]\n§cUnlocks at rank Trainee");
+  form.button(starfallUnlocked(st) ? "§e[Starfall Descent]\n§7Take the Star Sigil, needs 7 lit stars" : "§8[Starfall Descent]\n§cUnlocks at rank Trainee");
   form.button("§e[Ranks and how to rise]");
   form.button("§b[Status window and how to use skills]");
   form.button("§d[World Story]");
   const r = await showForm(player, form);
   if (r.canceled) return;
   if (r.selection === mine.length) {
-    if (!domainUnlocked(st)) { notify(player, "§cDomain Expansion unlocks at rank Trainee", 60); return; }
-    if (!giveDomainItem(player, true)) notify(player, "§eThe Domain Expansion item is already in your inventory", 50);
-    else notify(player, "§5You received: Domain Expansion", 50);
+    if (!starfallUnlocked(st)) { notify(player, "§cStarfall Descent unlocks at rank Trainee", 60); return; }
+    if (!giveSigil(player, true)) notify(player, "§eThe Star Sigil is already in your inventory", 50);
+    else notify(player, "§eYou received: Star Sigil", 50);
     return;
   }
   if (r.selection === mine.length + 1) { showRanks(player); return; }
@@ -1089,20 +1089,20 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
-      later(80, () => giveDomainItem(player, true));
+      later(80, () => giveSigil(player, true));
     }
   }
 }
 
-function giveDomainItem(p, announce) {
+function giveSigil(p, announce) {
   try {
     const st = getState(p);
-    if (!domainUnlocked(st) || hasItem(p, DOMAIN_ITEM)) return false;
-    giveItem(p, DOMAIN_ITEM);
-    if (announce && !st.domainTold) {
-      st.domainTold = true; saveState(p, st);
+    if (!starfallUnlocked(st) || hasItem(p, SIGIL_ITEM)) return false;
+    giveItem(p, SIGIL_ITEM);
+    if (announce && !st.sigilTold) {
+      st.sigilTold = true; saveState(p, st);
       sfxPlayer(p, "sh.kat_levelup", 1, 0.8);
-      say(p, "§5[Domain Expansion] §fYou unlocked your Domain. Fill your §dcursed energy§f by fighting (bar at the top), then use the item to trap every enemy inside your domain. §7Sneak + use: Reverse Flow (heal for 40 energy).");
+      say(p, "§e[Star Sigil] §fThe fallen star answers you. Light your §e7-star constellation§f by fighting with different moves (it shows at the top and above your head), then use the Sigil: your stars fall on your enemies and you become §eAscendant§f. §7Sneak + use: Starlight Mend (heal for 3 stars).");
     }
     return true;
   } catch (e) { return false; }
@@ -1146,7 +1146,7 @@ function handleKill(player, info) {
   saveState(player, st);
   announceUps(player, res.ups);
   grantSkillXp(player, res.xp);
-  if (!inDomain(player)) addEnergy(player, 6);
+  lightStar(player, `kill${system.currentTick}`);
 }
 
 world.afterEvents.entityDie.subscribe((ev) => {
@@ -1383,7 +1383,7 @@ function skillHitXp(by, target) {
   } catch (err) { /* */ }
 }
 function hurt(e, amount, by) {
-  try { e.applyDamage(amount * skillDmgMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
+  try { e.applyDamage(amount * skillDmgMul(by) * (by && by.typeId === "minecraft:player" && ascendant(by) ? 1.25 : 1), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
 }
 function viewDir(p) {
   try { return p.getViewDirection(); } catch (e) { return { x: 0, y: 0, z: 1 }; }
@@ -1624,191 +1624,239 @@ function breakBlocks(dim, positions, max = 40) {
   return n;
 }
 
-// ───────────────────────── الطاقة الملعونة (طاقة النجم) ─────────────────────────
-// تمتلي من الضرب والقتل وببطء لوحدها، والوميض الأسود يعطيها دفعة. كاملة = التوسع الإقليمي.
-const energyMap = new Map();
-function getEnergy(p) {
-  if (!energyMap.has(p.id)) { let v = 0; try { v = p.getDynamicProperty("sh_energy"); } catch (e) { /* */ } energyMap.set(p.id, typeof v === "number" ? v : 0); }
-  return energyMap.get(p.id);
+// ═════════════════════════ ميزات النجمة الساقطة (فكرة خاصة بالمود) ═════════════════════════
+// الكوكبة: كل حركة مختلفة (مهارة، مهارة سلاح، قتلة، رد نجمي) تضوي نجمة من 7، وتطلع 3D فوق راسك بنمط خاص بقدرتك.
+//   نفس الحركة مرتين ورا بعض ما تضوي (اللعبة تكافئ التنويع). إذا وقفت عن القتال 10 ثواني تنطفي نجمة كل 3 ثواني.
+// سقوط النجوم (ختم النجمة، رتبة Trainee): الكوكبة الكاملة ترتفع وتنزل نجمة نجمة على أقوى 7 أعداء بطبع قدرتك،
+//   وبعدها تصير "صاعد" 12 ثانية: هالة نجوم، كولداون أسرع، ضرر أعلى، وكل مهارة تطلق نجمة على أقرب عدو.
+// الرد النجمي: من يضربك عدو تلمع نجمة فوق راسه ثانية وحدة؛ إذا ضربته بهاي الثانية = رد قوي يشله ويضوي نجمتين.
+const STAR_MAX = 7, ASCEND_T = 240;
+const constel = new Map(); // pid -> { n, last, lastKey, nextDim, ents }
+const ascend = new Map();  // pid -> { until, halo }
+function cst(p) {
+  let c = constel.get(p.id);
+  if (!c) { c = { n: 0, last: 0, lastKey: "", nextDim: 0, ents: [] }; constel.set(p.id, c); }
+  return c;
 }
-function domainUnlocked(st) { return !!st.power && st.rank >= 1; }
-function addEnergy(p, n) {
-  const was = getEnergy(p), v = Math.max(0, Math.min(100, was + n));
-  energyMap.set(p.id, v);
-  if (v >= 100 && was < 100) {
-    try { if (domainUnlocked(getState(p)) && !inDomain(p)) { sfxPlayer(p, "sh.ready", 1, 0.7); notify(p, "§d§lCursed energy full: §r§dDomain Expansion is ready", 60); } } catch (e) { /* */ }
+function starfallUnlocked(st) { return !!st.power && st.rank >= 1; }
+function ascendant(p) { const a = ascend.get(p.id); return a && system.currentTick < a.until ? a : undefined; }
+// نمط الكوكبة لكل قدرة (ثابت، من اسمها): 7 نقاط حول الراس
+const patternCache = {};
+function starPattern(power) {
+  if (patternCache[power]) return patternCache[power];
+  let h = 7;
+  for (const ch of String(power)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => { h = (Math.imul(h, 1103515245) + 12345) >>> 0; return h / 4294967296; };
+  const pts = [];
+  for (let i = 0; i < STAR_MAX; i++) {
+    const a = (i / STAR_MAX) * Math.PI * 2 + (rnd() - 0.5) * 0.7;
+    const r = 0.8 + rnd() * 0.8;
+    pts.push({ x: Math.cos(a) * r, y: (rnd() - 0.5) * 0.6, z: Math.sin(a) * r });
   }
+  return (patternCache[power] = pts);
 }
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
+function lightStar(p, key, n = 1) {
+  const c = cst(p);
+  if (key && key === c.lastKey) return;
+  if (key) c.lastKey = key;
+  c.last = system.currentTick;
+  if (ascendant(p)) return;
+  const was = c.n;
+  c.n = Math.min(STAR_MAX, c.n + n);
+  if (c.n === was) return;
+  sfxPlayer(p, "sh.tick", 0.7, 0.9 + c.n * 0.12);
+  if (c.n === STAR_MAX) {
     try {
-      if (!inDomain(p)) addEnergy(p, 1);
-      p.setDynamicProperty("sh_energy", Math.floor(getEnergy(p)));
+      if (starfallUnlocked(getState(p))) { sfxPlayer(p, "sh.ready", 1, 0.8); notify(p, "§e§l✦ Your constellation is complete: §r§eStarfall Descent is ready", 70); }
+      else notify(p, "§eConstellation complete §7(Starfall Descent unlocks at rank Trainee)", 60);
     } catch (e) { /* */ }
   }
-}, 60);
-world.afterEvents.entityHurt.subscribe((ev) => {
-  try {
-    const a = ev.damageSource && ev.damageSource.damagingEntity;
-    if (!a || a.typeId !== "minecraft:player" || ev.hurtEntity.typeId === "minecraft:player" || isFriendly(ev.hurtEntity)) return;
-    if (inDomain(a)) return;
-    addEnergy(a, Math.min(4, ev.damage * 0.35));
-  } catch (e) { /* */ }
+}
+function starPos(p, i, now) {
+  const pt = starPattern(getState(p).power || "none")[i];
+  const a = now * 0.025, ca = Math.cos(a), sa = Math.sin(a);
+  const h = headPos(p);
+  return { x: h.x + pt.x * ca - pt.z * sa, y: h.y + 0.9 + pt.y, z: h.z + pt.x * sa + pt.z * ca };
+}
+// النجوم تتبع اللاعب، والخطوط بينها تنرسم، والانطفاء البطيء
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const p of world.getAllPlayers()) {
+    try {
+      const c = cst(p);
+      if (c.n > 0 && now - c.last > 200 && now >= c.nextDim) { c.n--; c.nextDim = now + 60; }
+      c.ents = c.ents.filter((e) => valid(e));
+      while (c.ents.length > c.n) removeFx(c.ents.pop());
+      while (c.ents.length < c.n) {
+        const e = shapeFx(p.dimension, "star5", starPos(p, c.ents.length, now), { r: 0.32, s: 240, life: 1200 });
+        if (!e) break;
+        c.ents.push(e);
+      }
+      c.ents.forEach((e, i) => moveShape(e, starPos(p, i, now)));
+      if (now % 10 === 0 && c.n > 1) {
+        for (let i = 0; i < c.ents.length - 1; i++) pixLine(p.dimension, c.ents[i].location, c.ents[i + 1].location, c.n >= STAR_MAX ? STAR_WHITE : [0.55, 0.6, 1], 4, 0.1, 0.5);
+      }
+    } catch (e) { /* */ }
+  }
+}, 2);
+world.afterEvents.playerLeave.subscribe((ev) => {
+  const c = constel.get(ev.playerId);
+  if (c) c.ents.forEach(removeFx);
+  constel.delete(ev.playerId);
 });
 
-// ───────────────────────── الوميض الأسود (Black Flash) ─────────────────────────
-// كل ضربة يد/سلاح عندها احتمال صغير تصير وميض أسود: ضرر ضخم، برق أسود-أحمر 3D، ودفعة طاقة. بعدها "بالزون" 5 ثواني.
-const flashCd = new Map(), flashForce = new Set();
-function blackFlash(p, t) {
-  const dim = t.dimension, st = getState(p);
-  const c = center3(t), yaw = yawOf(t.location, p.location);
-  try { t.applyDamage(7 + 2 * st.rank, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
-  popShape(dim, "black_flash", c, 0.6, 2.6, 6, { yaw, a: Math.random() * 60 });
-  later(2, () => popShape(dim, "black_flash", c, 0.4, 1.8, 6, { yaw, a: 30 + Math.random() * 60 }));
-  for (let i = 0; i < 10; i++) glow(dim, c, { color: i % 2 ? [0.9, 0.1, 0.15] : [0.05, 0, 0.05], size: 0.35, life: 0.5, speed: 3 });
-  pushAway(p.location, t, 1.6, 0.4);
-  shake(p, 0.35, 0.25);
-  sfx(dim, "sh.kat_exec", t.location, 1.3, 0.6);
-  sfx(dim, "sh.collapse", t.location, 1.1, 0.7);
-  try { p.onScreenDisplay.setTitle("§0§lBLACK §4§lFLASH", { subtitle: "§7You entered the zone", fadeInDuration: 0, stayDuration: 18, fadeOutDuration: 8 }); } catch (e) { /* */ }
-  addEnergy(p, 20);
-  effect(p, "strength", 100, 0);
-  st.flashes = (st.flashes || 0) + 1;
-  saveState(p, st);
+// ── طبع كل قدرة لما تنزل نجمتها على عدو ──
+function starFlavor(p, e) {
+  const dim = e.dimension, c3 = center3(e);
+  switch (getState(p).power) {
+    case "crystal": popShape(dim, "crystal_cluster", e.location, 0.3, 1.3, 5); addCrystal(e, p, 1); break;
+    case "accountant": if (numberOf(e) === undefined) { setNum(e, 6); numOwners.set(e.id, { e, pid: p.id }); } else decNum(e, 2, p); break;
+    case "law": popShape(dim, "weight", { x: e.location.x, y: e.location.y + 2.4, z: e.location.z }, 0.3, 0.7, 6); effect(e, "slowness", 60, 3); effect(e, "weakness", 60, 1); break;
+    case "distance": popShape(dim, "space_cube", c3, 1.4, 0.2, 8, { s: 600 }); pullTo(p.location, e, 1.2, 0.2); break;
+    case "echo": popShape(dim, "sound_ring", c3, 0.4, 2.2, 7, { yaw: yawOf(p.location, e.location) }); later(20, () => { if (valid(e)) hurt(e, 4, p); }); break;
+    case "iron": popShape(dim, "iron_fist", c3, 1.4, 2.0, 5, { yaw: yawOf(p.location, e.location) }); pushAway(p.location, e, 1.6, 0.4); break;
+    case "wind": popShape(dim, "wind_crescent", c3, 0.6, 1.8, 6, { s: 900 }); try { e.applyKnockback({ x: 0, z: 0 }, 0.8); } catch (err) { /* */ } break;
+    case "borrower": popShape(dim, "fang_jaw", c3, 0.9, 1.3, 9, { yaw: yawOf(e.location, p.location) }); effect(e, "poison", 60, 0); break;
+    case "star": popShape(dim, "black_hole", c3, 0.2, 0.9, 10, { s: 400 }); try { e.setOnFire(3, false); } catch (err) { /* */ } break;
+    default: break;
+  }
 }
+// ── سقوط النجوم ──
+function starfallDescent(p) {
+  const st = getState(p);
+  if (!st.power) { notify(p, "§cYou have no power", 40); return; }
+  if (!starfallUnlocked(st)) { notify(p, "§cStarfall Descent unlocks at rank Trainee", 60); return; }
+  if (ascendant(p)) { notify(p, "§eYou are already Ascendant", 30); return; }
+  const c = cst(p);
+  if (c.n < STAR_MAX) { notify(p, `§7Constellation ${c.n}/7: use different skills, weapon skills and counters to light it`, 60); return; }
+  const dim = p.dimension, pw = POWERS[st.power], now = system.currentTick;
+  const from = Array.from({ length: STAR_MAX }, (_, i) => (c.ents[i] && valid(c.ents[i]) ? { ...c.ents[i].location } : starPos(p, i, now)));
+  c.ents.forEach(removeFx); c.ents = []; c.n = 0; c.lastKey = "";
+  for (const q of world.getAllPlayers()) {
+    try {
+      if (q.dimension.id !== dim.id || dist2d(q.location, p.location) > 40) continue;
+      q.onScreenDisplay.setTitle("§e§l✦ STARFALL ✦", { subtitle: `${pw.color}${pw.name} §7descends`, fadeInDuration: 4, stayDuration: 40, fadeOutDuration: 10 });
+    } catch (e) { /* */ }
+  }
+  sfx(dim, "sh.supernova_charge", p.location, 1.4, 1.2);
+  // 1) النجوم ترتفع للسما وترسم الكوكبة بكبر
+  const sky = from.map((f, i) => ({ x: p.location.x + (f.x - p.location.x) * 4, y: p.location.y + 10 + (i % 3), z: p.location.z + (f.z - p.location.z) * 4 }));
+  const rising = from.map((f) => shapeFx(dim, "star5", f, { r: 0.35, s: 500, life: 40 }));
+  tween(14, 1, (k) => rising.forEach((e, i) => { moveShape(e, { x: from[i].x + (sky[i].x - from[i].x) * k, y: from[i].y + (sky[i].y - from[i].y) * k, z: from[i].z + (sky[i].z - from[i].z) * k }); setShape(e, "sh:r", 0.35 + 0.75 * k); }), () => {
+    for (let i = 0; i < sky.length - 1; i++) pixLine(dim, sky[i], sky[i + 1], STAR_WHITE, 10, 0.25, 0.9);
+    rising.forEach(removeFx);
+    // 2) كل نجمة تنزل على عدو (الأقوى أول)
+    const foes = enemiesNear(dim, p.location, 16, p.id).sort((a, b) => {
+      const ha = a.getComponent("minecraft:health"), hb = b.getComponent("minecraft:health");
+      return (hb ? hb.effectiveMax : 0) - (ha ? ha.effectiveMax : 0);
+    });
+    sky.forEach((top, i) => later(4 + i * 3, () => {
+      const e = foes.length ? foes[i % foes.length] : undefined;
+      const dest = e && valid(e) ? center3(e) : { x: p.location.x + (Math.random() - 0.5) * 10, y: p.location.y, z: p.location.z + (Math.random() - 0.5) * 10 };
+      const dx = dest.x - top.x, dy = dest.y - top.y, dz = dest.z - top.z, l = Math.hypot(dx, dy, dz) || 1;
+      sfx(dim, "sh.meteor_fall", top, 0.8, 1.4);
+      flyShape(dim, "star5", top, { x: dx / l, y: dy / l, z: dz / l }, 1.6, l, { r: 1.1, w: 900 }, undefined, (end) => {
+        popShape(dim, "nova", end, 0.3, 1.7, 7, { s: 400, ease: "out" });
+        rockBurst(dim, end, 2, 0.8);
+        sfx(dim, "sh.const_zap", end, 1.1, 0.8 + i * 0.06);
+        if (e && valid(e)) { hurt(e, 8 + 2 * getState(p).rank, p); starFlavor(p, e); }
+        shake(p, 0.12, 0.1);
+      });
+    }));
+    // 3) تصير صاعد
+    later(4 + sky.length * 3 + 10, () => becomeAscendant(p));
+  });
+}
+function becomeAscendant(p) {
+  if (!valid(p)) return;
+  const old = ascend.get(p.id);
+  if (old) removeFx(old.halo);
+  const halo = shapeFx(p.dimension, "star_halo", headPos(p), { r: 1.3, s: 90, life: ASCEND_T + 4 });
+  ascend.set(p.id, { until: system.currentTick + ASCEND_T, halo });
+  effect(p, "resistance", ASCEND_T, 0);
+  sfxPlayer(p, "sh.kat_levelup", 1, 1.2);
+  notify(p, "§e§lASCENDANT §r§7: faster skills, stronger hits, every skill fires a star", 90);
+  let t = 0;
+  const h = system.runInterval(() => {
+    try {
+      t += 2;
+      if (!valid(p) || !ascendant(p)) { system.clearRun(h); removeFx(halo); ascend.delete(p.id); if (valid(p)) notify(p, "§7Your Ascendant state faded", 40); return; }
+      const hp = headPos(p);
+      moveShape(halo, { x: hp.x, y: hp.y + 0.55, z: hp.z });
+    } catch (e) { system.clearRun(h); removeFx(halo); }
+  }, 2);
+}
+// كل مهارة وانت صاعد تطلق نجمة على أقرب عدو
+function ascendStar(p) {
+  if (!ascendant(p)) return;
+  const e = nearestEnemy(p, 12);
+  if (!e) return;
+  const from = { ...headPos(p), y: headPos(p).y + 0.6 }, to = center3(e);
+  const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
+  flyShape(p.dimension, "star5", from, { x: dx / l, y: dy / l, z: dz / l }, 1.5, l, { r: 0.6, w: 900 }, undefined, () => { if (valid(e)) { hurt(e, 5, p); popShape(e.dimension, "nova", center3(e), 0.2, 0.9, 5); } });
+}
+// ضوء النجمة: سنيك + استعمال الختم = 3 نجوم تنزل عليك وتشفيك
+function starlightMend(p) {
+  const c = cst(p);
+  if (c.n < 3) { notify(p, `§7Starlight Mend needs 3 lit stars (${c.n}/7)`, 40); return; }
+  const pts = c.ents.slice(-3).map((e) => ({ ...e.location }));
+  c.n -= 3;
+  pts.forEach((f, i) => {
+    const s2 = shapeFx(p.dimension, "star5", f, { r: 0.5, w: 700, life: 14 });
+    tween(10, 1, (k) => { const h = center3(p); moveShape(s2, { x: f.x + (h.x - f.x) * k, y: f.y + (h.y - f.y) * k, z: f.z + (h.z - f.z) * k }); });
+  });
+  later(10, () => {
+    try { const hp = p.getComponent("minecraft:health"); hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 6)); } catch (e) { /* */ }
+    effect(p, "regeneration", 40, 0);
+    popShape(p.dimension, "nova", center3(p), 0.2, 1.0, 6);
+    sfx(p.dimension, "sh.ready", p.location, 1, 1.3);
+    notify(p, "§eStarlight Mend: +6 health", 40);
+  });
+}
+// ── الرد النجمي ──
+const counterWin = new Map(); // id العدو -> { pid, until }
+world.afterEvents.entityHurt.subscribe((ev) => {
+  try {
+    const v = ev.hurtEntity;
+    if (v.typeId !== "minecraft:player") return;
+    const a = ev.damageSource && ev.damageSource.damagingEntity;
+    if (!a || a.typeId === "minecraft:player" || isFriendly(a) || !a.getComponent("minecraft:health")) return;
+    if (dist2d(a.location, v.location) > 5) return;
+    const now = system.currentTick, w = counterWin.get(a.id);
+    if (w && w.until > now) return;
+    counterWin.set(a.id, { pid: v.id, until: now + 20 });
+    followShape(a, "star5", 20, { r: 0.5, w: 1080, dy: 0.7 });
+    sfxPlayer(v, "sh.select", 0.6, 1.9);
+  } catch (e) { /* */ }
+});
 world.afterEvents.entityHitEntity.subscribe((ev) => {
   try {
     const p = ev.damagingEntity, t = ev.hitEntity;
-    if (!p || p.typeId !== "minecraft:player" || !t || t.typeId === "sh:trainer" || isFriendly(t)) return;
-    if (!t.getComponent("minecraft:health")) return;
-    const now = system.currentTick;
-    if (now < (flashCd.get(p.id) ?? 0)) return;
-    const forced = flashForce.delete(p.id);
-    if (!forced && Math.random() >= (getEnergy(p) >= 50 ? 0.1 : 0.06)) return;
-    flashCd.set(p.id, now + 60);
-    blackFlash(p, t);
+    if (!p || p.typeId !== "minecraft:player" || !t) return;
+    const w = counterWin.get(t.id);
+    if (!w || w.pid !== p.id || system.currentTick > w.until) return;
+    counterWin.delete(t.id);
+    starlitCounter(p, t);
   } catch (e) { /* */ }
 });
+function starlitCounter(p, t) {
+  const st = getState(p), dim = t.dimension, c3 = center3(t);
+  try { t.applyDamage(6 + Math.round(1.5 * st.rank), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
+  effect(t, "slowness", 40, 3);
+  effect(t, "weakness", 40, 1);
+  pushAway(p.location, t, 1.2, 0.3);
+  popShape(dim, "nova", c3, 0.3, 1.6, 6, { s: 500, ease: "out" });
+  fling(dim, "star5", c3, 3, 1, 0.3, 0.5);
+  shake(p, 0.2, 0.15);
+  sfx(dim, "sh.const_zap", t.location, 1.3, 1.1);
+  sfx(dim, "sh.guard_slam", t.location, 0.8, 1.5);
+  notify(p, "§e§l✦ STARLIT COUNTER", 25);
+  st.counters = (st.counters || 0) + 1;
+  saveState(p, st);
+  lightStar(p, `counter${system.currentTick}`, 2);
+}
+system.runInterval(() => { const now = system.currentTick; for (const [id, w] of [...counterWin]) if (w.until < now) counterWin.delete(id); }, 100);
 
-// ───────────────────────── التوسع الإقليمي (Domain Expansion) ─────────────────────────
-// يحتاج طاقة 100% ورتبة Trainee. قبة 3D بلون قدرتك نصف قطرها 10 بلوكات و12 ثانية:
-// الأعداء ما يطلعون، كولداون مهاراتك ينقص 65%، وكل ثانيتين "ضربة مؤكدة" خاصة بقدرتك على كل من بالداخل.
-const DOMAIN_R = 10, DOMAIN_T = 240;
-const DOMAINS = {
-  crystal: { name: "Crystal Cathedral", center: "crystal_cluster", cy: 0.0, cr: 2.6, circle: 4 },
-  accountant: { name: "Infinite Ledger", center: "digit_0", cy: 5.5, cr: 2.6, circle: 0 },
-  law: { name: "Court of Absolute Law", center: "clock", cy: 5.5, cr: 3.0, circle: 1 },
-  distance: { name: "Folded Horizon", center: "space_cube", cy: 5.0, cr: 2.4, circle: 2 },
-  echo: { name: "Hall of Endless Echoes", center: "sound_ring", cy: 5.0, cr: 3.0, circle: 3 },
-  iron: { name: "Iron Fortress", center: "weight", cy: 4.0, cr: 2.2, circle: 4 },
-  wind: { name: "Eye of the Storm", center: "tornado", cy: 0.0, cr: 2.8, circle: 3 },
-  borrower: { name: "Primal Menagerie", center: "hunter_eye", cy: 5.5, cr: 3.0, circle: 0 },
-  star: { name: "Starfall Sanctuary", center: "black_hole", cy: 5.5, cr: 1.8, circle: 2 },
-};
-const domains = new Map();
-function inDomain(p) { const d = domains.get(p.id); return d && system.currentTick < d.until ? d : undefined; }
-function expandDomain(p) {
-  const st = getState(p);
-  if (!st.power) { notify(p, "§cYou have no power", 40); return; }
-  if (!domainUnlocked(st)) { notify(p, "§cDomain Expansion unlocks at rank Trainee", 60); return; }
-  if (inDomain(p)) { notify(p, "§dYour domain is already open", 30); return; }
-  const en = getEnergy(p);
-  if (en < 100) { notify(p, `§7Cursed energy ${Math.floor(en)}/100: fight to fill it`, 50); return; }
-  energyMap.set(p.id, 0);
-  const dim = p.dimension, c = { ...p.location }, info = DOMAINS[st.power], pw = POWERS[st.power];
-  try { p.camera.fade({ fadeColor: { red: 0, green: 0, blue: 0 }, fadeTime: { fadeInTime: 0.15, holdTime: 0.35, fadeOutTime: 0.7 } }); } catch (e) { /* */ }
-  for (const q of world.getAllPlayers()) {
-    try {
-      if (q.dimension.id !== dim.id || dist2d(q.location, c) > 40) continue;
-      q.onScreenDisplay.setTitle("§5§lDOMAIN EXPANSION", { subtitle: `${pw.color}§l${info.name}`, fadeInDuration: 6, stayDuration: 46, fadeOutDuration: 12 });
-    } catch (e) { /* */ }
-  }
-  sfx(dim, "sh.supernova_charge", c, 1.6, 0.7);
-  later(8, () => { sfx(dim, "sh.boundary", c, 1.6, 0.6); sfx(dim, "sh.absolute", c, 1.4, 0.8); shake(p, 0.3, 0.6); });
-  const shapes = [];
-  const dome = shapeFx(dim, `dome_${st.power}`, c, { r: 0.1, s: 5, life: DOMAIN_T + 14 });
-  if (dome) { shapes.push(dome); tween(14, 1, (k) => setShape(dome, "sh:r", (DOMAIN_R / 2.5) * (1 - (1 - k) * (1 - k)))); }
-  const mid = shapeFx(dim, info.center, { x: c.x, y: c.y + info.cy, z: c.z }, { r: info.cr, s: 40, p: info.center === "sound_ring" ? 90 : 0, life: DOMAIN_T + 4 });
-  if (mid) shapes.push(mid);
-  const circle = spawnFx(dim, "circle", c, info.circle, DOMAIN_R, DOMAIN_T + 4);
-  if (circle) shapes.push(circle);
-  effect(p, "resistance", DOMAIN_T, 1);
-  const d = { power: st.power, c, dim, until: system.currentTick + DOMAIN_T, captured: new Map(), shapes };
-  for (const e of enemiesNear(dim, c, DOMAIN_R, p.id)) d.captured.set(e.id, e);
-  domains.set(p.id, d);
-  let t = 0;
-  d.h = system.runInterval(() => {
-    try {
-      t += 10;
-      if (!valid(p) || t >= DOMAIN_T) { endDomain(p); return; }
-      for (const e of enemiesNear(dim, c, DOMAIN_R, p.id)) d.captured.set(e.id, e);
-      for (const [id, e] of [...d.captured]) {
-        if (!valid(e)) { d.captured.delete(id); continue; }
-        const dd = dist2d(e.location, c);
-        if (dd > DOMAIN_R - 0.8) {
-          const k = (DOMAIN_R - 2) / dd;
-          safeTeleport(e, { x: c.x + (e.location.x - c.x) * k, y: e.location.y, z: c.z + (e.location.z - c.z) * k });
-        }
-      }
-      if (t % 40 === 0) domainPulse(p, d);
-    } catch (e) { /* */ }
-  }, 10);
-  notify(p, `${pw.color}§l${info.name}§r§7: enemies cannot leave, your skills recharge fast`, 100);
-}
-function endDomain(p) {
-  const d = domains.get(p.id);
-  if (!d) return;
-  domains.delete(p.id);
-  system.clearRun(d.h);
-  const dome = d.shapes[0];
-  tween(8, 1, (k) => setShape(dome, "sh:r", (DOMAIN_R / 2.5) * (1 - k)), () => d.shapes.forEach(removeFx));
-  sfx(d.dim, "sh.blackhole_end", d.c, 1.2, 1.2);
-  if (valid(p)) notify(p, "§7Your domain collapsed", 40);
-}
-// الضربة المؤكدة لكل قدرة
-function domainPulse(p, d) {
-  const dim = d.dim, list = [...d.captured.values()].filter((e) => valid(e));
-  if (d.power === "echo") popShape(dim, "sound_ring", { x: d.c.x, y: d.c.y + 0.5, z: d.c.z }, 1, DOMAIN_R / 0.9, 10, { p: 90, ease: "out" });
-  if (d.power === "borrower") { effect(p, "strength", 50, 1); effect(p, "speed", 50, 1); effect(p, "regeneration", 50, 0); }
-  list.slice(0, 8).forEach((e, i) => later(i * 2, () => {
-    if (!valid(e)) return;
-    const c3 = center3(e);
-    switch (d.power) {
-      case "crystal": popShape(dim, "crystal_cluster", e.location, 0.3, 1.3, 5); hurt(e, 5, p); addCrystal(e, p, 1); break;
-      case "accountant": if (numberOf(e) === undefined) { setNum(e, 6); numOwners.set(e.id, { e, pid: p.id }); } else decNum(e, 2, p); hurt(e, 2, p); break;
-      case "law": popShape(dim, "weight", { x: e.location.x, y: e.location.y + 2.6, z: e.location.z }, 0.3, 0.7, 6); effect(e, "slowness", 45, 4); effect(e, "weakness", 45, 1); hurt(e, 4, p); break;
-      case "distance": safeTeleport(e, { x: d.c.x + (Math.random() - 0.5) * 3, y: d.c.y, z: d.c.z + (Math.random() - 0.5) * 3 }); popShape(dim, "space_cube", c3, 1.4, 0.2, 8, { s: 600 }); hurt(e, 4, p); break;
-      case "echo": hurt(e, 5, p); pushAway(d.c, e, 0.5, 0.2); break;
-      case "iron": {
-        const from = { x: d.c.x, y: d.c.y + 6, z: d.c.z }, dx = c3.x - from.x, dy = c3.y - from.y, dz = c3.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
-        flyShape(dim, "iron_fist", from, { x: dx / l, y: dy / l, z: dz / l }, 1.4, Math.max(1, l - 0.6), { r: 1.2 }, undefined, () => { if (valid(e)) { hurt(e, 6, p); rockBurst(dim, e.location, 2, 0.8); } });
-        break;
-      }
-      case "wind": popShape(dim, "wind_crescent", c3, 0.6, 1.8, 6, { s: 900 }); try { e.applyKnockback({ x: 0, z: 0 }, 0.8); } catch (err) { /* */ } hurt(e, 4, p); break;
-      case "borrower": popShape(dim, "fang_jaw", c3, 0.9, 1.3, 9, { yaw: yawOf(e.location, p.location) }); effect(e, "poison", 40, 0); hurt(e, 4, p); break;
-      case "star": {
-        if (i > 2) break;
-        const top = { x: e.location.x + 3, y: e.location.y + 9, z: e.location.z - 3 }, dx = e.location.x - top.x, dy = e.location.y - top.y, dz = e.location.z - top.z, l = Math.hypot(dx, dy, dz);
-        const dir = { x: dx / l, y: dy / l, z: dz / l };
-        flyShape(dim, "meteor", top, dir, 1.3, l, { r: 1.2, w: 300 }, undefined, (end) => { for (const o of enemiesNear(dim, end, 2.5, p.id)) { hurt(o, 7, p); try { o.setOnFire(3, false); } catch (err) { /* */ } } popShape(dim, "nova", end, 0.3, 1.4, 6); });
-        break;
-      }
-      default: hurt(e, 4, p);
-    }
-  }));
-}
-// التدفق العكسي (سنيك + استعمال أيتم التوسع): 40 طاقة = شفاء
-function reverseFlow(p) {
-  const en = getEnergy(p);
-  if (en < 40) { notify(p, `§7Reverse Flow needs 40 cursed energy (${Math.floor(en)})`, 40); return; }
-  energyMap.set(p.id, en - 40);
-  try { const hp = p.getComponent("minecraft:health"); hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 8)); } catch (e) { /* */ }
-  effect(p, "regeneration", 60, 1);
-  popShape(p.dimension, "star5", { x: p.location.x, y: p.location.y + 1.2, z: p.location.z }, 0.3, 1.4, 10, { s: 500 });
-  for (let i = 0; i < 12; i++) pix(p.dimension, { x: p.location.x + (Math.random() - 0.5) * 1.2, y: p.location.y + Math.random() * 2, z: p.location.z + (Math.random() - 0.5) * 1.2 }, { color: [0.7, 1, 0.8], size: 0.2, life: 1, rise: 1.5 });
-  sfx(p.dimension, "sh.ready", p.location, 1, 1.3);
-  notify(p, "§aReverse Flow: +8 health", 40);
-}
 // إخفاء قلوب ماينكرافت تحت (القلوب صارت فوق بالـHUD) ومجسمها الأصلي اللي كان يطلع فوق مجسمنا
 function hideVanillaHud(p) {
   try {
@@ -2766,7 +2814,7 @@ function weaponActive(p, id) {
   if (now < ready) { notify(p, `§7${sk.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15); return; }
   let ok = false;
   try { ok = sk.fn(p); } catch (e) { ok = false; }
-  if (ok) { weaponCd.set(key, now + (typeof sk.cd === "function" ? sk.cd(p) : sk.cd)); notify(p, `§f⚔ ${sk.name}`, 20); }
+  if (ok) { weaponCd.set(key, now + Math.round((ascendant(p) ? 0.5 : 1) * (typeof sk.cd === "function" ? sk.cd(p) : sk.cd))); notify(p, `§f⚔ ${sk.name}`, 20); lightStar(p, key); }
   else weaponCd.set(key, now + 6);
 }
 
@@ -3589,7 +3637,7 @@ function i2c(k) { return k < 0.5 ? [0.4 + k, 0.6 + k * 0.4, 1.0] : [1.0, 0.85 + 
 // تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 5)، وكل ليفل يفتح مهارة جديدة.
 // السنيك (الجلوس) يبدل المهارة، والاستعمال ينفذها. المؤثرات: شظايا بكسل بنفسجية تحيط بالنصل.
 const KATANA = "sh:dark_katana";
-const DOMAIN_ITEM = "sh:skill_domain";
+const SIGIL_ITEM = "sh:skill_starfall";
 const KAT_MAX = 5;
 const KAT_NEED = [0, 40, 90, 160, 260]; // خبرة الانتقال من الليفل i إلى i+1
 const KATANA_PURPLE = [0.7, 0.35, 1.0];
@@ -3763,11 +3811,12 @@ function useSkill(p, skill) {
   try { res = SKILL_FN[skill.id](p); } catch (e) { res = false; }
   if (res && typeof res.then === "function") {
     cooldowns.set(key, now + 40); // يمنع الضغط المتكرر أثناء القائمة
-    res.then((ok) => cooldowns.set(key, system.currentTick + (ok ? skill.cooldown : 6))).catch(() => cooldowns.set(key, system.currentTick + 6));
+    res.then((ok) => { cooldowns.set(key, system.currentTick + Math.round((ascendant(p) ? 0.4 : 1) * (ok ? skill.cooldown : 6))); if (ok) { lightStar(p, skill.id); ascendStar(p); } }).catch(() => cooldowns.set(key, system.currentTick + 6));
     return;
   }
-  const dmul = inDomain(p) ? 0.35 : 1;
+  const dmul = ascendant(p) ? 0.4 : 1;
   cooldowns.set(key, now + Math.round(dmul * (typeof res === "number" && res > 0 ? res : res ? skill.cooldown : 6)));
+  if (res) { lightStar(p, skill.id); ascendStar(p); }
 }
 
 world.afterEvents.itemUse.subscribe((ev) => {
@@ -3780,7 +3829,7 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (SCROLLS[id]) { useScroll(p, id); return; }
     if (id === "sh:skill_scroll") { useSkillScroll(p); return; }
     if (id === "sh:star_shard") { useStarShard(p); return; }
-    if (id === DOMAIN_ITEM) { if (p.isSneaking) reverseFlow(p); else expandDomain(p); return; }
+    if (id === SIGIL_ITEM) { if (p.isSneaking) starlightMend(p); else starfallDescent(p); return; }
     if (id === "sh:explorer_compass") { useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
     const skill = ITEM_TO_SKILL[id];
@@ -3820,7 +3869,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         saveState(p, s5);
         if (ups.length) announceUps(p, ups);
       }
-      giveDomainItem(p, true);
+      giveSigil(p, true);
       if (!st.power) {
         const s4 = getState(p);
         if (!s4.shardDropped) { s4.shardDropped = true; saveState(p, s4); later(100, () => shardMeteor(p)); }
@@ -4483,7 +4532,7 @@ system.runInterval(() => {
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:shard          يعطيك شظية نجمة (للسحب)
-//   /scriptevent sh:energy 100     يملي الطاقة الملعونة (ويعطيك أيتم التوسع إذا مفتوح) | sh:blackflash الضربة الجاية وميض أسود
+//   /scriptevent sh:stars 7        يضوي نجوم الكوكبة (ويعطيك ختم النجمة إذا مفتوح)
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars on يشغل تلوين الأرض المؤقت (مطفي افتراضياً)
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
@@ -4504,10 +4553,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aKatana level: ${n}`);
-    } else if (ev.id === "sh:energy") {
-      energyMap.set(p.id, Math.max(0, Math.min(100, parseInt(msg, 10) || 100))); giveDomainItem(p, false); say(p, `§dCursed energy: ${getEnergy(p)}`);
-    } else if (ev.id === "sh:blackflash") {
-      flashForce.add(p.id); flashCd.delete(p.id); say(p, "§4Your next hit is a Black Flash");
+    } else if (ev.id === "sh:stars") {
+      const c = cst(p), v = parseInt(msg, 10); c.n = Math.max(0, Math.min(STAR_MAX, Number.isNaN(v) ? STAR_MAX : v)); c.last = system.currentTick; giveSigil(p, false); say(p, `§eConstellation: ${c.n}/7`);
     } else if (ev.id === "sh:shard") {
       giveItem(p, "sh:star_shard"); say(p, "§bStar Shard added");
     } else if (ev.id === "sh:weapons") {

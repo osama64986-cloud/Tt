@@ -697,51 +697,16 @@ def _(S):
             S.box((0, 0, 11), (4.6, 2.6, 1.2), GOLD_HI, rot=[0, i * 360 / 14, 0], pivot=(0, 0, 0))
 
 
-# ───────────────────────── التوسع الإقليمي + الوميض الأسود ─────────────────────────
-DOMAIN_COLORS = {
-    "iron": ((150, 158, 175), (225, 230, 240)), "wind": ((70, 200, 120), (210, 255, 225)), "echo": ((40, 200, 210), (210, 255, 255)),
-    "crystal": ((230, 90, 190), (255, 210, 240)), "accountant": ((230, 170, 40), (255, 236, 150)), "borrower": ((230, 140, 30), (255, 220, 140)),
-    "distance": ((50, 130, 240), (200, 230, 255)), "law": ((140, 70, 230), (220, 190, 255)), "star": ((40, 50, 140), (255, 220, 120)),
-}
-
-
-def dome(S, col, hi):
-    """قبة شبكية (قاعدتها y=0، نصف قطرها 40 بكسل): 12 ضلع + 4 حلقات + تاج بالقمة."""
-    R = 40.0
-    for i in range(12):
-        bn = S.bone(f"m{i}", rot=[0, i * 30, 0] if i else None)
-        for k in range(9):
-            a0 = math.radians(k * 10 + 5)
-            y, z = R * math.sin(a0), R * math.cos(a0)
-            S.box((0, y, z), (2.2, 9.0, 2.2), hi if k % 3 == 0 else col, bone=bn, rot=[(k * 10 + 5), 0, 0], pivot=(0, y, z))
-    for lat, n in ((12, 36), (35, 30), (58, 22), (78, 10)):
-        a = math.radians(lat)
-        ring(S, (0, R * math.sin(a), 0), R * math.cos(a), n, (2 * math.pi * R * math.cos(a) / n * 0.92, 1.6, 1.6), hi if lat in (12, 58) else col)
-    ring(S, (0, 0.6, 0), R, 40, (6.6, 1.2, 3.0), hi)
-    S.box((0, R + 1.5, 0), (5, 3, 5), hi, rot=[0, 45, 0])
-
-
-for _k, (_c, _h) in DOMAIN_COLORS.items():
-    shape(f"dome_{_k}", ground=True)(lambda S, c=_c, h=_h: dome(S, c, h))
-
-
-@shape("black_flash")
+# ───────────────────────── هالة الصاعد (Ascendant) ─────────────────────────
+@shape("star_halo")
 def _(S):
-    """برق أسود بحافة حمرة: 6 صواعق متكسرة تطلع من المركز (تواجه -Z)."""
-    BLK, RED, WH = (8, 0, 6), (235, 25, 40), (255, 220, 225)
-    for i in range(6):
-        bn = S.bone(f"b{i}", rot=[0, 0, i * 60 + 12])
-        x, y = 0.0, 2.0
-        for k in range(6):
-            dx = (3.0 if k % 2 == 0 else -2.4) * (1 - k * 0.1)
-            L = 4.2 - k * 0.35
-            S.box((x + dx / 2, y + L / 2, 0), (2.6 - k * 0.3 + 1.2, L + 0.6, 1.6), RED, bone=bn)
-            S.box((x + dx / 2, y + L / 2, -0.5), (1.4 - k * 0.15, L, 1.4), BLK, bone=bn, flat=True)
-            x += dx * 0.5
-            y += L
-    S.box((0, 0, -0.6), (5, 5, 2), BLK, rot=[0, 0, 45], flat=True)
-    S.box((0, 0, 0.4), (7, 7, 1.6), RED, rot=[0, 0, 45])
-    S.box((0, 0, -1.4), (1.6, 1.6, 0.6), WH, flat=True)
+    """هالة أفقية فوق الراس: حلقة ذهب رفيعة و7 نجوم صغيرة واقفة عليها."""
+    ring(S, (0, 0, 0), 9, 28, (2.2, 0.8, 0.8), STAR_G, col2=STAR_W)
+    for i in range(7):
+        bn = S.bone(f"h{i}", rot=[0, i * 360 / 7, 0] if i else None)
+        for (y, w) in ((0.0, 1.0), (1.2, 2.6), (2.4, 1.0)):
+            S.box((0, y + 0.5, 9), (w, 1.2, 1.0), STAR_W if y == 1.2 else STAR_G, bone=bn)
+        S.box((0, 1.7, 9), (1.0, 3.4, 1.0), STAR_G, bone=bn)
 
 
 # ───────────────────────── الإخراج ─────────────────────────
