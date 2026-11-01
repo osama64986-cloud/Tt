@@ -20,7 +20,7 @@
         "state": "controller.animation.sh_imp.state",
         "idle": "animation.sh_imp.idle",
         "close": "animation.sh_imp.rake",
-        "wings": "animation.sh_imp.wings"
+        "move": "animation.sh_imp.move"
       },
       "scripts": {
         "animate": [
@@ -28,7 +28,7 @@
           "walk",
           "state",
           "look",
-          "wings"
+          "move"
         ],
         "scale": "1.25"
       },

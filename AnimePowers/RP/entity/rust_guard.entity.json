@@ -19,14 +19,16 @@
         "attack": "animation.sh_guard.slam",
         "state": "controller.animation.sh_guard.state",
         "idle": "animation.sh_guard.idle",
-        "close": "animation.sh_guard.sweep"
+        "close": "animation.sh_guard.sweep",
+        "move": "animation.sh_guard.move"
       },
       "scripts": {
         "animate": [
           "idle",
           "walk",
           "state",
-          "look"
+          "look",
+          "move"
         ],
         "scale": "1.0"
       },

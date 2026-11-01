@@ -1,42 +1,44 @@
 {
- "format_version": "1.10.0",
- "minecraft:client_entity": {
-  "description": {
-   "identifier": "sh:shadow_hound",
-   "materials": {
-    "default": "entity_alphatest"
-   },
-   "textures": {
-    "default": "textures/entity/sh_hound"
-   },
-   "geometry": {
-    "default": "geometry.sh_hound"
-   },
-   "animations": {
-    "idle": "animation.sh_hound.idle",
-    "walk": "animation.sh_hound.walk",
-    "state": "controller.animation.sh_hound.state",
-    "look": "animation.sh.look",
-    "windup": "animation.sh_hound.windup",
-    "attack": "animation.sh_hound.pounce",
-    "close": "animation.sh_hound.bite"
-   },
-   "scripts": {
-    "animate": [
-     "idle",
-     "walk",
-     "state",
-     "look"
-    ],
-    "scale": "1.9"
-   },
-   "render_controllers": [
-    "controller.render.sh_default"
-   ],
-   "spawn_egg": {
-    "base_color": "#262230",
-    "overlay_color": "#8a50ff"
-   }
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:shadow_hound",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_hound"
+      },
+      "geometry": {
+        "default": "geometry.sh_hound"
+      },
+      "animations": {
+        "idle": "animation.sh_hound.idle",
+        "walk": "animation.sh_hound.walk",
+        "state": "controller.animation.sh_hound.state",
+        "look": "animation.sh.look",
+        "windup": "animation.sh_hound.windup",
+        "attack": "animation.sh_hound.pounce",
+        "close": "animation.sh_hound.bite",
+        "move": "animation.sh_hound.move"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "move"
+        ],
+        "scale": "1.9"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#262230",
+        "overlay_color": "#8a50ff"
+      }
+    }
   }
- }
 }
