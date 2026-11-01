@@ -154,6 +154,17 @@ function usageOf(s) {
 }
 
 
+// رتب الوحوش (سلم خاص بيهم، مطابق لألوان الصدوع): كل رتبة وحش تقابل رتبة لاعب بنفس الرقم
+const MON_RANKS = [
+  { name: "Lowly", col: "§9", desc: "the weakest spawn of the Abyss (blue rifts)" },
+  { name: "Feral", col: "§a", desc: "hungrier and faster, they hunt in the open" },
+  { name: "Vile", col: "§5", desc: "the Abyss has tainted them (violet rifts)" },
+  { name: "Cursed", col: "§d", desc: "they hit harder and carry the Abyss's strength" },
+  { name: "Dread", col: "§c", desc: "veterans of a hundred hunts (crimson rifts)" },
+  { name: "Calamity", col: "§6", desc: "one of them can empty a village" },
+  { name: "Cataclysm", col: "§4", desc: "the Abyss's own wardens (black-gold rifts)" },
+];
+const monRankName = (rk) => (rk < 0 ? "Training" : MON_RANKS[Math.min(MON_RANKS.length - 1, rk)].name);
 // وحوش: rank -1 = وحش تدريب (بلا رتبة)
 const MONSTERS = {
   "sh:training_archer": { rank: -1, xp: [20, 50], training: true },
@@ -847,15 +858,17 @@ function introStory(player) {
 // ───────────────────────── كتاب الوحوش ─────────────────────────
 const MONSTER_INFO = [
   ["sh:training_archer", "Training Archer", "Unranked", "It draws when you come close and recoils as it shoots a violet-trailed arrow. It weakens up close, and the Law of Silence stops it from shooting."],
-  ["sh:ember_imp", "Ember Imp", "Novice", "Close: a red circle marks where it will pounce, then it rakes you with fiery claws. Far (7-13 blocks): it charges a fireball and lobs it; a red circle shows where it lands, so move!"],
-  ["sh:rust_guard", "Rust Guard", "Novice", "A red circle grows around it before its ground slam, so step out. Up close it sweeps with crystal fists. Far (6-14 blocks): it tears out a boulder and throws it; dodge the red circle."],
-  ["sh:shadow_hound", "Shadow Hound", "Novice", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
-  ["sh:sand_scorpion", "Sand Scorpion", "Novice", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
+  ["sh:ember_imp", "Ember Imp", "Lowly to Cataclysm", "Close: a red circle marks where it will pounce, then it rakes you with fiery claws. Far (7-13 blocks): it charges a fireball and lobs it; a red circle shows where it lands, so move!"],
+  ["sh:rust_guard", "Rust Guard", "Lowly to Cataclysm", "A red circle grows around it before its ground slam, so step out. Up close it sweeps with crystal fists. Far (6-14 blocks): it tears out a boulder and throws it; dodge the red circle."],
+  ["sh:shadow_hound", "Shadow Hound", "Lowly to Cataclysm", "It howls to slow you, bites twice up close, and from 4-10 blocks it melts into violet smoke and appears behind you to bite. Keep turning."],
+  ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
   const st = getState(player);
   const kills = st.kills || {};
-  let body = "§5Monster Book§r\n\n";
+  let body = "§5Monster Book§r\n\n§fMonster ranks§7 (the tag above their heads; its color shows how dangerous they are for you: green easy, yellow fair, orange hard, red deadly):\n";
+  MON_RANKS.forEach((r, i) => { body += `${r.col}${i + 1}. ${r.name}§7: ${r.desc}\n`; });
+  body += "\n";
   for (const [id, name, rank, tip] of MONSTER_INFO) {
     const k = kills[id] || 0;
     body += `§e${name} §7(${rank}) §fKilled: §b${k}\n§7${k > 0 || id === "sh:training_archer" ? tip : "Kill one to reveal its info."}\n\n`;
@@ -884,6 +897,7 @@ async function showStatus(player) {
       }
     });
   } else b += st.powerless ? "\n§8Unbound§7: no power. Your body grows stronger and faster with each rank.\n" : "\n§7You have no power yet. Step on the crystal in the Star Temple.\n";
+  b += `\n§fPerfect Guard§7: ${st.rank >= GUARD_RANK ? `press sneak right as a monster's hit lands: no damage, the monster is stunned, and your next hit is a Counter. Guards so far: ${st.guards || 0}` : `§cunlocks at rank ${RANKS[GUARD_RANK]}`}\n`;
   b += `\n${riftStatusText(player)}\n§fRhythm Strike§7: ${st.rank >= RHY_RANK ? `hit enemies in a steady beat, like a drum. Your first two hits set the beat; keep hitting on it and each hit plays a rising note. 4th hit in rhythm = Rhythm, 7th = Crescendo, 10th = Finale. Best: ${st.rhyBest || 0}` : `§cunlocks at rank ${RANKS[RHY_RANK]}`}\n`;
   {
     const all = wlvAll(player), ids = Object.keys(WEAPON_SKILLS).filter((id) => all[id] || hasItem(player, id));
@@ -1128,6 +1142,7 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (needsDraw(getState(player))) later(60, () => ensureTemple(player)); } catch (e) { /* */ }
+      if (u.rank === GUARD_RANK) later(120, () => { say(player, "§f§l[Perfect Guard unlocked]§r §7Press §fsneak§7 at the very moment a monster's hit reaches you (watch its wind-up and the red circles). The hit is cancelled, the monster is stunned, and your next hit is a strong §6Counter§7. Pressing sneak over and over does not work: time it."); sfxPlayer(player, "sh.reflect", 0.8, 1.3); });
       if (u.rank === RHY_RANK) later(100, () => { say(player, "§b§l[Rhythm Strike unlocked]§r §7No item needed. Hit enemies in a steady beat, like playing a drum: your first two hits set the beat. Keep hitting on that beat and every hit plays a higher note; a soft tick tells you when the next hit is due. §fthe 4th hit in rhythm = Rhythm§7 (area hit), §dthe 7th = Crescendo§7, §6the 10th = Finale§7 (huge blast). Hitting off beat or stopping resets it. Practice: /scriptevent sh:rhythm"); sfxPlayer(player, "note.pling", 0.8, 1); later(5, () => sfxPlayer(player, "note.pling", 0.8, 1.26)); later(10, () => sfxPlayer(player, "note.pling", 0.8, 1.5)); });
     }
   }
@@ -2029,6 +2044,69 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
       rhyNote(p, r.combo + 1);
       if (r.combo >= 2) notify(p, `§b♪ ${r.combo}`, 15);
     }
+  } catch (e) { /* */ }
+});
+
+// ═════════════════════════ الصد المثالي (Perfect Guard) ═════════════════════════
+// من رتبة Trainee: اضغط سنيك بنفس لحظة ما توصلك ضربة وحش (خلال 0.35 ثانية من الضغطة) = الضرر يرجع،
+// الوحش يندفع ويتشل ثانيتين ونص، وضربتك الجاية خلال ثانيتين ونص = ضربة مضادة قوية.
+// الضغط المتكرر ما ينفع: بعد كل ضغطة لازم تنتظر ثانية حتى تنحسب ضغطة صد جديدة.
+const GUARD_RANK = 1, GUARD_WIN = 7, GUARD_GAP = 20;
+const sneakPrev = new Map(), guardAt = new Map(), riposte = new Map();
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const p of world.getAllPlayers()) {
+    try {
+      const sn = !!p.isSneaking, was = sneakPrev.get(p.id);
+      sneakPrev.set(p.id, sn);
+      if (sn && !was) { const g = guardAt.get(p.id); if (!g || now - g.at > GUARD_GAP) guardAt.set(p.id, { at: now, used: false }); }
+    } catch (e) { /* */ }
+  }
+}, 1);
+world.afterEvents.entityHurt.subscribe((ev) => {
+  try {
+    const p = ev.hurtEntity;
+    if (!p || p.typeId !== "minecraft:player") return;
+    const src = ev.damageSource && ev.damageSource.damagingEntity;
+    if (!src || src.typeId === "minecraft:player" || !valid(src)) return;
+    const g = guardAt.get(p.id), now = system.currentTick;
+    if (!g || g.used || now - g.at > GUARD_WIN) return;
+    if (getState(p).rank < GUARD_RANK) return;
+    g.used = true;
+    const hp = p.getComponent("minecraft:health");
+    if (!hp || hp.currentValue <= 0) return;
+    hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + ev.damage));
+    effect(src, "slowness", 50, 4);
+    effect(src, "weakness", 50, 1);
+    setMState(src, 0);
+    pushAway(p.location, src, 1.1, 0.3);
+    const dim = p.dimension, c = { x: (p.location.x + src.location.x) / 2, y: p.location.y + 1.2, z: (p.location.z + src.location.z) / 2 };
+    popShape(dim, "nova", c, 0.2, 0.9, 6, { s: 400, ease: "out" });
+    for (let i = 0; i < 10; i++) pix(dim, { x: c.x + (Math.random() - 0.5) * 0.6, y: c.y + (Math.random() - 0.5) * 0.6, z: c.z + (Math.random() - 0.5) * 0.6 }, { color: i % 2 ? COLORS.gold : COLORS.white, size: 0.18, life: 0.4, speed: 2.4 });
+    try { dim.playSound("random.anvil_land", p.location, { volume: 0.6, pitch: 1.7 }); } catch (e) { /* */ }
+    sfxPlayer(p, "sh.reflect", 1, 1.3);
+    shake(p, 0.08, 0.12);
+    riposte.set(p.id, { until: now + 50, tid: src.id });
+    notify(p, "§f§lPERFECT GUARD §r§7strike back now!", 30);
+    const st = getState(p); st.guards = (st.guards || 0) + 1; saveState(p, st);
+  } catch (e) { /* */ }
+});
+// الضربة المضادة: أول ضربة بعد الصد
+world.afterEvents.entityHitEntity.subscribe((ev) => {
+  try {
+    const p = ev.damagingEntity, t = ev.hitEntity;
+    if (!p || p.typeId !== "minecraft:player" || !t || isFriendly(t) || t.typeId === "sh:trainer") return;
+    const r = riposte.get(p.id);
+    if (!r || system.currentTick > r.until) return;
+    riposte.delete(p.id);
+    const st = getState(p), dmg = 6 + 2 * st.rank + (t.id === r.tid ? 4 : 0);
+    try { t.applyDamage(dmg, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
+    pushAway(p.location, t, 1.3, 0.4);
+    const c = center3(t);
+    popShape(t.dimension, "slash_gold", c, 0.6, 1.4, 5, { yaw: yawOf(c, p.location), a: 30 });
+    vanillaFx(t.dimension, "minecraft:critical_hit_emitter", c);
+    sfx(t.dimension, "sh.kat_exec", t.location, 0.9, 1.3);
+    notify(p, `§6§lCOUNTER §r§7${dmg} dmg`, 25);
   } catch (e) { /* */ }
 });
 
@@ -4939,7 +5017,7 @@ system.runInterval(() => {
           if (rk < 0) { col = "§7"; tag = "Training"; }
           else {
             const diff = rk - st.rank;
-            tag = RANKS[rk];
+            tag = monRankName(rk);
             col = diff <= -2 ? "§a" : diff <= 0 ? "§e" : diff === 1 ? "§6" : "§c";
             if (diff >= 2 && st.rank < HARD_RANK_FROM) tag += " ⚡";
           }

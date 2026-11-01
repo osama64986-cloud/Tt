@@ -479,6 +479,33 @@ export const __sim = {
         if (!loot.includes("sh:xp_scroll_big")) failures.push("مكافآت الصدع ما نزلت");
       }
     }
+    // الصد المثالي: سنيك بلحظة الضربة = الضرر يرجع + الوحش يتشل + ضربة مضادة
+    {
+      setState({ ...baseState("iron"), rank: 1 }); hold(""); player.isSneaking = false; advance(30);
+      spawnZombies(1, true); const z = entities[0]; z._hp = 400; z._max = 400; player._max = 20;
+      const hitPlayer = (d) => { player._hp -= d; fire("entityHurt", { hurtEntity: player, damage: d, damageSource: { damagingEntity: z, cause: "entityAttack" } }); };
+      const res = [];
+      // بالتوقيت: سنيك ثم ضربة بعد 3 تكات
+      player._hp = 20; player.isSneaking = true; advance(3); hitPlayer(6); advance(1); player.isSneaking = false;
+      const restored = player._hp; res.push(`صد بالتوقيت: صحة ${restored}/20`);
+      if (restored < 20) failures.push("الصد المثالي ما رجع الضرر");
+      const d0 = stats.damage || 0; fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(1);
+      const counter = Math.round((stats.damage || 0) - d0); res.push(`ضربة مضادة: ${counter}`);
+      if (counter <= 0) failures.push("الضربة المضادة ما صارت");
+      // متأخر: سنيك ثم ضربة بعد 15 تك = ما ينحسب
+      advance(40); player._hp = 20; player.isSneaking = true; advance(15); hitPlayer(6); advance(1); player.isSneaking = false;
+      res.push(`صد متأخر: صحة ${player._hp}/20`);
+      if (player._hp >= 20) failures.push("الصد اشتغل بتوقيت متأخر");
+      // سبام: ضغطات متكررة ما تنفع
+      advance(40); player._hp = 20; player.isSneaking = true; advance(2); player.isSneaking = false; advance(2); player.isSneaking = true; advance(2); hitPlayer(6); player.isSneaking = false;
+      res.push(`سبام سنيك: صحة ${player._hp}/20`);
+      // Novice ما عنده الصد
+      setState({ ...baseState("iron"), rank: 0 }); advance(40); player._hp = 20; player.isSneaking = true; advance(3); hitPlayer(6); player.isSneaking = false;
+      res.push(`Novice: صحة ${player._hp}/20`);
+      if (player._hp >= 20) failures.push("الصد اشتغل قبل رتبة Trainee");
+      player._hp = 20; player._valid = true; advance(60); // الضربة المضادة تنتهي
+      console.log("\nالصد المثالي:\n  " + res.join("\n  "));
+    }
     // ضربة الإيقاع: ضربات بإيقاع ثابت (من رتبة Elite)
     {
       setState({ ...baseState("iron"), rank: 2 }); hold("");
