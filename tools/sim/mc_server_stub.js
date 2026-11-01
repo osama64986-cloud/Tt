@@ -698,25 +698,28 @@ export const __sim = {
       reset(); advance(40);
       a = at(); dbl({ x: 1, y: 0 }); b = at();
       const dx1 = b.x - a.x, dz1 = b.z - a.z;
-      const side1 = Math.abs(Math.abs(dx1) - 6) < 0.6 && Math.abs(dz1) < 0.5;
+      const side1 = Math.abs(Math.abs(dx1) - 3) < 0.3 && Math.abs(dz1) < 0.5;
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();                  // ضمن الكول داون (1.8 ثانية): ما يشتغل
       const blocked = Math.hypot(b.x - a.x, b.z - a.z) < 0.5;
       advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
-      const back = Math.abs(b.z - a.z + 6) < 0.6 && Math.abs(b.x - a.x) < 0.5;     // خلف = عكس اتجاه البصر (+z)
+      const back = Math.abs(b.z - a.z + 3) < 0.3 && Math.abs(b.x - a.x) < 0.5;     // خلف = عكس اتجاه البصر (+z)
       advance(60);
       // معايرة: جهاز x موجب عنده = يمين (السرعة تبين يمين لما x موجب)
       reset(); player._vel = { x: -0.2, y: 0, z: 0 }; tap({ x: 1, y: 0 }, 14); player._vel = { x: 0, y: 0, z: 0 }; idle(40);
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();
-      const calibrated = b.x - a.x < -5.4;                                // يمين (نسبة للبصر +z) = -x
+      const calibrated = b.x - a.x < -2.7;                                // يمين (نسبة للبصر +z) = -x
       player._mv = { x: 0, y: 0 };
       // دائم: حتى لو رجعت الرتبة 0 (مثلاً ريسيت) يبقى الداش
       setState({ ...baseState("star"), rank: 0 }); advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
-      const forever = Math.abs(b.z - a.z + 6) < 0.6;
+      const forever = Math.abs(b.z - a.z + 3) < 0.3;
+      advance(60); reset(); const fa = at(); dbl({ x: 0, y: 1 }); const fb = at();
+      const noForward = Math.hypot(fb.x - fa.x, fb.z - fa.z) < 0.3;                     // للأمام ماكو داش
+      if (!noForward) failures.push("الداش اشتغل للأمام");
       console.log(`  مقفول قبل أول رتبة ${lockedOk ? "✔" : "✖"} | ينفتح بأول رتبة + إشعار ${unlockMsg ? "✔" : "✖"} | يبقى للأبد ${forever ? "✔" : "✖"}`);
       if (!lockedOk) failures.push("الداش اشتغل قبل أول رتبة");
       if (!unlockMsg) failures.push("الداش ما انفتح بأول رتبة (أو ما جاء إشعار)");
       if (!forever) failures.push("الداش اختفى بعد ما انفتح");
-      console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | كول داون 1.8 ثانية ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
+      console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | كول داون 1.8 ثانية ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | للأمام ماكو ${noForward ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
       if (!side1) failures.push(`الداش جانبي ما اشتغل أو المسافة غلط (${dx1.toFixed(1)},${dz1.toFixed(1)})`);
       if (!blocked) failures.push("الداش اشتغل ضمن الكول داون");
       if (!back) failures.push("داش الخلف ما اشتغل");

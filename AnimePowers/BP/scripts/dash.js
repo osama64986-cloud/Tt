@@ -4,14 +4,14 @@
 //  • يشتغل على لوحة المفاتيح وشاشة اللمس (جويستك) وعلى يد التحكم (عتبات ضغط/إفلات مع تأخير حتى ما يتلخبط).
 //  • ما نعرف اتجاه إشارة x,y بالضبط عند كل جهاز، فنعايرها تلقائياً: لما اللاعب يتحرك فعلاً نقارن إشارة المتجه بإشارة سرعته نسبة لاتجاه البصر
 //    ونحفظ النتيجة (sh_dashcal) حتى تبقى بالجلسات الجاية. أول ضغطة وحدة كافية لأن السرعة تبين خلال تك أو تكين.
-//  • الحركة بخطوات teleport قصيرة (4 تكات) مع فحص عوائق (بلوكتين ارتفاع) وصعود درجة بلوكة، ويوقف قبل الجدار.
+//  • الحركة بخطوات teleport قصيرة (3 تكات، 3 بلوكات بالضبط) مع فحص عوائق (بلوكتين ارتفاع) وصعود درجة بلوكة، ويوقف قبل الجدار.
 import { world, system } from "@minecraft/server";
 
 export const DASH = {
   cooldown: 36,        // 1.8 ثانية (20 تك = ثانية)
   window: 10,          // أقصى فاصل بين بداية الضغطتين (تك) ≈ نص ثانية
-  dist: 6,             // مسافة الداش (بلوكات)
-  steps: 4,            // يتوزع على 4 تكات
+  dist: 3,             // مسافة الداش: 3 بلوكات بالضبط (يمين/يسار/خلف بس، للأمام ماكو داش)
+  steps: 3,            // يتوزع على 3 تكات
   on: 0.6,             // عتبة الضغط
   off: 0.3,            // عتبة الإفلات (أقل من عتبة الضغط حتى ما يتذبذب)
 };
@@ -86,10 +86,11 @@ function stepDash(p, s) {
   const dim = p.dimension;
   let { x, y, z } = p.location;
   let moved = 0;
-  for (let q = 0; q < pl.per; q += 0.5) {
-    const nx = x + pl.dir.x * 0.5, nz = z + pl.dir.z * 0.5;
-    if (passable(dim, nx, y, nz) && passable(dim, nx, y + 1, nz)) { x = nx; z = nz; moved += 0.5; continue; }
-    if (passable(dim, nx, y + 1, nz) && passable(dim, nx, y + 2, nz) && passable(dim, x, y + 2, z)) { x = nx; z = nz; y += 1; moved += 0.5; continue; }   // درجة بلوكة
+  const n = Math.max(1, Math.ceil(pl.per / 0.5)), sub = pl.per / n;           // خطوات صغيرة (≤ نص بلوكة) مجموعها المسافة بالضبط
+  for (let q = 0; q < n; q++) {
+    const nx = x + pl.dir.x * sub, nz = z + pl.dir.z * sub;
+    if (passable(dim, nx, y, nz) && passable(dim, nx, y + 1, nz)) { x = nx; z = nz; moved += sub; continue; }
+    if (passable(dim, nx, y + 1, nz) && passable(dim, nx, y + 2, nz) && passable(dim, x, y + 2, z)) { x = nx; z = nz; y += 1; moved += sub; continue; }   // درجة بلوكة
     pl.left = 0;                                                                                                                                   // جدار: نوقف
     break;
   }
