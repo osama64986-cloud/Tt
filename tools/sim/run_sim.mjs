@@ -37,6 +37,14 @@ await W.runScenario(sc, root);
 
 console.log("\n== نتيجة المحاكي ==");
 console.log("جزيئات:", W.stats.particles, "| أصوات:", W.stats.sounds, "| كيانات fx:", W.stats.spawned);
+{
+  // كل جزيء بالمود لازم يكون من جزيئات ماينكرافت الأصلية (القائمة من Mojang/bedrock-samples)
+  const vanilla = new Set(fs.readFileSync(path.join(root, "tools/sim/vanilla_particle_ids.txt"), "utf8").split("\n").filter(Boolean));
+  const used = Object.entries(W.stats.pById || {});
+  const bad = used.filter(([id]) => !vanilla.has(id));
+  console.log("جزيئات مستعملة:", used.map(([id, n]) => `${id.replace("minecraft:", "")}×${n}`).join(" "));
+  if (bad.length) W.failures.push("جزيئات مو من ماينكرافت: " + bad.map(([id]) => id).join(", "));
+}
 console.log("أصوات مستعملة:", [...W.stats.soundIds].sort().join(" "));
 if (errors.size) {
   console.log(`\nأخطاء مبلوعة (${errors.size}):`);

@@ -30,7 +30,7 @@ function advance(n) {
 
 // ───── أنواع ─────
 export class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
-export class MolangVariableMap { constructor() { this.v = {}; } setFloat(k, x) { this.v[k] = x; } setColorRGB() {} setVector3() {} }
+export class MolangVariableMap { constructor() { this.v = {}; } setFloat(k, x) { this.v[k] = x; } setColorRGB() {} setColorRGBA() {} setVector3() {} setSpeedAndDirection() {} }
 export const EntityDamageCause = new Proxy({}, { get: (t, k) => String(k) });
 export const BlockPermutation = { resolve: () => ({}) };
 export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
@@ -598,8 +598,8 @@ export const __sim = {
         for (const n of wantShapes[type]) if (!stats.shapeV[SHP[n]]) failures.push(`${type}: الشكل ${n} ما انرسم`);
         if (type === "sh:hollow_seer") {
           const pb = stats.pById || {};
-          console.log(`  ${"".padEnd(16)} شعاع الجزيئات: core×${pb["sh:beam_core"] || 0} strand×${pb["sh:beam_strand"] || 0} crit×${pb["sh:crit"] || 0}`);
-          if (!pb["sh:beam_core"] || !pb["sh:beam_strand"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
+          console.log(`  ${"".padEnd(16)} شعاع الجزيئات: لهب×${pb["minecraft:colored_flame_particle"] || 0} خيوط×${pb["minecraft:glow_particle"] || 0} شرر×${pb["minecraft:electric_spark_particle"] || 0}`);
+          if (!pb["minecraft:colored_flame_particle"] || !pb["minecraft:glow_particle"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
         }
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }

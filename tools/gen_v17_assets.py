@@ -278,35 +278,6 @@ def gen_icons_and_items():
     print("icons:", len(STAR_SKILLS), "preview", out)
 
 
-# ───────────────────────── جزيء البكسل (مربع صغير يتوهج) ─────────────────────────
-def gen_particle():
-    Image.new("RGBA", (8, 8), (255, 255, 255, 255)).save(os.path.join(RP, "textures", "particles", "sh_pixel.png"))
-    p = {
-        "format_version": "1.10.0",
-        "particle_effect": {
-            "description": {"identifier": "sh:pixel", "basic_render_parameters": {"material": "particles_alpha", "texture": "textures/particles/sh_pixel"}},
-            "components": {
-                "minecraft:emitter_rate_instant": {"num_particles": 1},
-                "minecraft:emitter_lifetime_once": {"active_time": 0.1},
-                "minecraft:emitter_shape_point": {"offset": [0, 0, 0], "direction": ["math.random(-1,1)", "math.random(-0.2,1)", "math.random(-1,1)"]},
-                "minecraft:particle_lifetime_expression": {"max_lifetime": "variable.life"},
-                "minecraft:particle_initial_speed": "variable.speed",
-                "minecraft:particle_motion_dynamic": {"linear_acceleration": [0, "variable.rise", 0], "linear_drag_coefficient": 1.5},
-                "minecraft:particle_appearance_billboard": {
-                    "size": ["variable.size * (1 - 0.6 * (variable.particle_age / variable.particle_lifetime))", "variable.size * (1 - 0.6 * (variable.particle_age / variable.particle_lifetime))"],
-                    "facing_camera_mode": "lookat_xyz",
-                    "uv": {"texture_width": 8, "texture_height": 8, "uv": [0, 0], "uv_size": [8, 8]},
-                },
-                "minecraft:particle_appearance_tinting": {"color": ["variable.r", "variable.g", "variable.b", "1 - (variable.particle_age / variable.particle_lifetime) * (variable.particle_age / variable.particle_lifetime)"]},
-            },
-        },
-    }
-    with open(os.path.join(RP, "particles", "sh_pixel.json"), "w", encoding="utf-8") as f:
-        json.dump(p, f, indent=2)
-    print("particle: sh:pixel")
-
-
 if __name__ == "__main__":
     gen_sounds()
     gen_icons_and_items()
-    gen_particle()
