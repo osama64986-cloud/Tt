@@ -393,16 +393,17 @@ function heldLine(p, st, plain) {
   return none;
 }
 
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
+function renderHud(p) {
     try {
-      if (p.hasTag("sh_hud_off")) continue;
+      if (p.hasTag("sh_hud_off")) return;
       const plain = p.hasTag("sh_hud_plain");
       const st = getState(p);
       const h = heldLine(p, st, plain);
       let text = hudText(p, st, plain);
       const strip = skillStrip(p, st, h.skillId, plain);
       if (strip) text += "\n" + strip;
+      const pm = pendMeter(p);
+      if (pm) text += "\n" + pm;
       const m = tempMsg.get(p.id);
       if (m && m.until > system.currentTick) text += "\n" + m.text;
       else {
@@ -411,8 +412,8 @@ system.runInterval(() => {
       }
       p.onScreenDisplay.setActionBar(text);
     } catch (e) { /* */ }
-  }
-}, 5);
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) renderHud(p); }, 5);
 
 async function showForm(player, form) {
   for (let i = 0; i < 30; i++) {
@@ -847,7 +848,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy once, then hit it again after a short pause at just the right moment. Closer = shorter pause (about 0.7s at 2 blocks). Keep the same distance. Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
+  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy once: a light starts swinging above it and a meter appears at the top. Hit it again when the light passes the green mark (the middle of the meter). Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1080,7 +1081,7 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
-      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7No item needed. Hit an enemy once, wait a short moment, then hit it again at just the right time. Standing closer makes the wait shorter (about 0.7s at 2 blocks). Each perfect hit makes the next one faster and stronger. Practice mode: /scriptevent sh:pendulum (tells you if you were early or late)"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
+      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7No item needed. Hit an enemy once: a small light starts swinging above its head and a meter appears at the top of your screen. Hit the same enemy again when the light passes the middle (green mark). Each perfect hit makes the next swing faster and the strike stronger. Practice: /scriptevent sh:pendulum"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
     }
   }
 }
@@ -1875,11 +1876,50 @@ function riftStatusText(p) {
 //  * كل نجاح ورا الثاني: البندول يقصر ربع (يسرع) والضرر يكبر. الغلط يصفر السلسلة ويبدي بندول جديد.
 //  * ماكو أي مؤشر يساعدك؛ بس إذا قربت (±3 تكات) يطلع دخان خفيف حتى تتعلم. المؤثرات كلها جزيئات ماينكرافت الأصلية.
 //  * تنفتح من الرتبة الثالثة (Warrior).
-const PEND_G = 9.8, PEND_WINDOW = 1.0, PEND_NEAR = 3.0, PEND_RANK = 2;
+// هامش التوقيت 3 تكات لكل جهة (0.15 ثانية)، ويطلع بندول تشوفه فوق العدو وعداد بالـHUD
+const PEND_G = 9.8, PEND_WINDOW = 3.0, PEND_NEAR = 6.0, PEND_RANK = 2;
 const pend = new Map(); // pid -> { tid, start, L, chain }
 const pendDebug = new Set();
 function pendPeriodTicks(L) { return 2 * Math.PI * Math.sqrt(L / PEND_G) * 20; }
 function vanillaFx(dim, id, loc) { try { dim.spawnParticle(id, loc); } catch (e) { /* */ } }
+// وضع البندول الحالي: موجب/سالب = يمين/يسار، 0 = النص (وقت الضربة)
+function pendSwing(c, now) {
+  const T = pendPeriodTicks(c.L), dt = now - c.start;
+  if (dt < 0 || dt > T * 1.25 + PEND_WINDOW) return undefined;
+  return Math.cos((2 * Math.PI * dt) / T);
+}
+function pendMeter(p) {
+  const c = pend.get(p.id);
+  if (!c) return "";
+  const v = pendSwing(c, system.currentTick);
+  if (v === undefined) return "";
+  const n = 15, mid = 7, at = Math.round(((v + 1) / 2) * (n - 1));
+  let bar = "";
+  for (let i = 0; i < n; i++) bar += i === at ? (Math.abs(i - mid) <= 1 ? "§a§lO§r" : "§f§lO§r") : i === mid ? "§e|" : Math.abs(i - mid) === 1 ? "§6-" : "§8-";
+  return `§fPendulum${c.chain ? ` §ex${c.chain}` : ""} §8[${bar}§8] §7hit when it is in the middle`;
+}
+// البندول المرئي: ضوء يتمرجح فوق راس العدو (جزيئات ماينكرافت)، وعلامة خضرة بالنص، والعداد يتحدث كل تك
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const p of world.getAllPlayers()) {
+    try {
+      const c = pend.get(p.id);
+      if (!c) continue;
+      const v = pendSwing(c, now);
+      if (v === undefined) { pend.delete(p.id); continue; }
+      const t = world.getEntity ? world.getEntity(c.tid) : undefined;
+      if (t && valid(t)) {
+        const h = headPos(t), f = flatDir(p), rt = { x: -f.z, z: f.x };
+        const top = { x: h.x, y: h.y + 1.6, z: h.z };
+        // قوس البندول: أوطى نقطة بالنص (وقت الضربة) وأعلى بالطرفين
+        const bob = { x: top.x + rt.x * v * 0.9, y: top.y - 0.6 + 0.25 * Math.abs(v), z: top.z + rt.z * v * 0.9 };
+        vanillaFx(t.dimension, "minecraft:endrod", bob);
+        if (now % 3 === 0) vanillaFx(t.dimension, "minecraft:villager_happy", { x: top.x, y: top.y - 0.85, z: top.z });
+      }
+      renderHud(p);
+    } catch (e) { /* */ }
+  }
+}, 1);
 function pendulumStrike(p, t, chain) {
   const dim = t.dimension, c = center3(t), st = getState(p);
   const dmg = Math.round((6 + 1.5 * st.rank) * (1 + 0.5 * (chain - 1)));
@@ -1921,6 +1961,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
       if (err <= PEND_NEAR) vanillaFx(t.dimension, "minecraft:basic_smoke_particle", center3(t));
     }
     pend.set(p.id, { tid: t.id, start: now, L, chain: 0 });
+    renderHud(p);
   } catch (e) { /* */ }
 });
 

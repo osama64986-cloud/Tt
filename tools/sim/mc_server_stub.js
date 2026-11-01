@@ -112,6 +112,7 @@ player.getComponent = ((orig) => function (n) { if (n === "minecraft:inventory")
 export const world = {
   afterEvents: evProxy(), beforeEvents: evProxy(),
   getAllPlayers: () => [player], getPlayers: () => [player],
+  getEntity: (id) => entities.find((e) => e.id === id && e._valid),
   getDimension: (n) => dims[String(n).replace("minecraft:", "")] || dims.overworld,
   getDynamicProperty(k) { return world._dyn[k]; }, setDynamicProperty(k, v) { world._dyn[k] = v; }, _dyn: {},
   sendMessage() {}, getDefaultSpawnLocation: () => ({ x: 0, y: 64, z: 0 }),
@@ -445,6 +446,10 @@ export const __sim = {
       let p0 = stats.particles; const hz = z._hp; hitAt(); advance(Math.round(T(L0) / 4) + 5); hitAt();
       const wrong = hz - z._hp;
       res.push(`غلط بـ5 تكات: ضرر ${wrong}`);
+      { stats.actionBars.length = 0; hitAt(); advance(3); const bar = stats.actionBars[stats.actionBars.length - 1] || ""; const p1 = stats.particles; advance(6);
+        res.push(`عداد البندول بالـHUD: ${bar.includes("Pendulum") ? "✔" : "✖"} | ضوء يتمرجح: ${stats.particles - p1 > 3 ? "✔" : "✖"}`);
+        if (!bar.includes("Pendulum")) failures.push("عداد البندول ما طلع بالـHUD");
+        advance(120); hitAt(); }
       // 2) توقيت صح (السلسلة تبدي من الضربة الأخيرة)
       let L = Math.max(1.2, Math.min(4, L0)), chainOk = 0;
       for (let c = 1; c <= 3; c++) {
