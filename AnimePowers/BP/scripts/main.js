@@ -157,7 +157,7 @@ function usageOf(s) {
 // رتب الوحوش (سلم خاص بيهم، مطابق لألوان الصدوع): كل رتبة وحش تقابل رتبة لاعب بنفس الرقم
 const MON_RANKS = [
   { name: "Lowly", col: "§9", desc: "the weakest spawn of the Abyss (blue rifts)" },
-  { name: "Feral", col: "§a", desc: "hungrier and faster, they hunt in the open" },
+  { name: "Grim", col: "§a", desc: "dark-hearted hunters that stalk travellers at dusk" },
   { name: "Vile", col: "§5", desc: "the Abyss has tainted them (violet rifts)" },
   { name: "Cursed", col: "§d", desc: "they hit harder and carry the Abyss's strength" },
   { name: "Dread", col: "§c", desc: "veterans of a hundred hunts (crimson rifts)" },
