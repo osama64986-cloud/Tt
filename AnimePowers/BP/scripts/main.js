@@ -380,9 +380,6 @@ function heldLine(p, st, plain) {
       : `§6◎ ${nm} §8│ §7Not discovered yet, explore more`;
     return { line, tip: showTip ? "§7Use: choose destination §8│ §7Sneak + use: guide line" : "" };
   }
-  if (id === ATLAS_ITEM) {
-    return { line: `§f${plain ? "" : GL(GI.lens) + " "}§b§lAtlas Lens§r §7│ radius ${atlasRadius(p)} blocks`, tip: showTip ? "§7Hold: live 3D map of the land around you §8│ §7Use: change zoom" : "" };
-  }
   if (id === "sh:star_shard") return { line: "§b✦ Star Shard", tip: showTip ? (st.power ? "§7You already carry a power" : "§7Use: start your power draw") : "" };
   if (id === "sh:skill_scroll") return { line: "§b✦ Skill Upgrade Scroll", tip: showTip ? "§7Use: pick a skill and raise it a full level" : "" };
   if (id === "sh:evolution_book") return { line: "§eEvolution Book", tip: showTip ? "§7Use: skills, status window, ranks, story" : "" };
@@ -850,7 +847,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n${riftStatusText(player)}\n§bAtlas Lens§7: hold it to see a live 3D map of the land, monsters, rifts and places around you.\n`;
+  b += `\n${riftStatusText(player)}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1865,130 +1862,6 @@ function riftStatusText(p) {
   const t = riftTier();
   return `${t.col}${t.name}§7 open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
 }
-
-// ═════════════════════════ عدسة الأطلس: خريطة 3D مجسمة حية ═════════════════════════
-// من تمسك العدسة تطلع قدامك نسخة مصغرة من الأرض حواليك (ارتفاعات وألوان البلوكات الحقيقية) تدور ويا نظرك،
-// وبيها: الوحوش (أحمر)، اللاعبين (سماوي)، البنايات (ذهبي)، المدرب (أبيض)، والصدع بلونه. الاستعمال يغير الزوم.
-const ATLAS_ZOOMS = [24, 40, 64];
-const atlasZoomOf = new Map(), atlasData = new Map();
-function atlasRadius(p) { return ATLAS_ZOOMS[atlasZoomOf.get(p.id) ?? 1]; }
-function atlasZoom(p) {
-  const i = ((atlasZoomOf.get(p.id) ?? 1) + 1) % ATLAS_ZOOMS.length;
-  atlasZoomOf.set(p.id, i);
-  atlasData.delete(p.id);
-  sfxPlayer(p, "sh.select", 0.8, 0.9 + i * 0.2);
-  notify(p, `§bAtlas Lens: radius ${ATLAS_ZOOMS[i]} blocks`, 30);
-}
-function atlasColor(id) {
-  if (id.includes("water")) return [0.25, 0.5, 1];
-  if (id.includes("lava") || id.includes("magma")) return [1, 0.45, 0.1];
-  if (id.includes("leaves") || id.includes("azalea")) return [0.18, 0.55, 0.22];
-  if (id.includes("log") || id.includes("wood") || id.includes("planks")) return [0.5, 0.36, 0.2];
-  if (id.includes("snow") || id.includes("ice")) return [0.92, 0.96, 1];
-  if (id.includes("sand")) return [0.92, 0.85, 0.55];
-  if (id.includes("grass") || id.includes("moss") || id.includes("fern")) return [0.38, 0.8, 0.32];
-  if (id.includes("dirt") || id.includes("mud") || id.includes("podzol")) return [0.55, 0.4, 0.25];
-  if (id.includes("warped")) return [0.2, 0.8, 0.85];
-  if (id.includes("crimson")) return [0.9, 0.2, 0.25];
-  if (id.includes("purple")) return [0.6, 0.3, 0.9];
-  if (id.includes("blackstone")) return [0.15, 0.13, 0.18];
-  if (id.includes("cherry")) return [1, 0.65, 0.8];
-  if (id.includes("stone") || id.includes("andesite") || id.includes("gravel") || id.includes("deepslate") || id.includes("cobble")) return [0.58, 0.58, 0.62];
-  return [0.7, 0.7, 0.72];
-}
-function holo(dim, loc, c, size, life = 0.62) {
-  try {
-    const m = new MolangVariableMap();
-    m.setFloat("variable.r", c[0]); m.setFloat("variable.g", c[1]); m.setFloat("variable.b", c[2]);
-    m.setFloat("variable.size", size); m.setFloat("variable.life", life); m.setFloat("variable.speed", 0); m.setFloat("variable.rise", 0);
-    dim.spawnParticle("sh:glow", loc, m);
-  } catch (e) { /* */ }
-}
-function holdingAtlas(p) { try { const it = inv(p).getItem(p.selectedSlotIndex); return !!it && it.typeId === ATLAS_ITEM; } catch (e) { return false; } }
-// المسح: كل ثانيتين، شبكة 21×21 حول اللاعب (تتوزع على عدة تكات)
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
-    if (!holdingAtlas(p)) { atlasData.delete(p.id); continue; }
-    const R = atlasRadius(p), step = R / 10, cx = p.location.x, cz = p.location.z, dim = p.dimension;
-    const cells = [];
-    system.runJob((function* () {
-      let n = 0;
-      for (let i = -10; i <= 10; i++) for (let j = -10; j <= 10; j++) {
-        if (i * i + j * j > 100) continue;
-        if (++n % 30 === 0) yield;
-        try {
-          const top = dim.getTopmostBlock({ x: Math.floor(cx + i * step), z: Math.floor(cz + j * step) });
-          if (top) cells.push({ dx: i * step, dz: j * step, y: top.y + 1, col: atlasColor(top.typeId) });
-        } catch (e) { /* شنك مو محمل */ }
-      }
-      atlasData.set(p.id, { cx, cz, R, cells });
-    })());
-  }
-}, 40);
-// الرسم: كل نص ثانية
-system.runInterval(() => {
-  for (const p of world.getAllPlayers()) {
-    try {
-      if (!holdingAtlas(p)) continue;
-      const data = atlasData.get(p.id);
-      const dim = p.dimension, f = flatDir(p), rt = { x: -f.z, z: f.x }, eye = eyePos(p);
-      const C = { x: eye.x + f.x * 1.75, y: eye.y - 0.6, z: eye.z + f.z * 1.75 };
-      const R = atlasRadius(p), k = 0.95 / R;
-      const at = (dx, dz, y, lift = 0) => {
-        const fw = dx * f.x + dz * f.z, rr = dx * rt.x + dz * rt.z;
-        const hy = Math.max(-0.28, Math.min(0.42, (y - p.location.y) * 0.022));
-        return { x: C.x + (f.x * fw + rt.x * rr) * k, y: C.y + hy + lift, z: C.z + (f.z * fw + rt.z * rr) * k };
-      };
-      const clampXZ = (dx, dz) => { const d = Math.hypot(dx, dz); return d > R ? { dx: (dx / d) * R, dz: (dz / d) * R, edge: true } : { dx, dz, edge: false }; };
-      // الإطار والقاعدة
-      for (let i = 0; i < 30; i++) {
-        const a = (i / 30) * Math.PI * 2;
-        holo(dim, { x: C.x + Math.cos(a) * 1.0, y: C.y - 0.32, z: C.z + Math.sin(a) * 1.0 }, [0.35, 0.9, 1], 0.045);
-      }
-      holo(dim, { x: C.x, y: C.y - 0.36, z: C.z }, [0.3, 0.8, 1], 0.22, 0.5);
-      // الأرض
-      if (data) {
-        const ox = data.cx - p.location.x, oz = data.cz - p.location.z;
-        for (const cell of data.cells) {
-          const q = at(cell.dx + ox, cell.dz + oz, cell.y);
-          const c = cell.col;
-          holo(dim, q, [c[0] * 0.8 + 0.1, c[1] * 0.8 + 0.15, c[2] * 0.8 + 0.2], 0.075);
-        }
-      }
-      // أنت بالنص
-      holo(dim, { x: C.x, y: C.y + 0.08, z: C.z }, [1, 1, 1], 0.11);
-      holo(dim, { x: C.x + f.x * 0.07, y: C.y + 0.08, z: C.z + f.z * 0.07 }, [1, 1, 1], 0.06);
-      // الوحوش واللاعبين
-      for (const e of enemiesNear(dim, p.location, R, p.id)) {
-        const q = at(e.location.x - p.location.x, e.location.z - p.location.z, e.location.y, 0.09);
-        holo(dim, q, e.hasTag("sh_rift_boss") ? [1, 0.85, 0.2] : [1, 0.15, 0.15], e.hasTag("sh_rift_boss") ? 0.14 : 0.08);
-      }
-      for (const q2 of world.getAllPlayers()) {
-        if (q2.id === p.id || q2.dimension.id !== dim.id || dist2d(q2.location, p.location) > R) continue;
-        holo(dim, at(q2.location.x - p.location.x, q2.location.z - p.location.z, q2.location.y, 0.09), [0.3, 1, 1], 0.09);
-      }
-      // البنايات والمدرب (اللي برا الخريطة تطلع على الحافة)
-      const mark = (x, z, y, col, size, tall) => {
-        const m = clampXZ(x - p.location.x, z - p.location.z);
-        const q = at(m.dx, m.dz, m.edge ? p.location.y : y, 0.05);
-        holo(dim, q, col, m.edge ? size * 0.8 : size);
-        if (tall && !m.edge) for (let h = 1; h <= 3; h++) holo(dim, { x: q.x, y: q.y + h * 0.06, z: q.z }, col, 0.04);
-      };
-      for (const st of getStructs()) if (Math.hypot(st.x - p.location.x, st.z - p.location.z) < R * 4) mark(st.x, st.z, st.y || p.location.y, [1, 0.8, 0.25], 0.12, true);
-      const tp = trainerPos(p);
-      if (tp) mark(tp.x, tp.z, p.location.y, [1, 1, 1], 0.09, false);
-      if (rift && rift.dim === dim.id) {
-        const t = riftTier();
-        mark(rift.x, rift.z, rift.y, t.rgb, 0.16, true);
-        const m = clampXZ(rift.x - p.location.x, rift.z - p.location.z);
-        if (!m.edge) {
-          const rr = rift.r * k;
-          for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const base = at(m.dx, m.dz, rift.y); holo(dim, { x: base.x + Math.cos(a) * rr, y: base.y + 0.02, z: base.z + Math.sin(a) * rr }, t.rgb, 0.04); }
-        }
-      }
-    } catch (e) { /* */ }
-  }
-}, 10);
 
 // إخفاء قلوب ماينكرافت تحت (القلوب صارت فوق بالـHUD) ومجسمها الأصلي اللي كان يطلع فوق مجسمنا
 function hideVanillaHud(p) {
@@ -3770,7 +3643,6 @@ function i2c(k) { return k < 0.5 ? [0.4 + k, 0.6 + k * 0.4, 1.0] : [1.0, 0.85 + 
 // تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 5)، وكل ليفل يفتح مهارة جديدة.
 // السنيك (الجلوس) يبدل المهارة، والاستعمال ينفذها. المؤثرات: شظايا بكسل بنفسجية تحيط بالنصل.
 const KATANA = "sh:dark_katana";
-const ATLAS_ITEM = "sh:atlas_lens";
 const KAT_MAX = 5;
 const KAT_NEED = [0, 40, 90, 160, 260]; // خبرة الانتقال من الليفل i إلى i+1
 const KATANA_PURPLE = [0.7, 0.35, 1.0];
@@ -3960,7 +3832,6 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (SCROLLS[id]) { useScroll(p, id); return; }
     if (id === "sh:skill_scroll") { useSkillScroll(p); return; }
     if (id === "sh:star_shard") { useStarShard(p); return; }
-    if (id === ATLAS_ITEM) { atlasZoom(p); return; }
     if (id === "sh:explorer_compass") { useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
     const skill = ITEM_TO_SKILL[id];
@@ -4000,7 +3871,6 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         saveState(p, s5);
         if (ups.length) announceUps(p, ups);
       }
-      if (!st.gotAtlas) { const s6 = getState(p); s6.gotAtlas = true; saveState(p, s6); if (!hasItem(p, ATLAS_ITEM)) giveItem(p, ATLAS_ITEM); }
       if (!st.power) {
         const s4 = getState(p);
         if (!s4.shardDropped) { s4.shardDropped = true; saveState(p, s4); later(100, () => shardMeteor(p)); }
@@ -4666,7 +4536,7 @@ system.runInterval(() => {
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:shard          يعطيك شظية نجمة (للسحب)
-//   /scriptevent sh:rift blue      يفتح صدع قربك (blue violet crimson abyss) | sh:rift close يسده | sh:atlas يعطيك عدسة الأطلس
+//   /scriptevent sh:rift blue      يفتح صدع قربك (blue violet crimson abyss) | sh:rift close يسده
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars on يشغل تلوين الأرض المؤقت (مطفي افتراضياً)
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
@@ -4690,8 +4560,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     } else if (ev.id === "sh:rift") {
       if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }
-    } else if (ev.id === "sh:atlas") {
-      giveItem(p, ATLAS_ITEM); say(p, "§bAtlas Lens added");
+
     } else if (ev.id === "sh:shard") {
       giveItem(p, "sh:star_shard"); say(p, "§bStar Shard added");
     } else if (ev.id === "sh:weapons") {

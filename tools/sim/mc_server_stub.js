@@ -428,14 +428,6 @@ export const __sim = {
         if (!sealed) failures.push("الصدع ما انسد بعد قتل الزعيم");
         if (!loot.includes("sh:xp_scroll_big")) failures.push("مكافآت الصدع ما نزلت");
       }
-      // عدسة الأطلس: خريطة 3D
-      player.location = { x: 0, y: 64, z: 0 };
-      fire("scriptEventReceive", { id: "sh:atlas", message: "", sourceEntity: player });
-      const pa = stats.particles; hold("sh:atlas_lens"); advance(80);
-      console.log("عدسة الأطلس: جزيئات الخريطة خلال 4 ثواني =", stats.particles - pa);
-      if (stats.particles - pa < 600) failures.push("خريطة الأطلس ما ترسم");
-      await useItem("sh:atlas_lens"); advance(2);
-      hold("");
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });
