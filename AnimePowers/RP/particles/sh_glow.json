@@ -4,8 +4,8 @@
     "description": {
       "identifier": "sh:glow",
       "basic_render_parameters": {
-        "material": "particles_alpha",
-        "texture": "textures/particles/sh_glow"
+        "material": "particles_blend",
+        "texture": "textures/particle/particles"
       }
     },
     "components": {
@@ -13,17 +13,12 @@
         "num_particles": 1
       },
       "minecraft:emitter_lifetime_once": {
-        "active_time": 0.1
+        "active_time": 0.05
       },
       "minecraft:emitter_shape_point": {
-        "offset": [
-          0,
-          0,
-          0
-        ],
         "direction": [
           "math.random(-1,1)",
-          "math.random(-0.3,1)",
+          "math.random(-0.2,1)",
           "math.random(-1,1)"
         ]
       },
@@ -34,27 +29,44 @@
       "minecraft:particle_motion_dynamic": {
         "linear_acceleration": [
           0,
-          "variable.rise",
+          "variable.rise - 0.2",
           0
         ],
         "linear_drag_coefficient": 1.2
       },
       "minecraft:particle_appearance_billboard": {
         "size": [
-          "variable.size",
-          "variable.size"
+          "variable.size * (variable.particle_random_1 * 0.5 + 0.5)",
+          "variable.size * (variable.particle_random_1 * 0.5 + 0.5)"
         ],
-        "facing_camera_mode": "rotate_xyz",
+        "facing_camera_mode": "lookat_xyz",
         "uv": {
-          "texture_width": 16,
-          "texture_height": 16,
+          "texture_width": 128,
+          "texture_height": 128,
+          "flipbook": {
+            "base_UV": [
+              56,
+              88
+            ],
+            "size_UV": [
+              8,
+              8
+            ],
+            "step_UV": [
+              -8,
+              0
+            ],
+            "frames_per_second": 8,
+            "max_frame": 8,
+            "stretch_to_lifetime": true
+          },
           "uv": [
             0,
             0
           ],
           "uv_size": [
-            16,
-            16
+            1,
+            1
           ]
         }
       },
@@ -63,7 +75,7 @@
           "variable.r",
           "variable.g",
           "variable.b",
-          "1 - (variable.particle_age / variable.particle_lifetime)"
+          "variable.particle_age > (variable.particle_lifetime / 2.0) ? 1 - 0.6 * ((variable.particle_age - (variable.particle_lifetime / 2.0)) / (variable.particle_lifetime / 2.0)) : 1.0"
         ]
       }
     }

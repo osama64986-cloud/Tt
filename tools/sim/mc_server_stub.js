@@ -57,7 +57,7 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
     addEffect(id, dur, o) { effectLog.push(id); stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l) { this.location = { x: l.x, y: l.y, z: l.z }; }, remove() { this._valid = false; }, kill() { this._valid = false; },
-    setProperty(k, v) { props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
+    setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
     setRotation() {}, getRotation() { return { x: 0, y: 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },
@@ -71,14 +71,14 @@ const entities = [];
 function mkDim(id) {
   const d = {
     id,
-    spawnParticle() { stats.particles++; },
+    spawnParticle(id) { stats.particles++; stats.pById = stats.pById || {}; stats.pById[id] = (stats.pById[id] || 0) + 1; },
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
@@ -574,10 +574,10 @@ export const __sim = {
       const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" } };
       const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 1600], [14, 1200]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["beam_orange", "root_spike", "soul_orb"] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
-        stats.shapeV = {};
+        stats.shapeV = {}; stats.pById = {};
         for (const [dist, ticks] of plans[type]) {
           entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
           const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 90); entities.push(m);
@@ -596,6 +596,11 @@ export const __sim = {
         const shp = wantShapes[type].map((n) => `${n}×${stats.shapeV[SHP[n]] || 0}`).join(" ");
         console.log(`  ${"".padEnd(16)} أشكال انرسمت: ${shp}`);
         for (const n of wantShapes[type]) if (!stats.shapeV[SHP[n]]) failures.push(`${type}: الشكل ${n} ما انرسم`);
+        if (type === "sh:hollow_seer") {
+          const pb = stats.pById || {};
+          console.log(`  ${"".padEnd(16)} شعاع الجزيئات: core×${pb["sh:beam_core"] || 0} strand×${pb["sh:beam_strand"] || 0} crit×${pb["sh:crit"] || 0}`);
+          if (!pb["sh:beam_core"] || !pb["sh:beam_strand"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
+        }
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }
       {
@@ -604,7 +609,7 @@ export const __sim = {
         const m = mkEntity("sh:hollow_seer", { x: 0, y: 64, z: 3 }, dims.overworld, 90); entities.push(m);
         let breathSeen = false;
         for (let t = 0; t < 3000 && !breathSeen; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === 3) breathSeen = true; }
-        const dBefore = stats.damage || 0; advance(60);
+        const dBefore = stats.damage || 0; const _tr = []; const _sq = []; for (let q = 0; q < 30; q++) { const d00 = stats.damage || 0; advance(2); _sq.push(m.getProperty("sh:state")); if ((stats.damage || 0) > d00) _tr.push(`t${q * 2}:state${m.getProperty("sh:state")}:+${Math.round((stats.damage || 0) - d00)}`); } if (process.env.SH_DEBUG && _tr.length) console.log("   تتبع الضرر:", _tr.join(" "), "حالات:", _sq.join(""));
         const snowSet = (stats.blockSets || 0) - sets0, breathDmg = Math.round((stats.damage || 0) - dBefore);
         console.log(`  زفير التجميد: ثلج ناعم انحط = ${snowSet > 0 ? "✔" : "✖"} | ضرر وقت الزفير ${breathDmg}`);
         if (breathSeen && snowSet === 0) failures.push("زفير التجميد ما جمّد الشاشة (ثلج ناعم)");

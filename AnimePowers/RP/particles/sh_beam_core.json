@@ -1,0 +1,75 @@
+{
+  "format_version": "1.10.0",
+  "particle_effect": {
+    "description": {
+      "identifier": "sh:beam_core",
+      "basic_render_parameters": {
+        "material": "particles_blend",
+        "texture": "textures/particle/particles"
+      }
+    },
+    "components": {
+      "minecraft:emitter_rate_instant": {
+        "num_particles": "math.min(450, variable.len * 16)"
+      },
+      "minecraft:emitter_lifetime_once": {
+        "active_time": 0.05
+      },
+      "minecraft:emitter_shape_point": {},
+      "minecraft:particle_lifetime_expression": {
+        "max_lifetime": "variable.life * (variable.particle_random_3 * 0.4 + 0.8)"
+      },
+      "minecraft:particle_motion_parametric": {
+        "relative_position": [
+          "variable.s = variable.particle_random_1 * variable.len; variable.a = variable.s * 2.6 + variable.particle_age * 9.0 + (variable.particle_random_2 > 0.5 ? 3.14159 : 0.0); return variable.dx * variable.s + (0.03 * variable.particle_random_2) * (variable.px * math.cos(variable.a * 57.2958) + variable.qx * math.sin(variable.a * 57.2958));",
+          "variable.s = variable.particle_random_1 * variable.len; variable.a = variable.s * 2.6 + variable.particle_age * 9.0 + (variable.particle_random_2 > 0.5 ? 3.14159 : 0.0); return variable.dy * variable.s + (0.03 * variable.particle_random_2) * (variable.py * math.cos(variable.a * 57.2958) + variable.qy * math.sin(variable.a * 57.2958));",
+          "variable.s = variable.particle_random_1 * variable.len; variable.a = variable.s * 2.6 + variable.particle_age * 9.0 + (variable.particle_random_2 > 0.5 ? 3.14159 : 0.0); return variable.dz * variable.s + (0.03 * variable.particle_random_2) * (variable.pz * math.cos(variable.a * 57.2958) + variable.qz * math.sin(variable.a * 57.2958));"
+        ]
+      },
+      "minecraft:particle_appearance_billboard": {
+        "size": [
+          "0.2 * (variable.particle_random_3 * 0.5 + 0.75)",
+          "0.2 * (variable.particle_random_3 * 0.5 + 0.75)"
+        ],
+        "facing_camera_mode": "lookat_xyz",
+        "uv": {
+          "texture_width": 128,
+          "texture_height": 128,
+          "flipbook": {
+            "base_UV": [
+              56,
+              88
+            ],
+            "size_UV": [
+              8,
+              8
+            ],
+            "step_UV": [
+              -8,
+              0
+            ],
+            "frames_per_second": 8,
+            "max_frame": 8,
+            "stretch_to_lifetime": true
+          },
+          "uv": [
+            0,
+            0
+          ],
+          "uv_size": [
+            1,
+            1
+          ]
+        }
+      },
+      "minecraft:particle_appearance_tinting": {
+        "color": [
+          "variable.cr * (variable.particle_random_4 * 0.15 + 0.85)",
+          "variable.cg * (variable.particle_random_4 * 0.3 + 0.7)",
+          "variable.cb",
+          "variable.particle_age > (variable.particle_lifetime / 2.0) ? 1 - 0.6 * ((variable.particle_age - (variable.particle_lifetime / 2.0)) / (variable.particle_lifetime / 2.0)) : 1.0"
+        ]
+      }
+    }
+  }
+}
