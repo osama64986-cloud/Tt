@@ -4767,6 +4767,16 @@ function archerShoot(e, tp) {
   catch (err) { try { ar.applyImpulse({ x: (dx / l) * speed, y: (dy / l) * speed, z: (dz / l) * speed }); } catch (err2) { /* */ } }
   try { dim.playSound("random.bow", from, { volume: 1, pitch: 0.9 + Math.random() * 0.2 }); } catch (err) { /* */ }
   burst(dim, start, 8, [0.62, 0.35, 1], 2.5, 0.16);
+  // أثر بنفسجي يلحق السهم وهو طاير (مثل سهم الرامي البنفسجي اللي بإيده)
+  let n = 0;
+  const h = system.runInterval(() => {
+    try {
+      if (++n > 30 || !ar || !valid(ar)) { system.clearRun(h); return; }
+      const v = ar.getVelocity ? ar.getVelocity() : { x: 0, y: 0, z: 0 };
+      if (n > 3 && Math.hypot(v.x, v.y, v.z) < 0.05) { system.clearRun(h); return; }   // السهم وقف (انغرس)
+      glow(dim, ar.location, { color: n % 2 ? [0.62, 0.35, 1] : [0.85, 0.7, 1], size: 0.14, life: 0.35 });
+    } catch (err) { system.clearRun(h); }
+  }, 1);
 }
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
