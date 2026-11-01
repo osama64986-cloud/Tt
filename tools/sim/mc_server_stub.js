@@ -78,7 +78,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem() {}, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!q.families || !q.families.includes('sh_rank0') || ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'].includes(e.typeId)) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || !q.families.includes('sh_rank0') || ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'].includes(e.typeId)) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers() { return [player]; },
@@ -394,50 +394,48 @@ export const __sim = {
       const glyphs = [...bar].filter((ch) => ch.charCodeAt(0) >= 0xE500 && ch.charCodeAt(0) <= 0xE5FF).length;
       console.log("رموز مرسومة بالـHUD:", glyphs, "| أسطر:", bar.split("\n").length);
       if (glyphs < 25) failures.push("الـHUD ما يستعمل الرسومات");
-      // الكوكبة: مهارات مختلفة تضوي، نفس المهارة مرتين ما تضوي
-      const lit = () => { const b2 = stats.actionBars[stats.actionBars.length - 1] || ""; return [...b2].filter((ch) => ch.charCodeAt(0) === 0xE504 || ch.charCodeAt(0) === 0xE50C).length; };
-      fire("scriptEventReceive", { id: "sh:stars", message: "0", sourceEntity: player });
-      spawnZombies(4, true); await useItem("sh:skill_shards"); system_cd_reset(); advance(6);
-      await useItem("sh:skill_shards"); system_cd_reset(); advance(6);
-      const afterSame = lit();
-      await useItem("sh:skill_crystalshield"); system_cd_reset(); advance(6);
-      const afterDiff = lit();
-      console.log("الكوكبة: بعد نفس المهارة مرتين =", afterSame, "| بعد مهارة ثانية =", afterDiff);
-      if (afterSame !== 1 || afterDiff !== 2) failures.push("الكوكبة ما تشتغل صح (التنويع)");
-      const starEnts = entities.filter((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") === 38).length;
-      if (starEnts < 2) failures.push("نجوم الكوكبة ما تطلع فوق الراس");
-      // الرد النجمي: عدو يضربك ثم تضربه خلال ثانية
-      spawnZombies(1, true); const z = entities[0]; const hp0 = z._hp;
-      fire("entityHurt", { hurtEntity: player, damage: 2, damageSource: { damagingEntity: z } }); advance(5);
-      fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(5);
-      console.log("الرد النجمي: ضرر", hp0 - z._hp, "| نجوم", lit());
-      if (hp0 - z._hp <= 0) failures.push("الرد النجمي ما اشتغل");
-      // سقوط النجوم + الصاعد
-      fire("scriptEventReceive", { id: "sh:stars", message: "7", sourceEntity: player });
-      const has = inventory.some((i) => i && i.typeId === "sh:skill_starfall");
-      spawnZombies(4, true); stats.titles = []; const d0 = stats.damage || 0, s0 = stats.spawned;
-      await useItem("sh:skill_starfall"); advance(80);
-      const halo = entities.some((e) => e.typeId === "sh:fx_shape" && e._valid && e.getProperty("sh:v") === 50);
-      stats.actionBars.length = 0; advance(6);
-      const asc = (stats.actionBars[stats.actionBars.length - 1] || "").includes("ASCENDANT");
-      console.log("سقوط النجوم: ختم =", has, "| عنوان =", (stats.titles || [])[0], "| ضرر =", Math.round((stats.damage || 0) - d0), "| أشكال =", stats.spawned - s0, "| هالة =", halo, "| صاعد بالـHUD =", asc);
-      if (!has) failures.push("ختم النجمة ما انعطى");
-      if ((stats.damage || 0) - d0 <= 0) failures.push("سقوط النجوم ما ضرب");
-      if (!halo || !asc) failures.push("حالة الصاعد ما اشتغلت");
-      const d1 = stats.damage || 0; await useItem("sh:skill_burst"); system_cd_reset(); await useItem("sh:skill_shards"); advance(30);
-      if ((stats.damage || 0) - d1 <= 0) failures.push("المهارة وانت صاعد ما ضربت");
-      advance(260);
-      // ضوء النجمة (سنيك)
-      fire("scriptEventReceive", { id: "sh:stars", message: "3", sourceEntity: player });
-      player._hp = 5; player.isSneaking = true; await useItem("sh:skill_starfall"); player.isSneaking = false; advance(14);
-      console.log("ضوء النجمة: صحة", player._hp);
-      if (player._hp < 11) failures.push("ضوء النجمة ما شفى");
-      for (const pw of ["iron", "wind", "echo", "accountant", "borrower", "distance", "law", "star"]) {
-        setState({ ...baseState(pw), rank: 2, level: 35 }); spawnZombies(3, true);
-        fire("scriptEventReceive", { id: "sh:stars", message: "7", sourceEntity: player });
-        const dd = stats.damage || 0; await useItem("sh:skill_starfall"); advance(300);
-        if ((stats.damage || 0) - dd <= 0) failures.push(`سقوط نجوم ${pw} ما ضرب`);
+      // الصدع: يفتح، يفسد الأرض، 3 موجات، زعيم، ينسد ويعطي مكافآت
+      fire("scriptEventReceive", { id: "sh:rift", message: "close", sourceEntity: player }); advance(40);
+      entities.length = 0; stats.items = [];
+      fire("scriptEventReceive", { id: "sh:rift", message: "violet", sourceEntity: player });
+      let rs = JSON.parse(world._dyn.sh_rift || "null");
+      console.log("\nالصدع:", rs && rs.tier, rs && Math.round(Math.hypot(rs.x, rs.z)), "بلوكة");
+      if (!rs) failures.push("الصدع ما انفتح");
+      else {
+        const b0 = stats.blockSets || 0;
+        advance(40); stats.actionBars.length = 0; advance(10);
+        const hud = stats.actionBars[stats.actionBars.length - 1] || "";
+        if (!hud.includes("Violet Rift")) failures.push("الصدع ما طلع بالـHUD");
+        console.log("  فساد الأرض: بلوكات =", (stats.blockSets || 0) - b0, "| HUD:", (hud.split("\n").find((l) => l.includes("Rift")) || "").replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "◆"));
+        if ((stats.blockSets || 0) - b0 < 10) failures.push("الصدع ما فسد الأرض");
+        player.location = { x: rs.x + 4, y: 64, z: rs.z };
+        const waves = [];
+        for (let w = 1; w <= 3; w++) {
+          advance(w === 1 ? 40 : 140);
+          const mobs = entities.filter((e) => e._valid && e._tags.has("sh_rift"));
+          const boss = mobs.find((e) => e._tags.has("sh_rift_boss"));
+          waves.push(`موجة ${w}: ${mobs.length} وحش${boss ? " + زعيم «" + boss.nameTag.replace(/§./g, "") + "»" : ""}`);
+          if (!mobs.length) { failures.push(`موجة ${w} ما طلعت`); break; }
+          if (w === 3 && !boss) failures.push("الزعيم ما طلع بالموجة 3");
+          if (w < 3) mobs.forEach((e) => { e._valid = false; });
+          else { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
+        }
+        console.log("  " + waves.join("\n  "));
+        advance(40);
+        const sealed = !JSON.parse(world._dyn.sh_rift || "null");
+        const loot = (stats.items || []).filter((t) => t.startsWith("sh:") || t.startsWith("minecraft:"));
+        console.log("  انسد =", sealed, "| مكافآت:", loot.join(", "));
+        if (!sealed) failures.push("الصدع ما انسد بعد قتل الزعيم");
+        if (!loot.includes("sh:xp_scroll_big")) failures.push("مكافآت الصدع ما نزلت");
       }
+      // عدسة الأطلس: خريطة 3D
+      player.location = { x: 0, y: 64, z: 0 };
+      fire("scriptEventReceive", { id: "sh:atlas", message: "", sourceEntity: player });
+      const pa = stats.particles; hold("sh:atlas_lens"); advance(80);
+      console.log("عدسة الأطلس: جزيئات الخريطة خلال 4 ثواني =", stats.particles - pa);
+      if (stats.particles - pa < 600) failures.push("خريطة الأطلس ما ترسم");
+      await useItem("sh:atlas_lens"); advance(2);
+      hold("");
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

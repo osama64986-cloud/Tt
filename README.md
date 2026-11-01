@@ -1,6 +1,6 @@
 # Anime Powers (عالم القدرات)
 
-مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.14.0**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
+مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.15.0**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
 الشرح الكامل للمود بالعراقي بملف [`MOD_GUIDE.md`](MOD_GUIDE.md).
 
 ## الهيكل
@@ -36,4 +36,4 @@ JSON سليم، صياغة JS، UUID مطابقة للقفل، تطابق الن
 الأصوات (معرّفة وملفاتها موجودة)، تطابق كيانات BP وRP، وأن كل كيان له اسم بملف اللغة الإنجليزي (en_US). كل نصوص اللعبة إنجليزية.
 ويشغّل المحاكي (`node`) على عالم وهمي. المحاكي ما يغني عن اختبار اللعبة الحقيقية.
 
-للتجربة داخل اللعبة: `/scriptevent sh:shard` (شظية نجمة جديدة للسحب)، `/scriptevent sh:power star` ثم `/scriptevent sh:unlock`، `/scriptevent sh:weapons` (كل الأسلحة + لفائف)، `/scriptevent sh:stars 7` (كوكبة كاملة + ختم النجمة).
+للتجربة داخل اللعبة: `/scriptevent sh:shard` (شظية نجمة جديدة للسحب)، `/scriptevent sh:power star` ثم `/scriptevent sh:unlock`، `/scriptevent sh:weapons` (كل الأسلحة + لفائف)، `/scriptevent sh:rift blue` (يفتح صدع قربك: blue violet crimson abyss، و`close` يسده)، `/scriptevent sh:atlas` (عدسة الأطلس).

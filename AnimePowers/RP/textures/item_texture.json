@@ -173,8 +173,8 @@
     "sh_star_shard": {
       "textures": "textures/items/sh_star_shard"
     },
-    "sh_star_sigil": {
-      "textures": "textures/items/sh_star_sigil"
+    "sh_atlas_lens": {
+      "textures": "textures/items/sh_atlas_lens"
     }
   }
 }

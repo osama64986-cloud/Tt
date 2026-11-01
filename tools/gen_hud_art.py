@@ -1,6 +1,6 @@
 """رسومات الـHUD: ورقة رموز (glyph_E5) تنحط داخل نص الأكشن بار + إطار مزخرف للوحة + إطار لمجسم اللاعب.
-الرموز: قلوب، أشرطة مرسومة (رتبة/خبرة/قدرة)، نجوم الكوكبة (مضوية/مطفية/مكتملة)، شارات الرتب السبع، شعارات القدرات التسع،
-أيقونات حالة المهارة، ختم النجمة والرد النجمي. الرمز رقم i = الحرف U+E500+i.
+الرموز: قلوب، أشرطة مرسومة (رتبة/خبرة/قدرة)، شارات الرتب السبع، شعارات القدرات التسع، أيقونات حالة المهارة،
+الصدع (أيقونة، موجة مضوية/مطفية، جمجمة الزعيم، أرض فاسدة) وعدسة الأطلس. الرمز رقم i = الحرف U+E500+i.
 التشغيل: python3 tools/gen_hud_art.py [مجلد_معاينة]
 """
 import math
@@ -16,10 +16,10 @@ OUTLINE = (16, 10, 20, 255)
 
 # أرقام الرموز (لازم تطابق GLYPH بالسكربت)
 G = {
-    "heart": 0, "heart_half": 1, "heart_empty": 2, "const": 3,
-    "star_lit": 4, "star_dim": 5, "gold_full": 6, "gold_empty": 7, "xp_full": 8, "xp_empty": 9,
-    "pw_full": 10, "pw_empty": 11, "star_blaze": 12, "hp_full": 13, "hp_empty": 14,
-    "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "sigil": 53, "counter": 54, "sep": 55,
+    "heart": 0, "heart_half": 1, "heart_empty": 2, "rift": 3,
+    "wave_on": 4, "wave_off": 5, "gold_full": 6, "gold_empty": 7, "xp_full": 8, "xp_empty": 9,
+    "pw_full": 10, "pw_empty": 11, "boss": 12, "hp_full": 13, "hp_empty": 14,
+    "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "lens": 53, "rift_ring": 54, "sep": 55,
 }
 POWER_ORDER = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"]
 
@@ -106,51 +106,34 @@ def seg(base, hi, lo, filled=True, glow=False):
     return c.outline()
 
 
-STAR = [
-    "......X......",
-    ".....XWX.....",
-    ".....XWX.....",
-    "....XWWWX....",
-    "XXXXXWWWXXXXX",
-    ".XWWWWWWWWWX.",
-    "..XWWWWWWWX..",
-    "...XWWWWWX...",
-    "...XWWXWWX...",
-    "..XWWX.XWWX..",
-    "..XWX...XWX..",
-    ".XX.......XX.",
-]
-
-
-def star_glyph(kind):
-    """نجمة الكوكبة: lit ذهبية بقلب أبيض، dim مطفية، blaze بيضاء متوهجة (الكوكبة كاملة)."""
+def rift_icon():
+    """شق متعرج عمودي: حافة متوهجة بنفسجية-زرقاء وقلب أسود."""
     c = Cell()
-    if kind == "lit":
-        pal = {"X": (200, 130, 20), "W": (255, 214, 80)}
-    elif kind == "dim":
-        pal = {"X": (40, 38, 58), "W": (66, 64, 92)}
-    else:
-        pal = {"X": (255, 170, 60), "W": (255, 250, 220)}
-    c.mask(STAR, pal, 1, 2)
-    if kind == "lit":
-        c.put(7, 7, (255, 255, 240)); c.put(7, 8, (255, 245, 200))
-    if kind == "blaze":
-        for (x, y) in ((0, 0), (14, 0), (0, 14), (14, 14), (7, 0)):
-            c.put(x, y, (255, 230, 150))
+    xs = [8, 7, 6, 7, 9, 10, 9, 7, 6, 7, 8, 9, 8]
+    for i, x in enumerate(xs):
+        y = 1 + i
+        w = 1 if i in (0, 12) else (2 if i in (1, 11) else 3)
+        for dx in range(-w, w + 1):
+            col = (20, 6, 40) if abs(dx) < w - 0 and w > 1 and abs(dx) <= w - 2 else ((150, 90, 255) if abs(dx) == w else (110, 200, 255))
+            c.put(x + dx, y, col)
+    for (x, y) in ((3, 4), (13, 9), (4, 11), (12, 3)):
+        c.put(x, y, (190, 150, 255))
     return c.outline()
 
 
-def const_icon():
-    """أيقونة الكوكبة: 4 نجوم صغيرة موصولة بخطوط."""
+def wave_glyph(on):
     c = Cell()
-    pts = [(2, 11), (6, 6), (11, 9), (13, 3)]
-    for (a, b) in zip(pts, pts[1:]):
-        for k in range(12):
-            t = k / 11
-            c.put(round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t), (110, 120, 190))
-    for (x, y) in pts:
-        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
-            c.put(x + dx, y + dy, (255, 236, 150) if (dx, dy) == (0, 0) else (255, 196, 60))
+    rows = ["X......X", "XX....XX", ".XX..XX.", "..XXXX..", "...XX..."]
+    c.mask(rows, {"X": (255, 110, 60) if on else (60, 52, 70)}, 4, 5)
+    if on:
+        c.put(7, 9, (255, 220, 160)); c.put(8, 9, (255, 220, 160))
+    return c.outline()
+
+
+def skull_glyph():
+    c = Cell()
+    rows = [".XXXXXXX.", "XXXXXXXXX", "XXXXXXXXX", "XRRXXXRRX", "XRRXXXRRX", "XXXX.XXXX", ".XXXXXXX.", "..X.X.X..", "..XXXXX.."]
+    c.mask(rows, {"X": (236, 230, 214), "R": (230, 30, 40)}, 3, 3)
     return c.outline()
 
 
@@ -277,21 +260,19 @@ def icon(kind):
         for k in range(9):
             c.put(4 + k, 11 - k, (230, 236, 250)); c.put(5 + k, 11 - k, (160, 170, 200))
         c.rect(3, 10, 6, 10, (236, 180, 50)); c.rect(4, 9, 4, 12, (236, 180, 50)); c.put(2, 13, (120, 60, 30)); c.put(3, 12, (120, 60, 30))
-    elif kind == "sigil":  # ختم النجمة: قرص بحافة ذهب و7 نقاط ونجمة بالنص
+    elif kind == "lens":  # عدسة: حلقة نحاس وزجاج سماوي بيه أرض صغيرة، ومقبض
         for y in range(16):
             for x in range(16):
-                d = math.hypot(x - 7.5, y - 7.5)
-                if d < 7:
-                    c.put(x, y, (236, 180, 50) if d > 5.8 else (26, 22, 60))
-        for i in range(7):
-            a = -math.pi / 2 + i * 2 * math.pi / 7
-            c.put(round(7.5 + math.cos(a) * 4.2), round(7.5 + math.sin(a) * 4.2), (255, 236, 150))
-        c.mask([".X.", "XWX", ".X."], {"X": (255, 196, 60), "W": (255, 255, 240)}, 6, 6)
-    elif kind == "counter":  # سيفين متقاطعين وشرارة نجمة
-        for k in range(10):
-            c.put(3 + k, 12 - k, (220, 226, 240)); c.put(12 - k, 12 - k, (220, 226, 240))
-        c.rect(2, 12, 4, 12, (180, 120, 50)); c.rect(11, 12, 13, 12, (180, 120, 50))
-        c.mask(["..X..", ".XWX.", "XWWWX", ".XWX.", "..X.."], {"X": (255, 196, 60), "W": (255, 250, 220)}, 5, 0)
+                d = math.hypot(x - 6.5, y - 6.5)
+                if d < 5.6:
+                    c.put(x, y, (205, 150, 60) if d > 4.4 else ((90, 200, 120) if y > 7 else (120, 220, 255)))
+        c.put(5, 4, (240, 255, 255)); c.put(4, 5, (240, 255, 255)); c.put(8, 9, (60, 150, 90))
+        for k in range(5):
+            c.put(10 + k, 10 + k, (120, 80, 40)); c.put(11 + k, 10 + k, (90, 56, 28))
+    elif kind == "rift_ring":  # أرض فاسدة
+        c.rect(1, 9, 14, 12, (40, 20, 70))
+        for x in range(1, 15, 2):
+            c.put(x, 9, (150, 90, 255)); c.put(x + 1, 8, (110, 200, 255))
     elif kind == "sep":
         c.mask(["X", "X", "X", "X", "X", "X", "X", "X"], {"X": (120, 100, 70)}, 7, 4)
         c.put(7, 3, (236, 180, 50)); c.put(7, 12, (236, 180, 50))
@@ -302,10 +283,10 @@ def icon(kind):
 def build_sheet():
     cells = {}
     cells[G["heart"]] = heart("full"); cells[G["heart_half"]] = heart("half"); cells[G["heart_empty"]] = heart("empty")
-    cells[G["const"]] = const_icon()
-    cells[G["star_lit"]] = star_glyph("lit")
-    cells[G["star_dim"]] = star_glyph("dim")
-    cells[G["star_blaze"]] = star_glyph("blaze")
+    cells[G["rift"]] = rift_icon()
+    cells[G["wave_on"]] = wave_glyph(True)
+    cells[G["wave_off"]] = wave_glyph(False)
+    cells[G["boss"]] = skull_glyph()
     cells[G["gold_full"]] = seg((236, 180, 50), (255, 236, 140), (170, 110, 20))
     cells[G["gold_empty"]] = seg(None, None, None, filled=False)
     cells[G["xp_full"]] = seg((70, 210, 255), (170, 240, 255), (30, 120, 200))
@@ -318,7 +299,7 @@ def build_sheet():
         cells[G["rank0"] + r] = crest(r)
     for i, k in enumerate(POWER_ORDER):
         cells[G["power0"] + i] = emblem(k)
-    for k in ("ready", "cool", "lock", "held", "sword", "sigil", "counter", "sep"):
+    for k in ("ready", "cool", "lock", "held", "sword", "lens", "rift_ring", "sep"):
         cells[G[k]] = icon(k)
     sheet = Image.new("RGBA", (C * 16, C * 16), (0, 0, 0, 0))
     for idx, cell in cells.items():
@@ -426,7 +407,7 @@ def preview(sheet, out):
     lines = [
         [("g", G["rank0"] + 2), ("t", " Warrior ", (255, 200, 60)), *[("g", G["gold_full"])] * 4, *[("g", G["gold_empty"])] * 2, ("t", " 7/15  ", (170, 170, 170)), *[("g", G["heart"])] * 7, ("g", G["heart_half"]), *[("g", G["heart_empty"])] * 2, ("t", " 31/40", (255, 90, 90))],
         [("t", "Lv 44 ", (90, 220, 255)), *[("g", G["xp_full"])] * 2, *[("g", G["xp_empty"])] * 3, ("t", " 7%  ", (170, 170, 170)), ("g", G["power0"] + 3), ("t", " Crystal Lord ", (255, 120, 220)), ("t", "Lv6/6 ", (255, 120, 255)), *[("g", G["pw_full"])] * 5],
-        [("g", G["const"]), ("t", " ", (0, 0, 0)), *[("g", G["star_lit"])] * 5, *[("g", G["star_dim"])] * 2, ("t", " 5/7  ", (255, 210, 90)), ("g", G["sigil"]), ("t", " ASCENDANT 8.4s", (255, 210, 90))],
+        [("g", G["rift"]), ("t", " Violet Rift ", (200, 120, 255)), ("t", "(Vile) 64m ↗  ", (170, 170, 170)), ("g", G["wave_on"]), ("g", G["wave_on"]), ("g", G["wave_off"]), ("t", " Wave 2/3  ", (255, 140, 90)), ("g", G["boss"])],
         [("t", "Skills ", (170, 170, 170)), ("g", G["held"]), ("g", G["ready"]), ("t", "1  ", (90, 255, 90)), ("g", G["cool"]), ("t", "2 3.4  ", (255, 90, 90)), ("g", G["ready"]), ("t", "3  ", (90, 255, 90)), ("g", G["lock"]), ("t", "4", (120, 120, 120))],
     ]
     d = ImageDraw.Draw(img)

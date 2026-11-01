@@ -60,7 +60,10 @@
     "s47": "geometry.sh_shape_afterimage",
     "s48": "geometry.sh_shape_rock_chunk",
     "s49": "geometry.sh_shape_sun_chain",
-    "s50": "geometry.sh_shape_star_halo"
+    "s50": "geometry.sh_shape_rift_blue",
+    "s51": "geometry.sh_shape_rift_violet",
+    "s52": "geometry.sh_shape_rift_crimson",
+    "s53": "geometry.sh_shape_rift_abyss"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",

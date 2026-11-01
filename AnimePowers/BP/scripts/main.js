@@ -251,8 +251,8 @@ function rarityStars(key) {
   return rarityOf(key).color + "★".repeat(idx + 1) + "§8" + "★".repeat(RARITIES.length - idx - 1);
 }
 // ───── رموز الـHUD المرسومة (RP/font/glyph_E5.png من tools/gen_hud_art.py): الرمز i = U+E500+i ─────
-const GI = { heart: 0, heart_half: 1, heart_empty: 2, constel: 3, star_lit: 4, star_dim: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
-  pw_full: 10, pw_empty: 11, star_blaze: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, sigil: 53, counter: 54, sep: 55 };
+const GI = { heart: 0, heart_half: 1, heart_empty: 2, rift: 3, wave_on: 4, wave_off: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
+  pw_full: 10, pw_empty: 11, boss: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, lens: 53, rift_ring: 54, sep: 55 };
 const GLYPH_POWERS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 const GL = (i) => String.fromCharCode(0xE500 + i);
 function gbar(frac, n, full, empty) {
@@ -280,14 +280,16 @@ function hudArt(p, st) {
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
     l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
   } else l2 += "  §7No power yet";
-  const n = cst(p).n, asc = ascendant(p);
-  let l3 = `§f${GL(GI.constel)} ${n >= STAR_MAX ? "§f" + GL(GI.star_blaze).repeat(STAR_MAX) : gbar(n / STAR_MAX, STAR_MAX, GI.star_lit, GI.star_dim)} §e${n}/${STAR_MAX}`;
-  if (asc) l3 += `  §f${GL(GI.sigil)} §e§lASCENDANT §r§7${fmtSec(asc.until - system.currentTick)}s`;
-  else if (n >= STAR_MAX && starfallUnlocked(st)) l3 += `  §f${GL(GI.sigil)} §e§lSTARFALL READY`;
-  return `${l1}\n${l2}\n${l3}`;
+  const l3 = riftHudLine(p, false);
+  return l3 ? `${l1}\n${l2}\n${l3}` : `${l1}\n${l2}`;
 }
 function hudText(p, st, plain) {
   if (!plain) return hudArt(p, st);
+  const rl = riftHudLine(p, true);
+  if (rl) return hudPlain(p, st) + "\n" + rl;
+  return hudPlain(p, st);
+}
+function hudPlain(p, st) {
   const pw = POWERS[st.power];
   const rp = rankProgress(st);
   let hp = "§c♥ --";
@@ -378,9 +380,8 @@ function heldLine(p, st, plain) {
       : `§6◎ ${nm} §8│ §7Not discovered yet, explore more`;
     return { line, tip: showTip ? "§7Use: choose destination §8│ §7Sneak + use: guide line" : "" };
   }
-  if (id === SIGIL_ITEM) {
-    const n = cst(p).n;
-    return { line: `§f${plain ? "" : GL(GI.sigil) + " "}§e§lStar Sigil§r §7│ §e${n}/7${n >= STAR_MAX ? " §aREADY" : ""} §7│ S: §aStarlight Mend`, tip: showTip ? "§7Use: Starfall Descent (7 stars) §8│ §7Sneak + use: heal (3 stars)" : "" };
+  if (id === ATLAS_ITEM) {
+    return { line: `§f${plain ? "" : GL(GI.lens) + " "}§b§lAtlas Lens§r §7│ radius ${atlasRadius(p)} blocks`, tip: showTip ? "§7Hold: live 3D map of the land around you §8│ §7Use: change zoom" : "" };
   }
   if (id === "sh:star_shard") return { line: "§b✦ Star Shard", tip: showTip ? (st.power ? "§7You already carry a power" : "§7Use: start your power draw") : "" };
   if (id === "sh:skill_scroll") return { line: "§b✦ Skill Upgrade Scroll", tip: showTip ? "§7Use: pick a skill and raise it a full level" : "" };
@@ -849,7 +850,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n§e✦ Constellation: ${cst(player).n}/7§r §7(each different skill, weapon skill, kill or counter lights a star; repeating the same move does not)\n${starfallUnlocked(st) ? "§eStarfall Descent§7: use the Star Sigil with 7 stars. They fall on your strongest enemies, then you become Ascendant for 12 seconds." : "§8Starfall Descent: unlocks at rank Trainee"}\n§eStarlit Counter§7: when an enemy hits you a star glints over it; hit it back within one second. Counters: ${st.counters || 0}\n`;
+  b += `\n${riftStatusText(player)}\n§bAtlas Lens§7: hold it to see a live 3D map of the land, monsters, rifts and places around you.\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -883,21 +884,14 @@ async function openBook(player) {
       form.button(`§8${s.name}\n§c${need}`);
     }
   }
-  form.button(starfallUnlocked(st) ? "§e[Starfall Descent]\n§7Take the Star Sigil, needs 7 lit stars" : "§8[Starfall Descent]\n§cUnlocks at rank Trainee");
   form.button("§e[Ranks and how to rise]");
   form.button("§b[Status window and how to use skills]");
   form.button("§d[World Story]");
   const r = await showForm(player, form);
   if (r.canceled) return;
-  if (r.selection === mine.length) {
-    if (!starfallUnlocked(st)) { notify(player, "§cStarfall Descent unlocks at rank Trainee", 60); return; }
-    if (!giveSigil(player, true)) notify(player, "§eThe Star Sigil is already in your inventory", 50);
-    else notify(player, "§eYou received: Star Sigil", 50);
-    return;
-  }
-  if (r.selection === mine.length + 1) { showRanks(player); return; }
-  if (r.selection === mine.length + 2) { showStatus(player); return; }
-  if (r.selection === mine.length + 3) { openLore(player); return; }
+  if (r.selection === mine.length) { showRanks(player); return; }
+  if (r.selection === mine.length + 1) { showStatus(player); return; }
+  if (r.selection === mine.length + 2) { openLore(player); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: still locked`, 60); return; }
@@ -1089,24 +1083,10 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
-      later(80, () => giveSigil(player, true));
     }
   }
 }
 
-function giveSigil(p, announce) {
-  try {
-    const st = getState(p);
-    if (!starfallUnlocked(st) || hasItem(p, SIGIL_ITEM)) return false;
-    giveItem(p, SIGIL_ITEM);
-    if (announce && !st.sigilTold) {
-      st.sigilTold = true; saveState(p, st);
-      sfxPlayer(p, "sh.kat_levelup", 1, 0.8);
-      say(p, "§e[Star Sigil] §fThe fallen star answers you. Light your §e7-star constellation§f by fighting with different moves (it shows at the top and above your head), then use the Sigil: your stars fall on your enemies and you become §eAscendant§f. §7Sneak + use: Starlight Mend (heal for 3 stars).");
-    }
-    return true;
-  } catch (e) { return false; }
-}
 // صحة اللاعب تزيد مع الرتبة (+4 لكل رتبة) عبر health_boost يتجدد كل 5 ثواني
 function applyVitality(p, fill) {
   try {
@@ -1146,7 +1126,6 @@ function handleKill(player, info) {
   saveState(player, st);
   announceUps(player, res.ups);
   grantSkillXp(player, res.xp);
-  lightStar(player, `kill${system.currentTick}`);
 }
 
 world.afterEvents.entityDie.subscribe((ev) => {
@@ -1383,7 +1362,7 @@ function skillHitXp(by, target) {
   } catch (err) { /* */ }
 }
 function hurt(e, amount, by) {
-  try { e.applyDamage(amount * skillDmgMul(by) * (by && by.typeId === "minecraft:player" && ascendant(by) ? 1.25 : 1), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
+  try { e.applyDamage(amount * skillDmgMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
 }
 function viewDir(p) {
   try { return p.getViewDirection(); } catch (e) { return { x: 0, y: 0, z: 1 }; }
@@ -1624,238 +1603,392 @@ function breakBlocks(dim, positions, max = 40) {
   return n;
 }
 
-// ═════════════════════════ ميزات النجمة الساقطة (فكرة خاصة بالمود) ═════════════════════════
-// الكوكبة: كل حركة مختلفة (مهارة، مهارة سلاح، قتلة، رد نجمي) تضوي نجمة من 7، وتطلع 3D فوق راسك بنمط خاص بقدرتك.
-//   نفس الحركة مرتين ورا بعض ما تضوي (اللعبة تكافئ التنويع). إذا وقفت عن القتال 10 ثواني تنطفي نجمة كل 3 ثواني.
-// سقوط النجوم (ختم النجمة، رتبة Trainee): الكوكبة الكاملة ترتفع وتنزل نجمة نجمة على أقوى 7 أعداء بطبع قدرتك،
-//   وبعدها تصير "صاعد" 12 ثانية: هالة نجوم، كولداون أسرع، ضرر أعلى، وكل مهارة تطلق نجمة على أقرب عدو.
-// الرد النجمي: من يضربك عدو تلمع نجمة فوق راسه ثانية وحدة؛ إذا ضربته بهاي الثانية = رد قوي يشله ويضوي نجمتين.
-const STAR_MAX = 7, ASCEND_T = 240;
-const constel = new Map(); // pid -> { n, last, lastKey, nextDim, ents }
-const ascend = new Map();  // pid -> { until, halo }
-function cst(p) {
-  let c = constel.get(p.id);
-  if (!c) { c = { n: 0, last: 0, lastKey: "", nextDim: 0, ents: [] }; constel.set(p.id, c); }
-  return c;
+// ═════════════════════════ الصدع (Rift) ═════════════════════════
+// يتفتح نادراً (محاولة كل دقيقتين باحتمال 8%) على بعد 40-70 بلوكة من لاعب، وحد أقصى صدع واحد بالعالم.
+// لونه يحدد رتبة زعيمه: أزرق = دنيئة (Lowly)، بنفسجي = خبيثة (Vile)، قرمزي = مرعبة (Dread)، ذهبي أسود = كارثية (Cataclysm).
+// يكبر كل 30 ثانية ويفسد الأرض حواليه (ترجع طبيعية لما يتسد). من يقرب لاعب 14 بلوكة تبدي 3 موجات، والثالثة زعيم.
+// قتل الزعيم = الصدع ينسد ومكافآت حسب لونه. إذا ما أحد سده خلال 20 دقيقة ينفجر ويطلق زعيمه بالعالم.
+const RIFT_TIERS = [
+  { key: "blue", name: "Blue Rift", rank: "Lowly", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:warped_nylium", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
+  { key: "violet", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:purple_terracotta", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
+  { key: "crimson", name: "Crimson Rift", rank: "Dread", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:crimson_nylium", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
+  { key: "abyss", name: "Abyssal Rift", rank: "Cataclysm", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
+];
+const RIFT_LIFE = 24000, RIFT_ENGAGE = 14, RIFT_MAX_R = 12;
+const RIFT_GROUND = new Set(["minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:podzol", "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:stone", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:snow", "minecraft:mycelium", "minecraft:moss_block", "minecraft:mud", "minecraft:terracotta", "minecraft:sandstone"]);
+let rift = null;
+function riftState() { return rift; }
+function riftTier() { return rift ? RIFT_TIERS[rift.tier] : undefined; }
+function riftSave() {
+  try { world.setDynamicProperty("sh_rift", rift ? JSON.stringify({ ...rift, ent: undefined, scars: rift.scars.slice(0, 700) }) : undefined); } catch (e) { /* */ }
 }
-function starfallUnlocked(st) { return !!st.power && st.rank >= 1; }
-function ascendant(p) { const a = ascend.get(p.id); return a && system.currentTick < a.until ? a : undefined; }
-// نمط الكوكبة لكل قدرة (ثابت، من اسمها): 7 نقاط حول الراس
-const patternCache = {};
-function starPattern(power) {
-  if (patternCache[power]) return patternCache[power];
-  let h = 7;
-  for (const ch of String(power)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const rnd = () => { h = (Math.imul(h, 1103515245) + 12345) >>> 0; return h / 4294967296; };
-  const pts = [];
-  for (let i = 0; i < STAR_MAX; i++) {
-    const a = (i / STAR_MAX) * Math.PI * 2 + (rnd() - 0.5) * 0.7;
-    const r = 0.8 + rnd() * 0.8;
-    pts.push({ x: Math.cos(a) * r, y: (rnd() - 0.5) * 0.6, z: Math.sin(a) * r });
+system.runTimeout(() => {
+  try { const raw = world.getDynamicProperty("sh_rift"); if (typeof raw === "string") rift = JSON.parse(raw); } catch (e) { rift = null; }
+}, 40);
+function nearStructure(x, z, d) { try { return getStructs().some((s) => Math.hypot(s.x - x, s.z - z) < d); } catch (e) { return false; } }
+function openRift(p, tierIdx, force) {
+  if (rift || p.dimension.id !== "minecraft:overworld") return false;
+  const dim = p.dimension;
+  for (let i = 0; i < 14; i++) {
+    const a = Math.random() * Math.PI * 2, d = force ? 14 + Math.random() * 6 : 40 + Math.random() * 30;
+    const x = Math.floor(p.location.x + Math.cos(a) * d), z = Math.floor(p.location.z + Math.sin(a) * d);
+    if (!force && nearStructure(x, z, 40)) continue;
+    let top;
+    try { top = dim.getTopmostBlock({ x, z }); } catch (e) { continue; }
+    if (!top || /water|lava|leaves|log|ice/.test(top.typeId)) continue;
+    rift = { id: `r${Date.now() % 100000}`, tier: tierIdx, dim: dim.id, x: x + 0.5, y: top.y + 1, z: z + 0.5, age: 0, r: 0, phase: "growing", wave: 0, pause: 0, bossId: "", scars: [], pulse: 0 };
+    riftGrow();
+    const t = RIFT_TIERS[tierIdx];
+    for (const q of world.getAllPlayers()) {
+      if (q.dimension.id !== dim.id) continue;
+      const dist = Math.round(dist2d(q.location, rift)), dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
+      const dir = dirs[((Math.round((Math.atan2(rift.z - q.location.z, rift.x - q.location.x) * 180) / Math.PI / 45) % 8) + 8) % 8];
+      say(q, `${t.col}§l[${t.name}]§r §fA rift tore open ${dist} blocks to the ${dir}. Its warden is of the §l${t.col}${t.rank}§r§f rank. Close it before it spreads.`);
+      sfxPlayer(q, "sh.blackhole", 0.8, 0.6);
+      try { q.onScreenDisplay.setTitle(`${t.col}§l${t.name.toUpperCase()}`, { subtitle: `§7${dist}m ${dir} · Warden: ${t.col}${t.rank}`, fadeInDuration: 5, stayDuration: 50, fadeOutDuration: 15 }); } catch (e) { /* */ }
+    }
+    riftSave();
+    return true;
   }
-  return (patternCache[power] = pts);
+  return false;
 }
-function lightStar(p, key, n = 1) {
-  const c = cst(p);
-  if (key && key === c.lastKey) return;
-  if (key) c.lastKey = key;
-  c.last = system.currentTick;
-  if (ascendant(p)) return;
-  const was = c.n;
-  c.n = Math.min(STAR_MAX, c.n + n);
-  if (c.n === was) return;
-  sfxPlayer(p, "sh.tick", 0.7, 0.9 + c.n * 0.12);
-  if (c.n === STAR_MAX) {
-    try {
-      if (starfallUnlocked(getState(p))) { sfxPlayer(p, "sh.ready", 1, 0.8); notify(p, "§e§l✦ Your constellation is complete: §r§eStarfall Descent is ready", 70); }
-      else notify(p, "§eConstellation complete §7(Starfall Descent unlocks at rank Trainee)", 60);
-    } catch (e) { /* */ }
+// الفساد يتوسع حلقة حلقة (وتسجل البلوكات الأصلية حتى ترجع)
+function riftGrow() {
+  if (!rift || rift.r >= RIFT_MAX_R) return;
+  const t = riftTier(), dim = world.getDimension(rift.dim);
+  const r0 = rift.r, r1 = rift.r === 0 ? 3 : rift.r + 1;
+  rift.r = r1;
+  const cx = Math.floor(rift.x), cz = Math.floor(rift.z), id = rift.id;
+  system.runJob((function* () {
+    let n = 0;
+    for (let dx = -r1; dx <= r1; dx++) for (let dz = -r1; dz <= r1; dz++) {
+      const d = Math.hypot(dx, dz);
+      if (d > r1 || d <= r0 || (d > r1 - 1.2 && Math.random() < 0.45)) continue;
+      if (++n % 10 === 0) yield;
+      try {
+        if (!rift || rift.id !== id || rift.scars.length >= 700) return;
+        const top = dim.getTopmostBlock({ x: cx + dx, z: cz + dz });
+        if (!top || !RIFT_GROUND.has(top.typeId) || Math.abs(top.y - rift.y) > 6) continue;
+        rift.scars.push([top.x, top.y, top.z, top.typeId]);
+        top.setType(t.ground);
+        if (Math.random() < 0.25) glow(dim, { x: top.x + 0.5, y: top.y + 1.1, z: top.z + 0.5 }, { color: t.rgb, size: 0.25, life: 0.9, rise: 0.6 });
+      } catch (e) { /* */ }
+    }
+  })());
+}
+function riftRestore(scars, ground) {
+  const dim = world.getDimension(rift ? rift.dim : "minecraft:overworld");
+  system.runJob((function* () {
+    let n = 0;
+    for (const [x, y, z, type] of scars) {
+      if (++n % 12 === 0) yield;
+      try { const b = dim.getBlock({ x, y, z }); if (b && b.typeId === ground) b.setType(type); } catch (e) { /* */ }
+    }
+  })());
+}
+function riftPlayersNear(r) {
+  if (!rift) return [];
+  return world.getAllPlayers().filter((q) => q.dimension.id === rift.dim && Math.hypot(q.location.x - rift.x, q.location.z - rift.z) <= r);
+}
+function riftMobs() {
+  try { return world.getDimension(rift.dim).getEntities({ tags: ["sh_rift"], location: rift, maxDistance: 60 }); } catch (e) { return []; }
+}
+function riftSpawnMob(type, boss) {
+  const t = riftTier(), dim = world.getDimension(rift.dim);
+  const a = Math.random() * Math.PI * 2, d = 1.5 + Math.random() * 2;
+  const x = rift.x + Math.cos(a) * d, z = rift.z + Math.sin(a) * d;
+  let y = rift.y;
+  try { const top = dim.getTopmostBlock({ x: Math.floor(x), z: Math.floor(z) }); if (top && Math.abs(top.y + 1 - rift.y) < 5) y = top.y + 1; } catch (e) { /* */ }
+  let e;
+  try { e = dim.spawnEntity(type, { x, y, z }); } catch (err) { return undefined; }
+  const pr = Math.max(0, ...riftPlayersNear(60).map((q) => getState(q).rank));
+  scaleMonster(e, Math.min(RANKS.length - 1 + 2, Math.max(pr, t.mob) + (boss ? 2 : 0)));
+  try { e.addTag("sh_rift"); } catch (err) { /* */ }
+  burst(dim, { x, y: y + 1, z }, 10, t.rgb, 3, 0.25);
+  try { e.applyKnockback({ x: Math.cos(a) * 0.6, z: Math.sin(a) * 0.6 }, 0.4); } catch (err) { /* */ }
+  if (boss) {
+    try { e.triggerEvent("sh:rift_boss"); } catch (err) { /* */ }
+    try { e.addTag("sh_rift_boss"); } catch (err) { /* */ }
+    const amp = Math.min(250, t.boss + pr * 2);
+    later(3, () => {
+      try {
+        e.addEffect("health_boost", 1000000, { amplifier: amp, showParticles: false });
+        e.addEffect("strength", 1000000, { amplifier: rift && rift.tier >= 2 ? 1 : 0, showParticles: false });
+        e.addEffect("resistance", 1000000, { amplifier: rift && rift.tier >= 3 ? 1 : 0, showParticles: false });
+        later(2, () => { try { e.getComponent("minecraft:health").resetToMaxValue(); } catch (err) { /* */ } });
+      } catch (err) { /* */ }
+    });
+    try { e.nameTag = `${t.col}§l[${t.rank}] Rift Warden§r §7(${MON_NAMES[type] || "?"})`; } catch (err) { /* */ }
+    rift.bossId = e.id;
+  }
+  return e;
+}
+function riftStartWave(n) {
+  const t = riftTier();
+  rift.wave = n;
+  rift.pause = 0;
+  for (const q of riftPlayersNear(48)) {
+    try { q.onScreenDisplay.setTitle(n === 3 ? `${t.col}§lTHE WARDEN` : `${t.col}§lWAVE ${n}/3`, { subtitle: n === 3 ? `§7Rank: ${t.col}${t.rank}` : `§7${t.name}`, fadeInDuration: 3, stayDuration: 30, fadeOutDuration: 10 }); } catch (e) { /* */ }
+    sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
+  }
+  const dim = world.getDimension(rift.dim);
+  popShape(dim, "nova", { x: rift.x, y: rift.y + 2.2, z: rift.z }, 0.3, 1.6, 8, { s: 300 });
+  if (n === 3) {
+    later(20, () => { if (rift) { riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], true); for (let i = 0; i < 2; i++) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false); } });
+  } else {
+    const count = t.waves[n - 1];
+    for (let i = 0; i < count; i++) later(i * 6, () => { if (rift) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false); });
+  }
+  riftSave();
+}
+// زعيم الصدع: نبضة كل 8 ثواني تضرب اللاعبين القريبين (وبالقرمزي والكارثي تطلع وحش مساعد)
+function riftBossPulse(boss) {
+  const t = riftTier(), dim = boss.dimension;
+  spawnFx(dim, "circle", boss.location, t.circle, 6, 16);
+  waveFx(dim, boss.location, 6, t.circle, 10);
+  sfx(dim, "sh.guard_slam", boss.location, 1.2, 0.6);
+  for (const q of world.getAllPlayers()) {
+    if (q.dimension.id !== dim.id || dist2d(q.location, boss.location) > 6) continue;
+    try { q.applyDamage(3 + rift.tier * 2, { cause: EntityDamageCause.entityAttack, damagingEntity: boss }); } catch (e) { /* */ }
+    pushAway(boss.location, q, 1.4, 0.45);
+  }
+  if (rift.tier >= 2 && riftMobs().length < 6) riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], false);
+}
+function closeRift(victory, killer) {
+  if (!rift) return;
+  const r = rift, t = RIFT_TIERS[r.tier], dim = world.getDimension(r.dim);
+  rift = null;
+  riftSave();
+  removeFx(r.ent);
+  const c = { x: r.x, y: r.y + 2.2, z: r.z };
+  const imp = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + r.r * 0.08, s: 600, life: 16 });
+  tween(12, 1, (k) => setShape(imp, "sh:r", (1.2 + r.r * 0.08) * (1 - k)), () => { popShape(dim, "nova", c, 0.3, 2.4, 8, { s: 400, ease: "out" }); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
+  riftRestore(r.scars, t.ground);
+  if (!victory) return;
+  // المكافآت تنزل عند الصدع
+  const drops = ["sh:xp_scroll_big", "sh:xp_scroll_small", "sh:xp_scroll_small"];
+  for (let i = 0; i < Math.floor(t.skill); i++) drops.push("sh:skill_scroll");
+  if (Math.random() < t.skill % 1) drops.push("sh:skill_scroll");
+  if (Math.random() < t.weapon) drops.push(["sh:dawn_dagger", "sh:shadow_blade", "sh:shadow_claws", "sh:ember_cleaver", "sh:stone_maul", "sh:sunset_spear"][Math.floor(Math.random() * 6)]);
+  drops.push(...Array(1 + r.tier).fill(r.tier >= 2 ? "minecraft:diamond" : "minecraft:emerald"));
+  later(14, () => { for (const id of drops) { try { dim.spawnItem(new ItemStack(id, 1), { x: r.x + (Math.random() - 0.5), y: r.y + 1, z: r.z + (Math.random() - 0.5) }); } catch (e) { /* */ } } });
+  for (const q of world.getAllPlayers()) {
+    if (q.dimension.id !== r.dim || Math.hypot(q.location.x - r.x, q.location.z - r.z) > 60) continue;
+    try { q.onScreenDisplay.setTitle("§f§lRIFT SEALED", { subtitle: `${t.col}${t.name} §7· rewards dropped at the rift`, fadeInDuration: 4, stayDuration: 50, fadeOutDuration: 15 }); } catch (e) { /* */ }
+    const st = getState(q), amt = 80 * (r.tier + 1);
+    const ups = addXp(st, amt);
+    if (st.power) ups.push(...addPowerXp(st, amt, rarityOf(st.power).maxLv));
+    st.rifts = (st.rifts || 0) + 1;
+    saveState(q, st);
+    announceUps(q, ups);
+    sfxPlayer(q, "sh.rank_up", 1, 1.2);
   }
 }
-function starPos(p, i, now) {
-  const pt = starPattern(getState(p).power || "none")[i];
-  const a = now * 0.025, ca = Math.cos(a), sa = Math.sin(a);
-  const h = headPos(p);
-  return { x: h.x + pt.x * ca - pt.z * sa, y: h.y + 0.9 + pt.y, z: h.z + pt.x * sa + pt.z * ca };
-}
-// النجوم تتبع اللاعب، والخطوط بينها تنرسم، والانطفاء البطيء
+world.afterEvents.entityDie.subscribe((ev) => {
+  try { if (rift && rift.bossId && ev.deadEntity.id === rift.bossId) closeRift(true, ev.damageSource && ev.damageSource.damagingEntity); } catch (e) { /* */ }
+});
+// القلب: كل ثانية
 system.runInterval(() => {
-  const now = system.currentTick;
+  try {
+    const now = system.currentTick;
+    if (!rift) {
+      if (now % 2400 === 0 && Math.random() < 0.08) {
+        const ps = world.getAllPlayers().filter((q) => q.dimension.id === "minecraft:overworld");
+        if (ps.length) {
+          const p = ps[Math.floor(Math.random() * ps.length)], rank = getState(p).rank;
+          const ok = RIFT_TIERS.map((t, i) => ({ t, i })).filter((x) => x.t.minRank <= rank);
+          let roll = Math.random() * ok.reduce((a, x) => a + x.t.weight, 0), pick = 0;
+          for (const x of ok) { roll -= x.t.weight; if (roll <= 0) { pick = x.i; break; } }
+          openRift(p, pick, false);
+        }
+      }
+      return;
+    }
+    const t = riftTier(), dim = world.getDimension(rift.dim);
+    rift.age += 20;
+    const near = riftPlayersNear(64);
+    if (!near.length) { if (rift.age > RIFT_LIFE && rift.phase !== "battle") closeRift(false); return; }
+    // الشكل: شق كبير يكبر ويه الفساد
+    const c = { x: rift.x, y: rift.y + 2.2, z: rift.z };
+    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + rift.r * 0.08, s: 18, life: 1100 });
+    else setShape(rift.ent, "sh:r", 1.2 + rift.r * 0.08);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * Math.PI * 2, rr = 1 + Math.random() * rift.r;
+      glow(dim, { x: rift.x + Math.cos(a) * rr, y: rift.y + 0.3, z: rift.z + Math.sin(a) * rr }, { color: t.rgb, size: 0.25, life: 1.2, rise: 1.2 });
+    }
+    if (rift.age % 600 === 0) riftGrow();
+    if (rift.age % 200 === 0) sfx(dim, "sh.blackhole", c, 0.5, 0.5);
+    if (rift.phase === "growing") {
+      if (riftPlayersNear(RIFT_ENGAGE).length) { rift.phase = "battle"; riftStartWave(1); }
+      else if (rift.age > RIFT_LIFE) {
+        // ما أحد سده: ينفجر ويطلق زعيمه بالعالم
+        const b = riftSpawnMob(RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)], true);
+        for (const q of world.getAllPlayers()) say(q, `${t.col}§l[${t.name}]§r §cThe rift erupted. Its warden now roams the land.`);
+        if (b) { try { b.removeTag("sh_rift"); } catch (e) { /* */ } }
+        closeRift(false);
+      }
+      return;
+    }
+    // المعركة: الموجة تخلص لما ما يبقى وحش من الصدع
+    const mobs = riftMobs();
+    if (rift.wave < 3 && mobs.length === 0) {
+      rift.pause += 20;
+      if (rift.pause === 20) for (const q of riftPlayersNear(48)) notify(q, `${t.col}Wave ${rift.wave} cleared. The rift stirs...`, 60);
+      if (rift.pause >= 100) riftStartWave(rift.wave + 1);
+    }
+    if (rift.wave === 3) {
+      const boss = mobs.find((m) => m.id === rift.bossId);
+      if (boss) { rift.pulse += 20; if (rift.pulse >= 160) { rift.pulse = 0; riftBossPulse(boss); } }
+      else if (rift.bossId && rift.pause++ > 4 && !mobs.some((m) => m.id === rift.bossId)) {
+        // الزعيم اختفى (مو قتل): نطلع زعيم جديد
+        rift.bossId = ""; riftStartWave(3);
+      }
+    }
+    if (rift.age % 100 === 0) riftSave();
+  } catch (e) { /* */ }
+}, 20);
+function riftHudLine(p, plain) {
+  if (!rift || p.dimension.id !== rift.dim) return "";
+  const t = riftTier(), dist = Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z));
+  const arrow = compassArrow(p, rift);
+  let line = `${plain ? "§d⟁" : "§f" + GL(GI.rift)} ${t.col}§l${t.name}§r §7(${t.rank}) ${dist}m ${arrow}`;
+  if (rift.phase === "battle") {
+    const waves = plain ? `§c${rift.wave}/3` : "§f" + GL(GI.wave_on).repeat(rift.wave) + GL(GI.wave_off).repeat(3 - rift.wave);
+    line += `  ${waves} §6Wave ${rift.wave}/3`;
+    if (rift.wave === 3 && !plain) line += ` §f${GL(GI.boss)}`;
+  } else line += `  §7spreading ${rift.r}/${RIFT_MAX_R}`;
+  return line;
+}
+function riftStatusText(p) {
+  const st = getState(p);
+  if (!rift) return `§5Rifts§7: none open right now. They tear open rarely; the warden's rank follows the rift's color. Sealed: ${st.rifts || 0}`;
+  const t = riftTier();
+  return `${t.col}${t.name}§7 open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
+}
+
+// ═════════════════════════ عدسة الأطلس: خريطة 3D مجسمة حية ═════════════════════════
+// من تمسك العدسة تطلع قدامك نسخة مصغرة من الأرض حواليك (ارتفاعات وألوان البلوكات الحقيقية) تدور ويا نظرك،
+// وبيها: الوحوش (أحمر)، اللاعبين (سماوي)، البنايات (ذهبي)، المدرب (أبيض)، والصدع بلونه. الاستعمال يغير الزوم.
+const ATLAS_ZOOMS = [24, 40, 64];
+const atlasZoomOf = new Map(), atlasData = new Map();
+function atlasRadius(p) { return ATLAS_ZOOMS[atlasZoomOf.get(p.id) ?? 1]; }
+function atlasZoom(p) {
+  const i = ((atlasZoomOf.get(p.id) ?? 1) + 1) % ATLAS_ZOOMS.length;
+  atlasZoomOf.set(p.id, i);
+  atlasData.delete(p.id);
+  sfxPlayer(p, "sh.select", 0.8, 0.9 + i * 0.2);
+  notify(p, `§bAtlas Lens: radius ${ATLAS_ZOOMS[i]} blocks`, 30);
+}
+function atlasColor(id) {
+  if (id.includes("water")) return [0.25, 0.5, 1];
+  if (id.includes("lava") || id.includes("magma")) return [1, 0.45, 0.1];
+  if (id.includes("leaves") || id.includes("azalea")) return [0.18, 0.55, 0.22];
+  if (id.includes("log") || id.includes("wood") || id.includes("planks")) return [0.5, 0.36, 0.2];
+  if (id.includes("snow") || id.includes("ice")) return [0.92, 0.96, 1];
+  if (id.includes("sand")) return [0.92, 0.85, 0.55];
+  if (id.includes("grass") || id.includes("moss") || id.includes("fern")) return [0.38, 0.8, 0.32];
+  if (id.includes("dirt") || id.includes("mud") || id.includes("podzol")) return [0.55, 0.4, 0.25];
+  if (id.includes("warped")) return [0.2, 0.8, 0.85];
+  if (id.includes("crimson")) return [0.9, 0.2, 0.25];
+  if (id.includes("purple")) return [0.6, 0.3, 0.9];
+  if (id.includes("blackstone")) return [0.15, 0.13, 0.18];
+  if (id.includes("cherry")) return [1, 0.65, 0.8];
+  if (id.includes("stone") || id.includes("andesite") || id.includes("gravel") || id.includes("deepslate") || id.includes("cobble")) return [0.58, 0.58, 0.62];
+  return [0.7, 0.7, 0.72];
+}
+function holo(dim, loc, c, size, life = 0.62) {
+  try {
+    const m = new MolangVariableMap();
+    m.setFloat("variable.r", c[0]); m.setFloat("variable.g", c[1]); m.setFloat("variable.b", c[2]);
+    m.setFloat("variable.size", size); m.setFloat("variable.life", life); m.setFloat("variable.speed", 0); m.setFloat("variable.rise", 0);
+    dim.spawnParticle("sh:glow", loc, m);
+  } catch (e) { /* */ }
+}
+function holdingAtlas(p) { try { const it = inv(p).getItem(p.selectedSlotIndex); return !!it && it.typeId === ATLAS_ITEM; } catch (e) { return false; } }
+// المسح: كل ثانيتين، شبكة 21×21 حول اللاعب (تتوزع على عدة تكات)
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    if (!holdingAtlas(p)) { atlasData.delete(p.id); continue; }
+    const R = atlasRadius(p), step = R / 10, cx = p.location.x, cz = p.location.z, dim = p.dimension;
+    const cells = [];
+    system.runJob((function* () {
+      let n = 0;
+      for (let i = -10; i <= 10; i++) for (let j = -10; j <= 10; j++) {
+        if (i * i + j * j > 100) continue;
+        if (++n % 30 === 0) yield;
+        try {
+          const top = dim.getTopmostBlock({ x: Math.floor(cx + i * step), z: Math.floor(cz + j * step) });
+          if (top) cells.push({ dx: i * step, dz: j * step, y: top.y + 1, col: atlasColor(top.typeId) });
+        } catch (e) { /* شنك مو محمل */ }
+      }
+      atlasData.set(p.id, { cx, cz, R, cells });
+    })());
+  }
+}, 40);
+// الرسم: كل نص ثانية
+system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     try {
-      const c = cst(p);
-      if (c.n > 0 && now - c.last > 200 && now >= c.nextDim) { c.n--; c.nextDim = now + 60; }
-      c.ents = c.ents.filter((e) => valid(e));
-      while (c.ents.length > c.n) removeFx(c.ents.pop());
-      while (c.ents.length < c.n) {
-        const e = shapeFx(p.dimension, "star5", starPos(p, c.ents.length, now), { r: 0.32, s: 240, life: 1200 });
-        if (!e) break;
-        c.ents.push(e);
+      if (!holdingAtlas(p)) continue;
+      const data = atlasData.get(p.id);
+      const dim = p.dimension, f = flatDir(p), rt = { x: -f.z, z: f.x }, eye = eyePos(p);
+      const C = { x: eye.x + f.x * 1.75, y: eye.y - 0.6, z: eye.z + f.z * 1.75 };
+      const R = atlasRadius(p), k = 0.95 / R;
+      const at = (dx, dz, y, lift = 0) => {
+        const fw = dx * f.x + dz * f.z, rr = dx * rt.x + dz * rt.z;
+        const hy = Math.max(-0.28, Math.min(0.42, (y - p.location.y) * 0.022));
+        return { x: C.x + (f.x * fw + rt.x * rr) * k, y: C.y + hy + lift, z: C.z + (f.z * fw + rt.z * rr) * k };
+      };
+      const clampXZ = (dx, dz) => { const d = Math.hypot(dx, dz); return d > R ? { dx: (dx / d) * R, dz: (dz / d) * R, edge: true } : { dx, dz, edge: false }; };
+      // الإطار والقاعدة
+      for (let i = 0; i < 30; i++) {
+        const a = (i / 30) * Math.PI * 2;
+        holo(dim, { x: C.x + Math.cos(a) * 1.0, y: C.y - 0.32, z: C.z + Math.sin(a) * 1.0 }, [0.35, 0.9, 1], 0.045);
       }
-      c.ents.forEach((e, i) => moveShape(e, starPos(p, i, now)));
-      if (now % 10 === 0 && c.n > 1) {
-        for (let i = 0; i < c.ents.length - 1; i++) pixLine(p.dimension, c.ents[i].location, c.ents[i + 1].location, c.n >= STAR_MAX ? STAR_WHITE : [0.55, 0.6, 1], 4, 0.1, 0.5);
+      holo(dim, { x: C.x, y: C.y - 0.36, z: C.z }, [0.3, 0.8, 1], 0.22, 0.5);
+      // الأرض
+      if (data) {
+        const ox = data.cx - p.location.x, oz = data.cz - p.location.z;
+        for (const cell of data.cells) {
+          const q = at(cell.dx + ox, cell.dz + oz, cell.y);
+          const c = cell.col;
+          holo(dim, q, [c[0] * 0.8 + 0.1, c[1] * 0.8 + 0.15, c[2] * 0.8 + 0.2], 0.075);
+        }
+      }
+      // أنت بالنص
+      holo(dim, { x: C.x, y: C.y + 0.08, z: C.z }, [1, 1, 1], 0.11);
+      holo(dim, { x: C.x + f.x * 0.07, y: C.y + 0.08, z: C.z + f.z * 0.07 }, [1, 1, 1], 0.06);
+      // الوحوش واللاعبين
+      for (const e of enemiesNear(dim, p.location, R, p.id)) {
+        const q = at(e.location.x - p.location.x, e.location.z - p.location.z, e.location.y, 0.09);
+        holo(dim, q, e.hasTag("sh_rift_boss") ? [1, 0.85, 0.2] : [1, 0.15, 0.15], e.hasTag("sh_rift_boss") ? 0.14 : 0.08);
+      }
+      for (const q2 of world.getAllPlayers()) {
+        if (q2.id === p.id || q2.dimension.id !== dim.id || dist2d(q2.location, p.location) > R) continue;
+        holo(dim, at(q2.location.x - p.location.x, q2.location.z - p.location.z, q2.location.y, 0.09), [0.3, 1, 1], 0.09);
+      }
+      // البنايات والمدرب (اللي برا الخريطة تطلع على الحافة)
+      const mark = (x, z, y, col, size, tall) => {
+        const m = clampXZ(x - p.location.x, z - p.location.z);
+        const q = at(m.dx, m.dz, m.edge ? p.location.y : y, 0.05);
+        holo(dim, q, col, m.edge ? size * 0.8 : size);
+        if (tall && !m.edge) for (let h = 1; h <= 3; h++) holo(dim, { x: q.x, y: q.y + h * 0.06, z: q.z }, col, 0.04);
+      };
+      for (const st of getStructs()) if (Math.hypot(st.x - p.location.x, st.z - p.location.z) < R * 4) mark(st.x, st.z, st.y || p.location.y, [1, 0.8, 0.25], 0.12, true);
+      const tp = trainerPos(p);
+      if (tp) mark(tp.x, tp.z, p.location.y, [1, 1, 1], 0.09, false);
+      if (rift && rift.dim === dim.id) {
+        const t = riftTier();
+        mark(rift.x, rift.z, rift.y, t.rgb, 0.16, true);
+        const m = clampXZ(rift.x - p.location.x, rift.z - p.location.z);
+        if (!m.edge) {
+          const rr = rift.r * k;
+          for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const base = at(m.dx, m.dz, rift.y); holo(dim, { x: base.x + Math.cos(a) * rr, y: base.y + 0.02, z: base.z + Math.sin(a) * rr }, t.rgb, 0.04); }
+        }
       }
     } catch (e) { /* */ }
   }
-}, 2);
-world.afterEvents.playerLeave.subscribe((ev) => {
-  const c = constel.get(ev.playerId);
-  if (c) c.ents.forEach(removeFx);
-  constel.delete(ev.playerId);
-});
-
-// ── طبع كل قدرة لما تنزل نجمتها على عدو ──
-function starFlavor(p, e) {
-  const dim = e.dimension, c3 = center3(e);
-  switch (getState(p).power) {
-    case "crystal": popShape(dim, "crystal_cluster", e.location, 0.3, 1.3, 5); addCrystal(e, p, 1); break;
-    case "accountant": if (numberOf(e) === undefined) { setNum(e, 6); numOwners.set(e.id, { e, pid: p.id }); } else decNum(e, 2, p); break;
-    case "law": popShape(dim, "weight", { x: e.location.x, y: e.location.y + 2.4, z: e.location.z }, 0.3, 0.7, 6); effect(e, "slowness", 60, 3); effect(e, "weakness", 60, 1); break;
-    case "distance": popShape(dim, "space_cube", c3, 1.4, 0.2, 8, { s: 600 }); pullTo(p.location, e, 1.2, 0.2); break;
-    case "echo": popShape(dim, "sound_ring", c3, 0.4, 2.2, 7, { yaw: yawOf(p.location, e.location) }); later(20, () => { if (valid(e)) hurt(e, 4, p); }); break;
-    case "iron": popShape(dim, "iron_fist", c3, 1.4, 2.0, 5, { yaw: yawOf(p.location, e.location) }); pushAway(p.location, e, 1.6, 0.4); break;
-    case "wind": popShape(dim, "wind_crescent", c3, 0.6, 1.8, 6, { s: 900 }); try { e.applyKnockback({ x: 0, z: 0 }, 0.8); } catch (err) { /* */ } break;
-    case "borrower": popShape(dim, "fang_jaw", c3, 0.9, 1.3, 9, { yaw: yawOf(e.location, p.location) }); effect(e, "poison", 60, 0); break;
-    case "star": popShape(dim, "black_hole", c3, 0.2, 0.9, 10, { s: 400 }); try { e.setOnFire(3, false); } catch (err) { /* */ } break;
-    default: break;
-  }
-}
-// ── سقوط النجوم ──
-function starfallDescent(p) {
-  const st = getState(p);
-  if (!st.power) { notify(p, "§cYou have no power", 40); return; }
-  if (!starfallUnlocked(st)) { notify(p, "§cStarfall Descent unlocks at rank Trainee", 60); return; }
-  if (ascendant(p)) { notify(p, "§eYou are already Ascendant", 30); return; }
-  const c = cst(p);
-  if (c.n < STAR_MAX) { notify(p, `§7Constellation ${c.n}/7: use different skills, weapon skills and counters to light it`, 60); return; }
-  const dim = p.dimension, pw = POWERS[st.power], now = system.currentTick;
-  const from = Array.from({ length: STAR_MAX }, (_, i) => (c.ents[i] && valid(c.ents[i]) ? { ...c.ents[i].location } : starPos(p, i, now)));
-  c.ents.forEach(removeFx); c.ents = []; c.n = 0; c.lastKey = "";
-  for (const q of world.getAllPlayers()) {
-    try {
-      if (q.dimension.id !== dim.id || dist2d(q.location, p.location) > 40) continue;
-      q.onScreenDisplay.setTitle("§e§l✦ STARFALL ✦", { subtitle: `${pw.color}${pw.name} §7descends`, fadeInDuration: 4, stayDuration: 40, fadeOutDuration: 10 });
-    } catch (e) { /* */ }
-  }
-  sfx(dim, "sh.supernova_charge", p.location, 1.4, 1.2);
-  // 1) النجوم ترتفع للسما وترسم الكوكبة بكبر
-  const sky = from.map((f, i) => ({ x: p.location.x + (f.x - p.location.x) * 4, y: p.location.y + 10 + (i % 3), z: p.location.z + (f.z - p.location.z) * 4 }));
-  const rising = from.map((f) => shapeFx(dim, "star5", f, { r: 0.35, s: 500, life: 40 }));
-  tween(14, 1, (k) => rising.forEach((e, i) => { moveShape(e, { x: from[i].x + (sky[i].x - from[i].x) * k, y: from[i].y + (sky[i].y - from[i].y) * k, z: from[i].z + (sky[i].z - from[i].z) * k }); setShape(e, "sh:r", 0.35 + 0.75 * k); }), () => {
-    for (let i = 0; i < sky.length - 1; i++) pixLine(dim, sky[i], sky[i + 1], STAR_WHITE, 10, 0.25, 0.9);
-    rising.forEach(removeFx);
-    // 2) كل نجمة تنزل على عدو (الأقوى أول)
-    const foes = enemiesNear(dim, p.location, 16, p.id).sort((a, b) => {
-      const ha = a.getComponent("minecraft:health"), hb = b.getComponent("minecraft:health");
-      return (hb ? hb.effectiveMax : 0) - (ha ? ha.effectiveMax : 0);
-    });
-    sky.forEach((top, i) => later(4 + i * 3, () => {
-      const e = foes.length ? foes[i % foes.length] : undefined;
-      const dest = e && valid(e) ? center3(e) : { x: p.location.x + (Math.random() - 0.5) * 10, y: p.location.y, z: p.location.z + (Math.random() - 0.5) * 10 };
-      const dx = dest.x - top.x, dy = dest.y - top.y, dz = dest.z - top.z, l = Math.hypot(dx, dy, dz) || 1;
-      sfx(dim, "sh.meteor_fall", top, 0.8, 1.4);
-      flyShape(dim, "star5", top, { x: dx / l, y: dy / l, z: dz / l }, 1.6, l, { r: 1.1, w: 900 }, undefined, (end) => {
-        popShape(dim, "nova", end, 0.3, 1.7, 7, { s: 400, ease: "out" });
-        rockBurst(dim, end, 2, 0.8);
-        sfx(dim, "sh.const_zap", end, 1.1, 0.8 + i * 0.06);
-        if (e && valid(e)) { hurt(e, 8 + 2 * getState(p).rank, p); starFlavor(p, e); }
-        shake(p, 0.12, 0.1);
-      });
-    }));
-    // 3) تصير صاعد
-    later(4 + sky.length * 3 + 10, () => becomeAscendant(p));
-  });
-}
-function becomeAscendant(p) {
-  if (!valid(p)) return;
-  const old = ascend.get(p.id);
-  if (old) removeFx(old.halo);
-  const halo = shapeFx(p.dimension, "star_halo", headPos(p), { r: 1.3, s: 90, life: ASCEND_T + 4 });
-  ascend.set(p.id, { until: system.currentTick + ASCEND_T, halo });
-  effect(p, "resistance", ASCEND_T, 0);
-  sfxPlayer(p, "sh.kat_levelup", 1, 1.2);
-  notify(p, "§e§lASCENDANT §r§7: faster skills, stronger hits, every skill fires a star", 90);
-  let t = 0;
-  const h = system.runInterval(() => {
-    try {
-      t += 2;
-      if (!valid(p) || !ascendant(p)) { system.clearRun(h); removeFx(halo); ascend.delete(p.id); if (valid(p)) notify(p, "§7Your Ascendant state faded", 40); return; }
-      const hp = headPos(p);
-      moveShape(halo, { x: hp.x, y: hp.y + 0.55, z: hp.z });
-    } catch (e) { system.clearRun(h); removeFx(halo); }
-  }, 2);
-}
-// كل مهارة وانت صاعد تطلق نجمة على أقرب عدو
-function ascendStar(p) {
-  if (!ascendant(p)) return;
-  const e = nearestEnemy(p, 12);
-  if (!e) return;
-  const from = { ...headPos(p), y: headPos(p).y + 0.6 }, to = center3(e);
-  const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
-  flyShape(p.dimension, "star5", from, { x: dx / l, y: dy / l, z: dz / l }, 1.5, l, { r: 0.6, w: 900 }, undefined, () => { if (valid(e)) { hurt(e, 5, p); popShape(e.dimension, "nova", center3(e), 0.2, 0.9, 5); } });
-}
-// ضوء النجمة: سنيك + استعمال الختم = 3 نجوم تنزل عليك وتشفيك
-function starlightMend(p) {
-  const c = cst(p);
-  if (c.n < 3) { notify(p, `§7Starlight Mend needs 3 lit stars (${c.n}/7)`, 40); return; }
-  const pts = c.ents.slice(-3).map((e) => ({ ...e.location }));
-  c.n -= 3;
-  pts.forEach((f, i) => {
-    const s2 = shapeFx(p.dimension, "star5", f, { r: 0.5, w: 700, life: 14 });
-    tween(10, 1, (k) => { const h = center3(p); moveShape(s2, { x: f.x + (h.x - f.x) * k, y: f.y + (h.y - f.y) * k, z: f.z + (h.z - f.z) * k }); });
-  });
-  later(10, () => {
-    try { const hp = p.getComponent("minecraft:health"); hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 6)); } catch (e) { /* */ }
-    effect(p, "regeneration", 40, 0);
-    popShape(p.dimension, "nova", center3(p), 0.2, 1.0, 6);
-    sfx(p.dimension, "sh.ready", p.location, 1, 1.3);
-    notify(p, "§eStarlight Mend: +6 health", 40);
-  });
-}
-// ── الرد النجمي ──
-const counterWin = new Map(); // id العدو -> { pid, until }
-world.afterEvents.entityHurt.subscribe((ev) => {
-  try {
-    const v = ev.hurtEntity;
-    if (v.typeId !== "minecraft:player") return;
-    const a = ev.damageSource && ev.damageSource.damagingEntity;
-    if (!a || a.typeId === "minecraft:player" || isFriendly(a) || !a.getComponent("minecraft:health")) return;
-    if (dist2d(a.location, v.location) > 5) return;
-    const now = system.currentTick, w = counterWin.get(a.id);
-    if (w && w.until > now) return;
-    counterWin.set(a.id, { pid: v.id, until: now + 20 });
-    followShape(a, "star5", 20, { r: 0.5, w: 1080, dy: 0.7 });
-    sfxPlayer(v, "sh.select", 0.6, 1.9);
-  } catch (e) { /* */ }
-});
-world.afterEvents.entityHitEntity.subscribe((ev) => {
-  try {
-    const p = ev.damagingEntity, t = ev.hitEntity;
-    if (!p || p.typeId !== "minecraft:player" || !t) return;
-    const w = counterWin.get(t.id);
-    if (!w || w.pid !== p.id || system.currentTick > w.until) return;
-    counterWin.delete(t.id);
-    starlitCounter(p, t);
-  } catch (e) { /* */ }
-});
-function starlitCounter(p, t) {
-  const st = getState(p), dim = t.dimension, c3 = center3(t);
-  try { t.applyDamage(6 + Math.round(1.5 * st.rank), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
-  effect(t, "slowness", 40, 3);
-  effect(t, "weakness", 40, 1);
-  pushAway(p.location, t, 1.2, 0.3);
-  popShape(dim, "nova", c3, 0.3, 1.6, 6, { s: 500, ease: "out" });
-  fling(dim, "star5", c3, 3, 1, 0.3, 0.5);
-  shake(p, 0.2, 0.15);
-  sfx(dim, "sh.const_zap", t.location, 1.3, 1.1);
-  sfx(dim, "sh.guard_slam", t.location, 0.8, 1.5);
-  notify(p, "§e§l✦ STARLIT COUNTER", 25);
-  st.counters = (st.counters || 0) + 1;
-  saveState(p, st);
-  lightStar(p, `counter${system.currentTick}`, 2);
-}
-system.runInterval(() => { const now = system.currentTick; for (const [id, w] of [...counterWin]) if (w.until < now) counterWin.delete(id); }, 100);
+}, 10);
 
 // إخفاء قلوب ماينكرافت تحت (القلوب صارت فوق بالـHUD) ومجسمها الأصلي اللي كان يطلع فوق مجسمنا
 function hideVanillaHud(p) {
@@ -2814,7 +2947,7 @@ function weaponActive(p, id) {
   if (now < ready) { notify(p, `§7${sk.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15); return; }
   let ok = false;
   try { ok = sk.fn(p); } catch (e) { ok = false; }
-  if (ok) { weaponCd.set(key, now + Math.round((ascendant(p) ? 0.5 : 1) * (typeof sk.cd === "function" ? sk.cd(p) : sk.cd))); notify(p, `§f⚔ ${sk.name}`, 20); lightStar(p, key); }
+  if (ok) { weaponCd.set(key, now + (typeof sk.cd === "function" ? sk.cd(p) : sk.cd)); notify(p, `§f⚔ ${sk.name}`, 20); }
   else weaponCd.set(key, now + 6);
 }
 
@@ -3637,7 +3770,7 @@ function i2c(k) { return k < 0.5 ? [0.4 + k, 0.6 + k * 0.4, 1.0] : [1.0, 0.85 + 
 // تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 5)، وكل ليفل يفتح مهارة جديدة.
 // السنيك (الجلوس) يبدل المهارة، والاستعمال ينفذها. المؤثرات: شظايا بكسل بنفسجية تحيط بالنصل.
 const KATANA = "sh:dark_katana";
-const SIGIL_ITEM = "sh:skill_starfall";
+const ATLAS_ITEM = "sh:atlas_lens";
 const KAT_MAX = 5;
 const KAT_NEED = [0, 40, 90, 160, 260]; // خبرة الانتقال من الليفل i إلى i+1
 const KATANA_PURPLE = [0.7, 0.35, 1.0];
@@ -3811,12 +3944,10 @@ function useSkill(p, skill) {
   try { res = SKILL_FN[skill.id](p); } catch (e) { res = false; }
   if (res && typeof res.then === "function") {
     cooldowns.set(key, now + 40); // يمنع الضغط المتكرر أثناء القائمة
-    res.then((ok) => { cooldowns.set(key, system.currentTick + Math.round((ascendant(p) ? 0.4 : 1) * (ok ? skill.cooldown : 6))); if (ok) { lightStar(p, skill.id); ascendStar(p); } }).catch(() => cooldowns.set(key, system.currentTick + 6));
+    res.then((ok) => cooldowns.set(key, system.currentTick + (ok ? skill.cooldown : 6))).catch(() => cooldowns.set(key, system.currentTick + 6));
     return;
   }
-  const dmul = ascendant(p) ? 0.4 : 1;
-  cooldowns.set(key, now + Math.round(dmul * (typeof res === "number" && res > 0 ? res : res ? skill.cooldown : 6)));
-  if (res) { lightStar(p, skill.id); ascendStar(p); }
+  cooldowns.set(key, now + (typeof res === "number" && res > 0 ? res : res ? skill.cooldown : 6));
 }
 
 world.afterEvents.itemUse.subscribe((ev) => {
@@ -3829,7 +3960,7 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (SCROLLS[id]) { useScroll(p, id); return; }
     if (id === "sh:skill_scroll") { useSkillScroll(p); return; }
     if (id === "sh:star_shard") { useStarShard(p); return; }
-    if (id === SIGIL_ITEM) { if (p.isSneaking) starlightMend(p); else starfallDescent(p); return; }
+    if (id === ATLAS_ITEM) { atlasZoom(p); return; }
     if (id === "sh:explorer_compass") { useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
     const skill = ITEM_TO_SKILL[id];
@@ -3869,7 +4000,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         saveState(p, s5);
         if (ups.length) announceUps(p, ups);
       }
-      giveSigil(p, true);
+      if (!st.gotAtlas) { const s6 = getState(p); s6.gotAtlas = true; saveState(p, s6); if (!hasItem(p, ATLAS_ITEM)) giveItem(p, ATLAS_ITEM); }
       if (!st.power) {
         const s4 = getState(p);
         if (!s4.shardDropped) { s4.shardDropped = true; saveState(p, s4); later(100, () => shardMeteor(p)); }
@@ -4404,6 +4535,7 @@ const COMPASS_TARGETS = [
   { key: "ruins", name: "Temple Ruins" },
   { key: "village", name: "Sakura Village" },
   { key: "trainer", name: "Trainer" },
+  { key: "rift", name: "Open Rift" },
   { key: "nearest", name: "Nearest (any destination)" },
 ];
 const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine" };
@@ -4443,8 +4575,9 @@ function compassFind(p, key) {
   }
   if (key === "trainer" || key === "nearest") {
     const t = trainerPos(p);
-    if (t && dist(t) < bd) best = { x: t.x, z: t.z, name: "Trainer" };
+    if (t && dist(t) < bd) { bd = dist(t); best = { x: t.x, z: t.z, name: "Trainer" }; }
   }
+  if ((key === "rift" || key === "nearest") && rift && rift.dim === p.dimension.id && (key === "rift" || dist(rift) < bd)) best = { x: rift.x, z: rift.z, name: riftTier().name };
   return best;
 }
 const ARROWS = { 0: "↑", 1: "↗", 2: "→", 3: "↘", 4: "↓", [-1]: "↖", [-2]: "←", [-3]: "↙", [-4]: "↓" };
@@ -4499,6 +4632,7 @@ system.runInterval(() => {
       for (const e of list) {
         try {
           if (typeof e.getDynamicProperty("sh_num") === "number") continue; // رقم المحاسب له الأولوية
+          if (e.hasTag("sh_rift_boss")) continue; // اسم زعيم الصدع ثابت
           let near, nd = 48;
           for (const p of players) {
             if (p.dimension.id !== e.dimension.id) continue;
@@ -4532,7 +4666,7 @@ system.runInterval(() => {
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:shard          يعطيك شظية نجمة (للسحب)
-//   /scriptevent sh:stars 7        يضوي نجوم الكوكبة (ويعطيك ختم النجمة إذا مفتوح)
+//   /scriptevent sh:rift blue      يفتح صدع قربك (blue violet crimson abyss) | sh:rift close يسده | sh:atlas يعطيك عدسة الأطلس
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars on يشغل تلوين الأرض المؤقت (مطفي افتراضياً)
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   try {
@@ -4553,8 +4687,11 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aKatana level: ${n}`);
-    } else if (ev.id === "sh:stars") {
-      const c = cst(p), v = parseInt(msg, 10); c.n = Math.max(0, Math.min(STAR_MAX, Number.isNaN(v) ? STAR_MAX : v)); c.last = system.currentTick; giveSigil(p, false); say(p, `§eConstellation: ${c.n}/7`);
+    } else if (ev.id === "sh:rift") {
+      if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
+      else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }
+    } else if (ev.id === "sh:atlas") {
+      giveItem(p, ATLAS_ITEM); say(p, "§bAtlas Lens added");
     } else if (ev.id === "sh:shard") {
       giveItem(p, "sh:star_shard"); say(p, "§bStar Shard added");
     } else if (ev.id === "sh:weapons") {
