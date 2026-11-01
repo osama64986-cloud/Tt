@@ -437,6 +437,9 @@ export const __sim = {
       const T = (L) => 2 * Math.PI * Math.sqrt(Math.max(1.2, Math.min(4, L)) / 9.8) * 20;
       const L0 = Math.hypot(z.location.x - player.location.x, z.location.y - player.location.y, z.location.z - player.location.z);
       const res = [];
+      // قبل الرتبة الثالثة: ما تشتغل حتى بالتوقيت الصح
+      { const h0 = z._hp; hitAt(); advance(Math.round(T(L0) / 4)); hitAt(); res.push(`رتبة Trainee بتوقيت صح: ضرر ${h0 - z._hp}`); if (h0 - z._hp > 0) failures.push("ضربة البندول اشتغلت قبل رتبة Warrior"); }
+      setState({ ...baseState("iron"), rank: 2 }); advance(40);
       // 1) توقيت غلط: ما تصير
       let p0 = stats.particles; const hz = z._hp; hitAt(); advance(Math.round(T(L0) / 4) + 5); hitAt();
       const wrong = hz - z._hp;

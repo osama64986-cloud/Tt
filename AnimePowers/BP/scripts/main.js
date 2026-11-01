@@ -847,7 +847,7 @@ async function showStatus(player) {
       }
     });
   } else b += "\n§7You have no power yet. Use a Star Shard to draw one.\n";
-  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: hit an enemy, then hit it again exactly when the pendulum passes its lowest point. T = 2π·√(L/g), L = your distance to the enemy. Best chain: ${st.pendBest || 0}\n`;
+  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy, then hit it again exactly when the pendulum passes its lowest point. T = 2π·√(L/g), L = your distance to the enemy. Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1080,6 +1080,7 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (!getState(player).power) later(60, () => ensureShard(player)); } catch (e) { /* */ }
+      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7Hit an enemy, then hit it again exactly when the pendulum passes its lowest point: T = 2π·√(L/g), L = your distance to it (2 blocks ≈ 0.71s). No item needed. Practice: /scriptevent sh:pendulum"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
     }
   }
 }
@@ -1870,7 +1871,8 @@ function riftStatusText(p) {
 //  * إذا ضربت نفس العدو بالضبط لحظة العبور (هامش تكة وحدة = 0.05 ثانية) = ضربة البندول.
 //  * كل نجاح ورا الثاني: البندول يقصر ربع (يسرع) والضرر يكبر. الغلط يصفر السلسلة ويبدي بندول جديد.
 //  * ماكو أي مؤشر يساعدك؛ بس إذا قربت (±3 تكات) يطلع دخان خفيف حتى تتعلم. المؤثرات كلها جزيئات ماينكرافت الأصلية.
-const PEND_G = 9.8, PEND_WINDOW = 1.0, PEND_NEAR = 3.0;
+//  * تنفتح من الرتبة الثالثة (Warrior).
+const PEND_G = 9.8, PEND_WINDOW = 1.0, PEND_NEAR = 3.0, PEND_RANK = 2;
 const pend = new Map(); // pid -> { tid, start, L, chain }
 const pendDebug = new Set();
 function pendPeriodTicks(L) { return 2 * Math.PI * Math.sqrt(L / PEND_G) * 20; }
@@ -1895,6 +1897,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
   try {
     const p = ev.damagingEntity, t = ev.hitEntity;
     if (!p || p.typeId !== "minecraft:player" || !t || t.typeId === "sh:trainer" || isFriendly(t) || !t.getComponent("minecraft:health")) return;
+    if (getState(p).rank < PEND_RANK) return;
     const now = system.currentTick, cur = pend.get(p.id);
     const L = Math.max(1.2, Math.min(4, Math.hypot(t.location.x - p.location.x, t.location.y - p.location.y, t.location.z - p.location.z)));
     if (cur && cur.tid === t.id) {
