@@ -53,6 +53,7 @@ class Weapon:
         self.binding = "q.item_slot_to_bone_name(c.item_slot)"
         self.pivot = [0, 24, 0]
         self.hold = True        # False = بدون حركة مسك (السلاح ينلبس على الذراع)
+        self.extra_bones = []   # عظام إضافية: [{"name", "binding", "pivot", "cubes"}]
 
     def _idx(self, rgb):
         rgba = tuple(int(round(v)) for v in rgb[:3]) + (255,)
@@ -105,7 +106,7 @@ class Weapon:
             "minecraft:geometry": [{
                 "description": {"identifier": f"geometry.sh_w_{self.ident}", "texture_width": 16, "texture_height": 16,
                                 "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1, 0]},
-                "bones": [{"name": "sh_weapon", "binding": self.binding, "pivot": self.pivot, "cubes": self.cubes}],
+                "bones": [{"name": "sh_weapon", "binding": self.binding, "pivot": self.pivot, "cubes": self.cubes}] + self.extra_bones,
             }],
         }
         os.makedirs(os.path.join(RP, "models", "entity"), exist_ok=True)
@@ -344,41 +345,53 @@ def shadow_blade():
 
 # ───────────────────────── مخالب الظل (كاتار بثلاث شفرات) ─────────────────────────
 def claws():
-    """مخالب تنلبس على الإيد: الموديل مربوط بعظمة الذراع اليمنى (rightArm) ومبني بإحداثيات ذراع اللاعب
-    (الذراع: x من -8 إلى -4، y من 12 (الكف) إلى 24 (الكتف)، z من -2 إلى 2، والقدام = -z).
-    واقي ساعد يلف الذراع بأحزمة وصفائح، صفيحة مفاصل على الكف، وثلاث شفرات تطلع من المفاصل لتحت وتنحني لقدام."""
+    """مخالب تنلبس على الإيد. عظمتين بنفس الموديل:
+    * sh_weapon (المنظور الأول): مربوطة بخانة اليد مثل باقي الأسلحة، الواقي على مكان القبضة (y 4..16) والشفرات لقدام (+y).
+      السبب: بالمنظور الأول اللعبة تحط عظمة الذراع بوضعية خاصة لما تمسك أيتم، فالربط بالذراع يطلع مقلوب.
+    * tp_claws (المنظور الثالث): مربوطة بعظمة الذراع اليمنى ومبنية بإحداثيات ذراع اللاعب
+      (x -8..-4، y 12 الكف ← 24 الكتف، القدام = -z): الواقي يلف الساعد والشفرات تطلع من المفاصل.
+    حركة المسك تخفي العظمة اللي مو إلها بكل منظور (scale 0)."""
     w = Weapon("shadow_claws")
-    w.binding = "'rightArm'"
-    w.pivot = [-5, 22, 0]
-    w.hold = False
     LEATH, LEATH_HI = (58, 44, 52), (84, 64, 74)
     PLATE, PLATE_HI = (40, 36, 58), (76, 70, 104)
     STRAP, BUCKLE = (100, 60, 150), (200, 170, 255)
     BLD, BLD_HI, EDGE_W = (62, 50, 100), (150, 120, 230), (236, 228, 255)
     GEM = (170, 110, 255)
-    cx = -6.0                                                     # نص الذراع
-    # واقي الساعد يلف الذراع (أعرض منها شوية من كل جهة)
-    w.box(cx, 13.0, 0, 5.2, 6.2, 5.2, LEATH, top=LEATH_HI)
-    for yy in (13.6, 16.0, 18.4):                                 # أحزمة (أعرض من الواقي، مو بنفس وجهه)
-        w.box(cx, yy, 0, 5.6, 0.6, 5.6, STRAP)
-    w.box(cx - 2.95, 15.4, 0, 0.3, 1.6, 1.6, BUCKLE)              # إبزيم على الجهة الخارجية
-    w.box(cx - 2.75, 14.3, 0, 0.3, 4.0, 3.2, PLATE, top=PLATE_HI)  # صفيحة على ظهر الساعد
-    # صفيحة المفاصل على الكف + جواهر قدام
-    w.box(cx, 11.2, 0, 4.8, 1.8, 4.8, PLATE, top=PLATE_HI)
-    for x in (-1.3, 0.0, 1.3):
-        w.box(cx + x, 11.6, -2.55, 0.8, 0.9, 0.3, GEM)
-    # الشفرات: من تحت الكف (y=11.2) لتحت، وتنحني لقدام (-z) مثل الخطاف
-    for x, L in ((-1.3, 11.0), (0.0, 12.5), (1.3, 11.0)):
-        n = 10
-        h = L / n
-        for k in range(n):
-            t = k / (n - 1)
-            z = -0.2 - 2.6 * t ** 2.2
-            wd = 0.8 - 0.4 * t
-            y = 11.2 - (k + 1) * h + 0.6 * t ** 3
-            w.box(cx + x, y, z, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
-            w.box(cx + x, y, z - 0.425, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)   # الحد (قدام الشفرة، جنبها مو داخلها)
-        w.box(cx + x, 11.2 - L + 0.6 - 0.7, -0.2 - 2.6 - 0.2, 0.35, 0.7, 0.4, EDGE_W)
+
+    def gauntlet(cx, y_hand, up, fwd):
+        """يبني المخالب: cx نص الذراع، y_hand طرف الكف، up = اتجاه الساعد (+1 فوق أو -1 تحت)، fwd = اتجاه القدام بـz."""
+        s_ = up                                            # الساعد باتجاه up من الكف، والشفرات بعكسه
+        def Y(a, h):                                       # يحول (مسافة من الكف، طول) لقاعدة مكعب
+            return y_hand + a * s_ if s_ > 0 else y_hand - a - h
+        w.box(cx, Y(1.0, 6.2), 0, 5.2, 6.2, 5.2, LEATH, top=LEATH_HI)          # واقي الساعد
+        for a in (1.6, 4.0, 6.4):
+            w.box(cx, Y(a, 0.6), 0, 5.6, 0.6, 5.6, STRAP)
+        w.box(cx - 2.95, Y(3.4, 1.6), 0, 0.3, 1.6, 1.6, BUCKLE)
+        w.box(cx - 2.75, Y(2.3, 4.0), 0, 0.3, 4.0, 3.2, PLATE, top=PLATE_HI)
+        w.box(cx, Y(-0.8, 1.8), 0, 4.8, 1.8, 4.8, PLATE, top=PLATE_HI)          # صفيحة المفاصل
+        for x in (-1.3, 0.0, 1.3):
+            w.box(cx + x, Y(-0.4, 0.9), fwd * 2.55, 0.8, 0.9, 0.3, GEM)
+        for x, L in ((-1.3, 11.0), (0.0, 12.5), (1.3, 11.0)):                 # الشفرات
+            n = 10
+            h = L / n
+            for k in range(n):
+                t = k / (n - 1)
+                z = fwd * (0.2 + 2.6 * t ** 2.2)
+                wd = 0.8 - 0.4 * t
+                a = -0.8 - (k + 1) * h + 0.6 * t ** 3                       # مسافة سالبة = برا الكف
+                w.box(cx + x, Y(a, h), z, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
+                w.box(cx + x, Y(a, h), z + fwd * 0.425, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)
+            w.box(cx + x, Y(-0.8 - L + 0.6 - 0.7, 0.7), fwd * 3.0, 0.35, 0.7, 0.4, EDGE_W)
+
+    # المنظور الأول: الكف عند y=16، الساعد لتحت (y أقل)، الشفرات لفوق (+y = لقدام بحركة المسك)، والانحناء لـ-z
+    gauntlet(0.0, 16.0, -1, -1)
+    fp = w.cubes
+    w.cubes = []
+    # المنظور الثالث: إحداثيات الذراع، الكف عند y=12، الساعد لفوق، الشفرات لتحت، الانحناء لقدام (-z)
+    gauntlet(-6.0, 12.0, 1, -1)
+    tp = w.cubes
+    w.cubes = fp
+    w.extra_bones = [{"name": "tp_claws", "binding": "'rightArm'", "pivot": [-5, 22, 0], "cubes": tp}]
     w.save()
     return w
 
@@ -490,6 +503,9 @@ def save_animations():
                 "loop": True,
                 "bones": {"sh_weapon": {"position": p["pos"], "rotation": p["rot"], "scale": p["scale"]}},
             }
+    # المخالب: بالأول تبين عظمة اليد بس، وبالثالث عظمة الذراع بس
+    anims["animation.sh.hold_shadow_claws_fp"]["bones"]["tp_claws"] = {"scale": 0}
+    anims["animation.sh.hold_shadow_claws_tp"]["bones"] = {"sh_weapon": {"scale": 0}}
     os.makedirs(os.path.join(RP, "animations"), exist_ok=True)
     with open(os.path.join(RP, "animations", "sh_hold.animation.json"), "w") as f:
         json.dump({"format_version": "1.10.0", "animations": anims}, f, separators=(",", ":"))

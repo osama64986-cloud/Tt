@@ -42,9 +42,11 @@ class Mod:
                 "uv": {"north": m, "south": m, "east": m, "west": m, "up": t, "down": m}}
         self.bones[bone].setdefault("cubes", []).append(cube)
 
-    def bone(self, name, parent, pivot):
-        """عظمة جديدة (للأجزاء المتحركة مثل الأجنحة)."""
+    def bone(self, name, parent, pivot, rotation=None):
+        """عظمة جديدة (للأجزاء المتحركة مثل الأجنحة). rotation اختياري [x,y,z]."""
         b = {"name": name, "parent": parent, "pivot": list(pivot), "cubes": []}
+        if rotation:
+            b["rotation"] = list(rotation)
         self.g["bones"].append(b)
         self.bones[name] = b
         return name
@@ -209,41 +211,50 @@ def recolor_box_uv(tex, u, v, size, col, hi=None):
 # ───────────── رامي التدريب: جعبة أسهم، حزام بإبزيم، كتافات، واقي ساعد ─────────────
 def archer():
     m = Mod("archer")
-    # القوس كان بنفسجي مثل العباءة فيختفي بيها: صار خشب بني بأطراف ذهب، مقبض جلد، ووتر أبيض
-    WOOD_BOW, WOOD_HI, GOLD_T, GRIP, STRING = (124, 80, 40), (168, 116, 62), (228, 180, 70), (70, 42, 26), (236, 232, 220)
+    # القوس بنفسجي (من عائلة لون العباءة بس بدرجة ثانية فاتحة حتى ما يذوب بيها): أذرع بنفسجية بلمعة ليلكية،
+    # أطراف ليلكية فاتحة، مقبض بنفسجي غامق، ووتر خزامي
+    LIMB, LIMB_HI, TIP, TIP_HI, GRIP, GRIP_HI, STRING = (124, 72, 206), (176, 132, 250), (214, 186, 255), (240, 226, 255), (44, 26, 72), (96, 64, 150), (206, 192, 255)
     for c in m.bones["bow"]["cubes"]:
         u, v = c["uv"]
         sz = c["size"]
         if sz[2] > 15:                                   # الوتر
             recolor_box_uv(m.tex, u, v, sz, STRING)
         elif u in (183, 0):                              # المقبض
-            recolor_box_uv(m.tex, u, v, sz, GRIP, GOLD_T)
+            recolor_box_uv(m.tex, u, v, sz, GRIP, GRIP_HI)
         elif u == 28:                                    # طرفي القوس
-            recolor_box_uv(m.tex, u, v, sz, GOLD_T, (255, 226, 130))
-        else:                                            # الأذرع الخشبية
-            recolor_box_uv(m.tex, u, v, sz, WOOD_BOW, WOOD_HI)
+            recolor_box_uv(m.tex, u, v, sz, TIP, TIP_HI)
+        else:                                            # الأذرع
+            recolor_box_uv(m.tex, u, v, sz, LIMB, LIMB_HI)
+    # السهم اللي بالقوس (يطلع بس وقت السحب): بنفسجي
+    SHAFT, HEAD, FLETCH = (78, 44, 132), (226, 210, 255), (156, 96, 246)
+    for c in m.bones["arrow"]["cubes"]:
+        u, v = c["uv"]
+        col = SHAFT if c["size"][1] > 10 else HEAD if c["origin"][1] < 0 else FLETCH
+        recolor_box_uv(m.tex, u, v, c["size"], col)
     LEATHER, LEATHER_HI, GOLD = (92, 58, 34), (130, 86, 50), (226, 176, 60)
-    VIO, VIO_HI, WOOD = (84, 50, 150), (140, 100, 220), (120, 84, 50)
-    m.box("body", 0.6, 17.0, 3.9, 3.2, 9.0, 2.6, LEATHER, top=LEATHER_HI)          # جعبة على الظهر (فوق الكاب)
-    m.box("body", 0.4, 25.6, 3.7, 3.6, 0.8, 3.0, GOLD)
-    m.box("body", 0.4, 18.0, 3.7, 3.6, 0.6, 3.0, GOLD)
+    VIO, VIO_HI = (84, 50, 150), (140, 100, 220)
+    # الجعبة: على الجهة اليمنى من الظهر (جهة إيد السحب) ومايلة لكتفه اليمين، حتى السهم يطلع فوق الكتف
+    # مو من ورا الراس (قبل كانت يسار الظهر فالسهم يخترق القلنسوة). عظمة خاصة بدوران [-10, 0, 18].
+    m.bone("quiver", "body", (-3.6, 15.0, 5.4), rotation=[-10, 0, 18])
+    m.box("quiver", -5.2, 15.0, 4.1, 3.2, 9.0, 2.6, LEATHER, top=LEATHER_HI)
+    m.box("quiver", -5.4, 15.4, 3.9, 3.6, 0.6, 3.0, GOLD)
+    m.box("quiver", -5.4, 22.8, 3.9, 3.6, 0.6, 3.0, GOLD)
     for k in range(4):
-        x = 0.9 + k * 0.75
-        m.box("body", x, 26.0, 4.6 + (k % 2) * 0.5, 0.4, 3.4 + (k % 2) * 0.9, 0.4, WOOD)
-        m.box("body", x - 0.2, 29.0 + (k % 2) * 0.9, 4.4 + (k % 2) * 0.5, 0.8, 1.3, 0.8, VIO_HI)
+        x = -4.9 + k * 0.75
+        m.box("quiver", x, 24.0, 4.9 + (k % 2) * 0.5, 0.4, 2.6 + (k % 2) * 0.8, 0.4, SHAFT)
+        m.box("quiver", x - 0.2, 26.6 + (k % 2) * 0.8, 4.7 + (k % 2) * 0.5, 0.8, 1.3, 0.8, FLETCH)
     m.box("body", -4.3, 14.6, -2.5, 8.6, 1.1, 5.0, LEATHER)                         # حزام
     m.box("body", -0.8, 14.4, -2.8, 1.6, 1.5, 0.4, GOLD)                             # إبزيم
     m.box("arm_l", 4.6, 22.0, -1.6, 2.9, 1.6, 3.2, VIO, top=VIO_HI)                 # كتافات
     m.box("arm_r", -7.5, 22.0, -1.6, 2.9, 1.6, 3.2, VIO, top=VIO_HI)
     m.box("arm_l", 4.85, 12.9, -1.15, 2.3, 2.6, 2.3, LEATHER_HI)                    # واقي الساعد (يد القوس)
-    # سهم باليد اليمنى (يطلع بس لما يسحبه من الجعبة، مخفي بباقي الوقت بالأنميشن)
+    # سهم باليد اليمنى (يطلع بس لما يسحبه من الجعبة): بنفسجي
     m.bone("hand_arrow", "fore_r", (-6, 10.6, 0))
-    m.box("hand_arrow", -6.2, 4.0, -0.2, 0.4, 13.0, 0.4, WOOD)
-    m.box("hand_arrow", -6.45, 2.6, -0.45, 0.9, 1.6, 0.9, (200, 200, 214))
-    m.box("hand_arrow", -6.6, 15.6, -0.15, 1.2, 2.0, 0.3, VIO_HI)
-    m.box("hand_arrow", -6.15, 15.6, -0.6, 0.3, 2.0, 1.2, VIO_HI)
+    m.box("hand_arrow", -6.2, 4.0, -0.2, 0.4, 13.0, 0.4, SHAFT)
+    m.box("hand_arrow", -6.45, 2.6, -0.45, 0.9, 1.6, 0.9, HEAD)
+    m.box("hand_arrow", -6.6, 15.6, -0.15, 1.2, 2.0, 0.3, FLETCH)
+    m.box("hand_arrow", -6.15, 15.6, -0.6, 0.3, 2.0, 1.2, FLETCH)
     return m.save()
-
 
 if __name__ == "__main__":
     for fn in (imp, guard, hound, scorpion, archer):
