@@ -2849,6 +2849,11 @@ function weaponSkillMul(by) {
 }
 // نقطة الهالة: على النصل/الرأس حسب طول السلاح
 function weaponAuraPoint(p, id, u) {
+  if (id === "sh:shadow_claws") {
+    // المخالب لابسها على الإيد: الهالة حول الكف والشفرات (جنب الجسم يمين وتحت شوية)
+    const d = flatDir(p), r = katanaRight(d);
+    return { x: p.location.x + r.x * 0.4 + d.x * 0.15, y: p.location.y + 0.45 + u * 0.55, z: p.location.z + r.z * 0.4 + d.z * 0.15 };
+  }
   const tip = id === "sh:sunset_spear" ? 1.6 : id === "sh:stone_maul" ? 1.3 : 1.15;
   return bladePoint(p, 0.25 + u * (tip - 0.25));
 }
