@@ -402,8 +402,6 @@ function renderHud(p) {
       let text = hudText(p, st, plain);
       const strip = skillStrip(p, st, h.skillId, plain);
       if (strip) text += "\n" + strip;
-      const pm = pendMeter(p);
-      if (pm) text += "\n" + pm;
       const m = tempMsg.get(p.id);
       if (m && m.until > system.currentTick) text += "\n" + m.text;
       else {
@@ -743,7 +741,7 @@ async function openPowerMenu(player) {
   const st0 = getState(player);
   if (st0.power) return openBook(player);
   if (st0.powerless) {
-    await showForm(player, new ActionFormData().title("Unbound").body("§8The crystal stayed dark for you.§r\n\nYou carry no power, but your body grows with your rank:\n§c+ Strength§7 (more at Warrior and Legend)\n§b+ Speed§7 (more at Elite)\n§7+ Resistance at Commander\n\nFight with the mod's weapons and the Pendulum Strike.").button("§aOK"));
+    await showForm(player, new ActionFormData().title("Unbound").body("§8The crystal stayed dark for you.§r\n\nYou carry no power, but your body grows with your rank:\n§c+ Strength§7 (more at Warrior and Legend)\n§b+ Speed§7 (more at Elite)\n§7+ Resistance at Commander\n\nFight with the mod's weapons and the Rhythm Strike (from Elite, 30% stronger for the Unbound).").button("§aOK"));
     return;
   }
   if (!player.hasTag("sh_menu")) {
@@ -884,7 +882,7 @@ async function showStatus(player) {
       }
     });
   } else b += st.powerless ? "\n§8Unbound§7: no power. Your body grows stronger and faster with each rank.\n" : "\n§7You have no power yet. Step on the crystal in the Star Temple.\n";
-  b += `\n${riftStatusText(player)}\n§fPendulum Strike§7: ${st.rank >= PEND_RANK ? `hit an enemy once: a light starts swinging above it and a meter appears at the top. Hit it again when the light passes the green mark (the middle of the meter). Best chain: ${st.pendBest || 0}` : `§cunlocks at rank ${RANKS[PEND_RANK]}`}\n`;
+  b += `\n${riftStatusText(player)}\n§fRhythm Strike§7: ${st.rank >= RHY_RANK ? `hit enemies in a steady beat, like a drum. Your first two hits set the beat; keep hitting on it and each hit plays a rising note. 4th hit in rhythm = Rhythm, 7th = Crescendo, 10th = Finale. Best: ${st.rhyBest || 0}` : `§cunlocks at rank ${RANKS[RHY_RANK]}`}\n`;
   if (hasItem(player, KATANA) || player.getDynamicProperty("sh_kat")) {
     const k = getKat(player);
     b += `\n§5⚔ Abyss Katana§r §dLv ${k.lv}/${KAT_MAX}§r ${k.lv >= KAT_MAX ? "§6(MAX)" : `§7(${k.xp}/${KAT_NEED[k.lv]} XP, grows by killing enemies while holding it)`}\n`;
@@ -1118,7 +1116,7 @@ function announceUps(player, ups) {
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (needsDraw(getState(player))) later(60, () => ensureTemple(player)); } catch (e) { /* */ }
-      if (u.rank === PEND_RANK) later(100, () => { say(player, "§f§l[Pendulum Strike unlocked]§r §7No item needed. Hit an enemy once: a small light starts swinging above its head and a meter appears at the top of your screen. Hit the same enemy again when the light passes the middle (green mark). Each perfect hit makes the next swing faster and the strike stronger. Practice: /scriptevent sh:pendulum"); sfxPlayer(player, "random.anvil_land", 0.6, 1.4); });
+      if (u.rank === RHY_RANK) later(100, () => { say(player, "§b§l[Rhythm Strike unlocked]§r §7No item needed. Hit enemies in a steady beat, like playing a drum: your first two hits set the beat. Keep hitting on that beat and every hit plays a higher note; a soft tick tells you when the next hit is due. §fthe 4th hit in rhythm = Rhythm§7 (area hit), §dthe 7th = Crescendo§7, §6the 10th = Finale§7 (huge blast). Hitting off beat or stopping resets it. Practice: /scriptevent sh:rhythm"); sfxPlayer(player, "note.pling", 0.8, 1); later(5, () => sfxPlayer(player, "note.pling", 0.8, 1.26)); later(10, () => sfxPlayer(player, "note.pling", 0.8, 1.5)); });
     }
   }
 }
@@ -1910,100 +1908,113 @@ function riftStatusText(p) {
   return `${t.col}${t.name}§7 open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
 }
 
-// ═════════════════════════ ضربة البندول (بدون أيتم، توقيت بس) ═════════════════════════
-// مبنية على معادلة البندول البسيط: T = 2π·√(L / g)، و g = 9.8.
-//  * أي ضربة عادية (إيد أو سلاح) لعدو = "إفلات" البندول. طوله L = المسافة بينك وبين العدو لحظتها (1.2 إلى 4 بلوكات).
-//  * البندول يعبر أوطى نقطة بالأوقات T/4، 3T/4، 5T/4 من لحظة الإفلات.
-//  * إذا ضربت نفس العدو بالضبط لحظة العبور (هامش تكة وحدة = 0.05 ثانية) = ضربة البندول.
-//  * كل نجاح ورا الثاني: البندول يقصر ربع (يسرع) والضرر يكبر. الغلط يصفر السلسلة ويبدي بندول جديد.
-//  * ماكو أي مؤشر يساعدك؛ بس إذا قربت (±3 تكات) يطلع دخان خفيف حتى تتعلم. المؤثرات كلها جزيئات ماينكرافت الأصلية.
-//  * تنفتح من الرتبة الثالثة (Warrior).
-// هامش التوقيت 3 تكات لكل جهة (0.15 ثانية)، ويطلع بندول تشوفه فوق العدو وعداد بالـHUD
-const PEND_G = 9.8, PEND_WINDOW = 3.0, PEND_NEAR = 6.0, PEND_RANK = 2;
-const pend = new Map(); // pid -> { tid, start, L, chain }
-const pendDebug = new Set();
-function pendPeriodTicks(L) { return 2 * Math.PI * Math.sqrt(L / PEND_G) * 20; }
+// ═════════════════════════ ضربة الإيقاع (Rhythm Strike) ═════════════════════════
+// بدون أيتم وبدون عداد. تنفتح من رتبة Elite (الرابعة).
+//  * أول ضربتين على أي عدو تحدد "الإيقاع" (الفرق بينهم لازم يكون بين 0.3 و1.5 ثانية).
+//  * بعدها كل ضربة لازم تجي بنفس الإيقاع (هامش 15% أو تكتين، الأكبر). كل ضربة صح = نوتة موسيقية ترتفع.
+//  * صوت خفيف (تك) بوقت الضربة الجاية حتى تمشي ويا الإيقاع مثل الموسيقى، بدون ما تباوع على شي.
+//  * الضربة الرابعة بالإيقاع = ضربة الإيقاع، السابعة = التصاعد (Crescendo)، العاشرة = الختام (Finale) وتنعاد.
+//  * ضربة برا الإيقاع أو توقف = نوتة واطية والإيقاع يبدي من جديد.
+//  * الـUnbound (بلا قدرة) ضربتهم أقوى 30%.
+const RHY_RANK = 3, RHY_MIN = 6, RHY_MAX = 30;
+const RHY_NOTES = [0.5, 0.56, 0.63, 0.75, 0.84, 1, 1.12, 1.26, 1.5, 1.68, 2];
+const rhythm = new Map(); // pid -> { last, iv, combo, tid, ticked }
+const rhyDebug = new Set();
 function vanillaFx(dim, id, loc) { try { dim.spawnParticle(id, loc); } catch (e) { /* */ } }
-// وضع البندول الحالي: موجب/سالب = يمين/يسار، 0 = النص (وقت الضربة)
-function pendSwing(c, now) {
-  const T = pendPeriodTicks(c.L), dt = now - c.start;
-  if (dt < 0 || dt > T * 1.25 + PEND_WINDOW) return undefined;
-  return Math.cos((2 * Math.PI * dt) / T);
+function rhyTol(iv) { return Math.max(2, Math.round(iv * 0.15)); }
+function rhyNote(p, i, vol = 0.9) { sfxPlayer(p, "note.pling", vol, RHY_NOTES[Math.max(0, Math.min(RHY_NOTES.length - 1, i))]); }
+function rhyLost(p, why) {
+  rhythm.delete(p.id);
+  sfxPlayer(p, "note.bass", 0.8, 0.6);
+  later(3, () => { if (valid(p)) sfxPlayer(p, "note.bass", 0.7, 0.5); });
+  if (why) notify(p, why, 25);
 }
-function pendMeter(p) {
-  const c = pend.get(p.id);
-  if (!c) return "";
-  const v = pendSwing(c, system.currentTick);
-  if (v === undefined) return "";
-  const n = 15, mid = 7, at = Math.round(((v + 1) / 2) * (n - 1));
-  let bar = "";
-  for (let i = 0; i < n; i++) bar += i === at ? (Math.abs(i - mid) <= 1 ? "§a§lO§r" : "§f§lO§r") : i === mid ? "§e|" : Math.abs(i - mid) === 1 ? "§6-" : "§8-";
-  return `§fPendulum${c.chain ? ` §ex${c.chain}` : ""} §8[${bar}§8] §7hit when it is in the middle`;
-}
-// البندول المرئي: ضوء يتمرجح فوق راس العدو (جزيئات ماينكرافت)، وعلامة خضرة بالنص، والعداد يتحدث كل تك
+// المترونوم: تك خفيف بوقت الضربة الجاية، وإذا فاتك الوقت ينقطع الإيقاع
 system.runInterval(() => {
   const now = system.currentTick;
+  if (!rhythm.size) return;
   for (const p of world.getAllPlayers()) {
     try {
-      const c = pend.get(p.id);
-      if (!c) continue;
-      const v = pendSwing(c, now);
-      if (v === undefined) { pend.delete(p.id); continue; }
-      const t = world.getEntity ? world.getEntity(c.tid) : undefined;
-      if (t && valid(t)) {
-        const h = headPos(t), f = flatDir(p), rt = { x: -f.z, z: f.x };
-        const top = { x: h.x, y: h.y + 1.6, z: h.z };
-        // قوس البندول: أوطى نقطة بالنص (وقت الضربة) وأعلى بالطرفين
-        const bob = { x: top.x + rt.x * v * 0.9, y: top.y - 0.6 + 0.25 * Math.abs(v), z: top.z + rt.z * v * 0.9 };
-        vanillaFx(t.dimension, "minecraft:endrod", bob);
-        if (now % 3 === 0) vanillaFx(t.dimension, "minecraft:villager_happy", { x: top.x, y: top.y - 0.85, z: top.z });
-      }
-      renderHud(p);
+      const r = rhythm.get(p.id);
+      if (!r) continue;
+      if (!r.iv) { if (now - r.last > RHY_MAX + 4) rhythm.delete(p.id); continue; }
+      const due = r.last + r.iv;
+      if (now === due && r.ticked !== due) { r.ticked = due; sfxPlayer(p, "note.hat", 0.35, 1.2); }
+      if (now > due + rhyTol(r.iv) + 1) rhyLost(p, r.combo >= 2 ? "§8♪ rhythm lost" : "");
     } catch (e) { /* */ }
   }
 }, 1);
-function pendulumStrike(p, t, chain) {
+function rhythmStrike(p, t, tier) {
   const dim = t.dimension, c = center3(t), st = getState(p);
-  const dmg = Math.round((6 + 1.5 * st.rank) * (1 + 0.5 * (chain - 1)));
+  const mult = st.powerless ? 1.3 : 1;
+  const base = tier === 1 ? 8 + 2 * st.rank : tier === 2 ? 14 + 3 * st.rank : 24 + 4 * st.rank;
+  const dmg = Math.round(base * mult), r = tier === 1 ? 3 : tier === 2 ? 4.5 : 6;
   try { t.applyDamage(dmg, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
-  pushAway(p.location, t, 1.2 + 0.3 * chain, 0.35);
-  effect(t, "slowness", 30 + 10 * chain, Math.min(4, chain));
+  for (const e of enemiesNear(dim, t.location, r, t.id)) {
+    try { e.applyDamage(Math.round(dmg * (tier === 1 ? 0.6 : 0.8)), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (err) { /* */ }
+    pushAway(t.location, e, 0.8 + tier * 0.4, 0.3 + tier * 0.1);
+  }
+  pushAway(p.location, t, 1 + tier * 0.5, tier === 2 ? 0.8 : 0.35);
+  effect(t, "slowness", 30 + tier * 20, Math.min(4, tier + 1));
+  if (tier >= 2) effect(t, "weakness", 80, tier - 1);
+  // المؤثرات: نوتات وحلقة صوت وموجة
+  for (let i = 0; i < 8 + tier * 4; i++) {
+    const a = (i / (8 + tier * 4)) * Math.PI * 2;
+    vanillaFx(dim, "minecraft:note_particle", { x: c.x + Math.cos(a) * r * 0.6, y: c.y + 0.4 + Math.random() * 0.6, z: c.z + Math.sin(a) * r * 0.6 });
+  }
   vanillaFx(dim, "minecraft:critical_hit_emitter", c);
+  waveFx(dim, { x: t.location.x, y: t.location.y + 0.1, z: t.location.z }, r, 0, 10);
   vanillaFx(dim, "minecraft:knockback_roar_particle", { x: t.location.x, y: t.location.y + 0.3, z: t.location.z });
-  if (chain >= 2) vanillaFx(dim, "minecraft:sonic_explosion", c);
-  if (chain >= 3) vanillaFx(dim, "minecraft:huge_explosion_emitter", c);
-  for (let i = 0; i < 6; i++) vanillaFx(dim, "minecraft:electric_spark_particle", { x: c.x + (Math.random() - 0.5), y: c.y + (Math.random() - 0.5), z: c.z + (Math.random() - 0.5) });
-  try { dim.playSound("random.anvil_land", t.location, { volume: 0.7, pitch: 0.8 + chain * 0.15 }); } catch (e) { /* */ }
-  shake(p, 0.1 + 0.05 * chain, 0.15);
-  notify(p, `§f§lPENDULUM${chain > 1 ? ` §e×${chain}` : ""}`, 25);
-  if (chain > (st.pendBest || 0)) { st.pendBest = chain; saveState(p, st); }
+  if (tier >= 2) { popShape(dim, "nova", c, 0.3, r * 0.45, 8, { s: 300, ease: "out" }); vanillaFx(dim, "minecraft:sonic_explosion", c); }
+  if (tier >= 3) { vanillaFx(dim, "minecraft:huge_explosion_emitter", c); rockBurst(dim, t.location, 8); }
+  const names = ["", "§b§lRHYTHM", "§d§lCRESCENDO", "§6§lFINALE"];
+  notify(p, `${names[tier]} §r§7${dmg} dmg`, 35);
+  try { dim.playSound(tier === 3 ? "sh.supernova_boom" : tier === 2 ? "sh.guard_slam" : "sh.echostrike", t.location, { volume: 0.9, pitch: 1 + tier * 0.05 }); } catch (e) { /* */ }
+  // كورد: 3 نوتات سوه
+  for (const k of [0, 2, 4]) rhyNote(p, 3 + tier + k, 0.8);
+  shake(p, 0.08 + tier * 0.06, 0.15 + tier * 0.05);
+  const best = tier * 3 + 1;
+  if (best > (st.rhyBest || 0)) { st.rhyBest = best; saveState(p, st); }
 }
 world.afterEvents.entityHitEntity.subscribe((ev) => {
   try {
     const p = ev.damagingEntity, t = ev.hitEntity;
     if (!p || p.typeId !== "minecraft:player" || !t || t.typeId === "sh:trainer" || isFriendly(t) || !t.getComponent("minecraft:health")) return;
-    if (getState(p).rank < PEND_RANK) return;
-    const now = system.currentTick, cur = pend.get(p.id);
-    const L = Math.max(1.2, Math.min(4, Math.hypot(t.location.x - p.location.x, t.location.y - p.location.y, t.location.z - p.location.z)));
-    if (cur && cur.tid === t.id) {
-      const T = pendPeriodTicks(cur.L), dt = now - cur.start;
-      // أقرب عبور لأوطى نقطة: T/4 + k·T/2 (أول 3 عبورات بس)
-      const k = Math.max(0, Math.min(2, Math.round((dt - T / 4) / (T / 2))));
-      const err = Math.abs(dt - (T / 4 + (k * T) / 2));
-      if (pendDebug.has(p.id)) {
-        const signed = dt - (T / 4 + (k * T) / 2);
-        notify(p, err <= PEND_WINDOW ? "§a§lPERFECT timing" : signed < 0 ? `§eToo early §7by ${(err / 20).toFixed(2)}s, wait a bit longer` : `§cToo late §7by ${(err / 20).toFixed(2)}s, hit a bit sooner`, 40);
-      }
-      if (err <= PEND_WINDOW) {
-        const chain = cur.chain + 1;
-        pendulumStrike(p, t, chain);
-        pend.set(p.id, { tid: t.id, start: now, L: Math.max(0.5, cur.L * 0.75), chain });
-        return;
-      }
-      if (err <= PEND_NEAR) vanillaFx(t.dimension, "minecraft:basic_smoke_particle", center3(t));
+    if (getState(p).rank < RHY_RANK) return;
+    const now = system.currentTick;
+    let r = rhythm.get(p.id);
+    if (!r || now - r.last > RHY_MAX + 4) {
+      rhythm.set(p.id, { last: now, iv: 0, combo: 0, tid: t.id, ticked: 0 });
+      return;
     }
-    pend.set(p.id, { tid: t.id, start: now, L, chain: 0 });
-    renderHud(p);
+    const dt = now - r.last;
+    if (dt < 3) return; // نفس الضربة مرتين
+    if (!r.iv) {
+      if (dt < RHY_MIN) { r.last = now; return; }
+      // الضربة الثانية تحدد الإيقاع
+      r.iv = dt; r.last = now; r.combo = 1; r.tid = t.id;
+      rhyNote(p, 2);
+      vanillaFx(t.dimension, "minecraft:note_particle", headPos(t));
+      return;
+    }
+    const err = dt - r.iv, tol = rhyTol(r.iv);
+    if (rhyDebug.has(p.id)) notify(p, Math.abs(err) <= tol ? "§a§lON BEAT" : err < 0 ? `§eToo early §7by ${(-err / 20).toFixed(2)}s` : `§cToo late §7by ${(err / 20).toFixed(2)}s`, 30);
+    if (Math.abs(err) > tol) {
+      rhyLost(p, r.combo >= 2 ? "§8♪ off beat" : "");
+      rhythm.set(p.id, { last: now, iv: 0, combo: 0, tid: t.id, ticked: 0 }); // هالضربة تصير أول نبضة جديدة
+      return;
+    }
+    r.combo++; r.last = now; r.tid = t.id;
+    r.iv = Math.round((r.iv * 3 + dt) / 4); // يتبعك شوية إذا تبطئ أو تسرع بالتدريج
+    vanillaFx(t.dimension, "minecraft:note_particle", { x: t.location.x, y: t.location.y + 2.3, z: t.location.z });
+    if (r.combo % 3 === 0) {
+      const tier = r.combo / 3;
+      rhythmStrike(p, t, tier);
+      if (tier >= 3) rhythm.delete(p.id);
+    } else {
+      rhyNote(p, r.combo + 1);
+      if (r.combo >= 2) notify(p, `§b♪ ${r.combo}`, 15);
+    }
   } catch (e) { /* */ }
 });
 
@@ -4838,7 +4849,7 @@ system.runInterval(() => {
 //   /scriptevent sh:spawn 3        يطلّع 3 وحوش قربك
 //   /scriptevent sh:weapons        يعطيك كل الأسلحة السبعة + 3 لفائف تطور مهارة
 //   /scriptevent sh:shard          يعطيك شظية نجمة (للسحب)
-//   /scriptevent sh:pendulum       وضع تدريب ضربة البندول (يطلع لك فرق توقيتك)
+//   /scriptevent sh:rhythm         وضع تدريب ضربة الإيقاع (يكلك مبكر/متأخر/على الإيقاع)
 //   /scriptevent sh:rift blue      يفتح صدع قربك (blue violet crimson abyss) | sh:rift close يسده
 //   /scriptevent sh:rank 3         يضبط الرتبة (0-6) وصحتها | sh:xp 500 يعطيك خبرة | sh:scars on يشغل تلوين الأرض المؤقت (مطفي افتراضياً)
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
@@ -4861,8 +4872,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const n = Math.min(KAT_MAX, Math.max(1, parseInt(msg, 10) || 1));
       saveKat(p, { lv: n, xp: 0 });
       say(p, `§aKatana level: ${n}`);
-    } else if (ev.id === "sh:pendulum") {
-      if (pendDebug.has(p.id)) { pendDebug.delete(p.id); say(p, "§7Pendulum practice: off"); } else { pendDebug.add(p.id); say(p, "§ePendulum practice: on (tells you if you hit too early or too late)"); }
+    } else if (ev.id === "sh:rhythm" || ev.id === "sh:pendulum") {
+      if (rhyDebug.has(p.id)) { rhyDebug.delete(p.id); say(p, "§7Rhythm practice: off"); } else { rhyDebug.add(p.id); say(p, "§eRhythm practice: on (tells you if each hit was early, late or on beat)"); }
     } else if (ev.id === "sh:rift") {
       if (msg === "close") { if (riftState()) { closeRift(false); say(p, "§aRift closed"); } else say(p, "§7No rift is open"); }
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }

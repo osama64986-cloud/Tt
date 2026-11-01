@@ -454,38 +454,34 @@ export const __sim = {
         if (!loot.includes("sh:xp_scroll_big")) failures.push("مكافآت الصدع ما نزلت");
       }
     }
-    // ضربة البندول: بدون أيتم، توقيت بس (T = 2π√(L/g))
+    // ضربة الإيقاع: ضربات بإيقاع ثابت (من رتبة Elite)
     {
-      setState({ ...baseState("iron"), rank: 1 }); hold("");
-      spawnZombies(1, true); const z = entities[0]; z._hp = 400; z._max = 400;
+      setState({ ...baseState("iron"), rank: 2 }); hold("");
+      spawnZombies(1, true); const z = entities[0]; z._hp = 2000; z._max = 2000;
       const hitAt = () => fire("entityHitEntity", { damagingEntity: player, hitEntity: z });
-      const T = (L) => 2 * Math.PI * Math.sqrt(Math.max(1.2, Math.min(4, L)) / 9.8) * 20;
-      const L0 = Math.hypot(z.location.x - player.location.x, z.location.y - player.location.y, z.location.z - player.location.z);
       const res = [];
-      // قبل الرتبة الثالثة: ما تشتغل حتى بالتوقيت الصح
-      { const h0 = z._hp; hitAt(); advance(Math.round(T(L0) / 4)); hitAt(); res.push(`رتبة Trainee بتوقيت صح: ضرر ${h0 - z._hp}`); if (h0 - z._hp > 0) failures.push("ضربة البندول اشتغلت قبل رتبة Warrior"); }
-      setState({ ...baseState("iron"), rank: 2 }); advance(40);
-      // 1) توقيت غلط: ما تصير
-      let p0 = stats.particles; const hz = z._hp; hitAt(); advance(Math.round(T(L0) / 4) + 5); hitAt();
-      const wrong = hz - z._hp;
-      res.push(`غلط بـ5 تكات: ضرر ${wrong}`);
-      { stats.actionBars.length = 0; hitAt(); advance(3); const bar = stats.actionBars[stats.actionBars.length - 1] || ""; const p1 = stats.particles; advance(6);
-        res.push(`عداد البندول بالـHUD: ${bar.includes("Pendulum") ? "✔" : "✖"} | ضوء يتمرجح: ${stats.particles - p1 > 3 ? "✔" : "✖"}`);
-        if (!bar.includes("Pendulum")) failures.push("عداد البندول ما طلع بالـHUD");
-        advance(120); hitAt(); }
-      // 2) توقيت صح (السلسلة تبدي من الضربة الأخيرة)
-      let L = Math.max(1.2, Math.min(4, L0)), chainOk = 0;
-      for (let c = 1; c <= 3; c++) {
-        const d0 = stats.damage || 0; p0 = stats.particles; stats.actionBars.length = 0;
-        advance(Math.round(T(L) / 4) - (c > 1 ? 1 : 0)); hitAt(); advance(1);
-        const ok = (stats.damage || 0) - d0 > 0;
-        res.push(`سلسلة ${c}: ${ok ? "✔" : "✖"} ضرر ${Math.round((stats.damage || 0) - d0)} جزيئات ${stats.particles - p0} (T=${(T(L) / 20).toFixed(2)}ث)`);
-        if (ok) chainOk++;
-        L = Math.max(0.5, L * 0.75);
-      }
-      console.log("\nضربة البندول:\n  " + res.join("\n  "));
-      if (wrong > 0) failures.push("ضربة البندول صارت بتوقيت غلط");
-      if (chainOk < 3) failures.push("ضربة البندول ما اشتغلت بالتوقيت الصح");
+      const run = (beats, gaps) => { const d0 = stats.damage || 0; hitAt(); for (let i = 0; i < beats; i++) { advance(gaps[i % gaps.length]); hitAt(); } advance(2); return Math.round((stats.damage || 0) - d0); };
+      // قبل Elite: ما تشتغل
+      { const d = run(4, [10]); res.push(`رتبة Warrior بإيقاع صح: ضرر ${d}`); if (d > 0) failures.push("ضربة الإيقاع اشتغلت قبل رتبة Elite"); }
+      advance(80); setState({ ...baseState("iron"), rank: 3 }); advance(20);
+      // إيقاع غلط (فروقات عشوائية): ما تصير
+      { const d = run(6, [10, 16, 8, 14, 7, 18]); res.push(`إيقاع مخربط: ضرر ${d}`); if (d > 0) failures.push("ضربة الإيقاع صارت بإيقاع غلط"); }
+      advance(80);
+      // إيقاع ثابت كل 10 تكات: الضربة 4 = Rhythm، 7 = Crescendo، 10 = Finale
+      const hats0 = stats.soundIds.has("note.hat");
+      const tiers = [];
+      { const d0 = stats.damage || 0; hitAt(); advance(10); hitAt();
+        for (let i = 1; i <= 9; i++) { advance(10); const dd = stats.damage || 0; hitAt(); const got = Math.round((stats.damage || 0) - dd); if (got > 0) tiers.push(`${i}:${got}`); } }
+      res.push(`إيقاع ثابت (كل 0.5ث): ضربات قوية بعد ${tiers.join(" ")}`);
+      if (tiers.length !== 3) failures.push("ضربة الإيقاع ما طلعت 3 مرات (الضربة 4، 7، 10)");
+      if (!stats.soundIds.has("note.pling")) failures.push("نوتات الإيقاع ما طلعت");
+      if (!stats.soundIds.has("note.hat")) failures.push("تك المترونوم ما طلع");
+      // ضربة متأخرة شوية (±1 تك) تنحسب، وتوقف يقطع الإيقاع
+      advance(80);
+      { const d = run(3, [12, 13, 11]); res.push(`إيقاع بشري (12،13،11): ضرر ${d}`); if (d <= 0) failures.push("ضربة الإيقاع صعبة زيادة (ما تقبل فرق تكة)"); }
+      advance(80);
+      { const d0 = stats.damage || 0; hitAt(); advance(10); hitAt(); advance(10); hitAt(); advance(40); hitAt(); advance(2); const d = Math.round((stats.damage || 0) - d0); res.push(`توقف بنص الإيقاع: ضرر ${d}`); if (d > 0) failures.push("الإيقاع ما انقطع بعد التوقف"); }
+      console.log("\nضربة الإيقاع:\n  " + res.join("\n  "));
     }
     // الوحوش: كل وحش يستعمل مهارته الخاصة الجديدة ويضرب
     {
