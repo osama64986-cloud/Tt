@@ -71,13 +71,44 @@ class Rig:
         self.mat_def = mats
         self.seed = seed
         self.sc = (1.0, 1.0, 1.0)      # تحجيم x,y,z للهندسة (للماموث: أعرض وأقصر)
+        self.vmap = None               # دالة y -> y جديد (تمديد الأرجل وضغط الجسم)، تطبق على الجسم والأرجل
+        self.rigid = {}                # عظمة جذر -> y الأصلي لمحور ربطها: كل أبنائها (راس، خرطوم، أنياب...) تنزاح بنفس المقدار بدون تشويه
         self.rnd = random.Random(seed)
         n = len(self.mats)
         self.cols = 4
         self.rows = math.ceil(n / self.cols)
         self.tw, self.th = self.cols * TILE, self.rows * TILE
 
+    def _root(self, name):
+        """الجذر الصلب (إن وجد) الذي تنتمي له العظمة، وإلا None (هيكلية: جسم/أرجل)"""
+        seen = 0
+        while name and seen < 40:
+            if name in self.rigid:
+                return name
+            b = next((x for x in self.bones if x["name"] == name), None)
+            name = b.get("parent") if b else None
+            seen += 1
+        return None
+
+    def _dy(self, bone, y, h=0.0):
+        """يرجع (y جديد، ارتفاع جديد) حسب القاعدة: صلب = إزاحة موحدة، هيكلي = خريطة f على الطرفين"""
+        if not self.vmap:
+            return y, h
+        r = self._root(bone)
+        if r is not None:
+            return y + (self.vmap(self.rigid[r]) - self.rigid[r]), h
+        y0, y1 = self.vmap(y), self.vmap(y + h)
+        return y0, y1 - y0
+
     def bone(self, name, parent=None, pivot=(0, 0, 0), rotation=None):
+        if self.vmap:
+            r = self._root(parent) if parent else None
+            if name in self.rigid:
+                r = name
+            if r is not None:
+                pivot = (pivot[0], pivot[1] + (self.vmap(self.rigid[r]) - self.rigid[r]), pivot[2])
+            else:
+                pivot = (pivot[0], self.vmap(pivot[1]), pivot[2])
         pivot = (pivot[0] * self.sc[0], pivot[1] * self.sc[1], pivot[2] * self.sc[2])
         b = {"name": name, "pivot": [round(v, 3) for v in pivot], "cubes": []}
         if parent:
@@ -94,6 +125,12 @@ class Rig:
     def box(self, bone, o, s, mat, rot=None, pivot=None, top=None):
         """o = الزاوية الدنيا، s = الحجم، mat = المادة (top = مادة الوجه الفوقاني اختياري)."""
         sx, sy, sz = self.sc
+        if self.vmap:
+            r = self._root(bone)
+            oy, hy = self._dy(bone, o[1], s[1])
+            if pivot is not None:
+                pivot = (pivot[0], pivot[1] + (self.vmap(self.rigid[r]) - self.rigid[r]) if r is not None else self.vmap(pivot[1]), pivot[2])
+            o = (o[0], oy, o[2]); s = (s[0], hy, s[2])
         o = (o[0] * sx, o[1] * sy, o[2] * sz); s = (s[0] * sx, s[1] * sy, s[2] * sz)
         if pivot is not None: pivot = (pivot[0] * sx, pivot[1] * sy, pivot[2] * sz)
         w, h, d = s
@@ -511,7 +548,10 @@ def magmamoth():
         "ember": ("glow", (255, 120, 24), (255, 232, 140)),
     }
     R = Rig("sh_magmamoth", M, seed=41)
-    R.sc = (1.12, 0.9, 1.0)           # جسم أعرض (+12%) وارتفاع كلي ~3.8 بلوكة
+    R.sc = (1.12, 1.0, 1.0)           # جسم أعرض (+12%)
+    # أرجل أطول: الأرجل [0..17] تتمدد بـ1.53 (ركبة 1.6 بلوكة)، الجسم [17..56] ينضغط 0.8، التاج [56..] ينضغط 0.5 → ارتفاع كلي ~3.95 بلوكة
+    R.vmap = lambda y: y * 1.53 if y <= 17 else (26.0 + (y - 17) * 0.8 if y <= 56 else 57.2 + (y - 56) * 0.5)
+    R.rigid = {"head": 40.0, "tail": 42.0}     # الراس (والخرطوم والأنياب والأذان) والذيل أجزاء صلبة: تنزاح بدون ما تتشوه
     rnd = random.Random(5)
     R.bone("root", pivot=(0, 0, 0))
     R.bone("body", "root", (0, 34, 0))
@@ -606,11 +646,51 @@ def magmamoth():
         for k in range(3):
             R.box(nm, (x - 7.2 + k * 5.2, 0.4, z - 9.6), (4.4, 5.0, 2.0), "rock")             # أصابع حجر
         R.box(nm, (x - 8.7, 5.9, z - 8.7), (17.4, 0.9, 17.4), "magma_dk")                      # حلقة جمر عند الكاحل
-    # ── الذيل ──
+    # ── المؤخرة (تبين من ورا): صفائح درع بفجوات تتوهج، أفخاذ بارزة، عمود فقري بأشواك، تنورة صخر معلقة وأرجل خلفية بتفاصيل ──
+    for xi, x in enumerate((-17.0, -11.0, -5.0, 1.0, 7.0, 13.0)):
+        for yi, y in enumerate((22.3, 27.0, 31.7, 36.4, 41.1)):
+            w, h = 5.4 + rnd.random() * 0.5, 4.0 + rnd.random() * 0.5
+            R.box("body", (x + 0.3, y, 26.0), (w, h, 1.6 + rnd.random() * 1.8), ("rock", "rock_dk", "rock_rd", "rock_dk")[(xi + yi * 2) % 4])
+    for sx in (-1, 1):                                                                      # الأفخاذ
+        x0 = 8.0 if sx > 0 else -25.0
+        R.box("body", (x0, 24.0, 17.5), (17.0, 17.0, 11.5), "rock_rd")
+        R.box("body", (x0 - (0.3 if sx > 0 else -0.3), 41.0, 17.5), (17.0, 2.6, 11.5), "rock_dk")      # سطح الفخذ
+        for k in range(3):                                                                  # ريش صخري على الفخذ
+            R.box("body", (x0 + 1.5 + k * 5.0, 26.0 + (k % 2) * 4.0, 29.0), (4.2, 8.0, 1.6), ("rock", "rock_dk", "rock")[k])
+        R.box("body", (x0 + (16.2 if sx > 0 else 0.0), 27.0, 18.0), (0.8, 12.0, 10.0), "magma_dk")   # عرق جانبي للفخذ
+    for i in range(9):                                                                      # عمود فقري بأشواك (يصغر نحو الذيل)
+        z = -4.0 + i * 3.4
+        base = 50.0 if z < 0 else 47.0
+        h = 9.5 - i * 0.55
+        R.box("body", (-1.7, base, z), (3.4, h, 3.0), "rock_dk")
+        R.box("body", (-0.6, base + h - 1.4, z + 0.4), (1.2, 1.6, 2.2), "magma")
+    for i in range(5):                                                                      # تنورة صخر معلقة تحت الذيل (بين الرجلين)
+        x = -8.4 + i * 3.8
+        R.box("body", (x, 13.5 + (i % 2) * 1.6, 23.0), (3.4, 9.0 + (i % 3) * 1.5, 2.8), "rock_dk" if i % 2 else "rock")
+        R.box("body", (x + 1.4, 17.0, 25.5), (0.6, 5.0, 0.5), "magma")
+    for sx in (-1, 1):                                                                      # خصل صخر معلقة على الجنبين
+        for zi in range(5):
+            x = 16.6 if sx > 0 else -19.4
+            R.box("body", (x, 13.0 + (zi % 2) * 1.8, -10.0 + zi * 5.0), (2.8, 8.0 + (zi % 3) * 1.4, 4.4), ("rock_dk", "rock")[zi % 2])
+    for nm in ("leg_bl", "leg_br"):                                                         # الأرجل الخلفية من ورا: عرق وصفيحة كاحل
+        xx = 16.0 if nm.endswith("l") else -16.0
+        R.box(nm, (xx - 0.5, 8.0, 19.0 + 6.9), (1.0, 14.0, 0.4), "magma")
+        R.box(nm, (xx - 5.0, 9.0, 19.0 + 7.0), (10.0, 9.0, 1.6), "rock")
+        R.box(nm, (xx - 3.0, 12.0, 19.0 + 8.4), (6.0, 2.0, 0.8), "magma_dk")
+    # ── الذيل: ذيل ثقيل من 5 عقل بحلقات جمر، يطلع من كومة صخر، ونهايته خصلة لهب جمر ──
     R.bone("tail", "body", (0, 42.0, 26.0))
-    for k in range(4):
-        R.box("tail", (-1.6 + 0.0, 40.0 - k * 4.0, 26.0 + k * 1.2), (3.2, 4.4, 3.2), "rock_dk" if k % 2 else "rock")
-    R.box("tail", (-2.4, 23.5, 30.5), (4.8, 5.0, 4.8), "ember")
+    R.box("tail", (-5.0, 36.0, 26.0), (10.0, 9.0, 6.0), "rock_rd")                           # كومة أصل الذيل
+    R.box("tail", (-5.4, 43.4, 25.6), (10.8, 1.0, 6.8), "magma")
+    R.box("tail", (-3.6, 44.4, 26.4), (7.2, 2.4, 5.0), "rock_dk")
+    for k in range(5):
+        w = 5.6 - k * 0.6
+        y = 37.0 - k * 3.2; z = 32.0 + k * 2.6
+        R.box("tail", (-w / 2, y, z), (w, 4.2, w + 0.6), "rock_dk" if k % 2 else "rock")
+        R.box("tail", (-w / 2 - 0.25, y + 3.4, z - 0.25), (w + 0.5, 0.8, w + 1.1), "magma")
+    ty, tz = 37.0 - 5 * 3.2, 32.0 + 5 * 2.6
+    R.box("tail", (-2.4, ty - 1.0, tz - 0.4), (4.8, 4.8, 4.8), "ember")
+    for k, (dx, dz, hh) in enumerate(((-3.4, 0.0, 6.0), (2.6, 1.2, 8.0), (-0.6, 4.4, 5.5), (0.6, -2.2, 7.0))):
+        R.box("tail", (dx - 0.9, ty + 3.0, tz + 1.0 + dz), (1.8, hh, 1.8), "magma")
     return R
 
 
@@ -620,7 +700,7 @@ def main():
     d = veilfox(); nd = d.save(2.2)
     hot = {"magma": ("lava", (255, 176, 56), (255, 248, 190)), "magma_dk": ("lava", (255, 120, 32), (255, 220, 120)),
            "ember": ("glow", (255, 190, 60), (255, 255, 235)), "eye": ("glow", (255, 240, 120), (255, 255, 255))}
-    e = magmamoth(); ne = e.save(4.2, hot=hot, width=7)
+    e = magmamoth(); ne = e.save(4.4, hot=hot, width=7)
     print(f"gloomhorn cubes={na}  seer cubes={nb}  veilfox cubes={nd}  magmamoth cubes={ne}")
 
 

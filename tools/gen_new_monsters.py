@@ -22,7 +22,7 @@ def save(p, d, indent=1):
 MON = {
     "veilfox": dict(ident="sh:veilfox", name="Veilfox", rank="sh_rank1", hp=95, speed=0.34, atk=6, w=1.1, h=1.8, kb=0.4, xp=12,
                     egg=("#2a2640", "#8c64ff"), states=4, props=None),
-    "magmamoth": dict(ident="sh:magmamoth", name="Magmamoth", rank="sh_rank2", hp=260, speed=0.24, atk=12, w=3.4, h=3.7, kb=0.95, xp=40,
+    "magmamoth": dict(ident="sh:magmamoth", name="Magmamoth", rank="sh_rank2", hp=260, speed=0.24, atk=12, w=3.4, h=4.0, kb=0.95, xp=40,
                       egg=("#2c2a30", "#ff7a1c"), states=6, props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
 }
 

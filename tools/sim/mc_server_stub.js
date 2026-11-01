@@ -30,7 +30,14 @@ function advance(n) {
 
 // ───── أنواع ─────
 export class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
-export class MolangVariableMap { constructor() { this.v = {}; } setFloat(k, x) { this.v[k] = x; } setColorRGB() {} setColorRGBA() {} setVector3() {} setSpeedAndDirection() {} }
+export class MolangVariableMap {
+  constructor() { this.v = {}; }
+  setFloat(k, x) { this.v[k] = x; }
+  setColorRGB(k, c) { this.v[k + ".r"] = c.red; this.v[k + ".g"] = c.green; this.v[k + ".b"] = c.blue; }
+  setColorRGBA(k, c) { this.v[k + ".r"] = c.red; this.v[k + ".g"] = c.green; this.v[k + ".b"] = c.blue; this.v[k + ".a"] = c.alpha; }
+  setVector3(k, c) { this.v[k + ".x"] = c.x; this.v[k + ".y"] = c.y; this.v[k + ".z"] = c.z; }
+  setSpeedAndDirection(k, sp, d) { this.v[k + ".speed"] = sp; this.v[k + ".direction.x"] = d.x; this.v[k + ".direction.y"] = d.y; this.v[k + ".direction.z"] = d.z; }
+}
 export const EntityDamageCause = new Proxy({}, { get: (t, k) => String(k) });
 export const BlockPermutation = { resolve: () => ({}) };
 export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
@@ -38,6 +45,8 @@ export const GameMode = new Proxy({}, { get: (t, k) => String(k) });
 export const HudElement = { PaperDoll: 0, Armor: 1, ToolTips: 2, TouchControls: 3, Crosshair: 4, Hotbar: 5, Health: 6, ProgressBar: 7, Hunger: 8, AirBubbles: 9, HorseHealth: 10, StatusEffects: 11, ItemText: 12 };
 export const HudVisibility = { Hide: 0, Reset: 1 };
 
+// تسجيل: لما rec.on يسجل كل جزيء انطلب (النوع والمكان والمتغيرات) وتحرك كل كيان، حتى تنرسم النتيجة الحقيقية بدل مشاهد مرسومة باليد
+export const rec = { on: false, particles: [], frames: [] };
 export const stats = { particles: 0, sounds: 0, spawned: 0, soundIds: new Set(), actionBars: [], messages: [] };
 let effectLog = [];
 
@@ -46,6 +55,7 @@ let idc = 1;
 function mkEntity(typeId, loc, dim, hp = 40) {
   const props = {}, dyn = {}, tags = new Set();
   const e = {
+    _props: props,
     id: "e" + idc++, typeId, nameTag: "", location: { ...loc }, dimension: dim, _valid: true, _hp: hp, _max: hp, _tags: tags,
     isValid() { return this._valid; },
     getComponent(n) {
@@ -56,9 +66,9 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     applyDamage(a) { this._hp -= a; stats.damage = (stats.damage || 0) + a; if (this._hp <= 0) { this._valid = false; } return true; },
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
     addEffect(id, dur, o) { effectLog.push(id); stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
-    teleport(l) { this.location = { x: l.x, y: l.y, z: l.z }; }, remove() { this._valid = false; }, kill() { this._valid = false; },
+    teleport(l, o) { this.location = { x: l.x, y: l.y, z: l.z }; if (o && o.facingLocation) { this._yaw = (Math.atan2(-(o.facingLocation.x - l.x), o.facingLocation.z - l.z) * 180) / Math.PI; } else if (o && o.rotation) this._yaw = o.rotation.y; }, remove() { this._valid = false; }, kill() { this._valid = false; },
     setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
-    setRotation() {}, getRotation() { return { x: 0, y: 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
+    setRotation(r) { if (r) this._yaw = r.y; }, getRotation() { return { x: 0, y: this._yaw || 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },
     getHeadLocation() { return { x: this.location.x, y: this.location.y + 1.62, z: this.location.z }; },
@@ -71,7 +81,10 @@ const entities = [];
 function mkDim(id) {
   const d = {
     id,
-    spawnParticle(id) { stats.particles++; stats.pById = stats.pById || {}; stats.pById[id] = (stats.pById[id] || 0) + 1; },
+    spawnParticle(id, loc, vars) {
+      // سبرايت colored_flame_particle سماوي أصلاً: تلوينه بلون دافئ (أحمر/برتقالي/ذهبي) يطلعه أخضر زيتوني. للدافئ نستعمل small_flame_particle أو glow_particle
+      if (id === "minecraft:colored_flame_particle" && vars && vars.v) { const r = vars.v["variable.color.r"], g = vars.v["variable.color.g"], b = vars.v["variable.color.b"]; if (r > 0.6 && b < 0.5 && r >= g * 0.9) { stats.badTint = stats.badTint || {}; const k = [r, g, b].map((x) => x.toFixed(2)).join(","); stats.badTint[k] = (stats.badTint[k] || 0) + 1; } }
+      if (rec.on && loc) rec.particles.push({ t: tick, id, x: loc.x, y: loc.y, z: loc.z, v: vars && vars.v ? { ...vars.v } : {} }); stats.particles++; stats.pById = stats.pById || {}; stats.pById[id] = (stats.pById[id] || 0) + 1; },
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
@@ -81,7 +94,10 @@ function mkDim(id) {
       return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
-    getPlayers() { return [player]; },
+    getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
+      if (rec.on && q && q.location && q.maxDistance !== undefined) { const dx = player.location.x - q.location.x, dy = (player.location.y + 1) - q.location.y, dz = player.location.z - q.location.z; return Math.hypot(dx, dy, dz) <= q.maxDistance ? [player] : []; }
+      return [player];
+    },
     getTopmostBlock(l) { const b = { x: Math.floor(l.x), y: 63, z: Math.floor(l.z), typeId: "minecraft:grass_block", location: { x: l.x, y: 63, z: l.z }, isAir: false, isLiquid: false, dimension: d, above: () => ({ isAir: true }), below: () => ({ isAir: false, isLiquid: false }), getComponent: () => undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     fillBlocks() {}, setBlockType() {}, setBlockPermutation() {}, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   };
@@ -138,7 +154,14 @@ async function useItem(typeId) {
   await Promise.resolve();
 }
 
+function snapFrame() {
+  const list = [];
+  for (const e of entities) if (e._valid) list.push({ id: e.id, type: e.typeId, x: e.location.x, y: e.location.y, z: e.location.z, yaw: e._yaw || 0, props: { ...(e._props || {}) } });
+  list.push({ id: player.id, type: "player", x: player.location.x, y: player.location.y, z: player.location.z, yaw: player._yaw || 0, props: {} });
+  rec.frames.push({ t: tick, ents: list });
+}
 export const __sim = {
+  rec, snapFrame, advance, entities, mkEntity, dims, player, get tick() { return tick; },
   stats, failures, get failuresArr() { return failures; },
   async runScenario(sc, root) {
     const main = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/main.js"), "utf8");
@@ -574,7 +597,7 @@ export const __sim = {
       const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "ثعبان نار الثعلب", 2: "دوّامة المرايا", 3: "مطر الشمس", 4: "رفع القمر" }, "sh:magmamoth": { 1: "دكة الشقوق", 2: "كنس الجحيم", 3: "اندفاع الأنياب", 4: "القصف البركاني", 5: "درع الماغما" } };
       const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[4, 3600], [12, 3600]], "sh:magmamoth": [[4, 3600], [12, 4200]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "nova"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         stats.shapeV = {}; stats.pById = {};
@@ -598,8 +621,9 @@ export const __sim = {
         for (const n of wantShapes[type]) if (!stats.shapeV[SHP[n]]) failures.push(`${type}: الشكل ${n} ما انرسم`);
         if (type === "sh:hollow_seer") {
           const pb = stats.pById || {};
-          console.log(`  ${"".padEnd(16)} شعاع الجزيئات: لهب×${pb["minecraft:colored_flame_particle"] || 0} خيوط×${pb["minecraft:glow_particle"] || 0} شرر×${pb["minecraft:electric_spark_particle"] || 0}`);
-          if (!pb["minecraft:colored_flame_particle"] || !pb["minecraft:glow_particle"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
+          const beamFlame = (pb["minecraft:small_flame_particle"] || 0) + (pb["minecraft:colored_flame_particle"] || 0);
+          console.log(`  ${"".padEnd(16)} شعاع الجزيئات: لهب×${beamFlame} خيوط×${pb["minecraft:glow_particle"] || 0} شرر×${pb["minecraft:electric_spark_particle"] || 0}`);
+          if (!beamFlame || !pb["minecraft:glow_particle"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
         }
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }

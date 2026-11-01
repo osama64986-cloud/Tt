@@ -514,17 +514,47 @@ function mcP(dim, loc, id, color, dir, extra) {
   } catch (e) { /* مكان غير محمل */ }
 }
 const rndDir = (k) => { const a = Math.random() * 6.2832, b = Math.random() * 2 - 1, r = Math.sqrt(1 - b * b); return { x: Math.cos(a) * r * k, y: b * k, z: Math.sin(a) * r * k }; };
-// لمعة: لهب ملوّن (colored_flame_particle) وحسب طابع اللون جزيئات خاصة: روح زرقاء، شرارة كهرباء/ثلج، جمرة حمم، بوابة فراغ
+// ملاحظة مهمة عن سبرايتات ماينكرافت: colored_flame_particle وsmall_soul_fire_flame سبرايتهم سماوي أصلاً، والتلوين يضرب ألوان السبرايت بلون التلوين،
+// فالتلوين الدافئ (أحمر/برتقالي/ذهبي) يطلعه أخضر زيتوني. لذلك للألوان الدافئة نستعمل لهب المشعل البرتقالي الطبيعي (small_flame_particle بدون تلوين)،
+// وللبنفسجي/الأبيض/الداكن glow_particle (سبرايته أبيض فيقبل أي لون)، وللسماوي/الأزرق/الأخضر اللهب الملوّن (colored_flame_particle) لأن سبرايته سماوي.
+const isWarm = (cls) => cls === "red" || cls === "orange" || cls === "gold";
+// نار حقيقية: لهب المشعل الأصلي (small_flame_particle). dir = اتجاه الحركة، sp = السرعة الابتدائية (يتباطأ بالاحتكاك 0.96 ويصغر بعمره)
+function flame(dim, loc, dir, sp) {
+  mcP(dim, loc, "minecraft:small_flame_particle", undefined, dir || { x: 0, y: 1, z: 0 }, { particle_initial_speed: sp ?? 0.6 });
+}
+// لهب كبير: mobflame_single = نفس لهب الكيان المحترق (سبرايت لهب متحرك 0.5 بلوكة، يطلع لفوق ويعيش 1.25 ثانية). حسب توثيق Mojang لما ما يكون في كيان يطلع من نقطة المنبعث.
+function bigFlame(dim, loc) { vanillaFx(dim, "minecraft:mobflame_single", loc); }
+// جمرات: lava_particle (نقطة حمم تنط بقوس وتنزل بالجاذبية)
+function embers(dim, loc, n = 1) { for (let i = 0; i < n; i++) mcP(dim, loc, "minecraft:lava_particle"); }
+// حلقة لهب على الأرض (بدل الأشكال المصنوعة): لهب المشعل الأصلي + جمرات
+function fireRing(dim, c, r, n, y = 0.15) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2, p = { x: c.x + Math.cos(a) * r, y: c.y + y, z: c.z + Math.sin(a) * r };
+    flame(dim, p, { x: 0, y: 1, z: 0 }, 0.3 + Math.random() * 0.4);
+    if (i % 3 === 0) bigFlame(dim, p);
+    if (i % 5 === 0) mcP(dim, p, "minecraft:lava_particle");
+  }
+}
+// ضربة/انفجار بجزيئات ماينكرافت بس: big = حلقة صدمة (sonic_explosion) + شرر، وإلا انفجار عادي (large_explosion) + شرر ملوّن
+function impactFx(dim, c, color, big) {
+  vanillaFx(dim, big ? "minecraft:sonic_explosion" : "minecraft:large_explosion", c);
+  burst(dim, c, big ? 22 : 14, color, big ? 3.5 : 2.5);
+}
 function glow(dim, loc, o = {}) {
   try {
     if (nearEye(dim, loc, 1.4)) return;
     const c = o.color || COLORS.gold, cls = hueClass(c), r = Math.random();
-    let id = "minecraft:colored_flame_particle", extra;
-    if (cls === "cyan" && r < 0.6) { id = "minecraft:small_soul_fire_flame"; extra = { particle_initial_speed: 0 }; }
-    else if (cls === "white") id = r < 0.5 ? "minecraft:electric_spark_particle" : r < 0.8 ? "minecraft:falling_dust_top_snow_particle" : id;
-    else if ((cls === "red" || cls === "orange") && r < 0.2) id = "minecraft:lava_particle";
-    else if (cls === "violet" && r < 0.4) id = "minecraft:basic_portal_particle";
-    mcP(dim, loc, id, cls === "dark" ? [0.25, 0.2, 0.32] : c, id === "minecraft:electric_spark_particle" ? rndDir(0.4) : undefined, extra);
+    if (isWarm(cls)) {
+      if (r < 0.55) flame(dim, loc, { x: 0, y: 1, z: 0 }, 0.3 + Math.random() * 0.5);
+      else if (r < 0.65 && cls !== "gold") mcP(dim, loc, "minecraft:lava_particle");
+      else mcP(dim, loc, "minecraft:glow_particle", c, rndDir(0.15));
+      return;
+    }
+    if (cls === "cyan" && r < 0.6) { mcP(dim, loc, "minecraft:small_soul_fire_flame", undefined, undefined, { particle_initial_speed: 0 }); return; }
+    if (cls === "white") { const q = r < 0.4 ? "electric" : r < 0.65 ? "snow" : "glow"; mcP(dim, loc, q === "electric" ? "minecraft:electric_spark_particle" : q === "snow" ? "minecraft:falling_dust_top_snow_particle" : "minecraft:glow_particle", c, q === "electric" ? rndDir(0.4) : rndDir(0.1)); return; }
+    if (cls === "violet") { if (r < 0.35) mcP(dim, loc, "minecraft:basic_portal_particle", c); else mcP(dim, loc, "minecraft:glow_particle", c, rndDir(0.12)); return; }
+    if (cls === "dark") { mcP(dim, loc, "minecraft:glow_particle", [0.25, 0.2, 0.32], rndDir(0.1)); return; }
+    mcP(dim, loc, "minecraft:colored_flame_particle", c);
   } catch (e) { /* */ }
 }
 // شرارات: glow_particle (نقطة متوهجة) ملونة، تنطلق بالاتجاه العشوائي حسب speed
@@ -545,7 +575,7 @@ function burst(dim, loc, n, color, speed = 2.5, size = 0.2) {
     for (let i = 0; i < Math.min(n, 14); i++) mcP(dim, loc, "minecraft:glow_particle", c, rndDir(Math.min(1.5, speed * 0.4)));
   } catch (e) { /* */ }
 }
-// شعاع من جزيئات ماينكرافت من a إلى b: قلب لهب ملوّن (colored_flame_particle) وخيطين glow_particle ملتفين حوله، وشرارة كهرباء كل بلوكة
+// شعاع من جزيئات ماينكرافت من a إلى b: قلب (لهب المشعل للدافئ، لهب ملوّن للسماوي، glow_particle للباقي) وخيطين glow_particle ملتفين حوله، وشرارة كهرباء كل بلوكة
 function particleBeam(dim, a, b, color, life = 0.6, coreColor = [1, 0.9, 0.6]) {
   try {
     const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, len = Math.hypot(dx, dy, dz) || 1;
@@ -555,7 +585,8 @@ function particleBeam(dim, a, b, color, life = 0.6, coreColor = [1, 0.9, 0.6]) {
     const q = { x: d.y * p.z - d.z * p.y, y: d.z * p.x - d.x * p.z, z: d.x * p.y - d.y * p.x };
     for (let s = 0, k = 0; s <= len; s += 0.4, k++) {
       const c = { x: a.x + d.x * s, y: a.y + d.y * s, z: a.z + d.z * s };
-      mcP(dim, c, "minecraft:colored_flame_particle", coreColor);
+      const cc = hueClass(coreColor);
+      if (isWarm(cc)) flame(dim, c, { x: 0, y: 0, z: 0 }, 0); else if (cc === "cyan" || cc === "blue" || cc === "green") mcP(dim, c, "minecraft:colored_flame_particle", coreColor); else mcP(dim, c, "minecraft:glow_particle", coreColor);
       for (const ph of [0, Math.PI]) {
         const ang = s * 2.6 + ph, cs = Math.cos(ang) * 0.22, sn = Math.sin(ang) * 0.22;
         mcP(dim, { x: c.x + p.x * cs + q.x * sn, y: c.y + p.y * cs + q.y * sn, z: c.z + p.z * cs + q.z * sn }, "minecraft:glow_particle", color);
@@ -922,7 +953,7 @@ const MONSTER_INFO = [
   ["sh:gloomhorn", "Gloomhorn", "Grim to Cataclysm", "A spectral stag with an open ribcage and a floating heart. It scrapes the ground, then CHARGES and RAMS you with its antlers, so step aside. From afar its heart glows and a SPIRIT STAG bursts from its chest and gallops at you, followed by two more. Up close its heart BEATS three times: each beat sends a wave along the ground (JUMP over it), and the last one binds you with SOUL CHAINS that drain your life. Run more than 10 blocks to break them."],
   ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one round eye. When it raises its hand in front of the eye, an ORANGE BEAM gathers: the aim locks a moment before it fires, so sidestep. From 6-7 blocks away it lifts its arms and ROOTS erupt from the ground one after another toward you, then a CAGE OF ROOTS curls around you. Up close an ICE ORB forms before its face and it exhales a FROST BREATH: your screen freezes like powder snow and you slow down, but you can still fight."],
   ["sh:veilfox", "Veilfox", "Grim to Cataclysm", "A spirit fox with five flame-tipped tails and a white mask. FOXFIRE SERPENT: nine spirit flames weave toward you in a snaking train (stand between the waves). MIRROR CAROUSEL: it and three real shadow foxes circle you in a tightening ring, then all collapse on you at once (kill the shadows to thin it). SUN SHOWER: foxfire drops rain down over eight blocks around you. Below half health it casts MOON LIFT: it floats you into the air while three volleys of crescent waves fall on you."],
-  ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, 3.8 blocks tall, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: it raises its trunk and sweeps a real flame stream across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
+  ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -1263,7 +1294,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
       const dl = ev.deadEntity.location, dm = ev.deadEntity.dimension;
       vanillaFx(dm, "minecraft:huge_explosion_emitter", { x: dl.x, y: dl.y + 1.5, z: dl.z });
       rockBurst(dm, dl, 12, 1.3);
-      for (let i = 0; i < 28; i++) { const a = Math.random() * 6.28, r = Math.random() * 2.4; mcP(dm, { x: dl.x + Math.cos(a) * r, y: dl.y + 0.4 + Math.random() * 3, z: dl.z + Math.sin(a) * r }, i % 2 ? "minecraft:lava_particle" : "minecraft:colored_flame_particle", MAGY); }
+      for (let i = 0; i < 28; i++) { const a = Math.random() * 6.28, r = Math.random() * 2.4, q = { x: dl.x + Math.cos(a) * r, y: dl.y + 0.4 + Math.random() * 3, z: dl.z + Math.sin(a) * r }; if (i % 2) mcP(dm, q, "minecraft:lava_particle"); else flame(dm, q, UP, 1 + Math.random() * 2); }
       sfx(dm, "sh.supernova_boom", dl, 1.2, 0.7);
     }
     const info = MONSTERS[ev.deadEntity.typeId];
@@ -5315,7 +5346,7 @@ function gloomTick(e, st) {
         shake(pl, 0.35, 0.4); notify(pl, "§bThe Gloomhorn rams you with its antlers!", 40);
         burst(dim, center3(pl), 16, SOUL, 3, 0.22);
       }
-      popShape(dim, "nova", horn, 0.3, 1.6, 7, { s: 500 });
+      impactFx(dim, horn, SOUL, false);
       for (let k = 0; k < 16; k++) pix(dim, horn, { color: k % 2 ? SOUL : [0.95, 1, 1], size: 0.2, life: 0.6, speed: 3 });
       sfx(dim, "sh.guard_slam", L, 1.4, 1.1); sfx(dim, "random.anvil_land", L, 0.6, 0.6);
       grimEnd(e, st, 70);
@@ -5343,7 +5374,7 @@ function gloomTick(e, st) {
           hitS.add(pl.id); hurtPlayer(pl, dmg, valid(e) ? e : undefined);
           try { pl.applyKnockback({ x: dir.x * 1.4, z: dir.z * 1.4 }, 0.5); } catch (err) { /* */ }
           notify(pl, "§bA spirit stag tramples you!", 30);
-          popShape(dim, "nova", center3(pl), 0.3, 1.2, 6, { s: 400 });
+          impactFx(dim, center3(pl), SOUL, false);
           return true;                                          // الروح تتفجر لما تضرب
         }
         return false;
@@ -5370,7 +5401,7 @@ function gloomTick(e, st) {
     if (st.t === 10 || st.t === 20 || st.t === 30) {
       const n = st.t / 10, hitB = new Set(), C = { ...L };
       sfx(dim, "note.bass", L, 1.6, 0.5); sfx(dim, "sh.guard_slam", L, 0.7 + n * 0.2, 0.5);
-      popShape(dim, "nova", H, 0.3, 0.9 + n * 0.4, 6, { s: 500 });
+      impactFx(dim, H, [0.8, 0.6, 1], n >= 2);
       for (let k = 0; k < 10 + n * 2; k++) pix(dim, H, { color: k % 2 ? SOUL : [0.8, 0.6, 1], size: 0.18, life: 0.5, speed: 2.2 });
       const steps = 9;
       for (let k = 0; k <= steps; k++) {
@@ -5559,7 +5590,7 @@ function seerTick(e, st) {
       if (st.t === 48 && st.orb) {      // الكرة تتكسر شظايا
         removeFx(st.orb); st.orb = undefined;
         for (let k = 0; k < 18; k++) pix(dim, op, { color: ICE[k % 4], size: 0.18, life: 0.7, speed: 2.6 });
-        popShape(dim, "nova", op, 0.2, 0.9, 5, { s: 400 }); sfx(dim, "random.glass", op, 0.8, 1.4);
+        impactFx(dim, op, ICE[0], false); sfx(dim, "random.glass", op, 0.8, 1.4);
       }
     }
     if (st.t >= 8 && st.t <= 46 && st.aim) {
@@ -5696,7 +5727,7 @@ function veilTick(e, st) {
         const a = st.phi + j * Math.PI / 2;
         try { f.teleport({ x: C.x + Math.cos(a) * 1.3, y: C.y, z: C.z + Math.sin(a) * 1.3 }, { facingLocation: { x: C.x, y: C.y + 1, z: C.z } }); } catch (err) { /* */ }
       });
-      popShape(dim, "nova", { x: C.x, y: C.y + 1.2, z: C.z }, 0.4, 3.6, 8, { s: 300 }); burst(dim, { x: C.x, y: C.y + 1, z: C.z }, 24, FOXV, 4);
+      impactFx(dim, { x: C.x, y: C.y + 1.2, z: C.z }, FOXV, true); ring(dim, { x: C.x, y: C.y, z: C.z }, 2.6, 26, 0, FOXC, 0.2);
       sfx(dim, "sh.supernova_boom", C, 0.9, 1.6);
       for (const pl of dim.getPlayers({ location: C, maxDistance: 2.8 })) { hurtPlayer(pl, 9, e); pushAway(C, pl, 1.6, 0.5); try { pl.addEffect("weakness", 60, { amplifier: 0 }); } catch (err) { /* */ } shake(pl, 0.3, 0.3); }
     }
@@ -5728,7 +5759,7 @@ function veilTick(e, st) {
     if (st.t === 8) {
       st.victims = dim.getPlayers({ location: L, maxDistance: 16 });
       for (const pl of st.victims) { try { pl.addEffect("levitation", 38, { amplifier: 2, showParticles: false }); } catch (err) { /* */ } notify(pl, "§dThe Veilfox lifts you into the moonlight!", 50); ring(dim, pl.location, 1.3, 16, 0, FOXV, 0.2); }
-      sfx(dim, "sh.chorus", L, 1.4, 1.6); popShape(dim, "nova", { x: L.x, y: L.y + 1.5, z: L.z }, 0.4, 3.0, 8, { s: 300 });
+      sfx(dim, "sh.chorus", L, 1.4, 1.6); impactFx(dim, { x: L.x, y: L.y + 1.5, z: L.z }, FOXV, true);
     }
     for (const w of [18, 30, 42]) {
       if (st.t !== w) continue;
@@ -5755,9 +5786,12 @@ function veilTick(e, st) {
   }
 }
 // ═════════════════════════ ماغماموث (Magmamoth، Vile): ماموث بركاني بخمس مهارات خاصة ═════════════════════════
+// كل نار هنا لهب ماينكرافت الأصلي (small_flame_particle = لهب المشعل البرتقالي الطبيعي) + جمرات lava_particle + glow_particle ملوّن، بدون أشكال مصنوعة
 const MAGC = [1.0, 0.42, 0.08], MAGY = [1.0, 0.78, 0.25];
+const MOUTH_F = 5.0, MOUTH_H = 3.0;                               // فوهة الخرطوم أثناء النفخ (مقيسة من أنيميشن النموذج): 5 بلوكات لقدام و3 ارتفاع
 const setHot = (e, v) => { try { e.setProperty("sh:hot", v); } catch (err) { /* */ } };
-// رقع نار على الأرض (آثار الاندفاع، تيار النفخ، سقوط القذائف): تحرق اللي يوقف فيها
+const UP = { x: 0, y: 1, z: 0 };
+// رقع نار على الأرض (آثار الاندفاع، نهاية تيار النفخ، سقوط القذائف): لهب طبيعي يطلع وجمرات، وتحرق اللي يوقف فيها
 function addPatch(st, dim, x, y, z, life = 60) { (st.patches = st.patches || []).push({ dim, x, y, z, until: system.currentTick + life, n: 0 }); }
 function patchTick(st) {
   if (!st.patches || !st.patches.length) return;
@@ -5765,8 +5799,10 @@ function patchTick(st) {
   st.patches = st.patches.filter((p) => now < p.until);
   for (const p of st.patches) {
     p.n++;
-    mcP(p.dim, { x: p.x + (Math.random() - 0.5) * 0.9, y: p.y + 0.15, z: p.z + (Math.random() - 0.5) * 0.9 }, "minecraft:colored_flame_particle", Math.random() < 0.5 ? MAGC : MAGY);
-    if (p.n % 3 === 0) vanillaFx(p.dim, "minecraft:basic_flame_particle", { x: p.x, y: p.y + 0.1, z: p.z });
+    for (let k = 0; k < 3; k++) flame(p.dim, { x: p.x + (Math.random() - 0.5) * 1.3, y: p.y + 0.1, z: p.z + (Math.random() - 0.5) * 1.3 }, UP, 0.5 + Math.random() * 0.8);
+    if (p.n % 2 === 0) bigFlame(p.dim, { x: p.x + (Math.random() - 0.5) * 0.9, y: p.y, z: p.z + (Math.random() - 0.5) * 0.9 });
+    if (p.n % 4 === 0) embers(p.dim, { x: p.x, y: p.y + 0.2, z: p.z });
+    if (p.n % 3 === 0) vanillaFx(p.dim, "minecraft:basic_flame_particle", { x: p.x + (Math.random() - 0.5) * 0.8, y: p.y + 0.1, z: p.z + (Math.random() - 0.5) * 0.8 });
     if (p.n % 6 === 0) for (const pl of p.dim.getPlayers({ location: { x: p.x, y: p.y + 0.5, z: p.z }, maxDistance: 1.2 })) { hurtPlayer(pl, 2, undefined); try { pl.setOnFire(2, true); } catch (err) { /* */ } }
   }
 }
@@ -5774,14 +5810,14 @@ function mammothTick(e, st) {
   const dim = e.dimension, L = e.location;
   const hot = st.hot > 0;
   patchTick(st);
-  if (Math.random() < (hot ? 0.9 : 0.35)) {
+  if (Math.random() < (hot ? 0.9 : 0.35)) {                      // جمر يتصاعد من تاج الصخر
     const a = Math.random() * 6.28, r = 0.5 + Math.random() * 1.6;
-    glow(dim, { x: L.x + Math.cos(a) * r, y: L.y + 3.2 + Math.random() * 0.6, z: L.z + Math.sin(a) * r }, { color: Math.random() < 0.5 ? MAGC : MAGY, size: 0.12, life: 0.8, rise: 0.8 });
-    if (hot) vanillaFx(dim, "minecraft:basic_flame_particle", { x: L.x + Math.cos(a) * 1.9, y: L.y + 1.2 + Math.random() * 2.2, z: L.z + Math.sin(a) * 1.9 });
+    flame(dim, { x: L.x + Math.cos(a) * r, y: L.y + 3.7, z: L.z + Math.sin(a) * r }, UP, 0.6 + Math.random() * 0.6);
+    if (hot) embers(dim, { x: L.x + Math.cos(a) * 1.9, y: L.y + 1.4 + Math.random() * 2.2, z: L.z + Math.sin(a) * 1.9 });
   }
-  if (hot) {                                                      // درع الماغما: هالة نار حواليه، وحرق للقريب
+  if (hot) {                                                      // درع الماغما: لهب حواليه، وحرق للقريب
     st.hot -= 2;
-    if (st.hot % 4 === 0) for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28; mcP(dim, { x: L.x + Math.cos(a) * 2.1, y: L.y + 0.4 + Math.random() * 3.2, z: L.z + Math.sin(a) * 2.1 }, "minecraft:colored_flame_particle", i % 2 ? MAGC : MAGY); }
+    if (st.hot % 4 === 0) for (let i = 0; i < 8; i++) { const a = Math.random() * 6.28; flame(dim, { x: L.x + Math.cos(a) * 2.3, y: L.y + 0.3 + Math.random() * 3.4, z: L.z + Math.sin(a) * 2.3 }, UP, 0.8 + Math.random() * 0.8); if (i % 2 === 0) bigFlame(dim, { x: L.x + Math.cos(a) * 2.2, y: L.y + 0.2 + Math.random() * 1.5, z: L.z + Math.sin(a) * 2.2 }); }
     if (st.hot % 20 === 0) for (const pl of dim.getPlayers({ location: L, maxDistance: 3.8 })) { hurtPlayer(pl, 2, e); try { pl.setOnFire(2, true); } catch (err) { /* */ } }
     if (st.hot <= 0) { setHot(e, 0); st.hot = 0; }
   }
@@ -5794,14 +5830,14 @@ function mammothTick(e, st) {
     st.target = np.p; st.t = 0;
     const opts = [];
     if (np.d < 8) opts.push("stomp");
-    if (np.d >= 3 && np.d <= 14) opts.push("breath");
+    if (np.d >= 7 && np.d <= 16) opts.push("breath");              // الفوهة 5 بلوكات قدام الماموث، فلازم اللاعب أبعد منها
     if (np.d >= 6 && np.d <= 26) opts.push("stampede");
     if (np.d >= 5) opts.push("bombard");
     if (!hot && hpFrac(e) < 0.75) opts.push("armor");
     if (!opts.length) { st.cd = 10; return; }
     st.skill = pickSkill(opts, st.last); st.last = st.skill;
     setMState(e, { stomp: 1, breath: 2, stampede: 6, bombard: 4, armor: 5 }[st.skill]);
-    st.phase = 1; st.stage = 0; st.aimDir = undefined;
+    st.phase = 1; st.stage = 0; st.aimDir = undefined; st.a0 = undefined;
     return;
   }
   const tp = valid(st.target) ? st.target : undefined;
@@ -5814,16 +5850,17 @@ function mammothTick(e, st) {
       sfx(dim, "sh.guard_slam", C, 1.6, 0.5); sfx(dim, "sh.collapse", C, 1.0, 0.7);
       vanillaFx(dim, "minecraft:large_explosion", { x: L.x, y: L.y + 0.6, z: L.z }); rockBurst(dim, C, 8, 1.1);
       for (const q of dim.getPlayers({ location: C, maxDistance: 22 })) shake(q, 0.35, 0.35);
-      for (let k = 0; k < 3; k++) later(k, () => { const r = 1.2 + k * 1.2; for (let i = 0; i < 22 + k * 8; i++) { const a = (i / (22 + k * 8)) * Math.PI * 2; mcP(dim, { x: C.x + Math.cos(a) * r, y: C.y + 0.15, z: C.z + Math.sin(a) * r }, i % 2 ? "minecraft:lava_particle" : "minecraft:colored_flame_particle", MAGC); } });
+      for (let k = 0; k < 3; k++) later(k, () => fireRing(dim, C, 1.2 + k * 1.2, 22 + k * 8));
       for (const pl of dim.getPlayers({ location: C, maxDistance: 3.8 })) { hurtPlayer(pl, 7, e); pushAway(C, pl, 2.0, 0.6); notify(pl, "§6Magma Stomp!", 30); hitS.add(pl.id); }
       for (let j = 0; j < 8; j++) {
         const ang = a0 + (j / 8) * Math.PI * 2, dx = Math.cos(ang), dz = Math.sin(ang);
         for (let k = 1; k <= 9; k++) {
           const px = C.x + dx * (2.5 + k * 1.05), pz = C.z + dz * (2.5 + k * 1.05), py = groundAt(dim, px, pz, C.y);
           later(k, () => {
-            mcP(dim, { x: px, y: py + 0.2, z: pz }, "minecraft:lava_particle"); mcP(dim, { x: px, y: py + 0.2, z: pz }, "minecraft:colored_flame_particle", MAGY);
+            embers(dim, { x: px, y: py + 0.2, z: pz }); for (let q = 0; q < 3; q++) flame(dim, { x: px + (Math.random() - 0.5) * 0.5, y: py + 0.1, z: pz + (Math.random() - 0.5) * 0.5 }, UP, 0.8);
             later(7, () => {
               burst(dim, { x: px, y: py + 0.5, z: pz }, 6, MAGC, 2.5);
+              for (let q = 0; q < 8; q++) flame(dim, { x: px + (Math.random() - 0.5) * 0.9, y: py + 0.2 + Math.random() * 0.8, z: pz + (Math.random() - 0.5) * 0.9 }, UP, 1.5 + Math.random() * 2);
               if (k % 3 === 0) vanillaFx(dim, "minecraft:large_explosion", { x: px, y: py + 0.6, z: pz });
               for (const pl of dim.getPlayers({ location: { x: px, y: py + 1, z: pz }, maxDistance: 1.3 })) {
                 if (hitS.has(pl.id)) continue;
@@ -5838,44 +5875,56 @@ function mammothTick(e, st) {
     if (st.t >= 46) grimEnd(e, st, 75);
     return;
   }
-  // ── 2) كنس الجحيم: يرفع خرطومه وينفث نار حقيقية (لهب مو حمم) بسكنّ جانبي ±55° خلال 3 ثواني ويترك رقع نار على الأرض ──
+  // ── 2) كنس الجحيم: يرفع خرطومه وينفث نار حقيقية (لهب المشعل الأصلي، مو حمم) من فوهة الخرطوم نحو صدرك، ويكنس جانبياً ±55° خلال 3 ثواني ──
   if (st.skill === "breath") {
-    if (tp && st.t < 18) { st.a0 = Math.atan2(tp.location.z - L.z, tp.location.x - L.x); st.sgn = Math.random() < 0.5 ? 1 : -1; }
-    if (st.a0 === undefined) st.a0 = 0;
+    if (tp && st.t < 18) {                                         // يثبّت التصويب: الاتجاه الأفقي + زاوية نزول اللهب من الفوهة (3 بلوكات ارتفاع) لصدر اللاعب
+      const dx = tp.location.x - L.x, dz = tp.location.z - L.z;
+      st.a0 = Math.atan2(dz, dx);
+      if (st.sgn === undefined) st.sgn = Math.random() < 0.5 ? 1 : -1;
+      st.pitch = Math.max(0.12, Math.min(0.7, Math.atan2(MOUTH_H - 1.1, Math.max(2, Math.hypot(dx, dz) - MOUTH_F))));
+      face(tp.location);
+    }
+    if (st.a0 === undefined) { st.a0 = 0; st.pitch = 0.3; }
     if (st.t >= 18 && st.t <= 82) {
-      const k = (st.t - 18) / 64, ang = st.a0 + st.sgn * (-0.95 + 1.9 * k);
-      const u = { x: Math.cos(ang), y: -0.16, z: Math.sin(ang) }, ul = Math.hypot(u.x, u.y, u.z);
-      u.x /= ul; u.y /= ul; u.z /= ul;
-      const M = { x: L.x + u.x * 1.9, y: L.y + 3.9, z: L.z + u.z * 1.9 };
-      try { e.teleport(L, { facingLocation: { x: L.x + u.x * 5, y: L.y + 1, z: L.z + u.z * 5 } }); } catch (err) { /* */ }
-      for (let i = 0; i < 20; i++) {
-        const dd = 0.6 + Math.random() * 11, sp = dd * 0.09, pos = { x: M.x + u.x * dd + (Math.random() - 0.5) * sp * 2, y: M.y + u.y * dd + (Math.random() - 0.5) * sp * 2, z: M.z + u.z * dd + (Math.random() - 0.5) * sp * 2 };
-        if (i % 3 === 0) vanillaFx(dim, "minecraft:basic_flame_particle", pos); else mcP(dim, pos, "minecraft:colored_flame_particle", i % 2 ? [1, 0.55, 0.1] : [1, 0.85, 0.3]);
-        if (i === 7) mcP(dim, pos, "minecraft:glow_particle", MAGY, rndDir(0.3));
-        if (i === 13 && Math.random() < 0.5) vanillaFx(dim, "minecraft:basic_smoke_particle", pos);
+      const k = (st.t - 18) / 64, ang = st.a0 + st.sgn * (-0.95 + 1.9 * k), ch = Math.cos(st.pitch);
+      const u = { x: Math.cos(ang) * ch, y: -Math.sin(st.pitch), z: Math.sin(ang) * ch };
+      try { e.teleport(L, { facingLocation: { x: L.x + Math.cos(ang) * 5, y: L.y + 1, z: L.z + Math.sin(ang) * 5 } }); } catch (err) { /* */ }
+      const M = { x: L.x + Math.cos(ang) * MOUTH_F, y: L.y + MOUTH_H, z: L.z + Math.sin(ang) * MOUTH_F };
+      const len = Math.min(13, (MOUTH_H + 0.2) / Math.sin(st.pitch) + 1.0);          // التيار ينتهي لما يلمس الأرض
+      const at = (d, w) => ({ x: M.x + u.x * d + (Math.random() - 0.5) * 2 * w, y: M.y + u.y * d + (Math.random() - 0.5) * 2 * w, z: M.z + u.z * d + (Math.random() - 0.5) * 2 * w });
+      for (let i = 0; i < 40; i++) {                              // نار دقيقة: لهب المشعل ينطلق مع التيار، أكثف قرب الفوهة ويتسع مخروطياً
+        const d = 0.3 + Math.pow(Math.random(), 0.85) * len, j = 0.25;
+        flame(dim, at(d, 0.1 + d * 0.085), { x: u.x + (Math.random() - 0.5) * j, y: u.y + (Math.random() - 0.5) * j, z: u.z + (Math.random() - 0.5) * j }, 3 + Math.random() * 5);
       }
+      for (let i = 0; i < 12; i++) bigFlame(dim, at(0.6 + Math.pow(Math.random(), 0.9) * len, 0.06 + 0.04 * len * Math.random()));   // لهب الكيان المحترق الكبير: هو جسم التيار
+      for (let i = 0; i < 8; i++) mcP(dim, at(Math.random() * 4.5, 0.12), "minecraft:glow_particle", i % 2 ? MAGY : MAGC, rndDir(0.2));   // قلب مضيء قرب الفوهة
+      if (Math.random() < 0.8) embers(dim, at(1 + Math.random() * len, 0.3));
+      if (st.t % 4 === 0) vanillaFx(dim, "minecraft:basic_smoke_particle", at(len * 0.9, 0.3));
+      const E = at(len, 0);
+      const gy = groundAt(dim, E.x, E.z, L.y);
+      for (let i = 0; i < 6; i++) flame(dim, { x: E.x + (Math.random() - 0.5) * 1.6, y: gy + 0.1, z: E.z + (Math.random() - 0.5) * 1.6 }, UP, 1 + Math.random() * 1.5);   // لهب يتناثر عند الأرض
       if (st.t % 4 === 0) {
         sfx(dim, "sh.imp_pounce", M, 0.8, 0.6);
-        for (const pl of dim.getPlayers({ location: M, maxDistance: 13 })) {
+        for (const pl of dim.getPlayers({ location: M, maxDistance: 15 })) {
           const c = center3(pl), vx = c.x - M.x, vy = c.y - M.y, vz = c.z - M.z, along = vx * u.x + vy * u.y + vz * u.z;
-          if (along < 0 || along > 12) continue;
+          if (along < 0 || along > len + 0.8) continue;
           const perp = Math.hypot(vx - u.x * along, vy - u.y * along, vz - u.z * along);
-          if (perp > 1.0 + along * 0.1) continue;
+          if (perp > 0.9 + along * 0.1) continue;
           hurtPlayer(pl, 3, e); try { pl.setOnFire(3, true); } catch (err) { /* */ }
         }
       }
-      if (st.t % 6 === 0) for (const dd of [3.5, 6.5, 9.5]) { const px = L.x + u.x * (dd + 1.9), pz = L.z + u.z * (dd + 1.9); addPatch(st, dim, px, groundAt(dim, px, pz, L.y), pz, 50); }
+      if (st.t % 6 === 0) addPatch(st, dim, E.x, gy, E.z, 50);
     }
     if (st.t >= 90) { st.a0 = undefined; grimEnd(e, st, 80); }
     return;
   }
-  // ── 3) اندفاع الأنياب المزدوج: ينزل راسه ويحك الأرض ثم يندفع، ويعيد التصويب ويندفع ثانية. أول لاعب ينلحقه ينرفع لفوق بالأنياب. وراه رقع نار ──
+  // ── 3) اندفاع الأنياب المزدوج: ينزل راسه ويحك الأرض ثم يندفع، ويعيد التصويب ويندفع ثانية. أول لاعب ينلحقه ينرفع بالأنياب. وراه رقع نار ──
   if (st.skill === "stampede") {
     if (st.stage === 0) {
       if (tp && st.t <= 20) st.dir = fwdTo(L, tp.location);
       const d = st.dir || { x: 0, z: 1 };
       face({ x: L.x + d.x * 5, z: L.z + d.z * 5 });
-      if (st.t % 4 === 0) { rockBurst(dim, { x: L.x + d.x * 2.4, y: L.y, z: L.z + d.z * 2.4 }, 2, 0.5); vanillaFx(dim, "minecraft:basic_flame_particle", { x: L.x + d.x * 2.2, y: L.y + 0.4, z: L.z + d.z * 2.2 }); }
+      if (st.t % 4 === 0) { rockBurst(dim, { x: L.x + d.x * 2.4, y: L.y, z: L.z + d.z * 2.4 }, 2, 0.5); for (let q = 0; q < 4; q++) flame(dim, { x: L.x + d.x * 2.4 + (Math.random() - 0.5) * 1.5, y: L.y + 0.2, z: L.z + d.z * 2.4 + (Math.random() - 0.5) * 1.5 }, UP, 1.2); }
       if (st.t >= 26) { st.stage = 1; st.t = 0; st.hit = new Set(); setMState(e, 3); sfx(dim, "sh.stardash", L, 1.4, 0.5); }
       return;
     }
@@ -5900,14 +5949,14 @@ function mammothTick(e, st) {
     }
     try { e.teleport({ x: nx, y: groundAt(dim, nx, nz, L.y), z: nz }, { facingLocation: { x: nx + d.x, y: L.y + 1, z: nz + d.z } }); } catch (err) { /* */ }
     addPatch(st, dim, L.x - d.x * 1.6, groundAt(dim, L.x, L.z, L.y), L.z - d.z * 1.6, 70);
-    for (let i = 0; i < 5; i++) { const a = Math.random() * 6.28; mcP(dim, { x: L.x + Math.cos(a) * 1.3, y: L.y + 0.2 + Math.random() * 0.6, z: L.z + Math.sin(a) * 1.3 }, "minecraft:colored_flame_particle", MAGC); }
+    for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28; flame(dim, { x: L.x + Math.cos(a) * 1.6, y: L.y + 0.2 + Math.random() * 1.0, z: L.z + Math.sin(a) * 1.6 }, UP, 1.0); }
     const front = { x: L.x + d.x * 2.2, y: L.y + 1.2, z: L.z + d.z * 2.2 };
     for (const pl of dim.getPlayers({ location: front, maxDistance: 2.9 })) {
       if (st.hit.has(pl.id)) continue;
       st.hit.add(pl.id); hurtPlayer(pl, 12, e);
       try { pl.applyKnockback({ x: d.x * 0.5, z: d.z * 0.5 }, 1.1); } catch (err) { /* */ }          // رفع بالأنياب
       shake(pl, 0.5, 0.4); notify(pl, "§6Tusk Toss!", 30);
-      burst(dim, center3(pl), 20, MAGC, 4); popShape(dim, "nova", center3(pl), 0.4, 1.8, 7, { s: 500 });
+      impactFx(dim, { x: pl.location.x, y: pl.location.y + 0.15, z: pl.location.z }, MAGC, false); fireRing(dim, pl.location, 1.5, 14); embers(dim, { x: pl.location.x, y: pl.location.y + 0.3, z: pl.location.z }, 4);
       st.stage = 0; grimEnd(e, st, 90); return;
     }
     return;
@@ -5924,14 +5973,15 @@ function mammothTick(e, st) {
       sites.slice(0, 12).forEach((b, i) => later(i * 2, () => {
         const from = { x: L.x, y: L.y + 4.2, z: L.z }, gy = groundAt(dim, b.x, b.z, L.y), to = { x: b.x, y: gy, z: b.z }, T = 30 + (i % 4) * 4;
         const bomb = shapeFx(dim, "fireball", from, { r: 1.1, w: 500, life: T + 4 });
-        later(T - 12, () => { for (let k = 0; k < 14; k++) { const a = (k / 14) * Math.PI * 2; mcP(dim, { x: to.x + Math.cos(a) * 1.6, y: gy + 0.2, z: to.z + Math.sin(a) * 1.6 }, "minecraft:colored_flame_particle", MAGC); } });
+        later(T - 12, () => fireRing(dim, to, 1.6, 14, 0.2));
         tween(T, 1, (q) => {
           const pos = { x: from.x + (to.x - from.x) * q, y: from.y + (to.y - from.y) * q + Math.sin(Math.PI * q) * 11, z: from.z + (to.z - from.z) * q };
           moveShape(bomb, pos);
-          if (Math.round(q * T) % 2 === 0) { mcP(dim, pos, "minecraft:colored_flame_particle", MAGY); vanillaFx(dim, "minecraft:basic_flame_particle", pos); }
+          if (Math.round(q * T) % 2 === 0) { for (let k = 0; k < 3; k++) flame(dim, { x: pos.x + (Math.random() - 0.5) * 0.5, y: pos.y + (Math.random() - 0.5) * 0.5, z: pos.z + (Math.random() - 0.5) * 0.5 }, UP, 0.5); embers(dim, pos); }
         }, () => {
           removeFx(bomb);
-          vanillaFx(dim, "minecraft:large_explosion", { x: to.x, y: gy + 0.6, z: to.z }); burst(dim, { x: to.x, y: gy + 0.6, z: to.z }, 16, MAGC, 4); rockBurst(dim, to, 3, 1.0);
+          impactFx(dim, { x: to.x, y: gy + 0.6, z: to.z }, MAGC, false); rockBurst(dim, to, 3, 1.0);
+          for (let k = 0; k < 10; k++) flame(dim, { x: to.x + (Math.random() - 0.5) * 1.6, y: gy + 0.2, z: to.z + (Math.random() - 0.5) * 1.6 }, UP, 2 + Math.random() * 2);
           sfx(dim, "sh.meteor_hit", to, 0.8, 1.2);
           for (const pl of dim.getPlayers({ location: { x: to.x, y: gy + 1, z: to.z }, maxDistance: 2.6 })) { hurtPlayer(pl, 9, valid(e) ? e : undefined); try { pl.setOnFire(3, true); } catch (err) { /* */ } pushAway(to, pl, 1.4, 0.4); notify(pl, "§6Volcanic Bomb!", 30); }
           addPatch(st, dim, to.x, gy, to.z, 60);
@@ -5941,18 +5991,17 @@ function mammothTick(e, st) {
     if (st.t >= 76) grimEnd(e, st, 90);
     return;
   }
-  // ── 5) درع الماغما: الشقوق تتوهج أبيض وأصفر ونار حواليه، ويقل عليه الضرر (مقاومة) لـ 9 ثواني ──
+  // ── 5) درع الماغما: الشقوق تتوهج أبيض وأصفر ولهب حواليه، ويقل عليه الضرر (مقاومة) لـ 9 ثواني ──
   if (st.skill === "armor") {
     if (st.t === 14) {
       st.hot = 180; setHot(e, 1);
       try { e.addEffect("resistance", 190, { amplifier: 2, showParticles: false }); } catch (err) { /* */ }
       sfx(dim, "sh.supernova_boom", L, 1.0, 0.6); sfx(dim, "sh.chorus", L, 1.2, 0.4);
-      popShape(dim, "nova", { x: L.x, y: L.y + 2, z: L.z }, 0.5, 4.0, 10, { s: 300 });
-      for (let i = 0; i < 30; i++) { const a = (i / 30) * 6.28; mcP(dim, { x: L.x + Math.cos(a) * 2.2, y: L.y + 0.4 + (i % 5) * 0.8, z: L.z + Math.sin(a) * 2.2 }, i % 2 ? "minecraft:basic_flame_particle" : "minecraft:colored_flame_particle", MAGY); }
-      ring(dim, { x: L.x, y: L.y + 0.2, z: L.z }, 3.2, 28, 0, MAGC, 0.22);
+      impactFx(dim, { x: L.x, y: L.y + 2, z: L.z }, MAGY, true);
+      for (let h = 0; h < 4; h++) later(h * 2, () => fireRing(dim, L, 2.2 + h * 0.5, 24, 0.3 + h * 0.9));
       for (const pl of dim.getPlayers({ location: L, maxDistance: 24 })) notify(pl, "§6The Magmamoth's cracks blaze: damage reduced!", 50);
     }
-    if (st.t % 4 === 0 && st.t < 14) for (let i = 0; i < 4; i++) glow(dim, { x: L.x + (Math.random() - 0.5) * 3, y: L.y + 0.5 + Math.random() * 3, z: L.z + (Math.random() - 0.5) * 3 }, { color: MAGY, size: 0.15, life: 0.5, rise: 1 });
+    if (st.t % 4 === 0 && st.t < 14) for (let i = 0; i < 4; i++) mcP(dim, { x: L.x + (Math.random() - 0.5) * 3.4, y: L.y + 0.5 + Math.random() * 3.2, z: L.z + (Math.random() - 0.5) * 3.4 }, "minecraft:glow_particle", MAGY, rndDir(0.2));
     if (st.t >= 30) grimEnd(e, st, 90);
   }
 }
