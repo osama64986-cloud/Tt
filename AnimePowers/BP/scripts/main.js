@@ -6066,6 +6066,30 @@ function roarPuff(dim, L, f, n = 14) {
   const m = { x: L.x + f.x * 1.6, y: L.y + 2.7, z: L.z + f.z * 1.6 };
   for (let i = 0; i < n; i++) mcP(dim, m, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": f.x * 0.45 + (Math.random() - 0.5) * 0.25, "velocity.y": (Math.random() - 0.3) * 0.12, "velocity.z": f.z * 0.45 + (Math.random() - 0.5) * 0.25 });
 }
+// عصرة العناق: حلقة شرار عظمي تنضغط على خصر اللاعب (بعيد عن عيونه حتى ما تغطي الشاشة) + شرارة ضربة حرجة
+function crushFx(dim, at) {
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    mcP(dim, { x: at.x + Math.cos(a) * 0.8, y: at.y + 0.55, z: at.z + Math.sin(a) * 0.8 }, "minecraft:glow_particle", i % 2 ? BONEW : FURG, { x: -Math.cos(a) * 0.6, y: 0.05, z: -Math.sin(a) * 0.6 });
+  }
+  mcP(dim, { x: at.x, y: at.y + 1.2, z: at.z }, "minecraft:critical_hit_emitter", undefined, undefined, { particle_count: 16 });
+}
+// أثر لطمة المخالب بالهوا: 3 أقواس متوازية قرب كف الدب، من فوق لتحت ومن جهة لجهة حسب اليد
+function swipeArc(dim, L, f, side) {
+  const a0 = Math.atan2(f.z, f.x), cx = L.x + f.x * 1.1, cz = L.z + f.z * 1.1;          // مركز القوس قدام الدب حتى ما يدخل بجسمه
+  for (let k = 0; k < 3; k++) {
+    const r = 1.05 + k * 0.17;
+    for (let i = 0; i <= 8; i++) {
+      const q = i / 8, a = a0 + (side || 1) * (-0.85 + 1.7 * q), y = L.y + 2.7 - q * 1.5 - k * 0.12;
+      const p = { x: cx + Math.cos(a) * r, y, z: cz + Math.sin(a) * r };
+      mcP(dim, p, i % 2 ? "minecraft:electric_spark_particle" : "minecraft:glow_particle", BONEW, { x: -Math.sin(a) * (side || 1) * 0.3, y: -0.2, z: Math.cos(a) * (side || 1) * 0.3 });
+    }
+  }
+}
+// حلقة دخان على الأرض تنتشر لبرا (زئير/صحوة/سقوط)
+function dustRing(dim, c, n, speed, r0 = 0.8) {
+  for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; mcP(dim, { x: c.x + Math.cos(a) * r0, y: c.y + 0.25, z: c.z + Math.sin(a) * r0 }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": Math.cos(a) * speed, "velocity.y": 0.02, "velocity.z": Math.sin(a) * speed }); }
+}
 function bearTick(e, st) {
   const dim = e.dimension, L = e.location;
   if (st.rage > 0) {                                                        // الغضب: عيون حمرا ومخالب حمرا + غضب قروي فوق راسه
@@ -6137,7 +6161,7 @@ function bearTick(e, st) {
       try { pl.teleport(hold, { facingLocation: { x: L.x, y: L.y + 2.4, z: L.z } }); } catch (err) { /* */ }
       if (st.t === 10 || st.t === 20 || st.t === 30) {                         // عصرة
         hurtPlayer(pl, 3, e); shake(pl, 0.25, 0.2);
-        burst(dim, { x: hold.x, y: hold.y + 1.0, z: hold.z }, 10, BONEW, 1.6);
+        crushFx(dim, hold);
         sfx(dim, "sh.guard_slam", hold, 0.6, 1.6);
       }
       if (st.t >= 36) { st.stage = 2; st.t = 0; setMState(e, 3); }
@@ -6151,6 +6175,8 @@ function bearTick(e, st) {
       try { pl.applyKnockback({ x: d.x * 2.4, z: d.z * 2.4 }, 0.9); } catch (err) { /* */ }
       shake(pl, 0.5, 0.45); notify(pl, "§cThrown by the Bear Hug!", 30);
       roarPuff(dim, L, d, 10); sfx(dim, "mob.polarbear.warning", L, 1.6, 0.5);
+      for (let k = 1; k <= 9; k++) later(k * 2, () => { if (valid(pl)) mcP(dim, { x: pl.location.x, y: pl.location.y + 0.6, z: pl.location.z }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": 0, "velocity.y": 0, "velocity.z": 0 }); });   // أثر غبار ورا اللاعب وهو طاير
+      later(22, () => { if (valid(pl)) dustRing(dim, pl.location, 14, 0.4, 0.5); });                                                                                // غبار الطيحة
     }
     if (st.t >= 14) grimEnd(e, st, 80);
     return;
@@ -6162,6 +6188,7 @@ function bearTick(e, st) {
     if (side !== undefined) {
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
       sfx(dim, "sh.dagger_hit", L, 0.9, side === 0 ? 0.5 : 0.7);
+      swipeArc(dim, L, f, side); if (side === 0) swipeArc(dim, L, f, -1);
       let hit = false;
       for (const pl of dim.getPlayers({ location: L, maxDistance: 3.6 })) {
         const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
@@ -6183,7 +6210,7 @@ function bearTick(e, st) {
     if (tp && st.t < 10) face(tp.location);
     if (st.t === 10) {
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
-      sfx(dim, "mob.polarbear.warning", L, 1.8, 0.55); roarPuff(dim, L, f, 16);
+      sfx(dim, "mob.polarbear.warning", L, 1.8, 0.55); roarPuff(dim, L, f, 16); dustRing(dim, L, 16, 0.35, 1.2);
       for (const q of dim.getPlayers({ location: L, maxDistance: 18 })) { shake(q, 0.25, 0.4); notify(q, "§6The Grey Bear calls its cubs!", 40); }
       st.cubs = [];
       for (const sgn of [-1, 1]) {
@@ -6213,7 +6240,12 @@ function bearTick(e, st) {
       for (let i = 0; i < 5; i++) mcP(dim, { x: L.x + (Math.random() - 0.5) * 2, y: L.y + 0.6 + Math.random() * 1.8, z: L.z + (Math.random() - 0.5) * 2 }, "minecraft:villager_happy");
     }
     st.hpLast = hpOf(e);
-    if (st.t % 40 === 0) sfx(dim, "mob.polarbear.idle", L, 0.8, 0.45);
+    if (st.t % 40 === 0) {
+      sfx(dim, "mob.polarbear.idle", L, 0.8, 0.45);                                                         // شخير
+      let yaw = 0; try { yaw = (e.getRotation().y * Math.PI) / 180; } catch (err) { /* */ }
+      const nx = L.x - Math.sin(yaw) * 1.5, nz = L.z + Math.cos(yaw) * 1.5;
+      for (let i = 0; i < 3; i++) mcP(dim, { x: nx, y: L.y + 1.1, z: nz }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": -Math.sin(yaw) * 0.06, "velocity.y": 0.04, "velocity.z": Math.cos(yaw) * 0.06 });   // نفس من الخشم
+    }
     if (st.t >= 100) { st.hibCd = 900; grimEnd(e, st, 40); }
     return;
   }
@@ -6222,7 +6254,7 @@ function bearTick(e, st) {
       bearRage(e, st, 140);
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
       sfx(dim, "mob.polarbear.warning", L, 2.0, 0.45); roarPuff(dim, L, f, 18);
-      for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; mcP(dim, { x: L.x + Math.cos(a) * 1.2, y: L.y + 0.3, z: L.z + Math.sin(a) * 1.2 }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": Math.cos(a) * 0.55, "velocity.y": 0.02, "velocity.z": Math.sin(a) * 0.55 }); }
+      dustRing(dim, L, 28, 0.6, 1.2); later(3, () => dustRing(dim, L, 20, 0.45, 2.2));                                                            // موجتين دخان
       for (const pl of dim.getPlayers({ location: L, maxDistance: 5 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 1.6, 0.5); shake(pl, 0.45, 0.4); notify(pl, "§cYou woke the Grey Bear: WRATH!", 35); }
     }
     if (st.t >= 20) { st.hibCd = 900; grimEnd(e, st, 50); }

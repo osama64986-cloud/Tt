@@ -40,6 +40,7 @@ for (let i = 0; i < maxTicks; i++) {
   if (started < 0 && st === want && prev !== want) { started = W.tick; rec.on = true; rec.particles.length = 0; rec.frames.length = 0; }
   prev = st;
   if (rec.on) { W.snapFrame(); if (process.env.SH_DBG && (process.env.SH_DBG === "2" || (W.tick - started) % 2 === 0)) console.log("t+" + (W.tick - started), "state", m.getProperty("sh:state"), "z", m.location.z.toFixed(2)); }
+  if (process.env.SH_HIT_AT && started >= 0 && W.tick - started === Number(process.env.SH_HIT_AT)) m._hp -= 10;   // SH_HIT_AT: ضربة على الوحش بتك معين (مثلاً تصحية الدب من السبات)
   W.advance(1);
   if (!(process.env.SH_FREE && started >= 0)) player.location = { x: 0, y: 64, z: 0 };   // SH_FREE: بعد ما تبدأ المهارة نخلي الوحش يتحكم بمكان اللاعب (مسكة/رمية)
   if (started < 0 && Math.hypot(m.location.x, m.location.z - dist) > 0.01 && i % 40 === 0) m.location = { x: 0, y: 64, z: dist };
