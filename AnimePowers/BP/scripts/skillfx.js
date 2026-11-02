@@ -722,3 +722,166 @@ MONSTER.moonStep = (dim, pos, dir) => {
   arc(dim, add(pos, f, -1.2), normal.x || normal.y || normal.z ? normal : { x: 0, y: 1, z: 0 }, f, 1.5, -1.0, 1.0, 7, PT.endrod, { eye: 1.2 });
   P(dim, pos, PT.glow, { c: [0.8, 0.5, 1], eye: 1.2 });
 };
+
+// ═══════════════ الماغماموث: بركان يمشي — لهب المشعل، لهب الكيان، حمم، دخان النار الكبير، غبار وحصى (v1.31) ═══════════════
+const fireUp = (dim, p, n, s0, s1, j = 0.15, eye = 1.0) => { for (let q = 0; q < n; q++) P(dim, { x: p.x + rnd(-0.3, 0.3), y: p.y, z: p.z + rnd(-0.3, 0.3) }, PT.flame, { d: { x: rnd(-j, j), y: 1, z: rnd(-j, j) }, sp: rnd(s0, s1), eye }); };
+Object.assign(MONSTER, {
+  // الدكّة: انفجار + موجة غبار وحصى تكبر + أعمدة دخان بركاني حوالين الرجل + حمم تنط
+  mamStomp(dim, C) {
+    P(dim, up(C, 0.6), PT.boom, { eye: 0 });
+    shockwave(dim, C, 1.0, 5.2, 8, { ids: [PT.puff, PT.gravel], density: 1.3, y: 0.25, vout: 0.07, max: 40 });
+    for (let i = 0; i < 4; i++) { const a = i * 1.571 + 0.4; P(dim, { x: C.x + Math.cos(a) * 1.6, y: C.y + 0.3, z: C.z + Math.sin(a) * 1.6 }, PT.campfire, { eye: 0 }); }
+    for (let i = 0; i < 8; i++) P(dim, up(C, 0.5), PT.lava, { eye: 0 });
+  },
+  // شق ماغما يتوهج قبل ما ينفجر: جمرة + لهب واطي + خيط دخان
+  mamCrack(dim, p) {
+    P(dim, up(p, 0.15), PT.lava, { eye: 1.0 });
+    for (let q = 0; q < 2; q++) P(dim, { x: p.x + rnd(-0.25, 0.25), y: p.y + 0.1, z: p.z + rnd(-0.25, 0.25) }, PT.flame, { d: { x: 0, y: 1, z: 0 }, sp: 0.3, eye: 1.0 });
+    P(dim, up(p, 0.3), PT.smoke, { eye: 1.0 });
+  },
+  // نافورة ماغما من الشق: عمود لهب سريع لفوق + لسانين كبار + حمم، والنقاط الكبيرة انفجار ودخان بركاني
+  mamErupt(dim, p, big) {
+    fireUp(dim, up(p, 0.15), 7, 2.2, 4.2);
+    P(dim, up(p, 0.3), PT.bigFlame, { eye: 1.0 }); P(dim, up(p, 1.0), PT.bigFlame, { eye: 1.0 });
+    P(dim, up(p, 0.4), PT.lava, { eye: 1.0 }); P(dim, up(p, 0.4), PT.lava, { eye: 1.0 });
+    if (big) { P(dim, up(p, 0.6), PT.boom, { eye: 1.2 }); P(dim, up(p, 0.5), PT.campfire, { eye: 1.2 }); }
+  },
+  // دخان من الخرطوم أثناء النفخ (حرارة)
+  mamSnort(dim, M) { P(dim, M, PT.smoke, { eye: 1.2 }); },
+  // حك الأرض قبل الاندفاع: حصى وغبار ينرمي لورا + بخار من الخرطوم
+  mamPaw(dim, L, d) {
+    const f = flat(d), foot = { x: L.x + f.x * 1.6, y: L.y + 0.2, z: L.z + f.z * 1.6 };
+    for (let i = 0; i < 3; i++) P(dim, { x: foot.x + rnd(-0.6, 0.6), y: foot.y + rnd(0, 0.5), z: foot.z + rnd(-0.6, 0.6) }, PT.gravel, { eye: 1.0 });
+    for (let i = 0; i < 3; i++) P(dim, foot, PT.puff, { v: { x: -f.x * 0.18 + rnd(-0.06, 0.06), y: 0.06, z: -f.z * 0.18 + rnd(-0.06, 0.06) }, eye: 1.0 });
+    P(dim, { x: L.x + f.x * 3.4, y: L.y + 2.2, z: L.z + f.z * 3.4 }, PT.whiteSmoke, { eye: 1.0 });
+  },
+  // انطلاقة الاندفاع: زئير (نفخات زئير الـRavager) + حلقة غبار
+  mamCharge(dim, L, d) { const f = flat(d); P(dim, { x: L.x + f.x * 3, y: L.y + 2.4, z: L.z + f.z * 3 }, PT.roar, { eye: 1.6 }); dustRing(dim, L, 1.4, 16, 0.35); },
+  // أثر الاندفاع: غبار يطلع من الجنبين + لهب ورا
+  mamTrail(dim, L, d) {
+    const f = flat(d), r = right(f);
+    for (const s of [-1, 1]) P(dim, { x: L.x + r.x * s * 1.5, y: L.y + 0.3, z: L.z + r.z * s * 1.5 }, PT.puff, { v: { x: r.x * s * 0.12, y: 0.05, z: r.z * s * 0.12 }, eye: 1.0 });
+    P(dim, { x: L.x - f.x * 2, y: L.y + 0.4, z: L.z - f.z * 2 }, PT.bigFlame, { eye: 1.0 });
+  },
+  // رفعة الأنياب: عمود لهب ينفجر من تحت الهدف + شرر + حمم
+  mamToss(dim, at) { fireUp(dim, up(at, 0.1), 12, 2.5, 5, 0.2, 1.2); P(dim, up(at, 0.5), PT.boom, { eye: 1.4 }); critBurst(dim, up(at, 1.2), 20); for (let i = 0; i < 4; i++) P(dim, up(at, 0.3), PT.lava, { eye: 1.2 }); },
+  // اصطدام بجدار: انفجار + موجة غبار وحصى + حصى يتساقط
+  mamCrash(dim, at) {
+    P(dim, up(at, 1.2), PT.boom, { eye: 0 });
+    shockwave(dim, at, 0.8, 3.5, 6, { ids: [PT.puff, PT.gravel], density: 1.4, y: 0.3, vout: 0.06 });
+    for (let i = 0; i < 8; i++) P(dim, { x: at.x + rnd(-1.5, 1.5), y: at.y + rnd(0.5, 3), z: at.z + rnd(-1.5, 1.5) }, PT.gravel, { eye: 0 });
+  },
+  // ثوران التاج (قصف بركاني): عمود لهب عالي + حمم كثيرة + عمود دخان بركاني
+  mamEruptCrown(dim, top) {
+    fireUp(dim, top, 16, 3, 6, 0.25, 0);
+    for (let i = 0; i < 10; i++) P(dim, top, PT.lava, { eye: 0 });
+    for (let i = 0; i < 4; i++) P(dim, { x: top.x + rnd(-0.5, 0.5), y: top.y + i * 0.6, z: top.z + rnd(-0.5, 0.5) }, PT.campfire, { eye: 0 });
+    P(dim, top, PT.boom, { eye: 0 });
+  },
+  // ذيل الصخرة النارية: دخان أسود وجمرة (كل ثالث نقطة دخان بركاني كبير)
+  mamBombTrail(dim, pos, k) { P(dim, pos, k % 3 === 0 ? PT.campfire : PT.smoke, { eye: 1.0 }); if (k % 2 === 0) P(dim, pos, PT.lava, { eye: 1.0 }); },
+  // سقوط الصخرة: انفجار + موجة غبار وحصى صغيرة + دخان + حمم
+  mamBombHit(dim, to) {
+    P(dim, up(to, 0.6), PT.boom, { eye: 1.4 });
+    shockwave(dim, to, 0.6, 2.6, 4, { ids: [PT.puff, PT.gravel], density: 1.4, y: 0.2, vout: 0.05, max: 24 });
+    P(dim, up(to, 0.3), PT.campfire, { eye: 1.4 });
+    for (let i = 0; i < 3; i++) P(dim, up(to, 0.3), PT.lava, { eye: 1.2 });
+  },
+  // شحن درع الماغما: لهب ينسحب من حواليه لجسمه + دخان
+  mamArmorCharge(dim, L) {
+    for (let i = 0; i < 6; i++) { const a = Math.random() * 6.283; P(dim, { x: L.x + Math.cos(a) * 3.2, y: L.y + rnd(0.4, 3.2), z: L.z + Math.sin(a) * 3.2 }, PT.flame, { d: { x: -Math.cos(a), y: 0.1, z: -Math.sin(a) }, sp: 1.6, eye: 1.0 }); }
+    P(dim, up(L, rnd(1, 3)), PT.smoke, { eye: 1.0 });
+  },
+  // اشتعال الدرع: انفجار ضخم + حلقتين لهب تنطلق لبرا + حمم
+  mamArmor(dim, L) {
+    P(dim, up(L, 2), PT.hugeBoom, { eye: 0 });
+    ring(dim, up(L, 0.3), 2.4, 28, PT.flame, { out: 1.0, up: 0.15, sp: 1.6, eye: 1.0 });
+    ring(dim, up(L, 1.8), 2.2, 20, PT.flame, { out: 1.0, up: 0.3, sp: 1.2, eye: 1.0 });
+    for (let i = 0; i < 10; i++) P(dim, up(L, 2.5), PT.lava, { eye: 0 });
+  },
+});
+
+// ═══════════════ ثعلب الحجاب: نار الثعلب (لهب الأرواح) + توهج بنفسجي + بوابة + لمعات القمر (v1.31) ═══════════════
+const FOX_V = [0.7, 0.45, 1], FOX_C = [0.4, 0.85, 1];
+Object.assign(MONSTER, {
+  // استدعاء الثعبان: حلقة لهب أرواح عند رجليه + جزيئات بوابة تنضم
+  foxSummon(dim, L) { ring(dim, up(L, 0.1), 1.3, 14, PT.soulFlame, { eye: 1.0 }); converge(dim, up(L, 1.2), 2.2, 10, "portal", { eye: 1.0 }); },
+  // لسان نار الثعلب يزحف: لهب الأرواح، والرأس (أول لسان) يترك روح طالعة وتوهج بنفسجي
+  foxWisp(dim, p, i) {
+    P(dim, up(p, -0.3), PT.soulFlame, { eye: 1.0 });
+    if (i === 0) { P(dim, p, PT.glow, { c: FOX_V, eye: 1.0 }); P(dim, up(p, -0.2), PT.soul, { d: { x: 0, y: 0.4, z: 0 }, eye: 1.0 }); }
+    else if (i % 3 === 0) P(dim, p, PT.glow, { c: FOX_C, eye: 1.0 });
+    if (i % 2 === 1) P(dim, up(p, -0.1), PT.breath, { eye: 1.0 });            // ذيل بنفسجي (نَفَس التنين) بين الألسنة
+  },
+  // إصابة بنار الثعلب: شرر سحري + حلقة لهب أرواح صغيرة تنفتح + لمعة
+  foxHit(dim, c) { critBurst(dim, c, 14, true); ring(dim, up(c, -0.6), 0.6, 8, PT.soulFlame, { out: 0.6, sp: 0.4, eye: 1.0 }); P(dim, c, PT.endrod, { eye: 1.0 }); },
+  // انقسام الظلال: انفجار عين الإندر + غيمة بوابة
+  foxSplit(dim, L) { P(dim, up(L, 1), PT.ender, { eye: 0 }); for (let i = 0; i < 14; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0, 1.8), z: L.z + rnd(-0.6, 0.6) }, PT.portal, { eye: 0.9 }); },
+  // أثر الدوران: طيف بوابة + لهب أرواح (الأصلي بنفسجي)
+  foxAfter(dim, p, j) { P(dim, up(p, 0.8), PT.portal, { eye: 1.0 }); if (j === 0) P(dim, up(p, 1.2), PT.glow, { c: FOX_V, eye: 1.0 }); else P(dim, up(p, 0.1), PT.soulFlame, { eye: 1.0 }); },
+  // الانهيار: حلقة صدمة + انفجار إندر + موجة لهب أرواح وتوهج تتوسع + لمعات قمر
+  foxCollapse(dim, C) {
+    P(dim, up(C, 1.2), PT.sonic, { eye: 0 }); P(dim, up(C, 1.0), PT.ender, { eye: 0 });
+    shockwave(dim, C, 0.6, 3.2, 6, { ids: [PT.soulFlame, PT.glow], c: FOX_V, density: 1.6, y: 0.15, max: 36 });
+    for (let i = 0; i < 8; i++) { const u = { x: rnd(-1, 1), y: rnd(0, 1), z: rnd(-1, 1) }; P(dim, { x: C.x + u.x * 1.4, y: C.y + 0.6 + u.y * 1.6, z: C.z + u.z * 1.4 }, PT.endrod, { eye: 1.0 }); }
+    critBurst(dim, up(C, 1.4), 24, true);
+  },
+  // تبخر الظل: نفخة موت + بوابة
+  foxVanish(dim, L) { P(dim, up(L, 0.8), PT.poof, { f: { "aabb.x": 0.4, "aabb.y": 0.6, "aabb.z": 0.4 }, eye: 0.9 }); for (let i = 0; i < 8; i++) P(dim, { x: L.x + rnd(-0.5, 0.5), y: L.y + rnd(0.2, 1.4), z: L.z + rnd(-0.5, 0.5) }, PT.portal, { eye: 0.9 }); },
+  // غيمة مطر الشمس: سحابة نَفَس التنين البنفسجية فوق المنطقة
+  foxCloud(dim, c, r) { P(dim, c, PT.breathCloud, { f: { cloud_radius: r, cloud_lifetime: 0.1, particle_multiplier: 3 }, eye: 0 }); },
+  // قطرة نار ثعلب تنزل: لهب أرواح ينزل نقطة نقطة (خط مطر)
+  foxRain(dim, x, y, z) { seq(5, 1, (i) => P(dim, { x, y: y + 5.2 - i * 1.05, z }, PT.soulFlame, { eye: 1.0 })); },
+  // نزول القطرة: حلقة لهب أرواح صغيرة + روح سكلك طالعة + توهج
+  foxDrop(dim, p) { ring(dim, up(p, 0.1), 0.45, 6, PT.soulFlame, { out: 0.5, sp: 0.3, eye: 1.0 }); P(dim, up(p, 0.2), PT.sculkSoul, { d: { x: 0, y: 0.6, z: 0 }, eye: 1.0 }); P(dim, up(p, 0.3), PT.glow, { c: FOX_C, eye: 1.0 }); },
+  // رفع القمر: هالة قمر فوقه (لمعات End Rod + توهج بنفسجي) وانفجار إندر بنصها
+  foxMoonRise(dim, L) { ring(dim, up(L, 4.2), 1.6, 20, PT.endrod, { eye: 0 }); ring(dim, up(L, 4.2), 1.15, 14, PT.glow, { c: FOX_V, eye: 0 }); P(dim, up(L, 4.2), PT.ender, { eye: 0 }); critBurst(dim, up(L, 1.5), 20, true); },
+  // الضحية تنرفع: لولب لمعات قمر حواليها + حلقة لهب أرواح تحتها
+  foxLift(dim, at) { helix(dim, at, 0.8, 2.4, 1.5, 12, PT.endrod, { strands: 2, eye: 1.2 }); ring(dim, up(at, 0.1), 1.0, 10, PT.soulFlame, { eye: 1.0 }); },
+  // إصابة الهلال: شرر سحري ولمعات
+  foxMoonHit(dim, c) { critBurst(dim, c, 16, true); for (let i = 0; i < 4; i++) P(dim, { x: c.x + rnd(-0.6, 0.6), y: c.y + rnd(-0.4, 0.6), z: c.z + rnd(-0.6, 0.6) }, PT.endrod, { eye: 1.0 }); },
+});
+
+// ═══════════════ الدب الرمادي: قوة خام — زئير الـRavager، غبار وحصى، شرر حرج، خدوش بلون العظم ودم (v1.31) ═══════════════
+const BONE_C = [0.96, 0.94, 0.86], BLOOD_C = [0.75, 0.05, 0.06];
+Object.assign(MONSTER, {
+  // زئير: نفخات زئير الـRavager من الفم (40 نفخة) — ما ترسم إذا الفم لاصق بعين لاعب
+  bearRoar(dim, L, f) { P(dim, { x: L.x + f.x * 1.4, y: L.y + 2.7, z: L.z + f.z * 1.4 }, PT.roar, { eye: 1.6 }); },
+  // المسكة: غبار تحت الرجلين + شرر
+  bearGrab(dim, hold) { dustRing(dim, up(hold, -0.7), 0.6, 12, 0.25); critBurst(dim, up(hold, 0.6), 10); },
+  // العصرة: حلقة غبار تنضغط على الخصر + شرر حرج + طقطقة عظم (شرر أبيض)
+  bearCrush(dim, at) {
+    ring(dim, up(at, 0.55), 1.1, 12, PT.puff, { vout: -0.1, eye: 0.6 });
+    P(dim, up(at, 0.6), PT.crit, { n: 18, eye: 0.6 });
+    for (let i = 0; i < 6; i++) P(dim, { x: at.x + rnd(-0.4, 0.4), y: at.y + rnd(0.4, 1.0), z: at.z + rnd(-0.4, 0.4) }, PT.spark, { d: { x: rnd(-0.4, 0.4), y: rnd(0, 0.3), z: rnd(-0.4, 0.4) }, eye: 0.6 });
+  },
+  // فلت من المسكة / ترنح: غبار وشرر
+  bearBreak(dim, c) { dustRing(dim, up(c, -0.9), 0.6, 14, 0.3); critBurst(dim, c, 12); },
+  // لطمة مخالب: 3 أهلّة متوازية (لمعات بلون العظم + شرر أبيض) تنرسم من فوق لتحت خلال تكين
+  bearSwipe(dim, L, f, side) {
+    const c = { x: L.x + f.x * 1.1, y: L.y + 1.95, z: L.z + f.z * 1.1 }, s = side || 1;
+    for (let k = -1; k <= 1; k++) slash(dim, up(c, k * 0.26), f, 1.25 + k * 0.08, 1.8, s * 55, [PT.wax, PT.spark], { c: BONE_C, steps: 2, n: 12, side: s, d: { x: 0, y: -0.15, z: 0 }, eye: 1.0 });
+    later(2, () => P(dim, add(up(c, -1.6), flat(f), 0.8), PT.puff, { v: { x: f.x * 0.1, y: 0.02, z: f.z * 0.1 }, eye: 1.0 }));
+  },
+  // خدوش على جسم اللاعب: 3 خطوط مخالب بلون العظم وفوقها خطوط دم، وقطرات دم تنزل
+  bearClaw(dim, at, from, side, top = 1.35) {
+    const f = flat(sub(at, from)), c = { x: at.x, y: at.y + top - 0.5, z: at.z };
+    claws(dim, c, f, side * 38, [PT.wax], { c: BONE_C, eye: 0.5 });
+    claws(dim, add(c, f, -0.04), f, side * 38, [PT.glow], { c: BLOOD_C, eye: 0.5 });
+    P(dim, c, PT.crit, { n: 10, eye: 0.6 });
+    for (let i = 0; i < 3; i++) P(dim, { x: at.x + rnd(-0.3, 0.3), y: at.y + rnd(0.5, 1.0), z: at.z + rnd(-0.3, 0.3) }, PT.glow, { c: BLOOD_C, d: { x: 0, y: -0.6, z: 0 }, eye: 0.5 });
+  },
+  // نداء الجراء: زئير + حلقة غبار
+  bearCall(dim, L, f) { MONSTER.bearRoar(dim, L, f); dustRing(dim, L, 1.2, 18, 0.35); },
+  // ظهور جرو: نفخة موت صغيرة (عكسها) + غبار
+  bearCubPop(dim, pos) { P(dim, up(pos, 0.4), PT.poof, { f: { "aabb.x": 0.3, "aabb.y": 0.4, "aabb.z": 0.3 }, eye: 0.8 }); dustRing(dim, pos, 0.4, 8, 0.2); },
+  // السبات: نبتات تكبر (رشة سماد العظم) = تعافي
+  bearHeal(dim, L) { P(dim, up(L, 0.8), PT.crop, { eye: 0 }); for (let i = 0; i < 3; i++) P(dim, { x: L.x + rnd(-1, 1), y: L.y + rnd(0.6, 2.2), z: L.z + rnd(-1, 1) }, PT.happy, { eye: 0 }); },
+  // صحوة الغضب: زئير + موجة غبار وحصى + شرر + غضب فوق راسه
+  bearWrath(dim, L, f) {
+    MONSTER.bearRoar(dim, L, f);
+    shockwave(dim, L, 1.0, 5.5, 8, { ids: [PT.puff, PT.gravel], density: 1.3, y: 0.25, vout: 0.07, max: 40 });
+    critBurst(dim, up(L, 2.4), 20);
+    for (let i = 0; i < 4; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + 3.4, z: L.z + rnd(-0.6, 0.6) }, PT.angry, { eye: 0 });
+  },
+});
