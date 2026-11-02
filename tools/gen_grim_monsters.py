@@ -63,6 +63,15 @@ def tile_pattern(kind, base, alt, rnd):
                 elif (x * 3 + (y // 2) * 5) % 17 == 0:              # لمعة فرو
                     t += 0.25
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * t) for i in range(3))
+            elif kind == "shag":        # فرو ماينكرافت (مثل الذئب/دب القطب): لون أساسي هادئ، شعرات غامقة قصيرة عمودية متفرقة، ولمعات فاتحة قليلة
+                dark = BLK.setdefault((id(rnd), base, alt, "sd", x, y // 3), rnd.random()) < 0.16
+                lite = BLK.setdefault((id(rnd), base, alt, "sl", x, y // 2), rnd.random()) < 0.10
+                t = 0.42 + 0.06 * n - (y / TILE - 0.5) * 0.12
+                if dark:
+                    t -= 0.22
+                elif lite:
+                    t += 0.24
+                c = tuple(clamp(base[i] + (alt[i] - base[i]) * t) for i in range(3))
             elif kind == "obsidian":
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * (0.25 if rnd.random() < 0.06 else 0) + 6 * n) for i in range(3))
             else:                       # flat مع ضوضاء خفيفة
@@ -130,7 +139,7 @@ class Rig:
         i = self.mats.index(mat)
         return (i % self.cols) * TILE, (i // self.cols) * TILE
 
-    def box(self, bone, o, s, mat, rot=None, pivot=None, top=None):
+    def box(self, bone, o, s, mat, rot=None, pivot=None, top=None, bottom=None):
         """o = الزاوية الدنيا، s = الحجم، mat = المادة (top = مادة الوجه الفوقاني اختياري)."""
         sx, sy, sz = self.sc
         if self.vmap:
@@ -149,7 +158,7 @@ class Rig:
             return {"uv": [tx + ox, ty + oy], "uv_size": [round(uw, 3), round(uh, 3)]}
         salt = len(self._bone(bone)["cubes"]) + int(o[1] * 3)
         uv = {"north": face(mat, w, h, salt), "south": face(mat, w, h, salt + 1), "east": face(mat, d, h, salt + 2),
-              "west": face(mat, d, h, salt + 3), "up": face(top or mat, w, d, salt + 4), "down": face(mat, w, d, salt + 5)}
+              "west": face(mat, d, h, salt + 3), "up": face(top or mat, w, d, salt + 4), "down": face(bottom or mat, w, d, salt + 5)}
         cube = {"origin": [round(v, 3) for v in o], "size": [round(v, 3) for v in s], "uv": uv}
         if rot:
             cube["rotation"] = list(rot)
@@ -703,90 +712,186 @@ def magmamoth():
 
 
 
-# ════════════════════════════ الدب الرمادي (Grey Bear، Vile): دب واقف على رجلين ════════════════════════════
-# ~3.3 بلوكة. كتل مستديرة (blob = صندوقين متقاطعين بحواف مشطوفة)، صدر عريض عليه هلال فضي، لبدة فضية على الأكتاف، راس كبير
-# بخطم كريمي وندبة على العين اليسرى، ذراعين طويلتين بكوعين (للعناق) وأكف ضخمة بمخالب عظم طويلة، وأرجل قصيرة ثقيلة.
-def grey_bear():
-    M = {
-        "pelt": ("pelt", (98, 94, 92), (146, 140, 134)),
-        "pelt_dk": ("pelt", (62, 58, 58), (98, 94, 92)),
-        "pelt_lt": ("pelt", (176, 174, 170), (220, 218, 212)),
-        "muzzle": ("pelt", (170, 152, 128), (212, 196, 170)),
-        "nose": ("flat", (26, 24, 28), (26, 24, 28)),
-        "pad": ("flat", (46, 40, 44), (46, 40, 44)),
-        "claw": ("bone", (234, 228, 214), (128, 118, 108)),
-        "eye": ("glow", (255, 176, 40), (255, 244, 190)),
-        "scar": ("flat", (156, 116, 114), (156, 116, 114)),
-        "mouth": ("flat", (96, 32, 38), (96, 32, 38)),
+# ════════════════════════════ الدب الرمادي (Grey Bear، Vile): دب أشيب واقف على رجلين ════════════════════════════
+# التصميم (v2): حدبة عضلات ضخمة على الكتف (علامة الدب الأشيب)، الراس أوطى من الحدبة ومايل لقدام، خطم طويل متدرج بخشم أسود،
+# فرو مرسوم (شعرات + أفتح فوق وأغمق تحت) وخصل بارزة على الحواف تكسر الشكل الصندوقي، أطراف أغمق وظهر أشيب فضي،
+# وقصة على جسمه: سهمين صيادين مكسورين مغروزين بالحدبة، قيد حديد مكسور بسلسلة على معصمه اليسار، وثلاث ندبات مخالب على عينه.
+def _bear_mats():
+    return {
+        "fur": ("shag", (92, 88, 86), (138, 132, 126)),
+        "fur_top": ("shag", (140, 136, 130), (196, 192, 186)),
+        "fur_dk": ("shag", (54, 50, 50), (88, 84, 80)),
+        "fur_under": ("shag", (64, 60, 60), (86, 82, 80)),
+        "silver": ("shag", (168, 166, 162), (226, 224, 218)),
+        "muzzle": ("shag", (164, 142, 112), (210, 190, 158)),
+        "nose": ("flat", (22, 20, 24), (22, 20, 24)),
+        "mouth": ("flat", (92, 28, 34), (92, 28, 34)),
+        "bone": ("bone", (236, 230, 214), (132, 122, 110)),
+        "eye": ("glow", (255, 166, 28), (255, 242, 196)),
+        "pupil": ("flat", (24, 14, 10), (24, 14, 10)),
+        "scar": ("flat", (150, 98, 100), (150, 98, 100)),
+        "iron": ("metal", (90, 92, 98), (152, 154, 162)),
+        "wood": ("cloth", (110, 78, 46), (140, 104, 64)),
+        "feather": ("flat", (226, 224, 216), (226, 224, 216)),
+        "feather_r": ("flat", (168, 44, 40), (168, 44, 40)),
     }
-    R = Rig("sh_grey_bear", M, seed=63)
 
-    def blob(bone, cx, y0, cz, w, h, d, mat):
-        """كتلة مستديرة: صندوقين متقاطعين (الزوايا مشطوفة بلوكة)، بدون وجوه متطابقة"""
-        R.box(bone, (cx - w / 2 + 1, y0, cz - d / 2), (w - 2, h, d), mat)
-        R.box(bone, (cx - w / 2, y0 + 0.15, cz - d / 2 + 1), (w, h - 0.3, d - 2), mat)
+
+def grey_bear():
+    R = Rig("sh_grey_bear", _bear_mats(), seed=63)
+
+    def mass(bone, cx, y0, cz, w, h, d, mat, top=None, bottom=None):
+        """كتلة مستديرة (صندوقين متقاطعين بحواف مشطوفة)، مع وجه فوقاني/تحتاني بمادة مختلفة للتظليل"""
+        R.box(bone, (cx - w / 2 + 1, y0, cz - d / 2), (w - 2, h, d), mat, top=top, bottom=bottom)
+        R.box(bone, (cx - w / 2, y0 + 0.15, cz - d / 2 + 1), (w, h - 0.3, d - 2), mat, top=top, bottom=bottom)
+
+    def tuft(bone, x, y, z, w, h, d, mat):
+        R.box(bone, (x, y, z), (w, h, d), mat, top=mat, bottom="fur_under" if mat != "silver" else mat)
 
     R.bone("root", pivot=(0, 0, 0))
-    # ── الأرجل: فخذ مستدير، ساق، قدم طويلة بمخالب ──
+    # ── الأرجل: فخذ ضخم، ساق، قدم طويلة (مشية الدب على كامل القدم)، مخالب قصيرة، خصل خلف الفخذ والكعب ──
     for sx, nm in ((1, "leg_l"), (-1, "leg_r")):
-        cx = sx * 6.0
-        R.bone(nm, "root", (cx, 20.0, 1.0))
-        blob(nm, cx, 8.0, 1.0, 10.0, 14.0, 11.0, "pelt")
-        R.box(nm, (cx - 4.0, 3.0, -3.0), (8.0, 6.0, 8.0), "pelt_dk")
-        R.box(nm, (cx - 4.3, 0.0, -8.0), (8.6, 3.2, 13.0), "pelt_dk")
-        R.box(nm, (cx - 3.6, 0.0, 5.0), (7.2, 2.0, 0.6), "pad")
+        cx = sx * 6.5
+        R.bone(nm, "root", (cx, 21.0, 2.0))
+        mass(nm, cx, 9.0, 2.0, 10.0, 14.0, 12.0, "fur", top="fur_top", bottom="fur_under")
+        R.box(nm, (cx - 4.0, 3.0, -2.0), (8.0, 7.0, 8.0), "fur_dk", bottom="fur_dk")
+        R.box(nm, (cx - 4.5, 0.0, -8.0), (9.0, 3.4, 13.0), "fur_dk", top="fur_dk", bottom="nose")
         for k in range(4):
-            R.box(nm, (cx - 3.5 + k * 2.1, 0.0, -10.0), (1.4, 1.7, 2.6), "claw")
-    # ── الحوض والبطن ──
-    R.bone("body", "root", (0, 22.0, 1.0))
-    blob("body", 0, 14.5, 1.5, 23.0, 16.5, 16.0, "pelt")                        # حوض عريض (شكل كمثرى)
-    blob("body", 0, 16.5, -6.8, 16.0, 12.5, 3.6, "pelt_lt")                     # كرش فاتح بارز
-    blob("body", 0, 16.0, 8.6, 18.0, 13.0, 3.0, "pelt")                         # مؤخرة مستديرة
-    R.bone("tail", "body", (0, 22.0, 9.0))
-    blob("tail", 0, 19.2, 10.2, 5.0, 4.6, 3.6, "pelt_dk")
-    # ── الصدر: هلال فضي، لبدة فضية، حدبة ──
-    R.bone("chest", "body", (0, 31.0, 1.0), rotation=[12, 0, 0])               # منحني لقدام شوية مثل الدب الواقف
-    blob("chest", 0, 30.0, 1.0, 26.0, 13.0, 16.0, "pelt")
-    for x, y, w, h in ((-9.0, 36.5, 3.4, 3.0), (-6.0, 34.5, 3.4, 3.0), (-2.8, 33.4, 5.6, 2.6), (2.6, 34.5, 3.4, 3.0), (5.6, 36.5, 3.4, 3.0)):
-        R.box("chest", (x, y, -7.6), (w, h, 0.9), "pelt_lt")                     # هلال فضي على الصدر
-    blob("chest", 0, 41.0, 0.5, 25.0, 5.5, 15.0, "pelt_lt")                      # لبدة الأكتاف
-    blob("chest", 0, 46.3, 2.5, 17.0, 3.2, 10.0, "pelt")                         # حدبة
-    R.box("chest", (-8.0, 37.5, -9.9), (16.0, 5.5, 3.0), "pelt_lt")              # ياقة تحت الراس
-    blob("chest", 0, 31.5, 8.2, 20.0, 11.0, 3.6, "pelt")                        # ظهر مستدير
-    # ── الراس الكبير ──
-    R.bone("head", "chest", (0, 43.0, -6.0), rotation=[-12, 0, 0])
-    blob("head", 0, 40.0, -11.0, 15.0, 13.0, 13.0, "pelt")
-    blob("head", 0, 40.3, -20.3, 9.0, 5.8, 7.4, "muzzle")                        # الخطم
-    R.box("head", (-3.0, 46.0, -23.0), (6.0, 1.3, 5.6), "muzzle")                # جسر الخطم
-    R.box("head", (-2.0, 44.0, -24.6), (4.0, 2.4, 1.0), "nose")
-    R.box("head", (-6.0, 48.6, -17.8), (12.0, 1.4, 1.2), "pelt_dk")              # الحاجب
+            R.box(nm, (cx - 3.7 + k * 2.2, 0.0, -10.2), (1.4, 1.8, 2.6), "bone")
+        tuft(nm, cx - 3.0, 3.0, 5.2, 6.0, 4.2, 1.4, "fur_dk")
+        tuft(nm, cx - 3.4, 11.5, 7.8, 2.8, 5.0, 1.3, "fur")
+        tuft(nm, cx + 0.4, 9.5, 7.8, 2.8, 6.0, 1.3, "fur_dk")
+        tuft(nm, cx + sx * 4.7 - (1.3 if sx > 0 else 0), 9.0, 0.0, 1.3, 5.5, 5.0, "fur")   # خصلة جانبية
+    # ── الحوض والكرش: كتلة مستديرة، حافة كرش مشعثة، مؤخرة، ذيل ──
+    R.bone("body", "root", (0, 22.0, 2.0))
+    mass("body", 0, 14.0, 2.0, 23.0, 17.0, 18.0, "fur", top="fur_top", bottom="fur_under")
+    mass("body", 0, 15.0, 10.4, 18.0, 12.0, 4.0, "fur", bottom="fur_under")
+    mass("body", 0, 15.5, -7.4, 17.0, 12.5, 3.4, "fur", top="fur_top", bottom="fur_under")   # كرش بارز لقدام
+    for i in range(7):
+        x = -9.6 + i * 3.0
+        tuft("body", x, 12.2 - (i % 2) * 1.2, -7.6 + abs(i - 3) * 0.6, 2.6, 3.4 + (i % 2) * 1.2, 1.4, "fur_dk" if i % 2 else "fur")
     for sx in (-1, 1):
-        R.box("head", (sx * 3.6 - 1.0, 46.4, -17.75), (2.0, 1.5, 0.4), "eye")
+        for i in range(3):
+            tuft("body", sx * 11.3 - (1.4 if sx > 0 else 0), 13.0 + i * 0.4, -3.0 + i * 4.2, 1.4, 4.5 + (i % 2), 3.0, "fur")
+    for i in range(5):                                                               # خصل مشعثة على الظهر تكسر السطح المستوي
+        tuft("body", -8.4 + i * 3.8, 24.0 + (i % 2) * 2.5, 12.3, 2.8, 4.5 + (i % 3), 1.2, "fur_top" if i % 2 else "fur")
+    R.bone("tail", "body", (0, 21.0, 12.0))
+    mass("tail", 0, 18.6, 13.6, 5.0, 5.0, 4.0, "fur_dk", top="fur")
+    # ── الصدر والحدبة الضخمة والياقة ──
+    R.bone("chest", "body", (0, 31.0, 2.0), rotation=[14, 0, 0])
+    mass("chest", 0, 30.0, 2.0, 25.0, 12.0, 17.0, "fur", top="fur_top", bottom="fur_under")
+    for x, y, w, h in ((-8.6, 36.0, 3.2, 2.6), (-5.8, 34.2, 3.2, 2.6), (-2.7, 33.2, 5.4, 2.4), (2.6, 34.2, 3.2, 2.6), (5.4, 36.0, 3.2, 2.6)):
+        R.box("chest", (x, y, -6.9), (w, h, 0.8), "silver")                         # هلال فضي على الصدر
+    mass("chest", 0, 39.5, 4.8, 23.0, 8.2, 13.0, "fur_top", top="silver")            # الحدبة (علامة الدب الأشيب)
+    mass("chest", 0, 46.8, 5.4, 15.0, 2.8, 8.5, "silver", top="silver")
+    mass("chest", 0, 35.8, -7.2, 17.5, 9.0, 5.0, "fur", top="fur_top")               # ياقة الرقبة
+    for i in range(6):
+        tuft("chest", -8.0 + i * 3.0, 33.6 - (i % 2) * 0.8, -9.9, 2.4, 3.4 + (i % 2) * 1.2, 1.3, "fur" if i % 2 else "fur_dk")
+    for sx in (-1, 1):                                                               # خصل الكتف والحدبة الجانبية
+        for i in range(3):
+            tuft("chest", sx * 12.4 - (1.4 if sx > 0 else 0), 38.5 + i * 2.6, 1.0 + i * 2.5, 1.4, 3.6, 3.4, "fur_top" if i == 2 else "fur")
+    for i in range(4):                                                               # خصل ظهر الصدر تحت الحدبة
+        tuft("chest", -6.6 + i * 4.0, 32.0 + (i % 2) * 2.0, 10.4, 2.8, 5.0, 1.2, "fur" if i % 2 else "fur_top")
+    for i in range(5):                                                               # شعر واقف على الحدبة
+        tuft("chest", -7.0 + i * 3.4, 48.6 + (i % 2) * 0.5, 5.4 + (i % 3), 2.4, 1.2 + (i % 2) * 0.8, 3.0, "silver")
+    # سهمين صيادين مكسورين مغروزين بالحدبة (قصته)
+    for (ox, oy, oz, rx, ry) in ((4.0, 46.0, 9.5, -38, 24), (-5.0, 44.5, 10.4, -52, -28)):
+        R.box("chest", (ox - 0.4, oy, oz), (0.8, 0.8, 7.5), "wood", rot=[rx, ry, 0], pivot=[ox, oy + 0.4, oz])
+        R.box("chest", (ox - 0.1, oy - 0.6, oz + 5.3), (0.2, 2.0, 2.2), "feather", rot=[rx, ry, 0], pivot=[ox, oy + 0.4, oz])
+        R.box("chest", (ox - 1.0, oy + 0.3, oz + 5.3), (2.0, 0.2, 2.2), "feather_r", rot=[rx, ry, 0], pivot=[ox, oy + 0.4, oz])
+    # ── الراس: أوطى من الحدبة، جبهة ببروز، خطم طويل متدرج، خشم أسود، عيون كهرمانية بحدقة، أذان مدورة، خصل خدود، ندبات ──
+    R.bone("head", "chest", (0, 41.0, -8.0), rotation=[-6, 0, 0])
+    mass("head", 0, 37.0, -13.0, 15.0, 12.5, 13.0, "fur", top="fur_top", bottom="fur_under")
+    R.box("head", (-5.0, 47.90, -19.60), (10.0, 1.8, 5.2), "fur", top="fur_top")          # الجبهة
+    for sx in (-1, 1):
+        R.box("head", (sx * 3.6 - 2.0, 46.70, -19.85), (4.0, 1.1, 1.0), "fur_dk", rot=[0, 0, sx * 10], pivot=[sx * 3.6, 47.2, -19.4])   # حواجب مايلة (عصبية)
+    mass("head", 0, 37.8, -22.0, 9.6, 6.0, 5.4, "muzzle", top="fur", bottom="fur_under")   # الخطم (ظهره فرو أغمق)
+    R.box("head", (-3.4, 38.20, -26.40), (6.8, 4.2, 2.8), "muzzle", top="fur")            # طرف الخطم
+    R.box("head", (-1.9, 41.20, -26.95), (3.8, 1.7, 1.3), "nose", top="nose")              # الخشم على حافة الطرف
+    R.box("head", (-1.2, 39.40, -26.55), (2.4, 1.0, 0.2), "fur_under")                     # خط الفم تحت الخشم
+    for sx in (-1, 1):
+        R.box("head", (sx * 3.4 - 1.1, 44.90, -19.75), (2.2, 1.6, 0.4), "eye")                # عيون كهرمانية فوق الخطم
+        R.box("head", (sx * 3.4 - 0.4 - sx * 0.3, 45.10, -19.85), (0.8, 1.2, 0.2), "pupil")
         ex = 3.8 if sx > 0 else -7.8
-        R.box("head", (ex, 51.4, -12.4), (4.0, 3.2, 2.6), "pelt_dk")            # أذن مدورة
-        R.box("head", (ex + 0.7, 54.5, -12.1), (2.6, 1.0, 2.0), "pelt_dk")
-        R.box("head", (ex + 1.0, 51.9, -12.7), (2.0, 2.2, 0.4), "muzzle")
-        R.box("head", (sx * 7.4 - (1.3 if sx > 0 else 0.0), 41.2, -15.0), (1.3, 5.2, 7.0), "pelt_lt")   # شعر الخدود
-    R.box("head", (2.1, 45.1, -17.95), (0.6, 5.4, 0.4), "scar")                 # ندبة المخالب على العين اليسرى
-    R.box("head", (3.4, 45.8, -17.95), (0.6, 4.4, 0.4), "scar")
-    R.bone("jaw", "head", (0, 41.6, -14.0))
-    R.box("jaw", (-3.8, 38.4, -23.4), (7.6, 2.4, 6.0), "muzzle")
-    R.box("jaw", (-3.1, 40.45, -23.0), (6.2, 0.5, 5.2), "mouth")
+        R.box("head", (ex, 48.00, -14.60), (4.0, 3.8, 2.4), "fur_dk")                      # أذن مدورة
+        R.box("head", (ex + 0.6, 51.80, -14.30), (2.8, 0.8, 1.8), "fur_dk")
+        R.box("head", (ex + 0.9, 48.70, -14.90), (2.2, 2.4, 0.4), "muzzle")
+        tuft("head", 7.3 if sx > 0 else -8.9, 37.40, -18.60, 1.6, 6.4, 7.0, "fur")       # خصل الخدود (برا الجمجمة)
+        tuft("head", 7.1 if sx > 0 else -8.7, 35.60, -16.80, 1.6, 2.6, 4.6, "fur_dk")
+    for k in range(3):                                                               # ثلاث ندبات مخالب على العين اليسرى
+        R.box("head", (2.3 + k * 1.1, 43.40, -19.62), (0.45, 4.6, 0.15), "scar", rot=[0, 0, -22], pivot=[2.5 + k * 1.1, 45.7, -19.55])
+    R.bone("jaw", "head", (0, 39.6, -16.0))
+    R.box("jaw", (-3.4, 35.80, -25.00), (6.8, 2.4, 7.4), "muzzle", bottom="fur_dk")
+    R.box("jaw", (-2.9, 38.15, -24.60), (5.8, 0.4, 6.4), "mouth")
     for sx in (-1, 1):
-        R.box("jaw", (sx * 2.5 - 0.4, 40.5, -23.6), (0.8, 1.3, 0.8), "claw")    # أنياب
-    # ── الذراعين: كتف ← كوع ← كف ضخم بمخالب طويلة ──
+        R.box("jaw", (sx * 2.2 - 0.4, 38.15, -24.80), (0.8, 1.5, 0.8), "bone")            # أنياب
+    # ── الذراعين: كتف ضخم ← عضد ← ساعد غامق ← كف عريض بمخالب طويلة معقوفة ──
     for sx, nm, fn in ((1, "arm_l", "fore_l"), (-1, "arm_r", "fore_r")):
-        cx = sx * 15.5
-        R.bone(nm, "chest", (sx * 13.5, 41.0, 0.0), rotation=[-16, 0, -sx * 8])     # الذراعين لقدام ومفتوحة شوية (وقفة قتال)
-        blob(nm, cx, 34.5, 0.0, 9.0, 8.5, 9.6, "pelt_lt")                        # كتف فضي
-        R.box(nm, (cx - 3.6, 27.0, -3.7), (7.2, 8.0, 7.4), "pelt")              # العضد
-        R.bone(fn, nm, (cx, 28.0, 0.0), rotation=[-22, 0, 0])                    # كوع منثني، الأكف لقدام
-        blob(fn, cx, 15.0, -0.3, 8.6, 13.0, 8.6, "pelt")                         # الساعد الثخين
-        blob(fn, cx, 9.4, -0.8, 9.6, 6.0, 10.2, "pelt_dk")                       # الكف
-        R.box(fn, (cx - 3.6, 9.6, -6.1), (7.2, 3.6, 0.4), "pad")
+        cx = sx * 15.0
+        R.bone(nm, "chest", (sx * 13.0, 42.0, 1.0), rotation=[-14, 0, -sx * 6])
+        mass(nm, cx, 34.0, 1.0, 10.0, 9.0, 11.0, "fur", top="fur_top", bottom="fur_under")
+        mass(nm, cx + sx * 0.2, 27.0, 0.5, 8.6, 8.0, 9.0, "fur", bottom="fur_under")
+        tuft(nm, cx - 3.4, 27.5, 4.6, 2.6, 6.0, 1.3, "fur")                                # خصل خلف الذراع
+        tuft(nm, cx + 0.6, 26.5, 4.6, 2.6, 7.0, 1.3, "fur_dk")
+        R.bone(fn, nm, (cx + sx * 0.2, 28.0, 0.5), rotation=[-24, 0, 0])
+        fx = cx + sx * 0.2
+        mass(fn, fx, 17.0, 0.2, 8.4, 11.5, 8.6, "fur_dk", top="fur", bottom="fur_dk")
+        tuft(fn, fx - 3.0, 19.0, 4.3, 2.4, 6.0, 1.3, "fur_dk")
+        mass(fn, fx, 12.0, -0.4, 10.0, 5.4, 10.6, "fur_dk", top="fur_dk", bottom="nose")   # الكف
+        R.box(fn, (fx - 3.6, 12.2, -5.9), (7.2, 3.8, 0.4), "nose")                       # وسادة الكف
         for k in range(4):
-            R.box(fn, (cx - 3.4 + k * 2.0, 5.0, -6.0), (1.3, 5.0, 2.2), "claw")  # مخالب طويلة
-            R.box(fn, (cx - 3.25 + k * 2.0, 4.2, -7.2), (1.0, 1.6, 1.6), "claw") # رأس مخلب معقوف
+            R.box(fn, (fx - 3.6 + k * 2.3, 8.2, -6.6), (1.4, 4.4, 2.2), "bone")         # مخالب طويلة
+            R.box(fn, (fx - 3.45 + k * 2.3, 7.0, -7.9), (1.1, 1.8, 1.8), "bone")         # رأس معقوف لقدام
+        if sx > 0:                                                                       # قيد حديد مكسور بسلسلة (قصته)
+            R.box(fn, (fx - 4.7, 19.4, -4.6), (9.4, 2.4, 9.6), "iron", top="iron", bottom="iron")
+            for k in range(3):
+                R.box(fn, (fx + 4.4 - (k % 2) * 0.3, 18.6 - k * 1.7, -0.6 + (k % 2) * 0.4), (0.9, 1.9, 0.6), "iron", rot=[0, 0, (k % 2) * 30 - 10], pivot=[fx + 4.8, 19.5 - k * 1.7, -0.3])
+    return R
+
+
+# ── الجرو: موديل خاص (مو نسخة مصغرة): راس كبير بالنسبة لجسمه، أطراف قصيرة سمينة، عيون لامعة، أذان كبيرة، فرو أفتح ──
+# نفس أسماء العظام (حتى يستعمل أنميشن الدب)، طوله ~1.2 بلوكة
+def bear_cub():
+    mats = _bear_mats()
+    mats["fur"] = ("shag", (122, 118, 114), (168, 162, 156))
+    mats["fur_top"] = ("shag", (170, 166, 160), (214, 210, 204))
+    mats["eye"] = ("flat", (26, 20, 18), (26, 20, 18))
+    mats["pupil"] = ("flat", (250, 250, 246), (250, 250, 246))
+    R = Rig("sh_bear_cub", mats, seed=64)
+    R.bone("root", pivot=(0, 0, 0))
+    for sx, nm in ((1, "leg_l"), (-1, "leg_r")):
+        cx = sx * 2.6
+        R.bone(nm, "root", (cx, 6.5, 0.5))
+        R.box(nm, (cx - 2.0, 1.5, -1.5), (4.0, 5.5, 4.4), "fur", top="fur_top", bottom="fur_under")
+        R.box(nm, (cx - 2.2, 0.0, -3.0), (4.4, 1.8, 5.4), "fur_dk", bottom="nose")
+    R.bone("body", "root", (0, 7.0, 0.5))
+    R.box("body", (-4.5, 5.0, -3.5), (9.0, 7.5, 8.0), "fur", top="fur_top", bottom="fur_under")
+    R.box("body", (-3.4, 5.8, -4.1), (6.8, 5.6, 0.8), "fur_top")                        # كرش فاتح
+    R.bone("tail", "body", (0, 7.0, 4.5))
+    R.box("tail", (-1.0, 6.0, 4.4), (2.0, 2.0, 1.6), "fur_dk")
+    R.bone("chest", "body", (0, 12.0, 0.5), rotation=[6, 0, 0])
+    R.box("chest", (-4.0, 11.5, -3.0), (8.0, 4.5, 7.0), "fur", top="fur_top", bottom="fur_under")
+    R.box("chest", (-2.6, 12.8, -3.5), (5.2, 2.2, 0.6), "silver")                        # هلال صغير
+    R.bone("head", "chest", (0, 15.5, -1.0), rotation=[-4, 0, 0])
+    R.box("head", (-4.5, 15.0, -6.5), (9.0, 7.5, 7.5), "fur", top="fur_top", bottom="fur_under")
+    R.box("head", (-2.2, 15.4, -8.8), (4.4, 3.0, 2.4), "muzzle", top="muzzle")
+    R.box("head", (-1.0, 17.2, -9.2), (2.0, 1.2, 0.6), "nose")
+    for sx in (-1, 1):
+        R.box("head", (sx * 2.2 - 0.8, 18.4, -6.75), (1.6, 1.8, 0.4), "eye")              # عيون لامعة
+        R.box("head", (sx * 2.2 - 0.5 + (0.4 if sx < 0 else 0), 19.3, -6.85), (0.5, 0.5, 0.2), "pupil")   # لمعة
+        ex = 2.6 if sx > 0 else -5.6
+        R.box("head", (ex, 21.6, -3.6), (3.0, 3.0, 1.6), "fur_dk")
+        R.box("head", (ex + 0.7, 22.2, -3.8), (1.6, 1.8, 0.4), "muzzle")
+    R.bone("jaw", "head", (0, 15.6, -5.0))
+    R.box("jaw", (-1.8, 14.4, -8.6), (3.6, 1.2, 3.0), "muzzle")
+    for sx, nm, fn in ((1, "arm_l", "fore_l"), (-1, "arm_r", "fore_r")):
+        cx = sx * 5.0
+        R.bone(nm, "chest", (sx * 4.2, 15.0, 0.5), rotation=[-12, 0, -sx * 8])
+        R.box(nm, (cx - 1.7, 11.0, -1.3), (3.4, 4.6, 3.6), "fur", top="fur_top")
+        R.bone(fn, nm, (cx, 11.2, 0.5), rotation=[-20, 0, 0])
+        R.box(fn, (cx - 1.6, 7.4, -1.4), (3.2, 4.0, 3.4), "fur_dk", bottom="nose")
+        for k in range(3):
+            R.box(fn, (cx - 1.2 + k * 1.0, 6.6, -1.9), (0.6, 1.0, 0.8), "bone")
     return R
 
 def main():
@@ -798,6 +903,7 @@ def main():
     e = magmamoth(); ne = e.save(4.4, hot=hot, width=7)
     bhot = {"eye": ("glow", (255, 40, 30), (255, 210, 180)), "claw": ("bone", (255, 140, 120), (150, 40, 40)), "scar": ("flat", (210, 40, 40), (210, 40, 40))}   # الغضب: عيون حمرا ومخالب محمرة وندبة تحمر
     gb = grey_bear(); ng = gb.save(3.6, hot=bhot, width=4)
+    cb = bear_cub(); cb.save(1.6, width=1.5)
     print(f"gloomhorn cubes={na}  seer cubes={nb}  veilfox cubes={nd}  magmamoth cubes={ne}  grey_bear cubes={ng}")
 
 

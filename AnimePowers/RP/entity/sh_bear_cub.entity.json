@@ -7,10 +7,10 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/sh_grey_bear"
+        "default": "textures/entity/sh_bear_cub"
       },
       "geometry": {
-        "default": "geometry.sh_grey_bear"
+        "default": "geometry.sh_bear_cub"
       },
       "animations": {
         "idle": "animation.sh_grey_bear.idle",

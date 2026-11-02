@@ -26,7 +26,7 @@ MON = {
                       egg=("#2c2a30", "#ff7a1c"), states=6, props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
     "grey_bear": dict(ident="sh:grey_bear", name="Grey Bear", rank="sh_rank2", hp=300, speed=0.27, atk=11, w=1.6, h=3.2, kb=0.9, xp=40,
                       egg=("#5e5a58", "#d8d6d0"), states=6, props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
-    "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=1.5, h=3.2, kb=0.1, xp=2,
+    "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=0.6, h=1.2, kb=0.1, xp=2,
                      egg=("#7a7672", "#d8d6d0"), states=1, props=None),
 }
 
@@ -53,8 +53,7 @@ def bp_entity(key, m):
     if key == "grey_bear":
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.2
         c["minecraft:nameable"] = {}
-    if key == "bear_cub":                                   # الجرو: نفس موديل الدب بحجم 0.4، ما يكون حارس ولا زعيم صدع
-        c["minecraft:scale"] = {"value": 0.4}
+    if key == "bear_cub":                                   # الجرو: موديل خاص صغير (1.2 بلوكة)، ما يكون حارس ولا زعيم صدع
         c["minecraft:type_family"]["family"] = ["sh_monster", "sh_cub", "monster"]
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.5
         c["minecraft:despawn"] = {"despawn_from_distance": {"min_distance": 32, "max_distance": 48}}
@@ -78,8 +77,8 @@ def rp_entity(key, m, anims):
         cd["scale"] = None
         animate.append("attack")
     if key == "bear_cub":
-        cd["textures"] = {"default": "textures/entity/sh_grey_bear"}
-        cd["geometry"]["default"] = "geometry.sh_grey_bear"
+        cd["textures"] = {"default": "textures/entity/sh_bear_cub"}
+        cd["geometry"]["default"] = "geometry.sh_bear_cub"
         cd["animations"] = {"idle": "animation.sh_grey_bear.idle", "walk": "animation.sh_grey_bear.walk", "attack": "animation.sh_grey_bear.attack", "look": "animation.sh.look"}
         animate = ["idle", "walk", "look", "attack"]
     cd["scripts"]["animate"] = animate
