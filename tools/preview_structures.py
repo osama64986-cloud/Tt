@@ -17,7 +17,7 @@ COL = [
     ("peony", (240, 130, 190)), ("lilac", (200, 150, 220)), ("short_grass", (96, 150, 64)), ("fern", (80, 140, 60)), ("allium", (190, 120, 220)),
     ("cornflower", (90, 120, 230)), ("pink_tulip", (245, 140, 180)), ("flowering_azalea", (230, 140, 190)), ("lectern", (150, 110, 60)),
     ("composter", (110, 80, 40)), ("loom", (170, 130, 80)), ("cartography", (150, 110, 70)), ("carved_pumpkin", (230, 130, 20)), ("grass_path", (170, 140, 80)),
-    ("polished_andesite", (150, 150, 150)), ("door", (110, 80, 50)),
+    ("polished_andesite", (150, 150, 150)), ("azalea_leaves_flowered", (150, 120, 170)), ("azalea_leaves", (90, 130, 50)), ("web", (225, 225, 225)), ("deepslate_tile", (60, 60, 66)), ("chiseled_stone", (115, 115, 115)), ("cracked_stone", (110, 110, 110)), ("door", (110, 80, 50)),
     ("water", (60, 110, 200)), ("lava", (230, 90, 20)), ("cherry_leaves", (246, 170, 196)), ("pink_petals", (250, 190, 210)),
     ("cherry_log", (120, 80, 90)), ("dark_oak", (70, 50, 30)), ("red_nether", (130, 30, 40)), ("red_concrete", (190, 40, 36)),
     ("red_wool", (200, 50, 50)), ("white_wool", (235, 235, 235)), ("red_carpet", (180, 30, 30)), ("green_carpet", (90, 140, 60)),

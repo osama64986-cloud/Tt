@@ -72,6 +72,17 @@ def tile_pattern(kind, base, alt, rnd):
                 elif lite:
                     t += 0.24
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * t) for i in range(3))
+            elif kind == "chitin":      # درع حشرة (عقرب): أحزمة أفقية 4 بكسل، سطر لمعة فوق كل حزام وفاصل غامق تحته، وتفاوت كتل 4×4 ونقاط رمل
+                band = y % 4
+                v = BLK.setdefault((id(rnd), base, alt, "ch", x // 4, y // 4), rnd.uniform(-1, 1))
+                t = 0.45 + 0.12 * v + 0.04 * n
+                if band == 0:
+                    t -= 0.22
+                elif band == 3:
+                    t += 0.34
+                if rnd.random() < 0.03:
+                    t -= 0.3
+                c = tuple(clamp(base[i] + (alt[i] - base[i]) * t) for i in range(3))
             elif kind == "obsidian":
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * (0.25 if rnd.random() < 0.06 else 0) + 6 * n) for i in range(3))
             else:                       # flat مع ضوضاء خفيفة

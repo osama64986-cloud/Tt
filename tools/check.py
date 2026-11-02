@@ -206,6 +206,9 @@ if node:
             r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_shrines.py"), td], capture_output=True)   # ضريحا السيف: 45×45، أعمدة، مفتوح للسما، بدون صناديق، منارة، وصول
             if r.returncode != 0:
                 err("فحص ضريحي السيف فشل:\n" + r.stdout.decode("utf-8", "replace")[-1800:])
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_plans.py")], capture_output=True)            # أسماء البلوكات بكل البنايات (القصر، الخرائب، المعبد...) موجودة بـBedrock
+    if r.returncode != 0:
+        err("أسماء بلوكات غلط بالبنايات:\n" + r.stdout.decode("utf-8", "replace")[-1500:])
 
 for w in warnings:
     print("تحذير:", w)
