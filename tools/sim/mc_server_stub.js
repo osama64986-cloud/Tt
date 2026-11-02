@@ -565,13 +565,14 @@ export const __sim = {
     {
       const SH = (await import("node:fs")).readFileSync(path.join(root, "AnimePowers/BP/scripts/shapes.js"), "utf8");
       const sid = (n) => Number((SH.match(new RegExp('"' + n + '": (\\d+)')) || [])[1]);
-      const cases = [["sh:ember_imp", 9, "fireball"], ["sh:rust_guard", 9, "rock_chunk"], ["sh:shadow_hound", 7, "fang_jaw"], ["sh:sand_scorpion", 8, "slash_venom"]];
+      const cases = [["sh:ember_imp", 9, "fireball"], ["sh:rust_guard", 9, "rock_chunk"], ["sh:shadow_hound", 7, "fang_jaw"], ["sh:sand_scorpion", 8, "particle:minecraft:splash_spell_emitter"]];   // العقرب: انفجار السم صار رشة جرعة حقيقية (جزيء) مو شكل
       console.log("\nمهارات الوحوش الخاصة:");
       for (const [type, dist, shape] of cases) {
         entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 400; player._max = 400; player._valid = true;
         const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 60); entities.push(m);
         const d0 = stats.damage || 0; let seen = 0; const zones0 = stats.spawned;
-        for (let t = 0; t < 1500; t += 2) { advance(2); if (entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
+        const pid = shape.startsWith("particle:") ? shape.slice(9) : null, pc0 = pid ? ((stats.pById || {})[pid] || 0) : 0;
+        for (let t = 0; t < 1500; t += 2) { advance(2); if (pid ? ((stats.pById || {})[pid] || 0) > pc0 : entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
         const dmg = Math.round((stats.damage || 0) - d0);
         console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}`);
         if (!seen) failures.push(`${type}: المهارة الخاصة (${shape}) ما طلعت`);

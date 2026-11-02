@@ -2,7 +2,7 @@
 // هذا الملف بصري بالكامل: ما يغير ضرر ولا تبريد ولا منطق. main.js ينادي هذي الدوال بنفس توقيت المهارة.
 // كل مهارة إلها: تمهيد (anticipation) ← لحظة الفعل ← ضربة (impact) ← أثر يبقى شوي (residue)، وبجزيئات تناسب طبيعتها.
 import { system } from "@minecraft/server";
-import { PT, P, ring, arc, line, helix, column, converge, sphereOut, shockwave, spiralIn, dustRing, critBurst, seq, later, add, sub, norm, len, lerp, rnd } from "./vfx.js";
+import { PT, P, ring, arc, line, helix, column, converge, sphereOut, shockwave, spiralIn, dustRing, critBurst, seq, later, add, sub, norm, len, lerp, rnd, cross } from "./vfx.js";
 
 const ok = (e) => { try { return !!e && (typeof e.isValid === "function" ? e.isValid() : !!e.isValid); } catch (err) { return false; } };
 const up = (c, y) => ({ x: c.x, y: c.y + y, z: c.z });
@@ -644,4 +644,81 @@ export const WEAPON = {
     }
   },
   xCut(dim, c, from, roll, big) { slash(dim, c, norm(sub(c, from)), big ? 1.8 : 1.4, 2.0, roll, [PT.breath, PT.glow], { c: [0.7, 0.35, 1], steps: 2, n: big ? 22 : 16, eye: 1.0 }); critBurst(dim, up(c, 0.7), big ? 24 : 14, true); },
+};
+
+// ═══════════════ وحوش الرتبة الدنيا: كل وحش بجزيئات طبيعته (بدل نقاط ملونة وأشكال أقواس) ═══════════════
+const VENOM_C = [0.45, 0.95, 0.3], ROCK_TEAL = [0.35, 1, 0.85];
+const splash = (dim, at, col, range = 2) => P(dim, at, PT.splash, { c: col, f: { splash_range: range }, eye: 0 });
+export const MONSTER = {
+  // عفريت الرماد: نار حقيقية
+  impAmbient(dim, L) { if (Math.random() < 0.55) P(dim, { x: L.x + rnd(-0.3, 0.3), y: L.y + rnd(0.5, 1.4), z: L.z + rnd(-0.3, 0.3) }, PT.flame, { d: { x: 0, y: 1, z: 0 }, sp: 0.15, eye: 1.0 }); if (Math.random() < 0.08) P(dim, up(L, 1.2), PT.lava, { eye: 1.0 }); },
+  impCharge(dim, L) { for (let i = 0; i < 2; i++) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + 0.1, z: L.z + rnd(-0.4, 0.4) }, PT.flame, { d: { x: 0, y: 1, z: 0 }, sp: 0.5, eye: 1.0 }); },
+  impLeap(dim, L) { ring(dim, up(L, 0.15), 0.7, 12, PT.flame, { out: 1, up: 0.3, sp: 0.8, eye: 1.0 }); dustRing(dim, L, 0.4, 10, 0.3); P(dim, up(L, 0.5), PT.lava, { eye: 1.0 }); },
+  impTrail(dim, L) { P(dim, up(L, 0.6), PT.flame, { d: { x: 0, y: 0.5, z: 0 }, sp: 0.1, eye: 1.0 }); P(dim, up(L, 0.9), PT.bigFlame, { eye: 1.2 }); },
+  fireHit(dim, c) { for (let i = 0; i < 6; i++) P(dim, c, PT.flame, { d: { x: rnd(-1, 1), y: rnd(0.2, 1), z: rnd(-1, 1) }, sp: 0.9, eye: 1.0 }); P(dim, c, PT.lava, { eye: 1.0 }); critBurst(dim, up(c, 0.7), 10); },
+  fireSwipe(dim, c, face, i) { slash(dim, c, face, 0.9, 1.7, i % 2 ? 40 : -40, [PT.flame, PT.glow], { c: PAL.hot, steps: 1, n: 12, tan: 0.4, sp: 0.4, eye: 1.0 }); },
+  emberBoom(dim, b) {
+    P(dim, up(b, 0.5), PT.boom, { eye: 1.6 });
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * 6.283; P(dim, up(b, 0.15), PT.flame, { d: { x: Math.cos(a), y: 0.5, z: Math.sin(a) }, sp: 1.3, eye: 1.2 }); }
+    for (let i = 0; i < 4; i++) P(dim, up(b, 0.3), PT.lava, { eye: 1.2 });
+    P(dim, up(b, 0.3), PT.campfire, { eye: 1.6 });
+  },
+  // حارس الصدأ: صخر وغبار ولمعات رون تركوازية
+  guardAmbient(dim, L) { if (Math.random() < 0.25) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0.6, 2.4), z: L.z + rnd(-0.6, 0.6) }, PT.gravel, { eye: 1.0 }); if (Math.random() < 0.25) P(dim, { x: L.x + rnd(-0.5, 0.5), y: L.y + rnd(0.3, 2.0), z: L.z + rnd(-0.5, 0.5) }, PT.glow, { c: ROCK_TEAL, eye: 1.0 }); },
+  guardSlam(dim, L) { P(dim, up(L, 0.6), PT.roar, { eye: 0 }); dustRing(dim, L, 0.9, 22, 0.6); shockwave(dim, L, 0.8, 4.5, 8, { ids: [PT.puff, PT.gravel], density: 1.4, y: 0.3, vout: 0.06 }); critBurst(dim, up(L, 1.3), 18); for (let i = 0; i < 8; i++) P(dim, { x: L.x + rnd(-2, 2), y: L.y + 0.4, z: L.z + rnd(-2, 2) }, PT.glow, { c: ROCK_TEAL, eye: 1.0 }); },
+  guardSwipe(dim, c, face) { slash(dim, c, face, 1.4, 1.9, 75, [PT.glow, PT.gravel], { c: ROCK_TEAL, steps: 2, n: 16, eye: 1.0 }); dustRing(dim, add(up(c, -1.2), flat(face), 0.4), 0.4, 10, 0.3); },
+  rockImpact(dim, b) { dustRing(dim, b, 0.8, 20, 0.55); for (let i = 0; i < 8; i++) P(dim, { x: b.x + rnd(-1, 1), y: b.y + rnd(0.2, 1.2), z: b.z + rnd(-1, 1) }, PT.gravel, { eye: 1.0 }); critBurst(dim, up(b, 1.0), 16); },
+  // ذئب الظل: جزيئات بوابة وحبر، وعواء بنفخات زئير وموجة ظل
+  houndAmbient(dim, L) { if (Math.random() < 0.5) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(0.4, 1.1), z: L.z + rnd(-0.4, 0.4) }, PT.portal, { eye: 1.0 }); if (Math.random() < 0.08) P(dim, up(L, 0.6), PT.ink, { d: { x: 0, y: 0.4, z: 0 }, eye: 1.0 }); },
+  houndCharge(dim, L) { for (let i = 0; i < 3; i++) P(dim, { x: L.x + rnd(-0.5, 0.5), y: L.y + 0.1, z: L.z + rnd(-0.5, 0.5) }, PT.portal, { eye: 1.0 }); P(dim, up(L, 0.3), PT.ink, { d: { x: 0, y: 0.6, z: 0 }, eye: 1.0 }); },
+  howl(dim, L) {
+    P(dim, up(L, 1.6), PT.roar, { eye: 0 });
+    shockwave(dim, L, 1, 11, 16, { ids: [PT.breath, PT.ink], density: 0.9, y: 0.6, d: { x: 0, y: 0.4, z: 0 }, max: 56 });
+    for (let i = 0; i < 3; i++) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + 2.0, z: L.z + rnd(-0.4, 0.4) }, PT.angry, { eye: 1.0 });
+  },
+  houndBite(dim, c, face, k) { claws(dim, c, face, k % 2 ? 25 : -25, [PT.glow], { c: [0.6, 0.35, 1], eye: 1.0 }); critBurst(dim, up(c, 0.7), 10); },
+  // عقرب الرمل: رمل وسم أخضر (رشة جرعة السم الحقيقية)
+  scorpAmbient(dim, L) { if (Math.random() < 0.2) P(dim, up(L, 1.3), PT.spell, { c: VENOM_C, eye: 1.0 }); },
+  scorpCharge(dim, L, t) { P(dim, up(L, 1.7 + t * 0.02), PT.glow, { c: VENOM_C, eye: 1.0 }); ring(dim, up(L, 0.1), 1.1, 8, PT.spell, { c: VENOM_C, ph: t * 0.2, eye: 1.0 }); },
+  venomSplash(dim, c) { splash(dim, c, VENOM_C, 1.6); critBurst(dim, up(c, 0.7), 10); },
+  venomSwipe(dim, c, face) { slash(dim, c, face, 0.9, 1.6, -30, [PT.spell, PT.glow], { c: VENOM_C, steps: 1, n: 12, eye: 1.0 }); },
+  venomTrail(dim, at) { P(dim, at, PT.glow, { c: VENOM_C, eye: 1.0 }); P(dim, at, PT.spell, { c: [0.3, 0.7, 0.2], eye: 1.0 }); },
+  sandMark(dim, L) { for (let i = 0; i < 2; i++) P(dim, { x: L.x + rnd(-0.8, 0.8), y: L.y + 0.15, z: L.z + rnd(-0.8, 0.8) }, PT.puff, { v: { x: 0, y: rnd(0.04, 0.1), z: 0 } }); P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + 0.6, z: L.z + rnd(-0.6, 0.6) }, PT.sand, { eye: 1.0 }); },
+  burrowDig(dim, L) { dustRing(dim, L, 0.5, 14, 0.4); for (let i = 0; i < 6; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0.2, 1.0), z: L.z + rnd(-0.6, 0.6) }, PT.sand, { eye: 1.0 }); },
+  burrowErupt(dim, L) { dustRing(dim, L, 0.6, 20, 0.6); for (let i = 0; i < 10; i++) P(dim, { x: L.x + rnd(-1, 1), y: L.y + rnd(0.3, 1.8), z: L.z + rnd(-1, 1) }, PT.sand, { eye: 1.0 }); splash(dim, up(L, 0.4), VENOM_C, 1.8); },
+};
+
+// ═══════════════ أنظمة عامة: كشف القدرة بالمعبد، الصدع، ضربة الإيقاع، الصد المثالي، الرد ═══════════════
+export const SYS = {
+  // كشف القدرة: انفجار شرار بلون الندرة يكبر مع الندرة، وحلقة نجوم بلونها، والأسطورية/الخرافية: انفجار التوتم + End Rod، والخرافية: انفجار التنين
+  reveal(dim, c, col, idx) {
+    const top = up(c, 2.2);
+    for (let i = 0; i < 8 + idx * 6; i++) P(dim, top, PT.sparkler, { c: i % 3 ? col : PAL.white, eye: 0 });
+    shockwave(dim, c, 0.8, 3 + idx * 0.8, 8, { ids: [PT.wax], c: col, density: 1.4, y: 0.3 });
+    helix(dim, c, 1.0, 3.0, 2, 10 + idx * 3, PT.wax, { strands: 2, c: col, eye: 0 });
+    critBurst(dim, up(top, 0.7), 16 + idx * 4, idx >= 2);
+    if (idx >= 3) for (let i = 0; i < 8; i++) P(dim, { x: top.x + rnd(-1, 1), y: top.y + rnd(-1, 1), z: top.z + rnd(-1, 1) }, PT.endrod, { eye: 0 });
+    if (idx >= 4) P(dim, top, PT.totem, { eye: 0 });
+    if (idx >= 5) P(dim, top, PT.dragonBoom, { eye: 0 });
+  },
+  // بلا قدرة: البلورة تنطفي: دخان أسود وحبر ونفخة
+  unbound(dim, c) { for (let i = 0; i < 3; i++) P(dim, { x: c.x + rnd(-0.4, 0.4), y: c.y + 1.6, z: c.z + rnd(-0.4, 0.4) }, PT.campfire, { eye: 0 }); for (let i = 0; i < 12; i++) P(dim, { x: c.x + rnd(-0.6, 0.6), y: c.y + rnd(1.4, 2.6), z: c.z + rnd(-0.6, 0.6) }, PT.ink, { d: { x: 0, y: 0.3, z: 0 }, eye: 0 }); P(dim, up(c, 2), PT.poof, { f: { "aabb.x": 0.5, "aabb.y": 1, "aabb.z": 0.5 }, eye: 0 }); },
+  // موجة صدع جديدة: البوابة تنضم وتنفجر بلون الصدع
+  riftWave(dim, c) { converge(dim, up(c, 2.2), 3, 18, "portal", { eye: 1.2 }); later(4, () => { P(dim, up(c, 2.2), PT.ender, { eye: 0 }); critBurst(dim, up(c, 2.9), 20, true); }); },
+  riftClose(dim, c) { P(dim, c, PT.dragonBoom, { eye: 0 }); for (let i = 0; i < 10; i++) P(dim, c, PT.endrod, { eye: 0 }); },
+  // ضربة الإيقاع: نوتات بثلاث درجات (كل مرتبة أعلى = نوتات أكثر وموجة أكبر)
+  rhythm(dim, c, tier, r) {
+    ring(dim, c, 0.8, 8 + tier * 4, PT.note, { note: tier === 1 ? [0.3, 0.9, 1] : tier === 2 ? [0.9, 0.4, 1] : [1, 0.85, 0.3], eye: 1.0 });
+    if (tier >= 2) shockwave(dim, up(c, -0.9), 0.8, r, 6, { ids: [PT.puff], density: 1.4, y: 0.2, vout: 0.08 });
+  },
+  // الصد المثالي: شرر معدن بين اللاعب والمهاجم + لمعة
+  parry(dim, c) { ring(dim, c, 0.5, 10, PT.spark, { d: { x: 0.3, y: 0.3, z: 0.3 }, eye: 0.8 }); sphereOut(dim, c, 10, PT.basicCrit, 1, { eye: 0.8 }); P(dim, c, PT.endrod, { eye: 0.8 }); },
+  // الرد (Counter): هلال ذهبي سريع على الهدف
+  counter(dim, c, from) { WEAPON.slash(dim, c, norm(sub(c, from)), 1.1, 1.8, 30, [PT.wax, PT.glow], { c: PAL.gold, steps: 1, n: 14, eye: 1.0 }); },
+};
+// هلال القمر (ثعلب الحجاب): قوس لمعات End Rod (يبقى ويرسم الهلال) + توهج بنفسجي
+MONSTER.moonStep = (dim, pos, dir) => {
+  const f = norm(dir), side = right(flat(f)), normal = cross(f, side);
+  arc(dim, add(pos, f, -1.2), normal.x || normal.y || normal.z ? normal : { x: 0, y: 1, z: 0 }, f, 1.5, -1.0, 1.0, 7, PT.endrod, { eye: 1.2 });
+  P(dim, pos, PT.glow, { c: [0.8, 0.5, 1], eye: 1.2 });
 };

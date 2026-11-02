@@ -58,6 +58,7 @@ export const PT = {
   spell: "minecraft:mobspell_emitter",              // دوامة جرعة ملونة: color
   splash: "minecraft:splash_spell_emitter",
   gravel: "minecraft:falling_dust_gravel_particle", // غبار حصى ينزل
+  sand: "minecraft:falling_dust_sand_particle",     // غبار رمل ينزل
   redDust: "minecraft:redstone_wire_dust_particle",
   snow: "minecraft:snowflake_particle",
   ink: "minecraft:squid_ink_bubble",

@@ -8,7 +8,7 @@ import { setupStructures, buildTemple, findTemple, onShrineBossDeath } from "./s
 import { setupDash, dashCooldown } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
-import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON } from "./skillfx.js";
+import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS } from "./skillfx.js";
 
 // ───────────────────────── البيانات ─────────────────────────
 const TRAIN_NEED = 3;
@@ -797,7 +797,7 @@ function startDraw(p, t) {
       applyVitality(p, true);
       try { p.onScreenDisplay.setTitle("§8§lUNBOUND", { subtitle: "§7The crystal stays dark... your body answers instead", fadeInDuration: 8, stayDuration: 90, fadeOutDuration: 24 }); } catch (e) { /* */ }
       sfxPlayer(p, "sh.blackhole_end", 1, 0.7);
-      popShape(dim, "nova", { x: c.x, y: c.y + 2, z: c.z }, 0.3, 2.2, 10, { s: 300 });
+      SYS.unbound(dim, c);                                                     // البلورة تنطفي: دخان أسود وحبر
       say(p, "§8[Unbound] §fThe star gave you no power: one in two hundred. Instead your body refuses to break: §cstronger §fand §bfaster§f, and it grows with every rank. The Trainer has nothing to teach you; fight with weapons and your own fists.");
       return;
     }
@@ -806,9 +806,8 @@ function startDraw(p, t) {
     f.v = idx;
     try { p.onScreenDisplay.setTitle(`§l${pw.color}${pw.name}`, { subtitle: `${rar.color}${rar.name}  ${rarityStars(key)}`, fadeInDuration: 6, stayDuration: 80, fadeOutDuration: 24 }); } catch (e) { /* */ }
     const col = RAR_RGB[idx];
-    popShape(dim, "nova", { x: c.x, y: c.y + 2.2, z: c.z }, 0.3, 1.6 + idx * 0.4, 10, { s: 300, ease: "out" });
     waveFx(dim, c, 6 + idx, 0, 14);
-    burst(dim, { x: c.x, y: c.y + 2.2, z: c.z }, 20 + idx * 10, col, 4 + idx * 0.6, 0.28);
+    SYS.reveal(dim, c, col, idx);                                              // شرار بلون الندرة يكبر مع الندرة (+ توتم للأسطورية، وانفجار التنين للخرافية)
     sfxPlayer(p, idx >= 4 ? "sh.supernova_boom" : idx >= 2 ? "sh.rank_up" : "sh.level_up", idx >= 4 ? 0.9 : 1, 1);
     if (idx >= 2) shake(p, 0.1 + idx * 0.05, 0.4);
   });
@@ -1933,7 +1932,7 @@ function riftStartWave(n) {
     sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
   }
   const dim = world.getDimension(rift.dim);
-  popShape(dim, "nova", { x: rift.x, y: rift.y + 2.2, z: rift.z }, 0.3, 1.6, 8, { s: 300 });
+  SYS.riftWave(dim, { x: rift.x, y: rift.y, z: rift.z });
   if (n === 3) {
     later(20, () => { if (rift) { riftSpawnMob(riftMobType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
   } else {
@@ -1963,7 +1962,7 @@ function closeRift(victory, killer) {
   removeFx(r.ent);
   const c = { x: r.x, y: r.y + 2.2, z: r.z };
   const imp = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + r.r * 0.08, s: 600, life: 16 });
-  tween(12, 1, (k) => setShape(imp, "sh:r", (1.2 + r.r * 0.08) * (1 - k)), () => { popShape(dim, "nova", c, 0.3, 2.4, 8, { s: 400, ease: "out" }); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
+  tween(12, 1, (k) => setShape(imp, "sh:r", (1.2 + r.r * 0.08) * (1 - k)), () => { SYS.riftClose(dim, c); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
   riftRestore(r.scars, t.ground);
   if (!victory) return;
   // المكافآت تنزل عند الصدع
@@ -2124,7 +2123,8 @@ function rhythmStrike(p, t, tier) {
   vanillaFx(dim, "minecraft:critical_hit_emitter", c);
   waveFx(dim, { x: t.location.x, y: t.location.y + 0.1, z: t.location.z }, r, 0, 10);
   vanillaFx(dim, "minecraft:knockback_roar_particle", { x: t.location.x, y: t.location.y + 0.3, z: t.location.z });
-  if (tier >= 2) { popShape(dim, "nova", c, 0.3, r * 0.45, 8, { s: 300, ease: "out" }); vanillaFx(dim, "minecraft:sonic_explosion", c); }
+  SYS.rhythm(dim, c, tier, r);
+  if (tier >= 2) vanillaFx(dim, "minecraft:sonic_explosion", c);
   if (tier >= 3) { vanillaFx(dim, "minecraft:huge_explosion_emitter", c); rockBurst(dim, t.location, 8); }
   const names = ["", "§b§lRHYTHM", "§d§lCRESCENDO", "§6§lFINALE"];
   notify(p, `${names[tier]} §r§7${dmg} dmg`, 35);
@@ -2211,7 +2211,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     setMState(src, 0);
     pushAway(p.location, src, 1.1, 0.3);
     const dim = p.dimension, c = { x: (p.location.x + src.location.x) / 2, y: p.location.y + 1.2, z: (p.location.z + src.location.z) / 2 };
-    popShape(dim, "nova", c, 0.2, 0.9, 6, { s: 400, ease: "out" });
+    SYS.parry(dim, c);
     for (let i = 0; i < 10; i++) pix(dim, { x: c.x + (Math.random() - 0.5) * 0.6, y: c.y + (Math.random() - 0.5) * 0.6, z: c.z + (Math.random() - 0.5) * 0.6 }, { color: i % 2 ? COLORS.gold : COLORS.white, size: 0.18, life: 0.4, speed: 2.4 });
     try { dim.playSound("random.anvil_land", p.location, { volume: 0.6, pitch: 1.7 }); } catch (e) { /* */ }
     sfxPlayer(p, "sh.reflect", 1, 1.3);
@@ -2233,7 +2233,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     try { t.applyDamage(dmg, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
     pushAway(p.location, t, 1.3, 0.4);
     const c = center3(t);
-    popShape(t.dimension, "slash_gold", c, 0.6, 1.4, 5, { yaw: yawOf(c, p.location), a: 30 });
+    SYS.counter(t.dimension, c, p.location);
     vanillaFx(t.dimension, "minecraft:critical_hit_emitter", c);
     sfx(t.dimension, "sh.kat_exec", t.location, 0.9, 1.3);
     notify(p, `§6§lCOUNTER §r§7${dmg} dmg`, 25);
@@ -4655,10 +4655,10 @@ function closeHit(dim, e, tp, type, idx) {
   if (tp) { fx = tp.location.x - e.location.x; fz = tp.location.z - e.location.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; }
   if (type === "sh:ember_imp") {
     const o = tp ? { x: tp.location.x, y: tp.location.y + 1.1, z: tp.location.z } : { x: e.location.x + fx * 1.3, y: e.location.y + 1, z: e.location.z + fz * 1.3 };
-    popShape(dim, "slash_fire", o, 0.4, 0.8, 5, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: idx % 2 ? 40 : -40 });
+    MONSTER.fireSwipe(dim, o, { x: fx, y: 0, z: fz }, idx);                // خرمشة نار حقيقية
     sfx(dim, "sh.imp_pounce", e.location, 0.8, 1.2 + idx * 0.15);
   } else {
-    popShape(dim, "slash_teal", { x: e.location.x + fx * 1.4, y: e.location.y + 1.3, z: e.location.z + fz * 1.4 }, 0.8, 1.8, 6, { yaw: dirYaw({ x: fx, y: 0, z: fz }), p: 90, ease: "out" });
+    MONSTER.guardSwipe(dim, { x: e.location.x + fx * 0.6, y: e.location.y + 1.3, z: e.location.z + fz * 0.6 }, { x: fx, y: 0, z: fz });   // ضربة عمودية برون تركوازي وحصى
     rockBurst(dim, { x: e.location.x + fx * 1.8, y: e.location.y, z: e.location.z + fz * 1.8 }, 2, 0.7);
     sfx(dim, "sh.guard_slam", e.location, 0.9, 1.3);
   }
@@ -4726,8 +4726,7 @@ function impEmberBolt(e, tp, st) {
     dangerZone(dim, b, 2.2, 18);
     sfx(dim, "sh.imp_pounce", e.location, 1, 0.7);
     arcShape(dim, "fireball", a, b, 18, 2.5, { r: 0.8, w: 600 }, () => {
-      popShape(dim, "nova", { ...b, y: b.y + 0.4 }, 0.3, 1.4, 6);
-      for (let i = 0; i < 10; i++) glow(dim, b, { color: i % 2 ? COLORS.orange : COLORS.gold, size: 0.3, life: 0.8, speed: 3, rise: 1 });
+      MONSTER.emberBoom(dim, b);                                            // انفجار صغير + حلقة لهب + جمرات + دخان نار
       sfx(dim, "sh.meteor_hit", b, 0.8, 1.4);
       for (const pl of playersNear(dim, b, 2.4)) { hurtPlayer(pl, 4, e); try { pl.setOnFire(3, true); } catch (err) { /* */ } pushAway(b, pl, 0.6, 0.3); }
     });
@@ -4750,7 +4749,7 @@ function guardRockThrow(e, tp, st) {
     sfx(dim, "sh.guard_slam", e.location, 0.9, 1.4);
     arcShape(dim, "rock_chunk", a, b, 20, 4, { r: 2.0, w: 300, a: 30 }, () => {
       rockBurst(dim, b, 6, 1.2);
-      waveFx(dim, b, 3, 3, 8);
+      MONSTER.rockImpact(dim, b);
       sfx(dim, "sh.guard_slam", b, 1.2, 0.8);
       for (const pl of playersNear(dim, b, 2.6)) { hurtPlayer(pl, 6, e); pushAway(b, pl, 1.6, 0.5); shake(pl, 0.25, 0.3); }
     });
@@ -4762,13 +4761,14 @@ function houndShadowLeap(e, tp, st) {
   const dim = e.dimension;
   st.phase = 4; setMState(e, 1);
   try { dim.playSound("mob.wolf.growl", e.location, { volume: 1.2, pitch: 0.6 }); } catch (err) { /* */ }
-  for (let i = 0; i < 12; i++) glow(dim, { x: e.location.x + (Math.random() - 0.5), y: e.location.y + Math.random(), z: e.location.z + (Math.random() - 0.5) }, { color: VIOLET, size: 0.3, life: 0.8, rise: 1 });
+  MONSTER.houndCharge(dim, e.location); MONSTER.houndCharge(dim, e.location);
   later(10, () => {
     if (!valid(e) || !valid(tp)) { endSpecial(st, e, 60); return; }
     const from = { ...e.location }, dest = behindSpot(tp, e.location);
     if (!dest) { endSpecial(st, e, 40); return; }
-    for (let i = 0; i < 16; i++) glow(dim, { x: from.x + (Math.random() - 0.5), y: from.y + Math.random() * 1.2, z: from.z + (Math.random() - 0.5) }, { color: [0.1, 0.05, 0.2], size: 0.35, life: 1, rise: 0.4 });
+    WEAPON.shadowPuff(dim, from);                                         // يذوب بدخان ظل (حبر + بوابة + نفخة)
     safeTeleport(e, dest, tp.location);
+    WEAPON.shadowPuff(dim, dest);
     setMState(e, 3);
     sfx(dim, "sh.kat_step", dest, 0.9, 0.7);
     later(4, () => {
@@ -4786,13 +4786,14 @@ function scorpionBurrow(e, tp, st) {
   st.phase = 4; setMState(e, 1);
   sfx(dim, "sh.guard_windup", e.location, 0.8, 1.6);
   rockBurst(dim, e.location, 4, 0.7);
+  MONSTER.burrowDig(dim, e.location);
   try { e.addEffect("invisibility", 34, { amplifier: 0, showParticles: false }); e.addEffect("slowness", 34, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
   let lock;
   const tick = system.runInterval(() => {
     try {
       if (!valid(e) || !valid(tp)) return;
       const L = lock || tp.location;
-      glow(dim, { x: L.x + (Math.random() - 0.5) * 1.5, y: L.y + 0.1, z: L.z + (Math.random() - 0.5) * 1.5 }, { color: [0.75, 0.6, 0.35], size: 0.25, life: 0.6, rise: 0.8 });
+      MONSTER.sandMark(dim, L);                                             // رمل يتحرك تحت الأرض وين بيطلع
     } catch (err) { /* */ }
   }, 3);
   later(14, () => { if (valid(tp)) { lock = { ...tp.location }; dangerZone(dim, lock, 1.8, 16); sfx(dim, "sh.guard_windup", lock, 0.7, 1.9); } });
@@ -4803,7 +4804,7 @@ function scorpionBurrow(e, tp, st) {
     try { e.removeEffect("invisibility"); } catch (err) { /* */ }
     setMState(e, 2);
     rockBurst(dim, lock, 6, 1.3);
-    popShape(dim, "slash_venom", { ...lock, y: lock.y + 1 }, 0.6, 1.8, 6, { p: 90, s: 600 });
+    MONSTER.burrowErupt(dim, lock);                                       // انفجار رمل + رشة سم خضرا
     sfx(dim, "sh.guard_slam", lock, 1, 1.3);
     for (const pl of playersNear(dim, lock, 2.0)) { hurtPlayer(pl, 6, e); try { pl.addEffect("poison", 100, { amplifier: 0 }); pl.applyKnockback({ x: 0, z: 0 }, 0.9); } catch (err) { /* */ } }
     later(12, () => endSpecial(st, e, 110));
@@ -4813,13 +4814,8 @@ function scorpionBurrow(e, tp, st) {
 
 function ambientFx(dim, e, type) {
   const L = e.location;
-  if (type === "sh:ember_imp") {
-    if (Math.random() < 0.7) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.6, y: L.y + 0.4 + Math.random() * 1.1, z: L.z + (Math.random() - 0.5) * 0.6 }, { color: COLORS.orange, size: 0.14, life: 0.9, rise: 1.2 });
-    if (Math.random() < 0.3) glow(dim, { x: L.x, y: L.y + 1.5, z: L.z }, { color: COLORS.gold, size: 0.1, life: 0.6, rise: 0.8 });
-  } else {
-    if (Math.random() < 0.6) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.5, y: L.y + 3.0, z: L.z + (Math.random() - 0.5) * 0.5 }, { color: [0.55, 0.6, 0.5], size: 0.2, life: 1.4, rise: 0.5 });
-    if (Math.random() < 0.25) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.9, y: L.y + 0.2 + Math.random() * 1.8, z: L.z + (Math.random() - 0.5) * 0.9 }, { color: COLORS.teal, size: 0.1, life: 0.7, rise: 0.6 });
-  }
+  if (type === "sh:ember_imp") MONSTER.impAmbient(dim, L);                // لهب حقيقي يطلع من جسمه وجمرات
+  else MONSTER.guardAmbient(dim, L);                                       // غبار حصى ولمعات رون تركوازية
 }
 function runMonsterSkills() {
   for (const dimId of ["overworld", "nether", "the_end"]) {
@@ -4860,7 +4856,7 @@ function runMonsterSkills() {
           if (st.phase === 1) {
             st.t += 4;
             if (type === "sh:ember_imp") {
-              for (let i = 0; i < 3; i++) glow(dim, { x: e.location.x + (Math.random() - 0.5) * 0.8, y: e.location.y + 0.1, z: e.location.z + (Math.random() - 0.5) * 0.8 }, { color: COLORS.orange, size: 0.2, life: 0.5, rise: 1.5 });
+              MONSTER.impCharge(dim, e.location);
               if (valid(st.target)) {
                 // خط تحذير باتجاه الهدف
                 const tx = st.target.location.x - e.location.x, tz = st.target.location.z - e.location.z, tl = Math.hypot(tx, tz) || 1;
@@ -4878,8 +4874,7 @@ function runMonsterSkills() {
                 const l = Math.hypot(dx, dz) || 1;
                 try { e.applyImpulse({ x: (dx / l) * 1.1, y: 0.45, z: (dz / l) * 1.1 }); } catch (err) { /* */ }
                 sfx(dim, "sh.imp_pounce", e.location, 1);
-                burst(dim, e.location, 16, COLORS.orange, 3.5, 0.22);
-                ring(dim, e.location, 1.0, 14, 0, COLORS.gold, 0.2);
+                MONSTER.impLeap(dim, e.location);
               } else {
                 sfx(dim, "sh.guard_slam", e.location, 1.3);
                 for (const pl of dim.getPlayers({ location: e.location, maxDistance: 4 })) {
@@ -4887,9 +4882,8 @@ function runMonsterSkills() {
                   pushAway(e.location, pl, 2.2, 0.5);
                   shake(pl, 0.25, 0.3);
                 }
-                waveFx(dim, e.location, 4.5, 3, 10);
+                MONSTER.guardSlam(dim, e.location);
                 rockBurst(dim, e.location, 6, 1.3);
-                for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; popShape(dim, "crystal_gem", { x: e.location.x + Math.cos(a) * 2.2, y: e.location.y + 0.4, z: e.location.z + Math.sin(a) * 2.2 }, 0.4, 1.4, 8, { s: 400 }); }
               }
             }
             continue;
@@ -4905,15 +4899,14 @@ function runMonsterSkills() {
           if (st.phase === 2) {
             st.t += 4;
             if (type === "sh:ember_imp") {
-              glow(dim, { x: e.location.x, y: e.location.y + 0.6, z: e.location.z }, { color: COLORS.orange, size: 0.3, life: 0.6, rise: 0.5 });
-              glow(dim, { x: e.location.x, y: e.location.y + 0.9, z: e.location.z }, { color: COLORS.gold, size: 0.2, life: 0.5, rise: 0.8 });
+              MONSTER.impTrail(dim, e.location);
             }
             if (st.t >= cfg.hold) {
               if (type === "sh:ember_imp") {
                 for (const pl of dim.getPlayers({ location: e.location, maxDistance: 2.2 })) {
                   hurtPlayer(pl, 4, e);
                   pushAway(e.location, pl, 1.2, 0.3);
-                  burst(dim, headPos(pl), 12, COLORS.orange, 3);
+                  MONSTER.fireHit(dim, center3(pl));
                 }
               }
               st.phase = 0; st.cd = 80 + Math.random() * 60; st.target = undefined;
@@ -4952,7 +4945,7 @@ function archerShoot(e, tp) {
       if (++n > 30 || !ar || !valid(ar)) { system.clearRun(h); return; }
       const v = ar.getVelocity ? ar.getVelocity() : { x: 0, y: 0, z: 0 };
       if (n > 3 && Math.hypot(v.x, v.y, v.z) < 0.05) { system.clearRun(h); return; }   // السهم وقف (انغرس)
-      glow(dim, ar.location, { color: n % 2 ? [0.62, 0.35, 1] : [0.85, 0.7, 1], size: 0.14, life: 0.35 });
+      vP(dim, ar.location, n % 2 ? PT.breath : PT.glow, { c: [0.7, 0.45, 1], eye: 1.0 });       // أثر السهم: نَفَس تنين بنفسجي يبقى ثانية
     } catch (err) { system.clearRun(h); }
   }, 1);
 }
@@ -5014,8 +5007,8 @@ system.runInterval(() => {
           }
           const sp = ar.getVelocity();
           if (Math.hypot(sp.x, sp.y, sp.z) < 0.2) continue;
-          glow(dim, L, { color: [0.72, 0.45, 1], size: 0.2, life: 0.45 });
-          glow(dim, { x: L.x - sp.x * 0.5, y: L.y - sp.y * 0.5, z: L.z - sp.z * 0.5 }, { color: [0.45, 0.8, 1], size: 0.14, life: 0.4 });
+          vP(dim, L, PT.breath, { eye: 1.0 });
+          vP(dim, { x: L.x - sp.x * 0.5, y: L.y - sp.y * 0.5, z: L.z - sp.z * 0.5 }, PT.glow, { c: [0.6, 0.45, 1], eye: 1.0 });
         }
       } catch (err) { /* */ }
     }
@@ -5043,12 +5036,11 @@ function spitVenom(dim, from, target, shooter) {
       const dx = tx - pos.x, dy = ty - pos.y, dz = tz - pos.z, l = Math.hypot(dx, dy, dz) || 1;
       const k = Math.min(1.2, l);
       pos.x += (dx / l) * k; pos.y += (dy / l) * k; pos.z += (dz / l) * k;
-      glow(dim, pos, { color: VENOM, size: 0.28, life: 0.4 });
-      glow(dim, { x: pos.x - (dx / l) * 0.5, y: pos.y - (dy / l) * 0.5, z: pos.z - (dz / l) * 0.5 }, { color: [0.3, 0.7, 0.2], size: 0.18, life: 0.4 });
+      MONSTER.venomTrail(dim, pos);
       if (l < 1.1) {
         hurtPlayer(target, 4, shooter);
         try { target.addEffect("poison", 100, { amplifier: 0 }); } catch (e) { /* */ }
-        burst(dim, headPos(target), 16, VENOM, 3, 0.2);
+        MONSTER.venomSplash(dim, center3(target));
         sfx(dim, "sh.imp_pounce", target.location, 0.7, 0.7);
         system.clearRun(h);
       }
@@ -5068,9 +5060,7 @@ system.runInterval(() => {
           const hound = type === "sh:shadow_hound";
           const L = e.location;
           // جزيئات دائمة
-          if (hound) {
-            if (Math.random() < 0.5) glow(dim, { x: L.x + (Math.random() - 0.5) * 0.8, y: L.y + 0.5 + Math.random() * 0.6, z: L.z + (Math.random() - 0.5) * 0.8 }, { color: VIOLET, size: 0.12, life: 0.8, rise: 0.8 });
-          } else if (Math.random() < 0.3) glow(dim, { x: L.x, y: L.y + 1.2, z: L.z }, { color: VENOM, size: 0.12, life: 0.7, rise: 0.6 });
+          if (hound) MONSTER.houndAmbient(dim, L); else MONSTER.scorpAmbient(dim, L);
           let st = mst2.get(e.id);
           if (!st) { st = { phase: 0, t: 0, cd: 30 + Math.random() * 50 }; mst2.set(e.id, st); }
           if (st.phase === 0) {
@@ -5095,21 +5085,14 @@ system.runInterval(() => {
           if (st.phase === 1) {
             st.t += 4;
             const need = hound ? 12 : 20;
-            if (hound) {
-              for (let i = 0; i < 3; i++) glow(dim, { x: L.x + (Math.random() - 0.5), y: L.y + 0.1, z: L.z + (Math.random() - 0.5) }, { color: VIOLET, size: 0.18, life: 0.5, rise: 1.2 });
-            } else {
-              glow(dim, { x: L.x, y: L.y + 1.6 + st.t * 0.02, z: L.z }, { color: VENOM, size: 0.3, life: 0.4 });
-              ring(dim, { x: L.x, y: L.y + 0.1, z: L.z }, 1.2, 12, st.t * 0.2, VENOM, 0.14);
-            }
+            if (hound) MONSTER.houndCharge(dim, L); else MONSTER.scorpCharge(dim, L, st.t);
             if (st.t >= need) {
               st.phase = 2; st.t = 0; setMState(e, 2);
               if (hound) {
                 // عواء: يبطئ كل اللاعبين القريبين
                 sfx(dim, "sh.imp_windup", L, 1.6, 0.45);
                 try { dim.playSound("mob.wolf.growl", L, { volume: 1.5, pitch: 0.5 }); } catch (err) { /* */ }
-                waveFx(dim, L, 14, 1, 20);
-                for (const k of [0, 6, 12]) system.runTimeout(() => { try { ring(dim, L, 2 + k * 0.9, 30, k, VIOLET, 0.26); } catch (err) { /* */ } }, k);
-                burst(dim, { x: L.x, y: L.y + 1.8, z: L.z }, 30, VIOLET, 5, 0.25);
+                MONSTER.howl(dim, L);                                         // زئير (نفخات الـRavager) + موجة ظل تتوسع + غيوم غضب
                 for (const pl of dim.getPlayers({ location: L, maxDistance: 14 })) {
                   try { pl.addEffect("slowness", 100, { amplifier: 1 }); } catch (err) { /* */ }
                   notify(pl, "§5The howl slows you!", 40);
@@ -5120,8 +5103,8 @@ system.runInterval(() => {
                 try { e.applyImpulse({ x: (tp.location.x - L.x) * 0.12, y: 0.2, z: (tp.location.z - L.z) * 0.12 }); } catch (err) { /* */ }
                 const from = { x: L.x, y: L.y + 1.9, z: L.z }, to = center3(tp);
                 const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
-                flyShape(dim, "venom_glob", from, { x: dx / l, y: dy / l, z: dz / l }, 1.4, l, { r: 0.6, w: 500 });
-                popShape(dim, "slash_venom", to, 0.5, 1.2, 6, { yaw: yawOf(tp.location, L), a: 60 });
+                flyShape(dim, "venom_glob", from, { x: dx / l, y: dy / l, z: dz / l }, 1.4, l, { r: 0.6, w: 500 }, (pos) => { MONSTER.venomTrail(dim, pos); });
+                MONSTER.venomSplash(dim, to);                                  // رشة جرعة سم خضرا حقيقية
                 sfx(dim, "sh.imp_pounce", L, 0.9, 1.5);
                 for (const pl of dim.getPlayers({ location: L, maxDistance: 4 })) {
                   hurtPlayer(pl, 5, e);
@@ -5134,10 +5117,7 @@ system.runInterval(() => {
           }
           if (st.phase === 2) {
             st.t += 4;
-            if (hound) {
-              glow(dim, { x: L.x, y: L.y + 2.0, z: L.z + 0.6 }, { color: VIOLET, size: 0.3, life: 0.6, rise: 0.8 });
-              glow(dim, { x: L.x, y: L.y + 2.2, z: L.z }, { color: [0.85, 0.7, 1], size: 0.18, life: 0.5, rise: 1 });
-            }
+            if (hound && st.t % 8 === 0) MONSTER.houndCharge(dim, L);
             if (st.t >= (hound ? 36 : 12)) { st.phase = 0; st.cd = 50 + Math.random() * 50; st.hitP = false; setMState(e, 0); }
             continue;
           }
@@ -5149,8 +5129,8 @@ system.runInterval(() => {
               let fx = 0, fz = 1;
               if (tp) { fx = tp.location.x - L.x; fz = tp.location.z - L.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; }
               const o = { x: L.x + fx * 1.4, y: L.y + 0.8, z: L.z + fz * 1.4 };
-              if (hound) popShape(dim, st.hit % 2 ? "claw_marks" : "fang_jaw", o, 0.7, 1.1, 7, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: st.hit % 2 ? 25 : 0 });
-              else popShape(dim, "slash_venom", o, 0.4, 0.9, 5, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }), a: -30 });
+              if (hound) { if (st.hit % 2) MONSTER.houndBite(dim, o, { x: fx, y: 0, z: fz }, st.hit); else popShape(dim, "fang_jaw", o, 0.7, 1.1, 7, { yaw: dirYaw({ x: -fx, y: 0, z: -fz }) }); }
+              else MONSTER.venomSwipe(dim, o, { x: fx, y: 0, z: fz });
               sfx(dim, "sh.guard_slam", L, 0.6, hound ? 1.6 : 1.0);
               for (const pl of dim.getPlayers({ location: L, maxDistance: 2.8 })) {
                 hurtPlayer(pl, hound ? 3 : 5, e); pushAway(L, pl, hound ? 0.5 : 1.2, 0.2);
@@ -5763,8 +5743,8 @@ function veilTick(e, st) {
         for (let k = -1; k <= 1; k++) {
           const a0 = Math.atan2(dz, dx) + k * 0.3, hl = Math.hypot(dx, dz) || 1, dir = { x: Math.cos(a0) * hl / l, y: dy / l, z: Math.sin(a0) * hl / l };
           const hit = new Set();
-          flyShape(dim, "slash_violet", from, dir, 1.3, 26, { r: 1.8, p: 90, a: 90 }, (pos) => {
-            glow(dim, pos, { color: FOXV, size: 0.2, life: 0.5 });
+          flyFx(dim, from, dir, 1.3, 26, (pos) => {
+            MONSTER.moonStep(dim, pos, dir);                                  // هلال قمر من لمعات End Rod يطير لك
             for (const p2 of dim.getPlayers({ location: pos, maxDistance: 1.7 })) {
               if (hit.has(p2.id)) continue;
               hit.add(p2.id); hurtPlayer(p2, 7, valid(e) ? e : undefined); burst(dim, center3(p2), 10, FOXV, 3); shake(p2, 0.2, 0.2);
