@@ -31,15 +31,76 @@ def state_anims(mtype, state):
     return []
 
 
+# كيانات FX (دائرة رون، لوحة، بوابة، بلورة، قشرة الجسم): نفس الموديل والتكستشر حسب اللون (sh:c) والحجم (sh:r) ونفس أنميشن sh_fx
+FX_ENT = {"sh:fx_circle": "circle", "sh:fx_plate": "plate", "sh:fx_portal": "portal", "sh:fx_crystal": "crystal", "sh:fx_body": "body"}
+_fx_models = {}
+
+
+def fx_model(kind, c):
+    key = (kind, c)
+    if key not in _fx_models:
+        tex = f"sh_fx_{kind}_{int(c)}.png" if kind != "body" else f"sh_fx_body_{int(c) % 2}.png"
+        _fx_models[key] = SS.R.Model(os.path.join(SS.GEO, f"sh_fx_{kind}.geo.json"), os.path.join(SS.TEX, tex))
+    return _fx_models[key]
+
+
+def fx_pose(kind, life, props):
+    p = lambda bone, rot=(0, 0, 0), pos=(0, 0, 0): {bone: {"rot": list(rot), "pos": list(pos)}}
+    if kind == "circle":
+        return p("disc", (0, life * 40, 0)), 1.0
+    if kind == "plate":
+        q = p("plate", (0, life * 150, 0)); q.update(p("root", pos=(0, math.sin(math.radians(life * 180)) * 0.8, 0)))
+        return q, min(1.0, life * 4)
+    if kind == "portal":
+        return p("ring", (0, 0, life * 240)), min(1.0, life * 5)
+    if kind == "crystal":
+        return p("spike", (props.get("sh:p", 0) or 0, 0, life * 60)), min(1.0, life * 6)
+    if kind == "body":
+        return p("head", (props.get("sh:p", 0) or 0, 0, 0)), 1.0
+    return {}, 1.0
+
+
+def zombie(S, pos, d=(0, -1)):
+    """زومبي ماينكرافت مبسط بالبلوكات (2 بلوكة): جلد أخضر، قميص سماوي، بنطرون بنفسجي غامق، أذرع ممدودة لقدام."""
+    Rm = SS.roty(SS.yaw_for(d))
+    skin, shirt, pants = (78, 128, 70), (40, 140, 150), (60, 50, 120)
+    parts = [((-0.25, 0, -0.125), (0.0, 0.75, 0.125), pants), ((0.0, 0, -0.125), (0.25, 0.75, 0.125), pants),
+             ((-0.25, 0.75, -0.125), (0.25, 1.5, 0.125), shirt),
+             ((-0.5, 1.25, -0.75), (-0.25, 1.5, 0.0), shirt), ((0.25, 1.25, -0.75), (0.5, 1.5, 0.0), shirt),
+             ((-0.25, 1.5, -0.25), (0.25, 2.0, 0.25), skin)]
+    for lo, hi, col in parts:
+        fc = SS.R.face_corners(*lo, *hi)
+        for f in SS.R.FACES:
+            S.faces.append((np.array(fc[f], dtype=float) @ Rm.T + np.array(pos), "col", (np.array(col, dtype=float), False)))
+
+
 def render_frame(cap, T, parts_by_t, cam, size, snaps, start_tick):
     S = SS.Scene()
     S.ground(0, cap["dist"] / 2, 14)
     fr = min(snaps, key=lambda f: abs(f["t"] - T))
+    is_player_cap = cap.get("type") == "player"
+    born = cap.setdefault("_born", {})
+    if not born:
+        for f in snaps:
+            for e in f["ents"]:
+                born.setdefault(e["id"], f["t"])
     for e in fr["ents"]:
         pos = (e["x"], e["y"] - 64, e["z"])
         yaw = math.radians(e["yaw"]); d = (-math.sin(yaw), math.cos(yaw))
         if e["type"] == "player":
             S.player(pos, (0, 1)); continue
+        if e["type"] == "minecraft:zombie":
+            zombie(S, pos, (0, -1)); continue
+        if e["type"] in FX_ENT:
+            kind = FX_ENT[e["type"]]
+            life = max(0.0, (T - born.get(e["id"], T)) / 20.0)
+            c = e["props"].get("sh:v" if kind == "body" else "sh:c", 0) or 0
+            pose, grow = fx_pose(kind, life, e["props"])
+            r = e["props"].get("sh:r", 1.0) or 1.0
+            S.model(fx_model(kind, c), pose, pos, d, r * grow)
+            continue
+        if is_player_cap and e["type"] != "sh:fx_shape":
+            continue                                            # وحوش طبيعية ظهرت بالمحاكي: مو جزء من المهارة
         if e["type"] in MODEL:
             nm = MODEL[e["type"]]
             hot = bool(e["props"].get("sh:hot", 0))

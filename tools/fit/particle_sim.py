@@ -22,7 +22,7 @@ VP = os.environ.get("SH_VANILLA_PARTICLES") or os.path.join(os.path.dirname(os.p
 DEF_DIR = os.path.join(VP, "all") if os.path.isdir(os.path.join(VP, "all")) else os.path.join(VP, "particles")
 
 # ───────────── Molang مصغّر ─────────────
-_TOK = re.compile(r"\s*(?:(\d+\.?\d*|\.\d+)|([A-Za-z_][\w.]*)|(\?\?|&&|\|\||==|!=|<=|>=|[-+*/()<>?:,!;=]))")
+_TOK = re.compile(r"\s*(?:(\d+\.?\d*|\.\d+)f?|([A-Za-z_][\w.]*)|(\?\?|&&|\|\||==|!=|<=|>=|[-+*/()<>?:,!;=]))")
 
 
 def _tokens(s):
@@ -263,7 +263,7 @@ def spawn_event(ev, rng=None):
         n = int(mo(g("emitter_rate_instant").get("num_particles", 1), ee))
     elif g("emitter_rate_steady"):
         rs = g("emitter_rate_steady")
-        span = float((g("emitter_lifetime_once") or g("emitter_lifetime_looping") or {}).get("active_time", 1.0))
+        span = mo((g("emitter_lifetime_once") or g("emitter_lifetime_looping") or {}).get("active_time", 1.0), ee)
         n = int(min(mo(rs.get("max_particles", 50), ee), mo(rs.get("spawn_rate", 1), ee) * span))
     out = []
     for k in range(max(1, n)):
@@ -352,6 +352,11 @@ def state_at(p, T, ground=None):
         a += h
     env["variable.particle_age"] = age
     env["query.frame_alpha"] = 0.0
+    pin = g("particle_initialization")                      # per_update/per_render (shriek, campfire_smoke: variable.size)
+    if pin:
+        for key in ("per_update_expression", "per_render_expression"):
+            if pin.get(key):
+                run_statements(pin[key], env)
     if par and par.get("relative_position") is not None:
         rp = _vec(par["relative_position"], env)
         pos = [p.pos[i] + rp[i] for i in range(3)]
@@ -410,9 +415,17 @@ def pe_texture(pid):
     return pe["description"].get("basic_render_parameters", {}).get("texture") if pe else None
 
 
+def _tex(path):
+    """تكستشر جزيء: الأطلس واللهب محملين؛ والباقي (gust, shriek, soul, sculk...) من VP/textures/particle(s)/*.png إذا انحملت من bedrock-samples"""
+    if path in TEXTURES:
+        return TEXTURES[path]
+    TEXTURES[path] = _load(path + ".png") if path else None
+    return TEXTURES[path]
+
+
 def sprite(st):
-    """صورة اللوحة (RGBA numpy float) بعد التلوين. None إذا التكستشر مو الأطلس"""
-    tex = TEXTURES.get(st["tex"])
+    """صورة اللوحة (RGBA numpy float) بعد التلوين. None إذا التكستشر مو موجود"""
+    tex = _tex(st["tex"])
     if tex is None:
         return None
     sx, sy = tex.shape[1] / float(st["tw"]), tex.shape[0] / float(st["th"])      # وحدات الـuv ← بكسلات

@@ -164,6 +164,7 @@ function snapFrame() {
 }
 export const __sim = {
   rec, snapFrame, advance, entities, mkEntity, dims, player, get tick() { return tick; },
+  fire, useItem, setState, baseState, spawnZombies, hold, cdReset: () => system_cd_reset(),
   stats, failures, get failuresArr() { return failures; },
   async runScenario(sc, root) {
     const main = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/main.js"), "utf8");
@@ -230,7 +231,7 @@ export const __sim = {
         const dmg = Math.round((stats.damage || 0) - d0), shapes = stats.spawned - f0;
         row.push(`شكل ${shapes} ضرر ${dmg}${(stats.broken || 0) - b0 ? " بلوكات " + ((stats.broken || 0) - b0) : ""}`);
         if (dmg <= 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون ضرر`);
-        if (shapes === 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون أشكال`);
+        if (shapes === 0 && stats.particles - p0 < 20) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون مؤثرات (لا أشكال ولا جزيئات)`);
         if (stats.sounds - s0 === 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون صوت`);
         if (wid === "sh:stone_maul" && (stats.broken || 0) - b0 === 0) failures.push(`المطرقة ما كسرت بلوكات (مهارة ${sneak ? 2 : 1})`);
         system_cd_reset();

@@ -7,6 +7,8 @@ import {
 import { setupStructures, buildTemple, findTemple, onShrineBossDeath } from "./structures.js";
 import { setupDash, dashCooldown } from "./dash.js";
 import { SHAPE } from "./shapes.js";
+import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
+import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON } from "./skillfx.js";
 
 // ───────────────────────── البيانات ─────────────────────────
 const TRAIN_NEED = 3;
@@ -472,23 +474,10 @@ POWER_COLOR.wind = COLORS.green;
 POWER_COLOR.star = [0.5, 0.72, 1.0];
 
 // أماكن عيون اللاعبين (تتحدث كل تكين): الجزيئات القريبة من الكاميرا ما تنرسم حتى ما تغطي الشاشة
-const eyeCache = [];
-system.runInterval(() => {
-  eyeCache.length = 0;
-  for (const p of world.getAllPlayers()) { try { const h = p.getHeadLocation(); eyeCache.push({ d: p.dimension.id, x: h.x, y: h.y, z: h.z }); } catch (e) { /* */ } }
-}, 2);
-function nearEye(dim, loc, r) {
-  for (const c of eyeCache) {
-    if (c.d !== dim.id) continue;
-    const dx = c.x - loc.x, dy = c.y - loc.y, dz = c.z - loc.z;
-    if (dx * dx + dy * dy + dz * dz < r * r) return true;
-  }
-  return false;
-}
+// (الكاش والميزانية صاروا بمكتبة vfx.js حتى كل المود يشترك بنفس الحد)
+const nearEye = vNearEye;
 // ═══════════════ بارتكلز ماينكرافت الأصلية بس: المود ما عنده ولا جزيء مخصص ═══════════════
 // كل جزيء هنا هو "minecraft:..." بتعريف ماينكرافت نفسه (حجمه ومدته وحركته). اللي يقبل تلوين (variable.color) ننطيه لون المهارة.
-let pixBudget = 0;
-system.runInterval(() => { pixBudget = 0; }, 1);
 // تصنيف اللون حتى نختار الجزيء المناسب لطابع المهارة (نار، جليد، أرواح، فراغ...)
 function hueClass(c) {
   const mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]), d = mx - mn;
@@ -505,17 +494,7 @@ function hueClass(c) {
   return "violet";
 }
 // يطلع جزيء ماينكرافت: id = معرفه الأصلي، color = لون التلوين (للي يدعمه)، dir = اتجاه الانبعاث، extra = متغيرات إضافية
-function mcP(dim, loc, id, color, dir, extra) {
-  try {
-    if (++pixBudget > 260) return;
-    const m = new MolangVariableMap();
-    const c = color || [1, 1, 1];
-    m.setColorRGBA("variable.color", { red: c[0], green: c[1], blue: c[2], alpha: 1 });
-    m.setVector3("variable.direction", dir || { x: 0, y: 0, z: 0 });
-    if (extra) for (const k of Object.keys(extra)) m.setFloat("variable." + k, extra[k]);
-    dim.spawnParticle(id, loc, m);
-  } catch (e) { /* مكان غير محمل */ }
-}
+function mcP(dim, loc, id, color, dir, extra) { vP(dim, loc, id, { c: color, d: dir, f: extra, eye: 0 }); }
 const rndDir = (k) => { const a = Math.random() * 6.2832, b = Math.random() * 2 - 1, r = Math.sqrt(1 - b * b); return { x: Math.cos(a) * r * k, y: b * k, z: Math.sin(a) * r * k }; };
 // ملاحظة مهمة عن سبرايتات ماينكرافت: colored_flame_particle وsmall_soul_fire_flame سبرايتهم سماوي أصلاً، والتلوين يضرب ألوان السبرايت بلون التلوين،
 // فالتلوين الدافئ (أحمر/برتقالي/ذهبي) يطلعه أخضر زيتوني. لذلك للألوان الدافئة نستعمل لهب المشعل البرتقالي الطبيعي (small_flame_particle بدون تلوين)،
@@ -1401,12 +1380,13 @@ system.runInterval(() => {
   }
 }, 2);
 // شكل رمز (ناقص، قسمة، سهم) يطير من اللاعب للهدف
-function symbolShot(p, t, name, onHit, speed = 1.1) {
+function symbolShot(p, t, name, onHit, speed = 1.1, trail) {
   const from = { x: p.location.x, y: p.location.y + 1.3, z: p.location.z }, to = headPos(t);
   const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
   const d = { x: dx / l, y: dy / l, z: dz / l };
+  let k = 0;
   flyShape(p.dimension, name, { x: from.x + d.x, y: from.y + d.y, z: from.z + d.z }, d, speed, Math.max(1.5, l - 1), { r: 1.0, w: name.startsWith("arrow") ? 0 : 360 },
-    undefined, () => { try { onHit && onHit(); } catch (err) { /* */ } });
+    trail ? (pos) => { try { trail(pos, k++); } catch (err) { /* */ } } : undefined, () => { try { onHit && onHit(); } catch (err) { /* */ } });
 }
 
 function collapse(e, p) {
@@ -1416,8 +1396,8 @@ function collapse(e, p) {
   sfx(dim, "sh.collapse", loc, 1.2);
   fling(dim, ["digit_0", "digit_1", "digit_7", "digit_9", "digit_3"], loc, 6, 1.2, 0.35, 0.6);
   popShape(dim, "digit_0", { x: loc.x, y: loc.y + 0.3, z: loc.z }, 0.6, 2.2, 8, { s: 500 });
-  burst(dim, loc, 16, COLORS.red, 4, 0.25);
-  ring(dim, { x: e.location.x, y: e.location.y, z: e.location.z }, 1.4, 20, 0, COLORS.orange, 0.22);
+  // الانهيار: انفجار التوتم (عملات ذهب وخضر) + انفجار + شرر + حلقة ذهب، والحروف تنسحب للمكان
+  ACCOUNT.collapse(dim, center3(e));
   try { e.applyDamage(10, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (err) { /* */ }
 }
 
@@ -1613,10 +1593,8 @@ function bodyShell(p, variant, ticks) {
     e.setProperty("sh:v", variant);
     e.setProperty("sh:r", 0.55);
     const spark = variant === 0 ? [0.85, 0.9, 1.0] : [0.6, 0.62, 0.55];
-    // لحظة التحول: موجة + شرارات صاعدة بطول الجسم + وميض شاشة خفيف
-    ring(dim, p.location, 1.0, 22, 0, spark, 0.22);
-    waveFx(dim, p.location, 3, 4, 8);
-    for (let i = 0; i < 40; i++) pix(dim, { x: p.location.x + (Math.random() - 0.5) * 1.2, y: p.location.y + Math.random() * 2, z: p.location.z + (Math.random() - 0.5) * 1.2 }, { color: spark, size: 0.14, life: 0.9, speed: 0.8, rise: 1.8 });
+    // لحظة التحول: الحديد = حلقة شرر تصعد من الرجل للراس ورنة شرر حرج؛ الصخر = غبار حصى وحلقة غبار أرضية (+ وميض شاشة خفيف)
+    if (variant === 0) IRON.skinForm(dim, p.location); else TRAIT.rock(dim, p.location);
     try { p.camera.fade({ fadeColor: { red: spark[0], green: spark[1], blue: spark[2] }, fadeTime: { fadeInTime: 0.04, holdTime: 0.04, fadeOutTime: 0.25 } }); } catch (err) { /* */ }
     let t = 0, lastHp = hpNow(p);
     const h = system.runInterval(() => {
@@ -1624,7 +1602,7 @@ function bodyShell(p, variant, ticks) {
         t += 2;
         if (!valid(p) || !valid(e) || t > ticks) {
           system.clearRun(h); removeFx(e); bodyShells.delete(p.id);
-          if (valid(p)) { burst(p.dimension, headPos(p), 18, spark, 2.5, 0.2); sfx(p.dimension, "sh.cleaver_hit", p.location, 0.6, 1.6); }
+          if (valid(p)) { IRON.skinEnd(p.dimension, p.location); sfx(p.dimension, "sh.cleaver_hit", p.location, 0.6, 1.6); }
           return;
         }
         const rot = p.getRotation();
@@ -1634,7 +1612,8 @@ function bodyShell(p, variant, ticks) {
         e.setProperty("sh:mv", Math.hypot(v.x, v.z) > 0.04 ? 1 : 0);
         e.setProperty("sh:r", Math.min(1, 0.55 + t * 0.045));
         const hp = hpNow(p);
-        if (hp < lastHp - 0.4) { burst(p.dimension, { x: p.location.x, y: p.location.y + 1.1, z: p.location.z }, 14, spark, 3, 0.16); sfx(p.dimension, "sh.dagger_hit", p.location, 0.7, 1.9); }
+        if (hp < lastHp - 0.4) { IRON.skinHit(p.dimension, p.location); sfx(p.dimension, "sh.dagger_hit", p.location, 0.7, 1.9); }
+        if (variant === 0 && t % 10 === 0) IRON.skinTick(p.dimension, p.location);
         lastHp = hp;
       } catch (err) { system.clearRun(h); removeFx(e); bodyShells.delete(p.id); }
     }, 2);
@@ -1729,6 +1708,21 @@ function flyShape(dim, name, from, d, speed, maxDist, o = {}, onStep, onEnd) {
     } catch (err) { system.clearRun(h); removeFx(e); }
   }, 1);
   return e;
+}
+// قذيفة من جزيئات بس (بدون شكل): نفس حركة flyShape وفحص الجدار؛ onStep(pos, dist) يرجع true حتى يوقف
+function flyFx(dim, from, d, speed, maxDist, onStep, onEnd) {
+  let dist = 0;
+  const pos = { ...from };
+  const h = system.runInterval(() => {
+    try {
+      dist += speed;
+      pos.x = from.x + d.x * dist; pos.y = from.y + d.y * dist; pos.z = from.z + d.z * dist;
+      const blocked = !airAt(dim, pos.x, pos.y, pos.z);
+      const stop = blocked || dist >= maxDist || (onStep && onStep(pos, dist));
+      if (stop) { system.clearRun(h); if (onEnd) onEnd({ ...pos }, blocked); }
+    } catch (err) { system.clearRun(h); }
+  }, 1);
+  return h;
 }
 // شكل يركض على الأرض ويتبع ارتفاعها (يصعد/ينزل بلوكة)، يوقف عند الجدار: onStep(pos) يرجع true حتى يوقف
 function runShape(dim, name, from, d, speed, maxDist, o = {}, onStep, onEnd) {
@@ -2317,11 +2311,12 @@ system.runInterval(() => {
         if (z.kind === "weight") {
           e.addEffect("slowness", 20, { amplifier: 3, showParticles: false });
           e.addEffect("jump_boost", 20, { amplifier: 200, showParticles: false });
-          if (now - (z.lastDmg || 0) >= 20) { z.pulse = true; try { e.applyDamage(1, { cause: EntityDamageCause.magic }); } catch (err2) { /* */ } }
+          if (now - (z.lastDmg || 0) >= 20) { z.pulse = true; try { e.applyDamage(1, { cause: EntityDamageCause.magic }); } catch (err2) { /* */ } LAW.weightPulse(z.dim, headPos(e)); }
         } else if (z.kind === "silence") {
           e.addEffect("weakness", 20, { amplifier: 1, showParticles: false });
           if (RANGED_TYPES.has(e.typeId)) {
             seen.add(e.id);
+            if (now % 20 === 0) LAW.silenced(z.dim, headPos(e));
             if (!z.silenced.has(e.id)) { e.triggerEvent("sh:silence"); z.silenced.set(e.id, e); followShape(e, "padlock", Math.max(10, z.until - now), { r: 0.55, s: 120, dy: 0.7 }); }
           }
         }
@@ -2340,15 +2335,13 @@ system.runInterval(() => {
           if (d > z.r - 1) {
             const k = (z.r - 2) / d;
             safeTeleport(e, { x: z.c.x + (e.location.x - z.c.x) * k, y: e.location.y, z: z.c.z + (e.location.z - z.c.z) * k });
-            glow(z.dim, headPos(e), { color: COLORS.purple, size: 0.3, life: 0.4 });
+            LAW.bounce(z.dim, e.location);
           }
         } catch (err) { z.captured.delete(id); }
       }
     }
-    if (now % 20 === 0) {
-      const col = ZONE_COLORS[z.kind] || COLORS.gold;
-      ring(z.dim, z.c, z.r, 18, now * 0.03, z.kind === "weight" ? COLORS.gold : col, 0.2);
-    }
+    // حدود كل قانون بجزيء يناسبه (الثقل: غبار حصى وحروف تنزل، الصمت: دخان وحبر، الانعكاس: لمعات، الحدود: سياج بوابة ولمعات)
+    if (now % 10 === 0) LAW.border(z.dim, z.kind, z.c, z.r, now);
   }
 }, 5);
 
@@ -2371,7 +2364,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
       if (hp) hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + ev.damage * 0.5));
       sfx(victim.dimension, "sh.reflect", victim.location, 1);
       popShape(attacker.dimension, "mirror", headPos(attacker), 0.5, 1.5, 6, { yaw: yawOf(attacker.location, victim.location) });
-      burst(attacker.dimension, headPos(attacker), 10, COLORS.white, 3);
+      LAW.reflectHit(attacker.dimension, { x: victim.location.x, y: victim.location.y + 1.1, z: victim.location.z }, headPos(attacker));
     } finally { reflecting = false; }
   } catch (e) { reflecting = false; }
 });
@@ -2388,9 +2381,8 @@ const SKILL_FN = {
       setNum(t, 10);
       numOwners.set(t.id, { e: t, pid: p.id });
       try { t.addEffect("slowness", 60, { amplifier: 0, showParticles: false }); } catch (e) { /* */ }
-      popShape(t.dimension, "echo_glyph", headPos(t), 0.4, 1.4, 8, { s: 400 });
-      burst(t.dimension, headPos(t), 10, COLORS.gold, 2);
-    });
+      ACCOUNT.stamp(t.dimension, headPos(t));
+    }, 1.1, (pos, i) => ACCOUNT.shotTrail(p.dimension, pos, i));
     notify(p, "§6The number drops every two seconds and every hit lowers it. At zero it collapses", 70);
     return true;
   },
@@ -2402,11 +2394,12 @@ const SKILL_FN = {
     symbolShot(p, t, "sym_minus", () => {
       if (!valid(t)) return;
       popShape(t.dimension, "sym_minus", { ...headPos(t), y: headPos(t).y + 0.3 }, 1.0, 1.8, 6, { s: 300 });
+      ACCOUNT.minus(t.dimension, headPos(t));
       const n = t.getDynamicProperty("sh_num");
       if (typeof n !== "number") { setNum(t, 7); numOwners.set(t.id, { e: t, pid: p.id }); }
       else decNum(t, 3, p);
       hurt(t, 2, p);
-    }, 1.3);
+    }, 1.3, (pos, i) => ACCOUNT.shotTrail(p.dimension, pos, i));
     return true;
   },
   weight(p) {
@@ -2419,7 +2412,7 @@ const SKILL_FN = {
     tween(6, 1, (k) => moveShape(w, { x: c.x, y: c.y + 9 * (1 - k * k), z: c.z }), () => {
       shake(p, 0.22, 0.3);
       sfx(dim, "sh.guard_slam", c, 1.2, 0.7);
-      waveFx(dim, c, 6, 5, 10);
+      LAW.weightSlam(dim, c, 6);
       rockBurst(dim, c, 5, 1.2);
       for (const e of enemiesNear(dim, c, 6, p.id)) { hurt(e, 3, p); try { e.applyKnockback({ x: 0, z: 0 }, -0.6); } catch (err) { /* */ } }
     });
@@ -2430,7 +2423,7 @@ const SKILL_FN = {
     sfx(p.dimension, "sh.silence", p.location, 1.1);
     const lock = shapeFx(p.dimension, "padlock", { x: z.c.x, y: z.c.y + 3.2, z: z.c.z }, { r: 1.6, s: 70, life: 104 });
     if (lock) z.shapes.push(lock);
-    ring(p.dimension, p.location, 8, 24, 0, COLORS.blue, 0.22);
+    LAW.silenceCast(p.dimension, z.c, 8);
     return true;
   },
 };
@@ -2464,11 +2457,12 @@ Object.assign(SKILL_FN, {
     clearNum(t);
     const a = headPos(t), b = headPos(o);
     const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, l = Math.hypot(dx, dy, dz) || 1;
-    flyShape(t.dimension, `digit_${String(n)[0]}`, a, { x: dx / l, y: dy / l, z: dz / l }, 0.9, l, { r: 0.85, s: 500 }, undefined, () => {
+    let k = 0;
+    flyShape(t.dimension, `digit_${String(n)[0]}`, a, { x: dx / l, y: dy / l, z: dz / l }, 0.9, l, { r: 0.85, s: 500 }, (pos) => { ACCOUNT.shotTrail(t.dimension, pos, k++); }, () => {
       if (!valid(o)) return;
       setNum(o, n);
       numOwners.set(o.id, { e: o, pid: p.id });
-      burst(o.dimension, headPos(o), 12, COLORS.gold, 2.5);
+      ACCOUNT.arrive(o.dimension, headPos(o));
     });
     sfx(p.dimension, "sh.transfer", p.location);
     return true;
@@ -2483,11 +2477,13 @@ Object.assign(SKILL_FN, {
     if (!o) { notify(p, "§cNo other enemy nearby", 40); return false; }
     const a = Math.ceil(n / 2), b = Math.floor(n / 2);
     popShape(t.dimension, "sym_divide", { ...headPos(t), y: headPos(t).y + 0.4 }, 0.6, 1.8, 10, { s: 360 });
+    ACCOUNT.split(t.dimension, t.location, headPos(t), { x: t.location.x - p.location.x, y: 0, z: t.location.z - p.location.z });
     later(8, () => {
       if (valid(t)) { setNum(t, a); numOwners.set(t.id, { e: t, pid: p.id }); }
       if (valid(o) && valid(t)) {
         const A = headPos(t), B = headPos(o), dx = B.x - A.x, dy = B.y - A.y, dz = B.z - A.z, l = Math.hypot(dx, dy, dz) || 1;
-        flyShape(t.dimension, `digit_${String(b)[0]}`, A, { x: dx / l, y: dy / l, z: dz / l }, 0.9, l, { r: 0.7, s: 500 }, undefined, () => {
+        let k = 0;
+        flyShape(t.dimension, `digit_${String(b)[0]}`, A, { x: dx / l, y: dy / l, z: dz / l }, 0.9, l, { r: 0.7, s: 500 }, (pos) => { ACCOUNT.shotTrail(t.dimension, pos, k++); }, () => {
           if (valid(o)) { setNum(o, b); numOwners.set(o.id, { e: o, pid: p.id }); }
         });
       }
@@ -2503,11 +2499,11 @@ Object.assign(SKILL_FN, {
     // صفر ذهبي عملاق ينزل من فوق ويسحق الهدف
     const top = { x: t.location.x, y: t.location.y + 6, z: t.location.z };
     const z0 = shapeFx(t.dimension, "digit_0", top, { r: 2.4, yaw: yawOf(t.location, p.location), life: 16 });
-    tween(8, 1, (k) => moveShape(z0, { x: t.location.x, y: top.y - 5.0 * k * k, z: t.location.z }), () => {
+    tween(8, 1, (k) => { const zp = { x: t.location.x, y: top.y - 5.0 * k * k, z: t.location.z }; moveShape(z0, zp); ACCOUNT.zeroFall(t.dimension, { x: zp.x, y: zp.y + 1.2, z: zp.z }); }, () => {
       if (!valid(t)) return;
       shake(p, 0.18, 0.25);
       rockBurst(t.dimension, t.location, 4, 1);
-      waveFx(t.dimension, t.location, 3, 0, 8);
+      ACCOUNT.zeroSlam(t.dimension, t.location);
       const n = numberOf(t);
       if (n === undefined || n <= 5) collapse(t, p);
       else { decNum(t, 5, p); hurt(t, 4, p); }
@@ -2521,6 +2517,7 @@ Object.assign(SKILL_FN, {
     sfx(p.dimension, "sh.reflect", p.location, 1.1);
     // 3 مرايا تدور حولك طول مدة القانون
     const mirrors = [0, 1, 2].map(() => shapeFx(p.dimension, "mirror", p.location, { r: 1.1, life: 144 })).filter(Boolean);
+    LAW.reflectCast(p.dimension, p.location);
     z.shapes.push(...mirrors);
     let t = 0;
     z.orbit = system.runInterval(() => {
@@ -2546,6 +2543,7 @@ Object.assign(SKILL_FN, {
       const pos = { x: z.c.x + Math.cos(a) * 6.6, y: z.c.y, z: z.c.z + Math.sin(a) * 6.6 };
       const e = shapeFx(p.dimension, "rune_pillar", { ...pos, y: pos.y - 2.6 }, { r: 1.0, yaw: i * 45, life: 162 });
       if (e) { z.shapes.push(e); tween(10, 1, (k) => moveShape(e, { ...pos, y: pos.y - 2.6 * (1 - k) })); }
+      later(i, () => LAW.pillarRise(p.dimension, pos));
     }
     rockBurst(p.dimension, p.location, 3, 0.8);
     return true;
@@ -2570,11 +2568,11 @@ Object.assign(SKILL_FN, {
     tween(7, 1, (k) => setShape(g, "sh:p", -35 + 120 * k * k), () => {
       sfx(dim, "sh.guard_slam", at, 1.3, 0.8);
       shake(p, 0.25, 0.4);
-      waveFx(dim, at, 7, 0, 12);
+      LAW.gavelSlam(dim, at);
       rockBurst(dim, at, 5, 1.1);
-      popShape(dim, "echo_glyph", { x: at.x, y: at.y + 0.2, z: at.z }, 1, 3, 10, { p: 90, s: 200 });
     });
     try {
+      LAW.absoluteLaw(dim, r.selection, p.location);
       if (r.selection === 0) {
         p.addEffect("resistance", 100, { amplifier: 4, showParticles: false });
       } else if (r.selection === 1) {
@@ -2582,6 +2580,7 @@ Object.assign(SKILL_FN, {
           e.addEffect("slowness", 100, { amplifier: 4, showParticles: false });
           e.addEffect("weakness", 100, { amplifier: 2, showParticles: false });
           followShape(e, "weight", 100, { r: 0.35, dy: 0.5 });
+          LAW.heavyOn(dim, headPos(e));
         }
       } else {
         p.addEffect("strength", 100, { amplifier: 2, showParticles: false });
@@ -2599,7 +2598,9 @@ Object.assign(SKILL_FN, {
     const from = { ...t.location };
     // سهم أزرق يطلع من الهدف باتجاهك، والهدف ينسحب من بوابة لبوابة
     popShape(dim, "arrow_blue", { x: from.x, y: from.y + 1.2, z: from.z }, 0.6, 1.4, 6, { yaw: yawOf(from, p.location) });
-    portalFx(dim, from, 2, 1.4, from, p.location);
+    // شق مكاني (بوابة + نَفَس تنين) عند الهدف، وحبل مكاني منه لك
+    SPACE.rift(dim, from, { x: p.location.x - from.x, y: 0, z: p.location.z - from.z }, 1.1, 9);
+    SPACE.tether(dim, { x: from.x, y: from.y + 1.1, z: from.z }, { x: p.location.x, y: p.location.y + 1.1, z: p.location.z });
     const dest = { x: p.location.x + d.x * 2.2, y: p.location.y, z: p.location.z + d.z * 2.2 };
     later(4, () => {
       if (!valid(t)) return;
@@ -2607,7 +2608,8 @@ Object.assign(SKILL_FN, {
         const dx = p.location.x - t.location.x, dz = p.location.z - t.location.z, l = Math.hypot(dx, dz) || 1;
         try { t.applyKnockback({ x: (dx / l) * 3, z: (dz / l) * 3 }, 0.3); } catch (e) { /* */ }
       }
-      portalFx(dim, dest, 2, 1.2, from, p.location);
+      SPACE.implode(dim, { x: from.x, y: from.y + 1, z: from.z }, 1.4, 10);
+      SPACE.arriveBurst(dim, { x: t.location.x, y: t.location.y + 1, z: t.location.z });
       popShape(dim, "space_cube", { x: t.location.x, y: t.location.y + 1, z: t.location.z }, 1.0, 0.1, 8, { s: 600 });
       try { t.addEffect("slowness", 30, { amplifier: 2, showParticles: false }); } catch (e) { /* */ }
     });
@@ -2620,14 +2622,16 @@ Object.assign(SKILL_FN, {
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     sfx(p.dimension, "sh.push", p.location);
     shake(p, 0.08, 0.12);
-    portalFx(p.dimension, { x: p.location.x, y: p.location.y, z: p.location.z }, 2, 1.2, p.location, t.location);
+    const pd = { x: t.location.x - p.location.x, y: 0, z: t.location.z - p.location.z }, pl = Math.hypot(pd.x, pd.z) || 1;
+    const pdir = { x: pd.x / pl, y: 0, z: pd.z / pl };
+    SPACE.rift(p.dimension, { x: p.location.x + pdir.x * 0.8, y: p.location.y, z: p.location.z + pdir.z * 0.8 }, pdir, 0.9, 6);
     symbolShot(p, t, "arrow_blue", () => {
       if (!valid(t)) return;
       pushAway(p.location, t, 6, 0.6);
       hurt(t, 3, p);
-      popShape(t.dimension, "sound_ring", headPos(t), 0.4, 1.8, 6, { yaw: yawOf(p.location, t.location) });
-      burst(t.dimension, headPos(t), 10, COLORS.white, 3);
-    }, 1.6);
+      // كبش مكاني: حلقات بوابة تكبر باتجاه الدفع + نفخة
+      SPACE.ram(t.dimension, center3(t), pdir);
+    }, 1.6, (pos, i) => { if (i % 2 === 0) vP(p.dimension, pos, PT.portal, {}); });
     return true;
   },
   swap(p) {
@@ -2635,7 +2639,9 @@ Object.assign(SKILL_FN, {
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     const a = { ...p.location }, b = { ...t.location };
     try { p.teleport(b, { facingLocation: a }); t.teleport(a); } catch (e) { return false; }
-    portalFx(p.dimension, a, 2, 1.4, a, b); portalFx(p.dimension, b, 2, 1.4, a, b);
+    // لولب مزدوج (بوابة + End Rod) بين المكانين، وشق مكاني بكل مكان
+    SPACE.swap(p.dimension, a, b);
+    SPACE.rift(p.dimension, a, { x: b.x - a.x, y: 0, z: b.z - a.z }, 1.1, 9); SPACE.rift(p.dimension, b, { x: a.x - b.x, y: 0, z: a.z - b.z }, 1.1, 9);
     for (const q of [a, b]) popShape(p.dimension, "space_cube", { x: q.x, y: q.y + 1, z: q.z }, 1.4, 0.2, 10, { s: -500 });
     shapeFx(p.dimension, "arrow_blue", { x: a.x, y: a.y + 2.2, z: a.z }, { r: 1, yaw: yawOf(a, b), life: 10 });
     shapeFx(p.dimension, "arrow_blue", { x: b.x, y: b.y + 2.2, z: b.z }, { r: 1, yaw: yawOf(b, a), life: 10 });
@@ -2651,13 +2657,12 @@ Object.assign(SKILL_FN, {
     const dest = { x: t.location.x - (dx / l) * 1.8, y: t.location.y, z: t.location.z - (dz / l) * 1.8 };
     // المكان ينطوي: مكعب يتقلص مكانك ويتوسع جنب الهدف
     popShape(p.dimension, "space_cube", { x: start.x, y: start.y + 1, z: start.z }, 1.6, 0.1, 6, { s: 900 });
-    portalFx(p.dimension, start, 2, 1.5, start, t.location, 20);
     safeTeleport(p, dest, t.location);
-    portalFx(p.dimension, dest, 2, 1.5, start, t.location, 20);
+    // المكان ينطوي: انضمام بمكانك، خط تجعيدة أبيض ونَفَس تنين لحد الهدف، وانفلاق بوابة عنده
+    SPACE.fold(p.dimension, start, dest, center3(t));
     popShape(p.dimension, "space_cube", headPos(t), 0.2, 1.8, 6, { s: -900 });
     hurt(t, 9, p);
     pushAway(p.location, t, 1.2, 0.3);
-    burst(t.dimension, headPos(t), 14, COLORS.blue, 3.5, 0.24);
     sfx(p.dimension, "sh.fold", t.location, 1.1);
     shake(p, 0.15, 0.15);
     return true;
@@ -2667,7 +2672,7 @@ Object.assign(SKILL_FN, {
     if (list.length === 0) { notify(p, "§cNo enemies nearby", 40); return false; }
     const d = flatDir(p), dim = p.dimension;
     const c = { x: p.location.x + d.x * 5, y: p.location.y, z: p.location.z + d.z * 5 };
-    portalFx(dim, c, 2, 3.2, p.location, c, 50);
+    SPACE.collapseCharge(dim, c);
     sfx(dim, "sh.spacecollapse", p.location, 1.3);
     shake(p, 0.25, 0.5);
     // مكعب فضاء ضخم ينطوي على نفسه ويسحب الأعداء لنقطة وحدة
@@ -2678,8 +2683,7 @@ Object.assign(SKILL_FN, {
       hurt(e, 5, p);
     }
     later(16, () => {
-      popShape(dim, "nova", { x: c.x, y: c.y + 1.2, z: c.z }, 0.3, 2.2, 8, { s: 300 });
-      burst(dim, c, 20, COLORS.white, 4, 0.3);
+      SPACE.collapseBoom(dim, c);
       for (const e of enemiesNear(dim, c, 4, p.id)) hurt(e, 6, p);
       rockBurst(dim, c, 5, 1.2);
     });
@@ -2690,8 +2694,10 @@ Object.assign(SKILL_FN, {
   echostrike(p) {
     echoReady.set(p.id, { until: system.currentTick + 160 });
     sfx(p.dimension, "sh.echostrike", p.location);
-    popShape(p.dimension, "sound_ring", { x: p.location.x, y: p.location.y + 0.2, z: p.location.z }, 0.6, 2.4, 10, { p: 90 });
-    followShape(p, "echo_glyph", 160, { r: 0.45, s: 220, feet: true, dy: 2.4 });
+    // حلقات الـShrieker تصعد وراك (4 ثواني، وتنعاد مرة ثانية لو الصدى بعده جاهز) + نوتات وسكلك حولك
+    const back = () => { const d0 = flatDir(p); return { x: p.location.x - d0.x * 0.7, y: p.location.y, z: p.location.z - d0.z * 0.7 }; };
+    ECHO.strikeArm(p.dimension, back());
+    later(80, () => { const er = echoReady.get(p.id); if (er && valid(p) && system.currentTick <= er.until) vP(p.dimension, { ...back(), y: p.location.y + 0.1 }, PT.shriek, { eye: 0 }); });
     notify(p, "§3Your next hit will echo", 50);
     return true;
   },
@@ -2699,16 +2705,18 @@ Object.assign(SKILL_FN, {
     const t = raycastTarget(p, 24);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     echoMarks.set(t.id, { sum: 0 });
-    followShape(t, "echo_glyph", 100, { r: 0.9, s: 160, dy: 0.9 });
-    symbolShot(p, t, "sound_ring", undefined, 1.4);
+    // نبضة سكلك تمشي من صدرك للهدف، وتختمه بحلقات Shrieker، وبعدها حلقة شحنات سكلك تدور على صدره لحد الانفجار
+    const dimE = p.dimension;
+    ECHO.pulseTo(dimE, { x: p.location.x, y: p.location.y + 1.3, z: p.location.z }, center3(t), () => { if (valid(t)) ECHO.sealMark(t.dimension, center3(t)); });
+    let tk = 0;
+    const hm = system.runInterval(() => { try { tk += 5; if (!valid(t) || tk >= 100 || !echoMarks.has(t.id)) { system.clearRun(hm); return; } ECHO.sealTick(t.dimension, center3(t), tk); } catch (e) { system.clearRun(hm); } }, 5);
     sfx(p.dimension, "sh.echoseal", p.location);
     system.runTimeout(() => {
       const m = echoMarks.get(t.id);
       echoMarks.delete(t.id);
       if (!m || !valid(t)) return;
       hurt(t, Math.max(4, m.sum), p);
-      for (const [pp, yy] of [[0, 0], [0, 90], [90, 0]]) popShape(t.dimension, "sound_ring", center3(t), 0.5, 3.0, 9, { p: pp, yaw: yy });
-      burst(t.dimension, headPos(t), 16, POWER_COLOR.echo, 4, 0.26);
+      ECHO.sealBlast(t.dimension, center3(t));
       sfx(t.dimension, "sh.echoseal", t.location, 1.2, 0.7);
     }, 100);
     return true;
@@ -2729,13 +2737,11 @@ Object.assign(SKILL_FN, {
   },
   echowave(p) {
     const d = flatDir(p), c = { ...p.location }, dim = p.dimension;
-    const wave = (dmg, rmax, pitch) => {
+    const wave = (dmg, rmax, pitch, k0) => {
       sfx(dim, "sh.echowave", c, 1, pitch);
       shake(p, 0.12, 0.15);
-      // حلقة صوت عملاقة تطير قدامك وتكبر
-      const from = { x: c.x + d.x * 1.2, y: c.y + 1.1, z: c.z + d.z * 1.2 };
-      const e = flyShape(dim, "sound_ring", from, { x: d.x, y: 0, z: d.z }, 0.9, rmax, { r: 0.8 });
-      tween(Math.ceil(rmax / 0.9), 1, (k) => setShape(e, "sh:r", 0.8 + k * 3.2));
+      // جبهة موجة صوتية (قوس 80°) تتقدم قدامك: نوتات وسكلك، وحلقة Warden كل 3 تكات بنصها
+      ECHO.wave(dim, c, { x: d.x, y: 0, z: d.z }, rmax, k0);
       for (const e2 of enemiesNear(dim, c, rmax, p.id)) {
         const vx = e2.location.x - c.x, vz = e2.location.z - c.z, l = Math.hypot(vx, vz) || 1;
         if ((vx / l) * d.x + (vz / l) * d.z < 0.64) continue;
@@ -2743,12 +2749,12 @@ Object.assign(SKILL_FN, {
           if (!valid(e2)) return;
           hurt(e2, dmg, p);
           pushAway(c, e2, 1.6, 0.35);
-          burst(dim, headPos(e2), 8, POWER_COLOR.echo, 2.5);
+          ECHO.hit(dim, center3(e2), k0);
         });
       }
     };
-    wave(7, 12, 1);
-    later(10, () => { if (valid(p)) wave(4, 14, 0.8); });
+    wave(7, 12, 1, 0);
+    later(10, () => { if (valid(p)) wave(4, 14, 0.8, 2); });
     return true;
   },
   chorus(p) {
@@ -2759,12 +2765,12 @@ Object.assign(SKILL_FN, {
         if (!valid(p)) return;
         shake(p, 0.2, 0.3);
         sfx(p.dimension, "sh.chorus", p.location, 1.1, 1 + i * 0.15);
-        // حلقة صوت أرضية تتوسع لحد نصف القطر
-        popShape(p.dimension, "sound_ring", { x: p.location.x, y: p.location.y + 0.4 + i * 0.4, z: p.location.z }, 1, r / 0.9, 12, { p: 90, ease: "out" });
+        // حلقة Warden عليك + موجة أرضية من النوتات والسكلك تتوسع لحد نصف القطر (كل نبضة بلون نوتة)
+        ECHO.chorusPulse(p.dimension, p.location, r, i);
         for (const e of enemiesNear(p.dimension, p.location, r, p.id)) {
           hurt(e, dmgs[i], p);
           pushAway(p.location, e, 1.4, 0.3);
-          burst(e.dimension, headPos(e), 6, POWER_COLOR.echo, 3);
+          ECHO.chorusHit(e.dimension, center3(e), i);
         }
       }, i * 20);
     });
@@ -2778,7 +2784,6 @@ Object.assign(SKILL_FN, {
     try { p.addEffect("resistance", 120, { amplifier: 2, showParticles: false }); p.addEffect("slowness", 120, { amplifier: 0, showParticles: false }); } catch (e) { return false; }
     sfx(p.dimension, "sh.guard_slam", p.location, 0.8, 1.4);
     bodyShell(p, 0, 120);
-    rockBurst(p.dimension, p.location, 3, 0.7);
     notify(p, "§7Your body turned to iron: high resistance for 6 seconds", 60);
     return true;
   },
@@ -2790,11 +2795,13 @@ Object.assign(SKILL_FN, {
     const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, l = Math.hypot(dx, dy, dz) || 1;
     const d = { x: dx / l, y: dy / l, z: dz / l };
     sfx(p.dimension, "sh.push", p.location, 1, 0.6);
-    flyShape(p.dimension, "iron_fist", { x: from.x + d.x * 0.8, y: from.y + d.y * 0.8, z: from.z + d.z * 0.8 }, d, 1.3, Math.max(1, l - 0.9), { r: 1.5 }, undefined, () => {
+    const launch = { x: from.x + d.x * 0.8, y: from.y + d.y * 0.8, z: from.z + d.z * 0.8 };
+    IRON.fistLaunch(p.dimension, launch, d);
+    flyShape(p.dimension, "iron_fist", launch, d, 1.3, Math.max(1, l - 0.9), { r: 1.5 }, (pos) => { IRON.fistTrail(p.dimension, pos, d); }, () => {
       if (!valid(t)) return;
       hurt(t, 10, p);
       pushAway(p.location, t, 2.8, 0.5);
-      waveFx(t.dimension, t.location, 3, 4, 8);
+      IRON.fistImpact(t.dimension, center3(t), d, t.location);
       groundBreak(t.dimension, t.location, 3, { cracks: 6, ttl: 160 });
       popShape(t.dimension, "iron_fist", center3(t), 1.5, 2.2, 4, { yaw: dirYaw(d) });
       sfx(p.dimension, "sh.cleaver_hit", t.location, 1.1, 0.7);
@@ -2806,19 +2813,18 @@ Object.assign(SKILL_FN, {
   windrun(p) {
     try { p.addEffect("speed", 100, { amplifier: 2, showParticles: false }); } catch (e) { return false; }
     sfx(p.dimension, "sh.push", p.location, 0.8, 1.5);
-    // إعصار صغير يلف حول رجليك، وشفرات ريح تتخلف وراك وانت تركض
-    followShape(p, "tornado", 100, { r: 0.45, s: 900, feet: true, dy: 0 });
-    popShape(p.dimension, "wind_crescent", { x: p.location.x, y: p.location.y + 0.3, z: p.location.z }, 0.6, 2.2, 8, { p: 0, s: 600 });
+    // انفجار شحنة ريح حقيقي عند رجليك، وبعدها دوامات ريح صغيرة ودخان أبيض يتخلف وراك وانت تركض (كل 3 تكات، وانفجار ريح كل 12)
+    WIND.runStart(p.dimension, p.location);
     let t = 0;
     const h = system.runInterval(() => {
       try {
-        t += 6;
+        t += 3;
         if (!valid(p) || t > 100) { system.clearRun(h); return; }
         const d = flatDir(p), v = p.getVelocity();
         if (Math.hypot(v.x, v.z) < 0.05) return;
-        popShape(p.dimension, "wind_crescent", { x: p.location.x - d.x * 1.2, y: p.location.y + 0.8, z: p.location.z - d.z * 1.2 }, 1.0, 0.3, 10, { yaw: dirYaw({ ...d, y: 0 }) });
+        WIND.runTrail(p.dimension, p.location, d, t % 12 === 0);
       } catch (e) { system.clearRun(h); }
-    }, 6);
+    }, 3);
     return true;
   },
   windleap(p) {
@@ -2827,7 +2833,8 @@ Object.assign(SKILL_FN, {
       p.applyKnockback({ x: d.x * 2.6, z: d.z * 2.6 }, 0.9);
       p.addEffect("slow_falling", 80, { amplifier: 0, showParticles: false });
     } catch (e) { return false; }
-    popShape(p.dimension, "wind_crescent", { x: p.location.x, y: p.location.y + 0.2, z: p.location.z }, 0.8, 2.4, 8, { yaw: dirYaw({ x: d.x, y: 0, z: d.z }) + 180 });
+    WIND.leapLaunch(p.dimension, p.location);
+    for (let i = 2; i <= 16; i += 2) later(i, () => { if (valid(p)) WIND.leapTrail(p.dimension, p.location); });
     wingsOn(p, 40);
     sfx(p.dimension, "sh.push", p.location, 1, 1.3);
     return true;
@@ -2835,15 +2842,12 @@ Object.assign(SKILL_FN, {
   gale(p) {
     const dim = p.dimension;
     const list = enemiesNear(dim, p.location, 7, p.id);
-    popShape(dim, "tornado", p.location, 0.8, 1.9, 14, { s: 1100 });
-    // 8 شفرات ريح تطير للخارج من حولك
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2, d = { x: Math.cos(a), y: 0, z: Math.sin(a) };
-      flyShape(dim, "wind_crescent", { x: p.location.x + d.x, y: p.location.y + 1, z: p.location.z + d.z }, d, 0.7, 7, { r: 1.1 });
-    }
+    // انفجار ريح البريز الكبير بالمنتصف، و3 حلقات من انفجارات شحنة الريح تتوسع، وغبار أرضي ودخان
+    WIND.gale(dim, p.location);
     for (const e of list) {
       hurt(e, 3, p);
       pushAway(p.location, e, 2.6, 0.55);
+      WIND.galeHit(dim, center3(e));
     }
     sfx(dim, "sh.push", p.location, 1.3, 0.8);
     shake(p, 0.18, 0.3);
@@ -2854,9 +2858,13 @@ Object.assign(SKILL_FN, {
     const list = enemiesNear(p.dimension, p.location, 9, p.id);
     if (list.length === 0) { notify(p, "§cNo enemies nearby", 40); return false; }
     const dim = p.dimension;
-    spawnFx(dim, "circle", p.location, 0, 9, 66);
+    spawnFx(dim, "circle", p.location, 6, 9, 66);            // دائرة الساعة (ميناء 60 علامة + عقربين)
     // ساعة كبيرة فوقك عقاربها تدور، وساعة صغيرة فوق كل عدو متجمد
     shapeFx(dim, "clock", { x: p.location.x, y: p.location.y + 3.4, z: p.location.z }, { r: 2.2, s: 40, life: 62 });
+    // حروف السحر تنسحب للساعة، موجة لمعات وثلج، والمتجمدين يتساقط عليهم ثلج، ونبضة "تك" كل ثانية
+    LAW.timeCast(dim, { x: p.location.x, y: p.location.y + 3.4, z: p.location.z }, p.location, 9);
+    { let tt = 0; const at0 = { ...p.location };
+      const th = system.runInterval(() => { try { tt += 10; if (tt > 60) { system.clearRun(th); return; } for (const e of list) if (valid(e)) LAW.frozen(dim, headPos(e)); if (tt % 20 === 0) LAW.tick(dim, at0, 9); } catch (err) { system.clearRun(th); } }, 10); }
     for (const e of list) {
       try {
         e.addEffect("slowness", 60, { amplifier: 9, showParticles: false });
@@ -2994,22 +3002,11 @@ function weaponAuraTick(p, id, lv, t, strong) {
   const a = WEAPON_AURA[id];
   if (!a) return;
   const dim = p.dimension, n = strong ? 3 : lv >= 5 ? 3 : lv >= 3 ? 2 : 1;
+  // كل سلاح بجزيء ماينكرافت يناسبه: ذهب يلف (خنجر)، لهب حقيقي (ساطور)، لمعات End Rod (سيف القسم)، ريح زرقاء (سيف الظل)،
+  // نجوم خضر (مطرقة)، غبار أحمر (رمح)، نَفَس تنين (مخالب)
   for (let i = 0; i < n; i++) {
     const u = Math.random(), b = weaponAuraPoint(p, id, id === "sh:stone_maul" ? 0.85 + u * 0.15 : u);
-    const col = a.cols[Math.floor(Math.random() * a.cols.length)];
-    if (a.style === "swirl" || a.style === "wind") {
-      const ang = t * (a.style === "wind" ? 0.9 : 0.5) + i * 2.1, r = a.style === "wind" ? 0.32 : 0.22;
-      pix(dim, { x: b.x + Math.cos(ang) * r, y: b.y + (a.style === "wind" ? 0.05 : 0.1), z: b.z + Math.sin(ang) * r }, { color: col, size: 0.14, life: 0.5, speed: a.style === "wind" ? 0.9 : 0.2, rise: 0.2, eye: 0.7 });
-    } else if (a.style === "flame") {
-      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.15, y: b.y + 0.05, z: b.z + (Math.random() - 0.5) * 0.15 }, { color: col, size: 0.17, life: 0.55, speed: 0.15, rise: 1.4, eye: 0.7 });
-    } else if (a.style === "sparkle") {
-      // نجيمات بيضاء: تلمع وتختفي بسرعة بأماكن عشوائية على النصل
-      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.3, y: b.y, z: b.z + (Math.random() - 0.5) * 0.3 }, { color: col, size: 0.12 + Math.random() * 0.06, life: 0.35, speed: 0.05, rise: 0.1, eye: 0.7 });
-    } else if (a.style === "runes") {
-      pix(dim, b, { color: col, size: 0.13, life: 0.7, speed: 0.1, rise: 0.3, eye: 0.7 });
-    } else {
-      pix(dim, { x: b.x + (Math.random() - 0.5) * 0.5, y: b.y + (Math.random() - 0.5) * 0.4, z: b.z + (Math.random() - 0.5) * 0.5 }, { color: col, size: 0.15, life: 0.8, speed: 0.15, rise: 0.5, eye: 0.7 });
-    }
+    WEAPON.aura(dim, id, b, t, i);
   }
 }
 function weaponAuraBurst(p, id, ticks) {
@@ -3046,8 +3043,7 @@ function lanceStrike(p, x, z, dmg, delay = 0) {
     dropShape(dim, "light_lance", x, y, z, 1.25, 4, 10);
     later(4, () => {
       for (const e of enemiesNear(dim, { x, y, z }, 1.9, p.id)) { hurt(e, dmg, p); effect(e, "weakness", 50, 0); }
-      burst(dim, { x, y: y + 0.4, z }, 14, [1, 0.93, 0.7], 3.5);
-      ring(dim, { x, y, z }, 1.4, 14, 0, [1, 0.95, 0.8], 0.2);
+      WEAPON.lanceHit(dim, { x, y, z });
       sfx(dim, "sh.kat_wave", { x, y, z }, 0.7, 1.9);
     });
   });
@@ -3060,7 +3056,7 @@ function ghostSword(p, x, z, dmg, delay = 0, r = 1.2) {
     dropShape(dim, "ghost_sword", x, y, z, r, 3, 12);
     later(3, () => {
       if (dmg > 0) for (const e of enemiesNear(dim, { x, y, z }, 1.7, p.id)) hurt(e, dmg, p);
-      burst(dim, { x, y: y + 0.3, z }, 10, [0.7, 0.45, 1], 3);
+      WEAPON.ghostLand(dim, { x, y, z });
       sfx(dim, "sh.dagger_hit", { x, y, z }, 0.7, 0.7);
     });
   });
@@ -3075,12 +3071,8 @@ const WEAPON_SKILLS = {
         try { e.setOnFire(4, true); } catch (err) { /* */ }
         pushAway(o, e, 1.0, 0.3);
       }
-      popShape(dim, "slash_fire", { x: o.x + d.x * 1.4, y: o.y + 1.0, z: o.z + d.z * 1.4 }, 1.0, 2.6, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, ease: "out" });
-      later(2, () => popShape(dim, "slash_fire", { x: o.x + d.x * 1.8, y: o.y + 0.6, z: o.z + d.z * 1.8 }, 0.8, 2.2, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, a: 12, ease: "out" }));
-      for (let i = 0; i < 12; i++) {
-        const a = Math.atan2(d.z, d.x) - 1.0 + Math.random() * 2.0, r = 1.6 + Math.random() * 2.6;
-        pix(dim, { x: o.x + Math.cos(a) * r, y: o.y + 0.8 + Math.random(), z: o.z + Math.sin(a) * r }, { color: i % 3 ? COLORS.orange : COLORS.gold, size: 0.2, life: 0.8, speed: 1.6, rise: 1.6 });
-      }
+      // هلالين نار حقيقية (لهب المشعل يتحرك مع الشطرة) + ألسنة لهب كبيرة وجمرات ودخان نار
+      WEAPON.emberArc(dim, o, d);
       sfx(dim, "sh.cleaver_hit", o, 1.2, 0.7);
       shake(p, 0.15, 0.2);
       return true;
@@ -3088,11 +3080,11 @@ const WEAPON_SKILLS = {
     { name: "Inferno Spin", cd: 240, desc: "Spin: a ring of fire hits everything around you", fn(p) {
       const dim = p.dimension;
       effect(p, "resistance", 20, 1);
-      const r1 = shapeFx(dim, "slash_fire", { x: p.location.x, y: p.location.y + 1.0, z: p.location.z }, { r: 2.6, p: 90, s: 1500, life: 14 });
-      const r2 = shapeFx(dim, "slash_fire", { x: p.location.x, y: p.location.y + 0.5, z: p.location.z }, { r: 2.2, p: 90, s: -1300, yaw: 180, life: 14 });
-      tween(12, 1, () => { moveShape(r1, { x: p.location.x, y: p.location.y + 1.0, z: p.location.z }); moveShape(r2, { x: p.location.x, y: p.location.y + 0.5, z: p.location.z }); });
+      // حلقتين نار تلف حولك بعكس بعض (تترسم كل تك) وبكل ضربة حلقة لهب أرضية وجمرات
+      tween(12, 1, (k, tt) => { if (valid(p)) WEAPON.infernoSpin(dim, p.location, tt); });
       for (const k of [0, 6]) later(k, () => {
         if (!valid(p)) return;
+        WEAPON.infernoBurst(dim, p.location);
         sfx(dim, "sh.cleaver_hit", p.location, 1.1, 0.8 + k * 0.05);
         for (const e of enemiesNear(dim, p.location, 5.2, p.id)) {
           hurt(e, 6, p);
@@ -3111,7 +3103,7 @@ const WEAPON_SKILLS = {
       hurt(t, 3, p);
       effect(t, "slowness", 100, 2);
       effect(t, "weakness", 100, 0);
-      symbolShot(p, t, "arrow_gold", undefined, 1.6);
+      symbolShot(p, t, "arrow_gold", () => { if (valid(t)) WEAPON.sunBind(t.dimension, t.location); }, 1.6, (pos, i) => vP(p.dimension, pos, PT.wax, { c: [1, 0.85, 0.35] }));
       // 3 سلاسل ضوء تلف حول العدو بعكس بعض
       [[0.3, 260], [1.0, -320], [1.7, 240]].forEach(([dy, sp]) => followShape(t, "sun_chain", 100, { r: 0.9, s: sp, feet: true, dy }));
       sfx(p.dimension, "sh.dagger_hit", p.location, 1, 1.5);
@@ -3128,9 +3120,9 @@ const WEAPON_SKILLS = {
         if (!valid(t) || !valid(p)) return;
         const last = i === 5;
         hurt(t, last ? 9 : 3, p);
-        slashOn(t.dimension, "slash_gold", center3(t), p.location, Math.random() * 360, last ? 1.6 : 0.8);
+        WEAPON.stab(t.dimension, center3(t), p.location, i, last);           // هلال ذهبي صغير بزاوية مختلفة كل طعنة، والأخيرة انفجار شرار ذهبي
         sfx(t.dimension, "sh.dagger_hit", t.location, 1, 1.2 + i * 0.08);
-        if (last) { popShape(t.dimension, "star5", center3(t), 0.4, 1.6, 7, { yaw: yawOf(t.location, p.location), w: 400 }); shake(p, 0.15, 0.15); }
+        if (last) shake(p, 0.15, 0.15);
       });
       return true;
     } },
@@ -3139,19 +3131,14 @@ const WEAPON_SKILLS = {
     { name: "Oath Cleave", cd: 140, desc: "A wide silver crescent in front of you that pushes enemies back", fn(p) {
       const dim = p.dimension, o = p.location, d = flatDir(p);
       const c = { x: o.x + d.x * 1.6, y: o.y + 1.0, z: o.z + d.z * 1.6 };
-      popShape(dim, "slash_silver", c, 1.0, 2.8, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, ease: "out" });
-      later(2, () => popShape(dim, "slash_silver", { x: c.x + d.x * 0.6, y: c.y - 0.2, z: c.z + d.z * 0.6 }, 0.8, 2.4, 6, { yaw: dirYaw({ ...d, y: 0 }), p: 90, a: 14, ease: "out" }));
+      WEAPON.oathCleave(dim, o, d);                                        // هلال نور: لمعات End Rod تبقى بالهوا + شرر أبيض
       let n = 0;
       for (const e of enemiesNear(dim, o, 5, p.id)) {
         if (!inFront(p, e, 0.2)) continue;
         hurt(e, 9, p); n++;
         pushAway(o, e, 1.3, 0.35);
         effect(e, "weakness", 60, 0);
-        for (let i = 0; i < 4; i++) pix(dim, { x: e.location.x + (Math.random() - 0.5), y: e.location.y + 0.6 + Math.random(), z: e.location.z + (Math.random() - 0.5) }, { color: COLORS.white, size: 0.18, life: 0.5, speed: 1.2 });
-      }
-      for (let i = 0; i < 14; i++) {
-        const a = Math.atan2(d.z, d.x) - 1.1 + (i / 13) * 2.2, r = 2.2 + Math.random() * 2;
-        pix(dim, { x: o.x + Math.cos(a) * r, y: o.y + 1 + Math.random() * 0.6, z: o.z + Math.sin(a) * r }, { color: i % 3 ? COLORS.white : [0.95, 0.9, 0.7], size: 0.16, life: 0.6, speed: 0.6, rise: 0.4 });
+        WEAPON.silverCut(dim, center3(e), o, n);
       }
       sfx(dim, "sh.kat_wave", o, 1.0, 1.4);
       shake(p, 0.08, 0.15);
@@ -3174,13 +3161,11 @@ const WEAPON_SKILLS = {
       }
       if (Math.hypot(to.x - from.x, to.z - from.z) < 1) { notify(p, "§7No room to dash", 20); return false; }
       shapeFx(dim, "afterimage", from, { r: 1.0, yaw: dirYaw({ ...d, y: 0 }), life: 14 });
-      ring(dim, { x: from.x, y: from.y, z: from.z }, 1.2, 14, 0, [1, 0.95, 0.8], 0.2);
       safeTeleport(p, to, { x: to.x + d.x, y: to.y, z: to.z + d.z });
-      ring(dim, { x: to.x, y: to.y, z: to.z }, 1.2, 14, 0, [1, 0.95, 0.8], 0.2);
+      WEAPON.silverStep(dim, from, to);                                    // خط لمعات End Rod وشرر أبيض + حلقة بالبداية والنهاية
       const len = Math.hypot(to.x - from.x, to.z - from.z), hit = new Set();
       for (let i = 0; i <= 10; i++) {
         const t = i / 10, pt = { x: from.x + (to.x - from.x) * t, y: from.y + 1, z: from.z + (to.z - from.z) * t };
-        pix(dim, pt, { color: i % 2 ? COLORS.white : [0.86, 0.9, 1], size: 0.18, life: 0.7, speed: 0.3, rise: 0.3 });
         for (const e of enemiesNear(dim, pt, 1.6, p.id)) {
           if (hit.has(e.id)) continue;
           hit.add(e.id);
@@ -3188,7 +3173,7 @@ const WEAPON_SKILLS = {
             if (!valid(e)) return;
             hurt(e, 8, p);
             lanceStrike(p, e.location.x, e.location.z, 4, 1);
-            slashOn(dim, "slash_silver", center3(e), from, hit.size % 2 ? 35 : -35, 1.1);
+            WEAPON.silverCut(dim, center3(e), from, hit.size);
             effect(e, "slowness", 40, 1);
             sfx(dim, "sh.dagger_hit", e.location, 1, 1.4);
           });
@@ -3208,20 +3193,22 @@ const WEAPON_SKILLS = {
       if (!dest) { notify(p, "§7No room behind the enemy", 20); return false; }
       const dim = p.dimension, from = { ...p.location };
       shapeFx(dim, "afterimage", from, { r: 1.0, yaw: dirYaw({ ...flatDir(p), y: 0 }), life: 16 });
+      WEAPON.shadowPuff(dim, from);
       safeTeleport(p, dest, t.location);
+      WEAPON.shadowPuff(dim, dest);
       sfx(dim, "sh.kat_step", dest, 1.1, 1.1);
       for (let i = 0; i < 3; i++) { const a = i * 2.0944 + 0.5; ghostSword(p, t.location.x + Math.cos(a) * 1.8, t.location.z + Math.sin(a) * 1.8, 0, 2 + i, 1.1); }
       later(1, () => {
         if (!valid(t)) return;
         hurt(t, 8, p);
-        slashOn(dim, "slash_violet", center3(t), p.location, 45, 1.1);
+        WEAPON.shadowCut(dim, center3(t), p.location, 45);
         effect(t, "blindness", 40, 0);
         effect(t, "slowness", 40, 1);
       });
       later(5, () => {
         if (!valid(t)) return;
         hurt(t, 6, p);
-        slashOn(dim, "slash_violet", center3(t), p.location, -45, 1.1);
+        WEAPON.shadowCut(dim, center3(t), p.location, -45);
         sfx(dim, "sh.dagger_hit", t.location, 1, 1.3);
       });
       effect(p, "resistance", 20, 2);
@@ -3236,9 +3223,10 @@ const WEAPON_SKILLS = {
         if (!valid(e)) return;
         const spot = behindSpot(e, p.location) || e.location;
         shapeFx(dim, "afterimage", spot, { r: 1.0, yaw: yawOf(spot, e.location), life: 12 });
+        WEAPON.shadowPuff(dim, spot);
         hurt(e, 7, p);
         effect(e, "weakness", 60, 0);
-        slashOn(dim, "slash_violet", center3(e), spot, i % 2 ? 40 : -40, 1.1);
+        WEAPON.shadowCut(dim, center3(e), spot, i % 2 ? 40 : -40);
         ghostSword(p, e.location.x, e.location.z, 3, 1, 1.4);
         sfx(dim, "sh.dagger_hit", e.location, 1, 1.0 + i * 0.1);
       }));
@@ -3246,7 +3234,7 @@ const WEAPON_SKILLS = {
       later(list.length * 4 + 6, () => {
         if (!valid(p)) return;
         for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; ghostSword(p, p.location.x + Math.cos(a) * 3.6, p.location.z + Math.sin(a) * 3.6, 0, i % 4, 1.1); }
-        waveFx(dim, p.location, 5, 1, 12);
+        WEAPON.shadowWave(dim, p.location);
         for (const e of enemiesNear(dim, p.location, 4.8, p.id)) { hurt(e, 3, p); pushAway(p.location, e, 0.8, 0.25); }
         sfx(dim, "sh.kat_wave", p.location, 1, 0.8);
       });
@@ -3264,7 +3252,7 @@ const WEAPON_SKILLS = {
       [[1, 4, -25], [4, 4, 25], [8, 7, 0]].forEach(([tk, dmg, a]) => later(tk, () => {
         if (!valid(t) || !valid(p)) return;
         hurt(t, dmg, p);
-        popShape(dim, "claw_marks", center3(t), 0.7, 1.3, 5, { yaw: yawOf(t.location, p.location), a });
+        WEAPON.rake(dim, center3(t), { x: t.location.x - p.location.x, y: 0, z: t.location.z - p.location.z }, a);
         effect(t, "poison", 60, 1);
         try { const hp = p.getComponent("minecraft:health"); hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 1)); } catch (err) { /* */ }
         sfx(dim, "sh.dagger_hit", t.location, 1, 0.8 + tk * 0.04);
@@ -3278,7 +3266,7 @@ const WEAPON_SKILLS = {
         for (let i = 0; i < 4; i++) {
           const a = (i * 90 + w * 30) * Math.PI / 180;
           const c = { x: p.location.x + Math.cos(a) * 1.7, y: p.location.y + 1.0, z: p.location.z + Math.sin(a) * 1.7 };
-          popShape(dim, "claw_marks", c, 0.6, 1.2, 5, { yaw: dirYaw({ x: Math.cos(a), y: 0, z: Math.sin(a) }), a: w * 20 - 20 });
+          WEAPON.clawStorm(dim, c, { x: Math.cos(a), y: 0, z: Math.sin(a) }, w * 20 - 20);
         }
         for (const e of enemiesNear(dim, p.location, 4.5, p.id)) { hurt(e, 5, p); effect(e, "poison", 40, 0); pullTo(p.location, e, 0.25, 0.05); }
         sfx(dim, "sh.dagger_hit", p.location, 1, 0.9 + w * 0.15);
@@ -3302,7 +3290,7 @@ const WEAPON_SKILLS = {
       const n = breakBlocks(dim, list, 32);
       const cc = { x: c.x, y: gy + 1, z: c.z };
       rockBurst(dim, cc, 6, 1.4);
-      waveFx(dim, cc, 4, 5, 10);
+      WEAPON.quake(dim, cc, 3.6);                                          // نفخات زئير + غبار + موجة حصى
       for (const e of enemiesNear(dim, cc, 3.4, p.id)) {
         hurt(e, 10, p);
         try { e.applyKnockback({ x: 0, z: 0 }, 0.85); } catch (err) { /* */ }
@@ -3330,6 +3318,7 @@ const WEAPON_SKILLS = {
         budget -= n;
         const c = { x, y: gy + 1, z };
         fling(dim, "rock_chunk", c, 2, 1.1);
+        WEAPON.fissure(dim, c);
         for (const e of enemiesNear(dim, c, 1.8, p.id)) {
           if (hit.has(e.id)) continue;
           hit.add(e.id);
@@ -3366,7 +3355,7 @@ const WEAPON_SKILLS = {
           }
           moveShape(spear, pos, dirYaw(dir));
           setShape(spear, "sh:p", dirPitch(dir));
-          glow(dim, pos, { color: COLORS.orange, size: 0.25, life: 0.3 });
+          WEAPON.spearTrail(dim, pos, dir);
           for (const e of enemiesNear(dim, pos, 1.5, p.id)) {
             if (hit.has(e.id)) continue;
             hit.add(e.id);
@@ -3386,10 +3375,10 @@ const WEAPON_SKILLS = {
       for (let i = 0; i < 7; i++) later(14 + i * 2, () => {
         const a = Math.random() * Math.PI * 2, r = i === 0 ? 0 : 0.8 + Math.random() * 2.2;
         const top = { x: c.x + Math.cos(a) * r, y: c.y + 12, z: c.z + Math.sin(a) * r };
-        flyShape(dim, "spear_proj", top, { x: 0, y: -1, z: 0 }, 1.4, 12.5, { r: 1.2 }, undefined, (end) => {
+        flyShape(dim, "spear_proj", top, { x: 0, y: -1, z: 0 }, 1.4, 12.5, { r: 1.2 }, (pos) => { WEAPON.spearTrail(dim, pos, { x: 0, y: -1, z: 0 }); }, (end) => {
           for (const e of enemiesNear(dim, end, 1.8, p.id)) { hurt(e, 6, p); try { e.setOnFire(3, true); } catch (err) { /* */ } }
           fling(dim, "rock_chunk", end, 1, 0.7);
-          glow(dim, end, { color: COLORS.orange, size: 0.6, life: 0.4 });
+          WEAPON.spearLand(dim, end);
           sfx(dim, "sh.dagger_hit", end, 0.9, 0.7 + Math.random() * 0.2);
         });
       });
@@ -3424,11 +3413,11 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     const t = ev.hitEntity;
     if (t.typeId === "sh:trainer") return;
     echoReady.delete(p.id);
+    ECHO.strikeMark(t.dimension, center3(t));
     system.runTimeout(() => {
       if (!valid(t)) return;
       hurt(t, 6, p);
-      popShape(t.dimension, "sound_ring", center3(t), 0.4, 2.0, 7, { yaw: yawOf(p.location, t.location) });
-      burst(t.dimension, headPos(t), 8, POWER_COLOR.echo, 3);
+      ECHO.echo(t.dimension, center3(t));
       sfx(t.dimension, "sh.echostrike", t.location, 1, 0.75);
     }, 20);
   } catch (e) { /* */ }
@@ -3473,10 +3462,10 @@ function rayHits(p, d, range, width) {
   return out;
 }
 // شظية حقيقية تطير بخط مستقيم ثم تختفي
-function flyShard(p, d, len, r = 0.8, name = "crystal_spike", onEnd) {
+function flyShard(p, d, len, r = 0.8, name = "crystal_spike", onEnd, onStep) {
   const o = eyePos(p);
   const from = { x: o.x + d.x * 1.2, y: o.y - 0.35 + d.y * 1.2, z: o.z + d.z * 1.2 };
-  return flyShape(p.dimension, name, from, d, 2.4, Math.max(1, len - 1.2), { r, w: 540 }, undefined, onEnd);
+  return flyShape(p.dimension, name, from, d, 2.4, Math.max(1, len - 1.2), { r, w: 540 }, onStep, onEnd);
 }
 function rayTrail(p, d, len, color, size = 0.24) {
   const o = eyePos(p);
@@ -3553,6 +3542,7 @@ function applyTrait(p, id, m) {
     effect(p, "strength", 160 * m, 0);
     const d0 = flatDir(p);
     popShape(p.dimension, "fang_jaw", { x: p.location.x + d0.x * 1.3, y: p.location.y + 1.3, z: p.location.z + d0.z * 1.3 }, 1.4, 1.8, 10, { yaw: dirYaw({ ...d0, y: 0 }) + 180 });
+    TRAIT.fangs(p.dimension, p.location, { x: p.location.x + d0.x * 1.3, y: p.location.y + 1.3, z: p.location.z + d0.z * 1.3 });
   } else if (id === "wings") {
     const d = flatDir(p);
     try { p.applyKnockback({ x: d.x * 0.9, z: d.z * 0.9 }, 1.1); } catch (e) { /* */ }
@@ -3560,18 +3550,19 @@ function applyTrait(p, id, m) {
     effect(p, "jump_boost", 200 * m, 1);
     effect(p, "speed", 200 * m, 1);
     wingsOn(p, Math.round(200 * m));
-    popShape(p.dimension, "tornado", p.location, 0.4, 1.3, 10, { s: 1000 });
+    TRAIT.wings(p.dimension, p.location);
   } else if (id === "eye") {
     effect(p, "night_vision", 300 * m, 0);
     popShape(p.dimension, "hunter_eye", { x: p.location.x, y: p.location.y + 3, z: p.location.z }, 0.4, 2.2, 12, { yaw: dirYaw({ ...flatDir(p), y: 0 }) + 180 });
     const list = enemiesNear(p.dimension, p.location, 24, p.id).slice(0, 10);
+    TRAIT.eyeScan(p.dimension, p.location);                       // نبضة رادار ذهبية
     for (const e of list) {
       huntMarks.set(e.id, { pid: p.id, until: now + 200 * m });
+      TRAIT.eyeMark(e.dimension, center3(e));
       followShape(e, "hunter_eye", Math.round(200 * m), { r: 0.7, dy: 0.9, faceYaw: () => valid(p) && valid(e) ? yawOf(e.location, p.location) : undefined });
     }
     notify(p, list.length ? `§eMarked ${list.length} enemies` : "§7No enemies nearby, but your vision improved", 50);
   }
-  burst(p.dimension, headPos(p), 10, col, 2.5);
   sfx(p.dimension, "sh.trait_" + id, p.location, 1.1, 1);
   shake(p, 0.06, 0.1);
 }
@@ -3591,7 +3582,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     const a = ev.damageSource && ev.damageSource.damagingEntity;
     if (!a || a.id !== mk2.pid) return;
     huntBusy = true;
-    try { hurt(ev.hurtEntity, 2, a); glow(ev.hurtEntity.dimension, headPos(ev.hurtEntity), { color: COLORS.gold, size: 0.3, life: 0.4 }); } finally { huntBusy = false; }
+    try { hurt(ev.hurtEntity, 2, a); TRAIT.eyeBonus(ev.hurtEntity.dimension, headPos(ev.hurtEntity)); } finally { huntBusy = false; }
   } catch (e) { huntBusy = false; }
 });
 const fangsHeal = new Map();
@@ -3608,6 +3599,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     try { t.addEffect("poison", 80, { amplifier: 0, showParticles: true }); } catch (e) { /* */ }
     if (now - (fangsHeal.get(p.id) || -99) >= 10) {
       popShape(t.dimension, "fang_jaw", center3(t), 0.9, 1.3, 9, { yaw: yawOf(t.location, p.location) });
+      TRAIT.fangsBite(t.dimension, center3(t), p.location);
       fangsHeal.set(p.id, now);
       const hp = p.getComponent("minecraft:health");
       if (hp) hp.setCurrentValue(Math.min(hp.effectiveMax, hp.currentValue + 1.5));
@@ -3629,29 +3621,34 @@ Object.assign(SKILL_FN, {
     if (sneak) {
       // رمح بلوري عملاق يخترق كل شي بالخط
       const hits = rayHits(p, base, 20, 1.3);
-      const len = 20;
-      flyShard(p, base, len, 1.5, "crystal_lance");
+      const len = 20, o0 = eyePos(p);
+      // الرمح يترك نَفَس تنين بنفسجي واكف ولولب لمعات End Rod على مساره
+      let prev = { x: o0.x + base.x * 1.2, y: o0.y - 0.35 + base.y * 1.2, z: o0.z + base.z * 1.2 }, k = 0;
+      CRYSTAL.muzzle(p.dimension, prev, base);
+      flyShard(p, base, len, 1.5, "crystal_lance", undefined, (pos) => { CRYSTAL.lanceStep(p.dimension, prev, pos, base, k++); prev = { ...pos }; });
       hits.forEach((h) => later(Math.ceil(h.t / 2.4), () => {
         if (!valid(h.e)) return;
         hurt(h.e, 10, p); pushAway(p.location, h.e, 0.6, 0.15); addCrystal(h.e, p, 1);
-        popShape(h.e.dimension, "crystal_nova", center3(h.e), 0.3, 1.0, 5, { s: 400 });
+        CRYSTAL.lanceHit(h.e.dimension, center3(h.e));
       }));
       sfx(p.dimension, "sh.push", p.location, 1.1, 1.6);
       shake(p, 0.1, 0.12);
       return true;
     }
-    // 3 شوكات بلورية حقيقية تطير وتلزق بالأعداء
+    // 3 شوكات بلورية حقيقية تطير وتلزق بالأعداء: رشة نجوم وردية عند الإطلاق، وأثر نجوم ولمعات وراها
+    { const o0 = eyePos(p); CRYSTAL.muzzle(p.dimension, { x: o0.x + base.x * 1.1, y: o0.y - 0.3 + base.y * 1.1, z: o0.z + base.z * 1.1 }, base); }
     for (const ang of [-12, 0, 12]) {
       const d = rotY(base, ang);
       const hits = rayHits(p, d, 16, 1.1);
       const len = hits.length ? hits[0].t : 16;
       const e = hits.length ? hits[0].e : undefined;
+      let k = 0;
       flyShard(p, d, len, 1.0, "crystal_spike", () => {
         if (!e || !valid(e)) return;
         hurt(e, 4, p);
         addCrystal(e, p, 1);
-        burst(e.dimension, headPos(e), 6, CRYSTAL_PINK, 2.5);
-      });
+        CRYSTAL.shardHit(e.dimension, center3(e));
+      }, (pos) => { CRYSTAL.shardTrail(p.dimension, pos, k++, d); });
     }
     sfx(p.dimension, "sh.push", p.location, 0.9, 1.9);
     return true;
@@ -3660,17 +3657,25 @@ Object.assign(SKILL_FN, {
     effect(p, "absorption", 200, 2);
     sfx(p.dimension, "sh.reflect", p.location, 1, 1.5);
     popShape(p.dimension, "crystal_cluster", p.location, 0.2, 1.2, 6);
-    // 4 دروع بلورية سداسية تدور حولك وتواجه الخارج
+    CRYSTAL.shieldForm(p.dimension, p.location);
+    // 4 دروع بلورية سداسية تدور حولك وتواجه الخارج (لمعة End Rod على درع كل 8 تكات، وتتكسر بالنهاية)
     let t = 0;
     const plates = [0, 1, 2, 3].map(() => shapeFx(p.dimension, "crystal_plate", p.location, { r: 1.3, life: 206 }));
     const h = system.runInterval(() => {
       try {
         t += 2;
-        if (!valid(p) || t > 200) { system.clearRun(h); plates.forEach(removeFx); if (valid(p)) fling(p.dimension, "crystal_gem", center3(p), 5, 1, 0.6, 1); return; }
+        if (!valid(p) || t > 200) {
+          system.clearRun(h);
+          plates.forEach((f) => { try { if (f && valid(f)) CRYSTAL.shatter(f.dimension, { x: f.location.x, y: f.location.y + 0.4, z: f.location.z }); } catch (err) { /* */ } removeFx(f); });
+          if (valid(p)) fling(p.dimension, "crystal_gem", center3(p), 5, 1, 0.6, 1);
+          return;
+        }
         plates.forEach((f, i) => {
           if (!f) return;
           const a = t * 0.12 + (i / 4) * Math.PI * 2;
-          moveShape(f, { x: p.location.x + Math.cos(a) * 1.25, y: p.location.y + 1.0 + Math.sin(t * 0.1 + i) * 0.15, z: p.location.z + Math.sin(a) * 1.25 }, dirYaw({ x: Math.cos(a), y: 0, z: Math.sin(a) }));
+          const pos = { x: p.location.x + Math.cos(a) * 1.25, y: p.location.y + 1.0 + Math.sin(t * 0.1 + i) * 0.15, z: p.location.z + Math.sin(a) * 1.25 };
+          moveShape(f, pos, dirYaw({ x: Math.cos(a), y: 0, z: Math.sin(a) }));
+          if (t % 8 === 0 && i === (t / 8) % 4) CRYSTAL.shieldGlint(p.dimension, { x: pos.x, y: pos.y + 0.4, z: pos.z });
         });
       } catch (e) { system.clearRun(h); plates.forEach(removeFx); }
     }, 2);
@@ -3689,6 +3694,7 @@ Object.assign(SKILL_FN, {
     try { const bb = t.getComponent("minecraft:collision_box"); if (bb && bb.width) size = Math.max(1, Math.min(2.6, bb.width * 1.5)); } catch (e) { /* */ }
     const cage = shapeFx(t.dimension, "crystal_cage", t.location, { r: 0.1, s: 20, life: dur + 4 });
     tween(6, 1, (k) => setShape(cage, "sh:r", size * k));
+    CRYSTAL.prisonGrow(t.dimension, t.location, size * 0.75);
     sfx(p.dimension, "sh.boundary", t.location, 1, 1.4);
     symbolShot(p, t, "crystal_spike", undefined, 2.2);
     let k2 = 0;
@@ -3697,10 +3703,11 @@ Object.assign(SKILL_FN, {
         k2 += 4;
         if (!valid(t) || k2 > dur) {
           system.clearRun(h); removeFx(cage);
-          if (valid(t)) { popShape(t.dimension, "crystal_nova", center3(t), 0.4, 1.5, 6, { s: 300 }); fling(t.dimension, "crystal_gem", center3(t), 5, 1, 0.6, 1); sfx(t.dimension, "sh.collapse", t.location, 0.8, 1.6); }
+          if (valid(t)) { CRYSTAL.prisonBreak(t.dimension, center3(t)); fling(t.dimension, "crystal_gem", center3(t), 5, 1, 0.6, 1); sfx(t.dimension, "sh.collapse", t.location, 0.8, 1.6); }
           return;
         }
         moveShape(cage, t.location);
+        if (k2 % 8 === 0) CRYSTAL.prisonTick(t.dimension, t.location, size * 0.6);
       } catch (e) { system.clearRun(h); removeFx(cage); }
     }, 4);
     notify(p, BOSS_TYPES.has(t.typeId) ? "§dThe boss resists: short imprisonment" : "§dImprisoned", 40);
@@ -3714,12 +3721,13 @@ Object.assign(SKILL_FN, {
       dropCrystal(id);
       total += c.n;
       const e = c.e;
+      CRYSTAL.detonateLink(p.dimension, { x: p.location.x, y: p.location.y + 1.2, z: p.location.z }, center3(e));
       later(i * 2, () => {
         if (!valid(e)) return;
         hurt(e, 5 * c.n, p);
-        // تفجير: عنقود بلوري يطلع من تحت العدو + انفجار نجمي بلوري
+        // تفجير: عنقود بلوري يطلع من تحت العدو + انفجار عين الإندر وموجة نجوم وردية حسب عدد البلورات
         popShape(e.dimension, "crystal_cluster", e.location, 0.3, 1.2 + c.n * 0.15, 5);
-        popShape(e.dimension, "crystal_nova", center3(e), 0.4, 1.2 + c.n * 0.2, 7, { s: 500, ease: "out" });
+        CRYSTAL.detonate(e.dimension, center3(e), c.n);
         fling(e.dimension, "crystal_gem", center3(e), 2 + c.n, 1.1, 0.5, 0.9);
         sfx(e.dimension, "sh.collapse", e.location, 0.9, 1.5 + Math.random() * 0.2);
         for (const o of enemiesNear(e.dimension, e.location, 3, p.id)) {
@@ -3746,7 +3754,7 @@ Object.assign(SKILL_FN, {
     if (arr.length < 2) { notify(p, "§cUse two different traits within 40 seconds first", 60); return false; }
     const two = arr.slice(-2);
     for (const x of two) applyTrait(p, x.id, 0.7);
-    popShape(p.dimension, "nova", center3(p), 0.3, 1.4, 8, { s: 400 });
+    TRAIT.fuse(p.dimension, p.location, TRAIT_COLOR[two[0].id], TRAIT_COLOR[two[1].id]);   // لولبين بلوني الصفتين يلتفون ببعض
     notify(p, `§eFused: ${TRAIT_NAMES[two[0].id]} + ${TRAIT_NAMES[two[1].id]}`, 60);
     return true;
   },
@@ -3764,8 +3772,7 @@ Object.assign(SKILL_FN, {
       const hp = p.getComponent("minecraft:health");
       if (hp && a.hp > hp.currentValue) hp.setCurrentValue(Math.min(hp.effectiveMax, a.hp, hp.currentValue + 8));
       effect(p, "slow_falling", 40, 0);
-      portalFx(p.dimension, from, 1, 1.6, undefined, undefined, 20);
-      portalFx(p.dimension, a.loc, 1, 1.6, undefined, undefined, 20);
+      SPACE.rewind(p.dimension, from, a.loc);
       popShape(p.dimension, "hourglass", { x: from.x, y: from.y + 1.2, z: from.z }, 1.4, 0.1, 8, { a: 180, s: 600 });
       popShape(p.dimension, "hourglass", { x: a.loc.x, y: a.loc.y + 2.6, z: a.loc.z }, 0.3, 1.6, 10, { a: 180, s: -300 });
       sfx(p.dimension, "sh.swap", p.location, 1, 0.8);
@@ -3776,6 +3783,9 @@ Object.assign(SKILL_FN, {
     const fx = spawnFx(p.dimension, "circle", p.location, 2, 1.3, 305);
     const glass = shapeFx(p.dimension, "hourglass", { x: p.location.x, y: p.location.y + 1.4, z: p.location.z }, { r: 1.3, s: 60, life: 305 });
     rewindAnchors.set(p.id, { loc: { ...p.location }, dim: p.dimension, hp: hp ? hp.currentValue : 20, until: now + 300, fx, glass });
+    // علامة المكان المحفوظ: حلقة End Rod تنبض كل ثانية لحد ما ترجع أو تخلص المدة
+    const anchor = rewindAnchors.get(p.id), dimA = p.dimension, at = { ...p.location };
+    const ha = system.runInterval(() => { try { if (rewindAnchors.get(p.id) !== anchor || system.currentTick > anchor.until) { system.clearRun(ha); return; } SPACE.anchorPulse(dimA, at); } catch (e) { system.clearRun(ha); } }, 20);
     sfx(p.dimension, "sh.select", p.location, 1, 0.7);
     notify(p, "§bYour position is saved for 15 seconds. Use it again to return", 80);
     return 20;
@@ -3986,16 +3996,14 @@ Object.assign(SKILL_FN, {
     const dx = c.x - top.x, dy = c.y - top.y, dz = c.z - top.z, l = Math.hypot(dx, dy, dz);
     const d = { x: dx / l, y: dy / l, z: dz / l };
     const m = shapeFx(dim, "meteor", top, { r: 2.4, yaw: dirYaw(d), p: dirPitch(d), w: 200, life: 24 });
-    tween(18, 1, (k) => {
+    tween(18, 1, (k, tt) => {
       const loc = { x: top.x + dx * k, y: top.y + dy * k, z: top.z + dz * k };
       moveShape(m, loc, dirYaw(d));
-      if (Math.random() < 0.6) glow(dim, loc, { color: [1, 0.55, 0.2], size: 0.9, life: 0.5 });
+      STAR.meteorTrail(dim, loc, d, tt);                       // ذيل نار حقيقي ودخان نار يبقى بالسما
     }, () => {
       removeFx(m);
       sfx(dim, "sh.meteor_hit", c, 1.5, 1);
-      waveFx(dim, c, 7, 0, 12);
-      popShape(dim, "nova", { x: c.x, y: c.y + 0.8, z: c.z }, 0.4, 2.6, 7, { s: 300, ease: "out" });
-      burst(dim, { x: c.x, y: c.y + 0.6, z: c.z }, 18, STAR_GOLD, 5, 0.3);
+      STAR.meteorImpact(dim, c);                               // انفجار TNT الكبير + حلقة لهب + حمم + غبار + أعمدة دخان
       for (const e of enemiesNear(dim, c, 4, p.id)) { hurtS(e, 14, p); pushAway(c, e, 1.1, 0.5); try { e.setOnFire(4, false); } catch (err) { /* */ } }
       groundBreak(dim, c, 5, { crater: 0.5, cracks: 8, ttl: 400 });
       shake(p, 0.2, 0.2);
@@ -4006,19 +4014,14 @@ Object.assign(SKILL_FN, {
   gravwell(p) {
     const dim = p.dimension, c = aimPoint(p, 24), life = 80;
     spawnFx(dim, "circle", c, 2, 6, life + 6);
-    // دوامة جاذبية تدور بالأرض ونجمة بنصها
-    const vx = shapeFx(dim, "vortex", { x: c.x, y: c.y + 0.1, z: c.z }, { r: 2.6, s: 540, life: life + 2 });
-    shapeFx(dim, "star5", { x: c.x, y: c.y + 1.2, z: c.z }, { r: 0.8, s: 360, life: life + 2 });
+    // دوامة جاذبية من جزيئات: أذرع لولبية تدور وتنسحب للمركز، وبوابة تنضم لنجم صغير بالنص
     groundBreak(dim, c, 5, { cracks: 7, ttl: 160 });
     sfx(dim, "sh.gravwell", c, 1.2, 1);
     let t = 0;
     const h = system.runInterval(() => {
       try {
         t += 2;
-        if (t % 6 === 0) for (let i = 0; i < 4; i++) {
-          const a = t * 0.3 + i * 1.57, r = 7.5 * (1 - ((i / 4 + t * 0.04) % 1));
-          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + 0.3 + r * 0.12, z: c.z + Math.sin(a) * r }, { color: i % 2 ? STAR_BLUE : STAR_WHITE, size: 0.2, life: 0.5 });
-        }
+        STAR.wellTick(dim, c, t);
         for (const e of enemiesNear(dim, c, 7.5, p.id)) {
           const d = Math.hypot(e.location.x - c.x, e.location.z - c.z);
           pullTo(c, e, Math.min(0.5, 0.1 + 0.05 * (7.5 - d)));
@@ -4027,8 +4030,7 @@ Object.assign(SKILL_FN, {
         }
         if (t >= life) {
           system.clearRun(h);
-          burst(dim, { x: c.x, y: c.y + 0.6, z: c.z }, 24, STAR_BLUE, 4, 0.24);
-          waveFx(dim, c, 8, 2, 10);
+          STAR.wellEnd(dim, c);
           sfx(dim, "sh.pull", c, 1, 0.7);
         }
       } catch (err) { system.clearRun(h); }
@@ -4038,10 +4040,10 @@ Object.assign(SKILL_FN, {
   // 3) مدار النجوم: 3 نجوم تدور حولك وتضرب كل من يلمسها
   orbit(p) {
     const dim = p.dimension, life = 200, orbs = [], hitCd = new Map();
-    for (let i = 0; i < 3; i++) { const o = shapeFx(dim, "star5", p.location, { r: 0.8, w: 300, life: life + 10 }); if (o) orbs.push(o); }
+    // 3 نجوم من جزيئات (نواة لمعات + شرار ذهبي) تدور وتترك ذيل End Rod يرسم المدار
     effect(p, "resistance", life, 0);
     sfx(dim, "sh.orbit", p.location, 1.1, 1);
-    pixRing(dim, p.location, 2.3, 24, 0, STAR_GOLD, 0.22);
+    STAR.orbCast(dim, p.location);
     let t = 0;
     const h = system.runInterval(() => {
       try {
@@ -4054,13 +4056,13 @@ Object.assign(SKILL_FN, {
         for (let i = 0; i < 3; i++) {
           const a = t * 0.18 + (i * Math.PI * 2) / 3;
           const loc = { x: p.location.x + Math.cos(a) * 2.3, y: p.location.y + 1.0 + Math.sin(t * 0.1 + i) * 0.25, z: p.location.z + Math.sin(a) * 2.3 };
-          if (orbs[i]) moveShape(orbs[i], loc, dirYaw({ x: Math.cos(a), y: 0, z: Math.sin(a) }));
+          STAR.orbTick(dim, loc, i);
           for (const e of enemiesNear(dim, loc, 1.5, p.id)) {
             if ((hitCd.get(e.id) ?? 0) > t) continue;
             hitCd.set(e.id, t + 10);
             hurtS(e, 4, p);
             pushAway(p.location, e, 0.5, 0.2);
-            burst(dim, headPos(e), 6, STAR_GOLD, 2.5, 0.16);
+            STAR.orbHit(dim, center3(e));
           }
         }
 
@@ -4077,22 +4079,23 @@ Object.assign(SKILL_FN, {
     list = list.slice(0, 6);
     list.sort((a, b) => Math.atan2(a.location.z - p.location.z, a.location.x - p.location.x) - Math.atan2(b.location.z - p.location.z, b.location.x - p.location.x));
     sfx(dim, "sh.const_mark", p.location, 1.2, 1);
-    for (const e of list) followShape(e, "star5", 48, { r: 0.7, s: 240, dy: 0.9 });
+    // نجمة لمعات تومض فوق كل عدو، وخطوط End Rod منقطة بينهم (تبقى بالهوا)، وبالأخير خطوط شرر وصاعقة نجمية
+    for (let k = 0; k <= 42; k += 6) later(k, () => { for (const e of list) if (valid(e)) STAR.starMark(dim, headPos(e)); });
     const draw = (bright) => {
       for (let i = 0; i < list.length - 1; i++) {
         const a = list[i], b = list[i + 1];
         if (!valid(a) || !valid(b)) continue;
-        pixLine(dim, center3(a), center3(b), bright ? STAR_WHITE : STAR_BLUE, bright ? 14 : 8, 0.2, bright ? 0.6 : 0.45);
+        STAR.starLine(dim, center3(a), center3(b), bright);
       }
     };
-    for (let k = 4; k <= 40; k += 12) later(k, () => draw(false));
+    for (const k of [4, 26]) later(k, () => draw(false));
     later(44, () => {
       draw(true);
       const bonus = list.length >= 4 ? 4 : 0;
       for (const e of list) {
         if (!valid(e)) continue;
         hurtS(e, 8 + bonus, p);
-        popShape(dim, "nova", center3(e), 0.3, 1.2, 6, { s: 500 });
+        STAR.starfall(dim, center3(e));
         sfx(dim, "sh.const_zap", e.location, 1, 1 + Math.random() * 0.2);
       }
       shake(p, 0.12, 0.15);
@@ -4110,10 +4113,7 @@ Object.assign(SKILL_FN, {
     }
     if (!to) { notify(p, "§cNo room to dash", 30); return false; }
     const dim = p.dimension;
-    for (let i = 0; i <= 5; i++) {
-      const k = i / 5, loc = { x: from.x + (to.x - from.x) * k, y: from.y + 1.0, z: from.z + (to.z - from.z) * k };
-      later(i, () => popShape(dim, "star5", loc, 0.9, 0.1, 10, { yaw: yawOf(from, to), w: 600 }));
-    }
+    STAR.dash(dim, from, to);                                   // ذيل مذنب: End Rod واكف + شرار ذهبي + دخان
     const seg = { x: to.x - from.x, z: to.z - from.z }, sl = Math.hypot(seg.x, seg.z) || 1;
     for (const e of enemiesNear(dim, from, sl + 4, p.id)) {
       const vx = e.location.x - from.x, vz = e.location.z - from.z;
@@ -4122,11 +4122,10 @@ Object.assign(SKILL_FN, {
       if (Math.abs(vx * seg.z - vz * seg.x) / sl > 1.8) continue;
       hurtS(e, 9, p);
       try { e.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
-      burst(dim, headPos(e), 12, STAR_GOLD, 3, 0.22);
+      STAR.dashHit(dim, center3(e));
     }
     effect(p, "resistance", 20, 4);
-    spawnFx(dim, "circle", from, 4, 1.4, 14);
-    burst(dim, { x: to.x, y: to.y + 1, z: to.z }, 16, STAR_WHITE, 3, 0.22);
+    STAR.dashEnd(dim, to);
     sfx(dim, "sh.stardash", to, 1.2, 1);
     shake(p, 0.14, 0.15);
     return true;
@@ -4146,10 +4145,7 @@ Object.assign(SKILL_FN, {
     const h = system.runInterval(() => {
       try {
         t += 2;
-        for (let i = 0; i < 2; i++) {
-          const a = Math.random() * Math.PI * 2, r = 9 * Math.random() + 3;
-          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + (Math.random() - 0.5) * 4, z: c.z + Math.sin(a) * r }, { color: VOID_PURPLE, size: 0.15, life: 0.4, speed: -2 });
-        }
+        STAR.holeTick(dim, c, t);                                   // قرص تراكم من نَفَس التنين يلف للداخل + بوابة تنسحب
         for (const e of enemiesNear(dim, c, 12, p.id)) {
           const d = Math.hypot(e.location.x - c.x, e.location.z - c.z);
           pullTo(c, e, Math.min(0.65, 0.12 + 0.07 * (12 - d)), 0.08);
@@ -4160,15 +4156,9 @@ Object.assign(SKILL_FN, {
           system.clearRun(h);
           sfx(dim, "sh.blackhole_end", g, 1.6, 1);
           tween(8, 1, (k) => setShape(bh, "sh:r", 2.2 * (1 - k)), () => removeFx(bh));
-          for (let i = 0; i < 30; i++) {
-            const a = Math.random() * Math.PI * 2, r = 5 + Math.random() * 3;
-            pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + (Math.random() - 0.5) * 3, z: c.z + Math.sin(a) * r }, { color: VOID_PURPLE, size: 0.2, life: 0.4, speed: -9 });
-          }
+          STAR.holeCollapse(dim, c);
           later(8, () => {
-            popShape(dim, "nova", c, 0.3, 4, 9, { s: 400, ease: "out" });
-            burst(dim, c, 24, VOID_PURPLE, 7, 0.3);
-            waveFx(dim, g, 10, 1, 14);
-            waveFx(dim, g, 6, 4, 10);
+            STAR.holeBoom(dim, c, g);
             groundBreak(dim, g, 9, { crater: 0.45, cracks: 10, ttl: 500 });
             for (const e of enemiesNear(dim, c, 9, p.id)) { hurtS(e, 16, p); pushAway(c, e, 1.6, 0.6); }
             shake(p, 0.3, 0.3);
@@ -4185,7 +4175,6 @@ Object.assign(SKILL_FN, {
     effect(p, "slowness", charge + 10, 3);
     effect(p, "resistance", charge + 10, 3);
     notify(p, "§9§lSUPERNOVA... hold still", 50);
-    const core = shapeFx(dim, "nova", { x: p.location.x, y: p.location.y + 3.2, z: p.location.z }, { r: 0.2, s: 240, life: charge + 4 });
     let t = 0;
     const h = system.runInterval(() => {
       try {
@@ -4193,26 +4182,16 @@ Object.assign(SKILL_FN, {
         if (!valid(p)) { system.clearRun(h); return; }
         const c = { x: p.location.x, y: p.location.y + 1.0, z: p.location.z };
         const k = t / charge;
-        moveShape(core, { x: c.x, y: c.y + 2.2, z: c.z });
-        setShape(core, "sh:r", 0.2 + 1.4 * k);
-        for (let i = 0; i < 4; i++) {
-          const a = Math.random() * Math.PI * 2, r = 10 * (1 - k) + 1.2, up = (Math.random() - 0.3) * 3;
-          pix(dim, { x: c.x + Math.cos(a) * r, y: c.y + up, z: c.z + Math.sin(a) * r }, { color: i % 2 ? STAR_GOLD : STAR_WHITE, size: 0.18, life: 0.35, speed: -6 * (1 - k) - 1 });
-        }
-        if (t % 6 === 0) pixRing(dim, { x: c.x, y: p.location.y + 0.2, z: c.z }, 1 + 3 * k, 14, t * 0.4, STAR_BLUE, 0.2, 0.3);
+        // شحن: بوابة تنسحب لنواة فوق راسك، لولب شرار ذهبي وأزرق، ولمعات تكبر بالنواة، وحلقة لمعات بالأرض تتوسع
+        STAR.novaCharge(dim, p.location, k, t);
         if (t % 10 === 0) shake(p, 0.05 + 0.12 * k, 0.12);
         if (t >= charge) {
           system.clearRun(h);
           sfx(dim, "sh.supernova_boom", p.location, 2, 1);
           shake(p, 0.5, 0.5);
-          removeFx(core);
-          // النجمة تنفجر: كرة نجمية تكبر لحد 14 بلوكة، ونجوم تنرمي حولك
-          popShape(dim, "nova", { x: c.x, y: c.y + 2.2, z: c.z }, 1.6, 12, 12, { s: 200, ease: "out" });
-          fling(dim, "star5", c, 8, 2, 0.6, 1.1);
-          burst(dim, c, 30, STAR_GOLD, 9, 0.34);
-          waveFx(dim, p.location, 16, 0, 16);
-          later(3, () => waveFx(dim, p.location, 13, 4, 14));
-          later(6, () => waveFx(dim, p.location, 10, 2, 12));
+          // النجمة تنفجر: انفجار موت التنين + TNT الكبير، وثلاث موجات (غبار، لمعات، شرار ذهبي) لحد 14 بلوكة، ووميض أبيض
+          STAR.novaBoom(dim, p.location);
+          for (const q of dim.getPlayers({ location: p.location, maxDistance: 26 })) { try { q.camera.fade({ fadeColor: { red: 1, green: 0.97, blue: 0.85 }, fadeTime: { fadeInTime: 0.05, holdTime: 0.05, fadeOutTime: 0.6 } }); } catch (err) { /* */ } }
           groundBreak(dim, p.location, 13, { crater: 0.16, cracks: 12, ttl: 500 });
           for (const e of enemiesNear(dim, p.location, 14, p.id)) {
             hurtS(e, 28, p);
@@ -4280,8 +4259,7 @@ function katanaAura(p, ticks, strong) {
       t += 4;
       if (!valid(p) || t > ticks) { system.clearRun(h); return; }
       for (let i = 0; i < (strong ? 3 : 1); i++) {
-        const b = bladePoint(p, Math.random());
-        pix(p.dimension, b, { color: KAT_PALETTE[Math.floor(Math.random() * KAT_PALETTE.length)], size: 0.2, life: 0.6, speed: 0.5, rise: 0.6 });
+        WEAPON.aura(p.dimension, KATANA, bladePoint(p, Math.random()), t, i);
       }
     } catch (e) { system.clearRun(h); }
   }, 4);
@@ -4291,7 +4269,7 @@ system.runInterval(() => {
     try {
       const held = inv(p).getItem(p.selectedSlotIndex);
       if (!held || held.typeId !== KATANA || katLv(p) < 3) continue;
-      pix(p.dimension, bladePoint(p, 0.3 + Math.random() * 0.7), { color: KAT_PALETTE[Math.floor(Math.random() * 3)], size: 0.2, life: 0.9, speed: 0.2, rise: 0.4 });
+      WEAPON.aura(p.dimension, KATANA, bladePoint(p, 0.3 + Math.random() * 0.7), 0, 0);
     } catch (e) { /* */ }
   }
 }, 10);
@@ -4319,14 +4297,15 @@ function katCrescent(p, roll, delay) {
     const from = { x: p.location.x + d.x * 1.4, y: p.location.y + 1.1, z: p.location.z + d.z * 1.4 };
     const hit = new Set(), rad = 1.8 + 0.15 * lv;
     sfx(dim, "sh.kat_wave", p.location, 1.1, 1 + delay * 0.03);
-    flyShape(dim, "slash_violet", from, dir, 1.4, 18 + 2 * lv, { r: 1.6 + 0.2 * lv, p: 90, a: roll }, (pos) => {
-      glow(dim, { x: pos.x - dir.x * 0.8, y: pos.y + (Math.random() - 0.5) * 1.2, z: pos.z - dir.z * 0.8 }, { color: KATANA_PURPLE, size: 0.2, life: 0.6 });
+    // هلال الهاوية: هلال من نَفَس التنين وتوهج بنفسجي يطير لقدام (يترسم بكل تك بمكانه، ونَفَس التنين يبقى ثانية فيبين أثر الهلال)
+    flyFx(dim, from, dir, 1.4, 18 + 2 * lv, (pos) => {
+      WEAPON.abyssStep(dim, { x: pos.x - dir.x * rad * 0.7, y: pos.y, z: pos.z - dir.z * rad * 0.7 }, dir, roll, rad);
       for (const e of enemiesNear(dim, pos, rad, p.id)) {
         if (hit.has(e.id)) continue;
         hit.add(e.id);
         hurt(e, kd(p, 10), p);
         pushAway(p.location, e, 0.6, 0.2);
-        burst(dim, headPos(e), 8, KATANA_PURPLE, 3, 0.22);
+        WEAPON.abyssHit(dim, center3(e));
       }
       return false;
     });
@@ -4338,24 +4317,26 @@ function katExecute(p, t, chainsLeft) {
   const dim = p.dimension, lv = katLv(p);
   const dest = behindSpot(t, p.location);
   shapeFx(dim, "afterimage", p.location, { r: 1.0, yaw: dirYaw({ ...flatDir(p), y: 0 }), life: 14 });
-  if (dest) safeTeleport(p, dest, t.location);
+  WEAPON.shadowPuff(dim, p.location);
+  if (dest) { safeTeleport(p, dest, t.location); WEAPON.shadowPuff(dim, dest); }
   sfx(dim, "sh.kat_step", p.location, 1.1, 1);
   later(1, () => {
     if (!valid(t)) return;
     const c = center3(t);
-    slashOn(dim, "slash_violet", c, p.location, 45, 1.5);
+    WEAPON.xCut(dim, c, p.location, 45, false);
     hurt(t, kd(p, 8), p);
     sfx(dim, "sh.dagger_hit", t.location, 1.1, 0.8);
   });
   later(5, () => {
     if (!valid(t)) return;
     const c = center3(t);
-    slashOn(dim, "slash_violet", c, p.location, -45, 1.5);
+    WEAPON.xCut(dim, c, p.location, -45, false);
     let low = false;
     try { const hp = t.getComponent("minecraft:health"); low = hp.currentValue <= hp.effectiveMax * 0.3; } catch (err) { /* */ }
     if (lv >= 3 && low && !BOSS_TYPES.has(t.typeId)) {
       hurt(t, 9999, p);
-      popShape(dim, "slash_violet", c, 1.0, 3.0, 7, { yaw: yawOf(c, p.location), a: 90 });
+      WEAPON.xCut(dim, c, p.location, 90, true);
+      vP(dim, c, PT.ender, {}); vP(dim, c, PT.dragonBoom, { eye: 0 });
       notify(p, "§5EXECUTED!", 25);
     } else hurt(t, kd(p, 8), p);
     ghostSword(p, t.location.x, t.location.z, 0, 0, 1.9);
@@ -4497,8 +4478,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
       c.t = system.currentTick;
       if (c.n >= 3) {
         extra += 6; c.n = 0;
-        ring(target.dimension, { x: target.location.x, y: target.location.y + 0.8, z: target.location.z }, 1.2, 20, 0, COLORS.gold, 0.22);
-        burst(target.dimension, headPos(target), 18, COLORS.gold, 3.5, 0.2);
+        WEAPON.stab(target.dimension, center3(target), p.location, 5, true);        // ضربة الفجر: هلال ذهبي + انفجار شرار ذهبي
         sfx(target.dimension, "sh.dagger_hit", target.location, 1.1, 1.5);
         notify(p, "§6Dawn Strike!", 20);
       }
@@ -4512,7 +4492,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         extra += 7; c.n = 0;
         try { target.addEffect("blindness", 25, { amplifier: 0, showParticles: false }); } catch (e) { /* */ }
         const hc = headPos(target);
-        for (let i = 0; i < 12; i++) pix(target.dimension, { x: hc.x + (Math.random() - 0.5) * 0.8, y: hc.y + (Math.random() - 0.5) * 0.8, z: hc.z + (Math.random() - 0.5) * 0.8 }, { color: i % 3 ? COLORS.white : [0.95, 0.9, 0.7], size: 0.2, life: 0.4, speed: 1.8 });
+        WEAPON.glint(target.dimension, hc);
         sfx(target.dimension, "sh.dagger_hit", target.location, 1.1, 1.8);
         notify(p, "§f§lGlint!", 20);
       }
@@ -4520,14 +4500,14 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     }
     if (w.special === "rend") {
       try { target.addEffect("poison", 60, { amplifier: 0, showParticles: true }); } catch (e) { /* */ }
-      for (let i = 0; i < 3; i++) line(target.dimension, { x: target.location.x - 0.5, y: target.location.y + 0.6 + i * 0.4, z: target.location.z - 0.4 }, { x: target.location.x + 0.5, y: target.location.y + 1.3 + i * 0.4, z: target.location.z + 0.4 }, COLORS.white);
+      WEAPON.rake(target.dimension, center3(target), { x: target.location.x - p.location.x, y: 0, z: target.location.z - p.location.z }, Math.random() * 60 - 30);
     }
     if (w.cleave) {
       let n = 0;
       for (const o2 of enemiesNear(target.dimension, target.location, 2.8, target.id)) {
         if (o2.id === p.id || n >= w.cleave) continue;
         hurt(o2, Math.round(w.extra * 0.6), p); n++;
-        burst(target.dimension, headPos(o2), 6, COLORS.orange, 2, 0.18);
+        WEAPON.cleaveHit(target.dimension, center3(o2));
       }
     }
     if (w.shock) {
@@ -4536,7 +4516,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         hurt(o2, Math.round(w.extra * 0.4), p);
         pushAway(target.location, o2, 0.9, 0.3);
       }
-      ring(target.dimension, { x: target.location.x, y: target.location.y + 0.1, z: target.location.z }, 1.4, 16, 0, [0.6, 0.62, 0.58], 0.24);
+      WEAPON.shockHit(target.dimension, target.location);
       if (Math.random() < 0.2) { try { target.addEffect("slowness", 30, { amplifier: 3, showParticles: false }); } catch (e) { /* */ } }
     }
     if (w.fast) {
@@ -4545,7 +4525,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         try {
           if (!valid(tg)) return;
           hurt(tg, 2, p);
-          burst(tg.dimension, headPos(tg), 6, COLORS.blue, 2.5, 0.15);
+          WEAPON.doubleHit(tg.dimension, center3(tg));
           sfx(tg.dimension, w.sound, tg.location, 0.8, 1.4);
         } catch (e) { /* */ }
       }, 3);

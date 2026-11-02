@@ -4,8 +4,8 @@
   {
    "description": {
     "identifier": "geometry.sh_fx_circle",
-    "texture_width": 128,
-    "texture_height": 64,
+    "texture_width": 256,
+    "texture_height": 256,
     "visible_bounds_width": 40,
     "visible_bounds_height": 8,
     "visible_bounds_offset": [
@@ -43,10 +43,68 @@
         0.5,
         32
        ],
-       "uv": [
-        0,
-        0
-       ]
+       "uv": {
+        "up": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          256,
+          256
+         ]
+        },
+        "down": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          256,
+          256
+         ]
+        },
+        "north": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          1,
+          1
+         ]
+        },
+        "south": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          1,
+          1
+         ]
+        },
+        "east": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          1,
+          1
+         ]
+        },
+        "west": {
+         "uv": [
+          0,
+          0
+         ],
+         "uv_size": [
+          1,
+          1
+         ]
+        }
+       }
       }
      ]
     }

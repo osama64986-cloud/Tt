@@ -12,7 +12,8 @@
     "c2": "textures/entity/sh_fx_circle_2",
     "c3": "textures/entity/sh_fx_circle_3",
     "c4": "textures/entity/sh_fx_circle_4",
-    "c5": "textures/entity/sh_fx_circle_5"
+    "c5": "textures/entity/sh_fx_circle_5",
+    "c6": "textures/entity/sh_fx_circle_6"
    },
    "geometry": {
     "default": "geometry.sh_fx_circle"
