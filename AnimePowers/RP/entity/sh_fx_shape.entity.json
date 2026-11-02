@@ -83,14 +83,38 @@
     "s70": "geometry.sh_shape_spirit_stag",
     "s71": "geometry.sh_shape_foxfire",
     "s72": "geometry.sh_shape_light_lance",
-    "s73": "geometry.sh_shape_ghost_sword"
+    "s73": "geometry.sh_shape_ghost_sword",
+    "s74": "geometry.sh_shape_wind_trail",
+    "s75": "geometry.sh_shape_wind_ring",
+    "s76": "geometry.sh_shape_cyclone",
+    "s77": "geometry.sh_shape_sound_wave",
+    "s78": "geometry.sh_shape_echo_pulse",
+    "s79": "geometry.sh_shape_star_beam",
+    "s80": "geometry.sh_shape_grav_well",
+    "s81": "geometry.sh_shape_nova_core",
+    "s82": "geometry.sh_shape_nova_ring",
+    "s83": "geometry.sh_shape_comet",
+    "s84": "geometry.sh_shape_fusion_rings",
+    "s85": "geometry.sh_shape_seal_stamp",
+    "s86": "geometry.sh_shape_fire_ring",
+    "s87": "geometry.sh_shape_x_cut",
+    "s88": "geometry.sh_shape_claw_violet",
+    "s89": "geometry.sh_shape_stone_ring",
+    "s90": "geometry.sh_shape_warp_gate"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",
     "wings": "animation.sh_fx.shape_wings",
     "clock": "animation.sh_fx.shape_clock",
     "fang_jaw": "animation.sh_fx.shape_fang_jaw",
-    "rift": "animation.sh_fx.shape_rift"
+    "rift": "animation.sh_fx.shape_rift",
+    "cyclone": "animation.sh_fx.shape_cyclone",
+    "nova_core": "animation.sh_fx.shape_nova_core",
+    "fusion_rings": "animation.sh_fx.shape_fusion_rings",
+    "warp_gate": "animation.sh_fx.shape_warp_gate",
+    "beam": "animation.sh_fx.shape_beam",
+    "sound_pulse": "animation.sh_fx.shape_sound_pulse",
+    "flat_ring": "animation.sh_fx.shape_flat_ring"
    },
    "scripts": {
     "animate": [
@@ -106,11 +130,37 @@
      },
      {
       "rift": "q.property('sh:v') == 50 || q.property('sh:v') == 51 || q.property('sh:v') == 52 || q.property('sh:v') == 53"
+     },
+     {
+      "cyclone": "q.property('sh:v') == 76"
+     },
+     {
+      "nova_core": "q.property('sh:v') == 81"
+     },
+     {
+      "fusion_rings": "q.property('sh:v') == 84"
+     },
+     {
+      "warp_gate": "q.property('sh:v') == 90"
+     },
+     {
+      "beam": "q.property('sh:v') == 79"
+     },
+     {
+      "sound_pulse": "q.property('sh:v') == 77 || q.property('sh:v') == 78"
+     },
+     {
+      "flat_ring": "q.property('sh:v') == 75 || q.property('sh:v') == 82"
      }
     ]
    },
    "render_controllers": [
-    "controller.render.sh_fx_shape"
+    {
+     "controller.render.sh_fx_shape": "!(q.property('sh:v') == 7 || q.property('sh:v') == 27 || q.property('sh:v') == 31 || q.property('sh:v') == 32 || q.property('sh:v') == 48 || q.property('sh:v') == 47 || q.property('sh:v') == 89)"
+    },
+    {
+     "controller.render.sh_fx_shape_lit": "q.property('sh:v') == 7 || q.property('sh:v') == 27 || q.property('sh:v') == 31 || q.property('sh:v') == 32 || q.property('sh:v') == 48 || q.property('sh:v') == 47 || q.property('sh:v') == 89"
+    }
    ]
   }
  }

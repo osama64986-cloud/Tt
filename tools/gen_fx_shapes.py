@@ -230,6 +230,8 @@ STAR_G, STAR_W, VOIDC, VOID_RIM = (255, 214, 90), (255, 250, 225), (14, 8, 26), 
 WHITE = (255, 255, 255)
 
 SHAPES = []
+# أشكال أجسام صلبة (حديد، صخر، قفل، ظل) تاخذ إضاءة العالم العادية؛ الباقي طاقة سحرية مضيئة
+LIT_SHAPES = ["iron_fist", "weight", "gavel", "padlock", "rock_chunk", "afterimage", "stone_ring"]
 
 
 def shape(name, ground=False):
@@ -621,12 +623,19 @@ def _(S):
 
 # ───────────────────────── الأسلحة ─────────────────────────
 def crescent(S, outer, mid, core):
-    for k in range(17):
-        ang = -80 + k * 10
-        t = math.cos(math.radians(ang) * 90 / 82) ** 0.8 if abs(ang) < 82 else 0.05
-        w = 0.8 + 4.2 * t
-        for r, col, f, d in ((20.2, outer, 0.35, 1.0), (18.6, mid, 0.6, 1.6), (17.0, core, 0.45, 1.2)):
-            S.box((0, r, 0), (3.9, max(0.5, w * f), d), col, rot=[0, 0, ang] if ang else None, pivot=(0, 0, 0), flat=col == core)
+    """هلال ضربة بأسلوب الأنمي: سميك بالنص (5 بكسل) ويضيق لرأسين حادين، طبقات: حافة خارجية غامقة ← شريط بلون الضربة ← قلب أبيض مضيء
+    على الحافة الداخلية، وخطوط سرعة قصيرة داخل القوس. القوس بمستوى XY حول المركز (نصف قطر 18) ويواجه -Z."""
+    n = 25
+    for k in range(n):
+        u = k / (n - 1)
+        ang = -84 + u * 168
+        t = math.sin(math.pi * u) ** 1.6
+        w = 0.3 + 6.4 * t
+        seg = 2 * math.pi * 18 / 360 * 7.2
+        for r, col, f, d, fl in ((19.6 + w * 0.25, outer, 0.32, 0.9, False), (18.4, mid, 0.62, 1.5, False), (17.0 - w * 0.08, core, 0.34, 1.9, True)):
+            S.box((0, r, 0), (seg, max(0.45, w * f), d), col, rot=[0, 0, ang] if abs(ang) > 1e-6 else None, pivot=(0, 0, 0), flat=fl)
+    for ang, rr, L in ((-38, 13.5, 4.5), (-8, 12.6, 6.0), (24, 13.2, 5.0), (52, 14.2, 3.5)):
+        S.box((0, rr, 0.6), (L, 0.45, 0.5), core, rot=[0, 0, ang], pivot=(0, 0, 0), flat=True)
 
 
 @shape("slash_violet")
@@ -998,6 +1007,274 @@ def _(S):
 # ───────────────────────── الإخراج ─────────────────────────
 
 
+
+# ═════════════════════════ v1.32: أجسام 3D لكل مهارة ما كان إلها جسم ═════════════════════════
+def tangent_box(S, center, r, ang, size, col, bone="body", flat=False):
+    """مكعب مماسي على دائرة أفقية (حول Y) بزاوية ang"""
+    S.box((center[0], center[1], center[2] + r), size, col, bone=bone, rot=[0, ang, 0] if abs(ang) > 1e-6 else None, pivot=center, flat=flat)
+
+
+@shape("wind_trail", ground=True)
+def _(S):
+    """الركض بالريح: ثلاث شرائط ريح لولبية تلف حول الرجلين وتضيق للأعلى، وخطين سرعة ورا"""
+    for s_i in range(3):
+        for k in range(18):
+            t = k / 17
+            ang = s_i * 120 + k * 22
+            y = 1.0 + k * 0.75
+            r = 7.0 - 2.6 * t
+            w = 3.6 * (1 - 0.5 * t)
+            tangent_box(S, (0, y, 0), r, ang, (w, 1.1 * (1 - 0.4 * t), 0.7), WIND_W if s_i == 0 else WIND_HI, flat=s_i == 0)
+            if k % 4 == 1:
+                tangent_box(S, (0, y + 0.8, 0), r + 0.6, ang + 6, (w * 0.5, 0.4, 0.5), WHITE, flat=True)
+    for x, L in ((-3.0, 14), (2.6, 10)):
+        S.box((x, 0.8, 7 + L / 2), (0.6, 0.6, L), WIND_W, flat=True)
+        S.box((x, 0.8, 7 + L * 0.3), (1.4, 0.9, L * 0.5), WIND_HI)
+
+
+@shape("wind_ring", ground=True)
+def _(S):
+    """حلقة عصفة على الأرض: 16 قوس ريح منحني (أبيض ← أخضر) بفراغات، وحلقة دوامات صغيرة جوه"""
+    for i in range(16):
+        if i % 4 == 3:
+            continue
+        for k, (r, col, h) in enumerate(((16.0, WIND_W, 1.0), (15.0, WIND_HI, 1.6), (14.0, WIND, 1.0))):
+            for j in range(3):
+                tangent_box(S, (0, 1.0 + k * 0.2, 0), r, i * 22.5 + j * 5.5, (2.4, h, 1.0), col, flat=k == 0)
+    for i in range(8):
+        tangent_box(S, (0, 0.8, 0), 8.0, i * 45 + 10, (3.6, 0.8, 0.8), WIND_HI if i % 2 else WIND_W, flat=i % 2 == 0)
+
+
+@shape("cyclone", ground=True)
+def _(S):
+    """العاصفة: إعصار من 9 طبقات تتسع للأعلى بثلاث عظام تدور بسرعات مختلفة، وشفرات ريح مائلة وحطام"""
+    bones = [S.bone(n, pivot=(0, 0, 0)) for n in ("cy_a", "cy_b", "cy_c")]
+    for lv in range(9):
+        y = 1.5 + lv * 4.0
+        r = 4.0 + lv * 2.0
+        n = 10 + lv
+        col = mix(WIND_LO, WIND_W, lv / 8)
+        for i in range(n):
+            if (i + lv) % 4 == 3:
+                continue
+            L = 2 * math.pi * r / n * 0.72
+            tangent_box(S, (0, y, 0), r, i * 360 / n + lv * 17, (L, 1.8, 1.1), col if i % 2 else mix(col, WHITE, 0.35), bone=bones[lv // 3])
+            if i % 3 == 0:
+                tangent_box(S, (0, y + 1.6, 0), r + 0.8, i * 360 / n + lv * 17 + 8, (L * 0.6, 0.6, 0.7), WIND_W, bone=bones[lv // 3], flat=True)
+    for k, (a, y, r) in enumerate(((20, 8, 9), (140, 16, 13), (250, 24, 17), (330, 30, 20), (80, 34, 21))):
+        tangent_box(S, (0, y, 0), r, a, (1.6, 1.6, 1.6), (120, 104, 84) if k % 2 else (70, 140, 60), bone=bones[k % 3])
+
+
+@shape("sound_wave")
+def _(S):
+    """موجة الصدى: جبهة موجة صوتية منحنية (ثلاث أقواس من أعمدة مثل مقياس الصوت) تتقدم لـ-Z"""
+    for a_i, (r, col, hi) in enumerate(((9.0, TEAL_W, WHITE), (13.0, TEAL_HI, TEAL_W), (17.0, TEAL, TEAL_HI))):
+        n = 11 + a_i * 3
+        for i in range(n):
+            u = i / (n - 1)
+            ang = -55 + u * 110
+            h = 3.0 + 9.0 * abs(math.sin(i * 1.37 + a_i)) * (1 - 0.6 * abs(u - 0.5) * 2)
+            S.box((0, 0, -r), (1.6, h, 1.0), col if i % 2 else hi, rot=[0, ang, 0], pivot=(0, 0, 0), flat=a_i == 0)
+            S.box((0, h / 2 + 0.6, -r), (1.6, 0.8, 1.0), WHITE, rot=[0, ang, 0], pivot=(0, 0, 0), flat=True)
+
+
+@shape("echo_pulse", ground=True)
+def _(S):
+    """جوقة الصدى: حلقة على الأرض من أعمدة صوت واقفة بارتفاعات متغيرة (مثل مقياس الموسيقى)، وخط أرضي تحتها"""
+    n = 30
+    for i in range(n):
+        h = 2.5 + 8.0 * abs(math.sin(i * 0.9)) * abs(math.cos(i * 0.37))
+        tangent_box(S, (0, 0.5 + h / 2, 0), 16.0, i * 12, (1.8, h, 1.2), TEAL if i % 2 else TEAL_HI)
+        tangent_box(S, (0, 1.2 + h, 0), 16.0, i * 12, (1.8, 0.9, 1.2), WHITE, flat=True)
+    for i in range(24):
+        tangent_box(S, (0, 0.3, 0), 14.2, i * 15, (3.4, 0.6, 0.8), TEAL_W, flat=True)
+
+
+@shape("star_beam")
+def _(S):
+    """خط نجمي (كوكبة/مسار الومضة): شعاع وحدة طوله 16 على -Z، يتمدد بالطول بالخاصية sh:l"""
+    S.box((0, 0, -8), (0.7, 0.7, 16), WHITE, flat=True)
+    S.box((0, 0, -8), (1.6, 1.6, 15.6), (150, 200, 255))
+    for z in (-4, -12):
+        S.box((0, 0, z), (2.6, 0.5, 0.5), STAR_W, flat=True)
+        S.box((0, 0, z), (0.5, 2.6, 0.5), STAR_W, flat=True)
+
+
+@shape("grav_well", ground=True)
+def _(S):
+    """بئر الجاذبية: قمع حلقات (كل حلقة أوطى نحو المركز) وأذرع لولبية تنسحب للنص، ونواة سودة فوقها نجمة صغيرة"""
+    for k, r in enumerate((22, 18, 14, 10, 6.5)):
+        n = int(2 * math.pi * r / 3.4)
+        col = mix((40, 30, 110), BLUE_HI, k / 4)
+        for i in range(n):
+            if i % 5 == 4:
+                continue
+            tangent_box(S, (0, 0.4 + (4 - k) * 0.25, 0), r, i * 360 / n + k * 9, (2 * math.pi * r / n * 0.8, 0.7, 1.0), col if i % 2 else mix(col, WHITE, 0.25))
+    for arm in range(3):
+        for k in range(9):
+            r = 21 - k * 2.1
+            tangent_box(S, (0, 1.6, 0), r, arm * 120 + k * 24, (2.6 - k * 0.15, 0.8, 1.2), mix(BLUE_W, VOID_RIM, k / 8), flat=k < 2)
+    sphere(S, (0, 4.5, 0), 3.2, VOIDC, rim=(60, 30, 110))
+    ring(S, (0, 4.5, 0), 4.6, 10, (2.6, 0.7, 0.7), STAR_W, axis="z")
+    S.box((0, 9.5, 0), (1.2, 2.4, 1.2), STAR_W, flat=True)
+    S.box((0, 9.5, 0), (2.4, 1.2, 1.2), STAR_W, flat=True)
+
+
+@shape("nova_core")
+def _(S):
+    """قلب المستعر: كرة نجمية بيضاء ذهبية وحلقتين جيروسكوب تدور بمحورين، تكبر طول الشحن"""
+    core = S.bone("core", pivot=(0, 0, 0))
+    y = -5.0
+    while y < 5.0:
+        w = 2 * math.sqrt(max(0.0, 25 - (y + 0.5) ** 2))
+        S.box((0, y + 0.5, 0), (w, 1.02, w), STAR_W, bone=core, top=WHITE)
+        S.box((0, y + 0.5, 0), (w * 0.72, 1.02, w * 0.72), STAR_G, bone=core, rot=[0, 45, 0])
+        y += 1.0
+    ra = S.bone("ring_a", pivot=(0, 0, 0))
+    ring(S, (0, 0, 0), 9, 16, (3.4, 1.0, 1.0), STAR_G, axis="z", bone=ra, col2=STAR_W)
+    rb0 = S.bone("ring_b0", pivot=(0, 0, 0), rot=[0, 90, 0])
+    rb = S.bone("ring_b", parent=rb0, pivot=(0, 0, 0))
+    ring(S, (0, 0, 0), 11, 18, (3.6, 0.9, 0.9), (150, 200, 255), axis="z", bone=rb, col2=WHITE)
+    for i in range(8):
+        a = math.radians(i * 45)
+        S.box((math.cos(a) * 6.8, math.sin(a) * 6.8, 0), (1.4, 1.4, 1.4), WHITE, bone=core, flat=True)
+
+
+@shape("nova_ring", ground=True)
+def _(S):
+    """موجة المستعر: حلقة أرضية من 24 شعاع نجمي يطلع للخارج، وحلقة نور داخلية"""
+    for i in range(24):
+        L = 6.0 if i % 2 else 9.0
+        for k in range(3):
+            S.box((0, 1.0, 16 + k * L / 3 + L / 6), (1.6 - k * 0.45, 1.2, L / 3), (STAR_W, STAR_G, (255, 170, 60))[k], rot=[0, i * 15, 0] if i else None, pivot=(0, 0, 0), flat=k == 0)
+    for i in range(32):
+        tangent_box(S, (0, 0.6, 0), 15.0, i * 11.25, (3.2, 0.8, 0.6), WHITE if i % 2 else STAR_W, flat=True)
+
+
+@shape("comet")
+def _(S):
+    """الومضة النجمية: مذنب: رأس نجمي أبيض وذيل يضيق ورا (+Z) من الذهبي للبرتقالي"""
+    sphere(S, (0, 0, 0), 3.2, WHITE, rim=STAR_W, step=1.6)
+    for i in range(4):
+        S.box((0, 0, 0), (9, 1.0, 1.0), STAR_W, rot=[0, 0, i * 45] if i else None, pivot=(0, 0, 0), flat=True)
+    for k in range(10):
+        t = k / 9
+        w = 5.6 * (1 - t) + 0.6
+        S.box((0, 0, 4 + k * 2.4), (w, w * 0.8, 2.5), mix(STAR_G, (255, 120, 40), t))
+        if k % 2 == 0:
+            S.box((0, 0, 4 + k * 2.4), (w * 0.4, w * 0.4, 2.6), WHITE, flat=True)
+
+
+@shape("fusion_rings")
+def _(S):
+    """التكيّف: حلقتين متداخلات (جيروسكوب) تدور بمحورين، كل حلقة صفة، وبالنص جوهرة الدمج"""
+    ga = S.bone("ga", pivot=(0, 0, 0))
+    ring(S, (0, 0, 0), 12, 18, (4.0, 1.4, 1.4), GOLD, axis="z", bone=ga, col2=GOLD_HI)
+    gb0 = S.bone("gb0", pivot=(0, 0, 0), rot=[0, 90, 0])
+    gb = S.bone("gb", parent=gb0, pivot=(0, 0, 0))
+    ring(S, (0, 0, 0), 9.5, 16, (3.4, 1.2, 1.2), (220, 225, 240), axis="z", bone=gb, col2=WHITE)
+    for k, (y, w) in enumerate(((-2.2, 1.6), (-1.0, 3.0), (0.2, 3.8), (1.4, 3.0), (2.6, 1.6))):
+        S.box((0, y, 0), (w, 1.2, w), (255, 120, 90) if k < 2 else (120, 230, 150) if k < 4 else WHITE, flat=k == 4)
+    for i in range(4):
+        a = math.radians(i * 90 + 45)
+        S.box((math.cos(a) * 12, math.sin(a) * 12, 0), (1.6, 1.6, 1.8), WHITE, bone=ga, flat=True)
+
+
+@shape("seal_stamp")
+def _(S):
+    """ختم الرقم: ختم ذهبي دائري (حافة مسننة + حلقة داخلية + أشعة) يواجه -Z، ينطبع على راس العدو"""
+    ring(S, (0, 0, 0), 10.5, 20, (3.6, 1.6, 1.6), GOLD, axis="z", col2=GOLD_HI)
+    for i in range(20):
+        a = i * 18 + 9
+        S.box((0, 12.4, 0), (1.2, 1.4, 1.2), GOLD_HI, rot=[0, 0, a], pivot=(0, 0, 0))
+    disc_rows(S, (0, 0, 0.5), 8.6, 1.0, GOLD_LO, step=1.4, col2=mul(GOLD_LO, 0.9))
+    ring(S, (0, 0, -0.4), 6.6, 16, (2.8, 0.9, 0.9), GOLD_HI, axis="z")
+    for i in range(8):
+        S.box((0, 4.2, -0.5), (0.8, 3.4, 0.8), STAR_W if i % 2 else GOLD_HI, rot=[0, 0, i * 45] if i else None, pivot=(0, 0, 0), flat=True)
+    S.box((0, 0, -0.6), (2.6, 2.6, 0.8), WHITE, flat=True)
+
+
+@shape("fire_ring", ground=True)
+def _(S):
+    """دوامة الجحيم: حلقة ألسنة لهب حولك (12 لسان من أحمر لأبيض) وحلقة جمر تحتها"""
+    for i in range(12):
+        bn = S.bone(f"fl{i}", pivot=(0, 0, 0), rot=[0, i * 30, 0] if i else None)
+        for k, (w, h, col) in enumerate(((4.2, 4.0, (200, 40, 10)), (3.4, 4.0, (255, 110, 20)), (2.4, 3.6, (255, 190, 50)), (1.4, 3.0, (255, 245, 190)))):
+            S.box((0, 1.0 + k * 3.6 + h / 2, 22 + k * 0.6), (w, h, w * 0.7), col, bone=bn, flat=k >= 2)
+    for i in range(30):
+        tangent_box(S, (0, 0.5, 0), 22, i * 12, (4.6, 1.0, 2.2), (255, 120, 30) if i % 2 else (160, 40, 10))
+
+
+@shape("x_cut")
+def _(S):
+    """إعدام الفراغ: شطرتين متقاطعتين (X) بنفسجيات بقلب أبيض، تضيق للأطراف"""
+    for rot in (45, -45):
+        for k in range(15):
+            u = k / 14
+            t = math.sin(math.pi * u)
+            x = -15 + u * 30
+            S.box((x, 0, 0), (2.2, 0.6 + 2.6 * t, 1.2), (110, 40, 200), rot=[0, 0, rot], pivot=(0, 0, 0))
+            S.box((x, 0, -0.5), (2.2, 0.3 + 1.1 * t, 1.0), WHITE, rot=[0, 0, rot], pivot=(0, 0, 0), flat=True)
+
+
+@shape("claw_violet")
+def _(S):
+    """خرمشة مخالب الظل: ثلاث خدوش منحنية بنفسجية بقلب فاتح"""
+    for x in (-6, 0, 6):
+        for k in range(13):
+            t = (k - 6) / 6
+            w = 0.5 + 2.6 * (1 - t * t)
+            y = t * 13
+            S.box((x + 1.2 * t * t, y, 0.6), (w + 1.2, 13 / 6, 1.2), (90, 40, 170))
+            S.box((x + 1.2 * t * t, y, -0.2), (w * 0.55, 13 / 6, 1.0), (235, 215, 255), flat=True)
+
+
+@shape("stone_ring", ground=True)
+def _(S):
+    """كاسر الأرض: حلقة أشواك صخر تطلع من الأرض مايلة لبرا، بطحلب وشقوق"""
+    STONE, STONE_HI, STONE_LO, MOSSC = (128, 126, 120), (170, 168, 160), (82, 80, 78), (86, 128, 64)
+    for i in range(10):
+        bn = S.bone(f"rk{i}", pivot=(0, 0, 0), rot=[0, i * 36 + 7, 0])
+        L = 16 + (i * 7) % 6
+        for k in range(5):
+            t = k / 4
+            w = 5.6 * (1 - 0.78 * t)
+            S.box((0, 1 + k * L / 5 + L / 10, 16 + k * 0.9), (w, L / 5 * 1.05, w * 0.85), (STONE, STONE_HI, STONE_LO, STONE_HI, (205, 202, 192))[k], bone=bn, rot=[-16, 0, 0], pivot=(0, 0, 16))
+        S.box((0, 1.2, 16.6), (5.2, 1.6, 4.6), MOSSC if i % 3 == 0 else STONE_LO, bone=bn)
+    for i in range(6):
+        tangent_box(S, (0, 0.2, 0), 8 + (i % 2) * 3, i * 60, (6.0, 0.4, 0.8), (40, 34, 30))
+
+
+@shape("warp_gate")
+def _(S):
+    """بوابة المسافة: إطار بيضاوي عمودي (أزرق/بنفسجي ونقاط بيضا) ودوامة لولبية تدور جوه نواة سودة"""
+    for i in range(22):
+        a = i * 360 / 22
+        S.box((0, 15.0, 0), (4.4, 1.8, 1.6), BLUE if i % 2 else LAW, rot=[0, 0, a] if a else None, pivot=(0, 0, 0))
+        if i % 3 == 0:
+            S.box((0, 16.6, -0.4), (1.2, 1.2, 1.2), WHITE, rot=[0, 0, a] if a else None, pivot=(0, 0, 0), flat=True)
+    disc_rows(S, (0, 0, 0.6), 13.2, 0.8, VOIDC, step=1.6, col2=(24, 14, 46))
+    sw = S.bone("swirl", pivot=(0, 0, 0))
+    for arm in range(3):
+        for k in range(8):
+            r = 12 - k * 1.4
+            S.box((0, r, -0.2), (2.6 - k * 0.2, 0.9, 0.8), mix(BLUE_W, VOID_RIM, k / 7), bone=sw, rot=[0, 0, arm * 120 + k * 28], pivot=(0, 0, 0), flat=k < 3)
+
+
+EXTRA_ANIMS["cyclone"] = {"cy_a": {"rotation": [0, "q.life_time * 760", 0]}, "cy_b": {"rotation": [0, "q.life_time * 540", 0]}, "cy_c": {"rotation": [0, "q.life_time * 380", 0]}}
+EXTRA_ANIMS["nova_core"] = {"ring_a": {"rotation": [0, "q.life_time * 300", 0]}, "ring_b": {"rotation": [0, 0, "q.life_time * 420"]},
+                            "core": {"scale": "1 + math.sin(q.life_time * 900) * 0.08"}}
+EXTRA_ANIMS["fusion_rings"] = {"ga": {"rotation": [0, "q.life_time * 260", 0]}, "gb": {"rotation": [0, 0, "q.life_time * 330"]}}
+EXTRA_ANIMS["warp_gate"] = {"swirl": {"rotation": [0, 0, "q.life_time * 420"]}}
+EXTRA_ANIMS["beam"] = {"body": {"scale": [1, 1, "math.max(0.05, q.property('sh:l'))"]}}
+EXTRA_ANIM_SHAPES["beam"] = ["star_beam"]
+# أعمدة الصوت تنبض، وطولها ما يكبر مع نصف القطر (الحلقة تتوسع لـ12 بلوكة بس الأعمدة تبقى ~2 بلوكة)
+EXTRA_ANIMS["sound_pulse"] = {"body": {"scale": [1, "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, q.property('sh:r')))", 1]}}
+EXTRA_ANIM_SHAPES["sound_pulse"] = ["sound_wave", "echo_pulse"]
+# الحلقات الأرضية الكبيرة (عصفة الريح، موجة المستعر) تتوسع لـ7-14 بلوكة وسمكها يبقى رفيع
+EXTRA_ANIMS["flat_ring"] = {"body": {"scale": [1, "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))", 1]}}
+EXTRA_ANIM_SHAPES["flat_ring"] = ["wind_ring", "nova_ring"]
+
 def build():
     shapes = []
     for name, ground, fn in SHAPES:
@@ -1039,6 +1316,7 @@ def main():
                     "sh:a": {"type": "float", "range": [-360, 360], "default": 0, "client_sync": True},
                     "sh:s": {"type": "float", "range": [-3000, 3000], "default": 0, "client_sync": True},
                     "sh:w": {"type": "float", "range": [-3000, 3000], "default": 0, "client_sync": True},
+                    "sh:l": {"type": "float", "range": [0, 64], "default": 1, "client_sync": True},
                 },
             },
             "component_groups": {"sh:gone": {"minecraft:instant_despawn": {}}},
@@ -1056,6 +1334,7 @@ def main():
     }, compact=False)
     # كيان RP
     geos = {f"s{i}": f"geometry.sh_shape_{n}" for i, n in enumerate(names)}
+    lit_cond = " || ".join(f"q.property('sh:v') == {names.index(n)}" for n in LIT_SHAPES if n in names)
     anims = {"fx": "animation.sh_fx.shape"}
     animate = ["fx"]
     for key, bones in EXTRA_ANIMS.items():
@@ -1071,17 +1350,20 @@ def main():
             "geometry": geos,
             "animations": anims,
             "scripts": {"animate": animate},
-            "render_controllers": ["controller.render.sh_fx_shape"],
+            # طاقة/سحر = ignore_lighting (تضوي بالليل والكهوف مثل مؤثرات السحر)، والأجسام الصلبة (حديد/صخر/أقفال) إضاءة عادية
+            "render_controllers": [{"controller.render.sh_fx_shape": f"!({lit_cond})"}, {"controller.render.sh_fx_shape_lit": lit_cond}],
         }},
     }, compact=False)
     rc_path = os.path.join(RP, "render_controllers", "sh_fx.render_controllers.json")
     rc = json.load(open(rc_path, encoding="utf-8"))
-    rc["render_controllers"]["controller.render.sh_fx_shape"] = {
+    base_rc = {
         "arrays": {"geometries": {"Array.g": [f"Geometry.s{i}" for i in range(len(names))]}},
         "geometry": "Array.g[query.property('sh:v')]",
         "materials": [{"*": "Material.default"}],
         "textures": ["Texture.default"],
     }
+    rc["render_controllers"]["controller.render.sh_fx_shape"] = {**base_rc, "ignore_lighting": True}
+    rc["render_controllers"]["controller.render.sh_fx_shape_lit"] = dict(base_rc)
     write(rc_path, rc, compact=False)
     an_path = os.path.join(RP, "animations", "sh_fx.animation.json")
     an = json.load(open(an_path, encoding="utf-8"))

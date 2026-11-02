@@ -174,6 +174,8 @@ class Model:
                         rot = [a + b2 for a, b2 in zip(bb.get("rotation", [0, 0, 0]), p["rot"])]
                         pv = np.array(bb.get("pivot", [0, 0, 0]), dtype=float)
                         R = rot_matrix(*rot)
+                        if "scale" in p:                                   # تحجيم العظمة حول محورها (مثل اللعبة: قبل الدوران)
+                            pts = (pts - pv) * np.array(p["scale"], dtype=float) + pv
                         pts = (pts - pv) @ R.T + pv
                         pts = pts + np.array(p["pos"], dtype=float) * np.array([1, 1, -1]) * 0 + np.array([p["pos"][0], p["pos"][1], -p["pos"][2]])
                     faces.append((pts, rects[fname], c.get("mirror", False)))

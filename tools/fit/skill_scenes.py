@@ -53,9 +53,19 @@ class Scene:
             p = (pts / 16.0 * scale) @ Rm.T + np.array(pos)
             self.faces.append((p, "tex", (m, rect)))
 
-    def shape(self, name, pos, d=(0, 1), r=1.0, p=0.0, a=0.0):
-        pose = {"tilt": {"rot": [p, 0, 0], "pos": [0, 0, 0]}, "roll": {"rot": [0, 0, a], "pos": [0, 0, 0]}}
-        self.model(SHAPES[name], pose, pos, d, r)
+    def shape(self, name, pos, d=(0, 1), r=1.0, p=0.0, a=0.0, life=None, s=0.0, w=0.0, l=1.0):
+        """نفس animation.sh_fx.shape: spin (Y = الوقت×sh:s)، tilt (X = sh:p)، roll (Z = sh:a + الوقت×sh:w)، ونبضة الظهور،
+        والشعاع النجمي يتمدد بطوله sh:l"""
+        lt = life or 0.0
+        pose = {"spin": {"rot": [0, lt * s, 0], "pos": [0, 0, 0]}, "tilt": {"rot": [p, 0, 0], "pos": [0, 0, 0]}, "roll": {"rot": [0, 0, a + lt * w], "pos": [0, 0, 0]}}
+        if name == "star_beam":
+            pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, 1, max(0.05, l)]}
+        if name in ("wind_ring", "nova_ring"):
+            pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, min(1.0, 2.5 / max(0.1, r)), 1]}
+        if name in ("sound_wave", "echo_pulse"):
+            pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, min(1.0, 3.0 / max(0.1, r)), 1]}
+        grow = min(1.0, 0.3 + lt * 7.0) if life is not None else 1.0
+        self.model(SHAPES[name], pose, pos, d, r * grow)
 
     def cube(self, c, s, col, glow=False):
         x0, y0, z0 = c[0] - s / 2, c[1] - s / 2, c[2] - s / 2

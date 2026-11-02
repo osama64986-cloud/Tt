@@ -60,6 +60,15 @@
      ],
      "default": 0,
      "client_sync": true
+    },
+    "sh:l": {
+     "type": "float",
+     "range": [
+      0,
+      64
+     ],
+     "default": 1,
+     "client_sync": true
     }
    }
   },

@@ -20,20 +20,89 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RP = os.path.join(ROOT, "AnimePowers", "RP")
 FACES = ("north", "south", "east", "west", "up", "down")
 
-# ───────── حركة المسك: القيم الأساسية من vanilla trident.animation.json ─────────
-TRIDENT_FP = {"pos": [-7.0, -3.0, -2.0], "rot": [152.0, -9.0, 25.0]}
-TRIDENT_TP = {"pos": [1.5, -2.5, -10.5], "rot": [97.0, -1.5, -49.0]}
+# ───────── حركة المسك: محلولة رياضياً لكل سلاح (مو منسوخة من الترايدنت) ─────────
+# قاعدة الربط الحقيقية (من Blockbench attachable_preview.js، وتأكدت بملفات موجانغ: المنظار والترايدنت والدرع):
+#   العظمة المربوطة بـ q.item_slot_to_bone_name: نقطة الموديل (0,24,0) تنحط على pivot عظمة اليد rightItem (-6,15,1)
+#   والموديل يتبع الذراع. pivot العظمة ما يحدد مكان الربط؛ هو بس محور دوران/تحجيم حركة المسك.
+#   بالمنظور الثالث الذراع مرفوعة ~18° (animation.player.holding)، وبالأول الذراع [95,-45,115] + [13.5,-10,12]
+#   وعظمة اليد مزاحة [0,0,-1] (animation.player.first_person.empty_hand)، والكاميرا تباوع +z (الراس ملفوف 180).
+# المشكلة القديمة: كل الأسلحة استعملت حركة الترايدنت كما هي. الترايدنت متناظر فما يهمه وين "الحد"، لكن:
+#   * بالثالث الحد (x+ بالموديل) كان يطلع لفوق والظهر لتحت (ساطور/كاتانا مقلوبة)،
+#   * بالأول النصل كان يبين من جنبه (رفيع) مو من وجهه، والقبضة 7 بكسل برا الكف.
+# الحل: لكل سلاح نحدد (1) مركز القبضة بالموديل، (2) اتجاه النصل المطلوب، (3) اتجاه الحد، ونحل الدوران والإزاحة
+# حتى القبضة تقع بنص الكف بالضبط والحد يواجه اتجاه الضربة. المعاينة: python3 tools/fit/hand_sim.py out.png
+FIST_TP = (6.0, 13.0, 0.0)          # نص الكف بإحداثيات الذراع الداخلية (x مقلوب): الذراع x 4..8، z -2..2، الكف y 12..14
+FIST_FP = (6.0, 13.0, 1.0)          # نفس النقطة + تعويض إزاحة عظمة اليد [0,0,-1] بالمنظور الأول
+ARM_TP_DEG = 18.0
+R_ARM_FP = (-95.0, 45.0, 115.0)     # دوران الذراع بالأول (داخلي)
 HOLD = {
-    # scale يصغر الموديل الطويل ليناسب اليد. غيّر pos/rot هنا إذا شكل المسك مو مضبوط.
-    "dark_katana": {"fp": {**TRIDENT_FP, "scale": 0.78}, "tp": {**TRIDENT_TP, "scale": 0.78}},
-    "dawn_dagger": {"fp": {**TRIDENT_FP, "scale": 0.9}, "tp": {**TRIDENT_TP, "scale": 0.9}},
-    "ember_cleaver": {"fp": {**TRIDENT_FP, "scale": 0.82}, "tp": {**TRIDENT_TP, "scale": 0.82}},
-    "shadow_blade": {"fp": {**TRIDENT_FP, "scale": 0.82}, "tp": {**TRIDENT_TP, "scale": 0.82}},
-    "shadow_claws": {"fp": {**TRIDENT_FP, "scale": 0.95}, "tp": {**TRIDENT_TP, "scale": 0.95}},
-    "stone_maul": {"fp": {**TRIDENT_FP, "scale": 0.74}, "tp": {**TRIDENT_TP, "scale": 0.74}},
-    "sunset_spear": {"fp": {**TRIDENT_FP, "scale": 0.68}, "tp": {**TRIDENT_TP, "scale": 0.68}},
-    "silver_oath": {"fp": {**TRIDENT_FP, "scale": 0.8}, "tp": {**TRIDENT_TP, "scale": 0.8}},
+    # grip = ارتفاع مركز القبضة بالموديل، scale = حجم السلاح (نفس التصاميم)، tp/fp = (اتجاه النصل، اتجاه الحد) بالعالم الداخلي
+    #   الثالث: -z قدام، +y فوق. الأول: +z لقدام الشاشة، +y فوق، +x = يسار الشاشة (نحو النص)
+    "dark_katana": {"grip": 11.5, "scale": 0.78, "kind": "sword"},
+    "dawn_dagger": {"grip": 11.7, "scale": 0.9, "kind": "sword"},
+    "ember_cleaver": {"grip": 11.7, "scale": 0.82, "fp_scale": 0.74, "kind": "sword"},
+    "shadow_blade": {"grip": 11.95, "scale": 0.82, "kind": "sword"},
+    "stone_maul": {"grip": 10.0, "scale": 0.74, "fp_scale": 0.64, "kind": "maul"},
+    "sunset_spear": {"grip": 11.1, "scale": 0.68, "kind": "spear"},
+    "silver_oath": {"grip": 11.7, "scale": 0.8, "kind": "sword"},
 }
+POSE = {
+    # الثالث: النصل لقدام وفوق بزاوية، والحد لقدام-تحت (مثل السيف بإيد اللاعب بماينكرافت)
+    "sword": {"tp_up": 35.0, "fp_dir": (0.42, 0.80, 0.42)},
+    "maul": {"tp_up": 55.0, "fp_dir": (0.30, 0.85, 0.45)},
+    "spear": {"tp_up": 8.0, "fp_dir": (0.25, 0.80, 0.60)},
+}
+
+
+def _rx(a):
+    a = math.radians(a); return np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)], [0, math.sin(a), math.cos(a)]])
+
+
+def _euler_zyx(rx, ry, rz):
+    a, b, c = (math.radians(v) for v in (rx, ry, rz))
+    Rx = _rx(rx)
+    Ry = np.array([[math.cos(b), 0, math.sin(b)], [0, 1, 0], [-math.sin(b), 0, math.cos(b)]])
+    Rz = np.array([[math.cos(c), -math.sin(c), 0], [math.sin(c), math.cos(c), 0], [0, 0, 1]])
+    return Rz @ Ry @ Rx
+
+
+def _to_bedrock_euler(R):
+    """مصفوفة داخلية → دوران بيدروك [rx,ry,rz] (عكس Euler(-rx,-ry,rz) بترتيب ZYX)"""
+    b = -math.asin(max(-1.0, min(1.0, R[2, 0])))
+    a = math.atan2(R[2, 1], R[2, 2])
+    c = math.atan2(R[1, 0], R[0, 0])
+    return [round(-math.degrees(a), 2), round(-math.degrees(b), 2), round(math.degrees(c), 2)]
+
+
+def _unit(v):
+    v = np.array(v, float); return v / np.linalg.norm(v)
+
+
+def solve_hold(grip_y, scale, arm_R, fist, blade_world, edge_world):
+    """يرجع (rotation, position) بيدروك لعظمة sh_weapon (pivot [0,24,0]) حتى:
+    نقطة القبضة (0,grip_y,0) تقع على fist (إحداثيات الذراع)، محور الموديل +y = blade_world، ومحور الحد +x = edge_world."""
+    d = arm_R.T @ _unit(blade_world)                      # الاتجاهات بإطار الذراع
+    e = arm_R.T @ _unit(edge_world)
+    e = _unit(e - (e @ d) * d)                            # الحد عمودي على النصل
+    ex = -e                                               # x الموديل الموجب = -x داخلي
+    R = np.column_stack([ex, d, np.cross(ex, d)])         # أعمدة: صور المحاور الداخلية x,y,z
+    rot = _to_bedrock_euler(R)
+    assert np.allclose(_euler_zyx(-rot[0], -rot[1], rot[2]), R, atol=1e-3)
+    P = np.array([0, 24.0, 0]); g = np.array([0, grip_y, 0.0])
+    T = np.array(fist) + np.array([0, 24.0, 0]) - np.array([6, 15, 1.0]) - P - R @ (scale * (g - P))
+    return rot, [round(-T[0], 3), round(T[1], 3), round(T[2], 3)]
+
+
+def hold_for(ident):
+    h = HOLD[ident]; pose = POSE[h["kind"]]
+    up = math.radians(pose["tp_up"])
+    tp_blade = (0, math.sin(up), -math.cos(up)); tp_edge = (0, -math.cos(up), -math.sin(up))
+    fp_blade = _unit(pose["fp_dir"]); n_cam = np.array([0, 0, -1.0])              # وجه النصل يواجه الكاميرا
+    fp_edge = -np.cross(fp_blade, n_cam)                                          # الحد نحو يسار الشاشة
+    rt, pt = solve_hold(h["grip"], h["scale"], _rx(ARM_TP_DEG), FIST_TP, tp_blade, tp_edge)
+    fs = h.get("fp_scale", h["scale"])
+    rf, pf = solve_hold(h["grip"], fs, _euler_zyx(*R_ARM_FP), FIST_FP, fp_blade, fp_edge)
+    return {"tp": {"pos": pt, "rot": rt, "scale": h["scale"]}, "fp": {"pos": pf, "rot": rf, "scale": fs}}
 
 
 def lerp(a, b, t):
@@ -170,12 +239,13 @@ def katana():
         w.box(sx * 2.375, 18.1, 0, 0.35, 0.6, 1.2, GOLD)                  # حافة ذهب برا الذراع
         w.box(0, 18.1, sx * 2.375, 1.2, 0.6, 0.35, GOLD)
     w.box(0, 18.7, 0, 1.3, 1.3, 1.0, GOLD, top=GOLD_HI)            # هاباكي
-    # النصل: رفيع (عرض 1.5 ← 1.1)، سمك 0.6، انحناء خفيف، الحد (يمين) بخط هامون متموج
+    # النصل: رفيع (عرض 1.5 ← 1.1)، سمك 0.6، الحد (يمين +x) بخط هامون متموج، والانحناء (سوري) لجهة الظهر -x
+    # (مثل الكاتانا الحقيقية: الحد على الجهة المحدبة؛ كان ينحني لجهة الحد فيطلع معكوس لما الحد يواجه الضربة)
     y0, L, n = 20.0, 27.0, 18
     h = L / n
     for k in range(n):
         t = k / (n - 1)
-        off = 1.6 * t * t
+        off = -1.6 * t * t
         wd = 1.5 - 0.4 * t
         yy = y0 + k * h
         mune = wd * 0.45
@@ -184,15 +254,15 @@ def katana():
         w.box(off + wd / 2 - (wd - mune) / 2, yy, 0, wd - mune, h, 0.5, STEEL)
         w.box(off + wd / 2 - ham / 2 - 0.05, yy, 0, ham, h, 0.54, HAMON if k % 3 else HAMON_HI)
         w.box(off + wd / 2 + 0.06, yy, 0, 0.12, h, 0.4, EDGE_W)          # الحد الأبيض برا النصل
-    # كيساكي: الرأس المائل
-    tx = 1.6
-    w.box(tx - 0.15, y0 + L, 0, 1.0, 0.8, 0.55, STEEL_HI)
-    w.box(tx + 0.1, y0 + L + 0.8, 0, 0.6, 0.7, 0.45, HAMON_HI)
-    w.box(tx + 0.25, y0 + L + 1.5, 0, 0.3, 0.5, 0.35, EDGE_W)
+    # كيساكي: الرأس المائل (الحد يصعد لنقطة على خط الظهر)
+    tx = -1.6
+    w.box(tx + 0.15, y0 + L, 0, 1.0, 0.8, 0.55, STEEL_HI)
+    w.box(tx - 0.1, y0 + L + 0.8, 0, 0.6, 0.7, 0.45, HAMON_HI)
+    w.box(tx - 0.25, y0 + L + 1.5, 0, 0.3, 0.5, 0.35, EDGE_W)
     # خط الشيناغي (حافة لامعة على ظهر النصل)
     for k in range(0, n, 2):
         t = k / (n - 1)
-        w.box(1.6 * t * t - 0.55, y0 + k * h + 0.05, 0, 0.12, h * 2 - 0.1, 0.66, STEEL_HI)
+        w.box(-1.6 * t * t - 0.55, y0 + k * h + 0.05, 0, 0.12, h * 2 - 0.1, 0.66, STEEL_HI)
     w.save()
     return w
 
@@ -344,6 +414,9 @@ def shadow_blade():
 
 
 # ───────────────────────── مخالب الظل (كاتار بثلاث شفرات) ─────────────────────────
+CLAW_CURL = -1      # الشفرات تنحني لقدام (-z) نحو الضربة: بالثالث مثل مخالب جاهزة، وبالأول تنحني لفوق الشاشة
+
+
 def claws():
     """مخالب تنلبس على الإيد (واقي يلف الساعد + ثلاث شفرات تطلع من المفاصل وتنحني لقدام).
     عظمة وحدة مربوطة بخانة اليد (q.item_slot_to_bone_name) مثل كل الأسلحة، بس الموديل مبني بإحداثيات ذراع اللاعب
@@ -383,11 +456,16 @@ def claws():
                 w.box(cx + x, Y(a, h), z + fwd * 0.425, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)
             w.box(cx + x, Y(-0.8 - L + 0.6 - 0.7, 0.7), fwd * 3.0, 0.35, 0.7, 0.4, EDGE_W)
 
-    # عظمة وحدة مربوطة بخانة اليد (مثل كل الأسلحة، مضمونة الظهور)، والموديل بإحداثيات ذراع اللاعب:
-    # قاعدة الربط (مثبتة رياضياً من ترايدنت موجانغ): pivot العظمة ينحط على pivot عظمة اليد [-6,15,1]،
-    # فلما الـpivot نفسه = [-6,15,1] وبدون تحويل، المكعبات تطلع بمكانها الحقيقي على الذراع (الواقي يلف الساعد والشفرات من المفاصل).
-    gauntlet(-6.0, 12.0, 1, 1)          # الشفرات تنحني لـ+z (كانت لـ-z وطلعت مقلوبة باللعبة)
-    w.pivot = [-6, 15, 1]
+    # الموديل مبني بإحداثيات ذراع اللاعب (الواقي يلف الساعد x -8..-4 y 13..19، والشفرات من المفاصل تحت الكف y 12)،
+    # بعدين ينزاح كله بـ (0,24,0) - pivot اليد (-6,15,1) = (6,9,-1): لأن الربط الحقيقي يحط نقطة الموديل (0,24,0) على pivot اليد
+    # (مو pivot العظمة كما كنا نفترض، وهذا اللي كان يطلّع المخالب 9 بكسل تحت الكف و6 برا الإيد ومتدلية للأرض).
+    gauntlet(-6.0, 12.0, 1, CLAW_CURL)
+    shift = (6.0, 9.0, -1.0)
+    for c in w.cubes:
+        c["origin"] = [round(c["origin"][i] + shift[i], 3) for i in range(3)]
+        if "pivot" in c:
+            c["pivot"] = [round(c["pivot"][i] + shift[i], 3) for i in range(3)]
+    w.pivot = [0, 24, 0]
     w.extra_bones = []
     w.save()
     return w
@@ -493,17 +571,18 @@ def spear():
 # ───────────────────────── حركات المسك ─────────────────────────
 def save_animations():
     anims = {}
-    for ident, h in HOLD.items():
+    for ident in HOLD:
+        hh = hold_for(ident)
         for key in ("fp", "tp"):
-            p = h[key]
+            p = hh[key]
             anims[f"animation.sh.hold_{ident}_{key}"] = {
                 "loop": True,
                 "bones": {"sh_weapon": {"position": p["pos"], "rotation": p["rot"], "scale": p["scale"]}},
             }
-    # المخالب: بدون تحويل بالمنظور الثالث (تنلبس على الذراع بمكانها)، وبالأول تصحيح بكسل واحد
-    # لأن حركة موجانغ للشخص الأول تزيح عظمة اليد [0,0,-1]
-    anims["animation.sh.hold_shadow_claws_fp"]["bones"] = {"sh_weapon": {"position": [0, 0, -1]}}
-    anims["animation.sh.hold_shadow_claws_tp"]["bones"] = {"sh_weapon": {"position": [0, 0, 0]}}
+    # المخالب: الموديل نفسه مبني بمكانه على الذراع ومزاح بحيث (0,24,0) = pivot اليد، فبالثالث ما يحتاج تحويل،
+    # وبالأول نعوض إزاحة عظمة اليد [0,0,-1] حتى تبقى ملبوسة على الساعد بالضبط
+    anims["animation.sh.hold_shadow_claws_fp"] = {"loop": True, "bones": {"sh_weapon": {"position": [0, 0, 1]}}}
+    anims["animation.sh.hold_shadow_claws_tp"] = {"loop": True, "bones": {"sh_weapon": {"position": [0, 0, 0]}}}
     os.makedirs(os.path.join(RP, "animations"), exist_ok=True)
     with open(os.path.join(RP, "animations", "sh_hold.animation.json"), "w") as f:
         json.dump({"format_version": "1.10.0", "animations": anims}, f, separators=(",", ":"))

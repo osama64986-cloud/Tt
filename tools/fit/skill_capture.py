@@ -117,7 +117,9 @@ def render_frame(cap, T, parts_by_t, cam, size, snaps, start_tick):
             name = SHAPE_BY_ID.get(int(e["props"].get("sh:v", -1)))
             if name in SS.SHAPES:
                 p = e["props"]
-                S.shape(name, pos, d, p.get("sh:r", 1.0) or 1.0, p.get("sh:p", 0.0) or 0.0, p.get("sh:a", 0.0) or 0.0)
+                life = max(0.0, (T - born.get(e["id"], T)) / 20.0)
+                S.shape(name, pos, d, p.get("sh:r", 1.0) or 1.0, p.get("sh:p", 0.0) or 0.0, p.get("sh:a", 0.0) or 0.0,
+                        life=life, s=p.get("sh:s", 0.0) or 0.0, w=p.get("sh:w", 0.0) or 0.0, l=p.get("sh:l", 1.0) or 1.0)
     Tsec = T / 20.0
     n = 0
     for pt in parts_by_t:
