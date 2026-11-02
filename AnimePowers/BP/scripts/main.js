@@ -325,7 +325,7 @@ function hudText(p, st, plain) {
   if (rl) return hudPlain(p, st) + "\n" + rl;
   return hudPlain(p, st);
 }
-function hudPlain(p, st) {
+function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية بدل رموز الواجهة (كانت ناقصة = خطأ ReferenceError بالواجهة البسيطة)
   const pw = POWERS[st.power];
   const rp = rankProgress(st);
   let hp = "§c♥ --";
@@ -1809,7 +1809,7 @@ const CONTAINER_HINT = ["chest", "barrel", "shulker", "furnace", "smoker", "hopp
 function canBreak(b) {
   if (!b || b.isAir || b.isLiquid) return false;
   const id = b.typeId;
-  if (UNBREAKABLE.has(id) || id.startsWith("sh:")) return false;
+  if (UNBREAKABLE.has(id) || id.startsWith("sh:") || id.startsWith("minecraft:light_block")) return false;   // بلوكات الضوء: light_block_0..15
   return !CONTAINER_HINT.some((k) => id.includes(k));
 }
 // يكسر البلوكات كأن اللاعب حفرها (تسقط كأيتمات). max حد أعلى للأمان.
@@ -1843,7 +1843,7 @@ const RIFT_LIFE = 24000, RIFT_ENGAGE = 14, RIFT_MAX_R = 12;
 const RIFT_SCAR_TYPES = new Set(["minecraft:warped_nylium", "minecraft:purple_terracotta", "minecraft:crimson_nylium", "minecraft:blackstone", "minecraft:sculk", "minecraft:crying_obsidian", "minecraft:red_terracotta", "minecraft:gilded_blackstone"]);
 const riftRadius = (r) => 2.4 + r.r * 0.15;                  // حجم شكل الصدع 3D (كان صغير ويضيع)
 const riftShapeAt = (r) => ({ x: r.x, y: r.y + 1.6 + riftRadius(r) * 1.15, z: r.z });
-const RIFT_GROUND = new Set(["minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:podzol", "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:stone", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:snow", "minecraft:mycelium", "minecraft:moss_block", "minecraft:mud", "minecraft:terracotta", "minecraft:sandstone"]);
+const RIFT_GROUND = new Set(["minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:podzol", "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:stone", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:snow", "minecraft:mycelium", "minecraft:moss_block", "minecraft:mud", "minecraft:hardened_clay", "minecraft:sandstone"]);   // التيراكوتا العادية اسمها hardened_clay ببيدروك
 let rift = null;
 function riftState() { return rift; }
 function riftTier() { return rift ? RIFT_TIERS[rift.tier] : undefined; }

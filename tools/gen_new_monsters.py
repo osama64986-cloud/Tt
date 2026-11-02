@@ -60,7 +60,7 @@ def bp_entity(key, m):
     if key == "prayer_mantis":                              # السرعوف: سريع الانقضاض، ما يطيح من العالي
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.3
         c["minecraft:nameable"] = {}
-        c["minecraft:fall_damage"] = {"value": 0.2}
+        c["minecraft:damage_sensor"] = {"triggers": [{"cause": "fall", "deals_damage": "yes", "damage_multiplier": 0.2}]}   # ضرر السقوط 20% (المكون الرسمي، مثل الماعز)
     if key == "bear_cub":                                   # الجرو: موديل خاص صغير (1.2 بلوكة)، ما يكون حارس ولا زعيم صدع
         c["minecraft:type_family"]["family"] = ["sh_monster", "sh_cub", "monster"]
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.5

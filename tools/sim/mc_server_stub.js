@@ -328,6 +328,15 @@ export const __sim = {
       hold(it); stats.actionBars.length = 0; advance(130);
       console.log("---", it || "(يد فاضية)", "\n" + (stats.actionBars[stats.actionBars.length - 1] || "").replace(/§./g, ""));
     }
+    // الواجهة البسيطة (sh_hud_plain): لازم تطلع بدون خطأ وبدون رموز مرسومة
+    {
+      player._tags.add("sh_hud_plain"); hold(""); stats.actionBars.length = 0; advance(40);
+      const plainBar = stats.actionBars[stats.actionBars.length - 1] || "";
+      const okPlain = plainBar.includes("Lv") && !/[\uE000-\uF8FF]/.test(plainBar);
+      console.log(`  الواجهة البسيطة: ${okPlain ? "✔" : "✖"} | ${plainBar.split("\n")[0].replace(/§./g, "")}`);
+      if (!okPlain) failures.push("الواجهة البسيطة (sh_hud_plain) ما تطلع");
+      player._tags.delete("sh_hud_plain");
+    }
     // كتاب + نافذة الحالة
     const ui = (await import("@minecraft/server-ui")).sim;
     ui.nextSelection = 99; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(3);

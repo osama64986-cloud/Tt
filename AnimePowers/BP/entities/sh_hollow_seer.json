@@ -100,8 +100,13 @@
     "on_death": "query.last_hit_by_player ? 12 : 0"
    },
    "minecraft:fire_immune": {},
-   "minecraft:fall_damage": {
-    "value": 0
+   "minecraft:damage_sensor": {
+    "triggers": [
+     {
+      "cause": "fall",
+      "deals_damage": "no"
+     }
+    ]
    }
   },
   "component_groups": {

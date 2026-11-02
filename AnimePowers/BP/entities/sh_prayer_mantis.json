@@ -118,8 +118,14 @@
     "on_death": "query.last_hit_by_player ? 60 : 0"
    },
    "minecraft:nameable": {},
-   "minecraft:fall_damage": {
-    "value": 0.2
+   "minecraft:damage_sensor": {
+    "triggers": [
+     {
+      "cause": "fall",
+      "deals_damage": "yes",
+      "damage_multiplier": 0.2
+     }
+    ]
    }
   },
   "component_groups": {
