@@ -91,7 +91,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId)
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
@@ -596,16 +596,16 @@ export const __sim = {
     // وحوش رتبة Grim: كل مهارة من الثلاث تطلع وتضرب
     {
       console.log("\nوحوش Grim:");
-      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "ثعبان نار الثعلب", 2: "دوّامة المرايا", 3: "مطر الشمس", 4: "رفع القمر" }, "sh:magmamoth": { 1: "دكة الشقوق", 2: "كنس الجحيم", 3: "اندفاع الأنياب", 4: "القصف البركاني", 5: "درع الماغما" } };
-      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[4, 3600], [12, 3600]], "sh:magmamoth": [[4, 3600], [12, 4200]] };
+      const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "ثعبان نار الثعلب", 2: "دوّامة المرايا", 3: "مطر الشمس", 4: "رفع القمر" }, "sh:magmamoth": { 1: "دكة الشقوق", 2: "كنس الجحيم", 3: "اندفاع الأنياب", 4: "القصف البركاني", 5: "درع الماغما" } , "sh:grey_bear": { 1: "عناق الدب", 4: "الخرمشة", 5: "نداء الجراء", 6: "السبات" } };
+      const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[4, 3600], [12, 3600]], "sh:magmamoth": [[4, 3600], [12, 4200]], "sh:grey_bear": [[2.5, 3600], [8, 3600]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"], "sh:grey_bear": [] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         stats.shapeV = {}; stats.pById = {};
         for (const [dist, ticks] of plans[type]) {
           entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
-          const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, type === "sh:veilfox" ? 40 : type === "sh:magmamoth" ? 160 : 90); if (type === "sh:veilfox" || type === "sh:magmamoth") m._max = type === "sh:veilfox" ? 90 : 260; entities.push(m);
+          const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, type === "sh:veilfox" ? 40 : type === "sh:magmamoth" ? 160 : type === "sh:grey_bear" ? 120 : 90); if (type === "sh:veilfox" || type === "sh:magmamoth" || type === "sh:grey_bear") m._max = type === "sh:veilfox" ? 90 : type === "sh:grey_bear" ? 300 : 260; entities.push(m);
           const d0 = stats.damage || 0;
           for (let t = 0; t < ticks; t += 2) {
             advance(2); seenStates.add(m.getProperty("sh:state"));
@@ -632,6 +632,7 @@ export const __sim = {
       {
         entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
         const sets0 = stats.blockSets || 0, d0 = stats.damage || 0;
+        advance(120);                                                        // ننتظر نزف الدب (5 ثواني) يخلص حتى ما ينحسب ضرر على الزفير
         const m = mkEntity("sh:hollow_seer", { x: 0, y: 64, z: 3 }, dims.overworld, 90); entities.push(m);
         let breathSeen = false;
         for (let t = 0; t < 3000 && !breathSeen; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === 3) breathSeen = true; }
@@ -643,6 +644,79 @@ export const __sim = {
         entities.length = 0; advance(120);
       }
       player._hp = 20; player._max = 20; player._valid = true; entities.length = 0;
+    }
+    // الدب الرمادي: المسكة والرمية، النزف، الجراء والغضب، السبات والصحوة الغاضبة، الجلد الثخين
+    {
+      console.log("\nالدب الرمادي:");
+      const clear = () => { entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true; };
+      const bear = (hp, z = 2.5) => { const b = mkEntity("sh:grey_bear", { x: 0, y: 64, z }, dims.overworld, hp); b._max = 300; b._yaw = 180; entities.push(b); return b; };
+      // 1) المسكة: نخلي اللاعب ثابت لحد ما يمسكه، بعدها الدب يتحكم بمكانه، ثم الرمية (knockback)
+      clear(); let b = bear(300);
+      let held = false, heldNear = false, thrown = false, k0 = 0;
+      for (let t = 0; t < 4000 && !thrown; t += 2) {
+        advance(2);
+        const sNow = b.getProperty("sh:state");
+        if (sNow === 2 && !held) { held = true; k0 = stats.knock || 0; }
+        if (held && sNow === 2) heldNear = heldNear || Math.hypot(player.location.x - b.location.x, player.location.z - b.location.z) < 1.6;
+        if (held && (stats.knock || 0) > k0) thrown = true;
+        if (!held) { player.location = { x: 0, y: 64, z: 0 }; if (Math.hypot(b.location.x, b.location.z - 2.5) > 0.5 && t % 40 === 0) b.location = { x: 0, y: 64, z: 2.5 }; }
+      }
+      // 2) الإفلات بالضرب: نمسك مرة ثانية ونضربه 3 مرات
+      clear(); b = bear(300);
+      let grabbed2 = false, freed = false;
+      for (let t = 0; t < 4000 && !freed; t += 2) {
+        advance(2);
+        const sNow = b.getProperty("sh:state");
+        if (sNow === 2 && !grabbed2) { grabbed2 = true; }
+        if (grabbed2 && sNow === 2) b._hp -= 5;                                 // ضربة كل تكين
+        if (grabbed2 && sNow === 0) freed = true;
+        if (!grabbed2) { player.location = { x: 0, y: 64, z: 0 }; if (Math.hypot(b.location.x, b.location.z - 2.5) > 0.5 && t % 40 === 0) b.location = { x: 0, y: 64, z: 2.5 }; }
+      }
+      // 3) الخرمشة + النزف: بعد ما يخرمش نشيل الدب ونشوف النزف يستمر
+      clear(); b = bear(300, 3);
+      let scratched = false;
+      for (let t = 0; t < 4000 && !scratched; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (b.getProperty("sh:state") === 4 && (stats.pById || {})["minecraft:critical_hit_emitter"]) scratched = true; }
+      advance(40); b._valid = false;
+      const d0 = stats.damage || 0; advance(60); const bleedDmg = (stats.damage || 0) - d0;
+      // 4) الجراء: ينادي جروين، يتعلقون باللاعب (بطء)، ولما يموت جرو الدب يغضب
+      clear(); b = bear(300, 8);
+      let cubs = [];
+      const seenB = new Set();
+      for (let t = 0; t < 5000 && cubs.length < 2; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; seenB.add(b.getProperty("sh:state")); if (b.getProperty("sh:state") === 0 && Math.hypot(b.location.x, b.location.z) < 6) b.location = { x: 0, y: 64, z: 8 }; cubs = entities.filter((x) => x._valid && x.typeId === "sh:bear_cub"); }
+      if (process.env.SH_DEBUG) console.log("   [bear states]", [...seenB].join(","), "valid", b._valid, "hp", b._hp, "loc", JSON.stringify(b.location), "spawned", entities.filter((x) => x.typeId === "sh:bear_cub").length);
+      const slow0 = (stats.effects || {}).slowness || 0;
+      for (let t = 0; t < 120; t += 2) { advance(2); for (const c of cubs) if (c._valid && Math.hypot(c.location.x, c.location.z) > 1.2) c.location = { x: 0.5, y: 64, z: 0.5 }; }
+      const clung = ((stats.effects || {}).slowness || 0) > slow0;
+      const cub = cubs[0];
+      if (cub) { cub._valid = false; fire("entityDie", { deadEntity: cub, damageSource: {} }); }
+      advance(4);
+      const enraged = b.getProperty("sh:hot") === 1;
+      // 5) السبات: صحة قليلة → ينام ويتعافى؛ نضربه → يصحى بغضب ويدفع
+      clear(); b = bear(110, 6);
+      let slept = false, healed = false, woke = false; let hpS = 0;
+      for (let t = 0; t < 5000 && !woke; t += 2) {
+        advance(2); player.location = { x: 0, y: 64, z: 0 };
+        const sNow = b.getProperty("sh:state");
+        if (sNow === 6 && !slept) { slept = true; hpS = b._hp; }
+        if (slept && sNow === 6 && b._hp > hpS + 1) healed = true;
+        if (slept && healed && sNow === 6) { const k1 = stats.knock || 0; b._hp -= 8; advance(6); woke = b.getProperty("sh:hot") === 1 && (stats.knock || 0) >= k1; }
+      }
+      // 6) الجلد الثخين: ضربة من قدام ترجع 30%، ومن ورا تزيد 20%
+      clear(); b = bear(300, 3);
+      b._yaw = 180;                                                              // يباوع للاعب (−z)
+      const hit = (from) => { const before = b._hp; player.location = from; b._hp -= 10; fire("entityHurt", { hurtEntity: b, damage: 10, damageSource: { damagingEntity: player } }); return before - b._hp; };
+      const front = hit({ x: 0, y: 64, z: 0 }), back = hit({ x: 0, y: 64, z: 6 });
+      console.log(`  المسكة ${held ? "✔" : "✖"} (اللاعب بحضنه ${heldNear ? "✔" : "✖"}) | الرمية ${thrown ? "✔" : "✖"} | الإفلات بـ3 ضربات ${freed ? "✔" : "✖"} | الخرمشة ${scratched ? "✔" : "✖"} | النزف بعدها ${Math.round(bleedDmg)} ${bleedDmg > 0 ? "✔" : "✖"}`);
+      if (process.env.SH_DEBUG) console.log('   [bear debug]', JSON.stringify({ cubs: cubs.length, clung, enraged, hot: b.getProperty('sh:hot') }));
+      console.log(`  جراء ${cubs.length} ${cubs.length === 2 ? "✔" : "✖"} | تعلق بالرجل (بطء) ${clung ? "✔" : "✖"} | غضب بموت الجرو ${enraged ? "✔" : "✖"} | سبات ${slept ? "✔" : "✖"} تعافي ${healed ? "✔" : "✖"} صحوة غاضبة ${woke ? "✔" : "✖"} | جلد: قدام ${front.toFixed(1)} ورا ${back.toFixed(1)} ${front < 10 && back > 10 ? "✔" : "✖"}`);
+      if (!held || !heldNear) failures.push("الدب: المسكة ما اشتغلت");
+      if (!thrown) failures.push("الدب: الرمية ما صارت");
+      if (!freed) failures.push("الدب: ما تفلت بالضرب");
+      if (!scratched || bleedDmg <= 0) failures.push("الدب: الخرمشة أو النزف ما اشتغل");
+      if (cubs.length !== 2 || !clung || !enraged) failures.push("الدب: الجراء أو الغضب ما اشتغل");
+      if (!slept || !healed || !woke) failures.push("الدب: السبات أو الصحوة الغاضبة ما اشتغلت");
+      if (!(front < 10 && back > 10)) failures.push("الدب: الجلد الثخين ما اشتغل");
+      clear(); player._hp = 20; player._max = 20;
     }
     // ضريحا السيف: حارسان يظهران، وموتهما (الاثنين) يطلّع صندوق السيف المناسب
     {
@@ -709,6 +783,14 @@ export const __sim = {
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();
       const calibrated = b.x - a.x < -2.7;                                // يمين (نسبة للبصر +z) = -x
       player._mv = { x: 0, y: 0 };
+      // الكول داون حسب الرتبة: Trainee ثانيتين (40 تك)، Master 0.9 ثانية (18 تك).
+      // الداش الأول يبدأ بالضغطة الثانية ويبقى بعده 12 تك؛ الضغطة السريعة (تك، تك، تك) ضغطتها الثانية بالتك 3 → الفاصل = 12 + انتظار + 3
+      const quick = (v) => { tap(v, 1); idle(1); tap(v, 1); idle(10); };
+      const cdTry = (rank, wait) => { setState({ ...baseState("star"), rank }); advance(80); reset(); dbl({ x: 1, y: 0 }); advance(wait); reset(); const p0 = at(); quick({ x: 1, y: 0 }); const p1 = at(); return Math.hypot(p1.x - p0.x, p1.z - p0.z) > 2.5; };
+      const tr1 = cdTry(1, 20), tr2 = cdTry(1, 26), ms1 = cdTry(6, 0), ms2 = cdTry(6, 4);
+      const cdOk = !tr1 && tr2 && !ms1 && ms2;
+      console.log(`  الكول داون بالرتبة: Trainee (35 تك ممنوع ${tr1 ? "✖" : "✔"}، 41 تك يشتغل ${tr2 ? "✔" : "✖"}) | Master (15 تك ممنوع ${ms1 ? "✖" : "✔"}، 19 تك يشتغل ${ms2 ? "✔" : "✖"})`);
+      if (!cdOk) failures.push("كول داون الداش حسب الرتبة غلط");
       // دائم: حتى لو رجعت الرتبة 0 (مثلاً ريسيت) يبقى الداش
       setState({ ...baseState("star"), rank: 0 }); advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
       const forever = Math.abs(b.z - a.z + 3) < 0.3;
@@ -719,7 +801,7 @@ export const __sim = {
       if (!lockedOk) failures.push("الداش اشتغل قبل أول رتبة");
       if (!unlockMsg) failures.push("الداش ما انفتح بأول رتبة (أو ما جاء إشعار)");
       if (!forever) failures.push("الداش اختفى بعد ما انفتح");
-      console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | كول داون 1.8 ثانية ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | للأمام ماكو ${noForward ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
+      console.log(`  يمين/يسار بالافتراضي: إزاحة ${dx1.toFixed(1)},${dz1.toFixed(1)} ${side1 ? "✔" : "✖"} | ضمن الكول داون ممنوع ${blocked ? "✔" : "✖"} | خلف ${back ? "✔" : "✖"} (${(b.z - a.z).toFixed(1)}) | معايرة الإشارة ${calibrated ? "✔" : "✖"} | للأمام ماكو ${noForward ? "✔" : "✖"} | بدون جزيئات ${/spawnParticle|MolangVariableMap/.test(fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8")) ? "✖" : "✔"}`);
       if (!side1) failures.push(`الداش جانبي ما اشتغل أو المسافة غلط (${dx1.toFixed(1)},${dz1.toFixed(1)})`);
       if (!blocked) failures.push("الداش اشتغل ضمن الكول داون");
       if (!back) failures.push("داش الخلف ما اشتغل");

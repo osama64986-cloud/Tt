@@ -5,7 +5,7 @@ import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
 import { setupStructures, buildTemple, findTemple, onShrineBossDeath } from "./structures.js";
-import { setupDash } from "./dash.js";
+import { setupDash, dashCooldown } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 
 // ───────────────────────── البيانات ─────────────────────────
@@ -180,6 +180,8 @@ const MONSTERS = {
   "sh:veilfox": { rank: 1, xp: 90 },
   // وحوش الرتبة الثالثة (Vile): زعماء بخمس مهارات
   "sh:magmamoth": { rank: 2, xp: 220 },
+  "sh:grey_bear": { rank: 2, xp: 230 },
+  "sh:bear_cub": { rank: 0, xp: 6 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
@@ -200,10 +202,10 @@ function scaleMonster(e, rank) {
 const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floor(tier / 2));
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
-const VILE_TYPES = ["sh:magmamoth"];
+const VILE_TYPES = ["sh:magmamoth", "sh:grey_bear"];
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
 function riftMobType() {
-  if (rift && rift.tier >= 2 && Math.random() < 0.12) return VILE_TYPES[0];
+  if (rift && rift.tier >= 2 && Math.random() < 0.12) return VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)];
   if (rift && rift.tier >= 1 && Math.random() < 0.3) return GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)];
   return RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
 }
@@ -902,7 +904,7 @@ async function showRanks(player) {
   body += `§bJump:§f if you kill a monster two or more ranks above you, you rank up instantly (for the first ranks, up to ${RANKS[HARD_RANK_FROM]}).\n`;
   body += `§bAfterwards:§f killing a stronger monster gives triple experience but does not rank you up.\n`;
   body += "§bWeak:§f a monster three ranks below you gives half the experience.\n";
-  body += `§bDash:§f unlocks the moment you earn your first rank (${RANKS[1]}) and stays with you forever: double-tap left, right or back to dash that way.\n\n`;
+  body += `§bDash:§f unlocks the moment you earn your first rank (${RANKS[1]}) and stays with you forever: double-tap left, right or back to dash 3 blocks that way. Cooldown by rank: ${RANKS.slice(1).map((n, i) => `${n} ${(dashCooldown(i + 1) / 20).toFixed(1)}s`).join(", ")}.\n\n`;
   body += "§7Experience comes from: killing monsters, XP scrolls, and some structure chests.";
   await showForm(player, new ActionFormData().title("Ranks").body(body).button("§aOK"));
 }
@@ -956,6 +958,7 @@ const MONSTER_INFO = [
   ["sh:hollow_seer", "Hollow Seer", "Grim to Cataclysm", "A floating seer with one round eye. When it raises its hand in front of the eye, an ORANGE BEAM gathers: the aim locks a moment before it fires, so sidestep. From 6-7 blocks away it lifts its arms and ROOTS erupt from the ground one after another toward you, then a CAGE OF ROOTS curls around you. Up close an ICE ORB forms before its face and it exhales a FROST BREATH: your screen freezes like powder snow and you slow down, but you can still fight."],
   ["sh:veilfox", "Veilfox", "Grim to Cataclysm", "A spirit fox with five flame-tipped tails and a white mask. FOXFIRE SERPENT: nine spirit flames weave toward you in a snaking train (stand between the waves). MIRROR CAROUSEL: it and three real shadow foxes circle you in a tightening ring, then all collapse on you at once (kill the shadows to thin it). SUN SHOWER: foxfire drops rain down over eight blocks around you. Below half health it casts MOON LIFT: it floats you into the air while three volleys of crescent waves fall on you."],
   ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
+  ["sh:grey_bear", "Grey Bear", "Vile to Cataclysm", "A grey bear that fights standing on two legs, with a silver crescent on its chest and a clawed scar over one eye. BEAR HUG: it spreads its arms and grabs whoever is in front of it, squeezes three times and throws them; hit it 3 times or dash out to break free. RENDING CLAWS: four alternating claw swipes that scratch your body and make you bleed (stacks up to 3). CUB CALL: it roars and two cubs run at you and cling to your legs, slowing you; kill a cub and the bear goes into a rage. DEEP HIBERNATION: when hurt it falls asleep and heals; strike it and it wakes in a WRATH that blasts you away. Thick pelt: hits on its front do 30% less damage, hits on its back 20% more."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -1296,7 +1299,8 @@ world.afterEvents.entityDie.subscribe((ev) => {
       let tagged = true;                                                  // وحش طبيعي من نفس النوع ما يحسب (لو قدرنا نقرا الوسوم)
       try { tagged = ev.deadEntity.hasTag("sh_boss"); } catch (e02) { tagged = true; }
       onShrineBossDeath(ev.deadEntity.typeId, ev.deadEntity.location, ev.deadEntity.dimension, tagged);
-    } catch (e01) { /* */ }   // حراس الضريحين: لما يموت الاثنان يظهر صندوق السيف
+    } catch (e01) { /* */ }
+    if (ev.deadEntity.typeId === "sh:bear_cub") { try { onCubDeath(ev.deadEntity); } catch (e03) { /* */ } }   // الدب يغضب إذا قتلت جروه   // حراس الضريحين: لما يموت الاثنان يظهر صندوق السيف
     if (ev.deadEntity.typeId === "sh:magmamoth") {            // موت الماموث: انفجار حمم وصخور
       const dl = ev.deadEntity.location, dm = ev.deadEntity.dimension;
       vanillaFx(dm, "minecraft:huge_explosion_emitter", { x: dl.x, y: dl.y + 1.5, z: dl.z });
@@ -1350,6 +1354,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
         : t === "sh:sand_scorpion" ? (roll < 0.35 ? "sh:xp_scroll_small" : roll < 0.42 ? "sh:xp_scroll_big" : null)
         : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null)
         : t === "sh:gloomhorn" ? (roll < 0.45 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.75 ? "sh:skill_scroll" : null)
+        : t === "sh:grey_bear" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
         : t === "sh:magmamoth" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
         : t === "sh:veilfox" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : null)
         : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
@@ -4568,7 +4573,7 @@ function trySpawnMonster(p, force) {
     if (!force && Math.random() < 0.4) return undefined;
     const vile = st.rank >= 2 && !force && Math.random() < 0.1;
     const grim = st.rank >= 1 && !force && Math.random() < 0.25;
-    const id = vile ? VILE_TYPES[0] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+    const id = vile ? VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
     const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, force ? 16 : 26, force ? 30 : 44);
     if (m) scaleMonster(m, st.rank);
     return m;
@@ -6013,7 +6018,274 @@ function mammothTick(e, st) {
     if (st.t >= 30) grimEnd(e, st, 90);
   }
 }
-const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick };
+// ═════════════════════════ الدب الرمادي (Grey Bear، Vile) وجروه ═════════════════════════
+// دب واقف على رجلين. أربع مهارات خاصة + جلد ثخين:
+//  1) Bear Hug: يفتح ذراعيه ويمسكك ويعصرك 3 مرات ويرميك. تفلت إذا ضربته 3 مرات أو سويت داش.
+//  2) Rending Claws (خرمشة): أربع لطمات مخالب تخرمش جسمك (خطوط مخالب على جسمك) وتنزفك.
+//  3) Cub Call: يزأر ويطلع جروين يتعلقون برجلك؛ إذا قتلت جرو يغضب الدب.
+//  4) Deep Hibernation: عند صحة قليلة ينام ويتعافى؛ إذا ضربته يصحى بغضب ويدفعك.
+//  جلد ثخين: الضرب من قدام ينقص 30%، ومن ورا يزيد 20%.
+// كل المؤثرات جزيئات ماينكرافت الأصلية (glow_particle، critical_hit_emitter، explosion_particle، villager_angry، villager_happy).
+const BEAR = "sh:grey_bear", CUB = "sh:bear_cub";
+const BLOOD = [0.62, 0.04, 0.05], BONEW = [0.96, 0.94, 0.88], FURG = [0.62, 0.6, 0.58];
+const bleeds = new Map();                                                    // player.id → { n: طبقات النزف (حد 3), until }
+function addBleed(pl, n = 1) {
+  const b = bleeds.get(pl.id) || { n: 0, until: 0 };
+  b.n = Math.min(3, b.n + n); b.until = system.currentTick + 80; bleeds.set(pl.id, b);      // النزف 4 ثواني من آخر خرمشة
+}
+system.runInterval(() => {                                                   // النزف: ضرر كل ثانية حسب الطبقات + قطرات حمرا
+  const now = system.currentTick;
+  for (const pl of world.getAllPlayers()) {
+    const b = bleeds.get(pl.id);
+    if (!b) continue;
+    if (now > b.until || !valid(pl)) { bleeds.delete(pl.id); continue; }
+    hurtPlayer(pl, b.n, undefined);
+    for (let i = 0; i < 2 + b.n; i++) mcP(pl.dimension, { x: pl.location.x + (Math.random() - 0.5) * 0.6, y: pl.location.y + 0.4 + Math.random() * 0.9, z: pl.location.z + (Math.random() - 0.5) * 0.6 }, "minecraft:glow_particle", BLOOD, { x: 0, y: -0.6, z: 0 });
+  }
+}, 20);
+const hpOf = (e) => { try { return e.getComponent("minecraft:health").currentValue; } catch (err) { return 0; } };
+// خرمشة على جسم اللاعب: 3 خطوط مخالب مائلة ومتوازية على وجهه المقابل للدب (شرار عظمي + بكسلات حمرا)
+function clawMarks(dim, at, from, side, top = 1.35) {
+  const u = fwdTo(from, at), r = { x: -u.z, z: u.x }, fx = at.x - u.x * 0.36, fz = at.z - u.z * 0.36;
+  for (let k = -1; k <= 1; k++) {
+    for (let i = 0; i <= 9; i++) {
+      const f = i / 9, a = (f - 0.5) * 1.1 * side + k * 0.18;
+      const p = { x: fx + r.x * a, y: at.y + top - f * 1.1 + k * 0.04, z: fz + r.z * a };
+      mcP(dim, p, "minecraft:glow_particle", i % 3 === 1 ? BLOOD : BONEW, { x: r.x * side * 0.25, y: -0.12, z: r.z * side * 0.25 });
+      if (i % 3 === 0) mcP(dim, p, "minecraft:electric_spark_particle", undefined, { x: r.x * side * 0.4, y: -0.2, z: r.z * side * 0.4 });   // شرارة بيضا على حافة الخدش
+    }
+  }
+  mcP(dim, { x: fx, y: at.y + top - 0.45, z: fz }, "minecraft:critical_hit_emitter", undefined, undefined, { particle_count: 10 });
+}
+function bearRage(e, st, ticks) {
+  st.rage = Math.max(st.rage || 0, ticks); setHot(e, 1);
+  try { e.addEffect("speed", ticks, { amplifier: 0, showParticles: false }); e.addEffect("strength", ticks, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
+}
+// نفَس الزئير: نفخات دخان ماينكرافت (explosion_particle) طالعة من الفم لقدام
+function roarPuff(dim, L, f, n = 14) {
+  const m = { x: L.x + f.x * 1.6, y: L.y + 2.7, z: L.z + f.z * 1.6 };
+  for (let i = 0; i < n; i++) mcP(dim, m, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": f.x * 0.45 + (Math.random() - 0.5) * 0.25, "velocity.y": (Math.random() - 0.3) * 0.12, "velocity.z": f.z * 0.45 + (Math.random() - 0.5) * 0.25 });
+}
+function bearTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  if (st.rage > 0) {                                                        // الغضب: عيون حمرا ومخالب حمرا + غضب قروي فوق راسه
+    st.rage -= 2;
+    if (st.rage % 10 === 0) mcP(dim, { x: L.x + (Math.random() - 0.5) * 0.8, y: L.y + 3.5, z: L.z + (Math.random() - 0.5) * 0.8 }, "minecraft:villager_angry");
+    if (st.rage <= 0) setHot(e, 0);
+  }
+  if (st.hibCd > 0) st.hibCd -= 2;
+  if (st.cubCd > 0) st.cubCd -= 2;
+  const face = (loc) => { try { e.teleport(e.location, { facingLocation: { x: loc.x, y: e.location.y + 1, z: loc.z } }); } catch (err) { /* */ } };
+  const stepTo = (loc, k) => { const u = fwdTo(L, loc), nx = L.x + u.x * k, nz = L.z + u.z * k; if (airAt(dim, nx + u.x, L.y + 0.5, nz + u.z) && airAt(dim, nx + u.x, L.y + 1.6, nz + u.z)) { try { e.teleport({ x: nx, y: groundAt(dim, nx, nz, L.y), z: nz }, { facingLocation: { x: loc.x, y: L.y + 1, z: loc.z } }); } catch (err) { /* */ } } };
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 22);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0; st.stage = 0; st.victim = undefined;
+    const opts = [];
+    if (np.d < 3.8) opts.push("hug", "scratch");
+    else if (np.d <= 10) opts.push("scratch");
+    const cubsAlive = (st.cubs || []).some((id) => { const c = world.getEntity(id); return c && valid(c); });
+    if (np.d >= 4 && !cubsAlive && !(st.cubCd > 0)) opts.push("cubs");
+    if (hpFrac(e) < 0.45 && !(st.hibCd > 0)) opts.push("sleep", "sleep");
+    if (!opts.length) { st.cd = 10; return; }
+    st.skill = pickSkill(opts, st.last); st.last = st.skill;
+    setMState(e, { hug: 1, scratch: 4, cubs: 5, sleep: 6 }[st.skill]);
+    st.phase = 1;
+    return;
+  }
+  const tp = valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  // ── 1) Bear Hug: يفتح ذراعيه ويخطو، يمسك اللي قدامه ويعصره 3 مرات، ثم يلف ويرميه ──
+  if (st.skill === "hug") {
+    if (st.stage === 0) {
+      if (tp) { face(tp.location); if (st.t > 4 && Math.hypot(tp.location.x - L.x, tp.location.z - L.z) > 2.0) stepTo(tp.location, 0.35); }
+      if (st.t === 4) sfx(dim, "mob.polarbear.warning", L, 1.3, 0.8);
+      if (st.t >= 16) {
+        const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+        for (const pl of dim.getPlayers({ location: L, maxDistance: 3.4 })) {
+          const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+          if ((vx * f.x + vz * f.z) / l < 0.4) continue;
+          st.victim = pl; break;
+        }
+        if (!st.victim) { grimEnd(e, st, 50); return; }                       // فلت من المسكة
+        st.stage = 1; st.t = 0; st.f = f; st.hits = 0; st.hpLast = hpOf(e); setMState(e, 2);
+        notify(st.victim, "§cThe Grey Bear grabs you! §7Hit it 3 times or dash to break free", 40);
+        sfx(dim, "mob.polarbear.warning", L, 1.5, 0.6);
+      }
+      return;
+    }
+    const pl = st.victim;
+    if (!pl || !valid(pl)) { grimEnd(e, st, 60); return; }
+    const f = st.f, hold = { x: L.x + f.x * 1.25, y: L.y + 0.7, z: L.z + f.z * 1.25 };
+    if (st.stage === 1) {
+      if (st.t > 2 && Math.hypot(pl.location.x - hold.x, pl.location.z - hold.z) > 1.1) {   // انفلت (داش أو دفع)
+        notify(pl, "§aYou slipped out of the Bear Hug!", 30); burst(dim, center3(pl), 10, FURG, 2);
+        try { e.addEffect("slowness", 30, { amplifier: 3, showParticles: false }); } catch (err) { /* */ }
+        grimEnd(e, st, 60); return;
+      }
+      const h = hpOf(e);
+      if (h < st.hpLast - 0.01) st.hits++;
+      st.hpLast = h;
+      if (st.hits >= 3) {                                                     // 3 ضربات: يترنح ويفلتك
+        notify(pl, "§aYou broke free! The bear staggers.", 35);
+        try { e.addEffect("slowness", 50, { amplifier: 5, showParticles: false }); e.addEffect("weakness", 50, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+        burst(dim, { x: L.x, y: L.y + 2.2, z: L.z }, 14, BONEW, 2.5);
+        grimEnd(e, st, 80); return;
+      }
+      try { pl.teleport(hold, { facingLocation: { x: L.x, y: L.y + 2.4, z: L.z } }); } catch (err) { /* */ }
+      if (st.t === 10 || st.t === 20 || st.t === 30) {                         // عصرة
+        hurtPlayer(pl, 3, e); shake(pl, 0.25, 0.2);
+        burst(dim, { x: hold.x, y: hold.y + 1.0, z: hold.z }, 10, BONEW, 1.6);
+        sfx(dim, "sh.guard_slam", hold, 0.6, 1.6);
+      }
+      if (st.t >= 36) { st.stage = 2; st.t = 0; setMState(e, 3); }
+      return;
+    }
+    // stage 2: يلف ويرمي
+    if (st.t <= 6) { const a = Math.atan2(f.z, f.x) - st.t * 0.22, sp = { x: L.x + Math.cos(a) * 1.25, y: L.y + 0.9, z: L.z + Math.sin(a) * 1.25 }; try { pl.teleport(sp, { facingLocation: { x: L.x, y: L.y + 2.4, z: L.z } }); } catch (err) { /* */ } }
+    if (st.t === 8) {
+      const a = Math.atan2(f.z, f.x) - 1.4, d = { x: Math.cos(a), z: Math.sin(a) };
+      hurtPlayer(pl, 6, e);
+      try { pl.applyKnockback({ x: d.x * 2.4, z: d.z * 2.4 }, 0.9); } catch (err) { /* */ }
+      shake(pl, 0.5, 0.45); notify(pl, "§cThrown by the Bear Hug!", 30);
+      roarPuff(dim, L, d, 10); sfx(dim, "mob.polarbear.warning", L, 1.6, 0.5);
+    }
+    if (st.t >= 14) grimEnd(e, st, 80);
+    return;
+  }
+  // ── 2) Rending Claws (خرمشة): 4 لطمات بالتناوب يمين/يسار والأخيرة بالكفين، كل وحدة تخرمش جسمك وتنزفك ──
+  if (st.skill === "scratch") {
+    if (tp) { face(tp.location); if (st.t < 34 && Math.hypot(tp.location.x - L.x, tp.location.z - L.z) > 2.4) stepTo(tp.location, 0.45); }
+    const side = { 8: 1, 16: -1, 24: 1, 32: 0 }[st.t];
+    if (side !== undefined) {
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+      sfx(dim, "sh.dagger_hit", L, 0.9, side === 0 ? 0.5 : 0.7);
+      let hit = false;
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 3.6 })) {
+        const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+        if ((vx * f.x + vz * f.z) / l < 0.2) continue;
+        hit = true;
+        if (side === 0) {                                                   // الخرمشة الأخيرة بالكفين: أقوى + دفع
+          hurtPlayer(pl, 6, e); addBleed(pl, 1); pushAway(L, pl, 1.0, 0.35); shake(pl, 0.3, 0.25);
+          clawMarks(dim, pl.location, L, 1); later(1, () => { if (valid(pl)) clawMarks(dim, pl.location, L, -1); });
+          notify(pl, "§cRending Claws! You are bleeding", 30);
+        } else { hurtPlayer(pl, 3, e); addBleed(pl, 1); clawMarks(dim, pl.location, L, side); }
+      }
+      if (!hit) { const P = { x: L.x + f.x * 2.4, y: L.y, z: L.z + f.z * 2.4 }; clawMarks(dim, P, L, side || 1, 1.9); }   // لطمة بالهوا: خطوط المخالب قدامه
+    }
+    if (st.t >= 42) grimEnd(e, st, 70);
+    return;
+  }
+  // ── 3) Cub Call: زئير ونفس دخان، ويطلع جروين على جنبيه يركضون عليك ويتعلقون برجلك ──
+  if (st.skill === "cubs") {
+    if (tp && st.t < 10) face(tp.location);
+    if (st.t === 10) {
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
+      sfx(dim, "mob.polarbear.warning", L, 1.8, 0.55); roarPuff(dim, L, f, 16);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 18 })) { shake(q, 0.25, 0.4); notify(q, "§6The Grey Bear calls its cubs!", 40); }
+      st.cubs = [];
+      for (const sgn of [-1, 1]) {
+        const pos = { x: L.x + r.x * sgn * 1.7, y: L.y, z: L.z + r.z * sgn * 1.7 };
+        try {
+          const c = dim.spawnEntity(CUB, pos);
+          gst.set(c.id, { phase: 0, t: 0, cd: 0, skill: "", mom: e.id, age: 0 });
+          st.cubs.push(c.id);
+          for (let i = 0; i < 6; i++) mcP(dim, { x: pos.x, y: pos.y + 0.4, z: pos.z }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": (Math.random() - 0.5) * 0.3, "velocity.y": 0.05, "velocity.z": (Math.random() - 0.5) * 0.3 });
+        } catch (err) { /* */ }
+      }
+      st.cubCd = 600;
+    }
+    if (st.t >= 30) grimEnd(e, st, 70);
+    return;
+  }
+  // ── 4) Deep Hibernation: ينام ويتعافى 3% كل ثانية (5 ثواني). أي ضربة تصحيه بغضب: موجة دفع وضرر وغضب 7 ثواني ──
+  if (st.skill === "sleep") {
+    if (st.t === 2) {
+      st.hpLast = hpOf(e); sfx(dim, "mob.polarbear.idle", L, 1.2, 0.5);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 20 })) notify(q, "§7The Grey Bear falls into a deep sleep... §8(it heals; strike it and it wakes in a wrath)", 50);
+    }
+    const h = hpOf(e);
+    if (st.t > 4 && h < st.hpLast - 0.01) { st.skill = "wrath"; st.t = 0; setMState(e, 5); return; }   // انضرب: يصحى بغضب
+    if (st.t % 20 === 0) {
+      try { const hc = e.getComponent("minecraft:health"); hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + hc.effectiveMax * 0.03)); } catch (err) { /* */ }
+      for (let i = 0; i < 5; i++) mcP(dim, { x: L.x + (Math.random() - 0.5) * 2, y: L.y + 0.6 + Math.random() * 1.8, z: L.z + (Math.random() - 0.5) * 2 }, "minecraft:villager_happy");
+    }
+    st.hpLast = hpOf(e);
+    if (st.t % 40 === 0) sfx(dim, "mob.polarbear.idle", L, 0.8, 0.45);
+    if (st.t >= 100) { st.hibCd = 900; grimEnd(e, st, 40); }
+    return;
+  }
+  if (st.skill === "wrath") {
+    if (st.t === 2) {
+      bearRage(e, st, 140);
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+      sfx(dim, "mob.polarbear.warning", L, 2.0, 0.45); roarPuff(dim, L, f, 18);
+      for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; mcP(dim, { x: L.x + Math.cos(a) * 1.2, y: L.y + 0.3, z: L.z + Math.sin(a) * 1.2 }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": Math.cos(a) * 0.55, "velocity.y": 0.02, "velocity.z": Math.sin(a) * 0.55 }); }
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 5 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 1.6, 0.5); shake(pl, 0.45, 0.4); notify(pl, "§cYou woke the Grey Bear: WRATH!", 35); }
+    }
+    if (st.t >= 20) { st.hibCd = 900; grimEnd(e, st, 50); }
+  }
+}
+// الجرو: يركض عليك، وإذا وصلك يتعلق برجلك (بطء خفيف + ضرر 1 كل ثانية) لحد ما تضربه. يختفي بعد 45 ثانية
+function cubTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  st.age = (st.age || 0) + 2;
+  if (st.age > 900) {
+    for (let i = 0; i < 6; i++) mcP(dim, { x: L.x, y: L.y + 0.4, z: L.z }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": (Math.random() - 0.5) * 0.3, "velocity.y": 0.05, "velocity.z": (Math.random() - 0.5) * 0.3 });
+    try { e.remove(); } catch (err) { /* */ }
+    return;
+  }
+  if (st.cling) {
+    const pl = world.getAllPlayers().find((q) => q.id === st.cling);
+    if (!pl || !valid(pl) || pl.dimension.id !== dim.id) { st.cling = undefined; return; }
+    const v = pl.getViewDirection(), l = Math.hypot(v.x, v.z) || 1, fx = v.x / l, fz = v.z / l;
+    try { e.teleport({ x: pl.location.x - fx * 0.3 - fz * st.side * 0.35, y: pl.location.y, z: pl.location.z - fz * 0.3 + fx * st.side * 0.35 }, { facingLocation: { x: pl.location.x, y: pl.location.y + 0.5, z: pl.location.z } }); } catch (err) { /* */ }
+    try { pl.addEffect("slowness", 12, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
+    st.ct = (st.ct || 0) + 2;
+    if (st.ct % 20 === 0) hurtPlayer(pl, 1, e);
+    return;
+  }
+  const np = nearestPlayer(e, 1.3);
+  if (np) { st.cling = np.p.id; st.side = Math.random() < 0.5 ? -1 : 1; notify(np.p, "§eA bear cub clings to your legs! §7Hit it to shake it off", 40); sfx(dim, "mob.polarbear.warning", L, 0.6, 1.8); }
+}
+// موت جرو: الأم تغضب (إذا قريبة)
+function onCubDeath(dead) {
+  const cs = gst.get(dead.id);
+  if (!cs || !cs.mom) return;
+  const mom = world.getEntity(cs.mom);
+  if (!mom || !valid(mom)) return;
+  let ms = gst.get(mom.id);
+  if (!ms) { ms = { phase: 0, t: 0, cd: 20, skill: "" }; gst.set(mom.id, ms); }
+  bearRage(mom, ms, 160);
+  const L = mom.location;
+  sfx(mom.dimension, "mob.polarbear.warning", L, 2.0, 0.5);
+  for (let i = 0; i < 6; i++) mcP(mom.dimension, { x: L.x + (Math.random() - 0.5), y: L.y + 3.4, z: L.z + (Math.random() - 0.5) }, "minecraft:villager_angry");
+  for (const q of mom.dimension.getPlayers({ location: L, maxDistance: 24 })) notify(q, "§cThe Grey Bear roars: you hurt its cub! (enraged)", 50);
+}
+// الجلد الثخين: من قدام ينقص 30% (نرجع الصحة)، ومن ورا يزيد 20%
+let bearPelting = false;
+world.afterEvents.entityHurt.subscribe((ev) => {
+  try {
+    const e = ev.hurtEntity;
+    if (bearPelting || !e || e.typeId !== BEAR) return;
+    const src = ev.damageSource && ev.damageSource.damagingEntity;
+    if (!src || src.typeId !== "minecraft:player") return;
+    const yaw = (e.getRotation().y * Math.PI) / 180, fx = -Math.sin(yaw), fz = Math.cos(yaw);
+    const dx = src.location.x - e.location.x, dz = src.location.z - e.location.z, l = Math.hypot(dx, dz) || 1, dot = (dx * fx + dz * fz) / l;
+    const hc = e.getComponent("minecraft:health");
+    if (dot > 0.35) {
+      hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + ev.damage * 0.3));
+      mcP(e.dimension, { x: e.location.x + fx * 0.8, y: e.location.y + 2.0, z: e.location.z + fz * 0.8 }, "minecraft:glow_particle", FURG, rndDir(0.3));
+    } else if (dot < -0.35) {
+      bearPelting = true;
+      try { e.applyDamage(ev.damage * 0.2); } finally { bearPelting = false; }
+      for (let i = 0; i < 4; i++) mcP(e.dimension, { x: e.location.x - fx * 0.8, y: e.location.y + 1.6 + Math.random() * 0.8, z: e.location.z - fz * 0.8 }, "minecraft:glow_particle", BLOOD, rndDir(0.4));
+    }
+  } catch (err) { /* */ }
+});
+const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick };
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -6032,7 +6304,7 @@ system.runInterval(() => {
   }
 }, 2);
 
-const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth" };
+const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth", "sh:grey_bear": "Grey Bear", "sh:bear_cub": "Bear Cub" };
 system.runInterval(() => {
   const players = world.getAllPlayers();
   if (!players.length) return;

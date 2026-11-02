@@ -18,3 +18,7 @@ entity.sh:veilfox.name=Veilfox
 item.spawn_egg.entity.sh:veilfox.name=Veilfox Egg
 entity.sh:magmamoth.name=Magmamoth
 item.spawn_egg.entity.sh:magmamoth.name=Magmamoth Egg
+entity.sh:grey_bear.name=Grey Bear
+item.spawn_egg.entity.sh:grey_bear.name=Grey Bear Egg
+entity.sh:bear_cub.name=Bear Cub
+item.spawn_egg.entity.sh:bear_cub.name=Bear Cub Egg

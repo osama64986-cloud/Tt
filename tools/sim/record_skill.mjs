@@ -30,7 +30,7 @@ const want = Number(stateArg), dist = Number(distArg), maxTicks = Number(maxArg 
 const { entities, mkEntity, dims, player, rec } = W;
 entities.length = 0;
 player.location = { x: 0, y: 64, z: 0 }; player._hp = 5000; player._max = 5000; player._valid = true; player._yaw = 180;
-const hp = { "sh:veilfox": [90, 90], "sh:magmamoth": [260, 260], "sh:gloomhorn": [90, 90], "sh:hollow_seer": [90, 90] }[type] || [60, 60];
+const hp = { "sh:veilfox": [90, 90], "sh:magmamoth": [260, 260], "sh:grey_bear": [300, 300], "sh:gloomhorn": [90, 90], "sh:hollow_seer": [90, 90] }[type] || [60, 60];
 const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, hp[0]); m._max = hp[1]; if (hpArg) m._hp = hp[1] * Number(hpArg); m._yaw = 180; entities.push(m);
 // نبقي اللاعب بمكانه، ونترك الوحش يختار مهاراته لحد ما تجي الحالة المطلوبة؛ بعدها نسجل من أول ما تبدأ لحد ما ترجع للخمول
 let started = -1, tEnd = -1, prev = null;
@@ -41,7 +41,7 @@ for (let i = 0; i < maxTicks; i++) {
   prev = st;
   if (rec.on) { W.snapFrame(); if (process.env.SH_DBG && (process.env.SH_DBG === "2" || (W.tick - started) % 2 === 0)) console.log("t+" + (W.tick - started), "state", m.getProperty("sh:state"), "z", m.location.z.toFixed(2)); }
   W.advance(1);
-  player.location = { x: 0, y: 64, z: 0 };
+  if (!(process.env.SH_FREE && started >= 0)) player.location = { x: 0, y: 64, z: 0 };   // SH_FREE: بعد ما تبدأ المهارة نخلي الوحش يتحكم بمكان اللاعب (مسكة/رمية)
   if (started < 0 && Math.hypot(m.location.x, m.location.z - dist) > 0.01 && i % 40 === 0) m.location = { x: 0, y: 64, z: dist };
   if (rec.on && (m.getProperty("sh:state") === 0 || m.getProperty("sh:state") === undefined) && W.tick - started > 12) { tEnd = W.tick; break; }
   if (rec.on && W.tick - started > 260) { tEnd = W.tick; break; }

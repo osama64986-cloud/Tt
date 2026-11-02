@@ -1,0 +1,39 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:bear_cub",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_grey_bear"
+      },
+      "geometry": {
+        "default": "geometry.sh_grey_bear"
+      },
+      "animations": {
+        "idle": "animation.sh_grey_bear.idle",
+        "walk": "animation.sh_grey_bear.walk",
+        "attack": "animation.sh_grey_bear.attack",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "look",
+          "attack"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#7a7672",
+        "overlay_color": "#d8d6d0"
+      }
+    }
+  }
+}

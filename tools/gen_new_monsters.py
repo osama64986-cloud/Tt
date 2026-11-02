@@ -1,4 +1,4 @@
-"""تعريفات وحشين: ثعلب الحجاب (Veilfox، Grim) وماغماموث (Magmamoth، Vile).
+"""تعريفات وحوش: ثعلب الحجاب (Veilfox، Grim)، ماغماموث (Magmamoth، Vile)، الدب الرمادي (Grey Bear، Vile) وجروه (Bear Cub).
 يكتب: كيان BP، كيان RP، متحكم الرسم (للماموث: تكستشر حار)، الأنميشن، متحكمات الأنميشن، النصوص.
 (الموديل والتكستشر من gen_grim_monsters.py)   التشغيل: python3 tools/gen_new_monsters.py"""
 import json
@@ -24,6 +24,10 @@ MON = {
                     egg=("#2a2640", "#8c64ff"), states=4, props=None),
     "magmamoth": dict(ident="sh:magmamoth", name="Magmamoth", rank="sh_rank2", hp=260, speed=0.24, atk=12, w=3.4, h=4.0, kb=0.95, xp=40,
                       egg=("#2c2a30", "#ff7a1c"), states=6, props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
+    "grey_bear": dict(ident="sh:grey_bear", name="Grey Bear", rank="sh_rank2", hp=300, speed=0.27, atk=11, w=1.6, h=3.2, kb=0.9, xp=40,
+                      egg=("#5e5a58", "#d8d6d0"), states=6, props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
+    "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=1.5, h=3.2, kb=0.1, xp=2,
+                     egg=("#7a7672", "#d8d6d0"), states=1, props=None),
 }
 
 
@@ -46,6 +50,15 @@ def bp_entity(key, m):
         c["minecraft:fire_immune"] = {}
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.15
         c["minecraft:nameable"] = {}
+    if key == "grey_bear":
+        c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.2
+        c["minecraft:nameable"] = {}
+    if key == "bear_cub":                                   # الجرو: نفس موديل الدب بحجم 0.4، ما يكون حارس ولا زعيم صدع
+        c["minecraft:scale"] = {"value": 0.4}
+        c["minecraft:type_family"]["family"] = ["sh_monster", "sh_cub", "monster"]
+        c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.5
+        c["minecraft:despawn"] = {"despawn_from_distance": {"min_distance": 32, "max_distance": 48}}
+        e.pop("component_groups", None); e.pop("events", None)
     save(os.path.join(BP, "entities", f"sh_{key}.json"), d)
 
 
@@ -59,11 +72,16 @@ def rp_entity(key, m, anims):
     for a in anims:
         cd["animations"][a] = f"animation.sh_{key}.{a}"
     animate = ["idle", "walk", "state", "look"]
-    if key == "magmamoth":
-        cd["textures"]["hot"] = "textures/entity/sh_magmamoth_hot"
+    if key in ("magmamoth", "grey_bear"):
+        cd["textures"]["hot"] = f"textures/entity/sh_{key}_hot"
         cd["render_controllers"] = ["controller.render.sh_mammoth"]
         cd["scale"] = None
         animate.append("attack")
+    if key == "bear_cub":
+        cd["textures"] = {"default": "textures/entity/sh_grey_bear"}
+        cd["geometry"]["default"] = "geometry.sh_grey_bear"
+        cd["animations"] = {"idle": "animation.sh_grey_bear.idle", "walk": "animation.sh_grey_bear.walk", "attack": "animation.sh_grey_bear.attack", "look": "animation.sh.look"}
+        animate = ["idle", "walk", "look", "attack"]
     cd["scripts"]["animate"] = animate
     cd.pop("scale", None)
     cd["spawn_egg"] = {"base_color": m["egg"][0], "overlay_color": m["egg"][1]}
@@ -207,15 +225,91 @@ def mammoth_anims(A):
         "tail": {"rotation": {"0.0": [0, 0, 0], "1.0": [-40, 0, 0]}}}}
 
 
+
+def bear_anims(A):
+    S = "animation.sh_grey_bear."
+    D = "query.modified_distance_moved"
+    MS = "query.modified_move_speed"
+    A[S + "idle"] = {"loop": True, "bones": {
+        "body": {"position": [0, f"math.sin({LT}*90)*0.25", 0]},
+        "chest": {"rotation": [f"math.sin({LT}*90)*1.5", f"math.sin({LT}*40)*3", 0]},
+        "head": {"rotation": [f"math.sin({LT}*55)*3", f"math.sin({LT}*32)*12", 0]},
+        "jaw": {"rotation": [f"math.max(0, math.sin({LT}*45))*4", 0, 0]},
+        "arm_l": {"rotation": [f"math.sin({LT}*90)*3", 0, f"-math.sin({LT}*60)*2"]},
+        "arm_r": {"rotation": [f"math.sin({LT}*90 + 40)*3", 0, f"math.sin({LT}*60)*2"]},
+        "tail": {"rotation": [0, f"math.sin({LT}*140)*12", 0]}}}
+    A[S + "walk"] = {"loop": True, "bones": {                                             # مشي ثقيل على رجلين: تمايل جانبي والذراعين عكس الأرجل
+        "leg_l": {"rotation": [f"math.cos({D}*24)*30*{MS}", 0, 0]},
+        "leg_r": {"rotation": [f"-math.cos({D}*24)*30*{MS}", 0, 0]},
+        "arm_l": {"rotation": [f"-math.cos({D}*24)*20*{MS}", 0, 0]},
+        "arm_r": {"rotation": [f"math.cos({D}*24)*20*{MS}", 0, 0]},
+        "body": {"rotation": [0, 0, f"math.cos({D}*24)*4*{MS}"], "position": [0, f"math.abs(math.sin({D}*24))*0.8*{MS}", 0]},
+        "chest": {"rotation": [0, f"math.cos({D}*24)*6*{MS}", 0]},
+        "head": {"rotation": [f"math.sin({D}*48)*2*{MS}", f"-math.cos({D}*24)*5*{MS}", 0]}}}
+    at = "variable.attack_time*180"
+    A[S + "attack"] = {"loop": True, "bones": {                                           # ضربة عادية: لطمة بالكف اليمين
+        "arm_r": {"rotation": [f"-math.sin({at})*95", 0, f"math.sin({at})*25"]},
+        "fore_r": {"rotation": [f"-math.sin({at})*20", 0, 0]},
+        "chest": {"rotation": [f"math.sin({at})*8", f"math.sin({at})*22", 0]},
+        "jaw": {"rotation": [f"math.sin({at})*18", 0, 0]}}}
+    A[S + "hug_open"] = {"loop": "hold_on_last_frame", "animation_length": 0.7, "bones": {    # يوقف عالي ويفتح ذراعيه (1)
+        "chest": {"rotation": {"0.0": [0, 0, 0], "0.5": [-14, 0, 0], "0.7": [-10, 0, 0]}},
+        "body": {"position": {"0.0": [0, 0, 0], "0.5": [0, 1.2, 0]}},
+        "arm_l": {"rotation": {"0.0": [0, 0, 0], "0.5": [-18, 28, 56], "0.7": [-20, 30, 60]}},       # ذراعين مفتوحة على الجانبين بعلو الكتف (مقاسة)
+        "arm_r": {"rotation": {"0.0": [0, 0, 0], "0.5": [-18, -28, -56], "0.7": [-20, -30, -60]}},
+        "fore_l": {"rotation": {"0.0": [0, 0, 0], "0.6": [-20, 0, 0]}}, "fore_r": {"rotation": {"0.0": [0, 0, 0], "0.6": [-20, 0, 0]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.5": [-14, 0, 0]}}, "jaw": {"rotation": {"0.0": [0, 0, 0], "0.5": [26, 0, 0]}}}}
+    sq = f"math.max(0, math.sin({LT}*720))"
+    A[S + "hug_hold"] = {"loop": True, "bones": {                                         # العناق: الذراعين مسكرة قدامه ويعصر (2)
+        "chest": {"rotation": [f"10 + {sq}*6", 0, 0]},
+        "arm_l": {"rotation": [f"-30 - {sq}*4", -20, f"40 + {sq}*6"]},                       # الذراعين مسكرة قدام الصدر (يعصر)
+        "arm_r": {"rotation": [f"-30 - {sq}*4", 20, f"-40 - {sq}*6"]},
+        "fore_l": {"rotation": [f"-60 - {sq}*8", 0, 0]}, "fore_r": {"rotation": [f"-60 - {sq}*8", 0, 0]},
+        "head": {"rotation": [f"-8 + {sq}*6", 0, 0]}, "jaw": {"rotation": [f"10 + {sq}*12", 0, 0]}}}
+    A[S + "throw"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {        # يلف جسمه ويرمي (3)
+        "chest": {"rotation": {"0.0": [10, 0, 0], "0.25": [0, -70, 0], "0.4": [-6, 45, 0], "0.6": [0, 0, 0]}},
+        "arm_l": {"rotation": {"0.0": [-30, -20, 40], "0.25": [-110, 0, 20], "0.4": [-150, 0, -10], "0.6": [-20, 0, 0]}},
+        "arm_r": {"rotation": {"0.0": [-30, 20, -40], "0.25": [-110, 0, -20], "0.4": [-150, 0, 10], "0.6": [-20, 0, 0]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.3": [-20, 0, 0], "0.6": [0, 0, 0]}}, "jaw": {"rotation": {"0.0": [10, 0, 0], "0.4": [30, 0, 0], "0.6": [0, 0, 0]}}}}
+    sw = f"math.mod({LT}, 0.4) / 0.4"
+    A[S + "scratch"] = {"loop": True, "bones": {                                          # خرمشة: لطمات بالمخالب يمين/يسار بالتناوب (4)
+        "arm_r": {"rotation": [f"math.mod({LT}, 0.8) < 0.4 ? -140 + {sw}*170 : -20", f"math.mod({LT}, 0.8) < 0.4 ? -20 + {sw}*30 : 0", 20]},
+        "arm_l": {"rotation": [f"math.mod({LT}, 0.8) >= 0.4 ? -140 + {sw}*170 : -20", f"math.mod({LT}, 0.8) >= 0.4 ? 20 - {sw}*30 : 0", -20]},
+        "fore_r": {"rotation": [-25, 0, 0]}, "fore_l": {"rotation": [-25, 0, 0]},
+        "chest": {"rotation": [f"8 + math.sin({LT}*900)*3", f"math.sin({LT}*450)*20", 0]},
+        "head": {"rotation": [-6, f"-math.sin({LT}*450)*10", 0]}, "jaw": {"rotation": [f"16 + math.sin({LT}*900)*6", 0, 0]}}}
+    A[S + "roar"] = {"loop": True, "bones": {                                              # زئير: الراس لفوق والفك مفتوح والذراعين مفتوحة (5)
+        "chest": {"rotation": [f"-16 + math.sin({LT}*1500)*1.5", 0, 0]},
+        "head": {"rotation": [f"-28 + math.sin({LT}*1800)*2", 0, 0]}, "jaw": {"rotation": [f"34 + math.sin({LT}*2000)*4", 0, 0]},
+        "arm_l": {"rotation": [-25, 40, 55]}, "arm_r": {"rotation": [-25, -40, -55]},
+        "fore_l": {"rotation": [-40, 0, 0]}, "fore_r": {"rotation": [-40, 0, 0]}}}
+    br = f"math.sin({LT}*60)"
+    A[S + "sleep"] = {"loop": True, "bones": {                                             # سبات: قاعد على مؤخرته منحني ومحتضن ركبه (6)
+        "body": {"position": [0, -13, 1], "rotation": [-10, 0, 0]},
+        "leg_l": {"rotation": [-82, -12, 0]}, "leg_r": {"rotation": [-82, 12, 0]},
+        "chest": {"rotation": [f"30 + {br}*3", 0, 0]},
+        "head": {"rotation": [f"26 + {br}*2", 0, 0]}, "jaw": {"rotation": [0, 0, 0]},
+        "arm_l": {"rotation": [-15, -20, 35]}, "arm_r": {"rotation": [-15, 20, -35]},
+        "fore_l": {"rotation": [-50, 0, 0]}, "fore_r": {"rotation": [-50, 0, 0]}}}
+    A[S + "death"] = {"loop": "hold_on_last_frame", "animation_length": 1.2, "bones": {      # يتهاوى لورا على ظهره
+        "root": {"rotation": {"0.0": [0, 0, 0], "0.5": [12, 0, 0], "1.0": [80, 0, 6], "1.2": [86, 0, 6]},
+                 "position": {"0.0": [0, 0, 0], "1.0": [0, 0, 6], "1.2": [0, 0, 7]}},
+        "arm_l": {"rotation": {"0.0": [0, 0, 0], "1.0": [-30, 0, 50]}}, "arm_r": {"rotation": {"0.0": [0, 0, 0], "1.0": [-30, 0, -50]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "1.0": [-30, 20, 0]}}, "jaw": {"rotation": {"0.0": [0, 0, 0], "1.0": [22, 0, 0]}},
+        "leg_l": {"rotation": {"0.0": [0, 0, 0], "1.0": [-30, 0, 0]}}, "leg_r": {"rotation": {"0.0": [0, 0, 0], "1.0": [-14, 0, 0]}}}}
+
 def build():
     A = load(os.path.join(RP, "animations", "sh_grim.animation.json"))
     C = load(os.path.join(RP, "animation_controllers", "sh_grim.ac.json"))
-    for k in [k for k in A["animations"] if k.startswith(("animation.sh_quillback.", "animation.sh_veilfox.", "animation.sh_magmamoth."))]:
+    for k in [k for k in A["animations"] if k.startswith(("animation.sh_quillback.", "animation.sh_veilfox.", "animation.sh_magmamoth.", "animation.sh_grey_bear."))]:
         del A["animations"][k]
     for k in [k for k in C["animation_controllers"] if "quillback" in k]:
         del C["animation_controllers"][k]
     fox_anims(A["animations"])
     mammoth_anims(A["animations"])
+    bear_anims(A["animations"])
+    C["animation_controllers"]["controller.animation.sh_grey_bear.state"] = controller(
+        [("hug_open", 1), ("hug_hold", 2), ("throw", 3), ("scratch", 4), ("roar", 5), ("sleep", 6)], death=True)
     C["animation_controllers"]["controller.animation.sh_veilfox.state"] = controller([("volley", 1), ("pounce", 2), ("storm", 3), ("veil", 4)])
     C["animation_controllers"]["controller.animation.sh_magmamoth.state"] = controller(
         [("stomp", 1), ("breath", 2), ("run", 3), ("eruption", 4), ("armor", 5), ("lower", 6)], death=True)
@@ -225,6 +319,8 @@ def build():
         bp_entity(key, m)
     rp_entity("veilfox", MON["veilfox"], ["volley", "pounce", "storm", "veil"])
     rp_entity("magmamoth", MON["magmamoth"], ["stomp", "breath", "run", "eruption", "armor", "lower", "death", "attack"])
+    rp_entity("grey_bear", MON["grey_bear"], ["hug_open", "hug_hold", "throw", "scratch", "roar", "sleep", "death", "attack"])
+    rp_entity("bear_cub", MON["bear_cub"], [])
     rc = {"format_version": "1.8.0", "render_controllers": {"controller.render.sh_mammoth": {
         "arrays": {"textures": {"Array.t": ["Texture.default", "Texture.hot"]}},
         "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
