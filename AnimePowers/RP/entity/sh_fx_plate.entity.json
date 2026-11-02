@@ -4,7 +4,7 @@
   "description": {
    "identifier": "sh:fx_plate",
    "materials": {
-    "default": "entity_alpha"
+    "default": "entity_alphablend"
    },
    "textures": {
     "c0": "textures/entity/sh_fx_plate_0",

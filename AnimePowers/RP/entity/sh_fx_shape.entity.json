@@ -100,7 +100,14 @@
     "s87": "geometry.sh_shape_x_cut",
     "s88": "geometry.sh_shape_claw_violet",
     "s89": "geometry.sh_shape_stone_ring",
-    "s90": "geometry.sh_shape_warp_gate"
+    "s90": "geometry.sh_shape_warp_gate",
+    "s91": "geometry.sh_shape_prayer_halo",
+    "s92": "geometry.sh_shape_scythe_x",
+    "s93": "geometry.sh_shape_leaf_swirl",
+    "s94": "geometry.sh_shape_scythe_thrust",
+    "s95": "geometry.sh_shape_scissor_lock",
+    "s96": "geometry.sh_shape_molt_husk",
+    "s97": "geometry.sh_shape_husk_burst"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",
@@ -112,6 +119,8 @@
     "nova_core": "animation.sh_fx.shape_nova_core",
     "fusion_rings": "animation.sh_fx.shape_fusion_rings",
     "warp_gate": "animation.sh_fx.shape_warp_gate",
+    "leaf_swirl": "animation.sh_fx.shape_leaf_swirl",
+    "scissor_lock": "animation.sh_fx.shape_scissor_lock",
     "beam": "animation.sh_fx.shape_beam",
     "sound_pulse": "animation.sh_fx.shape_sound_pulse",
     "flat_ring": "animation.sh_fx.shape_flat_ring"
@@ -144,6 +153,12 @@
       "warp_gate": "q.property('sh:v') == 90"
      },
      {
+      "leaf_swirl": "q.property('sh:v') == 93"
+     },
+     {
+      "scissor_lock": "q.property('sh:v') == 95"
+     },
+     {
       "beam": "q.property('sh:v') == 79"
      },
      {
@@ -155,12 +170,7 @@
     ]
    },
    "render_controllers": [
-    {
-     "controller.render.sh_fx_shape": "!(q.property('sh:v') == 7 || q.property('sh:v') == 27 || q.property('sh:v') == 31 || q.property('sh:v') == 32 || q.property('sh:v') == 48 || q.property('sh:v') == 47 || q.property('sh:v') == 89)"
-    },
-    {
-     "controller.render.sh_fx_shape_lit": "q.property('sh:v') == 7 || q.property('sh:v') == 27 || q.property('sh:v') == 31 || q.property('sh:v') == 32 || q.property('sh:v') == 48 || q.property('sh:v') == 47 || q.property('sh:v') == 89"
-    }
+    "controller.render.sh_fx_shape"
    ]
   }
  }

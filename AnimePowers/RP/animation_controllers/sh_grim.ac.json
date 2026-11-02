@@ -696,6 +696,217 @@
      "blend_transition": 0.1
     }
    }
+  },
+  "controller.animation.sh_prayer_mantis.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "stance": {
+     "animations": [
+      "stance"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "camo": {
+     "animations": [
+      "camo"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "stab": {
+     "animations": [
+      "stab"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lock": {
+     "animations": [
+      "lock"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "molt": {
+     "animations": [
+      "molt"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "counter": {
+     "animations": [
+      "counter"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
   }
  }
 }

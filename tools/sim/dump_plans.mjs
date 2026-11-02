@@ -16,7 +16,7 @@ for (const [n, f] of [["@minecraft/server", "mc_server_stub.js"], ["@minecraft/s
   fs.copyFileSync(path.join(root, "tools/sim", f), path.join(d, "index.js"));
 }
 const m = await import(pathToFileURL(path.join(tmp, "scripts/structures.js")).href);
-for (const [k, fn] of [["village", m.planVillage], ["palace", m.planPalace], ["ruins", m.planRuins], ["shrine", m.planShrine], ["temple", m.planTemple], ["lightshrine", m.planLightShrine]]) {
+for (const [k, fn] of [["village", m.planVillage], ["palace", m.planPalace], ["ruins", m.planRuins], ["shrine", m.planShrine], ["temple", m.planTemple], ["lightshrine", m.planLightShrine], ["tower", m.planTower]]) {
   const p = fn(20260101);
   fs.writeFileSync(path.join(out, `plan_${k}.json`), JSON.stringify({ ops: p.ops, spawns: p.spawns, reward: p.rewardAt || null }));
   console.log(k, "ops:", p.ops.length);

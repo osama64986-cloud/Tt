@@ -13,7 +13,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 SHAPES_JS = open(os.path.join(ROOT, "AnimePowers", "BP", "scripts", "shapes.js"), encoding="utf-8").read()
 SHAPE_BY_ID = {int(v): k for k, v in re.findall(r'"([a-z0-9_]+)":\s*(\d+)', SHAPES_JS)}
 CTRL = json.load(open(os.path.join(ROOT, "AnimePowers", "RP", "animation_controllers", "sh_grim.ac.json"), encoding="utf-8"))["animation_controllers"]
-MODEL = {"sh:magmamoth": "magmamoth", "sh:veilfox": "veilfox", "sh:gloomhorn": "gloomhorn", "sh:hollow_seer": "hollow_seer", "sh:grey_bear": "grey_bear", "sh:bear_cub": "bear_cub"}
+MODEL = {"sh:magmamoth": "magmamoth", "sh:veilfox": "veilfox", "sh:gloomhorn": "gloomhorn", "sh:hollow_seer": "hollow_seer", "sh:grey_bear": "grey_bear", "sh:bear_cub": "bear_cub", "sh:prayer_mantis": "prayer_mantis"}
 SCALE = {}
 ANIM_OF = {"sh:bear_cub": "grey_bear"}
 _models = {}
@@ -104,9 +104,10 @@ def render_frame(cap, T, parts_by_t, cam, size, snaps, start_tick):
         if e["type"] in MODEL:
             nm = MODEL[e["type"]]
             hot = bool(e["props"].get("sh:hot", 0))
-            key = (nm, hot)
+            camo = bool(e["props"].get("sh:camo", 0))
+            key = (nm, hot, camo)
             if key not in _models:
-                _models[key] = SS.R.Model(os.path.join(SS.GEO, f"sh_{nm}.geo.json"), os.path.join(SS.TEX, f"sh_{nm}{'_hot' if hot else ''}.png"))
+                _models[key] = SS.R.Model(os.path.join(SS.GEO, f"sh_{nm}.geo.json"), os.path.join(SS.TEX, f"sh_{nm}{'_camo' if camo else '_hot' if hot else ''}.png"))
             m = _models[key]
             st = e["props"].get("sh:state", 0)
             an = "grey_bear" if nm == "bear_cub" else nm                 # الجرو يستعمل أنميشن الدب

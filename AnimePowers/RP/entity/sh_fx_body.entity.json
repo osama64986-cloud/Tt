@@ -4,7 +4,7 @@
   "description": {
    "identifier": "sh:fx_body",
    "materials": {
-    "default": "entity_alpha"
+    "default": "entity_alphatest"
    },
    "textures": {
     "v0": "textures/entity/sh_fx_body_0",

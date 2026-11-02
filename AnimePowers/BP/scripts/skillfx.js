@@ -11,6 +11,7 @@ const right = (d) => ({ x: -d.z, y: 0, z: d.x });
 const chest = (e) => { try { return up(e.location, 1.0); } catch (err) { return undefined; } };
 
 // ألوان كل قدرة (للجزيئات اللي تقبل تلوين: wax, glow, sparkler, spell, note)
+const LEAF_P = "minecraft:biome_tinted_leaves_particle";   // ورقة شجر أصلية تنزل وتتمايل بالهوا (تقبل لون)
 export const PAL = {
   steel: [0.82, 0.86, 0.95], hot: [1, 0.72, 0.35],
   teal: [0.2, 0.95, 0.85], aqua: [0.35, 0.8, 1], deep: [0.25, 0.4, 1], violetNote: [0.75, 0.45, 1],
@@ -883,5 +884,69 @@ Object.assign(MONSTER, {
     shockwave(dim, L, 1.0, 5.5, 8, { ids: [PT.puff, PT.gravel], density: 1.3, y: 0.25, vout: 0.07, max: 40 });
     critBurst(dim, up(L, 2.4), 20);
     for (let i = 0; i < 4; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + 3.4, z: L.z + rnd(-0.6, 0.6) }, PT.angry, { eye: 0 });
+  },
+});
+
+// ═══════════════ السرعوف المصلّي (Cursed): أوراق شجر حقيقية، حروف طاولة السحر (صلاة)، شرر حرج ونصل، غبار رمل (قشرة الانسلاخ) ═══════════════
+const LEAF_C = [0.42, 0.78, 0.26], LEAF_C2 = [0.62, 0.9, 0.36], CURSE_C = [0.72, 0.32, 1.0], SCY_C = [0.92, 1.0, 0.82];
+const leaf = (dim, at, o = {}) => P(dim, at, LEAF_P, { c: Math.random() < 0.5 ? LEAF_C : LEAF_C2, eye: 0.8, ...o });
+Object.assign(MONSTER, {
+  // بداية وضعية الصلاة: حروف السحر تنسحب لراسه + حلقة توهج بنفسجي عند الصدر + لمعات
+  mantisPray(dim, L) {
+    converge(dim, up(L, 2.6), 1.8, 14, "glyph", { eye: 1.0 });
+    ring(dim, up(L, 1.4), 1.0, 14, PT.glow, { c: CURSE_C, out: 0.25, eye: 1.0 });
+    for (let i = 0; i < 3; i++) P(dim, { x: L.x + rnd(-0.5, 0.5), y: L.y + rnd(2.2, 3.0), z: L.z + rnd(-0.5, 0.5) }, PT.endrod, { eye: 1.0 });
+  },
+  // أثناء الوضعية: حرف سحر أو لمعة بنفسجية حول الراس
+  mantisPrayTick(dim, L) { P(dim, { x: L.x + rnd(-0.8, 0.8), y: L.y + rnd(2.0, 3.0), z: L.z + rnd(-0.8, 0.8) }, PT.glow, { c: CURSE_C, d: { x: 0, y: 0.15, z: 0 }, eye: 1.0 }); },
+  // الصد: رنة معدن (شرر حرج سحري + شرارات بيضا) عند السرعوف
+  mantisParry(dim, c, f) {
+    critBurst(dim, c, 18, true);
+    for (let i = 0; i < 8; i++) P(dim, add(c, f, 0.4), PT.spark, { d: { x: f.x * 0.5 + rnd(-0.4, 0.4), y: rnd(-0.2, 0.5), z: f.z * 0.5 + rnd(-0.4, 0.4) }, eye: 0.8 });
+    P(dim, c, PT.whiteSmoke, { eye: 0.8 });
+  },
+  // الرد يوصل للهدف: شرر حرج + نقاط نصل بيضا بشكل X
+  mantisCounterHit(dim, c, f) {
+    critBurst(dim, c, 16);
+    const r = right(flat(f));
+    for (let k = -3; k <= 3; k++) {
+      P(dim, { x: c.x + r.x * k * 0.15, y: c.y + k * 0.15, z: c.z + r.z * k * 0.15 }, PT.wax, { c: SCY_C, eye: 0.5 });
+      P(dim, { x: c.x - r.x * k * 0.15, y: c.y + k * 0.15, z: c.z - r.z * k * 0.15 }, PT.wax, { c: SCY_C, eye: 0.5 });
+    }
+  },
+  // دوامة أوراق: أوراق شجر خضرا تنرش حول الجسم (التمويه/الكشف)
+  mantisLeaves(dim, L, n = 18) {
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; leaf(dim, { x: L.x + Math.cos(a) * rnd(0.6, 1.6), y: L.y + rnd(0.3, 2.6), z: L.z + Math.sin(a) * rnd(0.6, 1.6) }); }
+    dustRing(dim, L, 0.8, 10, 0.18, { eye: 0.8 });
+  },
+  // أثناء التمويه: ورقة أو ورقتين تنزل منه (الأثر الوحيد اللي يكشفه)
+  mantisCamoTick(dim, L) { leaf(dim, { x: L.x + rnd(-0.7, 0.7), y: L.y + rnd(1.2, 2.4), z: L.z + rnd(-0.7, 0.7) }); },
+  // الطعنة: خط شرر بيض باتجاه الطعنة + شرر حرج + أوراق تنفجر
+  mantisStab(dim, from, to) {
+    line(dim, from, to, 0.25, PT.spark, { eye: 0.8 });
+    critBurst(dim, to, 14);
+    for (let i = 0; i < 8; i++) leaf(dim, { x: from.x + rnd(-0.8, 0.8), y: from.y + rnd(-0.6, 0.8), z: from.z + rnd(-0.8, 0.8) });
+  },
+  // قفل المقص: المسكة (شرر + حلقة توهج على الخصر)، الضغط كل ثانية، القصة الأخيرة، والفلتة
+  mantisGrab(dim, at) { critBurst(dim, up(at, 0.9), 12); ring(dim, up(at, 0.9), 0.75, 12, PT.glow, { c: CURSE_C, eye: 0.6 }); },
+  mantisLockTick(dim, at) { ring(dim, up(at, 0.9), 0.7, 8, PT.wax, { c: SCY_C, eye: 0.6 }); },
+  mantisSnip(dim, at) {
+    P(dim, up(at, 0.9), PT.crit, { n: 22, eye: 0.6 });
+    P(dim, up(at, 0.9), PT.magicCrit, { n: 12, eye: 0.6 });
+    sphereOut(dim, up(at, 0.9), 10, PT.glow, 0.6, { c: CURSE_C, eye: 0.6 });
+  },
+  mantisBreak(dim, at) { dustRing(dim, at, 0.5, 12, 0.3); for (let i = 0; i < 6; i++) P(dim, up(at, rnd(0.5, 1.4)), PT.spark, { d: { x: rnd(-0.5, 0.5), y: rnd(0, 0.4), z: rnd(-0.5, 0.5) }, eye: 0.6 }); },
+  // الانسلاخ: قشور (غبار رمل) تتساقط من الجسم + شقوق متوهجة بنفسجية تطلع
+  mantisMoltTick(dim, L) {
+    for (let i = 0; i < 3; i++) P(dim, { x: L.x + rnd(-0.8, 0.8), y: L.y + rnd(0.8, 2.6), z: L.z + rnd(-0.8, 0.8) }, PT.sand, { eye: 0.8 });
+    P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(1.0, 2.4), z: L.z + rnd(-0.6, 0.6) }, PT.glow, { c: CURSE_C, d: { x: 0, y: 0.3, z: 0 }, eye: 0.8 });
+  },
+  // انفجار القشرة: انفجار كبير + قشور رمل طايرة + توهج بنفسجي + موجة أوراق
+  mantisHuskBoom(dim, c) {
+    P(dim, up(c, 1.2), PT.boom, { eye: 1.2 });
+    sphereOut(dim, up(c, 1.2), 16, PT.glow, 0.8, { c: CURSE_C, eye: 1.0 });
+    for (let i = 0; i < 12; i++) P(dim, { x: c.x + rnd(-1.4, 1.4), y: c.y + rnd(0.6, 2.6), z: c.z + rnd(-1.4, 1.4) }, PT.sand, { eye: 1.0 });
+    shockwave(dim, c, 0.8, 4.5, 6, { ids: [PT.puff], density: 1.2, y: 0.25, vout: 0.08, max: 30 });
+    for (let i = 0; i < 10; i++) leaf(dim, { x: c.x + rnd(-2, 2), y: c.y + rnd(0.5, 3), z: c.z + rnd(-2, 2) });
   },
 });

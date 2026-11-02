@@ -95,6 +95,13 @@ def tile_pattern(kind, base, alt, rnd):
                 if rnd.random() < 0.03:
                     t -= 0.3
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * t) for i in range(3))
+            elif kind == "leaf":        # ورقة (أجنحة السرعوف): عرق وسطي غامق عمودي وعروق جانبية مايلة كل 5 بكسل، ولمعة خفيفة بين العروق
+                d = x - 15.5
+                vein = abs(d) < 1.0 or (abs(d) > 1.5 and (y + abs(d) * 0.8) % 5 < 0.9)
+                t = 0.62 + 0.05 * n + (0.08 if (x + y) % 9 == 0 else 0)
+                if vein:
+                    t = 0.18 + 0.04 * n
+                c = tuple(clamp(alt[i] + (base[i] - alt[i]) * t) for i in range(3))
             elif kind == "obsidian":
                 c = tuple(clamp(base[i] + (alt[i] - base[i]) * (0.25 if rnd.random() < 0.06 else 0) + 6 * n) for i in range(3))
             else:                       # flat مع ضوضاء خفيفة

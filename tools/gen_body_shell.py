@@ -164,7 +164,7 @@ def main():
         "format_version": "1.10.0",
         "minecraft:client_entity": {"description": {
             "identifier": "sh:fx_body",
-            "materials": {"default": "entity_alpha"},
+            "materials": {"default": "entity_alphatest"},
             "textures": {"v0": "textures/entity/sh_fx_body_0", "v1": "textures/entity/sh_fx_body_1"},
             "geometry": {"default": "geometry.sh_fx_body"},
             "animations": {"fx": "animation.sh_fx.body"},

@@ -230,8 +230,6 @@ STAR_G, STAR_W, VOIDC, VOID_RIM = (255, 214, 90), (255, 250, 225), (14, 8, 26), 
 WHITE = (255, 255, 255)
 
 SHAPES = []
-# أشكال أجسام صلبة (حديد، صخر، قفل، ظل) تاخذ إضاءة العالم العادية؛ الباقي طاقة سحرية مضيئة
-LIT_SHAPES = ["iron_fist", "weight", "gavel", "padlock", "rock_chunk", "afterimage", "stone_ring"]
 
 
 def shape(name, ground=False):
@@ -1266,6 +1264,152 @@ EXTRA_ANIMS["nova_core"] = {"ring_a": {"rotation": [0, "q.life_time * 300", 0]},
                             "core": {"scale": "1 + math.sin(q.life_time * 900) * 0.08"}}
 EXTRA_ANIMS["fusion_rings"] = {"ga": {"rotation": [0, "q.life_time * 260", 0]}, "gb": {"rotation": [0, 0, "q.life_time * 330"]}}
 EXTRA_ANIMS["warp_gate"] = {"swirl": {"rotation": [0, 0, "q.life_time * 420"]}}
+
+# ───────────────────────── السرعوف المصلّي (Prayer Mantis، Cursed) ─────────────────────────
+LEAF, LEAF_HI, LEAF_LO = (112, 192, 72), (176, 232, 112), (48, 108, 40)
+SCY, SCY_W = (226, 240, 196), (250, 255, 240)
+CURSE, CURSE_HI, CURSE_LO = (172, 72, 240), (228, 176, 255), (72, 22, 122)
+HUSK, HUSK_HI, HUSK_LO = (198, 178, 122), (226, 210, 160), (138, 118, 78)
+
+
+def scythe_arc(S, bone, r, a0, a1, w_max, outer, mid, core, teeth=None, n=19, cy=0.0):
+    """منجل مقوس بمستوى XY حول (0,cy) (يواجه -Z): سميك بالنص ويضيق لطرف حاد، حافة نصل بيضا داخلية، وأسنان منشار لجوه"""
+    for k in range(n):
+        u = k / (n - 1)
+        ang = a0 + (a1 - a0) * u
+        t = math.sin(math.pi * min(1.0, u * 1.08)) ** 1.3
+        w = 0.35 + w_max * t
+        seg = 2 * math.pi * r / 360 * abs(a1 - a0) / (n - 1) * 1.08
+        rot = [0, 0, ang] if abs(ang) > 1e-6 else None
+        pv = (0, cy, 0)
+        S.box((0, cy + r + w * 0.22, 0), (seg, max(0.4, w * 0.5), 1.1), outer, bone=bone, rot=rot, pivot=pv)
+        S.box((0, cy + r - w * 0.1, 0), (seg, max(0.35, w * 0.38), 1.5), mid, bone=bone, rot=rot, pivot=pv)
+        S.box((0, cy + r - w * 0.36, -0.2), (seg, max(0.3, w * 0.2), 1.7), core, bone=bone, rot=rot, pivot=pv, flat=True)
+        if teeth and k % 3 == 1 and 0.12 < u < 0.88:
+            S.box((0, cy + r - w * 0.5 - 0.7, 0), (0.7, 1.4, 0.9), teeth, bone=bone, rot=rot, pivot=pv)
+
+
+@shape("prayer_halo")
+def _(S):
+    """وضعية الصلاة: هالة ملعونة عمودية ورا راس السرعوف: حلقة بنفسجية بأشواك منجلية لبرا، حلقة ورقية داخلية،
+    منجلين يلتقون فوق مثل كفوف تصلي، وعين ملعونة بالنص"""
+    ring(S, (0, 0, 0), 13.0, 24, (3.6, 1.6, 1.2), CURSE, axis="z", col2=CURSE_HI)
+    ring(S, (0, 0, 0.3), 9.0, 18, (3.0, 0.9, 0.9), LEAF_HI, axis="z", col2=LEAF)
+    for i in range(8):
+        a = i * 45 + 22.5
+        for k, (w, h, col) in enumerate(((2.4, 2.6, CURSE_LO), (1.6, 2.4, CURSE), (0.8, 2.2, CURSE_HI))):
+            S.box((0, 15.2 + k * 2.3, 0), (w, h, 1.0), col, rot=[0, 0, a], pivot=(0, 0, 0), flat=k == 2)
+    for sx in (-1, 1):                                                       # منجلين مرفوعين يلتقون فوق (كفوف تصلي)
+        for k in range(9):
+            t = k / 8
+            x = sx * (4.2 - 3.9 * t * t)
+            y = -6.5 + t * 13.5
+            w = 2.6 * math.sin(math.pi * min(1, 0.2 + t * 0.9)) + 0.5
+            S.box((x, y, -0.4), (w, 1.7, 1.2), SCY if k % 2 else LEAF_HI)
+            S.box((x - sx * w * 0.42, y, -0.7), (0.5, 1.7, 0.8), SCY_W, flat=True)
+    S.box((0, -1.0, -0.6), (3.4, 2.0, 0.8), CURSE_HI, flat=True)                   # العين الملعونة
+    S.box((0, -1.0, -0.6), (2.0, 3.2, 0.8), CURSE_HI, flat=True)
+    S.box((0, -1.0, -1.1), (1.0, 1.6, 0.6), (30, 8, 44))
+
+
+@shape("scythe_x")
+def _(S):
+    """رد الصلاة: منجلين متقاطعين X (أبيض نصل بحافة ورقية وأسنان بنفسجية) يطيرون على اللي ضربه"""
+    for nm, a in (("xa", 42), ("xb", -42)):                                         # كل منجل نصه يعبر المركز (شكل X)
+        bn = S.bone(nm, pivot=(0, 0, 0), rot=[0, 0, a])
+        scythe_arc(S, bn, 20.0, -44, 44, 4.4, LEAF_LO, SCY, SCY_W, teeth=CURSE, cy=-20.0)
+
+
+@shape("leaf_swirl", ground=True)
+def _(S):
+    """تمويه الأوراق: ثلاث حلقات أوراق خضرا تدور حول السرعوف بسرعات مختلفة (كل ورقة معينية بعرق وسطي)"""
+    for j, (nm, r, y, n) in enumerate((("lw_a", 12, 5, 7), ("lw_b", 16, 15, 8), ("lw_c", 13, 25, 7))):
+        S.bone(nm, pivot=(0, 0, 0))
+        for i in range(n):
+            ang = i * 360 / n + j * 17
+            yy = y + (i % 3) * 1.6
+            col = (LEAF, LEAF_HI, LEAF_LO, (140, 206, 86))[(i + j) % 4]
+            for (w, d, off) in ((1.2, 5.2, 0), (3.4, 2.6, 0.1), (2.2, 4.0, -0.1)):
+                tangent_box(S, (0, yy + off, 0), r, ang, (d, 0.45, w), col, bone=nm)
+            tangent_box(S, (0, yy + 0.3, 0), r, ang, (4.6, 0.2, 0.4), LEAF_LO, bone=nm)
+
+
+@shape("scythe_thrust")
+def _(S):
+    """طعنة من التمويه: منجلين متوازيين ينطلقون لقدام (-Z) بطرف خطافي وخطوط سرعة"""
+    for sx in (-1, 1):
+        x = sx * 4.0
+        for k, (z, w) in enumerate(((10, 2.6), (6, 3.0), (2, 3.0), (-2, 2.6), (-6, 2.0), (-10, 1.4), (-13, 0.8))):
+            S.box((x, 0, z), (w * 0.6, w, 4.1), LEAF if k < 3 else SCY)
+            S.box((x, w * 0.5 - 0.2, z), (w * 0.3, 0.5, 4.0), SCY_W, flat=True)
+        S.box((x, -1.4, -14.2), (0.8, 2.6, 0.8), CURSE_HI, flat=True)               # الخطاف
+        S.box((x, -2.6, -13.2), (0.7, 0.8, 1.8), CURSE)
+        for k in range(3):                                                           # أسنان
+            S.box((x, -1.3, 4 - k * 5), (0.6, 1.2, 0.8), CURSE)
+    for x, y, L in ((-7, 3, 10), (7, -2, 12), (0, 5, 8), (-2, -4, 9), (3, 1, 14)):  # خطوط سرعة
+        S.box((x, y, 14 + L / 2), (0.4, 0.4, L), SCY_W, flat=True)
+
+
+@shape("scissor_lock", ground=True)
+def _(S):
+    """قفل المقص: منجلين كبار أفقيين ينسدون حول خصر الضحية مثل مقص (مفصلهم ورا جهة السرعوف +Z)، وحلقة أشواك بنفسجية بالأرض"""
+    ring(S, (0, 0.6, 0), 11.0, 22, (3.4, 0.6, 1.2), CURSE, axis="y", col2=CURSE_LO)
+    for i in range(10):
+        a = i * 36
+        tangent_box(S, (0, 1.4, 0), 9.6, a, (1.0, 2.0, 1.8), CURSE_HI, flat=True)
+    hz = 13.0
+    for nm, sg in (("sa", 1), ("sb", -1)):
+        S.bone(nm, pivot=(0, 14, hz))
+        n = 16
+        for k in range(n):
+            u = k / (n - 1)
+            ang = sg * (12 + u * 158)
+            t = math.sin(math.pi * min(1, 0.15 + u * 0.95)) ** 1.2
+            w = 0.6 + 4.2 * t
+            for (rr, h, col, fl) in ((12.0 + w * 0.3, 2.6, LEAF_LO, False), (11.2, 3.2, SCY, False), (10.4 - w * 0.2, 2.4, SCY_W, True)):
+                tangent_box(S, (0, 14, 0), rr, ang, (3.0, h, max(0.5, w * 0.45)), col, bone=nm, flat=fl)
+            if k % 3 == 1 and 0.1 < u < 0.9:
+                tangent_box(S, (0, 14, 0), 9.0 - w * 0.2, ang, (0.8, 1.4, 1.2), CURSE, bone=nm)
+        S.box((0, 14, hz), (3.0, 3.0, 3.0), CURSE_LO, bone=nm)                       # المفصل
+
+
+@shape("molt_husk", ground=True)
+def _(S):
+    """الانسلاخ: قشرة السرعوف القديمة (ورقية فاتحة) واقفة بمكانها بشقوق بنفسجية متوهجة، قبل لا تنفجر"""
+    sc = 1.25
+    def b(c, s, col, **kw):
+        S.box((c[0] * sc, c[1] * sc, c[2] * sc), (s[0] * sc, s[1] * sc, s[2] * sc), col, **kw)
+    for k, (w, h) in enumerate(((7.0, 5.6), (8.4, 6.2), (9.2, 6.6), (8.8, 6.2), (7.6, 5.4), (5.6, 4.2))):
+        b((0, 17.0 + k * 0.4, 6.1 + k * 3.0), (w, h, 3.0), HUSK if k % 2 == 0 else HUSK_LO)
+    b((0, 17.0, 1.0), (6.0, 5.2, 8.4), HUSK)
+    b((0, 25.0, -6.6), (4.4, 15.0, 4.0), HUSK_HI, rot=[32, 0, 0], pivot=(0, 18.0 * 1.25, -2.4 * 1.25))    # الرقبة الطويلة المايلة لقدام
+    b((0, 25.0, -7.0), (2.0, 13.0, 0.4), HUSK_LO, rot=[32, 0, 0], pivot=(0, 18.0 * 1.25, -2.4 * 1.25))
+    b((0, 33.6, -11.4), (8.0, 3.2, 4.2), HUSK_HI)                                    # الراس
+    b((0, 31.4, -11.8), (4.0, 2.2, 3.4), HUSK)
+    for sx in (-1, 1):
+        b((sx * 5.2, 34.0, -11.8), (2.8, 3.4, 3.2), HUSK_LO)                         # عيون فارغة
+        b((sx * 2.6, 26.0, -14.0), (2.2, 9.0, 2.4), HUSK, rot=[-24, 0, 0])               # المناجل الفارغة
+        b((sx * 2.6, 27.0, -16.6), (1.4, 7.0, 1.4), HUSK_LO, rot=[-50, 0, 0])
+        for z in (-1.0, 4.0):
+            kx = sx * 10.5
+            b((sx * 7.0, 19.0, z), (8.0, 1.2, 1.2), HUSK, rot=[0, 0, sx * 38])         # فخذ لبرا ولفوق
+            b((kx + sx * 1.2, 10.5, z), (1.0, 20.0, 1.0), HUSK_LO, rot=[0, 0, sx * 8])    # ساق نازلة
+    for (x, y, z, w, h) in ((0, 20, 9, 0.5, 5.0), (2.4, 18, 14, 0.5, 4.0), (-2.0, 21, 4, 0.5, 4.4), (0, 30, -8, 0.5, 6.0), (1.5, 35.5, -14.2, 3.0, 0.5)):
+        b((x, y, z - 1.5), (w, h, 0.4), CURSE_HI, flat=True)                         # شقوق متوهجة
+
+
+@shape("husk_burst")
+def _(S):
+    """انفجار القشرة: شظايا ورقية فاتحة طايرة بكل الاتجاهات ونواة لعنة بنفسجية"""
+    sphere(S, (0, 0, 0), 4.5, CURSE, rim=CURSE_HI)
+    dirs = [(0, 0), (180, 0)] + [(50, i * 72 + 10) for i in range(5)] + [(95, i * 60) for i in range(6)] + [(140, i * 72 + 40) for i in range(5)]
+    radial_spikes(S, dirs, [12, 16, 10], 3.2, [HUSK_LO, HUSK, HUSK_HI, CURSE_HI], start=4.0, prefix="hs")
+
+
+EXTRA_ANIMS["leaf_swirl"] = {"lw_a": {"rotation": [0, "q.life_time * 420", 0]}, "lw_b": {"rotation": [0, "-q.life_time * 300", 0]},
+                             "lw_c": {"rotation": [0, "q.life_time * 520", 0]}}
+EXTRA_ANIMS["scissor_lock"] = {"sa": {"rotation": [0, "-math.max(0, 62 - q.life_time * 380)", 0]},       # تبدأ مفتوحة لبرا وتنسد خلال 0.16 ثانية
+                               "sb": {"rotation": [0, "math.max(0, 62 - q.life_time * 380)", 0]}}
 EXTRA_ANIMS["beam"] = {"body": {"scale": [1, 1, "math.max(0.05, q.property('sh:l'))"]}}
 EXTRA_ANIM_SHAPES["beam"] = ["star_beam"]
 # أعمدة الصوت تنبض، وطولها ما يكبر مع نصف القطر (الحلقة تتوسع لـ12 بلوكة بس الأعمدة تبقى ~2 بلوكة)
@@ -1334,7 +1478,6 @@ def main():
     }, compact=False)
     # كيان RP
     geos = {f"s{i}": f"geometry.sh_shape_{n}" for i, n in enumerate(names)}
-    lit_cond = " || ".join(f"q.property('sh:v') == {names.index(n)}" for n in LIT_SHAPES if n in names)
     anims = {"fx": "animation.sh_fx.shape"}
     animate = ["fx"]
     for key, bones in EXTRA_ANIMS.items():
@@ -1350,8 +1493,9 @@ def main():
             "geometry": geos,
             "animations": anims,
             "scripts": {"animate": animate},
-            # طاقة/سحر = ignore_lighting (تضوي بالليل والكهوف مثل مؤثرات السحر)، والأجسام الصلبة (حديد/صخر/أقفال) إضاءة عادية
-            "render_controllers": [{"controller.render.sh_fx_shape": f"!({lit_cond})"}, {"controller.render.sh_fx_shape_lit": lit_cond}],
+            # render controller واحد بدون شروط (نفس البنية اللي اشتغلت باللعبة من البداية) + ignore_lighting (مستعملة بالفانيلا:
+            # experience_orb وwarden) حتى الأشكال تضوي بالليل والكهوف
+            "render_controllers": ["controller.render.sh_fx_shape"],
         }},
     }, compact=False)
     rc_path = os.path.join(RP, "render_controllers", "sh_fx.render_controllers.json")
@@ -1363,7 +1507,7 @@ def main():
         "textures": ["Texture.default"],
     }
     rc["render_controllers"]["controller.render.sh_fx_shape"] = {**base_rc, "ignore_lighting": True}
-    rc["render_controllers"]["controller.render.sh_fx_shape_lit"] = dict(base_rc)
+    rc["render_controllers"].pop("controller.render.sh_fx_shape_lit", None)
     write(rc_path, rc, compact=False)
     an_path = os.path.join(RP, "animations", "sh_fx.animation.json")
     an = json.load(open(an_path, encoding="utf-8"))

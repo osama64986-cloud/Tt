@@ -239,11 +239,17 @@ def render(model, pose, yaw=0, pitch=12, size=420, center=None, dist=None, bg=(4
             tx = np.clip((u - 1e-3).astype(int), 0, model.tw - 1)
             ty = np.clip((v - 1e-3).astype(int), 0, model.th - 1)
             tex = model.tex[ty, tx]
-            ok = m & (tex[..., 3] > 128) & (z < zbuf[y0:y1 + 1, x0:x1 + 1])
-            if not ok.any(): continue
-            sub = zbuf[y0:y1 + 1, x0:x1 + 1]; sub[ok] = z[ok]
+            front = m & (z < zbuf[y0:y1 + 1, x0:x1 + 1])
+            ok = front & (tex[..., 3] > 128)
+            semi = front & (tex[..., 3] > 8) & (tex[..., 3] <= 128)          # مادة alphablend (تمويه شبه شفاف): تنمزج بدون كتابة عمق
+            if not ok.any() and not semi.any(): continue
             col = tex[..., :3].astype(np.float32) * shade
             region = img[y0:y1 + 1, x0:x1 + 1]
+            if semi.any():
+                al = tex[..., 3:4].astype(np.float32) / 255.0
+                region[semi] = (col * al + region * (1 - al))[semi]
+            if not ok.any(): continue
+            sub = zbuf[y0:y1 + 1, x0:x1 + 1]; sub[ok] = z[ok]
             region[ok] = col[ok]
     # أرضية خفيفة
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))

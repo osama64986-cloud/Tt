@@ -91,7 +91,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
@@ -493,7 +493,18 @@ export const __sim = {
           waves.push(`موجة ${w}: ${mobs.length} وحش${boss ? " + زعيم «" + boss.nameTag.replace(/§./g, "") + "»" : ""}`);
           if (!mobs.length) { failures.push(`موجة ${w} ما طلعت`); break; }
           if (w === 3 && !boss) failures.push("الزعيم ما طلع بالموجة 3");
-          if (w < 3) mobs.forEach((e) => { e._valid = false; });
+          if (w === 1) {
+            // خطأ قديم: لما تموت/تبتعد ووحوش الموجة تختفي (تحميل أو اختفاء)، الصدع كان يعبر للموجة اللي بعدها. هسه لازم يبقى بنفس الموجة ويرجع الوحوش
+            const back = { ...player.location };
+            player.location = { x: rs.x + 300, y: 64, z: rs.z }; mobs.forEach((e) => { e._valid = false; }); advance(200);
+            player.location = back; advance(220);
+            const st1 = JSON.parse(world._dyn.sh_rift || "null"), again = entities.filter((e) => e._valid && e._tags.has("sh_rift"));
+            console.log("  بعد ما ترجع للصدع (الوحوش اختفت): الموجة =", st1 && st1.wave, "| وحوش رجعت =", again.length);
+            if (!st1 || st1.wave !== 1) failures.push("الصدع عبر الموجة لما اللاعب ابتعد/مات (لازم يبقى بنفس الموجة)");
+            if (!again.length) failures.push("الصدع ما رجّع وحوش الموجة اللي اختفت");
+            mobs = again;
+          }
+          if (w < 3) mobs.forEach((e) => { fire("entityDie", { deadEntity: e, damageSource: { damagingEntity: player } }); e._valid = false; });
           else if (boss) { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
         }
         console.log("  " + waves.join("\n  "));
@@ -720,6 +731,61 @@ export const __sim = {
       if (!(front < 10 && back > 10)) failures.push("الدب: الجلد الثخين ما اشتغل");
       clear(); player._hp = 20; player._max = 20;
     }
+    // السرعوف المصلّي: وضعية الصلاة والرد المضاعف، التمويه والطعنة، قفل المقص (وكسره بالداش)، الانسلاخ وانفجار القشرة
+    {
+      console.log("\nالسرعوف المصلّي:");
+      const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
+      const clear = () => { entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true; stats.shapeV = {}; };
+      const mantis = (hp, z) => { const m = mkEntity("sh:prayer_mantis", { x: 0, y: 64, z }, dims.overworld, hp); m._max = 340; m._yaw = 180; entities.push(m); return m; };
+      const waitState = (m, want, z, maxT = 6000) => { for (let t = 0; t < maxT; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === want) return true; if (m.getProperty("sh:state") === 0 && t % 40 === 0) m.location = { x: 0, y: 64, z }; } return false; };
+      // 1) وضعية الصلاة: ضربة 10 → السرعوف ما ينقص، والضارب ياخذ 20
+      clear(); let m = mantis(340, 3);
+      const stance = waitState(m, 1, 3); advance(4);
+      const hp0 = m._hp; m._hp -= 10; const dmg0 = stats.damage || 0;
+      fire("entityHurt", { hurtEntity: m, damage: 10, damageSource: { damagingEntity: player } });
+      const parried = m._hp >= hp0 - 0.01, countered = m.getProperty("sh:state") === 6;
+      advance(20);
+      const back = Math.round((stats.damage || 0) - dmg0);
+      const haloN = stats.shapeV[SHP.prayer_halo] || 0, xN = stats.shapeV[SHP.scythe_x] || 0;
+      // 2) التمويه: شبه شفاف + بدون اسم، يقرب ويطعن، وينكشف
+      clear(); m = mantis(340, 9);
+      const camo = waitState(m, 2, 9); advance(4);
+      const transparent = m.getProperty("sh:camo") === 1 && m.hasTag("sh_camo");
+      advance(40); const noName = m.nameTag === "";
+      m.location = { x: 0, y: 64, z: 2 }; const dmg1 = stats.damage || 0;
+      let stabbed = false; for (let t = 0; t < 40 && !stabbed; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === 3) stabbed = true; }
+      advance(6);
+      const stabDmg = Math.round((stats.damage || 0) - dmg1), revealed = m.getProperty("sh:camo") === 0;
+      const swirlN = stats.shapeV[SHP.leaf_swirl] || 0, thrustN = stats.shapeV[SHP.scythe_thrust] || 0;
+      const leaves = (stats.pById || {})["minecraft:biome_tinted_leaves_particle"] || 0;
+      // 3) قفل المقص: يمسك ويثبت اللاعب، وبعد 1.5 ثانية قصة؛ وبالمرة الثانية الداش يكسره
+      clear(); m = mantis(340, 2.5);
+      let locked = false; for (let t = 0; t < 8000 && !locked; t += 2) { advance(2); const s = m.getProperty("sh:state"); if (s === 4) locked = true; else { player.location = { x: 0, y: 64, z: 0 }; if (s === 0 && t % 40 === 0) m.location = { x: 0, y: 64, z: 2.5 }; } }
+      const dmg2 = stats.damage || 0; let pinned = true;
+      for (let t = 0; t < 34; t += 2) { advance(2); if (m.getProperty("sh:state") === 4 && Math.hypot(player.location.x - m.location.x, player.location.z - m.location.z) > 2.6) pinned = false; }
+      const snip = Math.round((stats.damage || 0) - dmg2), lockN = stats.shapeV[SHP.scissor_lock] || 0;
+      clear(); m = mantis(340, 2.5);
+      let locked2 = false; for (let t = 0; t < 8000 && !locked2; t += 2) { advance(2); const s = m.getProperty("sh:state"); if (s === 4) locked2 = true; else { player.location = { x: 0, y: 64, z: 0 }; if (s === 0 && t % 40 === 0) m.location = { x: 0, y: 64, z: 2.5 }; } }
+      advance(4); player.location = { x: 3.2, y: 64, z: player.location.z }; const dmg3 = stats.damage || 0; advance(4);
+      const broke = m.getProperty("sh:state") === 0; advance(40); const noSnip = (stats.damage || 0) - dmg3 < 6;
+      // 4) الانسلاخ: صحة النص → قشرة + جلد جديد + انفجار + سرعة
+      clear(); m = mantis(160, 6); const sp0 = (stats.effects || {}).speed || 0;
+      const molt = waitState(m, 5, 6, 200); const dmg4 = stats.damage || 0;
+      player.location = { x: 0, y: 64, z: 5 };
+      for (let t = 0; t < 90; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 5 }; }
+      const newSkin = m.getProperty("sh:hot") === 1, huskN = stats.shapeV[SHP.molt_husk] || 0, burstN = stats.shapeV[SHP.husk_burst] || 0;
+      const boom = Math.round((stats.damage || 0) - dmg4), faster = ((stats.effects || {}).speed || 0) > sp0;
+      console.log(`  وضعية الصلاة ${stance ? "✔" : "✖"} | صد ${parried ? "✔" : "✖"} | رد ${countered ? "✔" : "✖"} ضرر راجع ${back} ${back >= 20 ? "✔" : "✖"} | هالة×${haloN} منجلين X×${xN}`);
+      console.log(`  تمويه ${camo ? "✔" : "✖"} شبه شفاف ${transparent ? "✔" : "✖"} بدون اسم ${noName ? "✔" : "✖"} | طعنة ${stabbed ? "✔" : "✖"} ضرر ${stabDmg} | انكشف ${revealed ? "✔" : "✖"} | دوامة أوراق×${swirlN} طعنة×${thrustN} أوراق شجر×${leaves}`);
+      console.log(`  قفل المقص ${locked ? "✔" : "✖"} تثبيت ${pinned ? "✔" : "✖"} قصة ${snip} ${snip > 0 ? "✔" : "✖"} مقص×${lockN} | الداش يكسره ${locked2 && broke && noSnip ? "✔" : "✖"}`);
+      console.log(`  انسلاخ ${molt ? "✔" : "✖"} جلد جديد ${newSkin ? "✔" : "✖"} قشرة×${huskN} انفجار×${burstN} ضرر ${boom} | أسرع ${faster ? "✔" : "✖"}`);
+      if (!stance || !parried || !countered || back < 20 || !haloN || !xN) failures.push("السرعوف: وضعية الصلاة أو الرد المضاعف ما اشتغل");
+      if (!camo || !transparent || !noName || !stabbed || stabDmg <= 0 || !revealed || !swirlN || !thrustN || !leaves) failures.push("السرعوف: التمويه أو الطعنة ما اشتغلت");
+      if (!locked || !pinned || snip <= 0 || !lockN) failures.push("السرعوف: قفل المقص ما اشتغل");
+      if (!(locked2 && broke && noSnip)) failures.push("السرعوف: الداش ما يكسر قفل المقص");
+      if (!molt || !newSkin || !huskN || !burstN || boom <= 0 || !faster) failures.push("السرعوف: الانسلاخ ما اشتغل");
+      clear(); player._hp = 20; player._max = 20;
+    }
     // ضريحا السيف: حارسان يظهران، وموتهما (الاثنين) يطلّع صندوق السيف المناسب
     {
       console.log("\nضريحا السيف:");
@@ -753,6 +819,49 @@ export const __sim = {
       }
       entities.forEach((x) => (x._valid = false)); entities.length = 0; world.setDynamicProperty("sh_structs", "[]");
       player._hp = 20; player._max = 20; player._valid = true;
+    }
+    // برج الهاوية: وحوش كل طابق تطلع أول ما يوصله اللاعب (مرة وحدة)، والطابق السابع وحوش عالية؛ موتهم يطلّع صندوق القمة
+    {
+      console.log("\nبرج الهاوية:");
+      entities.forEach((x) => (x._valid = false)); entities.length = 0;
+      player._hp = 2000; player._max = 2000; player._valid = true;
+      world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 200, y: 64, z: 200, type: "tower", rot: 1, seed: 11, v: 2, ok: 1 }]));
+      stats.setTypes = []; stats.chestItems = [];
+      const LOW = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"], GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"], HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis"];
+      const tagged = () => entities.filter((e) => e._valid && e._tags.has("sh_tower"));
+      const counts = [];
+      let ok13 = true, ok46 = true, once = true;
+      for (let k = 0; k < 6; k++) {
+        const before = tagged().length;
+        player.location = { x: 201.5, y: 64 + k * 7, z: 199.5 }; advance(20);
+        const neu = tagged().slice(before);
+        counts.push(neu.length);
+        if (k <= 2 && (neu.length !== 3 + k || !neu.every((e) => LOW.includes(e.typeId)))) ok13 = false;
+        if (k >= 3 && (neu.length < 3 || !neu.some((e) => GRIM.includes(e.typeId)))) ok46 = false;
+        advance(20); if (tagged().length !== before + neu.length) once = false;          // ما يتكرر
+        neu.forEach((e) => (e._valid = false));
+      }
+      player.location = { x: 200.5, y: 64 + 42, z: 200.5 }; advance(20);
+      const tops = entities.filter((e) => e._valid && e._tags.has("sh_tower_top"));
+      const topOk = tops.length >= 1 && tops.length <= 2 && tops.every((e) => HIGH.includes(e.typeId));
+      const chest0 = stats.setTypes.some((q) => q[3] === "minecraft:chest");
+      // تبخروا (بدون موت) ← يرجعون لما اللاعب بالطابق
+      const types0 = tops.map((e) => e.typeId).sort().join(",");
+      tops.forEach((e) => (e._valid = false)); advance(20);
+      const back = entities.filter((e) => e._valid && e._tags.has("sh_tower_top"));
+      const respawned = back.map((e) => e.typeId).sort().join(",") === types0;
+      for (const e of back) { e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); }
+      advance(20);
+      const chest = stats.setTypes.filter((q) => q[3] === "minecraft:chest");
+      const loot = stats.chestItems.filter(Boolean);
+      const wr = JSON.parse(world.getDynamicProperty("sh_structs"))[0];
+      console.log(`  الطوابق 1-6: ${counts.join("، ")} وحش | 1-3 Lowly بالعدد ${ok13 ? "✔" : "✖"} | 4-6 أقوى (Grim) ${ok46 ? "✔" : "✖"} | مرة وحدة ${once ? "✔" : "✖"}`);
+      console.log(`  الطابق 7: ${types0} ${topOk ? "✔" : "✖"} | يرجعون إذا تبخروا ${respawned ? "✔" : "✖"} | صندوق قبل القتل ${chest0 ? "✖" : "✔(ما في)"} | صندوق بعد القتل ${chest.length === 1 ? "✔" : "✖"} (${chest[0] ? chest[0].slice(0, 3).join(",") : "-"}) | غنائم ${loot.length} | مكتمل ${wr.c ? "✔" : "✖"}`);
+      if (!ok13 || !ok46 || !once) failures.push("البرج: وحوش الطوابق 1-6 غلط أو تتكرر");
+      if (!topOk || !respawned) failures.push("البرج: وحوش الطابق السابع ما ظهرت أو ما رجعت");
+      if (chest0 || chest.length !== 1 || loot.length < 3 || !wr.c) failures.push("البرج: صندوق القمة ما ظهر صح");
+      entities.forEach((x) => (x._valid = false)); entities.length = 0; world.setDynamicProperty("sh_structs", "[]");
+      player._hp = 20; player._max = 20; player._valid = true; player.location = { x: 0, y: 64, z: 0 };
     }
     // الداش: ضغطتين على يمين/يسار/خلف
     {

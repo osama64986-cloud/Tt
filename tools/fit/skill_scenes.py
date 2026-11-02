@@ -142,6 +142,11 @@ class Scene:
                     tex = m.tex[ty, tx]
                     ok = msk & (tex[..., 3] > 128) & (z < zb[y0:y1 + 1, x0:x1 + 1])
                     col = tex[..., :3].astype(np.float32) * shade
+                    semi = msk & (tex[..., 3] > 8) & (tex[..., 3] <= 128) & (z < zb[y0:y1 + 1, x0:x1 + 1])   # alphablend (تمويه): مزج بدون عمق
+                    if semi.any():
+                        al = tex[..., 3:4].astype(np.float32) / 255.0
+                        reg = img[y0:y1 + 1, x0:x1 + 1]
+                        reg[semi] = (col * al + reg * (1 - al))[semi]
                 else:
                     cc, glow = data
                     ok = msk & (z < zb[y0:y1 + 1, x0:x1 + 1])

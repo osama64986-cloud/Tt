@@ -4,7 +4,7 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple, onShrineBossDeath } from "./structures.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath } from "./structures.js";
 import { setupDash, dashCooldown } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
@@ -184,6 +184,8 @@ const MONSTERS = {
   "sh:magmamoth": { rank: 2, xp: 220 },
   "sh:grey_bear": { rank: 2, xp: 230 },
   "sh:bear_cub": { rank: 0, xp: 6 },
+  // الرتبة الرابعة (Cursed): نادر جداً بالعالم
+  "sh:prayer_mantis": { rank: 3, xp: 320 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
@@ -205,6 +207,7 @@ const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floo
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
 const VILE_TYPES = ["sh:magmamoth", "sh:grey_bear"];
+const CURSED_TYPES = ["sh:prayer_mantis"];
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
 function riftMobType() {
   if (rift && rift.tier >= 2 && Math.random() < 0.12) return VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)];
@@ -937,6 +940,7 @@ const MONSTER_INFO = [
   ["sh:veilfox", "Veilfox", "Grim to Cataclysm", "A spirit fox with five flame-tipped tails and a white mask. FOXFIRE SERPENT: nine spirit flames weave toward you in a snaking train (stand between the waves). MIRROR CAROUSEL: it and three real shadow foxes circle you in a tightening ring, then all collapse on you at once (kill the shadows to thin it). SUN SHOWER: foxfire drops rain down over eight blocks around you. Below half health it casts MOON LIFT: it floats you into the air while three volleys of crescent waves fall on you."],
   ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
   ["sh:grey_bear", "Grey Bear", "Vile to Cataclysm", "A grey bear that fights standing on two legs, with a silver crescent on its chest and a clawed scar over one eye. BEAR HUG: it spreads its arms and grabs whoever is in front of it, squeezes three times and throws them; hit it 3 times or dash out to break free. RENDING CLAWS: four alternating claw swipes that scratch your body and make you bleed (stacks up to 3). CUB CALL: it roars and two cubs run at you and cling to your legs, slowing you; kill a cub and the bear goes into a rage. DEEP HIBERNATION: when hurt it falls asleep and heals; strike it and it wakes in a WRATH that blasts you away. Thick pelt: hits on its front do 30% less damage, hits on its back 20% more."],
+  ["sh:prayer_mantis", "Prayer Mantis", "Cursed to Cataclysm", "A leaf-green mantis with a long raised neck, glowing violet eyes and two folded scythe arms. It is very rare in the wild. PRAYER STANCE: a cursed halo rises behind its head and it raises both scythes; any hit you land is turned back at you DOUBLED as an X of blades, so wait it out or keep your distance. LEAF CAMOUFLAGE: a whirl of leaves and it turns half transparent, creeps close and stabs with both scythes; hit it to reveal it early. SCISSOR LOCK: two huge blades close around your waist and pin you for 1.5 s before a final snip; DASH to break it. MOLT: at half health it sheds its old shell, which explodes a moment later (run!), and the fresh mantis is faster and attacks more often."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -1278,6 +1282,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
       try { tagged = ev.deadEntity.hasTag("sh_boss"); } catch (e02) { tagged = true; }
       onShrineBossDeath(ev.deadEntity.typeId, ev.deadEntity.location, ev.deadEntity.dimension, tagged);
     } catch (e01) { /* */ }
+    try { onTowerMobDeath(ev.deadEntity); } catch (e04) { /* */ }                      // قمة برج الهاوية: لما ينقتلون كلهم يطلع الصندوق
     if (ev.deadEntity.typeId === "sh:bear_cub") { try { onCubDeath(ev.deadEntity); } catch (e03) { /* */ } }   // الدب يغضب إذا قتلت جروه   // حراس الضريحين: لما يموت الاثنان يظهر صندوق السيف
     if (ev.deadEntity.typeId === "sh:magmamoth") {            // موت الماموث: انفجار حمم وصخور
       const dl = ev.deadEntity.location, dm = ev.deadEntity.dimension;
@@ -1333,6 +1338,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
         : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null)
         : t === "sh:gloomhorn" ? (roll < 0.45 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.75 ? "sh:skill_scroll" : null)
         : t === "sh:grey_bear" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
+        : t === "sh:prayer_mantis" ? (roll < 0.55 ? "sh:skill_scroll" : "sh:xp_scroll_big")
         : t === "sh:magmamoth" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
         : t === "sh:veilfox" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : null)
         : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
@@ -1827,18 +1833,22 @@ function breakBlocks(dim, positions, max = 40) {
 // يكبر كل 30 ثانية ويفسد الأرض حواليه (ترجع طبيعية لما يتسد). من يقرب لاعب 14 بلوكة تبدي 3 موجات، والثالثة زعيم.
 // قتل الزعيم = الصدع ينسد ومكافآت حسب لونه. إذا ما أحد سده خلال 20 دقيقة ينفجر ويطلق زعيمه بالعالم.
 const RIFT_TIERS = [
-  { key: "blue", name: "Blue Rift", rank: "Lowly", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:warped_nylium", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
-  { key: "violet", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:purple_terracotta", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
-  { key: "crimson", name: "Crimson Rift", rank: "Dread", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:crimson_nylium", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
-  { key: "abyss", name: "Abyssal Rift", rank: "Cataclysm", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
+  { key: "blue", name: "Blue Rift", rank: "Lowly", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:sculk", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
+  { key: "violet", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:crying_obsidian", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
+  { key: "crimson", name: "Crimson Rift", rank: "Dread", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:red_terracotta", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
+  { key: "abyss", name: "Abyssal Rift", rank: "Cataclysm", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:gilded_blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
 ];
 const RIFT_LIFE = 24000, RIFT_ENGAGE = 14, RIFT_MAX_R = 12;
+// كل أنواع أرضية الصدع (القديمة والجديدة) حتى الإرجاع يشتغل حتى لصدوع محفوظة من نسخ قبل
+const RIFT_SCAR_TYPES = new Set(["minecraft:warped_nylium", "minecraft:purple_terracotta", "minecraft:crimson_nylium", "minecraft:blackstone", "minecraft:sculk", "minecraft:crying_obsidian", "minecraft:red_terracotta", "minecraft:gilded_blackstone"]);
+const riftRadius = (r) => 2.4 + r.r * 0.15;                  // حجم شكل الصدع 3D (كان صغير ويضيع)
+const riftShapeAt = (r) => ({ x: r.x, y: r.y + 1.6 + riftRadius(r) * 1.15, z: r.z });
 const RIFT_GROUND = new Set(["minecraft:grass_block", "minecraft:dirt", "minecraft:coarse_dirt", "minecraft:podzol", "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:stone", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:snow", "minecraft:mycelium", "minecraft:moss_block", "minecraft:mud", "minecraft:terracotta", "minecraft:sandstone"]);
 let rift = null;
 function riftState() { return rift; }
 function riftTier() { return rift ? RIFT_TIERS[rift.tier] : undefined; }
 function riftSave() {
-  try { world.setDynamicProperty("sh_rift", rift ? JSON.stringify({ ...rift, ent: undefined, scars: rift.scars.slice(0, 700) }) : undefined); } catch (e) { /* */ }
+  try { world.setDynamicProperty("sh_rift", rift ? JSON.stringify({ ...rift, ent: undefined, circle: undefined, scars: rift.scars.slice(0, 700) }) : undefined); } catch (e) { /* */ }
 }
 system.runTimeout(() => {
   try { const raw = world.getDynamicProperty("sh_rift"); if (typeof raw === "string") rift = JSON.parse(raw); } catch (e) { rift = null; }
@@ -1854,7 +1864,8 @@ function openRift(p, tierIdx, force) {
     let top;
     try { top = dim.getTopmostBlock({ x, z }); } catch (e) { continue; }
     if (!top || /water|lava|leaves|log|ice/.test(top.typeId)) continue;
-    rift = { id: `r${Date.now() % 100000}`, tier: tierIdx, dim: dim.id, x: x + 0.5, y: top.y + 1, z: z + 0.5, age: 0, r: 0, phase: "growing", wave: 0, pause: 0, bossId: "", scars: [], pulse: 0 };
+    rift = { id: `r${Date.now() % 100000}`, tier: tierIdx, dim: dim.id, x: x + 0.5, y: top.y + 1, z: z + 0.5, age: 0, r: 0, phase: "growing", wave: 0, pause: 0, bossId: "", scars: [], pulse: 0,
+      cracks: [...Array(7).keys()].map((k) => (k / 7) * Math.PI * 2 + Math.random() * 0.5), waveIds: [], dead: [], expect: 0, miss: 0 };
     riftGrow();
     const t = RIFT_TIERS[tierIdx];
     for (const q of world.getAllPlayers()) {
@@ -1881,7 +1892,12 @@ function riftGrow() {
     let n = 0;
     for (let dx = -r1; dx <= r1; dx++) for (let dz = -r1; dz <= r1; dz++) {
       const d = Math.hypot(dx, dz);
-      if (d > r1 || d <= r0 || (d > r1 - 1.2 && Math.random() < 0.45)) continue;
+      if (d > r1 || d <= r0) continue;
+      if (d > 2.2) {                                                          // شقوق شعاعية متعرجة تطلع من الصدع (مو قرص كامل)
+        const cr = rift.cracks || (rift.cracks = [...Array(7).keys()].map((k) => (k / 7) * Math.PI * 2));
+        const ang = Math.atan2(dz, dx);
+        if (!cr.some((c0, k) => { let da = ang - (c0 + 0.32 * Math.sin(d * 0.55 + k)); da = Math.atan2(Math.sin(da), Math.cos(da)); return Math.abs(da) * d < 0.75; })) continue;
+      }
       if (++n % 10 === 0) yield;
       try {
         if (!rift || rift.id !== id || rift.scars.length >= 700) return;
@@ -1900,7 +1916,7 @@ function riftRestore(scars, ground) {
     let n = 0;
     for (const [x, y, z, type] of scars) {
       if (++n % 12 === 0) yield;
-      try { const b = dim.getBlock({ x, y, z }); if (b && b.typeId === ground) b.setType(type); } catch (e) { /* */ }
+      try { const b = dim.getBlock({ x, y, z }); if (b && (b.typeId === ground || RIFT_SCAR_TYPES.has(b.typeId)) && b.typeId !== type) b.setType(type); } catch (e) { /* */ }
     }
   })());
 }
@@ -1922,6 +1938,7 @@ function riftSpawnMob(type, boss) {
   const pr = Math.max(0, ...riftPlayersNear(60).map((q) => getState(q).rank));
   scaleMonster(e, Math.min(RANKS.length - 1 + 2, Math.max(pr, t.mob) + (boss ? 2 : 0)));
   try { e.addTag("sh_rift"); } catch (err) { /* */ }
+  if (!boss) { (rift.waveIds = rift.waveIds || []).push(e.id); }
   burst(dim, { x, y: y + 1, z }, 10, t.rgb, 3, 0.25);
   try { e.applyKnockback({ x: Math.cos(a) * 0.6, z: Math.sin(a) * 0.6 }, 0.4); } catch (err) { /* */ }
   if (boss) {
@@ -1951,6 +1968,7 @@ function riftStartWave(n) {
   }
   const dim = world.getDimension(rift.dim);
   SYS.riftWave(dim, { x: rift.x, y: rift.y, z: rift.z });
+  rift.waveIds = []; rift.dead = []; rift.miss = 0; rift.expect = n === 3 ? 2 : t.waves[n - 1];
   if (n === 3) {
     later(20, () => { if (rift) { riftSpawnMob(riftMobType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
   } else {
@@ -1977,10 +1995,10 @@ function closeRift(victory, killer) {
   const r = rift, t = RIFT_TIERS[r.tier], dim = world.getDimension(r.dim);
   rift = null;
   riftSave();
-  removeFx(r.ent);
-  const c = { x: r.x, y: r.y + 2.2, z: r.z };
-  const imp = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + r.r * 0.08, s: 600, life: 16 });
-  tween(12, 1, (k) => setShape(imp, "sh:r", (1.2 + r.r * 0.08) * (1 - k)), () => { SYS.riftClose(dim, c); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
+  removeFx(r.ent); removeFx(r.circle);
+  const c = riftShapeAt(r);
+  const imp = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(r), s: 600, life: 16 });
+  tween(12, 1, (k) => setShape(imp, "sh:r", riftRadius(r) * (1 - k)), () => { SYS.riftClose(dim, c); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
   riftRestore(r.scars, t.ground);
   if (!victory) return;
   // المكافآت تنزل عند الصدع
@@ -2004,6 +2022,7 @@ function closeRift(victory, killer) {
 }
 world.afterEvents.entityDie.subscribe((ev) => {
   try { if (rift && rift.bossId && ev.deadEntity.id === rift.bossId) closeRift(true, ev.damageSource && ev.damageSource.damagingEntity); } catch (e) { /* */ }
+  try { if (rift && (rift.waveIds || []).includes(ev.deadEntity.id) && !(rift.dead || []).includes(ev.deadEntity.id)) (rift.dead = rift.dead || []).push(ev.deadEntity.id); } catch (e) { /* */ }
 });
 // القلب: كل ثانية
 system.runInterval(() => {
@@ -2027,9 +2046,12 @@ system.runInterval(() => {
     const near = riftPlayersNear(64);
     if (!near.length) { if (rift.age > RIFT_LIFE && rift.phase !== "battle") closeRift(false); return; }
     // الشكل: شق كبير يكبر ويه الفساد
-    const c = { x: rift.x, y: rift.y + 2.2, z: rift.z };
-    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: 1.2 + rift.r * 0.08, s: 10, life: 1100 });
-    else setShape(rift.ent, "sh:r", 1.2 + rift.r * 0.08);
+    const c = riftShapeAt(rift);
+    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(rift), s: 10, life: 1100 });
+    else { setShape(rift.ent, "sh:r", riftRadius(rift)); moveShape(rift.ent, c); }
+    if (!rift.circle || !valid(rift.circle)) rift.circle = spawnFx(dim, "circle", { x: rift.x, y: rift.y, z: rift.z }, t.circle, 3 + rift.r * 0.45, 1100);
+    else setShape(rift.circle, "sh:r", 3 + rift.r * 0.45);
+    if (rift.age % 40 === 0) for (let y = 2; y < 26; y += 2) vP(dim, { x: rift.x, y: rift.y + y, z: rift.z }, PT.endrod, { eye: 2 });   // عمود نور يبين من بعيد
     for (let i = 0; i < 4; i++) {
       const a = Math.random() * Math.PI * 2, rr = 1 + Math.random() * rift.r;
       glow(dim, { x: rift.x + Math.cos(a) * rr, y: rift.y + 0.3, z: rift.z + Math.sin(a) * rr }, { color: t.rgb, size: 0.25, life: 1.2, rise: 1.2 });
@@ -2049,7 +2071,23 @@ system.runInterval(() => {
     }
     // المعركة: الموجة تخلص لما ما يبقى وحش من الصدع
     const mobs = riftMobs();
-    if (rift.wave < 3 && mobs.length === 0) {
+    const engaged = riftPlayersNear(RIFT_ENGAGE + 6).length > 0;
+    if (!rift.waveIds && engaged) { rift.waveIds = mobs.filter((m) => m.id !== rift.bossId).map((m) => m.id); rift.dead = []; rift.expect = rift.waveIds.length; }   // صدع محفوظ من نسخة قديمة
+    const ids = rift.waveIds || [], dead = rift.dead || [];
+    const alive = ids.filter((id) => !dead.includes(id));
+    const spawnedAll = ids.length >= (rift.expect || 0);
+    if (rift.wave < 3 && spawnedAll && alive.length && engaged) {
+      const loaded = new Set(mobs.map((m) => m.id));
+      const lost = alive.filter((id) => !loaded.has(id));
+      if (lost.length) {
+        rift.miss = (rift.miss || 0) + 20;
+        if (rift.miss >= 100) {                                                 // 5 ثواني وانت جنب الصدع ووحوشه مو موجودة: يطلع بدالهم (ما تعبر الموجة)
+          rift.waveIds = ids.filter((id) => !lost.includes(id)); rift.expect = rift.waveIds.length + lost.length; rift.miss = 0;
+          lost.forEach((_, i) => later(i * 6, () => { if (rift) riftSpawnMob(riftMobType(), false); }));
+        }
+      } else rift.miss = 0;
+    }
+    if (rift.wave < 3 && spawnedAll && alive.length === 0 && engaged) {
       rift.pause += 20;
       if (rift.pause === 20) for (const q of riftPlayersNear(48)) notify(q, `${t.col}Wave ${rift.wave} cleared. The rift stirs...`, 60);
       if (rift.pause >= 100) riftStartWave(rift.wave + 1);
@@ -2057,7 +2095,7 @@ system.runInterval(() => {
     if (rift.wave === 3) {
       const boss = mobs.find((m) => m.id === rift.bossId);
       if (boss) { rift.pulse += 20; if (rift.pulse >= 160) { rift.pulse = 0; riftBossPulse(boss); } }
-      else if (rift.bossId && rift.pause++ > 4 && !mobs.some((m) => m.id === rift.bossId)) {
+      else if (rift.bossId && engaged && rift.pause++ > 4 && !mobs.some((m) => m.id === rift.bossId)) {
         // الزعيم اختفى (مو قتل): نطلع زعيم جديد
         rift.bossId = ""; riftStartWave(3);
       }
@@ -4638,9 +4676,13 @@ function trySpawnMonster(p, force) {
     const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_monster"] });
     if (near.length >= MONSTER_CAP + (force ? 2 : 0)) return undefined;
     if (!force && Math.random() < 0.4) return undefined;
-    const vile = st.rank >= 2 && !force && Math.random() < 0.1;
-    const grim = st.rank >= 1 && !force && Math.random() < 0.25;
-    const id = vile ? VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+    // الوحوش القوية جداً نادرة بالعالم: Vile (الماغماموث، الدب) 3% وCursed (السرعوف) 1.5% من كل محاولة، وبس إذا ماكو وحش قوي ثاني قريب
+    const strongNear = near.some((e) => (MONSTERS[e.typeId] || {}).rank >= 2) || p.dimension.getEntities({ location: p.location, maxDistance: 110, families: ["sh_monster"] }).some((e) => (MONSTERS[e.typeId] || {}).rank >= 2);
+    const roll = Math.random();
+    const cursed = !force && !strongNear && st.rank >= 3 && roll < 0.015;
+    const vile = !force && !strongNear && !cursed && st.rank >= 2 && roll < 0.045;
+    const grim = st.rank >= 1 && !force && !cursed && !vile && Math.random() < 0.15;
+    const id = cursed ? CURSED_TYPES[Math.floor(Math.random() * CURSED_TYPES.length)] : vile ? VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
     const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, force ? 16 : 26, force ? 30 : 44);
     if (m) scaleMonster(m, st.rank);
     return m;
@@ -5238,6 +5280,7 @@ system.runInterval(() => {
 const COMPASS_TARGETS = [
   { key: "shrine", name: "Dark Sword Shrine" },
   { key: "lightshrine", name: "Light Sword Shrine" },
+  { key: "tower", name: "Abyss Tower" },
   { key: "palace", name: "Sunset Palace" },
   { key: "ruins", name: "Temple Ruins" },
   { key: "village", name: "Sakura Village" },
@@ -5246,7 +5289,7 @@ const COMPASS_TARGETS = [
   { key: "rift", name: "Open Rift" },
   { key: "nearest", name: "Nearest (any destination)" },
 ];
-const COMPASS_NAMES = { village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple", lightshrine: "Light Sword Shrine" };
+const COMPASS_NAMES = { tower: "Abyss Tower", village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple", lightshrine: "Light Sword Shrine" };
 const structCache = { tick: -9999, list: [] };
 function getStructs() {
   if (system.currentTick - structCache.tick > 100) {
@@ -6340,7 +6383,225 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     }
   } catch (err) { /* */ }
 });
-const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick };
+// ═════════════════════════ السرعوف المصلّي (Prayer Mantis، Cursed) ═════════════════════════
+// أربع مهارات أسطورية، كل وحدة إلها شكل 3D (gen_fx_shapes.py) + جزيئات ماينكرافت الأصلية (أوراق شجر، حروف سحر، شرر):
+//  1) Prayer Stance: هالة ملعونة ورا راسه ويرفع المنجلين 4 ثواني؛ أي ضربة توصله ترجع للضارب مضاعفة (منجلين X يطيرون عليه).
+//  2) Leaf Camouflage: دوامة أوراق ويصير شبه شفاف (بدون اسم)، يزحف لحد ما يقرب ويطعن بالمنجلين؛ تضربه = ينكشف.
+//  3) Scissor Lock: منجلين كبار ينسدون حول خصرك ويثبتونك 1.5 ثانية ثم قصة أخيرة؛ الداش يكسره.
+//  4) Molt: عند نص الصحة يطلع من قشرته القديمة، القشرة تنفجر بعد ثانية ونص، والسرعوف الجديد أسرع ومهاراته أقرب.
+const MANTIS = "sh:prayer_mantis";
+const setCamo = (e, v) => { try { e.setProperty("sh:camo", v); if (v) e.addTag("sh_camo"); else e.removeTag("sh_camo"); } catch (err) { /* */ } };
+const mantisYaw = (e) => { try { return e.getRotation().y; } catch (err) { return 0; } };
+function mantisEnd(e, st, cd) {
+  if (st.halo) { removeFx(st.halo); st.halo = undefined; }
+  if (st.lockFx) { removeFx(st.lockFx); st.lockFx = undefined; }
+  setCamo(e, 0);
+  grimEnd(e, st, st.molted ? cd * 0.6 : cd);
+}
+function mantisTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  const face = (loc) => { try { e.teleport(e.location, { facingLocation: { x: loc.x, y: e.location.y + 1, z: loc.z } }); } catch (err) { /* */ } };
+  // الانسلاخ له الأولوية: أول ما تنزل صحته للنص (وهو مو بنص مهارة ثانية) — مرة وحدة بس
+  if (!st.molted && st.phase === 0 && hpFrac(e) <= 0.5) {
+    st.skill = "molt"; st.phase = 1; st.t = 0; st.molted = true; setMState(e, 5);
+    return;
+  }
+  if (st.phase === 0) {
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 24);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0; st.stage = 0; st.victim = undefined;
+    const opts = [];
+    if (np.d < 4.2) opts.push("lock", "stance");
+    else if (np.d <= 10) opts.push("stance");
+    if (np.d >= 3.5 && np.d <= 18) opts.push("camo");
+    if (!opts.length) { st.cd = 10; return; }
+    st.skill = pickSkill(opts, st.last); st.last = st.skill;
+    setMState(e, { stance: 1, camo: 2, lock: 3 }[st.skill]);
+    st.phase = 1;
+    return;
+  }
+  const tp = st.target && valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  // ── 1) Prayer Stance: هالة ورا الراس + المنجلين مرفوعة؛ الضربة ترجع مضاعفة (onMantisHurt) ──
+  if (st.skill === "stance") {
+    if (tp) face(tp.location);
+    try { e.addEffect("slowness", 6, { amplifier: 6, showParticles: false }); } catch (err) { /* */ }
+    // الهالة ورا راسه بالضبط (الراس قدام الجسم ~0.8 بلوكة لأن الرقبة مايلة، وعلوه ~2.5)
+    const yaw = mantisYaw(e), hx = -Math.sin((yaw * Math.PI) / 180), hz = Math.cos((yaw * Math.PI) / 180);
+    const haloAt = { x: L.x + hx * 0.5, y: L.y + 2.55, z: L.z + hz * 0.5 };
+    if (st.t === 2) {
+      st.halo = shapeFx(dim, "prayer_halo", haloAt, { r: 0.1, yaw, w: 40, life: 84 });
+      if (st.halo) tween(6, 1, (k) => setShape(st.halo, "sh:r", 0.1 + 1.1 * k));
+      MONSTER.mantisPray(dim, L);
+      sfx(dim, "block.bell.hit", L, 1.2, 0.6);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 18 })) notify(q, "§dThe Prayer Mantis takes its PRAYER STANCE §7(don't hit it: every blow comes back doubled)", 50);
+    }
+    else if (st.halo) moveShape(st.halo, haloAt, yaw);
+    if (st.t % 6 === 0) MONSTER.mantisPrayTick(dim, L);
+    if (st.t >= 80) mantisEnd(e, st, 60);
+    return;
+  }
+  if (st.skill === "counter") {
+    if (st.t >= 16) mantisEnd(e, st, 60);
+    return;
+  }
+  // ── 2) Leaf Camouflage: دوامة أوراق، شبه شفاف، يزحف ويطعن ──
+  if (st.skill === "camo") {
+    if (st.t === 2) {
+      st.hpLast = hpOf(e);
+      setCamo(e, 1);
+      const sw = shapeFx(dim, "leaf_swirl", L, { r: 1.25, life: 34 });
+      if (sw) later(22, () => tween(10, 1, (k) => setShape(sw, "sh:r", 1.25 * (1 - k) + 0.02)));
+      MONSTER.mantisLeaves(dim, L, 22);
+      sfx(dim, "dig.azalea_leaves", L, 1.4, 0.7);
+      try { e.addEffect("speed", 120, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+    }
+    if (st.t % 8 === 0) MONSTER.mantisCamoTick(dim, L);
+    const h = hpOf(e);
+    if (st.t > 4 && h < st.hpLast - 0.01) {                                  // انضرب: ينكشف
+      setCamo(e, 0); MONSTER.mantisLeaves(dim, L, 14); sfx(dim, "dig.azalea_leaves", L, 1.2, 1.2);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 16 })) notify(q, "§aYou found the Prayer Mantis!", 30);
+      try { e.removeEffect("speed"); } catch (err) { /* */ }
+      mantisEnd(e, st, 50); return;
+    }
+    st.hpLast = h;
+    if (tp && st.t > 6 && Math.hypot(tp.location.x - L.x, tp.location.z - L.z) < 2.8) { st.skill = "stab"; st.t = 0; setMState(e, 3); return; }
+    if (st.t >= 130) { setCamo(e, 0); MONSTER.mantisLeaves(dim, L, 10); mantisEnd(e, st, 40); }
+    return;
+  }
+  if (st.skill === "stab") {
+    if (tp) face(tp.location);
+    if (st.t === 2) {
+      setCamo(e, 0);
+      try { e.removeEffect("speed"); } catch (err) { /* */ }
+      const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+      const from = { x: L.x + f.x * 1.0, y: L.y + 1.7, z: L.z + f.z * 1.0 }, to = { x: L.x + f.x * 3.2, y: L.y + 1.3, z: L.z + f.z * 3.2 };
+      popShape(dim, "scythe_thrust", { x: L.x + f.x * 2.0, y: L.y + 1.5, z: L.z + f.z * 2.0 }, 0.6, 1.3, 6, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }), p: 8, ease: "out" });
+      MONSTER.mantisStab(dim, from, to);
+      sfx(dim, "sh.dagger_hit", L, 1.0, 0.6); sfx(dim, "dig.azalea_leaves", L, 1.0, 1.4);
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 3.8 })) {
+        const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+        if ((vx * f.x + vz * f.z) / l < 0.3) continue;
+        hurtPlayer(pl, 9, e); shake(pl, 0.35, 0.25);
+        try { pl.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+        notify(pl, "§cThe Prayer Mantis strikes from its camouflage!", 30);
+      }
+    }
+    if (st.t >= 14) mantisEnd(e, st, 60);
+    return;
+  }
+  // ── 3) Scissor Lock: يمد المنجلين، يمسك اللي قدامه ويثبته 1.5 ثانية ثم قصة؛ الداش يكسره ──
+  if (st.skill === "lock") {
+    if (st.stage === 0) {
+      if (tp) face(tp.location);
+      if (st.t === 2) sfx(dim, "mob.sheep.shear", L, 1.2, 0.6);
+      if (st.t >= 6) {
+        const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
+        for (const pl of dim.getPlayers({ location: L, maxDistance: 3.9 })) {
+          const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+          if ((vx * f.x + vz * f.z) / l < 0.4) continue;
+          st.victim = pl; break;
+        }
+        if (!st.victim) { mantisEnd(e, st, 50); return; }                       // طاح بالهوا
+        const pl = st.victim;
+        st.stage = 1; st.t = 0; st.f = f; setMState(e, 4);
+        st.hold = { x: L.x + f.x * 1.9, y: pl.location.y, z: L.z + f.z * 1.9 };
+        st.lockFx = shapeFx(dim, "scissor_lock", st.hold, { r: 1.0, yaw: dirYaw({ x: f.x, y: 0, z: f.z }), life: 40 });
+        hurtPlayer(pl, 3, e); shake(pl, 0.3, 0.2);
+        MONSTER.mantisGrab(dim, st.hold); sfx(dim, "mob.sheep.shear", st.hold, 1.6, 0.5); sfx(dim, "random.anvil_land", st.hold, 0.5, 1.8);
+        notify(pl, "§cSCISSOR LOCK! §7Dash to break free", 35);
+      }
+      return;
+    }
+    const pl = st.victim;
+    if (!pl || !valid(pl)) { mantisEnd(e, st, 60); return; }
+    const hold = st.hold;
+    if (st.t > 2 && Math.hypot(pl.location.x - hold.x, pl.location.z - hold.z) > 1.1) {   // داش: انكسر القفل
+      notify(pl, "§aYou broke the Scissor Lock!", 30); MONSTER.mantisBreak(dim, pl.location);
+      sfx(dim, "random.anvil_land", hold, 0.6, 2.0);
+      try { e.addEffect("slowness", 30, { amplifier: 3, showParticles: false }); } catch (err) { /* */ }
+      mantisEnd(e, st, 60); return;
+    }
+    try { pl.teleport(hold, { facingLocation: { x: L.x, y: L.y + 2.0, z: L.z } }); } catch (err) { /* */ }
+    if (st.t % 10 === 0) { MONSTER.mantisLockTick(dim, hold); sfx(dim, "mob.sheep.shear", hold, 0.6, 0.8 + st.t * 0.01); }
+    if (st.t >= 30) {                                                         // القصة الأخيرة
+      hurtPlayer(pl, 7, e); shake(pl, 0.5, 0.35);
+      try { pl.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+      popShape(dim, "scythe_x", { x: hold.x, y: hold.y + 1.0, z: hold.z }, 0.4, 0.9, 5, { yaw: dirYaw({ x: st.f.x, y: 0, z: st.f.z }), ease: "out" });
+      MONSTER.mantisSnip(dim, hold); sfx(dim, "mob.sheep.shear", hold, 2.0, 0.5); sfx(dim, "sh.dagger_hit", hold, 1.0, 0.5);
+      try { pl.applyKnockback({ x: st.f.x * 0.8, z: st.f.z * 0.8 }, 0.3); } catch (err) { /* */ }
+      mantisEnd(e, st, 70);
+    }
+    return;
+  }
+  // ── 4) Molt: يرتجف ويطلع من قشرته؛ القشرة تنفجر بعد ثانية ونص؛ بعدها أسرع ──
+  if (st.skill === "molt") {
+    try { e.addEffect("slowness", 6, { amplifier: 6, showParticles: false }); e.addEffect("resistance", 6, { amplifier: 2, showParticles: false }); } catch (err) { /* */ }
+    if (st.t === 2) {
+      sfx(dim, "mob.silverfish.step", L, 1.5, 0.5); sfx(dim, "block.bell.hit", L, 1.0, 0.45);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 20 })) notify(q, "§5The Prayer Mantis begins to MOLT...", 40);
+    }
+    if (st.t % 4 === 0 && st.t < 24) MONSTER.mantisMoltTick(dim, L);
+    if (st.t === 24) {
+      const yaw = mantisYaw(e), fx = -Math.sin((yaw * Math.PI) / 180), fz = Math.cos((yaw * Math.PI) / 180);
+      const husk = { x: L.x, y: L.y, z: L.z };
+      shapeFx(dim, "molt_husk", husk, { r: 1.0, yaw, life: 34 });
+      setHot(e, 1);
+      sfx(dim, "mob.silverfish.kill", L, 1.4, 0.6);
+      const nx = L.x + fx * 2.2, nz = L.z + fz * 2.2;
+      if (airAt(dim, nx, L.y + 0.5, nz) && airAt(dim, nx, L.y + 1.6, nz)) { try { e.teleport({ x: nx, y: groundAt(dim, nx, nz, L.y), z: nz }); } catch (err) { /* */ } }
+      MONSTER.mantisLeaves(dim, husk, 12);
+      for (let k = 2; k <= 28; k += 6) later(k, () => MONSTER.mantisMoltTick(dim, husk));
+      later(30, () => {
+        popShape(dim, "husk_burst", { x: husk.x, y: husk.y + 1.4, z: husk.z }, 0.3, 1.5, 7, { ease: "out", s: 200 });
+        MONSTER.mantisHuskBoom(dim, husk);
+        sfx(dim, "random.explode", husk, 1.2, 1.3);
+        for (const pl of dim.getPlayers({ location: husk, maxDistance: 3.6 })) { hurtPlayer(pl, 8, e); pushAway(husk, pl, 1.3, 0.45); shake(pl, 0.5, 0.4); }
+      });
+    }
+    if (st.t >= 40) {
+      try { e.addEffect("speed", 20000000, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+      for (const q of dim.getPlayers({ location: e.location, maxDistance: 20 })) notify(q, "§dThe molted mantis is faster now!", 40);
+      mantisEnd(e, st, 30);
+    }
+  }
+}
+// الرد بوضعية الصلاة: أي ضربة (لاعب أو قذيفته) ترجع للضارب مضاعفة، والسرعوف ما ياخذ ضرر
+let mantisCountering = false;
+world.afterEvents.entityHurt.subscribe((ev) => {
+  try {
+    const e = ev.hurtEntity;
+    if (mantisCountering || !e || e.typeId !== MANTIS) return;
+    const st = gst.get(e.id);
+    if (!st || st.phase !== 1 || st.skill !== "stance" || st.t < 2) return;
+    const src = ev.damageSource && ev.damageSource.damagingEntity;
+    if (!src || !valid(src)) return;
+    const hc = e.getComponent("minecraft:health");
+    hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + ev.damage));     // صد كامل
+    const L = e.location, f = fwdTo(L, src.location), dim = e.dimension;
+    const c = { x: L.x + f.x * 0.9, y: L.y + 1.9, z: L.z + f.z * 0.9 };
+    MONSTER.mantisParry(dim, c, { x: f.x, y: 0, z: f.z });
+    sfx(dim, "random.anvil_land", L, 0.8, 1.9); sfx(dim, "sh.dagger_hit", L, 1.0, 0.7);
+    if (st.halo) { removeFx(st.halo); st.halo = undefined; }
+    st.skill = "counter"; st.t = 0; setMState(e, 6);
+    const dmg = Math.min(24, Math.max(4, ev.damage * 2));                         // مضاعف (بحد 24 حتى ما يقتل بضربة وحدة)
+    const to = center3(src), d = { x: to.x - c.x, y: to.y - c.y, z: to.z - c.z }, l = Math.hypot(d.x, d.y, d.z) || 1;
+    flyShape(dim, "scythe_x", c, { x: d.x / l, y: d.y / l, z: d.z / l }, 0.8, Math.min(24, l + 0.5), { r: 1.15, w: 0 }, undefined, (pos) => {
+      if (!valid(src)) return;
+      mantisCountering = true;
+      try {
+        if (src.typeId === "minecraft:player") hurtPlayer(src, dmg, e);
+        else src.applyDamage(dmg, { cause: EntityDamageCause.entityAttack, damagingEntity: e });
+      } catch (err) { /* */ } finally { mantisCountering = false; }
+      MONSTER.mantisCounterHit(dim, center3(src), d);
+      sfx(dim, "sh.dagger_hit", src.location, 1.0, 0.5);
+      if (src.typeId === "minecraft:player") { shake(src, 0.45, 0.3); notify(src, `§cYour blow came back DOUBLED! §7(-${Math.round(dmg)})`, 35); }
+    });
+  } catch (err) { /* */ }
+});
+const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick, [MANTIS]: mantisTick };
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -6359,7 +6620,7 @@ system.runInterval(() => {
   }
 }, 2);
 
-const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth", "sh:grey_bear": "Grey Bear", "sh:bear_cub": "Bear Cub" };
+const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth", "sh:grey_bear": "Grey Bear", "sh:bear_cub": "Bear Cub", "sh:prayer_mantis": "Prayer Mantis" };
 system.runInterval(() => {
   const players = world.getAllPlayers();
   if (!players.length) return;
@@ -6371,6 +6632,7 @@ system.runInterval(() => {
         try {
           if (typeof e.getDynamicProperty("sh_num") === "number") continue; // رقم المحاسب له الأولوية
           if (e.hasTag("sh_rift_boss")) continue; // اسم زعيم الصدع ثابت
+          if (e.hasTag("sh_camo")) { if (e.nameTag) e.nameTag = ""; continue; } // السرعوف المتمويه بدون اسم
           let near, nd = 48;
           for (const p of players) {
             if (p.dimension.id !== e.dimension.id) continue;

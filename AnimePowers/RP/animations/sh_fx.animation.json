@@ -340,6 +340,51 @@
      ]
     }
    }
+  },
+  "animation.sh_fx.shape_leaf_swirl": {
+   "loop": true,
+   "bones": {
+    "lw_a": {
+     "rotation": [
+      0,
+      "q.life_time * 420",
+      0
+     ]
+    },
+    "lw_b": {
+     "rotation": [
+      0,
+      "-q.life_time * 300",
+      0
+     ]
+    },
+    "lw_c": {
+     "rotation": [
+      0,
+      "q.life_time * 520",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_scissor_lock": {
+   "loop": true,
+   "bones": {
+    "sa": {
+     "rotation": [
+      0,
+      "-math.max(0, 62 - q.life_time * 380)",
+      0
+     ]
+    },
+    "sb": {
+     "rotation": [
+      0,
+      "math.max(0, 62 - q.life_time * 380)",
+      0
+     ]
+    }
+   }
   }
  }
 }

@@ -256,6 +256,7 @@ export const STRUCTURES = {
   palace: { name: "Sunset Palace", half: 26, weight: 0.2, guards: 4, lore: "The last light fell here before the palace fell." },
   ruins: { name: "Temple Ruins", half: 14, weight: 0.35, guards: 3, lore: "The ancient temple, where the first shard landed." },
   shrine: { name: "Dark Sword Shrine", half: SHRINE_HALF, weight: 0.15, guards: 0, bosses: ["sh:gloomhorn", "sh:hollow_seer"], unique: true, lore: "The Abyss sleeps beneath this stone. Defeat its two guardians to break the seal." },
+  tower: { name: "Abyss Tower", half: 11, weight: 0.3, guards: 0, tower: true, lore: "Seven floors of black stone and violet light. Every floor holds the Abyss's spawn, and the strongest waits at the top." },
   lightshrine: { name: "Light Sword Shrine", half: SHRINE_HALF, weight: 0.12, guards: 0, bosses: ["sh:veilfox", "sh:magmamoth"], unique: true, lore: "The light the Abyss could never swallow sleeps beneath this beam. Defeat its two guardians to break the seal." },
 };
 
@@ -503,12 +504,18 @@ export function planTemple(seed) {
   P.set(0, 1, 0, "minecraft:light_weighted_pressure_plate");
   for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) { P.set(x, 1, z, "minecraft:polished_blackstone_brick_wall"); P.perm(x, 2, z, "minecraft:end_rod", { facing_direction: 1 }); }
   for (const [x, z] of [[0, -2], [0, 2], [-2, 0], [2, 0]]) P.set(x, 1, z, "minecraft:polished_blackstone_brick_slab");
-  // أعمدة أميثست بالزوايا (تتوهج بعناقيد)
+  // جيود أميثست صغيرة بالزوايا (كانت أعمدة أميثست بطول 7 تغطي القاعة): قاعدة كالسايت وبازلت مثل الجيود الطبيعي،
+  // قلب أميثست بطول بلوكتين، وعناقيد وبراعم طالعة من فوق وجوانب
   for (const [x, z] of [[-8, -8], [8, -8], [-8, 8], [8, 8]]) {
-    P.box(x, 1, z, x, 7, z, "minecraft:amethyst_block");
-    P.set(x, 1, z - Math.sign(z), "minecraft:amethyst_cluster"); P.set(x - Math.sign(x), 1, z, "minecraft:amethyst_cluster");
-    P.set(x, 4, z - Math.sign(z), "minecraft:large_amethyst_bud"); P.set(x - Math.sign(x), 4, z, "minecraft:large_amethyst_bud");
-    P.hang(x - Math.sign(x), 7, z - Math.sign(z), "minecraft:soul_lantern");
+    const sx = Math.sign(x), sz = Math.sign(z);
+    P.set(x, 1, z, "minecraft:amethyst_block"); P.set(x, 2, z, "minecraft:budding_amethyst");
+    P.set(x + sx, 1, z, "minecraft:calcite"); P.set(x, 1, z + sz, "minecraft:calcite"); P.set(x + sx, 1, z + sz, "minecraft:smooth_basalt");
+    P.set(x + sx, 2, z + sz, "minecraft:amethyst_block");
+    P.perm(x, 3, z, "minecraft:amethyst_cluster", { "minecraft:block_face": "up" });
+    P.perm(x + sx, 3, z + sz, "minecraft:large_amethyst_bud", { "minecraft:block_face": "up" });
+    P.perm(x - sx, 1, z, "minecraft:medium_amethyst_bud", { "minecraft:block_face": "up" }); P.perm(x, 1, z - sz, "minecraft:small_amethyst_bud", { "minecraft:block_face": "up" });
+    P.perm(x + sx, 2, z, "minecraft:amethyst_cluster", { "minecraft:block_face": "up" }); P.perm(x, 2, z + sz, "minecraft:large_amethyst_bud", { "minecraft:block_face": "up" });
+    P.hang(x - sx, 7, z - sz, "minecraft:soul_lantern");
   }
   // فوانيس معلقة بسلاسل بحلقة حول البلورة
   for (let a = 0; a < 8; a++) {
@@ -555,7 +562,103 @@ export function planTemple(seed) {
   return P;
 }
 
-const PLANNERS = { village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine, temple: planTemple, lightshrine: planLightShrine };
+
+// ───────────────────────── برج الهاوية (7 طوابق، أسود وبنفسجي) ─────────────────────────
+// برج مثمن (15×15) من طابوق البلاكستون المصقول بأحزمة أميثيست عند كل طابق، دعامات أوبسيديان بالزوايا الثمانية،
+// شبابيك زجاج بنفسجي، فوانيس أرواح معلقة، درج حلزوني (يتبدل جهة كل طابق)، ونقش أرضي بنفسجي بكل طابق.
+// الطوابق 1-3: وحوش Lowly بالعدد، 4-6: أقوى (Grim مع Lowly)، 7: وحش أو اثنين من الرتب العالية؛ موتهم يطلّع صندوق الجائزة بالنص.
+export const TOWER_FH = 7, TOWER_FLOORS = 7;
+const tw = (z) => Math.min(7, 10 - Math.abs(z));          // نص عرض الصف (الحافة الخارجية للمثمن)
+const twi = (z) => Math.min(6, 9 - Math.abs(z));          // نص عرض الداخل
+export function planTower(seed) {
+  const P = new Plan(seed), FH = TOWER_FH, TOP = FH * TOWER_FLOORS - 1;   // TOP = 48: السطح
+  const BR = "minecraft:polished_blackstone_bricks", AM = "minecraft:amethyst_block", OB = "minecraft:obsidian", CO = "minecraft:crying_obsidian";
+  P.ground(-11, -11, 11, 11, 12, "minecraft:blackstone");
+  for (let z = -8; z <= 8; z++) { const w = Math.min(8, 11 - Math.abs(z)); P.box(-w, -1, z, w, 0, z, "minecraft:polished_blackstone"); }   // قاعدة أعرض
+  for (let z = -7; z <= 7; z++) P.box(-tw(z), 0, z, tw(z), TOP, z, BR);                      // جسم البرج
+  // أحزمة أميثيست خارجية عند خط كل طابق والسطح
+  for (let k = 1; k <= TOWER_FLOORS; k++) { const y = k * FH - 1; for (let z = -7; z <= 7; z++) P.box(-tw(z), y, z, tw(z), y, z, AM); }
+  // تآكل: طابوق مشقق وذهب أسود متناثر على الوجه الخارجي
+  for (let i = 0; i < 70; i++) {
+    const z = Math.floor(P.r() * 15) - 7, sx = P.r() < 0.5 ? -1 : 1, y = 1 + Math.floor(P.r() * (TOP - 2));
+    if (y % FH === FH - 1) continue;
+    P.set(sx * tw(z), y, z, P.r() < 0.15 ? "minecraft:gilded_blackstone" : "minecraft:cracked_polished_blackstone_bricks");
+  }
+  P.towerFloors = [];
+  for (let k = 0; k < TOWER_FLOORS; k++) {
+    const y0 = k * FH;
+    for (let z = -6; z <= 6; z++) {
+      P.box(-twi(z), y0 - 1, z, twi(z), y0 - 1, z, "minecraft:deepslate_tiles");                  // أرضية
+      P.box(-twi(z), y0, z, twi(z), y0 + FH - 2, z, AIR);                                         // الفراغ
+    }
+    // نقش أرضي: نص كرسي بلاكستون منقوش، صليب أميثيست، وزوايا أوبسيديان باكي (الطابق السابع: حلقة كاملة)
+    P.set(0, y0 - 1, 0, "minecraft:chiseled_polished_blackstone");
+    for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) P.set(x, y0 - 1, z, AM);
+    for (const [x, z] of [[2, 2], [-2, 2], [2, -2], [-2, -2]]) P.set(x, y0 - 1, z, k === TOWER_FLOORS - 1 ? CO : "minecraft:polished_blackstone");
+    if (k === TOWER_FLOORS - 1) for (const [x, z] of [[3, 0], [-3, 0], [0, 3], [0, -3], [1, 3], [-1, 3], [1, -3], [-1, -3], [3, 1], [3, -1], [-3, 1], [-3, -1]]) P.set(x, y0 - 1, z, "minecraft:purpur_block");
+    // فوانيس أرواح معلقة بالسقف
+    for (const [x, z] of [[3, 3], [-3, 3], [3, -3], [-3, -3]]) P.perm(x, y0 + FH - 2, z, "minecraft:soul_lantern", { hanging: true });
+    // شبابيك: زجاج بنفسجي بالجهات الأربعة، وشقوق زجاج أسود بالجهات المايلة
+    for (const [x, z] of [[7, 0], [-7, 0], [0, -7], [0, 7]]) {
+      if (k === 0 && z === 7) continue;                                                            // المدخل
+      for (let y = y0 + 1; y <= y0 + 3; y++) P.set(x, y, z, "minecraft:purple_stained_glass_pane");
+    }
+    for (const [x, z] of [[5, 5], [-5, 5], [5, -5], [-5, -5]]) for (let y = y0 + 2; y <= y0 + 3; y++) P.set(x, y, z, "minecraft:black_stained_glass_pane");
+    // شموع بنفسجية بزوايا الطابق
+    for (const [x, z] of [[-4, 4], [4, -4]]) P.perm(x, y0, z, "minecraft:purple_candle", { candles: 2, lit: true });
+    P.towerFloors.push({ y: y0, pts: [[3, 0], [-3, 0], [0, 3], [0, -3], [2, 2], [-2, -2], [2, -2], [-2, 2]] });
+  }
+  // الدرج بحلقة ثانية بعد ما تنبني كل الطوابق (حتى أرضية الطابق الجاي ما تسد الفتحة والدرجة الأخيرة)
+  for (let k = 0; k < TOWER_FLOORS - 1; k++) {
+    const y0 = k * FH;
+    // الدرج للطابق الجاي (7 درجات = ارتفاع الطابق): الزوجي على الجدار الشرقي يصعد شمالاً، والفردي على الغربي يصعد جنوباً.
+    // آخر درجة بمستوى أرضية الطابق الجاي، وفوق الدرجتين 4 و5 فتحة بالأرضية للراس، وسياج حول الفتحة فوق
+    {
+      const east = k % 2 === 0, xs = east ? [5, 6] : [-6, -5], dir = east ? "n" : "s", sz = east ? -1 : 1;
+      for (let i = 0; i < FH; i++) {
+        const z = (east ? 3 : -3) + sz * i;
+        for (const x of xs) {
+          if (i > 0) P.box(x, y0, z, x, y0 + i - 1, z, BR);
+          P.stair(x, y0 + i, z, "minecraft:polished_blackstone_brick_stairs", dir);
+        }
+      }
+      const h1 = (east ? 3 : -3) + sz * 4, h2 = (east ? 3 : -3) + sz * 5;
+      P.box(xs[0], y0 + FH - 1, Math.min(h1, h2), xs[1], y0 + FH - 1, Math.max(h1, h2), AIR);    // فتحة الراس
+      const rx = east ? 4 : -4;
+      for (const z of [h1, h2]) P.set(rx, y0 + FH, z, "minecraft:polished_blackstone_brick_wall");
+      for (const x of xs) P.set(x, y0 + FH, (east ? 3 : -3) + sz * 3, "minecraft:polished_blackstone_brick_wall");
+    }
+  }
+  // المدخل (جنوب +z): فتحة 3×3 بإطار بربر وعتبة بلاكستون منقوش، وممر ومشاعل أرواح
+  P.box(-1, 0, 6, 1, 2, 7, AIR);
+  for (const x of [-2, 2]) P.box(x, 0, 8, x, 3, 8, "minecraft:purpur_pillar");
+  P.box(-2, 4, 8, 2, 4, 8, "minecraft:chiseled_polished_blackstone");
+  P.set(0, 5, 8, CO);
+  P.box(-1, -1, 8, 1, -1, 11, "minecraft:polished_blackstone_bricks");
+  for (const x of [-3, 3]) { P.set(x, 0, 11, "minecraft:blackstone_wall"); P.set(x, 1, 11, "minecraft:soul_lantern"); }
+  // دعامات أوبسيديان بالزوايا الثمانية، بخطوط أوبسيديان باكي، وتاج بربر وعنقود أميثيست
+  for (const [x, z] of [[8, 3], [8, -3], [-8, 3], [-8, -3], [3, 8], [-3, 8], [3, -8], [-3, -8]]) {
+    P.box(x, -1, z, x, TOP + 2, z, OB);
+    for (let y = 3; y < TOP; y += 9 + Math.floor(P.r() * 5)) P.box(x, y, z, x, y + 1, z, CO);
+    P.set(x, TOP + 3, z, "minecraft:purpur_pillar");
+    P.perm(x, TOP + 4, z, "minecraft:amethyst_cluster", { "minecraft:block_face": "up" });
+  }
+  // السطح: شرفات حول الحافة وبرج بلوري بالنص (أوبسيديان ← بربر ← أميثيست ← أوبسيديان باكي ← قضيب إندر يضوي)
+  for (let z = -7; z <= 7; z++) {
+    const w = tw(z);
+    if (Math.abs(z) === 7) { for (let x = -w; x <= w; x += 2) P.set(x, TOP + 1, z, "minecraft:polished_blackstone_brick_wall"); }
+    else if ((z + 7) % 2 === 0) { P.set(w, TOP + 1, z, "minecraft:polished_blackstone_brick_wall"); P.set(-w, TOP + 1, z, "minecraft:polished_blackstone_brick_wall"); }
+  }
+  P.box(-2, TOP + 1, -2, 2, TOP + 2, 2, OB);
+  P.box(-1, TOP + 3, -1, 1, TOP + 5, 1, "minecraft:purpur_block");
+  for (const [x, z] of [[2, 2], [-2, 2], [2, -2], [-2, -2]]) P.perm(x, TOP + 3, z, "minecraft:amethyst_cluster", { "minecraft:block_face": "up" });
+  P.set(0, TOP + 6, 0, AM); P.set(0, TOP + 7, 0, AM); P.set(0, TOP + 8, 0, CO);
+  P.perm(0, TOP + 9, 0, "minecraft:end_rod", { facing_direction: 1 });
+  P.reward(0, (TOWER_FLOORS - 1) * FH, 0, "tower");
+  return P;
+}
+
+const PLANNERS = { tower: planTower, village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine, temple: planTemple, lightshrine: planLightShrine };
 // يرجع أقرب معبد مسجل (أو لا شي)
 export function findTemple(pos, maxD = 1e9) {
   let best, bd = maxD;
@@ -608,6 +711,8 @@ const LOOT = {
   palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
   lightshrine: [["sh:silver_oath", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
   shrine: [["sh:dark_katana", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.6], ["minecraft:diamond", 1, 2, 0.5]],
+  // صندوق قمة برج الهاوية (بعد قتل وحوش الطابق السابع)
+  tower: [["sh:xp_scroll_big", 2, 3, 1.0], ["sh:xp_scroll_small", 3, 5, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.35], ["minecraft:diamond", 2, 4, 0.85], ["minecraft:golden_apple", 1, 2, 0.9], ["minecraft:enchanted_golden_apple", 1, 1, 0.12], ["minecraft:ender_pearl", 2, 4, 0.5], ["minecraft:netherite_scrap", 1, 1, 0.15], ["minecraft:amethyst_shard", 4, 9, 0.7], ["sh:explorer_compass", 1, 1, 0.3], ["sh:monster_book", 1, 1, 0.2]],
   altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
 };
 
@@ -821,7 +926,8 @@ function chooseType(reg = []) {
   const has = (t) => reg.some((s) => s.type === t);
   if (!has("shrine") && reg.length >= SHRINE_PITY) return "shrine";
   if (!has("lightshrine") && has("shrine") && reg.length >= SHRINE_PITY + 2) return "lightshrine";
-  const roll = Math.random();
+  const total = Object.values(STRUCTURES).reduce((a, v) => a + (v.weight || 0), 0);
+  const roll = Math.random() * total;
   let acc = 0;
   for (const [k, v] of Object.entries(STRUCTURES)) {
     acc += v.weight;
@@ -830,8 +936,109 @@ function chooseType(reg = []) {
   return "village";
 }
 
+
+// ───────────────────────── برج الهاوية: وحوش الطوابق وصندوق القمة ─────────────────────────
+// كل طابق تطلع وحوشه أول ما يوصله لاعب (مرة وحدة). الطابق السابع: 1-2 وحش عالي الرتبة؛ إذا تبخروا (اللاعب بعد) يرجعون لما يرجع،
+// ولما ينقتلون كلهم يطلع صندوق الجائزة بنص الطابق.
+const TOWER_LOWLY = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
+const TOWER_GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
+const TOWER_HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis"];
+const pickOf = (a) => a[Math.floor(Math.random() * a.length)];
+export function towerFloorMobs(k) {
+  if (k <= 2) return Array.from({ length: 3 + k }, () => pickOf(TOWER_LOWLY));                        // 1-3: Lowly بالعدد (3، 4، 5)
+  if (k <= 5) {                                                                                     // 4-6: أقوى ومتوازن
+    const grim = [2, 2, 3][k - 3], low = [1, 2, 1][k - 3];
+    return [...Array.from({ length: grim }, () => pickOf(TOWER_GRIM)), ...Array.from({ length: low }, () => pickOf(TOWER_LOWLY))];
+  }
+  const pool = [...TOWER_HIGH].sort(() => Math.random() - 0.5);                                     // 7: وحش أو اثنين عاليين (مختلفين)
+  return pool.slice(0, Math.random() < 0.5 ? 1 : 2);
+}
+function towerSpawn(dim, s, plan, k, types, p, top) {
+  const fl = plan.towerFloors[k];
+  types.forEach((type, i) => {
+    const [px, pz] = fl.pts[i % fl.pts.length];
+    const [x, z] = rotXZ(px, pz, s.rot);
+    const loc = { x: s.x + x + 0.5, y: s.y + fl.y, z: s.z + z + 0.5 };
+    try {
+      if (!dim.isChunkLoaded(loc)) return;
+      const e = dim.spawnEntity(type, loc);
+      try { e.addTag("sh_tower"); if (top) e.addTag("sh_tower_top"); } catch (e2) { /* */ }
+      try { if (guardHook) guardHook(e, p); } catch (e3) { /* */ }
+    } catch (e1) { /* */ }
+  });
+}
+function towerTick() {
+  let reg;
+  for (const p of world.getAllPlayers()) {
+    try {
+      if (p.dimension.id !== "minecraft:overworld") continue;
+      reg = reg || loadReg();
+      for (const s of reg) {
+        if (s.type !== "tower" || !s.ok) continue;
+        if (Math.hypot(p.location.x - s.x - 0.5, p.location.z - s.z - 0.5) > 7.2) continue;      // جوه البرج بس
+        const ly = p.location.y - s.y;
+        if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
+        const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
+        const plan = planTower(s.seed), dim = p.dimension;
+        s.fl = s.fl || 0;
+        if (!(s.fl & (1 << k))) {
+          s.fl |= 1 << k;
+          const top = k === TOWER_FLOORS - 1;
+          const types = towerFloorMobs(k);
+          if (top) { s.top = types; s.kt = []; }
+          saveReg(reg);
+          towerSpawn(dim, s, plan, k, types, p, top);
+          try {
+            p.sendMessage(top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters`);
+            p.playSound(top ? "mob.wither.spawn" : "mob.evocation_illager.prepare_attack", { volume: top ? 0.6 : 0.8, pitch: top ? 1.2 : 0.8 });
+          } catch (e4) { /* */ }
+        } else if (k === TOWER_FLOORS - 1 && !s.c && s.top) {
+          // الحراس تبخروا (اللاعب بعد عن البرج): نرجع اللي ما انقتل
+          const c = { x: s.x, y: s.y + plan.towerFloors[k].y, z: s.z };
+          const alive = dim.getEntities({ location: c, maxDistance: 14, tags: ["sh_tower_top"] }).length;
+          if (!alive) {
+            const left = [...s.top];
+            for (const t of s.kt || []) { const i = left.indexOf(t); if (i >= 0) left.splice(i, 1); }
+            if (left.length) towerSpawn(dim, s, plan, k, left, p, true);
+          }
+        }
+      }
+    } catch (e) { /* */ }
+  }
+}
+// يستدعيه main.js لما يموت وحش عليه وسم sh_tower_top: نسجل القتل، ولما ينقتلون كلهم يطلع صندوق القمة
+export function onTowerMobDeath(e) {
+  try {
+    if (!e.hasTag("sh_tower_top")) return;
+    const reg = loadReg(), loc = e.location, dim = e.dimension;
+    const s = reg.find((t) => t.type === "tower" && !t.c && t.top && Math.hypot(t.x - loc.x, t.z - loc.z) < 14);
+    if (!s) return;
+    s.kt = s.kt || [];
+    s.kt.push(e.typeId);
+    const left = [...s.top];
+    for (const t of s.kt) { const i = left.indexOf(t); if (i >= 0) left.splice(i, 1); }
+    if (left.length) { saveReg(reg); for (const p of dim.getPlayers({ location: loc, maxDistance: 40 })) { try { p.sendMessage("§5[Abyss Tower] §fOne master has fallen. §7Another still stands."); } catch (e2) { /* */ } } return; }
+    s.c = 1; saveReg(reg);
+    const plan = planTower(s.seed), rw = plan.rewardAt;
+    const [x, z] = rotXZ(rw.x, rw.z, s.rot);
+    const at = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
+    dim.setBlockType(at, "minecraft:chest");
+    const b = dim.getBlock(at);
+    if (b) fillChest(b, rw.key);
+    const c = { x: at.x + 0.5, y: at.y + 0.6, z: at.z + 0.5 };
+    try {
+      dim.spawnParticle("minecraft:large_explosion", c);
+      dim.spawnParticle("minecraft:totem_particle", c);
+      dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
+      dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.1 });
+    } catch (e3) { /* */ }
+    for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { p.sendMessage("§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
+  } catch (e) { /* */ }
+}
+
 export function setupStructures(onGuardSpawn) {
   guardHook = onGuardSpawn;
+  system.runInterval(towerTick, 10);
   // بناء هيكل جديد قرب اللاعب (بعيد عن الهياكل الموجودة)
   system.runInterval(() => {
     if (building) return;
@@ -882,6 +1089,7 @@ export function setupStructures(onGuardSpawn) {
           announced.add(key);
           try { p.sendMessage(`§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
         }
+        if (STRUCTURES[s.type].tower) continue;                              // البرج: وحوشه بالطوابق (towerTick)
         if (STRUCTURES[s.type].bosses) {                                    // الضريحان: حارسان قويان فقط لحد ما ينكسر الختم
           if (s.ok && !s.c && d < 50) { try { ensureBosses(p, s); } catch (e) { /* */ } }
           continue;
