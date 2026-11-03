@@ -1,6 +1,6 @@
 # Anime Powers (عالم القدرات)
 
-مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.37.2**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
+مود أنمي أصلي لماينكرافت Bedrock (نسخة **1.37.3**، يتطلب ماينكرافت 26.50 أو أحدث): قدرات بندرات، رتب، مدرب، وحوش، أسلحة وبنايات.
 الشرح الكامل للمود بالعراقي بملف [`MOD_GUIDE.md`](MOD_GUIDE.md).
 
 ## الهيكل
@@ -8,7 +8,7 @@
 ```
 AnimePowers/BP   حزمة السلوك (سكربتات، كيانات، أيتمات)
 AnimePowers/RP   حزمة الموارد (موديلات، تكستشر، أصوات، لغة)
-tools/           (gen_fx_shapes.py أشكال المهارات 3D، gen_book_icons.py أيقونات الكتب، gen_skill_hands.py مهارات ما تطلع بالإيد، gen_hud_art.py رسومات الـHUD، gen_weapons3d.py أسلحة 3D، gen_icons2d.py أيقونات، gen_monster_mods.py تحسين الوحوش، gen_gear.py العتاد والجرعات، gen_achievements.py الإنجازات وصورها، gen_alchemy_ui.py صور شاشة الخيميائي، tune_sounds.py علو الأصوات) فحص + تغليف + محاكي (tools/sim) + مولدات الأصول + أدوات الوحوش (mobkit, render)
+tools/           (gen_fx_shapes.py أشكال المهارات 3D، gen_book_icons.py أيقونات الكتب، gen_skill_hands.py مهارات ما تطلع بالإيد، gen_hud_art.py رسومات الـHUD، gen_weapons3d.py أسلحة 3D، gen_icons2d.py أيقونات، gen_monster_mods.py تحسين الوحوش، gen_gear.py العتاد والجرعات، gen_achievements.py الإنجازات وصورها، gen_alchemy_ui.py صور شاشة الخيميائي، gen_sounds.py أصوات المود من ملفات ماينكرافت) فحص + تغليف + محاكي (tools/sim) + مولدات الأصول + أدوات الوحوش (mobkit, render)
 extend*.py       مولدات الموديلات والتكستشرات (تشغّل من جذر المشروع)
 ```
 

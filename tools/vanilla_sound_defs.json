@@ -1,0 +1,538 @@
+{
+ "beacon.activate": {
+  "sounds": [
+   "sounds/block/beacon/activate"
+  ]
+ },
+ "beacon.deactivate": {
+  "sounds": [
+   "sounds/block/beacon/deactivate"
+  ]
+ },
+ "block.bell.hit": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/block/bell/bell_use01",
+    "pitch": 0.95
+   },
+   {
+    "name": "sounds/block/bell/bell_use02",
+    "pitch": 0.95
+   },
+   {
+    "name": "sounds/block/bell/bell_use01",
+    "pitch": 0.93
+   },
+   {
+    "name": "sounds/block/bell/bell_use02",
+    "pitch": 0.93
+   },
+   {
+    "name": "sounds/block/bell/bell_use01",
+    "pitch": 0.97
+   },
+   {
+    "name": "sounds/block/bell/bell_use02",
+    "pitch": 0.97
+   }
+  ]
+ },
+ "block.end_portal_frame.fill": {
+  "sounds": [
+   {
+    "name": "sounds/block/end_portal/eyeplace1",
+    "pitch": 1,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace2",
+    "pitch": 1,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace3",
+    "pitch": 1,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace1",
+    "pitch": 0.9,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace2",
+    "pitch": 0.9,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace3",
+    "pitch": 0.9,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace1",
+    "pitch": 1.1,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace2",
+    "pitch": 1.1,
+    "volume": 1
+   },
+   {
+    "name": "sounds/block/end_portal/eyeplace3",
+    "pitch": 1.1,
+    "volume": 1
+   }
+  ]
+ },
+ "bloom.sculk_catalyst": {
+  "sounds": [
+   "sounds/particle/soulspeed1",
+   "sounds/particle/soulspeed2",
+   "sounds/particle/soulspeed3",
+   "sounds/particle/soulspeed4",
+   "sounds/particle/soulspeed5",
+   "sounds/particle/soulspeed6",
+   "sounds/particle/soulspeed7",
+   "sounds/particle/soulspeed8",
+   "sounds/particle/soulspeed9",
+   "sounds/particle/soulspeed10",
+   "sounds/particle/soulspeed11",
+   "sounds/particle/soulspeed12",
+   "sounds/particle/soulspeed13"
+  ]
+ },
+ "break.amethyst_cluster": {
+  "sounds": [
+   {
+    "name": "sounds/block/amethyst_cluster/break1",
+    "pitch": 0.8,
+    "volume": 0.8
+   },
+   {
+    "name": "sounds/block/amethyst_cluster/break2",
+    "pitch": 0.8,
+    "volume": 0.8
+   },
+   {
+    "name": "sounds/block/amethyst_cluster/break3",
+    "pitch": 0.8,
+    "volume": 0.8
+   },
+   {
+    "name": "sounds/block/amethyst_cluster/break4",
+    "pitch": 0.8,
+    "volume": 0.8
+   }
+  ]
+ },
+ "chime.amethyst_block": {
+  "sounds": [
+   {
+    "name": "sounds/block/amethyst/shimmer",
+    "volume": 1
+   }
+  ]
+ },
+ "conduit.short": {
+  "sounds": [
+   "sounds/block/conduit/short1",
+   "sounds/block/conduit/short2",
+   "sounds/block/conduit/short3",
+   "sounds/block/conduit/short4",
+   "sounds/block/conduit/short5",
+   "sounds/block/conduit/short6",
+   "sounds/block/conduit/short7",
+   "sounds/block/conduit/short8",
+   "sounds/block/conduit/short9"
+  ]
+ },
+ "firework.blast": {
+  "sounds": [
+   "sounds/fireworks/blast1"
+  ]
+ },
+ "firework.large_blast": {
+  "sounds": [
+   "sounds/fireworks/largeBlast1"
+  ]
+ },
+ "firework.launch": {
+  "sounds": [
+   "sounds/fireworks/launch1"
+  ]
+ },
+ "firework.twinkle": {
+  "sounds": [
+   "sounds/fireworks/twinkle1"
+  ]
+ },
+ "item.book.page_turn": {
+  "sounds": [
+   {
+    "name": "sounds/item/book/open_flip1",
+    "volume": 2
+   },
+   {
+    "name": "sounds/item/book/open_flip2",
+    "volume": 2
+   },
+   {
+    "name": "sounds/item/book/open_flip3",
+    "volume": 2
+   }
+  ]
+ },
+ "item.spear.attack_hit": {
+  "sounds": [
+   {
+    "name": "sounds/item/spear/attackhit1",
+    "volume": 1
+   },
+   {
+    "name": "sounds/item/spear/attackhit2",
+    "volume": 1
+   },
+   {
+    "name": "sounds/item/spear/attackhit3",
+    "volume": 1
+   }
+  ]
+ },
+ "item.trident.riptide_1": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/item/trident/riptide_mono1",
+    "pitch": 1,
+    "volume": 1
+   }
+  ]
+ },
+ "lodestone_compass.link_compass_to_lodestone": {
+  "sounds": [
+   "sounds/item/lock_compass1",
+   "sounds/item/lock_compass2"
+  ]
+ },
+ "mace.smash_air": {
+  "sounds": [
+   "sounds/item/mace/smash_air1",
+   "sounds/item/mace/smash_air2",
+   "sounds/item/mace/smash_air3"
+  ]
+ },
+ "mace.smash_ground": {
+  "sounds": [
+   "sounds/item/mace/smash_ground1",
+   "sounds/item/mace/smash_ground2",
+   "sounds/item/mace/smash_ground3",
+   "sounds/item/mace/smash_ground4"
+  ]
+ },
+ "mob.blaze.breathe": {
+  "sounds": [
+   {
+    "name": "sounds/mob/blaze/breathe1",
+    "volume": 0.2
+   },
+   {
+    "name": "sounds/mob/blaze/breathe2",
+    "volume": 0.2
+   },
+   {
+    "name": "sounds/mob/blaze/breathe3",
+    "volume": 0.2
+   },
+   {
+    "name": "sounds/mob/blaze/breathe4",
+    "volume": 0.2
+   }
+  ]
+ },
+ "mob.breeze.inhale": {
+  "sounds": [
+   {
+    "name": "sounds/mob/breeze/inhale1",
+    "pitch": 1.0,
+    "volume": 1.0
+   },
+   {
+    "name": "sounds/mob/breeze/inhale1",
+    "pitch": 1.1,
+    "volume": 1.0
+   },
+   {
+    "name": "sounds/mob/breeze/inhale2",
+    "pitch": 1.0,
+    "volume": 1.0
+   },
+   {
+    "name": "sounds/mob/breeze/inhale2",
+    "pitch": 1.1,
+    "volume": 1.0
+   }
+  ]
+ },
+ "mob.breeze.whirl": {
+  "sounds": [
+   "sounds/mob/breeze/whirl1",
+   "sounds/mob/breeze/whirl2",
+   "sounds/mob/breeze/whirl3",
+   "sounds/mob/breeze/whirl4",
+   "sounds/mob/breeze/whirl5"
+  ]
+ },
+ "mob.endermen.portal": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/mob/endermen/portal"
+   },
+   "sounds/mob/endermen/portal2"
+  ]
+ },
+ "mob.evocation_fangs.attack": {
+  "sounds": [
+   "sounds/mob/evocation_illager/fangs"
+  ]
+ },
+ "mob.evocation_illager.cast_spell": {
+  "sounds": [
+   "sounds/mob/evocation_illager/cast1",
+   "sounds/mob/evocation_illager/cast2"
+  ]
+ },
+ "mob.ghast.fireball": {
+  "sounds": [
+   "sounds/mob/ghast/fireball4"
+  ]
+ },
+ "mob.irongolem.hit": {
+  "sounds": [
+   "sounds/mob/irongolem/hit1",
+   "sounds/mob/irongolem/hit2",
+   "sounds/mob/irongolem/hit3",
+   "sounds/mob/irongolem/hit4"
+  ]
+ },
+ "mob.irongolem.throw": {
+  "sounds": [
+   "sounds/mob/irongolem/throw"
+  ]
+ },
+ "mob.phantom.flap": {
+  "sounds": [
+   "sounds/mob/phantom/flap1",
+   "sounds/mob/phantom/flap2",
+   "sounds/mob/phantom/flap3",
+   "sounds/mob/phantom/flap4",
+   "sounds/mob/phantom/flap5",
+   "sounds/mob/phantom/flap6"
+  ]
+ },
+ "mob.shulker.teleport": {
+  "sounds": [
+   "sounds/mob/endermen/portal",
+   "sounds/mob/endermen/portal2"
+  ]
+ },
+ "mob.vex.charge": {
+  "sounds": [
+   "sounds/mob/vex/charge1",
+   "sounds/mob/vex/charge2",
+   "sounds/mob/vex/charge3"
+  ]
+ },
+ "mob.warden.sonic_boom": {
+  "sounds": [
+   {
+    "name": "sounds/mob/warden/sonic_boom1"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_boom2"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_boom3"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_boom4"
+   }
+  ]
+ },
+ "mob.warden.sonic_charge": {
+  "sounds": [
+   {
+    "name": "sounds/mob/warden/sonic_charge1"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_charge2"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_charge3"
+   },
+   {
+    "name": "sounds/mob/warden/sonic_charge4"
+   }
+  ]
+ },
+ "note.bassattack": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/note/bassattack"
+   }
+  ]
+ },
+ "note.chime": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/note/icechime"
+   }
+  ]
+ },
+ "note.harp": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/note/harp"
+   }
+  ]
+ },
+ "portal.trigger": {
+  "sounds": [
+   "sounds/portal/trigger"
+  ]
+ },
+ "power.on.sculk_sensor": {
+  "sounds": [
+   "sounds/block/sculk_sensor/sculk_clicking1",
+   "sounds/block/sculk_sensor/sculk_clicking2",
+   "sounds/block/sculk_sensor/sculk_clicking3",
+   "sounds/block/sculk_sensor/sculk_clicking4",
+   "sounds/block/sculk_sensor/sculk_clicking5",
+   "sounds/block/sculk_sensor/sculk_clicking6"
+  ]
+ },
+ "random.anvil_land": {
+  "sounds": [
+   {
+    "name": "sounds/random/anvil_land",
+    "volume": 0.6
+   }
+  ]
+ },
+ "random.click": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/random/click",
+    "volume": 0.2
+   }
+  ]
+ },
+ "random.explode": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/random/explode1"
+   },
+   "sounds/random/explode2",
+   "sounds/random/explode3",
+   "sounds/random/explode4"
+  ]
+ },
+ "random.levelup": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/random/levelup"
+   }
+  ]
+ },
+ "random.toast": {
+  "sounds": [
+   "sounds/random/toast"
+  ]
+ },
+ "resonate.amethyst_block": {
+  "sounds": [
+   {
+    "name": "sounds/block/amethyst/resonate1",
+    "volume": 3.0
+   },
+   {
+    "name": "sounds/block/amethyst/resonate2",
+    "volume": 3.0
+   },
+   {
+    "name": "sounds/block/amethyst/resonate3",
+    "volume": 3.0
+   },
+   {
+    "name": "sounds/block/amethyst/resonate4",
+    "volume": 3.0
+   }
+  ]
+ },
+ "respawn_anchor.charge": {
+  "sounds": [
+   "sounds/block/respawn_anchor/charge1",
+   "sounds/block/respawn_anchor/charge2",
+   "sounds/block/respawn_anchor/charge3"
+  ]
+ },
+ "respawn_anchor.deplete": {
+  "sounds": [
+   "sounds/block/respawn_anchor/deplete1",
+   "sounds/block/respawn_anchor/deplete2"
+  ]
+ },
+ "smithing_table.use": {
+  "sounds": [
+   {
+    "load_on_low_memory": true,
+    "name": "sounds/random/smithing_table1"
+   },
+   "sounds/random/smithing_table2",
+   "sounds/random/smithing_table3"
+  ]
+ },
+ "trial_spawner.charge_activate": {
+  "sounds": [
+   "sounds/block/trial_spawner/charge_activate"
+  ]
+ },
+ "vault.close_shutter": {
+  "sounds": [
+   "sounds/block/trial_spawner/close_shutter"
+  ]
+ },
+ "vault.deactivate": {
+  "sounds": [
+   "sounds/block/vault/deactivate"
+  ]
+ },
+ "vault.eject_item": {
+  "sounds": [
+   "sounds/block/vault/eject_item1",
+   "sounds/block/vault/eject_item2",
+   "sounds/block/vault/eject_item3"
+  ]
+ },
+ "vault.insert_item": {
+  "sounds": [
+   "sounds/block/vault/insert"
+  ]
+ },
+ "wind_charge.burst": {
+  "sounds": [
+   "sounds/item/wind_charge/wind_burst1",
+   "sounds/item/wind_charge/wind_burst2",
+   "sounds/item/wind_charge/wind_burst3"
+  ]
+ }
+}

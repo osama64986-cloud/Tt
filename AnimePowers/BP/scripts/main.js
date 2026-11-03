@@ -657,9 +657,6 @@ function sfx(dim, id, loc, volume = 1, pitch = 1) {
 function sfxPlayer(p, id, volume = 1, pitch = 1) {
   try { p.playSound(id, { volume: Math.min(1, volume * (VANILLA_GAIN[id] || 1)), pitch }); } catch (e) { /* */ }
 }
-function shake(p, amount = 0.1, secs = 0.12) {
-  try { p.runCommand(`camerashake add @s ${amount} ${secs}`); } catch (e) { /* */ }
-}
 
 function headPos(e) {
   const l = e.location;
@@ -765,7 +762,6 @@ function ensureTemple(p) {
     templeBusy = true;
     say(p, "§b[Fallen Star] §fThe ground trembles... a great §bStar Temple§f rises right in front of you. It appears only once in this world. The heart of the fallen star waits inside.");
     sfxPlayer(p, "sh.supernova_charge", 0.8, 0.6);
-    shake(p, 0.15, 1.2);
     buildTemple(p, (rec) => { templeBusy = false; if (valid(p)) guideTemple(p, rec); });
   } catch (e) { templeBusy = false; }
 }
@@ -865,7 +861,6 @@ function startDraw(p, t) {
     waveFx(dim, c, 6 + idx, 0, 14);
     SYS.reveal(dim, c, col, idx);                                              // شرار بلون الندرة يكبر مع الندرة (+ توتم للأسطورية، وانفجار التنين للخرافية)
     sfxPlayer(p, idx >= 4 ? "sh.supernova_boom" : idx >= 2 ? "sh.rank_up" : "sh.level_up", idx >= 4 ? 0.9 : 1, 1);
-    if (idx >= 2) shake(p, 0.1 + idx * 0.05, 0.4);
   });
 }
 // توافق قديم: الشظية صارت تدلك على المعبد
@@ -2320,7 +2315,6 @@ function rhythmStrike(p, t, tier) {
   try { dim.playSound(tier === 3 ? "sh.supernova_boom" : tier === 2 ? "sh.guard_slam" : "sh.echostrike", t.location, { volume: 0.9, pitch: 1 + tier * 0.05 }); } catch (e) { /* */ }
   // كورد: 3 نوتات سوه
   for (const k of [0, 2, 4]) rhyNote(p, 3 + tier + k, 0.8);
-  shake(p, 0.08 + tier * 0.06, 0.15 + tier * 0.05);
   const best = tier * 3 + 1;
   if (best > (st.rhyBest || 0)) { st.rhyBest = best; saveState(p, st); }
 }
@@ -2404,7 +2398,6 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     for (let i = 0; i < 10; i++) pix(dim, { x: c.x + (Math.random() - 0.5) * 0.6, y: c.y + (Math.random() - 0.5) * 0.6, z: c.z + (Math.random() - 0.5) * 0.6 }, { color: i % 2 ? COLORS.gold : COLORS.white, size: 0.18, life: 0.4, speed: 2.4 });
     try { dim.playSound("random.anvil_land", p.location, { volume: 0.6, pitch: 1.7 }); } catch (e) { /* */ }
     sfxPlayer(p, "sh.reflect", 1, 1.3);
-    shake(p, 0.08, 0.12);
     riposte.set(p.id, { until: now + 50, tid: src.id });
     notify(p, "§f§lPERFECT GUARD §r§7strike back now!", 30);
     const st = getState(p); st.guards = (st.guards || 0) + 1; saveState(p, st);
@@ -2564,7 +2557,6 @@ const SKILL_FN = {
     const t = raycastTarget(p);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     sfx(p.dimension, "sh.seal", p.location);
-    shake(p, 0.05, 0.1);
     symbolShot(p, t, "arrow_gold", () => {
       if (!valid(t)) return;
       setNum(t, 10);
@@ -2580,7 +2572,6 @@ const SKILL_FN = {
     const t = raycastTarget(p);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     sfx(p.dimension, "sh.subtract", p.location);
-    shake(p, 0.08, 0.12);
     symbolShot(p, t, "sym_minus", () => {
       if (!valid(t)) return;
       popShape(t.dimension, "sym_minus", { ...headPos(t), y: headPos(t).y + 0.3 }, 1.0, 1.8, 6, { s: 300 });
@@ -2600,7 +2591,6 @@ const SKILL_FN = {
     const w = shapeFx(dim, "weight", { x: c.x, y: c.y + 9, z: c.z }, { r: 1.6, yaw: Math.random() * 90, life: 124 });
     if (w) z.shapes.push(w);
     tween(6, 1, (k) => moveShape(w, { x: c.x, y: c.y + 9 * (1 - k * k), z: c.z }), () => {
-      shake(p, 0.22, 0.3);
       sfx(dim, "sh.guard_slam", c, 1.2, 0.7);
       LAW.weightSlam(dim, c, 6);
       rockBurst(dim, c, 5, 1.2);
@@ -2679,7 +2669,6 @@ Object.assign(SKILL_FN, {
       }
     });
     sfx(p.dimension, "sh.divide", p.location);
-    shake(p, 0.08, 0.1);
     return true;
   },
   zero(p) {
@@ -2691,7 +2680,6 @@ Object.assign(SKILL_FN, {
     const z0 = shapeFx(t.dimension, "digit_0", top, { r: 2.4, yaw: yawOf(t.location, p.location), life: 16 });
     tween(8, 1, (k) => { const zp = { x: t.location.x, y: top.y - 5.0 * k * k, z: t.location.z }; moveShape(z0, zp); ACCOUNT.zeroFall(t.dimension, { x: zp.x, y: zp.y + 1.2, z: zp.z }); }, () => {
       if (!valid(t)) return;
-      shake(p, 0.18, 0.25);
       rockBurst(t.dimension, t.location, 4, 1);
       ACCOUNT.zeroSlam(t.dimension, t.location);
       const n = numberOf(t);
@@ -2726,7 +2714,6 @@ Object.assign(SKILL_FN, {
   boundary(p) {
     const z = startZone(p, "boundary", 7, 160);
     sfx(p.dimension, "sh.boundary", p.location, 1.2);
-    shake(p, 0.12, 0.2);
     // 8 أعمدة رونية تطلع من الأرض حول الدائرة
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2;
@@ -2757,7 +2744,6 @@ Object.assign(SKILL_FN, {
     sfx(dim, "sh.absolute", p.location, 1.3);
     tween(7, 1, (k) => setShape(g, "sh:p", -35 + 120 * k * k), () => {
       sfx(dim, "sh.guard_slam", at, 1.3, 0.8);
-      shake(p, 0.25, 0.4);
       LAW.gavelSlam(dim, at);
       rockBurst(dim, at, 5, 1.1);
     });
@@ -2806,14 +2792,12 @@ Object.assign(SKILL_FN, {
       try { t.addEffect("slowness", 30, { amplifier: 2, showParticles: false }); } catch (e) { /* */ }
     });
     sfx(dim, "sh.pull", p.location);
-    shake(p, 0.06, 0.1);
     return true;
   },
   push(p) {
     const t = raycastTarget(p, 24);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
     sfx(p.dimension, "sh.push", p.location);
-    shake(p, 0.08, 0.12);
     const pd = { x: t.location.x - p.location.x, y: 0, z: t.location.z - p.location.z }, pl = Math.hypot(pd.x, pd.z) || 1;
     const pdir = { x: pd.x / pl, y: 0, z: pd.z / pl };
     SPACE.rift(p.dimension, { x: p.location.x + pdir.x * 0.8, y: p.location.y, z: p.location.z + pdir.z * 0.8 }, pdir, 0.9, 6);
@@ -2860,7 +2844,6 @@ Object.assign(SKILL_FN, {
     hurt(t, 9, p);
     pushAway(p.location, t, 1.2, 0.3);
     sfx(p.dimension, "sh.fold", t.location, 1.1);
-    shake(p, 0.15, 0.15);
     return true;
   },
   spacecollapse(p) {
@@ -2871,7 +2854,6 @@ Object.assign(SKILL_FN, {
     SPACE.collapseCharge(dim, c);
     warpGate(dim, { x: c.x, y: c.y + 1.6, z: c.z }, yawOf(c, p.location), 2.6, 10);                          // بوابة ضخمة تبلع الكل
     sfx(dim, "sh.spacecollapse", p.location, 1.3);
-    shake(p, 0.25, 0.5);
     // مكعب فضاء ضخم ينطوي على نفسه ويسحب الأعداء لنقطة وحدة
     popShape(dim, "space_cube", { x: c.x, y: c.y + 1.5, z: c.z }, 4.5, 0.3, 16, { s: 500, ease: "out" });
     for (const e of list) {
@@ -2941,7 +2923,6 @@ Object.assign(SKILL_FN, {
     const d = flatDir(p), c = { ...p.location }, dim = p.dimension;
     const wave = (dmg, rmax, pitch, k0) => {
       sfx(dim, "sh.echowave", c, 1, pitch);
-      shake(p, 0.12, 0.15);
       // جبهة موجة صوتية (قوس 80°) تتقدم قدامك: نوتات وسكلك، وحلقة Warden كل 3 تكات بنصها
       ECHO.wave(dim, c, { x: d.x, y: 0, z: d.z }, rmax, k0);
       { const T = Math.ceil(rmax / 0.9), yw = dirYaw({ x: d.x, y: 0, z: d.z });
@@ -2968,7 +2949,6 @@ Object.assign(SKILL_FN, {
     radii.forEach((r, i) => {
       system.runTimeout(() => {
         if (!valid(p)) return;
-        shake(p, 0.2, 0.3);
         sfx(p.dimension, "sh.chorus", p.location, 1.1, 1 + i * 0.15);
         // حلقة Warden عليك + موجة أرضية من النوتات والسكلك تتوسع لحد نصف القطر (كل نبضة بلون نوتة)
         ECHO.chorusPulse(p.dimension, p.location, r, i);
@@ -3011,7 +2991,6 @@ Object.assign(SKILL_FN, {
       groundBreak(t.dimension, t.location, 3, { cracks: 6, ttl: 160 });
       popShape(t.dimension, "iron_fist", center3(t), 1.5, 2.2, 4, { yaw: dirYaw(d) });
       sfx(p.dimension, "sh.cleaver_hit", t.location, 1.1, 0.7);
-      shake(p, 0.2, 0.2);
     });
     return true;
   },
@@ -3062,7 +3041,6 @@ Object.assign(SKILL_FN, {
       WIND.galeHit(dim, center3(e));
     }
     sfx(dim, "sh.push", p.location, 1.3, 0.8);
-    shake(p, 0.18, 0.3);
     return true;
   },
   // ── قانون الزمن ──
@@ -3085,7 +3063,6 @@ Object.assign(SKILL_FN, {
       followShape(e, "clock", 60, { r: 0.6, s: 90, dy: 0.8 });
     }
     sfx(dim, "sh.weight", p.location, 1.2, 0.6);
-    shake(p, 0.15, 0.3);
     return true;
   },
 });
@@ -3287,7 +3264,6 @@ const WEAPON_SKILLS = {
       WEAPON.emberArc(dim, o, d);
       popShape(dim, "slash_fire", { x: o.x, y: o.y + 0.95, z: o.z }, 1.7, 2.5, 6, { yaw: dirYaw({ x: d.x, y: 0, z: d.z }), p: 84, a: -30, w: 300 });   // هلال نار يكنس قدامك
       sfx(dim, "sh.cleaver_hit", o, 1.2, 0.7);
-      shake(p, 0.15, 0.2);
       return true;
     } },
     { name: "Inferno Spin", cd: 240, desc: "Spin: a ring of fire hits everything around you", fn(p) {
@@ -3310,7 +3286,6 @@ const WEAPON_SKILLS = {
           pushAway(p.location, e, 1.3, 0.35);
         }
       });
-      shake(p, 0.18, 0.3);
       return true;
     } },
   ],
@@ -3341,7 +3316,6 @@ const WEAPON_SKILLS = {
         WEAPON.stab(t.dimension, center3(t), p.location, i, last);           // هلال ذهبي صغير بزاوية مختلفة كل طعنة، والأخيرة انفجار شرار ذهبي
         popShape(t.dimension, "slash_gold", center3(t), last ? 1.0 : 0.55, last ? 1.5 : 0.85, 3, { yaw: yawOf(t.location, p.location), a: (i * 67) % 180 - 90 });
         sfx(t.dimension, "sh.dagger_hit", t.location, 1, 1.2 + i * 0.08);
-        if (last) shake(p, 0.15, 0.15);
       });
       return true;
     } },
@@ -3361,7 +3335,6 @@ const WEAPON_SKILLS = {
         WEAPON.silverCut(dim, center3(e), o, n);
       }
       sfx(dim, "sh.kat_wave", o, 1.0, 1.4);
-      shake(p, 0.08, 0.15);
       // رماح نور تنزل من السما قدامك بشكل مثلث، وحدة ورا وحدة
       const rr = katanaRight(d);
       [[3.6, 0, 3], [5.4, -1.7, 6], [5.4, 1.7, 9]].forEach(([dist, off, dl]) => lanceStrike(p, o.x + d.x * dist + rr.x * off, o.z + d.z * dist + rr.z * off, 4, dl));
@@ -3517,14 +3490,12 @@ const WEAPON_SKILLS = {
         effect(e, "slowness", 40, 2);
       }
       sfx(dim, "sh.guard_slam", cc, 1.1, 0.8);
-      shake(p, 0.35, 0.35);
       return true;
     } },
     { name: "Seismic Fissure", cd: 200, desc: "A fissure tears the ground forward for 10 blocks", fn(p) {
       const dim = p.dimension, d = flatDir(p), o = { ...p.location };
       const hit = new Set();
       sfx(dim, "sh.guard_slam", o, 1.0, 0.6);
-      shake(p, 0.25, 0.5);
       for (let t = 2; t <= 11; t++) later((t - 2) * 2, () => {
         const x = o.x + d.x * t, z = o.z + d.z * t;
         const gy = groundY(dim, x, z, o.y);
@@ -3783,7 +3754,6 @@ function applyTrait(p, id, m) {
     notify(p, list.length ? `§eMarked ${list.length} enemies` : "§7No enemies nearby, but your vision improved", 50);
   }
   sfx(p.dimension, "sh.trait_" + id, p.location, 1.1, 1);
-  shake(p, 0.06, 0.1);
 }
 function recordTrait(p, id) {
   const arr = (lastTraits.get(p.id) || []).filter((x) => x.id !== id);
@@ -3851,7 +3821,6 @@ Object.assign(SKILL_FN, {
         CRYSTAL.lanceHit(h.e.dimension, center3(h.e));
       }));
       sfx(p.dimension, "sh.push", p.location, 1.1, 1.6);
-      shake(p, 0.1, 0.12);
       return true;
     }
     // 3 شوكات بلورية حقيقية تطير وتلزق بالأعداء: رشة نجوم وردية عند الإطلاق، وأثر نجوم ولمعات وراها
@@ -3957,7 +3926,6 @@ Object.assign(SKILL_FN, {
       });
     });
     sfx(p.dimension, "sh.collapse", p.location, 1.1, 1.5);
-    shake(p, 0.15, 0.2);
     notify(p, `§dDetonated ${total} crystals`, 40);
     return true;
   },
@@ -3996,7 +3964,6 @@ Object.assign(SKILL_FN, {
       popShape(p.dimension, "hourglass", { x: from.x, y: from.y + 1.2, z: from.z }, 1.4, 0.1, 8, { a: 180, s: 600 });
       popShape(p.dimension, "hourglass", { x: a.loc.x, y: a.loc.y + 2.6, z: a.loc.z }, 0.3, 1.6, 10, { a: 180, s: -300 });
       sfx(p.dimension, "sh.swap", p.location, 1, 0.8);
-      shake(p, 0.1, 0.15);
       return 1200;
     }
     const hp = p.getComponent("minecraft:health");
@@ -4226,7 +4193,6 @@ Object.assign(SKILL_FN, {
       STAR.meteorImpact(dim, c);                               // انفجار TNT الكبير + حلقة لهب + حمم + غبار + أعمدة دخان
       for (const e of enemiesNear(dim, c, 4, p.id)) { hurtS(e, 14, p); pushAway(c, e, 1.1, 0.5); try { e.setOnFire(4, false); } catch (err) { /* */ } }
       groundBreak(dim, c, 5, { crater: 0.5, cracks: 8, ttl: 400 });
-      shake(p, 0.2, 0.2);
     });
     return true;
   },
@@ -4328,7 +4294,6 @@ Object.assign(SKILL_FN, {
         dropShape(dim, "star5", e.location.x, e.location.y + 1.0, e.location.z, 0.7, 4, 5);
         sfx(dim, "sh.const_zap", e.location, 1, 1 + Math.random() * 0.2);
       }
-      shake(p, 0.12, 0.15);
       later(4, () => beams.forEach(removeFx));
     });
     notify(p, `§9Constellation of ${list.length} stars... the shock comes in two seconds`, 50);
@@ -4360,7 +4325,6 @@ Object.assign(SKILL_FN, {
     effect(p, "resistance", 20, 4);
     STAR.dashEnd(dim, to);
     sfx(dim, "sh.stardash", to, 1.2, 1);
-    shake(p, 0.14, 0.15);
     return true;
   },
   // 6) ثقب أسود: يسحب كل شي 6 ثواني ثم ينهار وينفجر
@@ -4373,7 +4337,6 @@ Object.assign(SKILL_FN, {
     tween(20, 1, (k) => setShape(bh, "sh:r", 0.3 + 1.9 * k));
     groundBreak(dim, g, 6, { cracks: 9, ttl: 240 });
     sfx(dim, "sh.blackhole", g, 1.5, 1);
-    shake(p, 0.1, 0.4);
     let t = 0;
     const h = system.runInterval(() => {
       try {
@@ -4394,7 +4357,6 @@ Object.assign(SKILL_FN, {
             STAR.holeBoom(dim, c, g);
             groundBreak(dim, g, 9, { crater: 0.45, cracks: 10, ttl: 500 });
             for (const e of enemiesNear(dim, c, 9, p.id)) { hurtS(e, 16, p); pushAway(c, e, 1.6, 0.6); }
-            shake(p, 0.3, 0.3);
           });
         }
       } catch (err) { system.clearRun(h); }
@@ -4419,11 +4381,9 @@ Object.assign(SKILL_FN, {
         // شحن: بوابة تنسحب لنواة فوق راسك، لولب شرار ذهبي وأزرق، ولمعات تكبر بالنواة، وحلقة لمعات بالأرض تتوسع
         STAR.novaCharge(dim, p.location, k, t);
         moveShape(core, { x: p.location.x, y: p.location.y + 3.0, z: p.location.z }); setShape(core, "sh:r", 0.3 + 1.4 * k);
-        if (t % 10 === 0) shake(p, 0.05 + 0.12 * k, 0.12);
         if (t >= charge) {
           system.clearRun(h);
           sfx(dim, "sh.supernova_boom", p.location, 2, 1);
-          shake(p, 0.5, 0.5);
           // النجمة تنفجر: انفجار موت التنين + TNT الكبير، وثلاث موجات (غبار، لمعات، شرار ذهبي) لحد 14 بلوكة، ووميض أبيض
           STAR.novaBoom(dim, p.location);
           removeFx(core);
@@ -4584,7 +4544,6 @@ function katExecute(p, t, chainsLeft) {
     } else hurt(t, kd(p, 8), p);
     ghostSword(p, t.location.x, t.location.z, 0, 0, 1.9);
     sfx(dim, "sh.kat_exec", t.location, 1.1, 1.2);
-    shake(p, 0.18, 0.15);
     if (chainsLeft > 0) {
       later(5, () => {
         const next = enemiesNear(dim, p.location, 9, p.id).filter((e) => e.id !== t.id)[0];
@@ -4601,7 +4560,6 @@ const KATANA_SKILLS = [
     if (lv >= 3) katCrescent(p, 35, 4);
     if (lv >= KAT_MAX) katCrescent(p, -35, 8);
     katanaAura(p, 16, true);
-    shake(p, 0.1, 0.12);
     return true;
   } },
   { name: "Void Execution", cd: 140, desc: "Vanish behind the enemy and cut it in an X; finishes weakened enemies", fn(p) {
@@ -4791,7 +4749,6 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
       const dx = target.location.x - p.location.x, dz = target.location.z - p.location.z;
       const len = Math.hypot(dx, dz) || 1;
       try { target.applyKnockback({ x: (dx / len) * w.knock, z: (dz / len) * w.knock }, 0.35); } catch (e) { /* */ }
-      shake(p, 0.12, 0.15);
     }
   } catch (e) { /* */ }
 });
@@ -5010,7 +4967,7 @@ function guardRockThrow(e, tp, st) {
       rockBurst(dim, b, 6, 1.2);
       MONSTER.rockImpact(dim, b);
       sfx(dim, "sh.guard_slam", b, 1.2, 0.8);
-      for (const pl of playersNear(dim, b, 2.6)) { hurtPlayer(pl, 6, e); pushAway(b, pl, 1.6, 0.5); shake(pl, 0.25, 0.3); }
+      for (const pl of playersNear(dim, b, 2.6)) { hurtPlayer(pl, 6, e); pushAway(b, pl, 1.6, 0.5); }
     });
     later(10, () => endSpecial(st, e, 100));
   });
@@ -5139,7 +5096,6 @@ function runMonsterSkills() {
                 for (const pl of dim.getPlayers({ location: e.location, maxDistance: 4 })) {
                   hurtPlayer(pl, 6, e);
                   pushAway(e.location, pl, 2.2, 0.5);
-                  shake(pl, 0.25, 0.3);
                 }
                 MONSTER.guardSlam(dim, e.location);
                 rockBurst(dim, e.location, 6, 1.3);
@@ -5355,7 +5311,6 @@ system.runInterval(() => {
                 for (const pl of dim.getPlayers({ location: L, maxDistance: 14 })) {
                   try { pl.addEffect("slowness", 100, { amplifier: 1 }); } catch (err) { /* */ }
                   notify(pl, "§5The howl slows you!", 40);
-                  shake(pl, 0.12, 0.4);
                 }
               } else if (tp && dist2d(tp.location, L) <= 5) {
                 // ضربة الذيل: خط أخضر من الإبرة للهدف + تسمم
@@ -5576,7 +5531,7 @@ function gloomTick(e, st) {
       for (const pl of hit) {
         hurtPlayer(pl, 10, e);
         try { pl.applyKnockback({ x: d.x * 2.4, z: d.z * 2.4 }, 0.85); } catch (err) { /* */ }
-        shake(pl, 0.35, 0.4); notify(pl, "§bThe Gloomhorn rams you with its antlers!", 40);
+        notify(pl, "§bThe Gloomhorn rams you with its antlers!", 40);
         burst(dim, center3(pl), 16, SOUL, 3, 0.22);
       }
       impactFx(dim, horn, SOUL, false);
@@ -5747,7 +5702,7 @@ function seerTick(e, st) {
         if (segDist(center3(pl), hand, st.beam.b) > 0.95) continue;
         hurtPlayer(pl, 9, e);
         try { pl.setOnFire(4, true); } catch (err) { /* */ }
-        shake(pl, 0.25, 0.3); notify(pl, "§6The Seer's beam burns you!", 40);
+        notify(pl, "§6The Seer's beam burns you!", 40);
       }
     }
     if (st.beam && st.t >= 20 && st.t <= 28 && st.t % 4 === 0) {         // الشعاع يبقى 0.4 ثانية (يتجدد كل 4 تكات)
@@ -5963,7 +5918,7 @@ function veilTick(e, st) {
       });
       MONSTER.foxCollapse(dim, C);
       sfx(dim, "sh.supernova_boom", C, 0.9, 1.6);
-      for (const pl of dim.getPlayers({ location: C, maxDistance: 2.8 })) { hurtPlayer(pl, 9, e); pushAway(C, pl, 1.6, 0.5); try { pl.addEffect("weakness", 60, { amplifier: 0 }); } catch (err) { /* */ } shake(pl, 0.3, 0.3); }
+      for (const pl of dim.getPlayers({ location: C, maxDistance: 2.8 })) { hurtPlayer(pl, 9, e); pushAway(C, pl, 1.6, 0.5); try { pl.addEffect("weakness", 60, { amplifier: 0 }); } catch (err) { /* */ } }
     }
     if (st.t >= 62) { st.clones = undefined; st.cen = undefined; grimEnd(e, st, 80); }
     return;
@@ -6009,7 +5964,7 @@ function veilTick(e, st) {
             MONSTER.moonStep(dim, pos, dir);                                  // هلال قمر من لمعات End Rod يطير لك
             for (const p2 of dim.getPlayers({ location: pos, maxDistance: 1.7 })) {
               if (hit.has(p2.id)) continue;
-              hit.add(p2.id); hurtPlayer(p2, 7, valid(e) ? e : undefined); MONSTER.foxMoonHit(dim, center3(p2)); shake(p2, 0.2, 0.2);
+              hit.add(p2.id); hurtPlayer(p2, 7, valid(e) ? e : undefined); MONSTER.foxMoonHit(dim, center3(p2));
             }
             return false;
           });
@@ -6084,7 +6039,6 @@ function mammothTick(e, st) {
       const C = { x: L.x, y: L.y, z: L.z }, hitS = new Set(), a0 = Math.random() * 6.28;
       sfx(dim, "sh.guard_slam", C, 1.6, 0.5); sfx(dim, "sh.collapse", C, 1.0, 0.7);
       MONSTER.mamStomp(dim, C); rockBurst(dim, C, 8, 1.1);
-      for (const q of dim.getPlayers({ location: C, maxDistance: 22 })) shake(q, 0.35, 0.35);
       for (let k = 0; k < 3; k++) later(k, () => fireRing(dim, C, 1.2 + k * 1.2, 22 + k * 8));
       for (const pl of dim.getPlayers({ location: C, maxDistance: 3.8 })) { hurtPlayer(pl, 7, e); pushAway(C, pl, 2.0, 0.6); notify(pl, "§6Magma Stomp!", 30); hitS.add(pl.id); }
       for (let j = 0; j < 8; j++) {
@@ -6172,7 +6126,6 @@ function mammothTick(e, st) {
     const blocked = !airAt(dim, nx + d.x * 1.6, L.y + 0.6, nz + d.z * 1.6) || !airAt(dim, nx + d.x * 1.6, L.y + 1.8, nz + d.z * 1.6) || !airAt(dim, nx + d.x * 1.6, L.y + 3.0, nz + d.z * 1.6);
     const crash = () => {
       MONSTER.mamCrash(dim, { x: L.x + d.x * 1.8, y: L.y, z: L.z + d.z * 1.8 }); rockBurst(dim, L, 8, 1.2); sfx(dim, "sh.guard_slam", L, 1.4, 0.6);
-      for (const q of dim.getPlayers({ location: L, maxDistance: 16 })) shake(q, 0.4, 0.4);
       try { e.addEffect("slowness", 50, { amplifier: 5, showParticles: false }); } catch (err) { /* */ }
       st.stage = 0; grimEnd(e, st, 90);
     };
@@ -6190,7 +6143,7 @@ function mammothTick(e, st) {
       if (st.hit.has(pl.id)) continue;
       st.hit.add(pl.id); hurtPlayer(pl, 12, e);
       try { pl.applyKnockback({ x: d.x * 0.5, z: d.z * 0.5 }, 1.1); } catch (err) { /* */ }          // رفع بالأنياب
-      shake(pl, 0.5, 0.4); notify(pl, "§6Tusk Toss!", 30);
+      notify(pl, "§6Tusk Toss!", 30);
       MONSTER.mamToss(dim, pl.location); fireRing(dim, pl.location, 1.5, 14);
       st.stage = 0; grimEnd(e, st, 90); return;
     }
@@ -6200,7 +6153,6 @@ function mammothTick(e, st) {
   if (st.skill === "bombard") {
     if (st.t === 20) {
       sfx(dim, "sh.guard_slam", L, 1.6, 0.5); sfx(dim, "sh.supernova_boom", L, 1.0, 0.6);
-      for (const q of dim.getPlayers({ location: L, maxDistance: 24 })) shake(q, 0.35, 0.4);
       MONSTER.mamEruptCrown(dim, { x: L.x, y: L.y + 3.9, z: L.z });
       const sites = [];
       for (const pl of dim.getPlayers({ location: L, maxDistance: 26 })) { sites.push({ x: pl.location.x, z: pl.location.z }); sites.push({ x: pl.location.x + (Math.random() - 0.5) * 5, z: pl.location.z + (Math.random() - 0.5) * 5 }); }
@@ -6356,7 +6308,7 @@ function bearTick(e, st) {
       }
       try { pl.teleport(hold, { facingLocation: { x: L.x, y: L.y + 2.4, z: L.z } }); } catch (err) { /* */ }
       if (st.t === 10 || st.t === 20 || st.t === 30) {                         // عصرة
-        hurtPlayer(pl, 3, e); shake(pl, 0.25, 0.2);
+        hurtPlayer(pl, 3, e);
         crushFx(dim, hold);
         sfx(dim, "sh.guard_slam", hold, 0.6, 1.6);
       }
@@ -6369,7 +6321,7 @@ function bearTick(e, st) {
       const a = Math.atan2(f.z, f.x) - 1.4, d = { x: Math.cos(a), z: Math.sin(a) };
       hurtPlayer(pl, 6, e);
       try { pl.applyKnockback({ x: d.x * 2.4, z: d.z * 2.4 }, 0.9); } catch (err) { /* */ }
-      shake(pl, 0.5, 0.45); notify(pl, "§cThrown by the Bear Hug!", 30);
+      notify(pl, "§cThrown by the Bear Hug!", 30);
       roarPuff(dim, L, d, 10); MONSTER.bearRoar(dim, L, d); sfx(dim, "mob.polarbear.warning", L, 1.6, 0.5);
       for (let k = 1; k <= 9; k++) later(k * 2, () => { if (valid(pl)) mcP(dim, { x: pl.location.x, y: pl.location.y + 0.6, z: pl.location.z }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": 0, "velocity.y": 0, "velocity.z": 0 }); });   // أثر غبار ورا اللاعب وهو طاير
       later(22, () => { if (valid(pl)) dustRing(dim, pl.location, 14, 0.4, 0.5); });                                                                                // غبار الطيحة
@@ -6391,7 +6343,7 @@ function bearTick(e, st) {
         if ((vx * f.x + vz * f.z) / l < 0.2) continue;
         hit = true;
         if (side === 0) {                                                   // الخرمشة الأخيرة بالكفين: أقوى + دفع
-          hurtPlayer(pl, 6, e); addBleed(pl, 1); pushAway(L, pl, 1.0, 0.35); shake(pl, 0.3, 0.25);
+          hurtPlayer(pl, 6, e); addBleed(pl, 1); pushAway(L, pl, 1.0, 0.35);
           clawMarks(dim, pl.location, L, 1); later(1, () => { if (valid(pl)) clawMarks(dim, pl.location, L, -1); });
           notify(pl, "§cRending Claws! You are bleeding", 30);
         } else { hurtPlayer(pl, 3, e); addBleed(pl, 1); clawMarks(dim, pl.location, L, side); }
@@ -6407,7 +6359,7 @@ function bearTick(e, st) {
     if (st.t === 10) {
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 }, r = { x: -f.z, z: f.x };
       sfx(dim, "mob.polarbear.warning", L, 1.8, 0.55); roarPuff(dim, L, f, 8); MONSTER.bearCall(dim, L, f);
-      for (const q of dim.getPlayers({ location: L, maxDistance: 18 })) { shake(q, 0.25, 0.4); notify(q, "§6The Grey Bear calls its cubs!", 40); }
+      for (const q of dim.getPlayers({ location: L, maxDistance: 18 })) { notify(q, "§6The Grey Bear calls its cubs!", 40); }
       st.cubs = [];
       for (const sgn of [-1, 1]) {
         const pos = { x: L.x + r.x * sgn * 1.7, y: L.y, z: L.z + r.z * sgn * 1.7 };
@@ -6451,7 +6403,7 @@ function bearTick(e, st) {
       const f = tp ? fwdTo(L, tp.location) : { x: 0, z: 1 };
       sfx(dim, "mob.polarbear.warning", L, 2.0, 0.45); roarPuff(dim, L, f, 10);
       MONSTER.bearWrath(dim, L, f);                                                            // موجتين دخان
-      for (const pl of dim.getPlayers({ location: L, maxDistance: 5 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 1.6, 0.5); shake(pl, 0.45, 0.4); notify(pl, "§cYou woke the Grey Bear: WRATH!", 35); }
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 5 })) { hurtPlayer(pl, 6, e); pushAway(L, pl, 1.6, 0.5); notify(pl, "§cYou woke the Grey Bear: WRATH!", 35); }
     }
     if (st.t >= 20) { st.hibCd = 900; grimEnd(e, st, 50); }
   }
@@ -6614,7 +6566,7 @@ function mantisTick(e, st) {
       for (const pl of dim.getPlayers({ location: L, maxDistance: 3.8 })) {
         const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
         if ((vx * f.x + vz * f.z) / l < 0.3) continue;
-        hurtPlayer(pl, 9, e); shake(pl, 0.35, 0.25);
+        hurtPlayer(pl, 9, e);
         try { pl.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
         notify(pl, "§cThe Prayer Mantis strikes from its camouflage!", 30);
       }
@@ -6639,7 +6591,7 @@ function mantisTick(e, st) {
         st.stage = 1; st.t = 0; st.f = f; setMState(e, 4);
         st.hold = { x: L.x + f.x * 1.9, y: pl.location.y, z: L.z + f.z * 1.9 };
         st.lockFx = shapeFx(dim, "scissor_lock", st.hold, { r: 1.0, yaw: dirYaw({ x: f.x, y: 0, z: f.z }), life: 40 });
-        hurtPlayer(pl, 3, e); shake(pl, 0.3, 0.2);
+        hurtPlayer(pl, 3, e);
         MONSTER.mantisGrab(dim, st.hold); sfx(dim, "mob.sheep.shear", st.hold, 1.6, 0.5); sfx(dim, "random.anvil_land", st.hold, 0.5, 1.8);
         notify(pl, "§cSCISSOR LOCK! §7Dash to break free", 35);
       }
@@ -6657,7 +6609,7 @@ function mantisTick(e, st) {
     try { pl.teleport(hold, { facingLocation: { x: L.x, y: L.y + 2.0, z: L.z } }); } catch (err) { /* */ }
     if (st.t % 10 === 0) { MONSTER.mantisLockTick(dim, hold); sfx(dim, "mob.sheep.shear", hold, 0.6, 0.8 + st.t * 0.01); }
     if (st.t >= 30) {                                                         // القصة الأخيرة
-      hurtPlayer(pl, 7, e); shake(pl, 0.5, 0.35);
+      hurtPlayer(pl, 7, e);
       try { pl.addEffect("slowness", 40, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
       popShape(dim, "scythe_x", { x: hold.x, y: hold.y + 1.0, z: hold.z }, 0.4, 0.9, 5, { yaw: dirYaw({ x: st.f.x, y: 0, z: st.f.z }), ease: "out" });
       MONSTER.mantisSnip(dim, hold); sfx(dim, "mob.sheep.shear", hold, 2.0, 0.5); sfx(dim, "sh.dagger_hit", hold, 1.0, 0.5);
@@ -6688,7 +6640,7 @@ function mantisTick(e, st) {
         popShape(dim, "husk_burst", { x: husk.x, y: husk.y + 1.4, z: husk.z }, 0.3, 1.5, 7, { ease: "out", s: 200 });
         MONSTER.mantisHuskBoom(dim, husk);
         sfx(dim, "random.explode", husk, 1.2, 1.3);
-        for (const pl of dim.getPlayers({ location: husk, maxDistance: 3.6 })) { hurtPlayer(pl, 8, e); pushAway(husk, pl, 1.3, 0.45); shake(pl, 0.5, 0.4); }
+        for (const pl of dim.getPlayers({ location: husk, maxDistance: 3.6 })) { hurtPlayer(pl, 8, e); pushAway(husk, pl, 1.3, 0.45); }
       });
     }
     if (st.t >= 40) {
@@ -6727,7 +6679,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
       } catch (err) { /* */ } finally { mantisCountering = false; }
       MONSTER.mantisCounterHit(dim, center3(src), d);
       sfx(dim, "sh.dagger_hit", src.location, 1.0, 0.5);
-      if (src.typeId === "minecraft:player") { shake(src, 0.45, 0.3); notify(src, `§cYour blow came back DOUBLED! §7(-${Math.round(dmg)})`, 35); }
+      if (src.typeId === "minecraft:player") { notify(src, `§cYour blow came back DOUBLED! §7(-${Math.round(dmg)})`, 35); }
     });
   } catch (err) { /* */ }
 });

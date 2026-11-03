@@ -7,7 +7,7 @@
   4. نسخة BP = نسخة RP، وكل منهما رقم صحيح.
   5. كل أيتم له أيقونة بـ item_texture.json وملف الصورة موجود.
   6. كل sh:skill_* المذكور بالسكربت له ملف أيتم.
-  7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
+  7. كل صوت مستعمل معرّف بـ sound_definitions، وملفه موجود بالحزمة أو بأصوات ماينكرافت (قائمة Mojang).
   8. كل كيان BP له كيان RP، وكل مفتاح اسم موجود بملف اللغة الإنجليزي.
   8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
   8c. كل مادة (material) من مواد اللعبة الأصلية (tools/vanilla_materials.txt).
@@ -116,14 +116,23 @@ try:
             continue
         if s not in defs:
             err(f"صوت مستعمل وغير معرّف: {s}")
+    # v1.37.3: أصوات المود من ملفات ماينكرافت نفسها (tools/gen_sounds.py)، فالمسار لازم يكون ملف بالحزمة أو ملف فانيلا
+    # موجود بقائمة Mojang (tools/vanilla_sound_files.txt من bedrock-samples)
+    vfiles = set(open(os.path.join(ROOT, "tools", "vanilla_sound_files.txt"), encoding="utf-8").read().split())
+    vevents = set(open(os.path.join(ROOT, "tools", "vanilla_sound_events.txt"), encoding="utf-8").read().split())
     for name, d in defs.items():
         for snd in d.get("sounds", []):
             path = snd["name"] if isinstance(snd, dict) else snd
-            if not os.path.exists(os.path.join(RP, path + ".ogg")):
-                err(f"ملف الصوت ناقص لـ {name}: {path}.ogg")
-            # v1.37: كل صوت للمود علوه مضبوط (tools/tune_sounds.py) وإله فئة يتحكم بيها اللاعب من الإعدادات
-            if name.startswith("sh.") and (not isinstance(snd, dict) or not 0.1 <= snd.get("volume", 1.0) <= 0.95):
-                err(f"صوت {name}: العلو مو مضبوط (شغّل tools/tune_sounds.py)")
+            if path not in vfiles and not any(os.path.exists(os.path.join(RP, path + ext)) for ext in (".ogg", ".fsb", ".wav")):
+                err(f"ملف الصوت مو موجود لـ {name}: {path} (لا بالحزمة ولا بأصوات ماينكرافت)")
+            # كل صوت للمود علوه مضبوط وإله فئة يتحكم بيها اللاعب من الإعدادات
+            if name.startswith("sh.") and (not isinstance(snd, dict) or not 0.05 <= snd.get("volume", 1.0) <= 0.95):
+                err(f"صوت {name}: العلو مو مضبوط (شغّل tools/gen_sounds.py)")
+    # أصوات الفانيلا اللي السكربت يشغلها مباشرة لازم تكون موجودة باللعبة
+    direct = set(re.findall(r'playSound\("([a-z0-9_.]+)"', js)) | set(re.findall(r'sfx(?:Player)?\([^,()]+, "([a-z0-9_.]+)"', js))
+    for s in sorted(x for x in direct if not x.startswith("sh.")):
+        if s not in vevents:
+            err(f"صوت فانيلا مو موجود باللعبة: {s}")
         if name.startswith("sh.") and d.get("category") not in ("ui", "player", "hostile"):
             err(f"صوت {name}: الفئة لازم ui أو player أو hostile")
 except Exception as e:  # noqa: BLE001
@@ -223,6 +232,11 @@ try:
             err(f"hud_screen.json: عنصر {k} مو من المسارات المتأكد منها بملف Mojang")
 except Exception as e:  # noqa: BLE001
     err(f"فحص الواجهة فشل: {e}")
+
+# 8f) بدون هزة شاشة (v1.37.3، طلب اللاعب): ماكو camerashake بأي سكربت أو ملف بالمود
+for f in glob.glob(os.path.join(BP, "**", "*.js"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.json"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.mcfunction"), recursive=True):
+    if "camerashake" in open(f, encoding="utf-8", errors="ignore").read():
+        err(f"{rel(f)}: بيه camerashake (هزة الشاشة انشالت من المود)")
 
 # 8e) شاشة الخيميائي (RP/ui/server_form.json، طريقة Bedrock Wiki "Modifying Server Forms"): نعدل بس long_form و main_screen_content
 #     والعلامة بالعنوان لازم تطابق ALC_MARK بالسكربت، وإلا القائمة العادية والمخصصة يطلعن سوا أو ما يطلع شي
