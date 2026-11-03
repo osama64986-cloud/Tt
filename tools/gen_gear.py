@@ -1,4 +1,4 @@
-"""العتاد الجديد (v1.35): مواد الوحوش، الجرعات الست، ودروع الوحوش الثلاث.
+"""العتاد: المواد (جلد ومخلب الدب + خام وسبائك المعدنين، v1.38)، شعلات الروح، الجرعات الست، ودروع: الدب + درعين معدن (v1.38).
 يولد: أيقونات (بكسل 16×16 بأسلوب ماينكرافت، مكبرة لـ32×32)، ملفات الأيتمات (BP/items)، item_texture.json،
 تكستشرات الدروع على تخطيط ماينكرافت القياسي 64×32 (رسم أصلي: فرو/درع حشرة/جلد)، الـattachables (موديلات الدروع
 الأصلية geometry.humanoid.armor.* مثل الحديد بالضبط)، ووصفات الصناعة (BP/recipes).
@@ -16,22 +16,25 @@ BP = os.path.join(ROOT, "AnimePowers", "BP")
 RP = os.path.join(ROOT, "AnimePowers", "RP")
 OUT = (20, 14, 24)
 
-# ───────────────────────── مواد الوحوش ─────────────────────────
-# (المعرف، الاسم، اللون، الوحش، الشكل، ألوان)
+# ───────────────────────── المواد (v1.38) ─────────────────────────
+# الوحوش صارت تسقط بس شعلات الروح، إلا الدب: جلده ومخلبه لدرع الدب. والمعدنين الجديدين من الخامات تحت الأرض
+# (tools/gen_ores.py): الخام يطيح قطعة خام، تذوبها بالفرن فتصير سبيكة، ومن السبائك تصنع الدرع.
+# ألوان المعادن: [حافة، غامق، أساس، فاتح، لمعة] بإزاحة لون (الظل يميل بارد، اللمعة دافية)
+METALS = {
+    "dawnsteel": [(66, 28, 26), (130, 62, 48), (190, 112, 84), (228, 158, 116), (255, 216, 178)],     # ذهبي وردي (ارتفاع 52 ونازل)
+    "abyssium": [(12, 6, 24), (40, 24, 70), (72, 46, 122), (118, 84, 190), (200, 170, 255)],          # بنفسجي غامق يلمع (ارتفاع 26 ونازل)
+}
+# (المعرف، الاسم، اللون، المصدر، الشكل، ألوان)
 MATERIALS = [
-    ("shadow_pelt", "Shadow Pelt", "§5", "Shadow Hound", "hide", ((46, 34, 70), (86, 62, 130), (24, 16, 38), (150, 110, 230))),
-    ("ember_horn", "Ember Horn", "§6", "Ember Imp", "horn", ((226, 214, 190), (255, 150, 40), (120, 100, 80), (255, 230, 120))),
-    ("sand_carapace", "Sand Carapace", "§e", "Sand Scorpion", "carapace", ((196, 156, 96), (232, 200, 140), (122, 88, 48), (70, 50, 28))),
-    ("rust_core", "Rust Core", "§3", "Rust Guard", "core", ((104, 108, 100), (90, 136, 70), (60, 62, 58), (80, 230, 210))),
-    ("gloom_antler", "Gloom Antler", "§b", "Gloomhorn", "antler", ((176, 170, 196), (220, 216, 236), (110, 104, 132), (110, 220, 255))),
-    ("hollow_lens", "Hollow Lens", "§6", "Hollow Seer", "lens", ((230, 180, 60), (255, 140, 40), (40, 20, 30), (255, 250, 220))),
-    ("spirit_fur", "Spirit Fur", "§d", "Veilfox", "fur", ((236, 232, 244), (255, 255, 255), (186, 176, 210), (200, 120, 255))),
-    ("magma_scale", "Magma Scale", "§c", "Magmamoth", "scale", ((58, 50, 52), (96, 84, 84), (30, 26, 28), (255, 130, 30))),
     ("bear_hide", "Grey Bear Hide", "§7", "Grey Bear", "hide", ((112, 108, 104), (170, 166, 160), (66, 62, 60), (214, 212, 206))),
     ("bear_claw", "Grey Bear Claw", "§f", "Grey Bear", "claw", ((232, 226, 210), (255, 252, 240), (150, 140, 124), (70, 60, 56))),
-    ("mantis_chitin", "Mantis Chitin", "§a", "Prayer Mantis", "chitin", ((100, 176, 70), (160, 220, 110), (52, 108, 40), (180, 80, 255))),
-    ("mantis_scythe", "Mantis Scythe", "§a", "Prayer Mantis", "scythe", ((210, 232, 180), (246, 255, 230), (110, 150, 90), (44, 32, 58))),
+    ("raw_dawnsteel", "Raw Dawnsteel", "§6", "Dawnsteel Ore", "raw", METALS["dawnsteel"]),
+    ("dawnsteel_ingot", "Dawnsteel Ingot", "§6", "Smelted Raw Dawnsteel", "ingot", METALS["dawnsteel"]),
+    ("raw_abyssium", "Raw Abyssium", "§5", "Abyssium Ore", "raw", METALS["abyssium"]),
+    ("abyssium_ingot", "Abyssium Ingot", "§5", "Smelted Raw Abyssium", "ingot", METALS["abyssium"]),
 ]
+REMOVED_ITEMS = ["shadow_pelt", "ember_horn", "sand_carapace", "rust_core", "gloom_antler", "hollow_lens", "spirit_fur", "magma_scale",
+                 "mantis_chitin", "mantis_scythe"] + [f"{k}_{p}" for k in ("hunter", "mantis") for p in ("helmet", "chestplate", "leggings", "boots")]
 
 # ───────────────────────── لهب الروح (v1.37.1، بدل الجواهر) ─────────────────────────
 # شعلة روح لكل جرعة: اللون يكلك أي جرعة تسوي بيها. الوحوش تسقطها نادراً كلش، والخيميائي يطبخ:
@@ -81,13 +84,19 @@ POTIONS = [
 
 # ───────────────────────── الدروع ─────────────────────────
 # (مفتاح، اسم، لون، مادتين (أساسية، ثانوية)، الحماية [خوذة، صدر، رجلين، جزمة]، المتانة، ألوان التكستشر، نقشة)
+def _metal_pal(r, accent, accent2):
+    return dict(out=r[0], dark=r[1], base=r[2], light=r[3], hi=r[4], accent=accent, accent2=accent2)
+
+
+# (المفتاح، الاسم، اللون، (المادة الأساسية، الثانوية أو None)، الحماية [خوذة، صدر، رجلين، جزمة]، المتانة، الألوان، النقشة)
+# v1.38: بقى درع الدب بس، وانضاف درعين معدن (صفائح حديد مو جلد: حواف ومسامير وفواصل بين الصفائح وشريط زينة)
 ARMOR_SETS = [
-    ("hunter", "Shadow Hunter", "§5", ("sh:shadow_pelt", "sh:sand_carapace"), (2, 6, 5, 2), 260,
-     dict(base=(48, 36, 72), light=(88, 64, 132), dark=(26, 18, 40), accent=(200, 160, 96), accent2=(150, 110, 230)), "pelt"),
     ("grizzly", "Grizzly", "§7", ("sh:bear_hide", "sh:bear_claw"), (3, 7, 6, 3), 420,
      dict(base=(108, 104, 100), light=(176, 172, 166), dark=(62, 58, 56), accent=(236, 230, 214), accent2=(120, 84, 52)), "pelt"),
-    ("mantis", "Mantis", "§a", ("sh:mantis_chitin", "sh:mantis_scythe"), (3, 8, 6, 3), 520,
-     dict(base=(96, 170, 66), light=(160, 220, 108), dark=(46, 98, 36), accent=(230, 244, 200), accent2=(170, 80, 250)), "chitin"),
+    ("dawnsteel", "Dawnsteel", "§6", ("sh:dawnsteel_ingot", None), (2, 6, 5, 2), 300,
+     _metal_pal(METALS["dawnsteel"], (240, 198, 96), (92, 44, 34)), "plate"),
+    ("abyssium", "Abyssium", "§5", ("sh:abyssium_ingot", None), (3, 8, 6, 3), 560,
+     _metal_pal(METALS["abyssium"], (196, 128, 255), (20, 12, 34)), "plate"),
 ]
 PIECES = [
     ("helmet", "Hood", "slot.armor.head", "armor_head", "geometry.humanoid.armor.helmet", "helmet_layer_visible", 1),
@@ -95,10 +104,11 @@ PIECES = [
     ("leggings", "Leggings", "slot.armor.legs", "armor_legs", "geometry.humanoid.armor.leggings", "leg_layer_visible", 2),
     ("boots", "Boots", "slot.armor.feet", "armor_feet", "geometry.humanoid.armor.boots", "boot_layer_visible", 1),
 ]
+PLATE_NAMES = {"helmet": "Helmet", "chestplate": "Chestplate", "leggings": "Leggings", "boots": "Boots"}
 SET_BONUS = {
-    "hunter": "Full set: Speed I and Jump Boost I.",
     "grizzly": "Full set: Resistance I, and 4 golden hearts (Absorption) every 30 s.",
-    "mantis": "Full set: Speed I, Strength I, and 20% of melee hits are countered back at the attacker.",
+    "dawnsteel": "Full set: Haste I and Speed I.",
+    "abyssium": "Full set: Strength I, Night Vision, and 20% of melee hits are countered back at the attacker.",
 }
 
 
@@ -378,6 +388,259 @@ def icon_armor(piece, pal, pattern):
     return P.outline()
 
 
+# ───────────────────────── المعادن والدروع المعدنية (v1.38): مرسومة باليد بكسل بكسل ─────────────────────────
+# o حافة، 1 غامق، 2 أساس، 3 فاتح، 4 لمعة، t شريط الزينة. السبيكة بمنظور مايل (وجه فوكاني فاتح، وجه قدامي، طرف غامق)،
+# والخام كتلة متكتلة بشقوق غامقة. الدروع صفائح: حواف لامعة فوك، فواصل غامقة، شريط زينة، ووسط الصدر حافة بارزة.
+INGOT_ROWS = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "......oooooooo..",
+    ".....o44444444o.",
+    "....o333433331o.",
+    "...o3333334311o.",
+    "...o2222222211o.",
+    "...o2222222211o.",
+    "...o111111111o..",
+    "...oooooooooo...",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+RAW_ROWS = [
+    "................",
+    "................",
+    "................",
+    "......ooo.......",
+    "....oo443oo.....",
+    "...o4433332oo...",
+    "..o44332223321o.",
+    "..o4332212232o..",
+    ".o43321122221o..",
+    ".o3322112111o...",
+    ".o3221111211o...",
+    "..o22111o11o....",
+    "...oo11o.oo.....",
+    ".....oo.........",
+    "................",
+    "................",
+]
+
+HELMET = [
+    "................",
+    "................",
+    "....oooooooo....",
+    "...o44443332o...",
+    "..o4443333221o..",
+    "..o4333332221o..",
+    "..o3333222211o..",
+    "..otttttttttto..",
+    "..o32o....o21o..",
+    "..o32o....o21o..",
+    "..o21o....o11o..",
+    "..oooo....oooo..",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+CHEST = [
+    "................",
+    "..ooo......ooo..",
+    ".o343o....o321o.",
+    ".o3443oooo3321o.",
+    ".o344433332221o.",
+    ".oo3443t33221oo.",
+    "..o3433t32221o..",
+    "..o3333t22221o..",
+    "..o3332t22211o..",
+    "..otttttttttto..",
+    "..o3332222211o..",
+    "..o3322222111o..",
+    "..oooooooooooo..",
+    "................",
+    "................",
+    "................",
+]
+
+LEGS = [
+    "................",
+    "................",
+    "..oooooooooooo..",
+    "..otttttttttto..",
+    "..o3443333221o..",
+    "..o3443oo3321o..",
+    "..o344o..o321o..",
+    "..o343o..o321o..",
+    "..o3t3o..o3t1o..",
+    "..o343o..o321o..",
+    "..o332o..o221o..",
+    "..o332o..o211o..",
+    "..ooooo..ooooo..",
+    "................",
+    "................",
+    "................",
+]
+
+BOOTS = [
+    "................",
+    "................",
+    "................",
+    ".ooooo....ooooo.",
+    ".o443o....o321o.",
+    ".o432o....o321o.",
+    ".ottto....ottto.",
+    ".o432o....o321o.",
+    ".o432o....o321o.",
+    "o4432o....o3221o",
+    "o3322o....o2211o",
+    "oooooo....oooooo",
+    "................",
+    "................",
+    "................",
+    "................",
+]
+
+PLATE_ICONS = {"helmet": HELMET, "chestplate": CHEST, "leggings": LEGS, "boots": BOOTS}
+
+
+def icon_rows(rows, pal):
+    for i, r in enumerate(rows):
+        assert len(r) == 16, (i, r)
+    key = {"o": pal["out"], "1": pal["dark"], "2": pal["base"], "3": pal["light"], "4": pal["hi"], "t": pal.get("accent", pal["light"])}
+    P = Px()
+    for y, r in enumerate(rows):
+        for x, ch in enumerate(r):
+            if ch in key:
+                P.put(x, y, key[ch])
+    return P
+
+
+def ramp_pal(r):
+    return dict(out=r[0], dark=r[1], base=r[2], light=r[3], hi=r[4])
+
+
+def paint_plate(set_key, pal, layer):
+    """درع صفائح معدن على تخطيط ماينكرافت 64×32 (مثل دروع الحديد مو الجلد): صفائح كبيرة ناعمة، كل صفيحة فاتحة فوك
+    وتغمق لتحت، حافة يسار فاتحة ويمين غامقة (ضو من اليسار فوك)، خط لمعة مايل وحد على الوجه القدامي، والفواصل بس وين
+    تخلص الصفيحة فعلاً (الصدر/البطن، الحزام، الركبة)، ومسامير لامعة وشريط زينة بالحواف."""
+    img = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+    out, dk, bs, lt, hi, ac, ac2 = pal["out"], pal["dark"], pal["base"], pal["light"], pal["hi"], pal["accent"], pal["accent2"]
+
+    def plate(x, y, w, y0, y1, front=False):
+        t = (y - y0) / max(1, y1 - y0)
+        c = lt if t <= 0.15 else (bs if t < 0.7 else mix(bs, dk, 0.55))
+        if x == 0:
+            c = mix(c, lt, 0.35)
+        elif x == w - 1:
+            c = mix(c, dk, 0.4)
+        if front and t < 0.75 and x == (y - y0) + 1:
+            c = mix(c, hi, 0.7)                                                 # خط اللمعة المايل
+        return c
+
+    def region(rect, fn):
+        x0, y0, w, h = rect
+        for y in range(y0, y0 + h):
+            for x in range(x0, x0 + w):
+                c = fn(x - x0, y - y0, w, h)
+                if c is not None:
+                    img.putpixel((x, y), (*[int(v) for v in c], 255))
+
+    if layer == 1:
+        for name, rect in box_faces(0, 0, 8, 8, 8).items():                     # الخوذة
+            def f(x, y, w, h, name=name):
+                if name == "bottom" or (name == "front" and 2 <= x <= 5 and 2 <= y <= 6):
+                    return None
+                if name == "top":
+                    return hi if (x, y) in ((2, 2), (3, 2), (2, 3)) else (lt if x + y < 9 else bs)
+                if y == 0:
+                    return lt
+                if y == 1:
+                    return ac                                                   # شريط الجبين
+                if y == h - 1:
+                    return mix(ac, dk, 0.35)
+                if name in ("right", "left") and y == 4 and x == w // 2:
+                    return hi                                                   # مسمار الخد
+                return plate(x, y, w, 2, h - 2, front=name in ("right", "left"))
+            region(rect, f)
+        for name, rect in box_faces(16, 16, 8, 12, 4).items():                  # الصدر
+            def f(x, y, w, h, name=name):
+                if name == "top":
+                    return lt
+                if name == "bottom":
+                    return dk
+                if y == 0:
+                    return ac                                                   # الياقة
+                if y == 9:
+                    return ac if name == "front" and x in (3, 4) else ac2       # الحزام والإبزيم
+                if name == "front":
+                    if 1 <= y <= 8 and x == 3:
+                        return lt if y != 5 else bs                             # الحافة البارزة بالنص
+                    if 1 <= y <= 8 and x == 4:
+                        return mix(bs, dk, 0.6)
+                    if (x, y) in ((1, 2), (6, 2)):
+                        return hi                                               # مسامير
+                    if y == 5:
+                        return dk                                               # الصدر/البطن
+                    if y < 5:
+                        return plate(x if x < 4 else x - 4, y, 4, 1, 4, front=x < 3)
+                    if y < 9:
+                        return plate(x, y, w, 6, 8)
+                    return plate(x, y, w, 10, 11)
+                return plate(x, y, w, 1, 8) if y < 9 else plate(x, y, w, 10, 11)
+            region(rect, f)
+        for name, rect in box_faces(40, 16, 4, 12, 4).items():                  # الكتافات
+            def f(x, y, w, h, name=name):
+                if name == "top":
+                    return ac if x in (0, w - 1) else lt
+                if name == "bottom" or y >= 8:
+                    return None
+                if y == 0:
+                    return ac
+                if y == 4:
+                    return dk                                                   # آخر الكتافة
+                return plate(x, y, w, 1, 3, front=True) if y < 4 else plate(x, y, w, 5, 7)
+            region(rect, f)
+        for name, rect in box_faces(0, 16, 4, 12, 4).items():                   # الجزمة
+            def f(x, y, w, h, name=name):
+                if name == "top" or (name != "bottom" and y < 8):
+                    return None
+                if name == "bottom":
+                    return out
+                if y == 8:
+                    return ac
+                return plate(x, y, w, 9, 10, front=name == "front") if y < 11 else out
+            region(rect, f)
+    else:
+        for name, rect in box_faces(16, 16, 8, 12, 4).items():                  # الحزام (آخر 3 صفوف من الجسم)
+            def f(x, y, w, h, name=name):
+                if name == "top" or y < 9:
+                    return None
+                if name == "bottom":
+                    return dk
+                if y == 9:
+                    return ac if name == "front" and x in (3, 4) else ac2
+                return plate(x, y, w, 10, 11)
+            region(rect, f)
+        for name, rect in box_faces(0, 16, 4, 12, 4).items():                   # الرجلين (أول 9 صفوف)
+            def f(x, y, w, h, name=name):
+                if name == "bottom" or y > 9:
+                    return None
+                if name == "top":
+                    return lt
+                if y == 4:
+                    return ac if name == "front" else dk                        # واقي الركبة
+                if y < 4:
+                    return plate(x, y, w, 0, 3, front=name == "front")
+                return plate(x, y, w, 5, 9, front=name == "front")
+            region(rect, f)
+    return img
+
+
 # ───────────────────────── تكستشر الدرع (تخطيط ماينكرافت القياسي 64×32) ─────────────────────────
 def box_faces(u, v, w, h, d):
     """مناطق UV لصندوق (box UV): يرجع dict اسم_الوجه -> (x0, y0, w, h)"""
@@ -508,7 +771,7 @@ def main():
     td = it["texture_data"]
     sheet = []
     for ident, name, col, mob, shape, pal in MATERIALS:
-        img = icon_material(shape, pal).image()
+        img = (icon_rows(RAW_ROWS if shape == "raw" else INGOT_ROWS, ramp_pal(pal)) if shape in ("raw", "ingot") else icon_material(shape, pal)).image()
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
         td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
         wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64}))
@@ -517,6 +780,17 @@ def main():
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
         td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
         wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64}))
+    for rid in REMOVED_ITEMS:                                                   # v1.38: مواد الوحوش ودرعي الصياد والسرعوف انشالوا
+        for path in (os.path.join(BP, "items", f"sh_{rid}.json"), os.path.join(tex_dir, f"sh_{rid}.png"),
+                     os.path.join(RP, "attachables", f"sh_{rid}.json"), os.path.join(BP, "recipes", f"sh_{rid}.json")):
+            if os.path.exists(path):
+                os.remove(path)
+        td.pop(f"sh_{rid}", None)
+    for k in ("hunter", "mantis"):
+        for layer in (1, 2):
+            path = os.path.join(RP, "textures", "models", "armor", f"sh_{k}_{layer}.png")
+            if os.path.exists(path):
+                os.remove(path)
     for old in [f for f in os.listdir(os.path.join(BP, "items")) if f.startswith("sh_essence_")]:       # الجواهر القديمة (1.37.0) انشالت
         os.remove(os.path.join(BP, "items", old))
         png = os.path.join(tex_dir, old.replace(".json", ".png"))
@@ -537,14 +811,16 @@ def main():
     recipes = os.path.join(BP, "recipes")
     os.makedirs(recipes, exist_ok=True)
     PAT = {"helmet": ["ABA", "A A"], "chestplate": ["A A", "ABA", "AAA"], "leggings": ["ABA", "A A", "A A"], "boots": ["A A", "B B"]}
+    PAT_METAL = {"helmet": ["AAA", "A A"], "chestplate": ["A A", "AAA", "AAA"], "leggings": ["AAA", "A A", "A A"], "boots": ["A A", "A A"]}  # مثل دروع الحديد
     for key, sname, col, (ma, mb), prot, dur, pal, pattern in ARMOR_SETS:
         for layer in (1, 2):
-            paint_armor(key, pal, pattern, layer).save(os.path.join(RP, "textures", "models", "armor", f"sh_{key}_{layer}.png") if os.path.isdir(os.path.join(RP, "textures", "models", "armor")) else _mk_armor_dir(key, layer, pal, pattern))
+            (paint_plate(key, pal, layer) if pattern == "plate" else paint_armor(key, pal, pattern, layer)).save(os.path.join(RP, "textures", "models", "armor", f"sh_{key}_{layer}.png") if os.path.isdir(os.path.join(RP, "textures", "models", "armor")) else _mk_armor_dir(key, layer, pal, pattern))
         for (piece, pname, slot, ench, geo, vis, layer), p in zip(PIECES, prot):
             ident = f"sh:{key}_{piece}"
-            img = icon_armor(piece, pal, pattern).image()
+            img = (icon_rows(PLATE_ICONS[piece], pal) if pattern == "plate" else icon_armor(piece, pal, pattern)).image()
             img.save(os.path.join(tex_dir, f"sh_{key}_{piece}.png")); sheet.append(img)
             td[f"sh_{key}_{piece}"] = {"textures": f"textures/items/sh_{key}_{piece}"}
+            pname = PLATE_NAMES[piece] if pattern == "plate" else pname
             wjson(os.path.join(BP, "items", f"sh_{key}_{piece}.json"), item_json(ident, f"{col}{sname} {pname}", f"sh_{key}_{piece}", {
                 "minecraft:max_stack_size": 1,
                 "minecraft:wearable": {"slot": slot, "protection": p},
@@ -562,7 +838,7 @@ def main():
                 "render_controllers": ["controller.render.armor"]}}})
             wjson(os.path.join(recipes, f"sh_{key}_{piece}.json"), {"format_version": "1.20.10", "minecraft:recipe_shaped": {
                 "description": {"identifier": f"sh:craft_{key}_{piece}"}, "tags": ["crafting_table"],
-                "pattern": PAT[piece], "key": {"A": {"item": ma}, "B": {"item": mb}},
+                "pattern": PAT[piece] if mb else PAT_METAL[piece], "key": {"A": {"item": ma}, "B": {"item": mb}} if mb else {"A": {"item": ma}},
                 "unlock": [{"item": ma}], "result": {"item": ident}}})
     wjson(itp, it)
     # بيانات للسكربت (نفس الأسماء والأوصاف بالضبط)
@@ -570,7 +846,7 @@ def main():
         "materials": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _s, _p in MATERIALS},
         "flames": {f"sh:{i}": {"name": f"{c}{n}", "potion": f"sh:{pot}"} for i, n, c, pot, _pal in SOUL_FLAMES},
         "potions": {f"sh:{i}": {"name": f"{c}{n}", "desc": d} for i, n, c, _col, d in POTIONS},
-        "sets": {k: {"name": f"{c}{sn}", "pieces": [f"sh:{k}_{pc[0]}" for pc in PIECES], "mats": [ma, mb], "bonus": SET_BONUS[k]} for k, sn, c, (ma, mb), *_r in ARMOR_SETS},
+        "sets": {k: {"name": f"{c}{sn}", "pieces": [f"sh:{k}_{pc[0]}" for pc in PIECES], "mats": [m for m in (ma, mb) if m], "bonus": SET_BONUS[k]} for k, sn, c, (ma, mb), *_r in ARMOR_SETS},
     }
     with open(os.path.join(BP, "scripts", "gear.js"), "w", encoding="utf-8") as f:
         f.write("// يتولد تلقائياً من tools/gen_gear.py — لا تعدله يدوياً\n")

@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "sh:smelt_dawnsteel"
+    },
+    "unlock": [
+      {
+        "item": "sh:raw_dawnsteel"
+      }
+    ],
+    "tags": [
+      "furnace",
+      "blast_furnace"
+    ],
+    "input": "sh:raw_dawnsteel",
+    "output": "sh:dawnsteel_ingot"
+  }
+}

@@ -146,6 +146,7 @@ const player = mkEntity("minecraft:player", { x: 0, y: 64, z: 0 }, dims.overworl
 Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
   camera: { fade() {} },
+  getGameMode() { return "Survival"; },                                          // مثل الـAPI الحقيقي (GameMode)
   // الشاشة: فوق يسار = شريط الأكشن، فوق الهوت بار = العنوان. actionBars يسجل الشاشة كاملة (فوق + تحت) حتى الاختبارات القديمة تلقى كل الكتابات،
   // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
   onScreenDisplay: {
@@ -565,6 +566,11 @@ export const __sim = {
       fire("scriptEventReceive", { id: "sh:rift", message: "violet", sourceEntity: player });
       let rs = JSON.parse(world._dyn.sh_rift || "null");
       console.log("\nالصدع:", rs && rs.tier, rs && Math.round(Math.hypot(rs.x, rs.z)), "بلوكة");
+      // مكان الصدع عشوائي: إذا طلع قريب من اللاعب تبدي الموجة فوراً، فنبعد اللاعب شوية (برا مسافة البدء) حتى نفحص شريط "قبل المعركة"
+      if (rs && Math.hypot(rs.x - player.location.x, rs.z - player.location.z) < 30) {
+        const d = Math.hypot(rs.x, rs.z) || 1;
+        player.location = { x: rs.x - (rs.x / d) * 40, y: 64, z: rs.z - (rs.z / d) * 40 };
+      }
       if (!rs) failures.push("الصدع ما انفتح");
       else {
         const b0 = stats.blockSets || 0;
@@ -1030,9 +1036,12 @@ export const __sim = {
       for (let i = 0; i < N; i++) { kill("sh:grey_bear"); kill("sh:prayer_mantis"); }
       for (let i = 0; i < 12; i++) kill("sh:shadow_hound");                  // 55% لكل وحدة: 12 قتلة حتى ما يفشل الاختبار بالصدفة
       const dropped = new Set(stats.items), cnt = (id) => stats.items.filter((x) => x === id).length;
-      const rate = { hide: cnt("sh:bear_hide") / N, chitin: cnt("sh:mantis_chitin") / N, ebear: cnt("sh:soul_silver") / N, emantis: cnt("sh:soul_verdant") / N };   // v1.37.1: شعلات الروح
-      const dropsOk = dropped.has("sh:shadow_pelt") && rate.hide > 0 && rate.hide <= 0.1 && rate.chitin > 0 && rate.chitin <= 0.07 && rate.ebear > 0 && rate.ebear <= 0.09 && rate.emantis > 0 && rate.emantis <= 0.1;
-      console.log(`  ندرة: جلد الدب ${(rate.hide * 100).toFixed(1)}% | قشرة السرعوف ${(rate.chitin * 100).toFixed(1)}% | شعلة فضية (الدب) ${(rate.ebear * 100).toFixed(1)}% | شعلة خضرة (السرعوف) ${(rate.emantis * 100).toFixed(1)}% (من ${N} قتلة)`);
+      // v1.38: الوحوش تسقط بس شعلات الروح، والدب كمان جلده ومخلبه (لدرعه). ماكو ولا مادة ثانية
+      const rate = { hide: cnt("sh:bear_hide") / N, chitin: cnt("sh:bear_claw") / N, ebear: cnt("sh:soul_silver") / N, emantis: cnt("sh:soul_verdant") / N };
+      const onlyFlames = [...dropped].every((id) => /^sh:soul_|^sh:bear_(hide|claw)$/.test(id));
+      if (!onlyFlames) console.log("   [drops غلط]", [...dropped].join(", "));
+      const dropsOk = onlyFlames && rate.hide > 0 && rate.hide <= 0.1 && rate.chitin > 0 && rate.chitin <= 0.07 && rate.ebear > 0 && rate.ebear <= 0.09 && rate.emantis > 0 && rate.emantis <= 0.1;
+      console.log(`  ندرة: جلد الدب ${(rate.hide * 100).toFixed(1)}% | مخلب الدب ${(rate.chitin * 100).toFixed(1)}% | شعلة فضية (الدب) ${(rate.ebear * 100).toFixed(1)}% | شعلة خضرة (السرعوف) ${(rate.emantis * 100).toFixed(1)}% (من ${N} قتلة)`);
       // 2) المانا: مهارة غالية تنعاد بدون تصفير كولداون لحد ما تخلص المانا
       setState(baseState("star")); spawnZombies(); system_cd_reset();
       const msgs0 = stats.actionBars.length; let blocked = false, used = 0;
@@ -1059,19 +1068,33 @@ export const __sim = {
       const hudBuff = stats.actionBars[stats.actionBars.length - 1] || "";
       // التركيز: كولداون أقصر (المهارة تنعاد أسرع)
       system_cd_reset(); await useItem("sh:skill_meteor"); advance(2);
-      // 4) طقم الدرع: 4 قطع صياد = سرعة وقفز
-      const sp0 = (stats.effects || {}).jump_boost || 0;
-      player._equip = { Head: new ItemStack("sh:hunter_helmet"), Chest: new ItemStack("sh:hunter_chestplate"), Legs: new ItemStack("sh:hunter_leggings"), Feet: new ItemStack("sh:hunter_boots") };
+      // 4) طقم الدرع (v1.38): 4 قطع Dawnsteel = Haste وسرعة
+      const sp0 = (stats.effects || {}).haste || 0;
+      player._equip = { Head: new ItemStack("sh:dawnsteel_helmet"), Chest: new ItemStack("sh:dawnsteel_chestplate"), Legs: new ItemStack("sh:dawnsteel_leggings"), Feet: new ItemStack("sh:dawnsteel_boots") };
       advance(90);
-      const setOk = ((stats.effects || {}).jump_boost || 0) > sp0 && stats.actionBars.some((b) => /Set bonus/.test(b));
-      // طقم السرعوف: الرد على الضربات (20%)
-      player._equip = { Head: new ItemStack("sh:mantis_helmet"), Chest: new ItemStack("sh:mantis_chestplate"), Legs: new ItemStack("sh:mantis_leggings"), Feet: new ItemStack("sh:mantis_boots") };
+      const setOk = ((stats.effects || {}).haste || 0) > sp0 && stats.actionBars.some((b) => /Set bonus/.test(b));
+      // طقم Abyssium: قوة ورؤية ليلية والرد على الضربات (20%)
+      const nv0 = (stats.effects || {}).night_vision || 0;
+      player._equip = { Head: new ItemStack("sh:abyssium_helmet"), Chest: new ItemStack("sh:abyssium_chestplate"), Legs: new ItemStack("sh:abyssium_leggings"), Feet: new ItemStack("sh:abyssium_boots") };
       advance(50);
       const foe = mkEntity("minecraft:zombie", { x: 1, y: 64, z: 1 }, dims.overworld, 500); entities.push(foe);
       const fh0 = foe._hp;
       for (let i = 0; i < 60; i++) fire("entityHurt", { hurtEntity: player, damage: 4, damageSource: { damagingEntity: foe, cause: "entityAttack" } });
-      const countered = foe._hp < fh0;
+      const countered = foe._hp < fh0 && ((stats.effects || {}).night_vision || 0) > nv0;
       player._equip = {};
+      // 4ب) الخامات (v1.38): معول بالدرجة الصح يطيح الخام، معول أضعف ما يطيح شي، Silk Touch يطيح البلوكة نفسها
+      const breakOre = (bid, tool) => fire("playerBreakBlock", { player, block: { location: { x: 5, y: 20, z: 5 }, dimension: dims.overworld }, brokenBlockPermutation: { type: { id: bid } }, itemStackBeforeBreak: tool });
+      const silkPick = { typeId: "minecraft:diamond_pickaxe", amount: 1, getComponent: (n) => (n === "minecraft:enchantable" ? { getEnchantment: (id) => (id === "silk_touch" ? { level: 1 } : undefined) } : undefined) };
+      stats.items = [];
+      breakOre("sh:dawnsteel_ore", new ItemStack("minecraft:stone_pickaxe"));
+      breakOre("sh:deepslate_abyssium_ore", new ItemStack("minecraft:stone_pickaxe"));   // يحتاج حديد: ما يطيح
+      breakOre("sh:abyssium_ore", new ItemStack("minecraft:iron_pickaxe"));
+      breakOre("sh:dawnsteel_ore", new ItemStack("minecraft:wooden_pickaxe"));          // خشب: ما يطيح
+      breakOre("sh:deepslate_dawnsteel_ore", silkPick);
+      const ores = stats.items.slice();
+      const oresOk = ores.length === 3 && ores[0] === "sh:raw_dawnsteel" && ores[1] === "sh:raw_abyssium" && ores[2] === "sh:deepslate_dawnsteel_ore";
+      console.log(`  الخامات: معول صح يطيح الخام، أضعف ما يطيح، Silk Touch البلوكة ${oresOk ? "✔" : "✖"} (${ores.join(", ")})`);
+      if (!oresOk) failures.push("إسقاط الخامات غلط");
       // 5) الخيميائي: يظهر بالقرية، ويطبخ جرعة لما تكون عندك المواد
       world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 300, y: 64, z: 300, type: "village", rot: 0, seed: 5, v: 2, ok: 1 }]));
       player.location = { x: 300, y: 64, z: 320 };
@@ -1079,7 +1102,7 @@ export const __sim = {
       const alch = entities.find((e) => e._valid && e.typeId === "sh:alchemist");
       inventory.fill(undefined);
       // v1.37.2: شاشة مستوحاة من طاولة السحر: 15 زر بترتيب ثابت (0..2 صفوف الطبخ، 3 خانة الماء، 4 خانة الشعلة، 5 الوصفات، 6..14 الحقيبة)
-      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:soul_crimson", 3); inventory[5] = new ItemStack("sh:soul_amber", 2); inventory[6] = new ItemStack("minecraft:potion", 2);
+      inventory[3] = new ItemStack("sh:bear_hide", 5); inventory[4] = new ItemStack("sh:soul_crimson", 3); inventory[5] = new ItemStack("sh:soul_amber", 2); inventory[6] = new ItemStack("minecraft:potion", 2);
       const ui = (await import("@minecraft/server-ui")).sim;
       // حط الماء (الحقيبة 6) ← حط الأحمر (الحقيبة 6 بعد ما راح الماء) ← اطبخ ×1 ← طلّع الشعلة (خانة 4) ← حط البرتقالي (الحقيبة 7) ← اطبخ ×1
       ui.formsShown.length = 0; ui.queue = [6, 6, 0, 4, 7, 0]; ui.cancelWhenEmpty = true;
@@ -1092,7 +1115,7 @@ export const __sim = {
         && /sh_potion_vitality/.test(f2.icons[0] || "") && !(f2.icons.slice(6).some((x) => /potion_bottle|soul_crimson/.test(x || "")));
       const got = (id) => inventory.filter((it) => it && it.typeId === id).reduce((a, it) => a + it.amount, 0);
       const brewed = got("sh:potion_vitality") === 1 && got("sh:potion_might") === 1;
-      const paid = got("sh:soul_crimson") === 1 && got("sh:soul_amber") === 0 && got("minecraft:potion") === 0 && got("sh:shadow_pelt") === 5;
+      const paid = got("sh:soul_crimson") === 1 && got("sh:soul_amber") === 0 && got("minecraft:potion") === 0 && got("sh:bear_hide") === 5;
       inventory.fill(undefined); ui.formsShown.length = 0; ui.queue = [];
       advance(12); if (alch) fire("playerInteractWithEntity", { player, target: alch });
       await new Promise((r) => setTimeout(r, 30)); advance(2);
@@ -1103,7 +1126,7 @@ export const __sim = {
       console.log(`  مواد الوحوش ${dropsOk ? "✔" : "✖"} (${[...dropped].filter((x) => x.includes("hide") || x.includes("chitin") || x.includes("pelt") || x.includes("scythe") || x.includes("claw")).join(", ")})`);
       console.log(`  المانا: مهارة غالية انعادت ${used} مرات ثم ${blocked ? "انقفلت (مانا ما تكفي) ✔" : "ما انقفلت ✖"} | المانا بالـHUD ${manaShown ? "✔" : "✖"}`);
       console.log(`  الجرعات: تأثيرات ${potOk ? "✔" : "✖"} | تقويات محفوظة ${buffsOk ? "✔" : "✖"} (${Object.keys(buffs).join(",")}) | أيقونات بالـHUD ${/[-]/.test(hudBuff) ? "✔" : "✖"}`);
-      console.log(`  طقم الصياد (بونص) ${setOk ? "✔" : "✖"} | رد طقم السرعوف ${countered ? "✔" : "✖"}`);
+      console.log(`  طقم Dawnsteel (Haste) ${setOk ? "✔" : "✖"} | طقم Abyssium (رد الضربات + رؤية ليلية) ${countered ? "✔" : "✖"}`);
       console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | ترتيب الشاشة ${layoutOk ? "✔" : "✖"} | حط بالخانات من الحقيبة وطبخ جرعتين ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"} | بدون شعلة = رونز ${runesOk ? "✔" : "✖"}`);
       // 6) الإنجازات (v1.36): تنفتح من حالة اللاعب ومن الأحداث، تعطي خبرة، وشاشاتها بالكتاب بصور (المقفول ??? وصورة _x)
       {

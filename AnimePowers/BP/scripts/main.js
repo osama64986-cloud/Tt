@@ -8,6 +8,7 @@ import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMob
 import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
+import { ORES } from "./ores.js";
 import { ACH, ACH_CATS } from "./achievements.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
 import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS } from "./skillfx.js";
@@ -1388,24 +1389,8 @@ world.afterEvents.entityDie.subscribe((ev) => {
       sk.kills[ev.deadEntity.typeId] = (sk.kills[ev.deadEntity.typeId] || 0) + 1;
       saveState(killer, sk);
     } catch (e3) { /* */ }
-    // الوحوش تسقط لفائف خبرة أحيانا
-    try {
-      const t = ev.deadEntity.typeId;
-      const roll = Math.random();
-      const drop = t === "sh:rust_guard" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.5 ? "sh:xp_scroll_big" : null)
-        : t === "sh:ember_imp" ? (roll < 0.3 ? "sh:xp_scroll_small" : null)
-        : t === "sh:shadow_hound" ? (roll < 0.3 ? "sh:xp_scroll_small" : null)
-        : t === "sh:sand_scorpion" ? (roll < 0.35 ? "sh:xp_scroll_small" : roll < 0.42 ? "sh:xp_scroll_big" : null)
-        : t === "sh:training_archer" ? (roll < 0.25 ? "sh:xp_scroll_small" : null)
-        : t === "sh:gloomhorn" ? (roll < 0.45 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.75 ? "sh:skill_scroll" : null)
-        : t === "sh:grey_bear" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
-        : t === "sh:prayer_mantis" ? (roll < 0.55 ? "sh:skill_scroll" : "sh:xp_scroll_big")
-        : t === "sh:magmamoth" ? (roll < 0.5 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : "sh:xp_scroll_small")
-        : t === "sh:veilfox" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.8 ? "sh:skill_scroll" : null)
-        : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
-      if (drop) ev.deadEntity.dimension.spawnItem(new ItemStack(drop, 1), ev.deadEntity.location);
-    } catch (e2) { /* */ }
-    try { dropMaterials(ev.deadEntity); } catch (e5) { /* */ }                     // مواد الوحوش (جلود، قشور، مخالب...)
+    // v1.38 (طلب اللاعب): الوحوش ما تسقط غير شعلة الروح (والدب جلده ومخلبه). اللفائف صارت من المهمات والصناديق والمدرب والصدع بس
+    try { dropMaterials(ev.deadEntity); } catch (e5) { /* */ }                     // شعلات الروح (+ مواد الدب)
   } catch (e) { /* */ }
 });
 
@@ -6826,21 +6811,22 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 });
 
 // ═════════════════════════ v1.35: مواد الوحوش، دروع الوحوش، المانا والجرعات ═════════════════════════
-// المواد: كل وحش يطيح مادته (جلد، قشرة، قرن، مخلب...). تنصنع منها دروع بطاولة الصناعة أو تنطبخ جرعات عند الخيميائي.
+// المواد: v1.38 الوحوش تسقط بس شعلات الروح (والدب جلده ومخلبه). المعادن من الخامات تحت الأرض (tools/gen_ores.py).
 // v1.37: مواد وحوش الرتب العالية (للدروع) نادرة كلش. v1.37.1: وكل وحش يسقط نادراً كلش شعلة روح بلون جرعة
 //   (أحمر حياة، أزرق مانا، برتقالي قوة، فضي حصن، بنفسجي تركيز، أخضر سرعة)
 //   [المادة، الفرصة، أقل، أكثر]
 const MAT_DROPS = {
-  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2], ["sh:soul_crimson", 0.025, 1, 1]],
-  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1], ["sh:soul_amber", 0.025, 1, 1]],
-  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2], ["sh:soul_verdant", 0.025, 1, 1]],
-  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1], ["sh:soul_silver", 0.025, 1, 1]],
-  "sh:gloomhorn": [["sh:gloom_antler", 0.4, 1, 2], ["sh:soul_violet", 0.03, 1, 1]],
-  "sh:hollow_seer": [["sh:hollow_lens", 0.4, 1, 1], ["sh:soul_azure", 0.03, 1, 1]],
-  "sh:veilfox": [["sh:spirit_fur", 0.45, 1, 2], ["sh:soul_crimson", 0.03, 1, 1]],
-  "sh:magmamoth": [["sh:magma_scale", 0.08, 1, 1], ["sh:soul_amber", 0.04, 1, 1]],
+  // v1.38: الوحوش تسقط بس شعلة الروح (النواة)، إلا الدب: جلده ومخلبه (نادرين كلش) لأن درع الدب ينصنع منهم
+  "sh:shadow_hound": [["sh:soul_crimson", 0.025, 1, 1]],
+  "sh:ember_imp": [["sh:soul_amber", 0.025, 1, 1]],
+  "sh:sand_scorpion": [["sh:soul_verdant", 0.025, 1, 1]],
+  "sh:rust_guard": [["sh:soul_silver", 0.025, 1, 1]],
+  "sh:gloomhorn": [["sh:soul_violet", 0.03, 1, 1]],
+  "sh:hollow_seer": [["sh:soul_azure", 0.03, 1, 1]],
+  "sh:veilfox": [["sh:soul_crimson", 0.03, 1, 1]],
+  "sh:magmamoth": [["sh:soul_amber", 0.04, 1, 1]],
   "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:soul_silver", 0.04, 1, 1]],
-  "sh:prayer_mantis": [["sh:mantis_chitin", 0.03, 1, 1], ["sh:mantis_scythe", 0.015, 1, 1], ["sh:soul_verdant", 0.05, 1, 1]],
+  "sh:prayer_mantis": [["sh:soul_verdant", 0.05, 1, 1]],
 };
 function dropMaterials(e) {
   const list = MAT_DROPS[e.typeId];
@@ -6883,20 +6869,20 @@ system.runInterval(() => {
         if (k) { notify(p, `§aSet bonus: ${GEAR.sets[k].name}§a! §7${GEAR.sets[k].bonus}`, 90); sfxPlayer(p, "random.levelup", 0.6, 1.6); }
       }
       if (!k) continue;
-      if (k === "hunter") { if (!hasBuff(p, "swift")) gearEffect(p, "speed", 0); gearEffect(p, "jump_boost", 0); }
+      if (k === "dawnsteel") { gearEffect(p, "haste", 0); if (!hasBuff(p, "swift")) gearEffect(p, "speed", 0); }
       else if (k === "grizzly") {
         if (!hasBuff(p, "bulwark")) gearEffect(p, "resistance", 0);
         if (system.currentTick - (absorbAt.get(p.id) ?? -9999) >= 600) { absorbAt.set(p.id, system.currentTick); gearEffect(p, "absorption", 0, 600); }
-      } else if (k === "mantis") { if (!hasBuff(p, "swift")) gearEffect(p, "speed", 0); if (!hasBuff(p, "might")) gearEffect(p, "strength", 0); }
+      } else if (k === "abyssium") { if (!hasBuff(p, "might")) gearEffect(p, "strength", 0); gearEffect(p, "night_vision", 0, 320); }
     } catch (err) { /* */ }
   }
 }, 40);
-// طقم السرعوف: 20% من الضربات القريبة ترجع نصها للضارب (مثل وضعية الصلاة)
+// طقم الأبيسيوم (v1.38، كان طقم السرعوف): 20% من الضربات القريبة ترجع نصها للضارب
 let gearCountering = false;
 world.afterEvents.entityHurt.subscribe((ev) => {
   try {
     const p = ev.hurtEntity;
-    if (gearCountering || !p || p.typeId !== "minecraft:player" || setActive.get(p.id) !== "mantis") return;
+    if (gearCountering || !p || p.typeId !== "minecraft:player" || setActive.get(p.id) !== "abyssium") return;
     const src = ev.damageSource && ev.damageSource.damagingEntity;
     if (!src || src.id === p.id || !valid(src) || ev.damageSource.damagingProjectile) return;
     if (Math.random() >= 0.2) return;
@@ -6904,6 +6890,30 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     try { src.applyDamage(Math.max(1, ev.damage * 0.5), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (err) { /* */ } finally { gearCountering = false; }
     MONSTER.mantisParry(p.dimension, { x: p.location.x, y: p.location.y + 1.2, z: p.location.z }, fwdTo(p.location, src.location));
     sfx(p.dimension, "random.anvil_land", p.location, 0.5, 2.0);
+  } catch (err) { /* */ }
+});
+
+// ───── الخامات (v1.38، tools/gen_ores.py): Dawnsteel من ارتفاع 52 ونازل، Abyssium من 26 ونازل ─────
+// الإسقاط بالسكربت (البلوكة نفسها ما تطيح شي): لازم معول بالدرجة الصح (Dawnsteel: حجر أو أحسن، Abyssium: حديد أو أحسن).
+// Silk Touch يطيح البلوكة نفسها، Fortune يزيد قطع الخام (مثل الحديد: 1 لحد 1+المستوى)، وبالكرييتف ما يطيح شي مثل اللعبة.
+const PICK_TIER = { "minecraft:wooden_pickaxe": 0, "minecraft:golden_pickaxe": 0, "minecraft:stone_pickaxe": 1, "minecraft:copper_pickaxe": 1,
+  "minecraft:iron_pickaxe": 2, "minecraft:diamond_pickaxe": 3, "minecraft:netherite_pickaxe": 4 };
+function enchLevel(it, id) {
+  try { const e = it && it.getComponent("minecraft:enchantable"); const x = e && e.getEnchantment(id); return x ? x.level : 0; } catch (err) { return 0; }
+}
+world.afterEvents.playerBreakBlock.subscribe((ev) => {
+  try {
+    const bid = ev.brokenBlockPermutation.type.id, o = ORES[bid];
+    if (!o) return;
+    const p = ev.player;
+    try { if (String(p.getGameMode()).toLowerCase() === "creative") return; } catch (err) { /* */ }
+    const tool = ev.itemStackBeforeBreak, tier = tool ? PICK_TIER[tool.typeId] : undefined;
+    if (tier === undefined || tier < o.tier) { notify(p, `§7This ore needs ${o.tier >= 2 ? "an iron" : "a stone"} pickaxe or better.`, 40); return; }
+    const silk = enchLevel(tool, "silk_touch") > 0;
+    const id = silk ? bid : o.raw, n = silk ? 1 : 1 + Math.floor(Math.random() * (enchLevel(tool, "fortune") + 1));
+    const b = ev.block.location;
+    ev.block.dimension.spawnItem(new ItemStack(id, n), { x: b.x + 0.5, y: b.y + 0.4, z: b.z + 0.5 });
+    if (!silk) achCount(p, "ore");
   } catch (err) { /* */ }
 });
 
@@ -7010,7 +7020,11 @@ function manaHudLine(p, st, plain) {
 // معلومات الأيتم بالإيد (مواد، جرعات، دروع)
 function gearHeld(id, showTip) {
   const m = GEAR.materials[id];
-  if (m) return { line: `${m.name} §8│ §7Monster material (${m.mob})`, tip: showTip ? "§7Craft monster armor at a crafting table, or brew potions with the Alchemist (Sakura Village)" : "" };
+  if (m) {
+    // v1.38: الخام يتذوب بالفرن، والسبيكة ومواد الدب تنصنع منها دروع
+    const tip = /^sh:raw_/.test(id) ? "§7Smelt it in a furnace or blast furnace to get an ingot" : /_ingot$/.test(id) ? "§7Craft armor at a crafting table (like iron armor)" : "§7Craft Grizzly armor at a crafting table";
+    return { line: `${m.name} §8│ §7${m.mob}`, tip: showTip ? tip : "" };
+  }
   const fl = GEAR.flames[id];
   if (fl) return { line: `${fl.name} §8│ §7for the ${GEAR.potions[fl.potion].name.replace(/§./g, "")}`, tip: showTip ? "§7The Alchemist brews it: a water bottle and two flames of this color" : "" };
   const po = GEAR.potions[id];
@@ -7302,6 +7316,7 @@ const MIS_METRIC = {
   dash: (p, st, a) => a.c.dash || 0,
   alchemist: (p, st) => (ACH_CHECK.meet_alchemist(p, st) ? 1 : 0),
   materials: (p) => { let n = 0; try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && GEAR.materials[it.typeId]) n += it.amount; } } catch (e) { /* */ } return n; },
+  ores: (p, st, a) => a.c.ore || 0,
   rifts: (p, st) => st.rifts || 0,
   rift_g2: (p, st, a) => a.c.rift_g2 || 0,
   rift_abyss: (p, st, a) => a.c.rift_abyss || 0,
@@ -7322,11 +7337,11 @@ const MISSIONS = [
   ["trainee", "Easy", "Trainee", "Reach the rank of Trainee.", "rank", 1, false, 100, [["sh:skill_scroll", 1]], "rank_trainee"],
   ["quick_feet", "Easy", "Quick Feet", "Dash 10 times (double-tap left, right or back).", "dash", 10, true, 80, [["minecraft:golden_apple", 1]], "dash_50"],
   ["brewer_met", "Easy", "The Old Brewer", "Find a Sakura Village and meet the Alchemist.", "alchemist", 1, false, 100, [["minecraft:glass_bottle", 6]], "meet_alchemist"],
-  ["collector", "Medium", "Hide Collector", "Carry 10 monster materials at once.", "materials", 10, false, 150, [["sh:xp_scroll_big", 1]], "first_material"],
+  ["collector", "Medium", "Deep Miner", "Mine 10 Dawnsteel or Abyssium ore.", "ores", 10, true, 150, [["sh:xp_scroll_big", 1]], "first_material"],
   ["hunter30", "Medium", "Monster Hunter", "Defeat 30 monsters.", "kills", 30, true, 180, [["sh:skill_scroll", 1]], "hunter_100"],
   ["grim3", "Medium", "Grim Business", "Defeat 3 Grim-rank monsters (Gloomhorn, Hollow Seer, Veilfox).", "grim", 3, true, 200, [["sh:xp_scroll_big", 1]], "slay_gloom"],
   ["rift1", "Medium", "Close a Tear", "Seal a rift.", "rifts", 1, true, 220, [["sh:skill_scroll", 1]], "rift_first"],
-  ["tailor", "Medium", "Tailored", "Wear a piece of monster armor.", "armor", 1, false, 180, [["sh:xp_scroll_big", 1]], "tailored"],
+  ["tailor", "Medium", "Forged", "Wear a piece of crafted armor.", "armor", 1, false, 180, [["sh:xp_scroll_big", 1]], "tailored"],
   ["climb3", "Medium", "Climb", "Clear the third floor of an Abyss Tower.", "tower3", 1, false, 250, [["sh:skill_scroll", 1]], "visit_tower"],
   ["warrior", "Medium", "Warrior", "Reach the rank of Warrior.", "rank", 2, false, 250, [["sh:skill_scroll", 2]], "rank_warrior"],
   ["bond", "Medium", "Weapon Bond", "Raise any weapon to level 3.", "weapon", 3, false, 250, [["sh:xp_scroll_big", 2]], "armed"],

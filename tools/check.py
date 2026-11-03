@@ -233,6 +233,59 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص الواجهة فشل: {e}")
 
+# 8g) البلوكات والخامات (v1.38، tools/gen_ores.py): كل بلوكة إلها تكستشر بـ terrain_texture وملفها موجود، صوت بـ blocks.json،
+#     اسم بالـlang، وجدول loot موجود. كل ore_feature يحط بلوكات موجودة ويستبدل بلوكات فانيلا حقيقية، وكل feature_rule يأشر
+#     على feature موجود. وصفات الفرن: المدخل والناتج أيتمات موجودة.
+try:
+    vblocks = set(open(os.path.join(ROOT, "tools", "vanilla_block_ids.txt"), encoding="utf-8").read().split())
+    terr = load(os.path.join(RP, "textures", "terrain_texture.json"))["texture_data"] if os.path.exists(os.path.join(RP, "textures", "terrain_texture.json")) else {}
+    brp = load(os.path.join(RP, "blocks.json")) if os.path.exists(os.path.join(RP, "blocks.json")) else {}
+    en = open(os.path.join(RP, "texts", "en_US.lang"), encoding="utf-8").read()
+    my_blocks = set()
+    for f in glob.glob(os.path.join(BP, "blocks", "*.json")):
+        b = load(f)["minecraft:block"]
+        bid = b["description"]["identifier"]; my_blocks.add(bid)
+        comp = b.get("components", {})
+        if "minecraft:geometry" not in comp:
+            err(f"{rel(f)}: البلوكة بدون minecraft:geometry (لازمة من 1.21.80)")
+        for mi in comp.get("minecraft:material_instances", {}).values():
+            t = mi.get("texture")
+            if t not in terr or not os.path.exists(os.path.join(RP, terr[t]["textures"] + ".png")):
+                err(f"{rel(f)}: تكستشر {t} مو موجود بـ terrain_texture أو ملفه ناقص")
+        if bid not in brp:
+            err(f"{rel(f)}: البلوكة {bid} ما إلها صوت بـ RP/blocks.json")
+        if f"tile.{bid}.name=" not in en:
+            err(f"{rel(f)}: البلوكة {bid} ما إلها اسم بالـlang")
+        loot = comp.get("minecraft:loot")
+        if loot and not os.path.exists(os.path.join(BP, loot)):
+            err(f"{rel(f)}: جدول loot مو موجود {loot}")
+    feats = set()
+    for f in glob.glob(os.path.join(BP, "features", "*.json")):
+        d = load(f); ore = d.get("minecraft:ore_feature")
+        if not ore:
+            continue
+        feats.add(ore["description"]["identifier"])
+        for rr in ore.get("replace_rules", []):
+            if rr["places_block"] not in my_blocks and rr["places_block"] not in vblocks:
+                err(f"{rel(f)}: يحط بلوكة مو موجودة {rr['places_block']}")
+            for m in rr.get("may_replace", []):
+                if m not in vblocks:
+                    err(f"{rel(f)}: يستبدل بلوكة مو من بلوكات ماينكرافت {m}")
+    for f in glob.glob(os.path.join(BP, "feature_rules", "*.json")):
+        d = load(f)["minecraft:feature_rules"]
+        if d["description"]["places_feature"] not in feats:
+            err(f"{rel(f)}: يأشر على feature مو موجود {d['description']['places_feature']}")
+        if d["conditions"].get("placement_pass") != "underground_pass":
+            err(f"{rel(f)}: الخامات لازم underground_pass")
+    for f in glob.glob(os.path.join(BP, "recipes", "*.json")):
+        d = load(f).get("minecraft:recipe_furnace")
+        if d:
+            for it_id in (d["input"], d["output"]):
+                if it_id.startswith("sh:") and it_id not in item_ids:
+                    err(f"{rel(f)}: وصفة الفرن تأشر على أيتم مو موجود {it_id}")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص البلوكات والخامات فشل: {e}")
+
 # 8f) بدون هزة شاشة (v1.37.3، طلب اللاعب): ماكو camerashake بأي سكربت أو ملف بالمود
 for f in glob.glob(os.path.join(BP, "**", "*.js"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.json"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.mcfunction"), recursive=True):
     if "camerashake" in open(f, encoding="utf-8", errors="ignore").read():

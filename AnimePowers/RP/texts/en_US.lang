@@ -28,3 +28,7 @@ entity.sh:alchemist.name=Alchemist
 item.spawn_egg.entity.sh:alchemist.name=Alchemist Egg
 entity.sh:hud_bar.name=Progress
 entity.sh:hud_bar_near.name=Progress
+tile.sh:dawnsteel_ore.name=Dawnsteel Ore
+tile.sh:deepslate_dawnsteel_ore.name=Deepslate Dawnsteel Ore
+tile.sh:abyssium_ore.name=Abyssium Ore
+tile.sh:deepslate_abyssium_ore.name=Deepslate Abyssium Ore

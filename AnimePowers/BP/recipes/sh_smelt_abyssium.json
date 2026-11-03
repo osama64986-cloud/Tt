@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "sh:smelt_abyssium"
+    },
+    "unlock": [
+      {
+        "item": "sh:raw_abyssium"
+      }
+    ],
+    "tags": [
+      "furnace",
+      "blast_furnace"
+    ],
+    "input": "sh:raw_abyssium",
+    "output": "sh:abyssium_ingot"
+  }
+}

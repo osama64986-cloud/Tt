@@ -82,9 +82,9 @@ ACH = [
     ("slay_mammoth", "monsters", "Volcano Walker", "Defeat a Magmamoth.", "A mountain of fur and lava.", 150, False, "mob:sh:magmamoth"),
     ("slay_mantis", "monsters", "Molt and Fall", "Defeat a Prayer Mantis.", "It prays before it strikes.", 200, False, "mob:sh:prayer_mantis"),
     # ── العتاد والخيمياء ──
-    ("first_material", "gear", "Hide and Seek", "Collect a monster material.", "Monsters leave more than bones behind.", 30, False, "item:sh_bear_hide"),
-    ("tailored", "gear", "Tailored Hide", "Wear a piece of monster armor.", "Hides and claws make good armor.", 60, False, "item:sh_hunter_chestplate"),
-    ("full_set", "gear", "Full Set", "Wear a complete monster armor set.", "Four pieces from the same beast.", 150, False, "item:sh_mantis_chestplate"),
+    ("first_material", "gear", "Strike Metal", "Get a crafting material: raw metal, an ingot or a bear part.", "Dig deep: something shines under the stone.", 30, False, "item:sh_raw_dawnsteel"),
+    ("tailored", "gear", "Forged", "Wear a piece of crafted armor.", "Ingots and hides make good armor.", 60, False, "item:sh_dawnsteel_chestplate"),
+    ("full_set", "gear", "Full Set", "Wear a complete armor set.", "Four pieces of the same metal or beast.", 150, False, "item:sh_abyssium_chestplate"),
     ("first_brew", "gear", "First Brew", "Brew a potion with the Alchemist.", "The old brewer needs ingredients.", 60, False, "item:sh_potion_vitality"),
     ("potion_six", "gear", "Six Flavors", "Drink all six potions.", "Six rare potions exist.", 200, False, "item:sh_potion_focus"),
     ("mana_dry", "gear", "Running on Empty", "Try a skill without enough mana.", "Even powers run dry.", 20, False, "item:sh_potion_mana:dark"),

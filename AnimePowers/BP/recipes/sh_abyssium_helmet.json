@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "sh:craft_abyssium_helmet"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "AAA",
+      "A A"
+    ],
+    "key": {
+      "A": {
+        "item": "sh:abyssium_ingot"
+      }
+    },
+    "unlock": [
+      {
+        "item": "sh:abyssium_ingot"
+      }
+    ],
+    "result": {
+      "item": "sh:abyssium_helmet"
+    }
+  }
+}

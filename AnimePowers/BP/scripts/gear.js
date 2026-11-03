@@ -1,38 +1,6 @@
 // يتولد تلقائياً من tools/gen_gear.py — لا تعدله يدوياً
 export const GEAR = {
  "materials": {
-  "sh:shadow_pelt": {
-   "name": "§5Shadow Pelt",
-   "mob": "Shadow Hound"
-  },
-  "sh:ember_horn": {
-   "name": "§6Ember Horn",
-   "mob": "Ember Imp"
-  },
-  "sh:sand_carapace": {
-   "name": "§eSand Carapace",
-   "mob": "Sand Scorpion"
-  },
-  "sh:rust_core": {
-   "name": "§3Rust Core",
-   "mob": "Rust Guard"
-  },
-  "sh:gloom_antler": {
-   "name": "§bGloom Antler",
-   "mob": "Gloomhorn"
-  },
-  "sh:hollow_lens": {
-   "name": "§6Hollow Lens",
-   "mob": "Hollow Seer"
-  },
-  "sh:spirit_fur": {
-   "name": "§dSpirit Fur",
-   "mob": "Veilfox"
-  },
-  "sh:magma_scale": {
-   "name": "§cMagma Scale",
-   "mob": "Magmamoth"
-  },
   "sh:bear_hide": {
    "name": "§7Grey Bear Hide",
    "mob": "Grey Bear"
@@ -41,13 +9,21 @@ export const GEAR = {
    "name": "§fGrey Bear Claw",
    "mob": "Grey Bear"
   },
-  "sh:mantis_chitin": {
-   "name": "§aMantis Chitin",
-   "mob": "Prayer Mantis"
+  "sh:raw_dawnsteel": {
+   "name": "§6Raw Dawnsteel",
+   "mob": "Dawnsteel Ore"
   },
-  "sh:mantis_scythe": {
-   "name": "§aMantis Scythe",
-   "mob": "Prayer Mantis"
+  "sh:dawnsteel_ingot": {
+   "name": "§6Dawnsteel Ingot",
+   "mob": "Smelted Raw Dawnsteel"
+  },
+  "sh:raw_abyssium": {
+   "name": "§5Raw Abyssium",
+   "mob": "Abyssium Ore"
+  },
+  "sh:abyssium_ingot": {
+   "name": "§5Abyssium Ingot",
+   "mob": "Smelted Raw Abyssium"
   }
  },
  "flames": {
@@ -103,20 +79,6 @@ export const GEAR = {
   }
  },
  "sets": {
-  "hunter": {
-   "name": "§5Shadow Hunter",
-   "pieces": [
-    "sh:hunter_helmet",
-    "sh:hunter_chestplate",
-    "sh:hunter_leggings",
-    "sh:hunter_boots"
-   ],
-   "mats": [
-    "sh:shadow_pelt",
-    "sh:sand_carapace"
-   ],
-   "bonus": "Full set: Speed I and Jump Boost I."
-  },
   "grizzly": {
    "name": "§7Grizzly",
    "pieces": [
@@ -131,19 +93,31 @@ export const GEAR = {
    ],
    "bonus": "Full set: Resistance I, and 4 golden hearts (Absorption) every 30 s."
   },
-  "mantis": {
-   "name": "§aMantis",
+  "dawnsteel": {
+   "name": "§6Dawnsteel",
    "pieces": [
-    "sh:mantis_helmet",
-    "sh:mantis_chestplate",
-    "sh:mantis_leggings",
-    "sh:mantis_boots"
+    "sh:dawnsteel_helmet",
+    "sh:dawnsteel_chestplate",
+    "sh:dawnsteel_leggings",
+    "sh:dawnsteel_boots"
    ],
    "mats": [
-    "sh:mantis_chitin",
-    "sh:mantis_scythe"
+    "sh:dawnsteel_ingot"
    ],
-   "bonus": "Full set: Speed I, Strength I, and 20% of melee hits are countered back at the attacker."
+   "bonus": "Full set: Haste I and Speed I."
+  },
+  "abyssium": {
+   "name": "§5Abyssium",
+   "pieces": [
+    "sh:abyssium_helmet",
+    "sh:abyssium_chestplate",
+    "sh:abyssium_leggings",
+    "sh:abyssium_boots"
+   ],
+   "mats": [
+    "sh:abyssium_ingot"
+   ],
+   "bonus": "Full set: Strength I, Night Vision, and 20% of melee hits are countered back at the attacker."
   }
  }
 };
