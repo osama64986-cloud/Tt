@@ -86,6 +86,11 @@
       },
       "minecraft:behavior.random_look_around": {
         "priority": 8
+      },
+      "minecraft:ambient_sound_interval": {
+        "value": 8.0,
+        "range": 12.0,
+        "event_name": "ambient"
       }
     },
     "events": {

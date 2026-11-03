@@ -84,7 +84,86 @@ SOUNDS = {
     "sh.trait_fangs":   ("player", 4, 32, [("mob.evocation_fangs.attack", 0.7, 1.0)]),
     "sh.trait_wings":   ("player", 4, 32, [("mob.phantom.flap", 0.8, 1.0)]),
     "sh.trait_eye":     ("player", 4, 32, [("block.end_portal_frame.fill", 0.7, 1.0)]),
+    # ── v1.39 الحاصد الأجوف: دمية خشب (أصوات الـCreaking)، خيوط (وتر قوس النشاب)، لعنة (الحارس الكبير)، منجل (الترايدنت) ──
+    "sh.harv_twitch":      ("hostile", 4, 28, [("mob.creaking.twitch", 0.8, 1.0)]),                 # رجة مفصل خشبي (حركة دمية)
+    "sh.harv_sway":        ("hostile", 4, 28, [("mob.creaking.sway", 0.7, 0.9)]),                    # صرير تمايل
+    "sh.harv_string_cast": ("hostile", 4, 32, [("crossbow.loading.start", 0.8, 0.8)]),              # الخيط ينطلق
+    "sh.harv_string":      ("hostile", 4, 32, [("crossbow.loading.middle", 0.7, 0.7)]),             # الخيط يتشد
+    "sh.harv_yank":        ("hostile", 4, 32, [("crossbow.shoot", 0.7, 0.7)]),                      # السحبة: طقة وتر
+    "sh.harv_snap":        ("hostile", 4, 28, [("random.bowhit", 0.7, 1.3)]),                       # الخيط انقطع
+    "sh.harv_stare":       ("hostile", 6, 40, [("mob.elderguardian.curse", 0.4, 1.15)]),            # النظرة: لعنة الحارس الكبير (واطية ومختصرة)
+    "sh.harv_reap_raise":  ("hostile", 4, 32, [("mob.evocation_illager.prepare_attack", 0.6, 0.8)]),# رفع المنجل
+    "sh.harv_reap":        ("hostile", 6, 36, [("item.trident.riptide_1", 0.5, 0.75)]),             # الحصدة: هبة ثقيلة
+    "sh.harv_seal":        ("hostile", 4, 28, [("respawn_anchor.deplete", 0.7, 1.25)]),             # الختم: مرساة تنطفي
+    "sh.harv_seal_tail":   ("hostile", 4, 24, [("block.enchanting_table.use", 0.6, 0.7)]),          # ذيل الختم: حروف سحر
+    "sh.harv_burn":        ("hostile", 4, 28, [("fire.ignite", 0.8, 0.9)]),                         # يشتعل
+    "sh.harv_death":       ("hostile", 6, 40, [("mob.creaking.death", 0.8, 0.9)]),
+    # ── منجل الحاصد (سلاح اللاعب) ──
+    "sh.scythe_swing":     ("player", 3, 20, [("item.spear.attack_miss", 0.6, 0.8)]),              # هبة نصل طويل
+    "sh.scythe_hit":       ("player", 3, 20, [("item.trident.hit", 0.5, 0.85)]),                   # قطع
+    "sh.scythe_reap":      ("player", 4, 28, [("item.trident.riptide_1", 0.4, 0.95)]),
+    "sh.scythe_string":    ("player", 4, 28, [("crossbow.loading.middle", 0.6, 0.85)]),
+    "sh.scythe_yank":      ("player", 4, 28, [("crossbow.shoot", 0.6, 0.85)]),
+    # ── v1.39 لعنة القرويين: نبض، همس كهف نادر، وتحول ──
+    "sh.curse_mark":       ("hostile", 3, 20, [("mob.warden.heartbeat", 0.6, 1.3)]),               # نبضة: البقع السود تكبر
+    "sh.curse_whisper":    ("hostile", 2, 16, [("ambient.cave", 0.25, 1.1)]),                      # همس (نادر)
+    "sh.curse_turn":       ("hostile", 6, 48, [("mob.zombie.remedy", 0.7, 0.7)]),                  # بداية التحول
+    "sh.curse_burst":      ("hostile", 8, 48, [("mob.husk.convert_to_zombie", 0.9, 0.8)]),         # لحظة التحول
+    "sh.curse_free":       ("hostile", 4, 32, [("mob.zombie.unfect", 0.7, 1.1)]),                  # اللعنة انفكت (صوت شفاء القروي الزومبي)
 }
+
+# v1.39: أصوات الوحوش نفسها (ضربة، موت، جو، خطوات) بـ RP/sounds.json — قبل كانت الوحوش ساكتة تماماً لما تنضرب أو تموت.
+# كل وحش أخذ أصوات موب فانيلا يناسب طبيعته وبطبقة مختلفة حتى يتميز: (علو، [أقل طبقة، أكثر طبقة]، {الحدث: صوت أو (صوت، علو، طبقة)})
+ENTITY_SOUNDS = {
+    "sh:training_archer": (0.9, [0.95, 1.05], {"ambient": "mob.skeleton.say", "hurt": "mob.skeleton.hurt", "death": "mob.skeleton.death", "step": ("mob.skeleton.step", 0.4, 1.0)}),
+    "sh:ember_imp": (0.9, [1.25, 1.4], {"ambient": ("mob.blaze.breathe", 0.6, 1.3), "hurt": "mob.blaze.hit", "death": "mob.blaze.death"}),
+    "sh:rust_guard": (1.0, [0.8, 0.9], {"hurt": "mob.irongolem.hit", "death": "mob.irongolem.death", "step": ("mob.irongolem.walk", 0.6, 0.9)}),
+    "sh:shadow_hound": (1.0, [0.8, 0.9], {"ambient": "mob.wolf.growl", "hurt": "mob.wolf.hurt", "death": "mob.wolf.death", "step": ("mob.wolf.step", 0.4, 1.0)}),
+    "sh:sand_scorpion": (0.9, [0.8, 0.9], {"ambient": "mob.spider.say", "hurt": "mob.spider.say", "death": "mob.spider.death", "step": ("mob.spider.step", 0.4, 1.0)}),
+    "sh:gloomhorn": (1.0, [0.6, 0.7], {"ambient": "mob.goat.ambient", "hurt": "mob.skeleton.hurt", "death": "mob.goat.death", "step": ("mob.goat.step", 0.5, 0.8)}),
+    "sh:hollow_seer": (1.0, [0.8, 0.9], {"ambient": "mob.guardian.land_idle", "hurt": "mob.guardian.land_hit", "death": "mob.guardian.land_death"}),
+    "sh:veilfox": (1.0, [0.9, 1.0], {"ambient": "mob.fox.ambient", "hurt": "mob.fox.hurt", "death": "mob.fox.death"}),
+    "sh:magmamoth": (1.0, [0.7, 0.8], {"ambient": "mob.ravager.ambient", "hurt": "mob.ravager.hurt", "death": "mob.ravager.death", "step": ("mob.ravager.step", 0.6, 0.8)}),
+    "sh:grey_bear": (1.0, [0.85, 0.95], {"ambient": "mob.polarbear.idle", "hurt": "mob.polarbear.hurt", "death": "mob.polarbear.death", "step": ("mob.polarbear.step", 0.5, 0.9)}),
+    "sh:bear_cub": (0.8, [1.3, 1.5], {"ambient": "mob.polarbear_baby.idle", "hurt": "mob.polarbear.hurt", "death": "mob.polarbear.death", "step": ("mob.polarbear.step", 0.3, 1.4)}),
+    "sh:prayer_mantis": (1.0, [0.65, 0.75], {"ambient": "mob.silverfish.say", "hurt": "mob.silverfish.hit", "death": "mob.silverfish.kill", "step": ("mob.spider.step", 0.4, 1.2)}),
+    "sh:hollow_harvester": (1.0, [0.9, 1.05], {"ambient": "mob.creaking.ambient", "hurt": "mob.creaking.sway", "death": "mob.creaking.death", "step": ("mob.creaking.step", 0.5, 1.0)}),
+    "sh:cursed_villager": (1.0, [0.72, 0.82], {"ambient": "mob.villager.idle", "hurt": "mob.villager.hit", "death": "mob.villager.death"}),   # قروي مريض: طبقة أوطى
+}
+# ملفات الكيانات (BP) اللي تحتاج المكون الرسمي minecraft:ambient_sound_interval حتى صوت "الجو" يشتغل (كل كم ثانية)
+ENTITY_FILES = {"sh:training_archer": "sh_training_archer", "sh:ember_imp": "ember_imp", "sh:rust_guard": "rust_guard", "sh:shadow_hound": "shadow_hound",
+                "sh:sand_scorpion": "sand_scorpion", "sh:gloomhorn": "sh_gloomhorn", "sh:hollow_seer": "sh_hollow_seer", "sh:veilfox": "sh_veilfox",
+                "sh:magmamoth": "sh_magmamoth", "sh:grey_bear": "sh_grey_bear", "sh:bear_cub": "sh_bear_cub", "sh:prayer_mantis": "sh_prayer_mantis",
+                "sh:hollow_harvester": "sh_hollow_harvester", "sh:cursed_villager": "sh_cursed_villager"}
+
+
+def entity_sounds():
+    ents = {}
+    for ident, (vol, pitch, evs) in ENTITY_SOUNDS.items():
+        out = {}
+        for ev, snd in evs.items():
+            out[ev] = snd if isinstance(snd, str) else {"sound": snd[0], "volume": snd[1], "pitch": snd[2]}
+        ents[ident] = {"volume": vol, "pitch": pitch, "events": out}
+    with open(os.path.join(RP, "sounds.json"), "w", encoding="utf-8") as f:
+        json.dump({"entity_sounds": {"entities": ents}}, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    bp = os.path.join(ROOT, "AnimePowers", "BP", "entities")
+    n = 0
+    for ident, fn in ENTITY_FILES.items():
+        if "ambient" not in ENTITY_SOUNDS[ident][2]:
+            continue
+        p = os.path.join(bp, fn + ".json")
+        d = json.load(open(p, encoding="utf-8"))
+        comps = d["minecraft:entity"]["components"]
+        want = {"value": 8.0, "range": 12.0, "event_name": "ambient"}
+        if comps.get("minecraft:ambient_sound_interval") != want:
+            comps["minecraft:ambient_sound_interval"] = want
+            raw = open(p, encoding="utf-8").read()
+            ind = 1 if raw.startswith("{\n \"") else 2 if raw.startswith("{\n  \"") else 4
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(d, f, indent=ind, ensure_ascii=False)
+            n += 1
+    return len(ents), n
 
 
 def files_of(vdefs, ev):
@@ -100,7 +179,7 @@ def main():
     if len(sys.argv) > 1:                                                       # أول مرة: تصغير نسخة Mojang الكاملة للأحداث اللي نستعملها
         full = json.load(open(sys.argv[1], encoding="utf-8"))
         full = full.get("sound_definitions", full)
-        need = sorted({ev for *_, lst in SOUNDS.values() for ev, _, _ in lst})
+        need = sorted({ev for *_, lst in SOUNDS.values() for ev, _, _ in lst} | {(v if isinstance(v, str) else v[0]) for *_, evs in ENTITY_SOUNDS.values() for v in evs.values()})
         json.dump({ev: {"sounds": full[ev]["sounds"]} for ev in need}, open(VANILLA, "w", encoding="utf-8"), indent=1)
     vdefs = json.load(open(VANILLA, encoding="utf-8"))
     d = json.load(open(DEFS, encoding="utf-8"))
@@ -126,7 +205,8 @@ def main():
                 os.remove(os.path.join(sh_dir, f)); gone += 1
         if not os.listdir(sh_dir):
             os.rmdir(sh_dir)
-    print(f"sounds ok: {len(SOUNDS)} أصوات من ملفات ماينكرافت | انشال {gone} صوت مصنوع")
+    ne, nb = entity_sounds()
+    print(f"sounds ok: {len(SOUNDS)} أصوات من ملفات ماينكرافت | انشال {gone} صوت مصنوع | أصوات {ne} وحش (عدلت {nb} ملف كيان)")
 
 
 if __name__ == "__main__":

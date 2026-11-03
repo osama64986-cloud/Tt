@@ -9,9 +9,10 @@ import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH } from 
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
 import { ORES } from "./ores.js";
+import { PANIM } from "./panims.js";
 import { ACH, ACH_CATS } from "./achievements.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
-import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS } from "./skillfx.js";
+import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS, HARVEST, CURSE } from "./skillfx.js";
 
 // ───────────────────────── البيانات ─────────────────────────
 const TRAIN_NEED = 3;
@@ -189,6 +190,7 @@ const MONSTERS = {
   "sh:bear_cub": { rank: 0, xp: 6 },
   // الرتبة الرابعة (Cursed): نادر جداً بالعالم
   "sh:prayer_mantis": { rank: 3, xp: 320 },
+  "sh:hollow_harvester": { rank: 3, xp: 320 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
@@ -210,7 +212,7 @@ const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floo
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
 const VILE_TYPES = ["sh:magmamoth", "sh:grey_bear"];
-const CURSED_TYPES = ["sh:prayer_mantis"];
+const CURSED_TYPES = ["sh:prayer_mantis", "sh:hollow_harvester"];
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
 // درجات الصدع (v1.37، مثل درجات اللعنات): اللون = الدرجة والصعوبة، ونهاية الصدع وحش رتبة قوي يحدد صعوبته
 //   الدرجة 1 أزرق ضعيف: موجات Lowly، الحارس Grim | الدرجة 2 بنفسجي متوسط: Lowly + Grim، الحارس Vile
@@ -252,6 +254,9 @@ const WEAPONS = {
   // رمح: ترميه ويرجع، أو مطر رماح
   "sh:sunset_spear": { extra: 5, sound: "sh.dagger_hit", color: "red", knock: 0.4, name: "Sunset Spear",
     desc: "Use: Sunset Throw (it returns to you). Sneak + use: Spear Rain on the spot you aim at." },
+  // v1.39 منجل الحاصد: يسقط بس من الحاصد الأجوف. كل ضربة على عدو صحته أقل من الثلث "تحصده" (+50%)
+  "sh:harvest_scythe": { extra: 7, sound: "sh.scythe_hit", color: "purple", knock: 0.5, name: "Harvester's Scythe", special: "reap",
+    desc: "The Hollow Harvester's scythe; defeating it is the only way to get one. Every hit on an enemy below a third of its health REAPS it (+50% damage). Use: Reaping Arc. Sneak + use: Puppet Strings." },
 };
 
 // الوحوش اللي ينفع عليها قانون الصمت (عندها حدث sh:silence)
@@ -422,6 +427,8 @@ function heldLine(p, st, plain) {
   const showTip = now - heldSeen.get(p.id).tick < 120;
   const none = { line: "", tip: "" };
   if (!id) return none;
+  const sealed = sealLeft(p, id);
+  if (sealed > 0) return { line: `§5⛓ ${sealName(id)} §8│ §dSEALED ${fmtSec(sealed)}s`, tip: showTip ? "§7The Hollow Harvester's scythe sealed it. Switch to another item" : "" };
   const stateOf = (left) => (left > 0 ? `§c⏳ ${fmtSec(left)}s` : "§a✔ Ready");
   const mini = (left) => (left > 0 ? `§c${fmtSec(left)}s` : "§a✔");
 
@@ -652,12 +659,74 @@ function line(dim, from, to, color) {
 // ونخلي صوت اللاعب لنفسه ما يتعدى 1 (فوق 1 ما يعلّي، بس يوسع المسافة؛ للعالم نخليها حتى اللي قريبين يسمعون).
 const VANILLA_GAIN = { "random.totem": 0.5, "random.explode": 0.6, "mob.wither.spawn": 0.5, "raid.horn": 0.7, "random.anvil_land": 0.7,
   "mob.sheep.shear": 0.75, "random.levelup": 0.8, "mob.silverfish.kill": 0.8, "mob.polarbear.warning": 0.8 };
+// v1.39 (أبحاث تصميم الصوت): أصوات المود (sh.*) تتغير شوية كل مرة (طبقة ±4%، علو ±6%) حتى الصوت المتكرر ما يصير "رشاش" ممل،
+// ونفس الصوت بنفس المكان بنفس التك ينعزف مرة وحدة بس (ضربة تصيب 5 أعداء = صوت واحد مو 5 فوق بعض وعلو مفاجئ)
+const sfxSeen = new Set();
+let sfxSeenTick = -1;
 function sfx(dim, id, loc, volume = 1, pitch = 1) {
-  try { dim.playSound(id, loc, { volume: Math.min(1.6, volume * (VANILLA_GAIN[id] || 1)), pitch }); } catch (e) { /* */ }
+  try {
+    if (id.startsWith("sh.")) {
+      const t = system.currentTick;
+      if (t !== sfxSeenTick) { sfxSeenTick = t; sfxSeen.clear(); }
+      const key = `${id}|${Math.floor(loc.x / 2)}|${Math.floor(loc.y / 2)}|${Math.floor(loc.z / 2)}`;
+      if (sfxSeen.has(key)) return;
+      sfxSeen.add(key);
+      volume *= 0.94 + Math.random() * 0.12;
+      pitch *= 0.96 + Math.random() * 0.08;
+    }
+    dim.playSound(id, loc, { volume: Math.min(1.6, volume * (VANILLA_GAIN[id] || 1)), pitch });
+  } catch (e) { /* */ }
 }
 function sfxPlayer(p, id, volume = 1, pitch = 1) {
   try { p.playSound(id, { volume: Math.min(1, volume * (VANILLA_GAIN[id] || 1)), pitch }); } catch (e) { /* */ }
 }
+// ═════════ v1.39 تصميم الصوت: "cue" = طبقات من أصوات ماينكرافت الأصلية ═════════
+// مثل ما يسوون مصممين صوت الألعاب: الحدث المهم يتكون من 2-3 طبقات: بداية قصيرة حادة (transient) + جسم (body) + ذيل (tail)،
+// كل طبقة بتأخير صغير (0-6 تك) وتغيير عشوائي خفيف بالطبقة الصوتية (±6%) والعلو (±8%) حتى ما يتكرر نفس الصوت حرفياً،
+// وحد أصوات: نفس الـcue ما يتكرر بنفس المكان أسرع من cool تك، وأقصى 6 طبقات تبدأ بنفس التك (ما تتكدس الأصوات ويتعب السمع).
+// الطبقة: [صوت sh.* (من tools/gen_sounds.py)، تأخير بالتك، علو، طبقة صوتية]
+const CUES = {
+  harv_strings: { cool: 10, layers: [["sh.harv_string_cast", 0, 0.9, 1.0], ["sh.harv_twitch", 1, 0.8, 1.0], ["sh.harv_string", 5, 0.8, 1.0]] },
+  harv_yank: { cool: 8, layers: [["sh.harv_yank", 0, 1.0, 1.0], ["sh.harv_twitch", 2, 0.7, 1.2]] },
+  harv_snap: { cool: 8, layers: [["sh.harv_snap", 0, 1.0, 1.0], ["sh.harv_twitch", 2, 0.6, 0.8]] },
+  harv_stare: { cool: 20, layers: [["sh.harv_twitch", 0, 0.8, 0.9], ["sh.harv_stare", 3, 0.9, 1.0]] },
+  harv_reap_raise: { cool: 10, layers: [["sh.harv_sway", 0, 0.8, 0.9], ["sh.harv_reap_raise", 2, 0.8, 1.0]] },
+  harv_reap: { cool: 8, layers: [["sh.harv_reap", 0, 1.0, 1.0], ["sh.scythe_hit", 1, 0.7, 0.8], ["sh.harv_twitch", 4, 0.5, 1.1]] },
+  harv_seal: { cool: 6, layers: [["sh.harv_seal", 0, 1.0, 1.0], ["sh.harv_seal_tail", 3, 0.7, 1.0]] },
+  harv_burn: { cool: 30, layers: [["sh.harv_burn", 0, 1.0, 1.0], ["sh.harv_twitch", 2, 0.9, 1.3]] },
+  harv_death: { cool: 20, layers: [["sh.harv_death", 0, 1.0, 1.0], ["sh.harv_snap", 6, 0.8, 0.8]] },
+  scythe_reap: { cool: 6, layers: [["sh.scythe_swing", 0, 1.0, 1.0], ["sh.scythe_reap", 1, 0.8, 1.0]] },
+  scythe_strings: { cool: 8, layers: [["sh.scythe_string", 0, 0.9, 1.0]] },
+  scythe_yank: { cool: 6, layers: [["sh.scythe_yank", 0, 1.0, 1.0], ["sh.scythe_hit", 2, 0.6, 0.9]] },
+  // لعنة القرويين: نبضة لما البقع تكبر، همس نادر، نبض يتسارع قبل التحول، ضربة التحول، وفك اللعنة
+  curse_mark: { cool: 20, layers: [["sh.curse_mark", 0, 0.9, 1.0], ["sh.curse_mark", 9, 0.7, 1.0]] },
+  curse_whisper: { cool: 200, layers: [["sh.curse_whisper", 0, 0.8, 1.0]] },
+  curse_turn: { cool: 40, layers: [["sh.curse_turn", 0, 1.0, 1.0], ["sh.curse_mark", 10, 0.8, 0.9], ["sh.curse_mark", 22, 0.9, 1.05], ["sh.curse_mark", 31, 1.0, 1.2], ["sh.curse_mark", 38, 1.0, 1.35]] },
+  curse_burst: { cool: 20, layers: [["sh.curse_burst", 0, 1.0, 1.0], ["sh.guard_slam", 1, 0.6, 0.7]] },
+  curse_free: { cool: 20, layers: [["sh.curse_free", 0, 1.0, 1.0], ["sh.ready", 6, 0.6, 0.8]] },
+};
+const cueLast = new Map();
+let cueTick = -1, cueCount = 0;
+function cue(dim, name, loc, gain = 1) {
+  const c = CUES[name];
+  if (!c || !loc) return;
+  const now = system.currentTick, key = `${name}:${Math.round(loc.x / 4)}:${Math.round(loc.z / 4)}`;
+  if (now - (cueLast.get(key) ?? -999) < (c.cool || 0)) return;
+  if (cueLast.size > 256) cueLast.clear();
+  cueLast.set(key, now);
+  const at = { x: loc.x, y: loc.y, z: loc.z };
+  for (const [id, delay, vol, pit] of c.layers) {
+    const v = vol * gain * (0.95 + Math.random() * 0.1), pt = pit * (0.97 + Math.random() * 0.06);   // + تغيير sfx نفسها = ~±7% بالمجموع
+    const play = () => {
+      const t = system.currentTick;
+      if (t !== cueTick) { cueTick = t; cueCount = 0; }
+      if (++cueCount > 6) return;
+      sfx(dim, id, at, v, pt);
+    };
+    if (delay > 0) later(delay, play); else play();
+  }
+}
+
 
 function headPos(e) {
   const l = e.location;
@@ -997,6 +1066,8 @@ const MONSTER_INFO = [
   ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
   ["sh:grey_bear", "Grey Bear", "Vile to Cataclysm", "A grey bear that fights standing on two legs, with a silver crescent on its chest and a clawed scar over one eye. BEAR HUG: it spreads its arms and grabs whoever is in front of it, squeezes three times and throws them; hit it 3 times or dash out to break free. RENDING CLAWS: four alternating claw swipes that scratch your body and make you bleed (stacks up to 3). CUB CALL: it roars and two cubs run at you and cling to your legs, slowing you; kill a cub and the bear goes into a rage. DEEP HIBERNATION: when hurt it falls asleep and heals; strike it and it wakes in a WRATH that blasts you away. Thick pelt: hits on its front do 30% less damage, hits on its back 20% more."],
   ["sh:prayer_mantis", "Prayer Mantis", "Cursed to Cataclysm", "A leaf-green mantis with a long raised neck, glowing violet eyes and two folded scythe arms. It is very rare in the wild. PRAYER STANCE: a cursed halo rises behind its head and it raises both scythes; any hit you land is turned back at you DOUBLED as an X of blades, so wait it out or keep your distance. LEAF CAMOUFLAGE: a whirl of leaves and it turns half transparent, creeps close and stabs with both scythes; hit it to reveal it early. SCISSOR LOCK: two huge blades close around your waist and pin you for 1.5 s before a final snip; DASH to break it. MOLT: at half health it sheds its old shell, which explodes a moment later (run!), and the fresh mantis is faster and attacks more often."],
+  ["sh:hollow_harvester", "Hollow Harvester", "Cursed to Cataclysm", "A cursed scarecrow that moves like a marionette: a burlap sack head with violet eyes and a stitched grin, a straw hat, and a wooden puppet cross floating above it with strings to its shoulders. It carries a huge scythe and is very rare in the wild. PUPPET STRINGS: from 4-15 blocks it points at you and a string latches on; a moment later it DRAGS you to it, so DASH to snap the string first. HOLLOW STARE: its head tilts and its eyes flare; if you are looking at it you are slowed (Slowness I only, no darkness), so look away. SEALING SCYTHE: up close it raises the scythe over its head and reaps in front of it; if it hits you, the skill or weapon in your hand is SEALED for 8 s (switch to another one). WEAKNESS: FIRE. Fire hurts it three times as much, and while it burns it flails and cannot use its skills. It always drops its scythe, the Harvester's Scythe: the only way to get one."],
+  ["sh:cursed_villager", "Cursed Villager", "Curse", "Very rarely a villager near you is CURSED. Black marks spread over its body in three stages over about five minutes, and at the last stage its eyes glow violet. Then it convulses and TURNS into a monster of a random rank: most often Lowly, sometimes Grim, rarely Vile and very rarely Cursed. Defeat it before it turns to end the curse."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
 async function openMonsterBook(player) {
@@ -2349,6 +2420,45 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
 // من رتبة Trainee: اضغط سنيك بنفس لحظة ما توصلك ضربة وحش (خلال 0.35 ثانية من الضغطة) = الضرر يرجع،
 // الوحش يندفع ويتشل ثانيتين ونص، وضربتك الجاية خلال ثانيتين ونص = ضربة مضادة قوية.
 // الضغط المتكرر ما ينفع: بعد كل ضغطة لازم تنتظر ثانية حتى تنحسب ضغطة صد جديدة.
+// ───── أنميشن اللاعب (v1.39، tools/gen_player_anims.py): playAnimation بطبقتين ─────
+// "sh_act" للضربات والمهارات والداش والصد (وحدة تبدل اللي قبلها)، و"sh_move" للركض. الأنميشن يوقف بالمنظور الأول
+// (variable.is_first_person) حتى إيدك بعيونك تبقى مثل اللعبة، ويبين للي يشوفونك وبالمنظور الثالث.
+const WEAPON_ANIM = { "sh:dark_katana": "slash", "sh:silver_oath": "slash", "sh:shadow_blade": "slash", "sh:dawn_dagger": "stab",
+  "sh:ember_cleaver": "cleave", "sh:stone_maul": "heavy", "sh:sunset_spear": "thrust", "sh:shadow_claws": "claw", "sh:harvest_scythe": "reap" };
+const WEAPON_SKILL_ANIM = { "sh:ember_cleaver": ["cleave", "cast_spin"], "sh:dawn_dagger": ["stab", "claw"], "sh:silver_oath": ["slash", "thrust"],
+  "sh:shadow_blade": ["stab", "cast_spin"], "sh:shadow_claws": ["claw", "cast_spin"], "sh:stone_maul": ["heavy", "cast_ground"],
+  "sh:sunset_spear": ["cleave", "cast_sky"], "sh:dark_katana": ["slash", "slash2"], "sh:harvest_scythe": ["reap", "cast_spin"] };
+const SKILL_ANIM = {
+  seal: "cast_push", subtract: "cast_push", transfer: "cast_push", divide: "cast_push", zero: "cast_push",
+  ironskin: "cast_spread", ironfist: "stab", windrun: "cast_spread", windleap: "cast_push", gale: "cast_spin",
+  weight: "cast_ground", silence: "cast_spread", reflect: "guard", boundary: "cast_spread", time: "cast_sky", absolute: "cast_sky",
+  pull: "cast_push", push: "cast_push", swap: "cast_push", fold: "cast_push", spacecollapse: "cast_ground", spacerewind: "cast_sky",
+  echostrike: "stab", echoseal: "cast_push", echowave: "cast_push", chorus: "cast_spread",
+  shards: "cast_push", crystalshield: "guard", prison: "cast_push", burst: "cast_spread",
+  rockskin: "cast_spread", fangs: "cast_ground", windwings: "cast_spread", huntereye: "cast_push", adapt: "cast_spread",
+  meteor: "cast_sky", gravwell: "cast_ground", orbit: "cast_spread", constellation: "cast_sky", blackhole: "cast_push", supernova: "cast_sky",
+};
+const slashFlip = new Map();
+function pAnim(p, name) {
+  if (name === "slash") { const f = !slashFlip.get(p.id); slashFlip.set(p.id, f); name = f ? "slash" : "slash2"; }
+  const a = PANIM[name];
+  if (!a || !p || typeof p.playAnimation !== "function") return;
+  try { p.playAnimation(a.id, { controller: "sh_act", blendOutTime: 0.12, stopExpression: "query.any_animation_finished || variable.is_first_person" }); } catch (e) { /* */ }
+}
+// الركض: يبدي لما تبدي تركض، ويوقف بالعميل نفسه لما توقف (أو تسبح/تطير/تركب)
+const sprintOn = new Set();
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      if (p.isSprinting && !sprintOn.has(p.id)) {
+        sprintOn.add(p.id);
+        p.playAnimation(PANIM.sprint.id, { controller: "sh_move", blendOutTime: 0.2,
+          stopExpression: "!query.is_sprinting || variable.is_first_person || query.is_riding || query.is_swimming || query.is_gliding" });
+      } else if (!p.isSprinting) sprintOn.delete(p.id);
+    } catch (e) { sprintOn.delete(p.id); }
+  }
+}, 4);
+
 const GUARD_RANK = 1, GUARD_WIN = 7, GUARD_GAP = 20;
 const sneakPrev = new Map(), guardAt = new Map(), riposte = new Map();
 system.runInterval(() => {
@@ -2384,6 +2494,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     try { dim.playSound("random.anvil_land", p.location, { volume: 0.6, pitch: 1.7 }); } catch (e) { /* */ }
     sfxPlayer(p, "sh.reflect", 1, 1.3);
     riposte.set(p.id, { until: now + 50, tid: src.id });
+    pAnim(p, "guard");
     notify(p, "§f§lPERFECT GUARD §r§7strike back now!", 30);
     const st = getState(p); st.guards = (st.guards || 0) + 1; saveState(p, st);
   } catch (e) { /* */ }
@@ -3134,6 +3245,7 @@ const WEAPON_AURA = {
   "sh:stone_maul": { style: "motes", cols: [[0.25, 0.85, 0.45], [0.55, 1, 0.65], [0.85, 1, 0.9]] },
   "sh:sunset_spear": { style: "runes", cols: [[0.95, 0.15, 0.15], [1, 0.45, 0.35], [1, 0.85, 0.8]] },
   "sh:shadow_claws": { style: "motes", cols: [[0.6, 0.4, 1], [0.8, 0.65, 1], [0.95, 0.9, 1]] },
+  "sh:harvest_scythe": { style: "souls", cols: [[0.62, 0.3, 0.95], [0.8, 0.6, 1], [0.95, 0.9, 1]] },
 };
 function wlvAll(p) { try { const raw = p.getDynamicProperty("sh_wlv"); return typeof raw === "string" ? JSON.parse(raw) : {}; } catch (e) { return {}; } }
 function getWlv(p, id) { const k = wlvAll(p)[id] || {}; return { lv: Math.min(WLV_MAX, Math.max(1, k.lv || 1)), xp: k.xp || 0 }; }
@@ -3169,8 +3281,9 @@ function weaponAuraPoint(p, id, u) {
     const d = flatDir(p), r = katanaRight(d);
     return { x: p.location.x + r.x * 0.4 + d.x * 0.15, y: p.location.y + 0.45 + u * 0.55, z: p.location.z + r.z * 0.4 + d.z * 0.15 };
   }
-  const tip = id === "sh:sunset_spear" ? 1.6 : id === "sh:stone_maul" ? 1.3 : 1.15;
-  return bladePoint(p, 0.25 + u * (tip - 0.25));
+  const tip = id === "sh:sunset_spear" ? 1.6 : id === "sh:stone_maul" ? 1.3 : id === "sh:harvest_scythe" ? 1.45 : 1.15;
+  const lo = id === "sh:harvest_scythe" ? 0.95 : 0.25;                             // المنجل: الهالة على النصل فوق العصا بس
+  return bladePoint(p, lo + u * (tip - lo));
 }
 function weaponAuraTick(p, id, lv, t, strong) {
   const a = WEAPON_AURA[id];
@@ -3556,6 +3669,51 @@ const WEAPON_SKILLS = {
       return true;
     } },
   ],
+  // v1.39 منجل الحاصد: حصدة عريضة تجر الأعداء لعندك، وخيوط دمية تسحب 4 أعداء لرجليك وتربطهم
+  "sh:harvest_scythe": [
+    { name: "Reaping Arc", cd: 140, desc: "A wide reaping sweep that cuts everything in front of you and drags it a little closer", fn(p) {
+      const dim = p.dimension, o = p.location, d = flatDir(p);
+      for (const e of enemiesNear(dim, o, 5.2, p.id)) {
+        if (!inFront(p, e, -0.2)) continue;                                          // قوس عريض (~200 درجة)
+        hurt(e, 8, p);
+        pullTo(o, e, 0.35, 0.05);
+        effect(e, "slowness", 40, 0);
+        HARVEST.reapHit(dim, center3(e), o);
+      }
+      HARVEST.reapSweep(dim, o, { x: d.x, y: 0, z: d.z }, 3.4);
+      cue(dim, "scythe_reap", o);
+      return true;
+    } },
+    { name: "Puppet Strings", cd: 220, desc: "Strings latch onto up to four enemies in front of you, then yank them to your feet and bind them", fn(p) {
+      const dim = p.dimension, d = flatDir(p);
+      const list = enemiesNear(dim, p.location, 13, p.id).filter((e) => inFront(p, e, 0.5)).slice(0, 4);
+      if (!list.length) { notify(p, "§7No enemy in front of you for the strings", 25); return false; }
+      cue(dim, "scythe_strings", p.location);
+      const hand = () => ({ x: p.location.x + d.x * 0.5, y: p.location.y + 1.3, z: p.location.z + d.z * 0.5 });
+      let t = 0;
+      const h = system.runInterval(() => {
+        try {
+          t += 2;
+          if (!valid(p)) { system.clearRun(h); return; }
+          for (const e of list) if (valid(e)) HARVEST.string(dim, hand(), center3(e), t);
+          if (t === 4) for (const e of list) if (valid(e)) HARVEST.stringAttach(dim, center3(e));
+          if (t < 12) return;
+          system.clearRun(h);
+          const c = p.location, fd = flatDir(p), dest = { x: c.x + fd.x * 1.8, z: c.z + fd.z * 1.8 };
+          for (const e of list) {
+            if (!valid(e)) continue;
+            const dx = dest.x - e.location.x, dz = dest.z - e.location.z, l = Math.hypot(dx, dz) || 1, k = Math.max(0.4, Math.min(1.6, l / 6.5));
+            try { e.applyKnockback({ x: (dx / l) * k, z: (dz / l) * k }, 0.3); } catch (err) { /* */ }
+            hurt(e, 5, p);
+            effect(e, "slowness", 30, 3);
+            HARVEST.yank(dim, hand(), center3(e));
+          }
+          cue(dim, "scythe_yank", c);
+        } catch (err) { system.clearRun(h); }
+      }, 2);
+      return true;
+    } },
+  ],
 };
 function weaponActive(p, id) {
   const list = id === KATANA ? KATANA_SKILLS : WEAPON_SKILLS[id];
@@ -3571,7 +3729,7 @@ function weaponActive(p, id) {
   if (now < ready) { notify(p, `§7${sk.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15); return; }
   let ok = false;
   try { ok = sk.fn(p); } catch (e) { ok = false; }
-  if (ok) { achCount(p, "cast"); const cd = typeof sk.cd === "function" ? sk.cd(p) : sk.cd; weaponCd.set(key, now + Math.round(cd * (wl >= WLV_MAX ? 0.8 : 1))); notify(p, `§f⚔ ${sk.name}`, 20); }
+  if (ok) { pAnim(p, (WEAPON_SKILL_ANIM[id] || [])[idx] || WEAPON_ANIM[id]); achCount(p, "cast"); const cd = typeof sk.cd === "function" ? sk.cd(p) : sk.cd; weaponCd.set(key, now + Math.round(cd * (wl >= WLV_MAX ? 0.8 : 1))); notify(p, `§f⚔ ${sk.name}`, 20); }
   else weaponCd.set(key, now + 6);
 }
 
@@ -4585,10 +4743,10 @@ function useSkill(p, skill) {
   try { res = SKILL_FN[skill.id](p); } catch (e) { res = false; }
   if (res && typeof res.then === "function") {
     cooldowns.set(key, now + 40); // يمنع الضغط المتكرر أثناء القائمة
-    res.then((ok) => { cooldowns.set(key, system.currentTick + (ok ? Math.round(skill.cooldown * fm) : 6)); if (ok) spendMana(p, cost); }).catch(() => cooldowns.set(key, system.currentTick + 6));
+    res.then((ok) => { cooldowns.set(key, system.currentTick + (ok ? Math.round(skill.cooldown * fm) : 6)); if (ok) { spendMana(p, cost); pAnim(p, SKILL_ANIM[skill.id]); } }).catch(() => cooldowns.set(key, system.currentTick + 6));
     return;
   }
-  if (res) spendMana(p, cost);
+  if (res) { spendMana(p, cost); pAnim(p, SKILL_ANIM[skill.id]); }
   cooldowns.set(key, now + (typeof res === "number" && res > 0 ? Math.round(res * fm) : res ? Math.round(skill.cooldown * fm) : 6));
 }
 
@@ -4597,6 +4755,8 @@ world.afterEvents.itemUse.subscribe((ev) => {
     const p = ev.source;
     const id = ev.itemStack && ev.itemStack.typeId;
     if (!id) return;
+    const sealed = sealLeft(p, id);                                              // v1.39: مختوم بمنجل الحاصد
+    if (sealed > 0) { notify(p, `§5⛓ ${sealName(id)} is SEALED §7(${(sealed / 20).toFixed(1)}s)`, 20); sfxPlayer(p, "note.bass", 0.5, 0.5); return; }
     if (id === "sh:evolution_book") { openBook(p); return; }
     if (id === KATANA || WEAPON_SKILLS[id]) { weaponActive(p, id); return; }
     if (SCROLLS[id]) { useScroll(p, id); return; }
@@ -4660,6 +4820,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     const held = inv(p).getItem(p.selectedSlotIndex);
     const w = held && WEAPONS[held.typeId];
     if (!w) return;
+    pAnim(p, WEAPON_ANIM[held.typeId]);                                          // v1.39: حركة الضربة حسب نوع السلاح
     const hp = target.getComponent("minecraft:health");
     if (!hp) return;
     let extra = w.extra;
@@ -4694,6 +4855,11 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         notify(p, "§f§lGlint!", 20);
       }
       comboMap.set(p.id, c);
+    }
+    if (w.special === "reap" && hp.currentValue / hp.effectiveMax < 0.34 && !isFriendly(target)) {   // منجل الحاصد: يحصد الضعيف
+      extra = Math.round(extra * 1.5);
+      HARVEST.reapHit(target.dimension, center3(target), p.location);
+      notify(p, "§5Reaped!", 15);
     }
     if (w.special === "rend") {
       try { target.addEffect("poison", 60, { amplifier: 0, showParticles: true }); } catch (e) { /* */ }
@@ -6668,7 +6834,169 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     });
   } catch (err) { /* */ }
 });
-const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick, [MANTIS]: mantisTick };
+// ═════════════════════════ الحاصد الأجوف (Hollow Harvester، Cursed) — v1.39 ═════════════════════════
+// فزاعة ملعونة تتحرك مثل دمية خيوط (صليب دمية عائم فوق راسه). المهارات مثبتة بطلب اللاعب (MOD_GUIDE §56):
+//  1) Puppet Strings: خيط يطلع من إيده اليسار وينمسك بيك، وبعد ثلثين ثانية يسحبك لعنده. الداش قبل السحبة يقطع الخيط.
+//  2) Hollow Stare: يميل راسه وعيونه تضوي؛ إذا انت تباوع عليه تبطأ بأوطى مستوى بس (Slowness I) وبدون ظلام. لف وجهك وما يأثر.
+//  3) Sealing Scythe: يرفع المنجل فوق راسه ويحصد قدامه؛ إذا ضربك يختم المهارة (أو السلاح) اللي بإيدك 8 ثواني بس.
+//  الضعف: النار. ضرر النار عليه ×3 (damage_sensor بملف الكيان)، ولما يشتعل: يتخبط، تتوقف مهاراته، وتكستشره يتفحم (sh:hot).
+//  ينقتل = يسقط منجله دائماً (Harvester's Scythe): هذي الطريقة الوحيدة للحصول عليه.
+const HARVESTER = "sh:hollow_harvester";
+const SEAL_TICKS = 160;
+const isBurning = (e) => { try { return !!e.getComponent("minecraft:onfire"); } catch (err) { return false; } };
+function harvFrame(e) {
+  const yaw = mantisYaw(e), f = { x: -Math.sin((yaw * Math.PI) / 180), z: Math.cos((yaw * Math.PI) / 180) };
+  return { f, left: { x: f.z, z: -f.x } };
+}
+function harvEnd(e, st, cd) { st.victim = undefined; st.anchor = undefined; grimEnd(e, st, cd); }
+function harvesterTick(e, st) {
+  const dim = e.dimension, L = e.location;
+  const face = (loc) => { try { e.teleport(e.location, { facingLocation: { x: loc.x, y: e.location.y + 1, z: loc.z } }); } catch (err) { /* */ } };
+  // ── الضعف: النار توقف كل شي (يتخبط ويتفحم) ──
+  if (isBurning(e)) {
+    if (!st.burning) {
+      st.burning = true; setHot(e, 1);
+      if (st.phase !== 0) harvEnd(e, st, 20);
+      setMState(e, 5);
+      cue(dim, "harv_burn", L);
+      for (const q of dim.getPlayers({ location: L, maxDistance: 16 })) notify(q, "§6The Hollow Harvester is BURNING! §7(fire is its weakness)", 40);
+    }
+    if (system.currentTick % 4 === 0) HARVEST.burn(dim, L);
+    try { e.addEffect("slowness", 6, { amplifier: 1, showParticles: false }); } catch (err) { /* */ }
+    return;
+  }
+  if (st.burning) {
+    st.burning = false; setMState(e, 0); st.cd = Math.max(st.cd, 20);
+    later(60, () => { if (valid(e) && !isBurning(e)) setHot(e, 0); });                 // يبقى متفحم شوية بعد ما تنطفي
+  }
+  if (st.phase === 0) {
+    if (system.currentTick % 10 === 0) HARVEST.ambient(dim, L);
+    st.cd -= 2;
+    if (st.cd > 0) return;
+    const np = nearestPlayer(e, 20);
+    if (!np) { st.cd = 10; return; }
+    st.target = np.p; st.t = 0; st.stage = 0; st.victim = undefined;
+    const opts = [];
+    if (np.d < 4.4) opts.push("reap", "reap", "stare");
+    else if (np.d <= 15) opts.push("strings", "stare");
+    if (!opts.length) { st.cd = 10; return; }
+    st.skill = pickSkill(opts, st.last); st.last = st.skill;
+    setMState(e, { strings: 1, stare: 3, reap: 4 }[st.skill]);
+    st.phase = 1;
+    return;
+  }
+  const tp = st.target && valid(st.target) ? st.target : undefined;
+  st.t += 2;
+  const { f, left } = harvFrame(e);
+  // ── 1) Puppet Strings: خيط من الإيد اليسار للضحية، ثم سحبة؛ الداش يقطعه ──
+  if (st.skill === "strings") {
+    if (st.stage === 0) {
+      if (st.t === 2) {
+        if (!tp) { harvEnd(e, st, 30); return; }
+        st.victim = tp; st.anchor = { ...tp.location };
+        cue(dim, "harv_strings", L);
+        notify(tp, "§dPUPPET STRINGS! §7Dash to snap them before they pull", 35);
+      }
+      const vic = st.victim;
+      if (!vic || !valid(vic)) { harvEnd(e, st, 30); return; }
+      face(vic.location);
+      const hand = { x: L.x + f.x * 0.9 + left.x * 0.36, y: L.y + 1.85, z: L.z + f.z * 0.9 + left.z * 0.36 };
+      const chestV = { x: vic.location.x, y: vic.location.y + 1.1, z: vic.location.z };
+      HARVEST.string(dim, hand, chestV, st.t);
+      if (st.t === 4) HARVEST.stringAttach(dim, chestV);
+      if (st.t > 2 && Math.hypot(vic.location.x - st.anchor.x, vic.location.z - st.anchor.z) > 2.6) {     // داش: الخيط انقطع
+        HARVEST.snap(dim, vic.location); cue(dim, "harv_snap", vic.location);
+        notify(vic, "§aYou snapped the strings!", 30);
+        harvEnd(e, st, 50); return;
+      }
+      if (st.t >= 14) {
+        st.stage = 1; st.t = 0; setMState(e, 2);
+        const dx = L.x - vic.location.x, dz = L.z - vic.location.z, d = Math.hypot(dx, dz) || 1;
+        const pull = Math.max(0.5, Math.min(1.8, (d - 2.0) / 6.5));                      // يوقعك تقريباً بلوكتين قدامه
+        try { vic.applyKnockback({ x: (dx / d) * pull, z: (dz / d) * pull }, 0.32); } catch (err) { /* */ }
+        hurtPlayer(vic, 4, e);
+        HARVEST.yank(dim, hand, chestV); cue(dim, "harv_yank", L);
+        notify(vic, "§cThe strings drag you to the Harvester!", 30);
+      }
+      return;
+    }
+    if (st.t >= 10) harvEnd(e, st, 70);
+    return;
+  }
+  // ── 2) Hollow Stare: بس اللي يباوع عليه ينبطأ (أوطى مستوى، بدون ظلام) ──
+  if (st.skill === "stare") {
+    if (tp) face(tp.location);
+    try { e.addEffect("slowness", 6, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
+    const eyeY = L.y + 2.22, ex = { x: L.x + f.x * 0.3, z: L.z + f.z * 0.3 };
+    const eyeA = { x: ex.x + left.x * 0.12, y: eyeY, z: ex.z + left.z * 0.12 }, eyeB = { x: ex.x - left.x * 0.12, y: eyeY - 0.02, z: ex.z - left.z * 0.12 };
+    if (st.t % 4 === 0) HARVEST.stareEyes(dim, eyeA, eyeB);
+    if (st.t === 2) cue(dim, "harv_stare", L);
+    if (st.t === 12) {
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 13 })) {
+        const vx = L.x - pl.location.x, vy = L.y + 2.0 - (pl.location.y + 1.62), vz = L.z - pl.location.z, l = Math.hypot(vx, vy, vz) || 1;
+        const v = viewDir(pl);
+        if ((v.x * vx + v.y * vy + v.z * vz) / l < 0.55) { notify(pl, "§7You looked away from the Hollow Stare", 25); continue; }
+        try { pl.addEffect("slowness", 100, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
+        HARVEST.stareHit(dim, { x: ex.x, y: eyeY, z: ex.z }, pl.location);
+        notify(pl, "§5The HOLLOW STARE slows you §7(look away next time)", 35);
+      }
+    }
+    if (st.t >= 30) harvEnd(e, st, 60);
+    return;
+  }
+  // ── 3) Sealing Scythe: رفعة فوق الراس ثم حصدة قدامه؛ الضربة تختم الأيتم اللي بإيدك ──
+  if (st.skill === "reap") {
+    if (tp && st.t <= 10) face(tp.location);
+    try { e.addEffect("slowness", 6, { amplifier: 3, showParticles: false }); } catch (err) { /* */ }
+    if (st.t === 2) cue(dim, "harv_reap_raise", L);
+    if (st.t === 6 || st.t === 8) HARVEST.reapCharge(dim, { x: L.x - f.x * 0.2, y: L.y + 3.6, z: L.z - f.z * 0.2 });
+    if (st.t === 12) {
+      HARVEST.reapSweep(dim, L, { x: f.x, y: 0, z: f.z }, 3.2);
+      cue(dim, "harv_reap", L);
+      for (const pl of dim.getPlayers({ location: L, maxDistance: 4.6 })) {
+        const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
+        if ((vx * f.x + vz * f.z) / l < 0.1) continue;
+        hurtPlayer(pl, 10, e);
+        try { pl.applyKnockback({ x: (vx / l) * 0.5, z: (vz / l) * 0.5 }, 0.2); } catch (err) { /* */ }
+        sealHeld(pl);
+      }
+    }
+    if (st.t >= 22) harvEnd(e, st, 70);
+  }
+}
+// الختم: يقفل الأيتم اللي بإيد اللاعب (مهارة قدرة، سلاح بمهارات، الكاتانا) 8 ثواني بس. باقي المهارات تشتغل عادي
+const sealedItems = new Map();      // pid -> Map(itemId -> untilTick)
+function sealLeft(p, id) {
+  const m = sealedItems.get(p.id), u = m && m.get(id);
+  if (u === undefined) return 0;
+  const left = u - system.currentTick;
+  if (left <= 0) { m.delete(id); return 0; }
+  return left;
+}
+const sealName = (id) => (ITEM_TO_SKILL[id] && ITEM_TO_SKILL[id].name) || (WEAPONS[id] && WEAPONS[id].name) || "That item";
+function sealHeld(pl) {
+  let held;
+  try { held = inv(pl).getItem(pl.selectedSlotIndex); } catch (err) { /* */ }
+  const id = held && held.typeId;
+  if (!id || !(ITEM_TO_SKILL[id] || WEAPON_SKILLS[id] || id === KATANA)) { notify(pl, "§7The Sealing Scythe found nothing in your hand to seal", 30); return; }
+  let m = sealedItems.get(pl.id);
+  if (!m) { m = new Map(); sealedItems.set(pl.id, m); }
+  m.set(id, system.currentTick + SEAL_TICKS);
+  HARVEST.seal(pl.dimension, pl.location); cue(pl.dimension, "harv_seal", pl.location);
+  notify(pl, `§5⛓ ${sealName(id)} is SEALED for 8s §7(your other skills still work)`, 50);
+  for (let k = 10; k < SEAL_TICKS; k += 20) later(k, () => { if (valid(pl) && sealLeft(pl, id) > 0) HARVEST.sealTick(pl.dimension, pl.location); });
+  later(SEAL_TICKS + 1, () => { if (valid(pl) && sealLeft(pl, id) === 0) { notify(pl, `§d${sealName(id)} is free again`, 30); sfxPlayer(pl, "sh.ready", 0.8, 1.0); } });
+}
+world.afterEvents.entityDie.subscribe((ev) => {
+  try {
+    const e = ev.deadEntity;
+    if (!e || e.typeId !== HARVESTER) return;
+    const L = { ...e.location };
+    HARVEST.death(e.dimension, L); cue(e.dimension, "harv_death", L);
+    gst.delete(e.id);
+  } catch (err) { /* */ }
+});
+const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick, [MANTIS]: mantisTick, [HARVESTER]: harvesterTick };
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -6687,7 +7015,104 @@ system.runInterval(() => {
   }
 }, 2);
 
-const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth", "sh:grey_bear": "Grey Bear", "sh:bear_cub": "Bear Cub", "sh:prayer_mantis": "Prayer Mantis" };
+// ═════════════════════════ v1.39 لعنة القرويين (MOD_GUIDE §56 بند 10) ═════════════════════════
+// نادراً كلش: كل دقيقتين لكل لاعب بالعالم العادي فرصة 3% ينلعن قروي بالغ قريب منه (48 بلوكة)، وبس إذا ماكو قروي ملعون ثاني قريب.
+// القروي ينبدل بنسخة ملعونة تشبهه بالضبط (نفس المهنة والبيئة، tools/gen_curse.py) وتطلع بجسمه بقع سودة تكبر على 3 مراحل
+// (كل مرحلة دقيقتين)، وبالثالثة عيونه تضوي بنفسجي. بعدها يتشنج 3 ثواني ويتحول لوحش برتبة حسب درجة اللعنة
+// (تنحدد أول ما ينلعن، مثل درجات الصدع): 55% Lowly، 30% Grim، 12% Vile، 3% Cursed. قتله قبل ما يتحول ينهي اللعنة.
+const CURSED_VIL = "sh:cursed_villager";
+const CURSE_STAGE_T = [2400, 4800], CURSE_TURN_T = 6600, CURSE_SHAKE_T = 60, CURSE_CHANCE = 0.03;
+const CURSE_GRADES = [[0.55, RANK0_TYPES], [0.30, GRIM_TYPES], [0.12, VILE_TYPES], [0.03, CURSED_TYPES]];
+const CURSE_RANK = ["Lowly", "Grim", "Vile", "Cursed"];
+const curseTurning = new Set();
+function rollCurseGrade() { let r = Math.random(); for (let g = 0; g < CURSE_GRADES.length; g++) { r -= CURSE_GRADES[g][0]; if (r < 0) return g + 1; } return 1; }
+function curseVillager(vil, speed = 1) {
+  try {
+    if (!vil || !valid(vil) || vil.typeId !== "minecraft:villager_v2" || vil.getComponent("minecraft:is_baby")) return undefined;
+    const dim = vil.dimension, L = { ...vil.location };
+    let prof = 0, biome = 0;
+    try { prof = vil.getComponent("minecraft:variant")?.value ?? 0; } catch (err) { /* */ }
+    try { biome = vil.getComponent("minecraft:mark_variant")?.value ?? 0; } catch (err) { /* */ }
+    const c = dim.spawnEntity(CURSED_VIL, L);
+    try { c.setProperty("sh:prof", Math.max(0, Math.min(14, prof))); c.setProperty("sh:biome", Math.max(0, Math.min(6, biome))); c.setProperty("sh:stage", 1); } catch (err) { /* */ }
+    try { c.setRotation(vil.getRotation()); } catch (err) { /* */ }
+    try { if (vil.nameTag) c.nameTag = vil.nameTag; } catch (err) { /* */ }
+    c.setDynamicProperty("sh_curse_t", 0); c.setDynamicProperty("sh_curse_g", rollCurseGrade()); c.setDynamicProperty("sh_curse_x", speed);
+    vil.remove();
+    CURSE.spread(dim, L); cue(dim, "curse_mark", L);
+    for (const q of dim.getPlayers({ location: L, maxDistance: 32 })) notify(q, "§5A villager has been CURSED! §7Black marks are spreading on its body...", 60);
+    return c;
+  } catch (err) { return undefined; }
+}
+function curseTransform(e) {
+  const dim = e.dimension, L = { ...e.location }, g = Math.max(1, Math.min(4, e.getDynamicProperty("sh_curse_g") || 1));
+  const type = pick(CURSE_GRADES[g - 1][1]);
+  curseTurning.delete(e.id);
+  CURSE.burst(dim, L); cue(dim, "curse_burst", L);
+  try { e.remove(); } catch (err) { /* */ }
+  let m;
+  try { m = dim.spawnEntity(type, L); } catch (err) { return; }
+  const np = nearestPlayer(m, 48);
+  if (np) scaleMonster(m, getState(np.p).rank);
+  for (const q of dim.getPlayers({ location: L, maxDistance: 40 })) notify(q, `§5The cursed villager turned into a ${MON_NAMES[type] || type}! §7(${CURSE_RANK[g - 1]} curse)`, 70);
+}
+system.runInterval(() => {
+  let dim;
+  try { dim = world.getDimension("overworld"); } catch (err) { return; }
+  let list = [];
+  try { list = dim.getEntities({ type: CURSED_VIL }); } catch (err) { return; }
+  for (const e of list) {
+    try {
+      let t = e.getDynamicProperty("sh_curse_t");
+      if (typeof t !== "number") { t = 0; e.setDynamicProperty("sh_curse_g", rollCurseGrade()); }      // من بيضة (للتجربة)
+      const x = e.getDynamicProperty("sh_curse_x") || 1;
+      t += 20 * x; e.setDynamicProperty("sh_curse_t", t);
+      const L = e.location, stage = t >= CURSE_STAGE_T[1] ? 3 : t >= CURSE_STAGE_T[0] ? 2 : 1;
+      if (e.getProperty("sh:stage") !== stage) {
+        e.setProperty("sh:stage", stage);
+        CURSE.spread(dim, L); cue(dim, "curse_mark", L);
+        const msg = stage === 2 ? "§5The black marks on the cursed villager are spreading..." : "§5The cursed villager's eyes glow violet. §7It will turn into a monster soon (defeat it to end the curse)";
+        if (stage >= 2) for (const q of dim.getPlayers({ location: L, maxDistance: 24 })) notify(q, msg, 60);
+      }
+      CURSE.tick(dim, L, stage);
+      if (stage >= 2 && Math.random() < 0.04) cue(dim, "curse_whisper", L);
+      if (t >= CURSE_TURN_T && !curseTurning.has(e.id)) {                          // يتشنج 3 ثواني ثم يتحول
+        curseTurning.add(e.id);
+        e.setProperty("sh:shake", 1);
+        cue(dim, "curse_turn", L);
+        for (const q of dim.getPlayers({ location: L, maxDistance: 32 })) notify(q, "§5§lThe cursed villager is TURNING!", 50);
+        for (let k = 0; k < CURSE_SHAKE_T; k += 4) later(k, () => { if (valid(e)) { CURSE.turn(dim, e.location, k); try { e.addEffect("slowness", 6, { amplifier: 9, showParticles: false }); } catch (err) { /* */ } } });
+        later(CURSE_SHAKE_T, () => { if (valid(e)) curseTransform(e); else curseTurning.delete(e.id); });
+      }
+    } catch (err) { /* */ }
+  }
+}, 20);
+// نادراً كلش: قروي قريب من لاعب ينلعن (وماكو قروي ملعون ثاني قريب)
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      if (p.dimension.id !== "minecraft:overworld" || Math.random() >= CURSE_CHANCE) continue;
+      if (p.dimension.getEntities({ type: CURSED_VIL, location: p.location, maxDistance: 96 }).length) continue;
+      const vils = p.dimension.getEntities({ type: "minecraft:villager_v2", location: p.location, maxDistance: 48 }).filter((v) => !v.getComponent("minecraft:is_baby"));
+      if (vils.length) curseVillager(pick(vils));
+    } catch (err) { /* */ }
+  }
+}, 2400);
+// انقتل قبل ما يتحول: اللعنة تنتهي (ويسجل بكتاب الوحوش)
+world.afterEvents.entityDie.subscribe((ev) => {
+  try {
+    const e = ev.deadEntity;
+    if (!e || e.typeId !== CURSED_VIL) return;
+    curseTurning.delete(e.id);
+    CURSE.free(e.dimension, e.location); cue(e.dimension, "curse_free", e.location);
+    const k = ev.damageSource && ev.damageSource.damagingEntity;
+    if (k && k.typeId === "minecraft:player") {
+      const st = getState(k); st.kills = st.kills || {}; st.kills[CURSED_VIL] = (st.kills[CURSED_VIL] || 0) + 1; saveState(k, st);
+      notify(k, "§dThe curse is broken. §7The villager's soul is free.", 50);
+    }
+  } catch (err) { /* */ }
+});
+const MON_NAMES = { "sh:training_archer": "Training Archer", "sh:ember_imp": "Ember Imp", "sh:rust_guard": "Rust Guard", "sh:shadow_hound": "Shadow Hound", "sh:sand_scorpion": "Sand Scorpion", "sh:gloomhorn": "Gloomhorn", "sh:hollow_seer": "Hollow Seer", "sh:veilfox": "Veilfox", "sh:magmamoth": "Magmamoth", "sh:grey_bear": "Grey Bear", "sh:bear_cub": "Bear Cub", "sh:prayer_mantis": "Prayer Mantis", "sh:hollow_harvester": "Hollow Harvester" };
 system.runInterval(() => {
   const players = world.getAllPlayers();
   if (!players.length) return;
@@ -6773,10 +7198,15 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       else ensureTemple(p);
     } else if (ev.id === "sh:redraw") {
       const st = getState(p); st.power = null; st.powerless = false; saveState(p, st); removeSkillItems(p); say(p, "§bYour power was released. Step on a temple crystal to draw again.");
+    } else if (ev.id === "sh:curse") {
+      const vils = p.dimension.getEntities({ type: "minecraft:villager_v2", location: p.location, maxDistance: 32 }).filter((v) => !v.getComponent("minecraft:is_baby"));
+      vils.sort((a, b) => dist2d(a.location, p.location) - dist2d(b.location, p.location));
+      const c = vils.length ? curseVillager(vils[0], msg === "fast" ? 20 : 1) : undefined;
+      say(p, c ? `§5The nearest villager is now cursed${msg === "fast" ? " (fast: about 17 s)" : ""}` : "§7No adult villager within 32 blocks");
     } else if (ev.id === "sh:weapons") {
       for (const wid of [KATANA, ...Object.keys(WEAPONS).filter((k) => k !== KATANA)]) if (!hasItem(p, wid)) giveItem(p, wid);
       giveItem(p, "sh:skill_scroll", 3);
-      say(p, "§aYou received all weapons (7) + 3 Skill Upgrade Scrolls");
+      say(p, `§aYou received all weapons (${Object.keys(WEAPONS).length}) + 3 Skill Upgrade Scrolls`);
     } else if (ev.id === "sh:spawn") {
       let n = Math.min(6, Math.max(1, parseInt(msg, 10) || 2)), ok = 0;
       for (let i = 0; i < n; i++) if (trySpawnMonster(p, true)) ok++;
@@ -6827,6 +7257,8 @@ const MAT_DROPS = {
   "sh:magmamoth": [["sh:soul_amber", 0.04, 1, 1]],
   "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:soul_silver", 0.04, 1, 1]],
   "sh:prayer_mantis": [["sh:soul_verdant", 0.05, 1, 1]],
+  // v1.39: الحاصد الأجوف يسقط منجله دائماً (الطريقة الوحيدة للحصول عليه) + شعلة روح نادرة
+  "sh:hollow_harvester": [["sh:harvest_scythe", 1, 1, 1], ["sh:soul_violet", 0.05, 1, 1]],
 };
 function dropMaterials(e) {
   const list = MAT_DROPS[e.typeId];
@@ -6837,7 +7269,7 @@ function dropMaterials(e) {
     try { e.dimension.spawnItem(new ItemStack(id, n), e.location); } catch (err) { /* */ }
   }
 }
-const dropNames = (id) => (MAT_DROPS[id] || []).map(([m, ch]) => `${(GEAR.materials[m] || GEAR.flames[m] || {}).name || m}${ch < 0.1 ? " §8(very rare)" : ""}`).join("§7, ");
+const dropNames = (id) => (MAT_DROPS[id] || []).map(([m, ch]) => `${(GEAR.materials[m] || GEAR.flames[m] || WEAPONS[m] || {}).name || m}${ch >= 1 ? " §8(always)" : ch < 0.1 ? " §8(very rare)" : ""}`).join("§7, ");
 
 // ───── دروع الوحوش: لما تلبس القطع الأربعة من نفس الطقم ينفتح بونص الطقم ─────
 const SET_OF = {};
@@ -7235,7 +7667,7 @@ const ACH_CHECK = {
   scholar: (p, st) => Object.keys(st.kills || {}).filter((k) => (st.kills[k] || 0) > 0).length >= 8,
   slay_gloom: (p, st) => ((st.kills || {})["sh:gloomhorn"] || 0) >= 1, slay_seer: (p, st) => ((st.kills || {})["sh:hollow_seer"] || 0) >= 1,
   slay_fox: (p, st) => ((st.kills || {})["sh:veilfox"] || 0) >= 1, slay_bear: (p, st) => ((st.kills || {})["sh:grey_bear"] || 0) >= 1,
-  slay_mammoth: (p, st) => ((st.kills || {})["sh:magmamoth"] || 0) >= 1, slay_mantis: (p, st) => ((st.kills || {})["sh:prayer_mantis"] || 0) >= 1,
+  slay_mammoth: (p, st) => ((st.kills || {})["sh:magmamoth"] || 0) >= 1, slay_mantis: (p, st) => ((st.kills || {})["sh:prayer_mantis"] || 0) >= 1, slay_harvester: (p, st) => ((st.kills || {})["sh:hollow_harvester"] || 0) >= 1,
   first_material: (p) => hasMaterial(p),
   tailored: (p) => wearsPiece(p),
   full_set: (p) => !!wornSet(p),
@@ -7261,7 +7693,7 @@ function achCheck(p) {
   } catch (e) { /* */ }
 }
 system.runInterval(() => { for (const p of world.getAllPlayers()) achCheck(p); }, 40);
-dashHooks.push((p) => achCount(p, "dash"));
+dashHooks.push((p, d) => { achCount(p, "dash"); pAnim(p, d === "right" ? "dash_right" : d === "left" ? "dash_left" : "dash_back"); });
 // شاشات الإنجازات: الفئات ← القائمة (صورة لكل إنجاز، المقفول ??? وتلميح) ← التفاصيل
 async function openAchievements(player) {
   const a = achGet(player);

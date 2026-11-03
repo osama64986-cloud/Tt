@@ -1,0 +1,48 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:hollow_harvester",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_hollow_harvester",
+        "hot": "textures/entity/sh_hollow_harvester_hot"
+      },
+      "geometry": {
+        "default": "geometry.sh_hollow_harvester"
+      },
+      "animations": {
+        "idle": "animation.sh_hollow_harvester.idle",
+        "walk": "animation.sh_hollow_harvester.walk",
+        "state": "controller.animation.sh_hollow_harvester.state",
+        "look": "animation.sh.look",
+        "strings": "animation.sh_hollow_harvester.strings",
+        "yank": "animation.sh_hollow_harvester.yank",
+        "stare": "animation.sh_hollow_harvester.stare",
+        "reap": "animation.sh_hollow_harvester.reap",
+        "burn": "animation.sh_hollow_harvester.burn",
+        "death": "animation.sh_hollow_harvester.death",
+        "attack": "animation.sh_hollow_harvester.attack"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "attack"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_mammoth"
+      ],
+      "spawn_egg": {
+        "base_color": "#4a3c58",
+        "overlay_color": "#e2b85c"
+      }
+    }
+  }
+}

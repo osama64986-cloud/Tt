@@ -1,0 +1,79 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.sh_cursed_villager_base": {
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.base"
+      ]
+    },
+    "controller.render.sh_cursed_villager_masked": {
+      "arrays": {
+        "textures": {
+          "Array.biomes": [
+            "Texture.plains",
+            "Texture.desert",
+            "Texture.jungle",
+            "Texture.savanna",
+            "Texture.snow",
+            "Texture.swamp",
+            "Texture.taiga"
+          ],
+          "Array.professions": [
+            "Texture.unskilled",
+            "Texture.farmer",
+            "Texture.fisherman",
+            "Texture.shepherd",
+            "Texture.fletcher",
+            "Texture.librarian",
+            "Texture.cartographer",
+            "Texture.cleric",
+            "Texture.armorer",
+            "Texture.weapon_smith",
+            "Texture.tool_smith",
+            "Texture.butcher",
+            "Texture.leatherworker",
+            "Texture.stonemason",
+            "Texture.nitwit"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "query.property('sh:prof') == 0 ? Material.default : Material.masked"
+        }
+      ],
+      "textures": [
+        "Array.biomes[query.property('sh:biome')]",
+        "Array.professions[query.property('sh:prof')]"
+      ]
+    },
+    "controller.render.sh_cursed_villager_curse": {
+      "arrays": {
+        "textures": {
+          "Array.curse": [
+            "Texture.curse1",
+            "Texture.curse1",
+            "Texture.curse2",
+            "Texture.curse3"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.curse[query.property('sh:stage')]"
+      ]
+    }
+  }
+}

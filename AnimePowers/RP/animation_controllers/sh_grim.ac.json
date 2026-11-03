@@ -907,6 +907,170 @@
      "blend_transition": 0.1
     }
    }
+  },
+  "controller.animation.sh_hollow_harvester.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "strings": {
+     "animations": [
+      "strings"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "yank": {
+     "animations": [
+      "yank"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "stare": {
+     "animations": [
+      "stare"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "reap": {
+     "animations": [
+      "reap"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "burn": {
+     "animations": [
+      "burn"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
   }
  }
 }

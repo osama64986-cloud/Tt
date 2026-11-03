@@ -45,12 +45,15 @@ HOLD = {
     "stone_maul": {"grip": 10.0, "scale": 0.74, "fp_scale": 0.64, "kind": "maul"},
     "sunset_spear": {"grip": 11.1, "scale": 0.68, "kind": "spear"},
     "silver_oath": {"grip": 11.7, "scale": 0.8, "kind": "sword"},
+    "harvest_scythe": {"grip": 8.0, "scale": 0.64, "fp_scale": 0.5, "kind": "scythe"},
 }
 POSE = {
     # الثالث: النصل لقدام وفوق بزاوية، والحد لقدام-تحت (مثل السيف بإيد اللاعب بماينكرافت)
     "sword": {"tp_up": 35.0, "fp_dir": (0.42, 0.80, 0.42)},
     "maul": {"tp_up": 55.0, "fp_dir": (0.30, 0.85, 0.45)},
     "spear": {"tp_up": 8.0, "fp_dir": (0.25, 0.80, 0.60)},
+    # المنجل: العصا شبه واقفة جنبك والنصل فوقها لقدام (+x الموديل = اتجاه النصل)، وحده المقعّر لتحت نحوك
+    "scythe": {"tp_up": 72.0, "fp_dir": (0.34, 0.80, 0.50)},
 }
 
 
@@ -712,14 +715,99 @@ def silver_oath():
     return w
 
 
-ALL = [katana, dagger, cleaver, shadow_blade, claws, maul, spear, silver_oath]
+# ───────────────────────── منجل الحاصد (يوقعه الحاصد الأجوف بس) ─────────────────────────
+def scythe():
+    """منجل الحاصد الأجوف: عصا خشب قديمة رمادية بعُقد، لف خيش وحبل عند القبضة، مقبض جانبي صغير (مثل المنجل الحقيقي)،
+    جلبة حديد صدئة فوق بعين بنفسجية، ونصل طويل مقوس لقدام (+x) ينزل طرفه لتحت: ظهر غامق، جسم حديد،
+    حد فاتح من تحت وخيط بنفسجي ملعون على الحد. خيطين دمية معلقين من النصل (تلميح لمهارة خيوط الدمية)."""
+    w = Weapon("harvest_scythe")
+    WOOD_A, WOOD_B, WOOD_HI, KNOT = (86, 66, 50), (64, 48, 36), (112, 90, 68), (44, 32, 24)
+    TWINE_A, TWINE_B = (156, 128, 82), (120, 96, 58)
+    IRON, IRON_HI, IRON_LO = (74, 74, 84), (128, 128, 142), (46, 46, 54)
+    RUST, RUST_HI = (122, 64, 36), (158, 92, 50)
+    SPINE, BODY, BODY_HI, EDGE = (52, 52, 62), (96, 98, 112), (126, 128, 142), (196, 198, 212)
+    CURSE, CURSE_HI, CURSE_LO = (150, 70, 230), (214, 160, 255), (84, 30, 140)
+    STRING = (222, 214, 196)
+    # طرف العصا السفلي: غطاء حديد وشوكة صغيرة
+    w.box(0, -5.0, 0, 1.0, 1.0, 1.0, IRON_LO)
+    w.box(0, -4.0, 0, 2.0, 1.2, 2.0, IRON, top=IRON_HI)
+    # العصا: قطاعات 1.5 بلون خشب متبادل، مع عُقد غامقة على الجنب
+    y = -2.8
+    k = 0
+    while y < 30.0:
+        w.box(0, y, 0, 1.5, 1.5, 1.5, WOOD_A if k % 2 == 0 else WOOD_B, top=WOOD_HI)
+        if k in (5, 13, 18):
+            w.box(0.85, y + 0.4, 0, 0.2, 0.7, 0.7, KNOT)
+        y += 1.5; k += 1
+    top = y                                                            # نهاية العصا (~33.2)
+    # القبضة: لف خيش وحبل (y 4..12)
+    for i in range(8):
+        w.box(0, 4.0 + i, 0, 2.0, 1.0, 2.0, TWINE_A if i % 2 == 0 else TWINE_B, top=shade(TWINE_A, 1.15))
+    # المقبض الجانبي (الحقيقي بالمنجل): وتد قصير لورا (-x) ملفوف بحبل
+    for i in range(3):
+        w.box(-1.25 - i, 19.5, 0, 1.0, 1.1, 1.1, WOOD_A if i % 2 == 0 else WOOD_B, top=WOOD_HI)
+    w.box(-0.95, 19.4, 0, 0.4, 1.3, 1.3, TWINE_B)
+    # جلبة الحديد بالراس: حلقتين + صدأ + عين ملعونة
+    w.box(0, top - 2.6, 0, 2.2, 1.0, 2.2, IRON, top=IRON_HI)
+    w.box(0, top - 1.6, 0, 2.4, 2.6, 2.4, IRON_LO, top=IRON)
+    w.box(0, top + 1.0, 0, 2.0, 0.8, 2.0, IRON, top=IRON_HI)
+    w.box(-0.7, top - 1.2, 1.25, 0.8, 0.8, 0.1, RUST)
+    w.box(0.6, top - 0.2, -1.25, 0.6, 0.6, 0.1, RUST_HI)
+    for sz in (-1, 1):
+        w.box(0, top - 0.8, sz * 1.3, 1.0, 1.0, 0.2, CURSE, top=CURSE_HI)
+        w.box(-0.2, top - 0.5, sz * 1.42, 0.4, 0.4, 0.06, CURSE_HI)
+    # شوكة خلفية صغيرة (-x) مقابل النصل
+    w.box(-1.9, top - 0.6, 0, 1.4, 1.2, 1.0, IRON, top=IRON_HI)
+    w.box(-3.0, top - 0.3, 0, 0.9, 0.7, 0.7, IRON_HI)
+    # النصل: 15 قطاع على +x. الظهر يرتفع شوية ثم ينحني لتحت، والعرض يضيق للطرف
+    n, seg = 18, 1.4
+    x0 = 1.1
+
+    def spine_y(t):
+        return top + 1.8 + 1.8 * math.sin(math.pi * min(1.0, t * 1.8)) * (1 - t) - 10.0 * t ** 2.0
+
+    def width(t):
+        return 5.6 * (1 - t) ** 0.8 + 0.4
+    for i in range(n):
+        t = i / (n - 1)
+        spine = spine_y(t)
+        wd = width(t)
+        th = 1.0 - 0.45 * t
+        cx = x0 + i * seg + seg / 2
+        sp = min(0.6, wd * 0.25)
+        ed = max(0.3, wd * 0.28)
+        body = wd - sp - ed
+        w.box(cx, spine - sp, 0, seg, sp, th, SPINE, top=IRON)                           # الظهر
+        if body > 0.05:
+            w.box(cx, spine - sp - body, 0, seg, body, th * 0.92, BODY if i % 3 else BODY_HI, top=BODY_HI)
+        w.box(cx, spine - wd, 0, seg, ed, th * 0.7, EDGE)                                 # الحد الفاتح
+        if i < n - 1:
+            w.box(cx, spine - wd - 0.3, 0, seg, 0.3, th * 0.45, CURSE if i % 2 else CURSE_HI)  # خيط اللعنة على الحد
+        if i in (3, 9):
+            w.box(cx, spine - sp - body * 0.6, 0, seg * 0.7, min(0.8, body * 0.5), th + 0.12, RUST)  # بقع صدأ
+        if i in (2, 6, 11):
+            w.box(cx, spine - sp - body * 0.45, 0, seg * 0.8, 0.25, th + 0.1, CURSE_LO)        # رونة ملعونة محفورة
+    w.box(x0 + n * seg + 0.35, spine_y(1.0) - 0.8, 0, 0.7, 0.5, 0.4, EDGE)                 # الطرف
+    # خيطين دمية معلقين من حد النصل، بنهايتهم عقدة بنفسجية
+    for (i, L) in ((3, 5.0), (7, 3.6)):
+        t = i / (n - 1)
+        sx = x0 + i * seg + seg / 2
+        sy = spine_y(t) - width(t) - 0.3
+        w.box(sx, sy - L, 0.0, 0.3, L, 0.3, STRING)
+        w.box(sx, sy - L - 0.7, 0.0, 0.7, 0.7, 0.7, CURSE, top=CURSE_HI)
+    w.save()
+    return w
+
+
+ALL = [katana, dagger, cleaver, shadow_blade, claws, maul, spear, silver_oath, scythe]
 
 if __name__ == "__main__":
     ws = [fn() for fn in ALL]
     save_animations()
     outdir = os.environ.get("PREVIEW_DIR", "/tmp")
     preview(ws[:4], os.path.join(outdir, "weapons3d_a.png"))
-    preview(ws[4:], os.path.join(outdir, "weapons3d_b.png"))
+    preview(ws[4:8], os.path.join(outdir, "weapons3d_b.png"))
+    preview(ws[8:], os.path.join(outdir, "weapons3d_c.png"))
     for w in ws:
         print(f"{w.ident:14} cubes={len(w.cubes):3} colors={len(w.palette)}")
     print("preview", outdir)

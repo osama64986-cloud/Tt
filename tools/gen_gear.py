@@ -641,6 +641,146 @@ def paint_plate(set_key, pal, layer):
     return img
 
 
+# ───────────────────────── الدروع ثلاثية الأبعاد (v1.39) ─────────────────────────
+# موديل كل قطعة = صناديق درع ماينكرافت نفسها (نفس الأماكن والتضخيم من geometry.humanoid.armor*) + قطع زيادة مجسمة.
+# العظام بنفس أسماء عظام اللاعب (head/body/rightArm/leftArm/rightLeg/leftLeg) فتتحرك وياه (حتى ويا أنميشن الضربات).
+# القطع الزيادة تاخذ ألوانها من "عينات" مرسومة بالنص التحتاني من التكستشر (64×64): كل وجه يغطي عينة 8×8 فيها تظليل.
+SW = {"plate": (0, 32), "trim": (8, 32), "dark": (16, 32), "emblem": (24, 32), "glow": (32, 32), "fur": (40, 32), "horn": (48, 32), "top": (56, 32)}
+PIVOT = {"head": [0, 24, 0], "body": [0, 24, 0], "rightArm": [-5, 22, 0], "leftArm": [5, 22, 0], "rightLeg": [-1.9, 12, 0], "leftLeg": [1.9, 12, 0]}
+BASE_CUBES = {   # (العظمة، origin، size، uv، inflate، mirror) مثل ماينكرافت بالضبط
+    "helmet": [("head", [-4, 24, -4], [8, 8, 8], [0, 0], 1.0, False)],
+    "chestplate": [("body", [-4, 12, -2], [8, 12, 4], [16, 16], 1.01, False), ("rightArm", [-8, 12, -2], [4, 12, 4], [40, 16], 1.0, False),
+                   ("leftArm", [4, 12, -2], [4, 12, 4], [40, 16], 1.0, True)],
+    "leggings": [("body", [-4, 12, -2], [8, 12, 4], [16, 16], 0.5, False), ("rightLeg", [-3.9, 0, -2], [4, 12, 4], [0, 16], 0.49, False),
+                 ("leftLeg", [-0.1, 0, -2], [4, 12, 4], [0, 16], 0.49, True)],
+    "boots": [("rightLeg", [-3.9, 0, -2], [4, 12, 4], [0, 16], 1.0, False), ("leftLeg", [-0.1, 0, -2], [4, 12, 4], [0, 16], 1.0, True)],
+}
+
+
+def _mirror_x(o, sz):
+    return [-(o[0] + sz[0]), o[1], o[2]]
+
+
+def _extras(key):
+    """القطع المجسمة لكل طقم: (القطعة، العظمة، origin، size، عينة الجوانب، {rot, pivot})"""
+    E = []
+    def both(piece, bone_r, o, sz, sw, **kw):
+        E.append((piece, bone_r, o, sz, sw, kw))
+        bl = bone_r.replace("right", "left")
+        kw2 = dict(kw)
+        if "rot" in kw:
+            kw2["rot"] = [kw["rot"][0], -kw["rot"][1], -kw["rot"][2]]
+            kw2["pivot"] = [-kw["pivot"][0], kw["pivot"][1], kw["pivot"][2]]
+        E.append((piece, bl, _mirror_x(o, sz), sz, sw, kw2))
+    if key == "dawnsteel":                                                     # فارس الشمس
+        E.append(("helmet", "head", [-0.7, 33, -4.8], [1.4, 2.2, 9.6], "trim", {}))           # عرف ذهبي متدرج فوق الخوذة
+        E.append(("helmet", "head", [-0.7, 35.2, -4.0], [1.4, 1.4, 6.4], "trim", {}))
+        E.append(("helmet", "head", [-0.7, 36.6, -4.0], [1.4, 1.0, 2.6], "trim", {}))
+        E.append(("helmet", "head", [-1.6, 30.0, -5.6], [3.2, 1.8, 0.6], "emblem", {"front": True}))   # صفيحة الشمس على الجبين
+        E.append(("chestplate", "body", [-4.6, 24.4, -3.4], [9.2, 1.4, 6.8], "trim", {}))      # الياقة
+        E.append(("chestplate", "body", [-2.2, 17.6, -3.6], [4.4, 4.4, 0.6], "emblem", {"front": True}))  # شعار الشمس
+        both("chestplate", "rightArm", [-9.8, 21.6, -3.4], [5.6, 3.2, 6.8], "plate")            # كتافة بطبقتين
+        both("chestplate", "rightArm", [-9.6, 20.0, -3.2], [5.2, 1.6, 6.4], "plate")
+        both("chestplate", "rightArm", [-9.8, 24.8, -3.4], [5.6, 0.6, 6.8], "trim")
+        both("leggings", "rightLeg", [-4.5, 9.0, -2.95], [4.6, 3.0, 0.6], "plate")             # حماية الفخذ
+        both("leggings", "rightLeg", [-3.2, 4.4, -3.05], [2.6, 2.2, 0.7], "trim")              # واقي الركبة
+        both("boots", "rightLeg", [-4.6, -0.9, -4.3], [4.4, 1.8, 1.5], "plate")                # مقدمة الجزمة
+        both("boots", "rightLeg", [-5.0, 3.4, -3.2], [5.2, 0.8, 6.4], "trim")                  # حزام الكاحل
+    elif key == "abyssium":                                                    # فارس الهاوية
+        both("helmet", "head", [-6.4, 29.6, -1.0], [1.8, 1.8, 1.8], "horn")                     # قرنين ملتويين
+        both("helmet", "head", [-7.0, 31.2, -0.8], [1.4, 2.4, 1.4], "horn", rot=[0, 0, 22], pivot=[-6.3, 31.2, 0])
+        both("helmet", "head", [-7.8, 33.3, -0.6], [1.0, 2.2, 1.0], "horn", rot=[0, 0, 40], pivot=[-7.3, 33.3, 0])
+        E.append(("helmet", "head", [-3.2, 27.6, -5.5], [6.4, 0.8, 0.5], "glow", {}))           # شق الخوذة المضوي
+        E.append(("chestplate", "body", [-1.0, 18.0, -3.7], [2.0, 3.6, 0.7], "glow", {}))       # بلورة الهاوية على الصدر
+        E.append(("chestplate", "body", [-4.6, 24.4, -3.4], [9.2, 1.2, 6.8], "dark", {}))
+        both("chestplate", "rightArm", [-10.0, 21.4, -3.6], [6.0, 3.6, 7.2], "plate")          # كتافات بأشواك
+        both("chestplate", "rightArm", [-8.6, 25.0, -1.8], [1.2, 2.6, 1.2], "horn")
+        both("chestplate", "rightArm", [-8.6, 25.0, 0.8], [1.0, 1.8, 1.0], "horn")
+        both("leggings", "rightLeg", [-4.5, 8.8, -2.95], [4.6, 3.4, 0.6], "plate")
+        both("leggings", "rightLeg", [-2.4, 5.0, -3.7], [1.2, 1.4, 1.3], "horn")               # شوكة الركبة
+        both("boots", "rightLeg", [-3.6, -0.9, -4.7], [2.4, 1.6, 2.0], "plate")                # جزمة مدببة
+        both("boots", "rightLeg", [-2.4, 0.2, 2.9], [0.8, 1.0, 1.4], "horn")                   # مهماز الكعب
+    else:                                                                       # الدب: قلنسوة راس دب
+        both("helmet", "head", [-4.4, 33.0, -1.6], [2.2, 2.2, 1.2], "fur")                     # أذنين
+        E.append(("helmet", "head", [-2.4, 30.4, -6.7], [4.8, 1.8, 1.8], "fur", {}))           # خطم فوق الجبين
+        E.append(("helmet", "head", [-0.8, 31.5, -7.0], [1.6, 0.9, 0.4], "dark", {}))          # الخشم
+        E.append(("helmet", "head", [-2.2, 29.9, -6.6], [4.4, 0.5, 0.5], "horn", {}))          # أسنان
+        E.append(("chestplate", "body", [-5.2, 22.6, -3.6], [10.4, 2.6, 7.2], "fur", {}))      # عباءة فرو على الأكتاف
+        for x in (-2.1, -0.4, 1.3):
+            E.append(("chestplate", "body", [x, 19.6 + (0.4 if x > -1 and x < 0 else 0), -3.5], [0.8, 1.8, 0.6], "horn", {}))  # قلادة مخالب
+        both("chestplate", "rightArm", [-9.6, 21.0, -3.2], [5.4, 3.2, 6.4], "fur")
+        both("leggings", "rightLeg", [-3.4, 4.8, -3.0], [3.0, 2.0, 0.8], "fur")
+        both("boots", "rightLeg", [-5.0, 3.4, -3.3], [5.2, 1.8, 6.6], "fur")                   # حافة فرو
+    return E
+
+
+def armor_geometry(key, piece):
+    bones = {}
+    for bone, o, sz, uv, inf, mir in BASE_CUBES[piece]:
+        bones.setdefault(bone, {"name": bone, "pivot": PIVOT[bone], "cubes": []})
+        c = {"origin": o, "size": sz, "uv": uv, "inflate": inf}
+        if mir:
+            c["mirror"] = True
+        bones[bone]["cubes"].append(c)
+    for pc, bone, o, sz, sw, kw in _extras(key):
+        if pc != piece:
+            continue
+        bones.setdefault(bone, {"name": bone, "pivot": PIVOT[bone], "cubes": []})
+        side = SW[sw]
+        front = SW["emblem"] if kw.get("front") else side
+        uvf = {f: {"uv": list(front if f == "north" else (SW["top"] if f == "up" and sw in ("plate", "trim") else (SW["dark"] if f == "down" else side))),
+                   "uv_size": [8, 8]} for f in ("north", "south", "east", "west", "up", "down")}
+        c = {"origin": [round(v, 3) for v in o], "size": [round(v, 3) for v in sz], "uv": uvf}
+        if "rot" in kw:
+            c["rotation"] = kw["rot"]; c["pivot"] = kw["pivot"]
+        bones[bone]["cubes"].append(c)
+    return {"description": {"identifier": f"geometry.sh_{key}_{piece}", "texture_width": 64, "texture_height": 64,
+                            "visible_bounds_width": 3, "visible_bounds_height": 3, "visible_bounds_offset": [0, 1.5, 0]},
+            "bones": list(bones.values())}
+
+
+def paint_swatches(img, key, pal, pattern):
+    """العينات (النص التحتاني 64×32): صفيحة، شريط، غامق، شعار، توهج، فرو، قرن، وجه فوكاني"""
+    if pattern == "plate":
+        dk, bs, lt, hi, ac, ac2, out = pal["dark"], pal["base"], pal["light"], pal["hi"], pal["accent"], pal["accent2"], pal["out"]
+    else:
+        dk, bs, lt, hi, ac, ac2 = pal["dark"], pal["base"], pal["light"], mix(pal["light"], (255, 255, 255), 0.4), pal["accent"], pal["accent2"]
+        out = mix(dk, (0, 0, 0), 0.4)
+    px = img.load()
+    def sw(name, fn):
+        u, v = SW[name]
+        for y in range(8):
+            for x in range(8):
+                c = fn(x, y)
+                if c is not None:
+                    px[u + x, v + y] = (*[int(t) for t in c], 255)
+    def grad(top, mid, bot):
+        return lambda x, y: mix(top if y < 2 else (mid if y < 6 else bot), dk if x == 7 else (lt if x == 0 else mid), 0.25 if x in (0, 7) else 0)
+    sw("plate", grad(lt, bs, mix(bs, dk, 0.55)))
+    sw("trim", grad(mix(ac, (255, 255, 255), 0.3), ac, mix(ac, (0, 0, 0), 0.35)))
+    sw("dark", lambda x, y: mix(out, dk, 0.4) if (x + y) % 4 else out)
+    sw("top", lambda x, y: hi if (x, y) in ((1, 1), (2, 1), (1, 2)) else (lt if x + y < 8 else bs))
+    sw("glow", lambda x, y: (255, 255, 255) if 3 <= x <= 4 and 3 <= y <= 4 else mix(ac, (255, 255, 255), 0.35 - 0.04 * abs(3.5 - x)))
+    if key == "dawnsteel":                                                     # شمس: قرص ذهبي بقلب أبيض وأشعة
+        def sun(x, y):
+            dx, dy = x - 3.5, y - 3.5
+            r = (dx * dx + dy * dy) ** 0.5
+            if r < 1.2: return (255, 250, 220)
+            if r < 2.3: return ac
+            if (abs(dx) < 0.6 or abs(dy) < 0.6 or abs(abs(dx) - abs(dy)) < 0.6) and r < 3.9: return mix(ac, (255, 255, 255), 0.25)
+            return mix(bs, dk, 0.25)
+        sw("emblem", sun)
+        sw("horn", grad(lt, bs, dk)); sw("fur", grad(lt, bs, dk))
+    elif key == "abyssium":                                                    # بلورة هاوية: معين مضوي
+        sw("emblem", lambda x, y: (255, 255, 255) if abs(x - 3.5) + abs(y - 3.5) < 1.2 else (ac if abs(x - 3.5) + abs(y - 3.5) < 3.2 else out))
+        sw("horn", lambda x, y: mix(out, mix(hi, (230, 210, 255), 0.4), y / 7.0) if x not in (0, 7) else out)   # القرن يفتح لراسه
+        sw("fur", grad(lt, bs, dk))
+    else:                                                                       # الدب: فرو وخطوط مخالب
+        sw("fur", lambda x, y: lt if (x * 3 + y) % 7 == 0 else (dk if (x + 2 * y) % 5 == 0 else bs))
+        sw("emblem", lambda x, y: ac if (x - y) in (-2, 0, 2) and 1 <= x <= 6 else bs)
+        sw("horn", lambda x, y: mix(ac, (255, 255, 255), 0.25) if y < 5 else mix(ac, (120, 100, 80), 0.5))
+
+
 # ───────────────────────── تكستشر الدرع (تخطيط ماينكرافت القياسي 64×32) ─────────────────────────
 def box_faces(u, v, w, h, d):
     """مناطق UV لصندوق (box UV): يرجع dict اسم_الوجه -> (x0, y0, w, h)"""
@@ -814,7 +954,9 @@ def main():
     PAT_METAL = {"helmet": ["AAA", "A A"], "chestplate": ["A A", "AAA", "AAA"], "leggings": ["AAA", "A A", "A A"], "boots": ["A A", "A A"]}  # مثل دروع الحديد
     for key, sname, col, (ma, mb), prot, dur, pal, pattern in ARMOR_SETS:
         for layer in (1, 2):
-            (paint_plate(key, pal, layer) if pattern == "plate" else paint_armor(key, pal, pattern, layer)).save(os.path.join(RP, "textures", "models", "armor", f"sh_{key}_{layer}.png") if os.path.isdir(os.path.join(RP, "textures", "models", "armor")) else _mk_armor_dir(key, layer, pal, pattern))
+            top = paint_plate(key, pal, layer) if pattern == "plate" else paint_armor(key, pal, pattern, layer)
+            full = Image.new("RGBA", (64, 64), (0, 0, 0, 0)); full.paste(top, (0, 0)); paint_swatches(full, key, pal, pattern)
+            full.save(os.path.join(RP, "textures", "models", "armor", f"sh_{key}_{layer}.png") if os.path.isdir(os.path.join(RP, "textures", "models", "armor")) else _mk_armor_dir(key, layer, pal, pattern))
         for (piece, pname, slot, ench, geo, vis, layer), p in zip(PIECES, prot):
             ident = f"sh:{key}_{piece}"
             img = (icon_rows(PLATE_ICONS[piece], pal) if pattern == "plate" else icon_armor(piece, pal, pattern)).image()
@@ -833,7 +975,7 @@ def main():
                 "identifier": ident,
                 "materials": {"default": "armor", "enchanted": "armor_enchanted"},
                 "textures": {"default": f"textures/models/armor/sh_{key}_{layer}", "enchanted": "textures/misc/enchanted_actor_glint"},
-                "geometry": {"default": geo},
+                "geometry": {"default": f"geometry.sh_{key}_{piece}"},
                 "scripts": {"parent_setup": f"variable.{vis} = 0.0;"},
                 "render_controllers": ["controller.render.armor"]}}})
             wjson(os.path.join(recipes, f"sh_{key}_{piece}.json"), {"format_version": "1.20.10", "minecraft:recipe_shaped": {
@@ -841,6 +983,9 @@ def main():
                 "pattern": PAT[piece] if mb else PAT_METAL[piece], "key": {"A": {"item": ma}, "B": {"item": mb}} if mb else {"A": {"item": ma}},
                 "unlock": [{"item": ma}], "result": {"item": ident}}})
     wjson(itp, it)
+    # v1.39: موديلات الدروع المجسمة (12 قطعة)
+    with open(os.path.join(RP, "models", "entity", "sh_armor.geo.json"), "w", encoding="utf-8") as f:
+        json.dump({"format_version": "1.12.0", "minecraft:geometry": [armor_geometry(k, pc[0]) for k, *_r in ARMOR_SETS for pc in PIECES]}, f, indent=1)
     # بيانات للسكربت (نفس الأسماء والأوصاف بالضبط)
     gear = {
         "materials": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _s, _p in MATERIALS},

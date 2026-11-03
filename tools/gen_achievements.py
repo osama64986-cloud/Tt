@@ -81,6 +81,7 @@ ACH = [
     ("slay_bear", "monsters", "Bear Hug Survivor", "Defeat a Grey Bear.", "Do not let it hug you.", 150, False, "mob:sh:grey_bear"),
     ("slay_mammoth", "monsters", "Volcano Walker", "Defeat a Magmamoth.", "A mountain of fur and lava.", 150, False, "mob:sh:magmamoth"),
     ("slay_mantis", "monsters", "Molt and Fall", "Defeat a Prayer Mantis.", "It prays before it strikes.", 200, False, "mob:sh:prayer_mantis"),
+    ("slay_harvester", "monsters", "Cut the Strings", "Defeat a Hollow Harvester.", "A scarecrow that moves like a puppet.", 200, False, "mob:sh:hollow_harvester"),
     # ── العتاد والخيمياء ──
     ("first_material", "gear", "Strike Metal", "Get a crafting material: raw metal, an ingot or a bear part.", "Dig deep: something shines under the stone.", 30, False, "item:sh_raw_dawnsteel"),
     ("tailored", "gear", "Forged", "Wear a piece of crafted armor.", "Ingots and hides make good armor.", 60, False, "item:sh_dawnsteel_chestplate"),

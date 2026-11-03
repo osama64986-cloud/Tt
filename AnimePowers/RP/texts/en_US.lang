@@ -32,3 +32,7 @@ tile.sh:dawnsteel_ore.name=Dawnsteel Ore
 tile.sh:deepslate_dawnsteel_ore.name=Deepslate Dawnsteel Ore
 tile.sh:abyssium_ore.name=Abyssium Ore
 tile.sh:deepslate_abyssium_ore.name=Deepslate Abyssium Ore
+entity.sh:hollow_harvester.name=Hollow Harvester
+item.spawn_egg.entity.sh:hollow_harvester.name=Hollow Harvester Egg
+entity.sh:cursed_villager.name=Cursed Villager
+item.spawn_egg.entity.sh:cursed_villager.name=Cursed Villager Egg

@@ -1,4 +1,5 @@
-"""تعريفات وحوش: ثعلب الحجاب (Veilfox، Grim)، ماغماموث (Magmamoth، Vile)، الدب الرمادي (Grey Bear، Vile) وجروه (Bear Cub).
+"""تعريفات وحوش: ثعلب الحجاب (Veilfox، Grim)، ماغماموث (Magmamoth، Vile)، الدب الرمادي (Grey Bear، Vile) وجروه (Bear Cub)،
+السرعوف المصلّي والحاصد الأجوف (Cursed).
 يكتب: كيان BP، كيان RP، متحكم الرسم (للماموث: تكستشر حار)، الأنميشن، متحكمات الأنميشن، النصوص.
 (الموديل والتكستشر من gen_grim_monsters.py)   التشغيل: python3 tools/gen_new_monsters.py"""
 import json
@@ -30,6 +31,9 @@ MON = {
                           egg=("#4c8a32", "#c060ff"), states=6,
                           props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
                                  "sh:camo": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
+    "hollow_harvester": dict(ident="sh:hollow_harvester", name="Hollow Harvester", rank="sh_rank3", hp=320, speed=0.27, atk=12, w=1.1, h=2.9, kb=0.8, xp=60,
+                             egg=("#4a3c58", "#e2b85c"), states=5,
+                             props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
     "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=0.6, h=1.2, kb=0.1, xp=2,
                      egg=("#7a7672", "#d8d6d0"), states=1, props=None),
 }
@@ -61,6 +65,14 @@ def bp_entity(key, m):
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.3
         c["minecraft:nameable"] = {}
         c["minecraft:damage_sensor"] = {"triggers": [{"cause": "fall", "deals_damage": "yes", "damage_multiplier": 0.2}]}   # ضرر السقوط 20% (المكون الرسمي، مثل الماعز)
+    if key == "hollow_harvester":                           # الحاصد: فزاعة قش، ضعفه النار (المكون الرسمي damage_sensor)
+        c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.2
+        c["minecraft:nameable"] = {}
+        c["minecraft:damage_sensor"] = {"triggers": [
+            {"cause": "fall", "deals_damage": "yes", "damage_multiplier": 0.5},
+            {"cause": "fire", "deals_damage": "yes", "damage_multiplier": 3.0},
+            {"cause": "fire_tick", "deals_damage": "yes", "damage_multiplier": 3.0},
+            {"cause": "lava", "deals_damage": "yes", "damage_multiplier": 2.0}]}
     if key == "bear_cub":                                   # الجرو: موديل خاص صغير (1.2 بلوكة)، ما يكون حارس ولا زعيم صدع
         c["minecraft:type_family"]["family"] = ["sh_monster", "sh_cub", "monster"]
         c["minecraft:behavior.melee_attack"]["speed_multiplier"] = 1.5
@@ -83,6 +95,10 @@ def rp_entity(key, m, anims):
         cd["textures"]["hot"] = f"textures/entity/sh_{key}_hot"
         cd["render_controllers"] = ["controller.render.sh_mammoth"]
         cd["scale"] = None
+        animate.append("attack")
+    if key == "hollow_harvester":                           # تكستشرين: عادي، ومحروق لما يشتعل (sh:hot)
+        cd["textures"]["hot"] = f"textures/entity/sh_{key}_hot"
+        cd["render_controllers"] = ["controller.render.sh_mammoth"]
         animate.append("attack")
     if key == "prayer_mantis":                              # 3 تكستشرات: عادي، بعد الانسلاخ (hot)، تمويه شبه شفاف بمادة alphablend
         cd["textures"]["hot"] = f"textures/entity/sh_{key}_hot"
@@ -395,10 +411,77 @@ def mantis_anims(A):
         "ant_l": {"rotation": {"0.0": [0, 0, 0], "1.1": [30, 0, 0]}}, "ant_r": {"rotation": {"0.0": [0, 0, 0], "1.1": [30, 0, 0]}}}}
 
 
+def harvester_anims(A):
+    """الحاصد الأجوف: يتحرك مثل دمية خيوط (رجات مفاجئة، راس يتدلى ويميل، صليب الدمية فوقه يتأرجح).
+    الإيد اليمين ماسكة المنجل: لما ترتفع الإيد، عظمة المنجل تلف بعكسها حتى النصل يبقى فوق (ارتفاع فوق الراس ثم حصدة لتحت)."""
+    S = "animation.sh_hollow_harvester."
+    D = "query.modified_distance_moved"
+    MS = "query.modified_move_speed"
+    jerk = f"(math.mod({LT}, 3.4) < 0.16 ? 18 : 0)"                                       # رجة راس مفاجئة كل ~3 ثواني
+    A[S + "idle"] = {"loop": True, "bones": {
+        "body": {"rotation": [f"5 + math.sin({LT}*40)*2", 0, f"math.sin({LT}*52)*3"]},
+        "head": {"rotation": [f"6 + math.sin({LT}*33)*4", 0, f"math.sin({LT}*41)*8 + {jerk}"]},
+        "hat": {"rotation": [0, 0, f"math.sin({LT}*41)*2"]},
+        "arm_l": {"rotation": [f"math.sin({LT}*47)*6", 0, f"5 + math.sin({LT}*39)*4"]},
+        "arm_r": {"rotation": [f"math.sin({LT}*47 + 40)*3", 0, -3]},
+        "leg_l": {"rotation": [f"math.sin({LT}*47)*2", 0, 0]}, "leg_r": {"rotation": [f"-math.sin({LT}*47)*2", 0, 0]},
+        "control": {"position": [0, f"math.sin({LT}*60)*0.5", 0], "rotation": [0, f"math.sin({LT}*25)*5", 0]}}}
+    A[S + "walk"] = {"loop": True, "bones": {                                             # مشية دمية: رجلين متيبسة وقفزات صغيرة كأن الخيوط ترفعه
+        "leg_l": {"rotation": [f"math.cos({D}*26)*34*{MS}", 0, 0]},
+        "leg_r": {"rotation": [f"-math.cos({D}*26)*34*{MS}", 0, 0]},
+        "body": {"position": [0, f"math.abs(math.sin({D}*26))*1.4*{MS}", 0], "rotation": [f"6*{MS}", 0, f"math.sin({D}*26)*5*{MS}"]},
+        "arm_l": {"rotation": [f"-math.cos({D}*26)*26*{MS}", 0, 0]},
+        "arm_r": {"rotation": [f"-math.cos({D}*26)*8*{MS}", 0, 0]},
+        "head": {"rotation": [0, 0, f"math.sin({D}*52)*7*{MS}"]},
+        "control": {"position": [0, f"math.abs(math.sin({D}*26))*0.8*{MS}", 0]}}}
+    at = "variable.attack_time*180"
+    A[S + "attack"] = {"loop": True, "bones": {                                           # ضربة عادية: ترفع المنجل وتقطع لقدام
+        "arm_r": {"rotation": [f"-math.sin({at})*100", 0, f"math.sin({at})*12"]},
+        "scythe": {"rotation": [f"math.sin({at})*120", 0, 0]},
+        "body": {"rotation": [f"math.sin({at})*8", f"-math.sin({at})*20", 0]}}}
+    A[S + "strings"] = {"loop": True, "bones": {                                          # خيوط الدمية (1): الإيد اليسار تأشر عليك وترتجف
+        "arm_l": {"rotation": [f"-82 + math.sin({LT}*1400)*2", -10, -8]},
+        "body": {"rotation": [-6, -14, 0]}, "head": {"rotation": [4, 0, 16]},
+        "arm_r": {"rotation": [6, 0, -4]}, "control": {"rotation": [14, 0, 0]}}}
+    A[S + "yank"] = {"loop": "hold_on_last_frame", "animation_length": 0.5, "bones": {    # السحبة (2): الإيد ترجع بقوة والصليب ينسحب
+        "arm_l": {"rotation": {"0.0": [-82, -10, -8], "0.12": [30, 0, -14], "0.5": [10, 0, -5]}},
+        "body": {"rotation": {"0.0": [-6, -14, 0], "0.12": [-14, 12, 0], "0.5": [0, 0, 0]}},
+        "head": {"rotation": {"0.0": [4, 0, 16], "0.12": [-10, 0, -8], "0.5": [0, 0, 0]}},
+        "control": {"rotation": {"0.0": [14, 0, 0], "0.12": [-22, 0, 0], "0.5": [0, 0, 0]}}}}
+    A[S + "stare"] = {"loop": True, "bones": {                                            # النظرة الجوفاء (3): الراس مايل كلش ويرتجف
+        "head": {"rotation": [f"12 + math.sin({LT}*1800)*1.2", 0, f"34 + math.sin({LT}*1500)*1.5"]},
+        "body": {"rotation": [12, 0, 0]}, "arm_l": {"rotation": [8, 0, 8]}, "arm_r": {"rotation": [6, 0, -6]},
+        "control": {"rotation": [0, 0, -10], "position": [0, -1, 0]}}}
+    A[S + "reap"] = {"loop": "hold_on_last_frame", "animation_length": 1.1, "bones": {    # المنجل الخاتم (4): يرفعه فوق راسه ثم حصدة قوية لقدام
+        "arm_r": {"rotation": {"0.0": [0, 0, 0], "0.45": [-150, 0, -16], "0.55": [-154, 0, -16], "0.72": [-40, 0, 34], "0.9": [-22, 0, 20], "1.1": [0, 0, 0]}},
+        "scythe": {"rotation": {"0.0": [0, 0, 0], "0.45": [120, 0, 0], "0.55": [122, 0, 0], "0.72": [110, 0, 0], "0.9": [60, 0, 0], "1.1": [0, 0, 0]}},
+        "body": {"rotation": {"0.0": [0, 0, 0], "0.45": [-10, 30, 0], "0.55": [-10, 32, 0], "0.72": [16, -35, 0], "1.1": [0, 0, 0]}},
+        "arm_l": {"rotation": {"0.0": [0, 0, 0], "0.45": [-30, 0, 20], "0.72": [10, 0, 10], "1.1": [0, 0, 0]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.5": [-8, 0, 0], "0.72": [14, 0, 0], "1.1": [0, 0, 0]}},
+        "control": {"rotation": {"0.0": [0, 0, 0], "0.5": [-12, 0, 0], "0.72": [18, 0, 0], "1.1": [0, 0, 0]}}}}
+    A[S + "burn"] = {"loop": True, "bones": {                                             # يحترق (5): يتخبط ويهز إيديه وراسه
+        "arm_l": {"rotation": [f"-60 + math.sin({LT}*900)*50", 0, f"20 + math.sin({LT}*700)*15"]},
+        "arm_r": {"rotation": [f"-40 + math.sin({LT}*900 + 90)*30", 0, -15]},
+        "head": {"rotation": [f"math.sin({LT}*1100)*10", f"math.sin({LT}*800)*20", f"math.sin({LT}*1300)*12"]},
+        "body": {"rotation": [f"math.sin({LT}*1000)*4", f"math.sin({LT}*600)*10", 0]},
+        "control": {"rotation": [f"math.sin({LT}*900)*10", 0, f"math.sin({LT}*700)*10"]}}}
+    A[S + "death"] = {"loop": "hold_on_last_frame", "animation_length": 1.4, "bones": {   # الخيوط تنقطع: يطيح كومة، القبعة تطيح، والصليب يرتفع ويبتعد
+        "root": {"position": {"0.0": [0, 0, 0], "0.5": [0, -8, 0], "1.0": [0, -13, 0]}},
+        "leg_l": {"rotation": {"0.0": [0, 0, 0], "0.5": [-80, 0, -10], "1.0": [-90, 0, -15]}},
+        "leg_r": {"rotation": {"0.0": [0, 0, 0], "0.5": [-80, 0, 10], "1.0": [-90, 0, 15]}},
+        "body": {"rotation": {"0.0": [0, 0, 0], "0.6": [20, 0, 0], "1.0": [55, 0, 8], "1.4": [60, 0, 10]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.8": [30, 0, 30], "1.4": [35, 0, 40]}},
+        "arm_l": {"rotation": {"0.0": [0, 0, 0], "1.0": [-20, 0, 30]}},
+        "arm_r": {"rotation": {"0.0": [0, 0, 0], "1.0": [-10, 0, -20]}},
+        "scythe": {"rotation": {"0.0": [0, 0, 0], "0.6": [0, 0, 0], "1.0": [60, 0, -10]}},
+        "hat": {"position": {"0.0": [0, 0, 0], "0.7": [2, 2, -1], "1.4": [5, -14, -6]}, "rotation": {"0.0": [0, 0, 0], "0.7": [0, 0, -20], "1.4": [-40, 0, -70]}},
+        "control": {"position": {"0.0": [0, 0, 0], "0.5": [0, 6, 0], "1.4": [0, 22, 0]}, "rotation": {"0.0": [0, 0, 0], "1.4": [0, 90, 0]}}}}
+
+
 def build():
     A = load(os.path.join(RP, "animations", "sh_grim.animation.json"))
     C = load(os.path.join(RP, "animation_controllers", "sh_grim.ac.json"))
-    for k in [k for k in A["animations"] if k.startswith(("animation.sh_quillback.", "animation.sh_veilfox.", "animation.sh_magmamoth.", "animation.sh_grey_bear.", "animation.sh_prayer_mantis."))]:
+    for k in [k for k in A["animations"] if k.startswith(("animation.sh_quillback.", "animation.sh_veilfox.", "animation.sh_magmamoth.", "animation.sh_grey_bear.", "animation.sh_prayer_mantis.", "animation.sh_hollow_harvester."))]:
         del A["animations"][k]
     for k in [k for k in C["animation_controllers"] if "quillback" in k]:
         del C["animation_controllers"][k]
@@ -406,6 +489,9 @@ def build():
     mammoth_anims(A["animations"])
     bear_anims(A["animations"])
     mantis_anims(A["animations"])
+    harvester_anims(A["animations"])
+    C["animation_controllers"]["controller.animation.sh_hollow_harvester.state"] = controller(
+        [("strings", 1), ("yank", 2), ("stare", 3), ("reap", 4), ("burn", 5)], death=True)
     C["animation_controllers"]["controller.animation.sh_prayer_mantis.state"] = controller(
         [("stance", 1), ("camo", 2), ("stab", 3), ("lock", 4), ("molt", 5), ("counter", 6)], death=True)
     C["animation_controllers"]["controller.animation.sh_grey_bear.state"] = controller(
@@ -422,6 +508,7 @@ def build():
     rp_entity("grey_bear", MON["grey_bear"], ["hug_open", "hug_hold", "throw", "scratch", "roar", "sleep", "death", "attack"])
     rp_entity("bear_cub", MON["bear_cub"], [])
     rp_entity("prayer_mantis", MON["prayer_mantis"], ["stance", "camo", "stab", "lock", "molt", "counter", "death", "attack"])
+    rp_entity("hollow_harvester", MON["hollow_harvester"], ["strings", "yank", "stare", "reap", "burn", "death", "attack"])
     rc = {"format_version": "1.8.0", "render_controllers": {"controller.render.sh_mammoth": {
         "arrays": {"textures": {"Array.t": ["Texture.default", "Texture.hot"]}},
         "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],

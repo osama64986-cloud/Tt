@@ -12,7 +12,7 @@
         "enchanted": "textures/misc/enchanted_actor_glint"
       },
       "geometry": {
-        "default": "geometry.humanoid.armor.leggings"
+        "default": "geometry.sh_dawnsteel_leggings"
       },
       "scripts": {
         "parent_setup": "variable.leg_layer_visible = 0.0;"

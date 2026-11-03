@@ -191,6 +191,196 @@
         }
       ]
     },
+    "sh.curse_burst": {
+      "category": "hostile",
+      "min_distance": 8,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/husk/convert1",
+          "volume": 0.9,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/mob/husk/convert2",
+          "volume": 0.9,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.curse_free": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/zombie/unfect",
+          "volume": 0.7,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.curse_mark": {
+      "category": "hostile",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/mob/warden/heartbeat_1",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_2",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_3",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_4",
+          "volume": 0.6,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.curse_turn": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/zombie/remedy",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.curse_whisper": {
+      "category": "hostile",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/cave/cave1",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave2",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave3",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave4",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave5",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave6",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave7",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave8",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave9",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave10",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave11",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave12",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave13",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave14",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave15",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave16",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave17",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave18",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave19",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave20",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave21",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave22",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave23",
+          "volume": 0.25,
+          "pitch": 1.1
+        }
+      ]
+    },
     "sh.dagger_hit": {
       "category": "player",
       "min_distance": 3,
@@ -417,6 +607,236 @@
           "name": "sounds/mob/irongolem/throw",
           "volume": 0.7,
           "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_burn": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/fire/ignite",
+          "volume": 0.8,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_death": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/death",
+          "volume": 0.8,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_reap": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 36,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/riptide_mono1",
+          "volume": 0.5,
+          "pitch": 0.75
+        }
+      ]
+    },
+    "sh.harv_reap_raise": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/evocation_illager/prepare_attack1",
+          "volume": 0.6,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/mob/evocation_illager/prepare_attack2",
+          "volume": 0.6,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_seal": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/block/respawn_anchor/deplete1",
+          "volume": 0.7,
+          "pitch": 1.25
+        },
+        {
+          "name": "sounds/block/respawn_anchor/deplete2",
+          "volume": 0.7,
+          "pitch": 1.25
+        }
+      ]
+    },
+    "sh.harv_seal_tail": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/block/enchanting_table/enchant1",
+          "volume": 0.6,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/block/enchanting_table/enchant2",
+          "volume": 0.6,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/block/enchanting_table/enchant3",
+          "volume": 0.6,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.harv_snap": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/random/bowhit1",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit2",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit3",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit4",
+          "volume": 0.7,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.harv_stare": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/mob/guardian/curse",
+          "volume": 0.4,
+          "pitch": 1.15
+        }
+      ]
+    },
+    "sh.harv_string": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_middle1",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle2",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle3",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle4",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.harv_string_cast": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_start",
+          "volume": 0.8,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_sway": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/sway1",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway2",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway3",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway4",
+          "volume": 0.7,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_twitch": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/twitch",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.harv_yank": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/shoot1",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/shoot2",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/shoot3",
+          "volume": 0.7,
+          "pitch": 0.7
         }
       ]
     },
@@ -719,6 +1139,111 @@
         {
           "name": "sounds/block/amethyst/shimmer",
           "volume": 0.9
+        }
+      ]
+    },
+    "sh.scythe_hit": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/pierce1",
+          "volume": 0.5,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/item/trident/pierce2",
+          "volume": 0.5,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/item/trident/pierce3",
+          "volume": 0.5,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.scythe_reap": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/riptide_mono1",
+          "volume": 0.4,
+          "pitch": 0.95
+        }
+      ]
+    },
+    "sh.scythe_string": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_middle1",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle2",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle3",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle4",
+          "volume": 0.6,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.scythe_swing": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/item/spear/attackmiss1",
+          "volume": 0.48,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/item/spear/attackmiss2",
+          "volume": 0.48,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/item/spear/attackmiss3",
+          "volume": 0.48,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.scythe_yank": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/shoot1",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/shoot2",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/shoot3",
+          "volume": 0.6,
+          "pitch": 0.85
         }
       ]
     },

@@ -456,6 +456,17 @@ export const ACH = [
   "iconLocked": "textures/ui/sh_ach/slay_mantis_x"
  },
  {
+  "id": "slay_harvester",
+  "cat": "monsters",
+  "name": "Cut the Strings",
+  "desc": "Defeat a Hollow Harvester.",
+  "hint": "A scarecrow that moves like a puppet.",
+  "xp": 200,
+  "secret": false,
+  "icon": "textures/ui/sh_ach/slay_harvester",
+  "iconLocked": "textures/ui/sh_ach/slay_harvester_x"
+ },
+ {
   "id": "first_material",
   "cat": "gear",
   "name": "Strike Metal",

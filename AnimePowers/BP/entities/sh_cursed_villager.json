@@ -1,0 +1,102 @@
+{
+ "format_version": "1.21.50",
+ "minecraft:entity": {
+  "description": {
+   "identifier": "sh:cursed_villager",
+   "is_spawnable": true,
+   "is_summonable": true,
+   "is_experimental": false,
+   "properties": {
+    "sh:prof": {
+     "type": "int",
+     "range": [
+      0,
+      14
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:biome": {
+     "type": "int",
+     "range": [
+      0,
+      6
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:stage": {
+     "type": "int",
+     "range": [
+      0,
+      3
+     ],
+     "default": 1,
+     "client_sync": true
+    },
+    "sh:shake": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ],
+     "default": 0,
+     "client_sync": true
+    }
+   }
+  },
+  "components": {
+   "minecraft:type_family": {
+    "family": [
+     "sh_cursed_villager",
+     "mob"
+    ]
+   },
+   "minecraft:health": {
+    "value": 20,
+    "max": 20
+   },
+   "minecraft:collision_box": {
+    "width": 0.6,
+    "height": 1.9
+   },
+   "minecraft:movement": {
+    "value": 0.42
+   },
+   "minecraft:navigation.walk": {
+    "can_path_over_water": false,
+    "avoid_water": true,
+    "can_pass_doors": true,
+    "can_open_doors": true
+   },
+   "minecraft:movement.basic": {},
+   "minecraft:jump.static": {},
+   "minecraft:physics": {},
+   "minecraft:pushable": {
+    "is_pushable": true,
+    "is_pushable_by_piston": true
+   },
+   "minecraft:persistent": {},
+   "minecraft:nameable": {},
+   "minecraft:behavior.float": {
+    "priority": 0
+   },
+   "minecraft:behavior.random_stroll": {
+    "priority": 6,
+    "speed_multiplier": 0.6
+   },
+   "minecraft:behavior.look_at_player": {
+    "priority": 7,
+    "look_distance": 8
+   },
+   "minecraft:behavior.random_look_around": {
+    "priority": 8
+   },
+   "minecraft:ambient_sound_interval": {
+    "value": 8.0,
+    "range": 12.0,
+    "event_name": "ambient"
+   }
+  }
+ }
+}

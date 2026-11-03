@@ -96,13 +96,14 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     getComponent(n) {
       if (n === "minecraft:health") { const s = this; return { get currentValue() { return s._hp; }, get effectiveMax() { return s._max; }, setCurrentValue(v) { s._hp = v; }, resetToMaxValue() { s._hp = s._max; } }; }
       if (n === "minecraft:type_family") return { hasTypeFamily: (f) => f === "monster" };
+      if (n === "minecraft:onfire") return this._fire > tick ? { onFireTicksRemaining: this._fire - tick } : undefined;   // v1.39: مشتعل؟
       return undefined;
     },
     applyDamage(a) { this._hp -= a; stats.damage = (stats.damage || 0) + a; if (this._hp <= 0) { this._valid = false; } return true; },
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
-    addEffect(id, dur, o) { effectLog.push(id); stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
+    addEffect(id, dur, o) { effectLog.push(id); (this._effs = this._effs || {})[id] = { dur, amp: o && o.amplifier }; stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l, o) { this.location = { x: l.x, y: l.y, z: l.z }; if (o && o.facingLocation) { this._yaw = (Math.atan2(-(o.facingLocation.x - l.x), o.facingLocation.z - l.z) * 180) / Math.PI; } else if (o && o.rotation) this._yaw = o.rotation.y; }, remove() { this._valid = false; }, kill() { this._valid = false; },
-    setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire() {},
+    setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire(sec) { this._fire = tick + Math.round((sec || 0) * 20); stats.fires = (stats.fires || 0) + 1; },
     setRotation(r) { if (r) this._yaw = r.y; }, getRotation() { return { x: 0, y: this._yaw || 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },
@@ -126,7 +127,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis','sh:hollow_harvester'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis','sh:hollow_harvester'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
@@ -147,6 +148,7 @@ Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
   camera: { fade() {} },
   getGameMode() { return "Survival"; },                                          // مثل الـAPI الحقيقي (GameMode)
+  playAnimation(id, opts) { (stats.anims = stats.anims || []).push(id); stats.animOpts = opts; },   // v1.39: أنميشن اللاعب
   // الشاشة: فوق يسار = شريط الأكشن، فوق الهوت بار = العنوان. actionBars يسجل الشاشة كاملة (فوق + تحت) حتى الاختبارات القديمة تلقى كل الكتابات،
   // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
   onScreenDisplay: {
@@ -933,6 +935,110 @@ export const __sim = {
       if (!molt || !newSkin || !huskN || !burstN || boom <= 0 || !faster) failures.push("السرعوف: الانسلاخ ما اشتغل");
       clear(); player._hp = 20; player._max = 20;
     }
+    // v1.39 الحاصد الأجوف: خيوط الدمية (سحبة، والداش يقطعها)، النظرة الجوفاء (بطء I بس بدون ظلام، واللي يلف وجهه ينجو)،
+    // المنجل الخاتم (يقفل بس الأيتم اللي بإيدك 8 ثواني)، ضعف النار (يتخبط ويتفحم وتتوقف مهاراته)، والمنجل يسقط دائماً + مهارتين المنجل
+    {
+      console.log("\nالحاصد الأجوف:");
+      const clear = () => { entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true; player._effs = {}; };
+      const harv = (z) => { const m = mkEntity("sh:hollow_harvester", { x: 0, y: 64, z }, dims.overworld, 320); m._max = 320; m._yaw = 180; entities.push(m); return m; };
+      const waitState = (m, want, z, maxT = 6000) => { for (let t = 0; t < maxT; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === want) return true; if (m.getProperty("sh:state") === 0 && t % 40 === 0) m.location = { x: 0, y: 64, z }; } return false; };
+      const heard = (id) => stats.soundIds.has(id);
+      // 1) الخيوط تسحب
+      clear(); let m = harv(9); stats.soundIds.clear();
+      const strings = waitState(m, 1, 9); const k0 = stats.knock || 0, d0 = stats.damage || 0;
+      let yanked = false; for (let t = 0; t < 30 && !yanked; t += 2) { advance(2); if (m.getProperty("sh:state") === 2) yanked = true; }
+      const pulled = (stats.knock || 0) > k0 && (stats.damage || 0) > d0, strSnd = heard("sh.harv_string_cast") && heard("sh.harv_yank");
+      // 2) الداش يقطع الخيط قبل السحبة
+      clear(); m = harv(9);
+      const strings2 = waitState(m, 1, 9); advance(2);
+      player.location = { x: 3.2, y: 64, z: 0 }; let snapped = false, yank2 = false;
+      for (let t = 0; t < 20; t += 2) { advance(2); player.location = { x: 3.2, y: 64, z: 0 }; if (m.getProperty("sh:state") === 2) yank2 = true; if (m.getProperty("sh:state") === 0) snapped = true; }
+      const snapSnd = heard("sh.harv_snap");
+      // 3) النظرة: تباوع عليه = Slowness I (amplifier 0) بدون ظلام؛ تلف وجهك = ما يصير شي
+      clear(); m = harv(6);
+      const stare = waitState(m, 3, 6); for (let t = 0; t < 16; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; }
+      const slow = player._effs.slowness, stareOk = !!slow && slow.amp === 0 && !player._effs.darkness && !player._effs.blindness;
+      clear(); m = harv(6); const gv = player.getViewDirection; player.getViewDirection = () => ({ x: 0, y: 0, z: -1 });
+      const stare2 = waitState(m, 3, 6); for (let t = 0; t < 16; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; }
+      const dodged = !player._effs.slowness; player.getViewDirection = gv;
+      // 4) المنجل الخاتم: يقفل الساطور اللي بإيدك 8 ثواني بس، وباقي الأيتمات تشتغل
+      clear(); hold("sh:ember_cleaver"); m = harv(2.5); const d1 = stats.damage || 0;
+      const reap = waitState(m, 4, 2.5); for (let t = 0; t < 16; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; }
+      const reapDmg = Math.round((stats.damage || 0) - d1);
+      m._valid = false; stats.actionBars = []; stats.titles = [];
+      fire("itemUse", { source: player, itemStack: new ItemStack("sh:ember_cleaver") }); advance(10);
+      const blocked = stats.actionBars.concat(stats.titles || []).some((t) => /SEALED/.test(t));
+      stats.actionBars = []; stats.titles = []; hold("sh:stone_maul");
+      fire("itemUse", { source: player, itemStack: new ItemStack("sh:stone_maul") }); advance(10);
+      const otherFree = !stats.actionBars.concat(stats.titles || []).some((t) => /Stone Maul is SEALED/.test(t));
+      advance(170); stats.actionBars = []; stats.titles = []; hold("sh:ember_cleaver");
+      fire("itemUse", { source: player, itemStack: new ItemStack("sh:ember_cleaver") }); advance(10);
+      const freed = !stats.actionBars.concat(stats.titles || []).some((t) => /SEALED/.test(t));
+      hold(undefined);
+      // 5) النار: يتخبط (حالة 5) ويتفحم (sh:hot) وما يستعمل مهارات، وبعد ما تنطفي يرجع
+      clear(); m = harv(9); advance(4); m.setOnFire(3); let burnState = false, hot = false, skillWhileBurning = false;
+      for (let t = 0; t < 56; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; const st = m.getProperty("sh:state"); if (st === 5) burnState = true; if (st >= 1 && st <= 4) skillWhileBurning = true; if (m.getProperty("sh:hot") === 1) hot = true; }
+      for (let t = 0; t < 30; t += 2) advance(2);
+      const recovered = m.getProperty("sh:state") !== 5; advance(80); const cooled = m.getProperty("sh:hot") === 0;
+      // 6) المنجل يسقط دائماً
+      clear(); stats.items = [];
+      for (let i = 0; i < 20; i++) { const h = mkEntity("sh:hollow_harvester", { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(h); h._valid = false; fire("entityDie", { deadEntity: h, damageSource: { damagingEntity: player } }); }
+      const scythes = stats.items.filter((x) => x === "sh:harvest_scythe").length;
+      // 7) سلاح المنجل: الحصدة العريضة، وخيوط الدمية (Lv2) تسحب الأعداء، والحصاد (+50%) على عدو صحته واطية
+      clear(); spawnZombies(4, true); player._hp = 2000; stats.soundIds.clear(); hold("sh:harvest_scythe"); const d2 = stats.damage || 0;
+      fire("itemUse", { source: player, itemStack: new ItemStack("sh:harvest_scythe") }); advance(6);
+      const arcDmg = Math.round((stats.damage || 0) - d2), arcSnd = heard("sh.scythe_swing");
+      player.setDynamicProperty("sh_wlv", JSON.stringify({ "sh:harvest_scythe": { lv: 2, xp: 0 } }));
+      player.isSneaking = true; const k1 = stats.knock || 0, d3 = stats.damage || 0;
+      fire("itemUse", { source: player, itemStack: new ItemStack("sh:harvest_scythe") }); advance(20); player.isSneaking = false;
+      const strPulled = (stats.knock || 0) - k1 >= 1 && (stats.damage || 0) > d3;
+      const low = mkEntity("minecraft:zombie", { x: 0, y: 64, z: 2 }, dims.overworld, 40); low._hp = 6; entities.push(low); stats.actionBars = []; stats.titles = [];
+      fire("entityHitEntity", { damagingEntity: player, hitEntity: low }); advance(10);
+      const reaped = stats.actionBars.concat(stats.titles || []).some((t) => /Reaped!/.test(t));
+      hold(undefined); player.setDynamicProperty("sh_wlv", "{}");
+      console.log(`  خيوط ${strings ? "✔" : "✖"} سحبة ${yanked && pulled ? "✔" : "✖"} صوت ${strSnd ? "✔" : "✖"} | الداش يقطعها ${strings2 && snapped && !yank2 ? "✔" : "✖"} صوت ${snapSnd ? "✔" : "✖"}`);
+      console.log(`  نظرة ${stare ? "✔" : "✖"} بطء I بدون ظلام ${stareOk ? "✔" : "✖"} | لف وجهك ينجيك ${stare2 && dodged ? "✔" : "✖"}`);
+      console.log(`  المنجل الخاتم ${reap ? "✔" : "✖"} ضرر ${reapDmg} | الساطور مختوم ${blocked ? "✔" : "✖"} | المطرقة حرة ${otherFree ? "✔" : "✖"} | بعد 8 ثواني ينفك ${freed ? "✔" : "✖"}`);
+      console.log(`  النار: يتخبط ${burnState ? "✔" : "✖"} يتفحم ${hot ? "✔" : "✖"} بدون مهارات ${!skillWhileBurning ? "✔" : "✖"} يرجع ${recovered ? "✔" : "✖"} ينطفي التفحم ${cooled ? "✔" : "✖"} | المنجل سقط ${scythes}/20`);
+      console.log(`  سلاح المنجل: حصدة ضرر ${arcDmg} صوت ${arcSnd ? "✔" : "✖"} | خيوط تسحب ${strPulled ? "✔" : "✖"} | حصاد الضعيف ${reaped ? "✔" : "✖"}`);
+      if (!strings || !yanked || !pulled || !strSnd) failures.push("الحاصد: خيوط الدمية ما سحبت");
+      if (!strings2 || !snapped || yank2) failures.push("الحاصد: الداش ما يقطع الخيوط");
+      if (!stare || !stareOk) failures.push("الحاصد: النظرة الجوفاء لازم Slowness I بس وبدون ظلام");
+      if (!stare2 || !dodged) failures.push("الحاصد: اللي يلف وجهه لازم ينجو من النظرة");
+      if (!reap || reapDmg <= 0 || !blocked || !otherFree || !freed) failures.push("الحاصد: المنجل الخاتم (قفل الأيتم بالإيد 8 ثواني) ما اشتغل صح");
+      if (!burnState || !hot || skillWhileBurning || !recovered || !cooled) failures.push("الحاصد: ضعف النار ما اشتغل");
+      if (scythes !== 20) failures.push("الحاصد: المنجل لازم يسقط بكل قتلة");
+      if (arcDmg <= 0 || !arcSnd || !strPulled || !reaped) failures.push("منجل الحاصد: مهاراته أو الحصاد ما اشتغلت");
+      clear(); player._hp = 20; player._max = 20;
+    }
+    // v1.39 لعنة القرويين: أمر التجربة يلعن أقرب قروي (سريع ×20)، البقع تكبر 1→2→3، يتشنج ويتحول لوحش برتبة، وقتله قبل التحول ينهي اللعنة
+    {
+      console.log("\nلعنة القرويين:");
+      const RANKED = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion", "sh:gloomhorn", "sh:hollow_seer", "sh:veilfox", "sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis", "sh:hollow_harvester"];
+      const clear = () => { entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true; };
+      const vil = () => { const v = mkEntity("minecraft:villager_v2", { x: 2, y: 64, z: 2 }, dims.overworld, 20); entities.push(v); return v; };
+      clear(); let v0 = vil(); stats.soundIds.clear();
+      fire("scriptEventReceive", { id: "sh:curse", message: "fast", sourceEntity: player }); advance(2);
+      let cv = entities.find((e) => e._valid && e.typeId === "sh:cursed_villager");
+      const replaced = !!cv && !v0._valid;
+      const stages = new Set(); let shook = false;
+      for (let t = 0; t < 600 && cv && cv._valid; t += 2) { advance(2); stages.add(cv.getProperty("sh:stage")); if (cv.getProperty("sh:shake") === 1) shook = true; }
+      const turned = entities.filter((e) => e._valid && RANKED.includes(e.typeId) && Math.hypot(e.location.x - 2, e.location.z - 2) < 2);   // الوحوش الطبيعية تطلع بعيد
+      const gone = cv && !cv._valid, sndTurn = stats.soundIds.has("sh.curse_turn") && stats.soundIds.has("sh.curse_burst") && stats.soundIds.has("sh.curse_mark");
+      // قتله قبل التحول
+      clear(); v0 = vil(); stats.soundIds.clear(); setState(baseState(null));
+      fire("scriptEventReceive", { id: "sh:curse", message: "fast", sourceEntity: player }); advance(40);
+      cv = entities.find((e) => e._valid && e.typeId === "sh:cursed_villager");
+      if (cv) { cv._valid = false; fire("entityDie", { deadEntity: cv, damageSource: { damagingEntity: player } }); }
+      advance(600);
+      const noMonster = !entities.some((e) => e._valid && RANKED.includes(e.typeId) && Math.hypot(e.location.x - 2, e.location.z - 2) < 2);   // الوحوش الطبيعية تطلع بعيد
+      const freed = stats.soundIds.has("sh.curse_free"), counted = ((JSON.parse(player.getDynamicProperty("sh")).kills || {})["sh:cursed_villager"] || 0) === 1;
+      console.log(`  انلعن وانبدل ${replaced ? "✔" : "✖"} | مراحل ${[...stages].sort().join("→")} ${stages.has(1) && stages.has(2) && stages.has(3) ? "✔" : "✖"} | تشنج ${shook ? "✔" : "✖"} | تحول لوحش ${turned.length === 1 && gone ? "✔" : "✖"} (${turned.map((e) => e.typeId).join(",")}) | أصوات ${sndTurn ? "✔" : "✖"}`);
+      console.log(`  قتله قبل التحول: ما طلع وحش ${noMonster ? "✔" : "✖"} | صوت فك اللعنة ${freed ? "✔" : "✖"} | انحسب بكتاب الوحوش ${counted ? "✔" : "✖"}`);
+      if (!replaced || !(stages.has(1) && stages.has(2) && stages.has(3)) || !shook || turned.length !== 1 || !gone || !sndTurn) failures.push("لعنة القرويين: المراحل أو التحول ما اشتغلت");
+      if (!noMonster || !freed || !counted) failures.push("لعنة القرويين: قتله قبل التحول لازم ينهي اللعنة");
+      clear(); player._hp = 20; player._max = 20;
+    }
     // ضريحا السيف: حارسان يظهران، وموتهما (الاثنين) يطلّع صندوق السيف المناسب
     {
       console.log("\nضريحا السيف:");
@@ -974,7 +1080,7 @@ export const __sim = {
       player._hp = 2000; player._max = 2000; player._valid = true;
       world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 200, y: 64, z: 200, type: "tower", rot: 1, seed: 11, v: 2, ok: 1 }]));
       stats.setTypes = []; stats.chestItems = [];
-      const LOW = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"], GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"], HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis"];
+      const LOW = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"], GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"], HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis", "sh:hollow_harvester"];
       const tagged = () => entities.filter((e) => e._valid && e._tags.has("sh_tower"));
       const counts = [];
       let ok13 = true, ok46 = true, once = true, sealOn = false, sealOff = false, orbs = false, hudFloor = "", hudClear = "";

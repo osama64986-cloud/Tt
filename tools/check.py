@@ -286,6 +286,62 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص البلوكات والخامات فشل: {e}")
 
+# 8h) أنميشن اللاعب (v1.39، tools/gen_player_anims.py): كل اسم أنميشن بالسكربت موجود بـ panims.js، وكل وحدة موجودة بملف الأنميشن
+#     وطولها مضبوط، وكلها تطفي بالمنظور الأول (blend_weight)
+try:
+    pa_js = open(os.path.join(BP, "scripts", "panims.js"), encoding="utf-8").read()
+    panim = json.loads(pa_js[pa_js.index("{"):pa_js.rindex("}") + 1])
+    afile = load(os.path.join(RP, "animations", "sh_player.animation.json"))["animations"]
+    for n, a in panim.items():
+        if a["id"] not in afile:
+            err(f"أنميشن اللاعب {n}: {a['id']} مو موجود بملف الأنميشن")
+        elif "first_person" not in str(afile[a["id"]].get("blend_weight", "")):
+            err(f"أنميشن اللاعب {n}: لازم يطفي بالمنظور الأول (blend_weight)")
+    used = set(re.findall(r'pAnim\(p, "([a-z_0-9]+)"\)', js))
+    for blk in ("WEAPON_ANIM", "WEAPON_SKILL_ANIM", "SKILL_ANIM"):
+        m = re.search(r"const " + blk + r" = \{(.*?)\};", js, re.S)
+        if not m:
+            err(f"ما لكيت {blk} بالسكربت"); continue
+        used |= set(re.findall(r'"([a-z_0-9]+)"', re.sub(r'"sh:[a-z_]+"', "", m.group(1))))
+    for n in sorted(used - {"slash2"} if "slash2" in panim else used):
+        if n not in panim:
+            err(f"السكربت يشغل أنميشن مو موجود: {n}")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص أنميشن اللاعب فشل: {e}")
+
+# 8i) تصميم الصوت (v1.39): كل cue بالسكربت معرف بـ CUES، وأصوات الوحوش بـ RP/sounds.json: الكيان موجود، كل صوت موجود باللعبة أو بالحزمة،
+#     واللي إله صوت "ambient" لازم عنده المكون الرسمي minecraft:ambient_sound_interval وإلا ما يشتغل
+try:
+    m = re.search(r"const CUES = \{(.*?)\n\};", js, re.S)
+    cues = set(re.findall(r"^  ([a-z_]+): \{", m.group(1), re.M)) if m else set()
+    if not cues:
+        err("ما لكيت CUES بالسكربت")
+    for c in sorted(set(re.findall(r'\bcue\([^,()]+, "([a-z_]+)"', js))):
+        if c not in cues:
+            err(f"cue مستعمل وغير معرف بـ CUES: {c}")
+    defs = load(os.path.join(RP, "sounds", "sound_definitions.json"))["sound_definitions"]
+    vevents = set(open(os.path.join(ROOT, "tools", "vanilla_sound_events.txt"), encoding="utf-8").read().split())
+    ents_bp = {}
+    for f in glob.glob(os.path.join(BP, "entities", "*.json")):
+        d = load(f)
+        ents_bp[d["minecraft:entity"]["description"]["identifier"]] = d["minecraft:entity"]
+    sj = load(os.path.join(RP, "sounds.json"))["entity_sounds"]["entities"]
+    for ident, d in sj.items():
+        if ident not in ents_bp:
+            err(f"sounds.json: الكيان {ident} مو موجود")
+            continue
+        for ev, snd in d.get("events", {}).items():
+            sid = snd if isinstance(snd, str) else snd.get("sound")
+            if sid not in vevents and sid not in defs:
+                err(f"sounds.json: صوت {ident}/{ev} مو موجود باللعبة: {sid}")
+        if "ambient" in d.get("events", {}) and "minecraft:ambient_sound_interval" not in ents_bp[ident]["components"]:
+            err(f"{ident}: إله صوت ambient بس ما عنده minecraft:ambient_sound_interval")
+    for ident, e in ents_bp.items():
+        if "sh_monster" in str(e["components"].get("minecraft:type_family", "")) and ident not in sj:
+            err(f"الوحش {ident} ما إله أصوات بـ sounds.json (ضربة/موت)")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص تصميم الصوت فشل: {e}")
+
 # 8f) بدون هزة شاشة (v1.37.3، طلب اللاعب): ماكو camerashake بأي سكربت أو ملف بالمود
 for f in glob.glob(os.path.join(BP, "**", "*.js"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.json"), recursive=True) + glob.glob(os.path.join(BP, "**", "*.mcfunction"), recursive=True):
     if "camerashake" in open(f, encoding="utf-8", errors="ignore").read():

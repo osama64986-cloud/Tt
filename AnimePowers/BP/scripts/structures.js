@@ -943,7 +943,7 @@ function chooseType(reg = []) {
 // ولما ينقتلون كلهم يطلع صندوق الجائزة بنص الطابق.
 const TOWER_LOWLY = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 const TOWER_GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
-const TOWER_HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis"];
+const TOWER_HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis", "sh:hollow_harvester"];
 const pickOf = (a) => a[Math.floor(Math.random() * a.length)];
 export function towerFloorMobs(k) {
   if (k <= 2) return Array.from({ length: 3 + k }, () => pickOf(TOWER_LOWLY));                        // 1-3: Lowly بالعدد (3، 4، 5)

@@ -265,6 +265,9 @@
     },
     "sh_abyssium_boots": {
       "textures": "textures/items/sh_abyssium_boots"
+    },
+    "sh_scythe": {
+      "textures": "textures/items/sh_scythe"
     }
   }
 }

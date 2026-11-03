@@ -87,7 +87,7 @@ function calibrate(p, s, v, b) {
 // مستمعين للداش (main.js يعد الداشات لإنجاز Blink)
 export const dashHooks = [];
 function startDash(p, s, d) {
-  for (const f of dashHooks) { try { f(p); } catch (e) { /* */ } }
+  for (const f of dashHooks) { try { f(p, d); } catch (e) { /* */ } }
   const b = basis(p), now = system.currentTick, rank = rankOf(p);
   const dir = d === "right" ? { x: b.r.x, z: b.r.z } : d === "left" ? { x: -b.r.x, z: -b.r.z } : { x: -b.f.x, z: -b.f.z };
   s.plan = { dir, i: 0 };

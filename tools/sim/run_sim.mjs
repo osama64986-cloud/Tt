@@ -47,6 +47,15 @@ console.log("جزيئات:", W.stats.particles, "| أصوات:", W.stats.sounds,
   if (W.stats.badTint) W.failures.push("colored_flame_particle بتلوين دافئ (يطلع أخضر لأن سبرايته سماوي): " + Object.entries(W.stats.badTint).map(([k, n]) => `${k}×${n}`).join(" "));
 }
 console.log("أصوات مستعملة:", [...W.stats.soundIds].sort().join(" "));
+{
+  // v1.39: أنميشن اللاعب: خلال الاختبارات لازم انشغلت ضربات أسلحة وحركات مهارات وداش، وكلها توقف بالمنظور الأول
+  const an = [...new Set((W.stats.anims || []).map((a) => a.replace("animation.sh.player.", "")))].sort();
+  console.log("أنميشن اللاعب:", an.join(" "));
+  const need = [/^slash|^stab|^cleave|^heavy|^thrust|^claw|^reap/, /^cast_/, /^dash_/];
+  if (need.some((r) => !an.some((a) => r.test(a)))) W.failures.push("أنميشن اللاعب ما انشغل (ضربة سلاح، مهارة، داش)");
+  const op = W.stats.animOpts || {};
+  if (!/is_first_person/.test(op.stopExpression || "")) W.failures.push("أنميشن اللاعب ما يوقف بالمنظور الأول");
+}
 if (errors.size) {
   console.log(`\nأخطاء مبلوعة (${errors.size}):`);
   for (const [k, n] of errors) console.log(` x${n}  ${k}`);

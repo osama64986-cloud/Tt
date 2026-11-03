@@ -641,10 +641,102 @@ export const WEAPON = {
       case "sh:sunset_spear": P(dim, j(0.1), PT.redDust, { eye: 0.7 }); if (Math.random() < 0.3) P(dim, b, PT.glow, { c: [1, 0.35, 0.25], eye: 0.7 }); break;
       case "sh:shadow_claws": P(dim, j(0.25), PT.breath, { eye: 0.7 }); break;
       case "sh:dark_katana": P(dim, j(0.12), Math.random() < 0.5 ? PT.breath : PT.portal, { eye: 0.7 }); if (Math.random() < 0.3) P(dim, b, PT.glow, { c: [0.7, 0.35, 1], eye: 0.7 }); break;
+      case "sh:harvest_scythe": P(dim, j(0.12), PT.soul, { d: { x: 0, y: 0.3, z: 0 }, eye: 0.7 }); if (Math.random() < 0.35) P(dim, b, PT.glow, { c: [0.62, 0.3, 0.95], eye: 0.7 }); break;
       default: P(dim, b, PT.glow, { eye: 0.7 });
     }
   },
   xCut(dim, c, from, roll, big) { slash(dim, c, norm(sub(c, from)), big ? 1.8 : 1.4, 2.0, roll, [PT.breath, PT.glow], { c: [0.7, 0.35, 1], steps: 2, n: big ? 22 : 16, eye: 1.0 }); critBurst(dim, up(c, 0.7), big ? 24 : 14, true); },
+};
+
+// ═══════════════ v1.39 الحاصد الأجوف (Cursed) ومنجله: خيوط دمية، نظرة جوفاء، منجل خاتم، احتراق القش ═══════════════
+// كله جزيئات ماينكرافت الأصلية: الخيط = نقاط توهج باهتة متقاربة (مثل خيط مشدود) ولمعة بنفسجية تمشي عليه،
+// النظرة = توهج بنفسجي بالعيون + أرواح رمل الأرواح تلف رجل الضحية، الختم = حروف طاولة السحر تتجمع + انفجار عين الإندر.
+const STRING_C = [0.92, 0.88, 0.78], HOLLOW_C = [0.62, 0.3, 0.95], SEAL_C = [0.72, 0.42, 1], STRAW_C = [0.92, 0.76, 0.36];
+export const HARVEST = {
+  // خيط مشدود بين نقطتين + لمعة تمشي عليه (t = عداد التكات حتى اللمعة تتحرك)
+  string(dim, a, b, t = 0) {
+    line(dim, a, b, 0.34, PT.glow, { c: STRING_C, eye: 0.8 });
+    P(dim, lerp(a, b, (t % 8) / 8), PT.glow, { c: HOLLOW_C, eye: 0.8 });
+  },
+  stringAttach(dim, at) { ring(dim, at, 0.35, 8, PT.wax, { c: HOLLOW_C, eye: 0.8 }); P(dim, at, PT.endrod, { eye: 0.8 }); },
+  // السحبة: شرر على طول الخيط باتجاه الساحب + نفخة ريح عند الضحية
+  yank(dim, a, b) { line(dim, a, b, 0.55, PT.spark, { d: sub(a, b), eye: 0.8 }); P(dim, b, PT.smallGust, { eye: 1.0 }); critBurst(dim, up(b, 0.4), 8); },
+  // الخيوط انقطعت (الداش): خيوط تتطاير + نفخة صغيرة
+  snap(dim, at) {
+    for (let i = 0; i < 9; i++) P(dim, { x: at.x + rnd(-0.5, 0.5), y: at.y + rnd(0.6, 1.8), z: at.z + rnd(-0.5, 0.5) }, PT.glow, { c: STRING_C, eye: 0.8 });
+    P(dim, up(at, 1.2), PT.poof, { f: { "aabb.x": 0.2, "aabb.y": 0.3, "aabb.z": 0.2 }, eye: 0 });
+  },
+  // النظرة الجوفاء: العيون تتوهج، وخط نظرة باهت للضحية، وأرواح تلف رجليها
+  stareEyes(dim, a, b) { P(dim, a, PT.glow, { c: HOLLOW_C, eye: 0.8 }); P(dim, b, PT.glow, { c: HOLLOW_C, eye: 0.8 }); if (Math.random() < 0.5) P(dim, lerp(a, b, 0.5), PT.soul, { d: { x: 0, y: 0.25, z: 0 }, eye: 0.8 }); },
+  stareHit(dim, from, feet) {
+    line(dim, from, up(feet, 1.5), 0.7, PT.glow, { c: HOLLOW_C, eye: 1.2 });
+    ring(dim, up(feet, 0.1), 0.55, 10, PT.soul, { d: { x: 0, y: 0.2, z: 0 }, eye: 1.2 });
+  },
+  // المنجل الخاتم: طاقة بنفسجية تتجمع على النصل فوق راسه، ثم هلال حصاد كبير قدامه (نَفَس تنين + توهج + أرواح)
+  reapCharge(dim, at) { converge(dim, at, 1.1, 6, "portal", { eye: 1.0 }); P(dim, at, PT.glow, { c: SEAL_C, eye: 1.0 }); },
+  reapSweep(dim, o, d, r = 3.0) {
+    const f = flat(d), c = { x: o.x + f.x * 1.1, y: o.y + 1.1, z: o.z + f.z * 1.1 };
+    slash(dim, c, f, r, 2.4, -14, [PT.breath, PT.glow], { c: SEAL_C, eye: 1.2 });
+    slash(dim, up(c, -0.35), f, r * 1.12, 2.1, -22, [PT.soul], { delay: 1, d: { x: 0, y: 0.1, z: 0 }, eye: 1.2 });
+    later(2, () => critBurst(dim, add(up(c, 0.2), f, r * 0.85), 12, true));
+  },
+  // الختم على الضحية: حلقة نجوم بنفسجية + حروف سحر تتجمع + انفجار عين الإندر (المهارة اللي بإيدك انقفلت)
+  seal(dim, at) {
+    ring(dim, up(at, 1.1), 0.7, 14, PT.wax, { c: SEAL_C, eye: 1.0 });
+    converge(dim, up(at, 1.2), 1.5, 12, "glyph", { eye: 1.0 });
+    P(dim, up(at, 1.2), PT.ender, { eye: 1.0 });
+  },
+  sealTick(dim, at) { P(dim, { x: at.x + rnd(-0.3, 0.3), y: at.y + rnd(0.9, 1.6), z: at.z + rnd(-0.3, 0.3) }, PT.wax, { c: SEAL_C, eye: 1.0 }); },
+  // يحترق: لهب ودخان وجمر يطيح من القش
+  burn(dim, L) {
+    for (let i = 0; i < 2; i++) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(0.4, 2.4), z: L.z + rnd(-0.4, 0.4) }, PT.flame, { d: { x: 0, y: 1, z: 0 }, sp: 0.2, eye: 1.0 });
+    if (Math.random() < 0.3) P(dim, up(L, 2.3), PT.campfire, { eye: 1.6 });
+    if (Math.random() < 0.25) P(dim, { x: L.x + rnd(-0.3, 0.3), y: L.y + rnd(0.6, 2.0), z: L.z + rnd(-0.3, 0.3) }, PT.lava, { eye: 1.0 });
+  },
+  // جو: قشة تطيح ببطء + لمعة بالعين أحياناً
+  ambient(dim, L) {
+    if (Math.random() < 0.18) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(1.0, 2.2), z: L.z + rnd(-0.4, 0.4) }, PT.wax, { c: STRAW_C, d: { x: 0, y: -0.3, z: 0 }, eye: 1.0 });
+    if (Math.random() < 0.06) P(dim, up(L, 2.25), PT.glow, { c: HOLLOW_C, eye: 1.0 });
+  },
+  // الموت: قش يتطاير + نفخة موت، والصليب يطلع لفوق ويختفي (لمعات)
+  death(dim, L) {
+    for (let i = 0; i < 16; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0.3, 2.2), z: L.z + rnd(-0.6, 0.6) }, PT.wax, { c: STRAW_C, eye: 0 });
+    P(dim, up(L, 1.2), PT.poof, { f: { "aabb.x": 0.5, "aabb.y": 1.2, "aabb.z": 0.5 }, eye: 0 });
+    for (let i = 0; i < 6; i++) later(i * 3, () => P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + 3.4 + i * 0.4, z: L.z + rnd(-0.4, 0.4) }, PT.endrod, { eye: 0 }));
+  },
+  // ضربة الحصاد (سلاح اللاعب على عدو صحته واطية): هلال صغير بنفسجي + أرواح
+  reapHit(dim, c, from) { slash(dim, c, norm(sub(c, from)), 1.0, 1.8, 30, [PT.breath, PT.glow], { c: SEAL_C, steps: 1, n: 12, eye: 1.0 }); P(dim, c, PT.soul, { d: { x: 0, y: 0.4, z: 0 }, eye: 1.0 }); critBurst(dim, up(c, 0.7), 10, true); },
+};
+
+// ═══════════════ v1.39 لعنة القرويين: حبر ودخان أسود يطلع من الجسم، أرواح، وانفجار التحول ═══════════════
+export const CURSE = {
+  // جو اللعنة: يزيد ويا المرحلة (1-3): فقاعات حبر سودة تطلع من الجسم وروح سكلك أحياناً
+  tick(dim, L, stage) {
+    for (let i = 0; i < stage; i++) P(dim, { x: L.x + rnd(-0.3, 0.3), y: L.y + rnd(0.5, 1.8), z: L.z + rnd(-0.3, 0.3) }, PT.ink, { d: { x: 0, y: 0.25, z: 0 }, eye: 1.0 });
+    if (stage >= 2 && Math.random() < 0.3) P(dim, { x: L.x + rnd(-0.3, 0.3), y: L.y + rnd(1.0, 1.9), z: L.z + rnd(-0.3, 0.3) }, PT.smoke, { eye: 1.0 });
+    if (stage >= 3 && Math.random() < 0.25) P(dim, up(L, 1.7), PT.sculkSoul, { d: { x: 0, y: 0.3, z: 0 }, eye: 1.0 });
+  },
+  // البقع تكبر (مرحلة جديدة): حلقة حبر + أرواح تتجمع بالصدر
+  spread(dim, L) { ring(dim, up(L, 1.0), 0.55, 12, PT.ink, { d: { x: 0, y: 0.2, z: 0 }, eye: 1.0 }); converge(dim, up(L, 1.1), 1.2, 8, "portal", { eye: 1.0 }); P(dim, up(L, 1.6), PT.sculkSoul, { eye: 1.0 }); },
+  // التشنج قبل التحول: بوابة تنضم للصدر + دخان أسود يلف
+  turn(dim, L, t) {
+    converge(dim, up(L, 1.1), 1.6, 6, "portal", { eye: 1.0 });
+    const a = t * 0.5; for (let i = 0; i < 3; i++) { const b = a + i * 2.09; P(dim, { x: L.x + Math.cos(b) * 0.8, y: L.y + 0.3 + (t % 20) * 0.08, z: L.z + Math.sin(b) * 0.8 }, PT.ink, { eye: 1.0 }); }
+  },
+  // لحظة التحول: نفخة موت كبيرة + انفجار حبر وأرواح + شرر سحري + موجة دخان
+  burst(dim, L) {
+    P(dim, up(L, 1.0), PT.poof, { f: { "aabb.x": 0.6, "aabb.y": 1.2, "aabb.z": 0.6 }, eye: 0 });
+    sphereOut(dim, up(L, 1.1), 18, PT.sculkSoul, 0.5, { eye: 0 });
+    for (let i = 0; i < 16; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0.2, 2.0), z: L.z + rnd(-0.6, 0.6) }, PT.ink, { d: { x: 0, y: 0.4, z: 0 }, eye: 0 });
+    critBurst(dim, up(L, 1.4), 24, true);
+    shockwave(dim, L, 0.6, 3.5, 6, { ids: [PT.smoke], density: 1.4, y: 0.2 });
+  },
+  // اللعنة انتهت (انقتل قبل ما يتحول): دخان أبيض وروح تطلع ولمعات
+  free(dim, L) {
+    for (let i = 0; i < 10; i++) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(0.4, 1.8), z: L.z + rnd(-0.4, 0.4) }, PT.whiteSmoke, { eye: 0 });
+    for (let i = 0; i < 5; i++) later(i * 3, () => P(dim, { x: L.x + rnd(-0.2, 0.2), y: L.y + 1.4 + i * 0.35, z: L.z + rnd(-0.2, 0.2) }, PT.endrod, { eye: 0 }));
+    P(dim, up(L, 1.2), PT.soul, { d: { x: 0, y: 0.6, z: 0 }, eye: 0 });
+  },
 };
 
 // ═══════════════ وحوش الرتبة الدنيا: كل وحش بجزيئات طبيعته (بدل نقاط ملونة وأشكال أقواس) ═══════════════

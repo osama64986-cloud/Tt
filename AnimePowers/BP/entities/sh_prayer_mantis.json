@@ -117,6 +117,11 @@
    "minecraft:experience_reward": {
     "on_death": "query.last_hit_by_player ? 60 : 0"
    },
+   "minecraft:ambient_sound_interval": {
+    "value": 8.0,
+    "range": 12.0,
+    "event_name": "ambient"
+   },
    "minecraft:nameable": {},
    "minecraft:damage_sensor": {
     "triggers": [
