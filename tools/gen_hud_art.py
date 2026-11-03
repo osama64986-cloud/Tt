@@ -344,7 +344,29 @@ def build_sheet():
 
 
 def panel():
-    """إطار اللوحة (nine-slice 32x32): خلفية كحلية شبه شفافة، خط ذهب مزدوج، زخارف بالزوايا."""
+    """إطار اللوحة (nine-slice 16x16، الشرائح 4 بكسل، v1.36.1): خلفية كحلية شبه شفافة، حافة غامقة، خط ذهب، ولمعة بالزوايا.
+    كان 32x32 بشرائح 7 بكسل (إطار ثخين)؛ صار أرفع ويا تصغير خط اللوحة 0.75."""
+    W = 16
+    im = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    for y in range(W):
+        for x in range(W):
+            im.putpixel((x, y), (*mix((26, 20, 44), (10, 8, 20), y / (W - 1)), 178))
+    GOLD, GOLD2, DARK = (214, 164, 64, 255), (255, 226, 140, 255), (8, 6, 12, 235)
+    for i in range(W):
+        for (x, y) in ((i, 0), (i, W - 1), (0, i), (W - 1, i)):
+            im.putpixel((x, y), DARK)
+        for (x, y) in ((i, 1), (i, W - 2), (1, i), (W - 2, i)):
+            if 1 <= x <= W - 2 and 1 <= y <= W - 2:
+                im.putpixel((x, y), GOLD)
+    for (cx, cy, fx, fy) in ((1, 1, 1, 1), (W - 2, 1, -1, 1), (1, W - 2, 1, -1), (W - 2, W - 2, -1, -1)):
+        for k in range(3):
+            im.putpixel((cx + fx * k, cy), GOLD2); im.putpixel((cx, cy + fy * k), GOLD2)
+        im.putpixel((cx + fx, cy + fy), (170, 90, 255, 255))
+    return im
+
+
+def panel_old():
+    """الإطار القديم (nine-slice 32x32)، باقي للمقارنة."""
     W = 32
     im = Image.new("RGBA", (W, W), (0, 0, 0, 0))
     for y in range(W):
@@ -409,7 +431,7 @@ def main():
     sheet.save(os.path.join(RP, "font", "glyph_E5.png"))
     panel().save(os.path.join(RP, "textures", "ui", "sh_hud_panel.png"))
     with open(os.path.join(RP, "textures", "ui", "sh_hud_panel.json"), "w") as f:
-        f.write('{ "nineslice_size": 7, "base_size": [ 32, 32 ] }\n')
+        f.write('{ "nineslice_size": 4, "base_size": [ 16, 16 ] }\n')
     portrait().save(os.path.join(RP, "textures", "ui", "sh_hud_portrait.png"))
     print("hud art ok:", len(cells), "رمز")
     if len(sys.argv) > 1:

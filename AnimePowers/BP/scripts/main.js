@@ -1642,9 +1642,17 @@ system.runInterval(() => {
   }
 }, 40);
 // البرج: شريط الطابق اللي واقف بيه اللاعب
+const towerSeen = new Map();
 system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
-    try { const ti = towerHudInfo(p); if (ti) setHudBar(ti.key, p.dimension, ti.loc, ti.name, ti.frac, true); } catch (err) { /* */ }
+    try {
+      const ti = towerHudInfo(p);
+      if (ti) setHudBar(ti.key, p.dimension, ti.loc, ti.name, ti.frac, true);
+      // أول ما توصل طابق بيه وحوش: سطر قصير فوق الهوت بار (الطابق وعدد الوحوش)
+      const was = towerSeen.get(p.id), now = ti ? `${ti.key}:${ti.floor}` : "";
+      if (ti && now !== was && !ti.done) notify(p, `§5Abyss Tower §7· §dFloor ${ti.floor}/7 §7· ${ti.left} monster${ti.left > 1 ? "s" : ""}`, 60);
+      towerSeen.set(p.id, now);
+    } catch (err) { /* */ }
   }
 }, 10);
 function yawOf(from, to) { return (Math.atan2(-(to.x - from.x), to.z - from.z) * 180) / Math.PI; }
@@ -2039,8 +2047,10 @@ function riftStartWave(n) {
   rift.wave = n;
   rift.pause = 0;
   for (const q of riftPlayersNear(48)) {
-    sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);   // سطر Wave فوق الهوت بار يبين لحاله (بدون عنوان كبير)
-    if (n === 3) notify(q, `${t.col}The warden of the rift appears §7(${t.rank})`, 60);
+    // بداية الموجة مثل الغارة باللعبة: بوق الغارة الأصلي (raid.horn) + الشريط بأعلى الشاشة يتعبى + سطر قصير فوق الهوت بار
+    sfxPlayer(q, "raid.horn", 0.7, n === 3 ? 0.8 : 1);
+    sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
+    notify(q, n === 3 ? `${t.col}Wave 3/3 §7· the warden of the rift appears §8(${t.rank})` : `${t.col}Wave ${n}/3 §7· ${t.waves[n - 1]} monsters`, 60);
   }
   const dim = world.getDimension(rift.dim);
   SYS.riftWave(dim, { x: rift.x, y: rift.y, z: rift.z });

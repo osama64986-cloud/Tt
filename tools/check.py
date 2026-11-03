@@ -202,6 +202,23 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص المواد فشل: {e}")
 
+# 8d) الواجهة (RP/ui/hud_screen.json): الخط مصغر (اللوحة 0.75، الكتابة فوق الهوت بار 0.85) وكل عنصر نعدله موجود بملف Mojang الأصلي
+try:
+    ui = load(os.path.join(RP, "ui", "hud_screen.json"))
+    if ui.get("hud_actionbar_text/actionbar_message", {}).get("font_scale_factor") != 0.75:
+        err("hud_screen.json: خط اللوحة لازم يكون مصغر (font_scale_factor 0.75)")
+    if ui.get("hud_title_text/title_frame/title", {}).get("font_scale_factor") != 0.85:
+        err("hud_screen.json: الكتابة فوق الهوت بار لازم تكون مصغرة (font_scale_factor 0.85)")
+    vanilla_paths = {"hud_actionbar_text", "hud_actionbar_text/actionbar_message", "hud_title_text", "hud_title_text/title_frame/title_background",
+                     "hud_title_text/title_frame/title", "hud_title_text/subtitle_frame", "root_panel", "root_panel/boss_health_panel/boss_hud_panel/boss_health_grid"}
+    for k in ui:
+        if k in ("namespace", "sh_player_doll") or k.startswith("sh_"):
+            continue
+        if k not in vanilla_paths:
+            err(f"hud_screen.json: عنصر {k} مو من المسارات المتأكد منها بملف Mojang")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص الواجهة فشل: {e}")
+
 # 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
 if node and "--no-sim" not in sys.argv:
     r = subprocess.run([node, os.path.join(ROOT, "tools", "sim", "run_sim.mjs")], capture_output=True)

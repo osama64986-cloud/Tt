@@ -1121,6 +1121,7 @@ export function towerHudInfo(p) {
         loc: { x: s.x + 0.5, y: s.y + k * TOWER_FH - 0.5, z: s.z + 0.5 },          // جوه بلوك أرضية الطابق (ما يبين)
         name: `§5Abyss Tower §7· §dFloor ${k + 1}/${TOWER_FLOORS} §7· ${st}`,
         frac: done ? 0 : total ? left / total : 1,
+        floor: k + 1, left, done,
       };
     }
   } catch (e) { /* */ }

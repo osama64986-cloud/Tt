@@ -635,6 +635,10 @@ export const __sim = {
           && !(stats.bottom || "").includes("Wave") && !(stats.top || "").includes("Wave");
         console.log(`  شريط الموجة بأعلى الشاشة ${waveOk ? "✔" : "✖"}: ${waveLines.map((l) => `"${l}"`).join(" → ")}`);
         if (!waveOk) failures.push("شريط الموجة بأعلى الشاشة (Wave رقم + الباقي) ما يشتغل صح");
+        // بداية كل موجة: بوق الغارة الأصلي + سطر قصير فوق الهوت بار
+        const horn = stats.soundIds.has("raid.horn"), waveNote = [1, 2].every((n) => (stats.titles || []).some((t) => new RegExp(`Wave ${n}/3 §7· \\d+ monsters`).test(t))) && (stats.titles || []).some((t) => /Wave 3\/3 §7· the warden/.test(t));
+        console.log(`  بداية الموجة: بوق الغارة ${horn ? "✔" : "✖"} | سطر فوق الهوت بار ${waveNote ? "✔" : "✖"}`);
+        if (!horn || !waveNote) failures.push("بداية الموجة (بوق + سطر) ما تطلع");
         advance(40);
         const sealBanner = (stats.titles || []).some((t) => t.includes("RIFT SEALED"));
         if (!sealBanner) failures.push("إعلان سد الصدع ما طلع فوق الهوت بار");
@@ -970,6 +974,7 @@ export const __sim = {
         if (k === 0) {                                                       // ختم الدرج: زجاج بنفسجي لحد ما ينظف الطابق، وينكسر بموتهم
           sealOn = stats.setTypes.some((q) => q[3] === "minecraft:purple_stained_glass" && q[1] === 64 + 6);
           advance(10); hudFloor = (bossBar("sh:hud_bar_near") || { name: "" }).name;
+          if (!(stats.titles || []).some((t) => /Abyss Tower §7· §dFloor 1\/7 §7· 3 monsters/.test(t))) failures.push("البرج: سطر الطابق (الرقم وعدد الوحوش) ما طلع فوق الهوت بار");
           const xp0 = entities.filter((e) => e.typeId === "minecraft:xp_orb").length;
           for (const e of neu) { e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); }
           advance(20);

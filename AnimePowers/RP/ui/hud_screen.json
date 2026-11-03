@@ -3,8 +3,8 @@
   "sh_player_doll": {
     "type": "panel",
     "size": [
-      36,
-      50
+      28,
+      39
     ],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
@@ -31,8 +31,8 @@
           "renderer": "live_player_renderer",
           "layer": 3,
           "size": [
-            "100% - 6px",
-            "100% - 7px"
+            "100% - 5px",
+            "100% - 6px"
           ],
           "offset": [
             0,
@@ -48,13 +48,13 @@
     "anchor_from": "top_left",
     "anchor_to": "top_left",
     "offset": [
-      39,
+      31,
       2
     ],
     "texture": "textures/ui/sh_hud_panel",
     "size": [
-      "100%c + 16px",
-      "100%c + 9px"
+      "100%c + 10px",
+      "100%c + 6px"
     ]
   },
   "hud_actionbar_text/actionbar_message": {
@@ -62,9 +62,10 @@
     "anchor_from": "left_middle",
     "anchor_to": "left_middle",
     "offset": [
-      8,
+      5,
       0
-    ]
+    ],
+    "font_scale_factor": 0.75
   },
   "hud_title_text": {
     "size": [
@@ -88,14 +89,15 @@
       0
     ],
     "shadow": true,
-    "enable_profanity_filter": false
+    "enable_profanity_filter": false,
+    "font_scale_factor": 0.85
   },
   "hud_title_text/subtitle_frame": {
     "ignored": true
   },
   "root_panel/boss_health_panel/boss_hud_panel/boss_health_grid": {
     "offset": [
-      56,
+      24,
       2
     ]
   },
