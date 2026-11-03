@@ -550,7 +550,8 @@ export const __sim = {
           if (!ok) failures.push("شكل الصدع أو دائرته يختفي أو يتكرر");
         }
         player.location = { x: rs.x + 4, y: 64, z: rs.z };
-        const waves = [];
+        const waves = [], waveLines = [];
+        const lowWave = () => ((stats.bottom || "").split("\n").map((l) => l.replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "☠")).find((l) => /^Wave \d\/3/.test(l)) || "");
         for (let w = 1; w <= 3; w++) {
           // ننتظر لحد ما تطلع الموجة كاملة (توقيت فحص الصدع كل 20 تك يختلف حسب اللي قبله)
           let mobs = [];
@@ -574,15 +575,24 @@ export const __sim = {
             if (!again.length) failures.push("الصدع ما رجّع وحوش الموجة اللي اختفت");
             mobs = again;
           }
-          if (w < 3) mobs.forEach((e) => { fire("entityDie", { deadEntity: e, damageSource: { damagingEntity: player } }); e._valid = false; });
+          advance(5); waveLines.push(lowWave());
+          if (w < 3) {
+            mobs.forEach((e) => { fire("entityDie", { deadEntity: e, damageSource: { damagingEntity: player } }); e._valid = false; });
+            advance(25); waveLines.push(lowWave());
+          }
           else if (boss) { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
         }
         console.log("  " + waves.join("\n  "));
-        const waveBanners = [1, 2].every((n) => (stats.titles || []).some((t) => t.includes(`WAVE ${n}/3`))) && (stats.titles || []).some((t) => t.includes("THE WARDEN"));
+        // سطر Wave فوق الهوت بار: كلمة Wave + رقم الموجة + شكد خلصت (قتلت/الكل)، ويكمل لما تقتلهم
+        const num = (l) => { const m = l.match(/(\d+)\/(\d+)\s*☠?\s*$/); return m ? [Number(m[1]), Number(m[2])] : null; };
+        const [s1, e1, s2, e2, s3] = waveLines, a1 = num(s1 || ""), b1 = num(e1 || ""), a3 = num(s3 || "");
+        const waveOk = /^Wave 1\/3/.test(s1 || "") && a1 && a1[0] === 0 && a1[1] > 0 && b1 && b1[0] === b1[1] && /^Wave 2\/3/.test(s2 || "") && /^Wave 3\/3/.test(s3 || "") && a3 && a3[1] >= 2
+          && !(stats.titles || []).some((t) => /WAVE \d\/3/.test(t));
+        console.log(`  سطر الموجة فوق الهوت بار ${waveOk ? "✔" : "✖"}: ${waveLines.map((l) => `"${l}"`).join(" → ")}`);
+        if (!waveOk) failures.push("سطر الموجة (Wave رقم + شكد خلصت) فوق الهوت بار ما يطلع صح");
         advance(40);
         const sealBanner = (stats.titles || []).some((t) => t.includes("RIFT SEALED"));
-        console.log(`  إعلانات الموجات والزعيم فوق الهوت بار ${waveBanners ? "✔" : "✖"} | إعلان سد الصدع ${sealBanner ? "✔" : "✖"}`);
-        if (!waveBanners || !sealBanner) failures.push("إعلانات الصدع (الموجات/الزعيم/السد) ما طلعت فوق الهوت بار");
+        if (!sealBanner) failures.push("إعلان سد الصدع ما طلع فوق الهوت بار");
         const sealed = !JSON.parse(world._dyn.sh_rift || "null");
         const loot = (stats.items || []).filter((t) => t.startsWith("sh:") || t.startsWith("minecraft:"));
         console.log("  انسد =", sealed, "| مكافآت:", loot.join(", "));
@@ -942,8 +952,8 @@ export const __sim = {
       const wr = JSON.parse(world.getDynamicProperty("sh_structs"))[0];
       console.log(`  الطوابق 1-6: ${counts.join("، ")} وحش | 1-3 Lowly بالعدد ${ok13 ? "✔" : "✖"} | 4-6 أقوى (Grim) ${ok46 ? "✔" : "✖"} | مرة وحدة ${once ? "✔" : "✖"}`);
       console.log(`  الطابق 7: ${types0} ${topOk ? "✔" : "✖"} | يرجعون إذا تبخروا ${respawned ? "✔" : "✖"} | صندوق قبل القتل ${chest0 ? "✖" : "✔(ما في)"} | صندوق بعد القتل ${chest.length === 1 ? "✔" : "✖"} (${chest[0] ? chest[0].slice(0, 3).join(",") : "-"}) | غنائم ${loot.length} | مكتمل ${wr.c ? "✔" : "✖"}`);
-      console.log(`  ختم الدرج ${sealOn ? "✔" : "✖"} | ينكسر لما ينظف الطابق ${sealOff ? "✔" : "✖"} | خبرة ${orbs ? "✔" : "✖"} | الـHUD: "${hudFloor.split("\n").find((l) => l.includes("Abyss")) || "-"}" ثم "${hudClear.split("\n").find((l) => l.includes("Abyss")) || "-"}"`);
-      if (!sealOn || !sealOff || !orbs || !/Floor 1\/7/.test(hudFloor) || !/Cleared/.test(hudClear)) failures.push("البرج: الختم أو الـHUD أو جوائز الطابق ما تشتغل");
+      console.log(`  ختم الدرج ${sealOn ? "✔" : "✖"} | ينكسر لما ينظف الطابق ${sealOff ? "✔" : "✖"} | خبرة ${orbs ? "✔" : "✖"} | الـHUD: "${hudFloor.split("\n").find((l) => l.startsWith("Floor")) || "-"}" ثم "${hudClear.split("\n").find((l) => l.startsWith("Floor")) || "-"}"`);
+      if (!sealOn || !sealOff || !orbs || !/Floor 1\/7 .* 0\/3/.test(hudFloor) || !/Floor 1\/7 .* 3\/3\s+Cleared/.test(hudClear)) failures.push("البرج: الختم أو سطر Floor (رقم الطابق + شكد خلصت) أو جوائز الطابق ما تشتغل");
       if (!ok13 || !ok46 || !once) failures.push("البرج: وحوش الطوابق 1-6 غلط أو تتكرر");
       if (!topOk || !respawned) failures.push("البرج: وحوش الطابق السابع ما ظهرت أو ما رجعت");
       if (chest0 || chest.length !== 1 || loot.length < 3 || !wr.c) failures.push("البرج: صندوق القمة ما ظهر صح");

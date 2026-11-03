@@ -449,8 +449,8 @@ function heldLine(p, st, plain) {
 
 // الشاشة قسمين:
 //   فوق يسار (شريط الأكشن + لوحة): الرتبة والصحة، الليفل والقدرة، المانا والتقويات، شريط المهارات.
-//   فوق الهوت بار (العنوان، صغير وبدون خلفية مثل اسم الأيتم): الإعلانات (موجات/صدع/سحب القدرة)، سطر الصدع، سطر البرج،
-//   والرسالة المؤقتة أو معلومات الأيتم اللي بإيدك وتلميحه (الأقرب للهوت بار).
+//   فوق الهوت بار (العنوان، صغير وبدون خلفية مثل اسم الأيتم): الإعلانات، الرسالة المؤقتة أو معلومات الأيتم وتلميحه،
+//   وبالأسفل (الأقرب للهوت بار) سطر Wave بالصدع أو Floor بالبرج: الرقم وشكد خلصت منه.
 function renderHud(p) {
     try {
       const now = system.currentTick;
@@ -467,10 +467,10 @@ function renderHud(p) {
       const b = banners.get(p.id);
       if (b && b.until > now) low.push(b.text);
       if (!off) {
-        low.push(riftHudLine(p, plain), towerHudLine(p, plain));
         const m = tempMsg.get(p.id);
         if (m && m.until > now) low.push(m.text);
-        else low.push(h.line, h.tip);
+        else low.push(h.tip, h.line);
+        low.push(riftHudLine(p, plain), towerHudLine(p, plain));               // سطر Wave/Floor: الأقرب للهوت بار
       }
       setBottomText(p, low.filter(Boolean).join("\n"));
     } catch (e) { /* */ }
@@ -1991,8 +1991,8 @@ function riftStartWave(n) {
   rift.wave = n;
   rift.pause = 0;
   for (const q of riftPlayersNear(48)) {
-    banner(q, n === 3 ? `${t.col}§lTHE WARDEN §r§8│ §7Rank: ${t.col}${t.rank}` : `${t.col}§lWAVE ${n}/3 §r§8│ §7${t.name}`, 50);
-    sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
+    sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);   // سطر Wave فوق الهوت بار يبين لحاله (بدون عنوان كبير)
+    if (n === 3) notify(q, `${t.col}The warden of the rift appears §7(${t.rank})`, 60);
   }
   const dim = world.getDimension(rift.dim);
   SYS.riftWave(dim, { x: rift.x, y: rift.y, z: rift.z });
@@ -2152,17 +2152,21 @@ system.runInterval(() => {
     if (rift.age % 100 === 0) riftSave();
   } catch (e) { /* */ }
 }, 20);
+// سطر الصدع فوق الهوت بار (صغير وبدون خلفية):
+//   بالمعركة: كلمة Wave + رقم الموجة + شكد خلصت منها (شريط + قتلت/الكل). الموجة 3: وحوشها + الزعيم.
+//   قبل المعركة: اسم الصدع والمسافة والاتجاه بس.
+function riftProgress() {
+  const ids = rift.waveIds || [], dead = (rift.dead || []).filter((id) => ids.includes(id)).length;
+  const boss = rift.wave === 3 ? 1 : 0;
+  return { done: dead, total: Math.max(rift.expect || 0, ids.length) + boss };
+}
 function riftHudLine(p, plain) {
   if (!rift || p.dimension.id !== rift.dim) return "";
   const t = riftTier(), dist = Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z));
-  const arrow = compassArrow(p, rift);
-  let line = `${plain ? "§d⟁" : "§f" + GL(GI.rift)} ${t.col}§l${t.name}§r §7(${t.rank}) ${dist}m ${arrow}`;
-  if (rift.phase === "battle") {
-    const waves = plain ? `§c${rift.wave}/3` : "§f" + GL(GI.wave_on).repeat(rift.wave) + GL(GI.wave_off).repeat(3 - rift.wave);
-    line += `  ${waves} §6Wave ${rift.wave}/3`;
-    if (rift.wave === 3 && !plain) line += ` §f${GL(GI.boss)}`;
-  } else line += `  §7spreading ${rift.r}/${RIFT_MAX_R}`;
-  return line;
+  if (rift.phase !== "battle" || !rift.wave) return `${t.col}${t.name} §7${dist}m ${compassArrow(p, rift)}`;
+  if (dist > 48) return "";
+  const pr = riftProgress(), full = pr.total > 0 && pr.done >= pr.total;
+  return `§6Wave §f${rift.wave}§7/3  ${bar(pr.total ? pr.done / pr.total : 0, 8, full ? "§a" : t.col, "§8", plain)}  §f${pr.done}§7/${pr.total}${rift.wave === 3 && !plain ? " §f" + GL(GI.boss) : ""}`;
 }
 function riftStatusText(p) {
   const st = getState(p);

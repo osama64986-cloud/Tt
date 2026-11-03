@@ -1017,6 +1017,7 @@ function towerTick() {
           s.fl |= 1 << k;
           const types = towerFloorMobs(k);
           s.ft[k] = [...types];
+          s.fn = s.fn || {}; s.fn[k] = types.length;                         // عدد وحوش الطابق (لسطر Floor فوق الهوت بار)
           if (top) { s.top = types; s.kt = []; }
           saveReg(reg);
           towerSpawn(dim, s, plan, k, types, p, top);
@@ -1108,10 +1109,14 @@ export function towerHudLine(p, plain) {
       const ly = p.location.y - s.y;
       if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
       const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
+      // سطر فوق الهوت بار: كلمة Floor + رقم الطابق + شكد خلصت منه (شريط + قتلت/الكل)
       const left = s.ft && s.ft[k] ? s.ft[k].length : 0;
       const done = (s.cl || 0) & (1 << k) || (k === TOWER_FLOORS - 1 && s.c);
-      const st = done ? (k === TOWER_FLOORS - 1 ? "§dConquered" : "§aCleared, climb!") : left ? `§c${left} monster${left > 1 ? "s" : ""} left` : "§7...";
-      return `§5${plain ? "" : "▲ "}Abyss Tower §fFloor ${k + 1}/${TOWER_FLOORS} §8│ ${st}`;
+      const total = Math.max(left, (s.fn && s.fn[k]) || (s.ft && s.ft[k] ? left : 0)), killed = done ? total : total - left;
+      const n = Math.max(0, Math.min(8, Math.round(total ? (killed / total) * 8 : done ? 8 : 0))), ch = plain ? "|" : "█";
+      const bar = (done ? "§a" : "§d") + ch.repeat(n) + "§8" + ch.repeat(8 - n);
+      const tail = done ? (k === TOWER_FLOORS - 1 ? "  §dConquered ✔" : "  §aCleared, climb! ✔") : "";
+      return `§dFloor §f${k + 1}§7/${TOWER_FLOORS}  ${bar}${total ? `  §f${killed}§7/${total}` : ""}${tail}`;
     }
   } catch (e) { /* */ }
   return "";
