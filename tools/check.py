@@ -10,6 +10,7 @@
   7. كل صوت مستعمل معرّف بـ sound_definitions وملف .ogg موجود.
   8. كل كيان BP له كيان RP، وكل مفتاح اسم موجود بملف اللغة الإنجليزي.
   8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
+  8c. كل مادة (material) من مواد اللعبة الأصلية (tools/vanilla_materials.txt).
   9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD والضريحين والداش على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
  10. المخططات: قرية الساكورا (check_village.py) وضريحا السيف (check_shrines.py).
 """
@@ -187,6 +188,19 @@ for f in glob.glob(os.path.join(RP, "attachables", "*.json")):
     for a in d.get("animations", {}).values():
         if a not in anim_ids:
             err(f"{rel(f)}: الحركة {a} مو معرّفة")
+
+# 8c) المواد: كل مادة بالكيانات والأسلحة والدروع لازم تكون من مواد اللعبة الأصلية (مادة غلط مثل entity_alpha = الكيان ما ينرسم)
+try:
+    with open(os.path.join(ROOT, "tools", "vanilla_materials.txt"), encoding="utf-8") as fh:
+        vmats = {ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")}
+    for f in glob.glob(os.path.join(RP, "entity", "*.json")) + glob.glob(os.path.join(RP, "attachables", "*.json")):
+        d = load(f)
+        desc = (d.get("minecraft:client_entity") or d.get("minecraft:attachable"))["description"]
+        for m in desc.get("materials", {}).values():
+            if m not in vmats:
+                err(f"{rel(f)}: المادة {m} مو من مواد اللعبة الأصلية")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص المواد فشل: {e}")
 
 # 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
 if node and "--no-sim" not in sys.argv:

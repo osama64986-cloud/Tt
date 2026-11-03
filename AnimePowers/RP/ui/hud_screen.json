@@ -46,6 +46,28 @@
     "offset": [ 8, 0 ]
   },
 
+  "hud_title_text": {
+    "size": [ "100%", "100%c" ],
+    "anchor_from": "bottom_middle",
+    "anchor_to": "bottom_middle",
+    "offset": [ 0, -60 ]
+  },
+
+  "hud_title_text/title_frame/title_background": {
+    "visible": false
+  },
+
+  "hud_title_text/title_frame/title": {
+    "font_size": "normal",
+    "offset": [ 0, 0 ],
+    "shadow": true,
+    "enable_profanity_filter": false
+  },
+
+  "hud_title_text/subtitle_frame": {
+    "ignored": true
+  },
+
   "root_panel": {
     "modifications": [
       {

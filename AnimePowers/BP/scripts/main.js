@@ -265,18 +265,33 @@ const tempMsg = new Map();
 function notify(p, text, ticks = 60) {
   tempMsg.set(p.id, { text, until: system.currentTick + ticks });
 }
+// إعلانات (الموجات، الصدع، سحب القدرة...): كتابة صغيرة فوق الهوت بار بدل العنوان الكبير بنص الشاشة (v1.35.1)
+const banners = new Map();
+function banner(p, text, ticks = 60) {
+  banners.set(p.id, { text, until: system.currentTick + ticks });
+  renderHud(p);                                                                 // تنعرض فوراً (عجلة سحب القدرة تتبدل أسرع من دورة الـHUD)
+}
+// الكتابة فوق الهوت بار: تنرسل كعنوان (title)، وملف RP/ui/hud_screen.json ينقل العنوان فوق الهوت بار، صغير وبدون خلفية
+const bottomSent = new Map();
+function setBottomText(p, text) {
+  if (!text) {
+    if (bottomSent.get(p.id)) { try { p.onScreenDisplay.clearTitle(); } catch (e) { /* */ } bottomSent.set(p.id, ""); }
+    return;
+  }
+  p.onScreenDisplay.setTitle(text, { fadeInDuration: 0, stayDuration: 14, fadeOutDuration: 4 });
+  bottomSent.set(p.id, text);
+}
 function say(p, text) {
   try { p.sendMessage(text); } catch (e) { /* */ }
 }
 
 // ───────────────────────── واجهة اللاعب (HUD) ─────────────────────────
-// تنعرض عبر شريط الأكشن وتتنقل لأعلى الشاشة بملف ui بالـRP. الأسطر:
-//   1) الرتبة │ القدرة │ نجوم الندرة │ ليفل القدرة
-//   2) الصحة │ ليفل اللاعب + شريط الخبرة
-//   3) شريط المهارات: جاهزة ✔ / كولداون ثواني / مقفولة ✖ (المسكوكة بيدك بين أقواس)
-//   4) معلومات الأيتم اللي بيدك (مستوى المهارة وحالتها)
-//   5) تلميح طريقة الاستعمال (يظهر 6 ثواني بعد ما تمسك الأيتم)
-// أوسمة: sh_hud_off يطفي الواجهة | sh_hud_plain شريط بسيط إذا الرموز ما تنعرض عندك.
+// قسمين (RP/ui/hud_screen.json):
+//   فوق يسار، عبر شريط الأكشن بلوحة: 1) الرتبة والصحة  2) الليفل والقدرة  3) المانا والتقويات  4) شريط المهارات:
+//     جاهزة ✔ / كولداون ثواني / مقفولة ✖ (المسكوكة بيدك عليها علامة)
+//   فوق الهوت بار، عبر العنوان (صغير وبدون خلفية مثل اسم الأيتم): الإعلانات، سطر الصدع، سطر البرج،
+//     ثم الرسالة المؤقتة أو معلومات الأيتم اللي بإيدك وتلميح الاستعمال (6 ثواني بعد ما تمسكه)
+// أوسمة: sh_hud_off يطفي الواجهة (الإعلانات تبقى) | sh_hud_plain شريط بسيط إذا الرموز ما تنعرض عندك.
 function bar(frac, len, on, off = "§8", plain = false) {
   const n = Math.max(0, Math.min(len, Math.round(frac * len)));
   const ch = plain ? "|" : "█";
@@ -319,11 +334,11 @@ function hudArt(p, st) {
     l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
   } else l2 += st.powerless ? "  §8§lUnbound §r§c+STR §b+SPD" : "  §7No power: find the Star Temple";
   const lm = manaHudLine(p, st, false);                                         // المانا والتقويات (v1.35)
-  return [l1, l2, lm, riftHudLine(p, false), towerHudLine(p, false)].filter(Boolean).join("\n");
+  return [l1, l2, lm].filter(Boolean).join("\n");
 }
 function hudText(p, st, plain) {
   if (!plain) return hudArt(p, st);
-  return [hudPlain(p, st), manaHudLine(p, st, true), riftHudLine(p, true), towerHudLine(p, true)].filter(Boolean).join("\n");
+  return [hudPlain(p, st), manaHudLine(p, st, true)].filter(Boolean).join("\n");
 }
 function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية بدل رموز الواجهة (كانت ناقصة = خطأ ReferenceError بالواجهة البسيطة)
   const pw = POWERS[st.power];
@@ -432,22 +447,32 @@ function heldLine(p, st, plain) {
   return none;
 }
 
+// الشاشة قسمين:
+//   فوق يسار (شريط الأكشن + لوحة): الرتبة والصحة، الليفل والقدرة، المانا والتقويات، شريط المهارات.
+//   فوق الهوت بار (العنوان، صغير وبدون خلفية مثل اسم الأيتم): الإعلانات (موجات/صدع/سحب القدرة)، سطر الصدع، سطر البرج،
+//   والرسالة المؤقتة أو معلومات الأيتم اللي بإيدك وتلميحه (الأقرب للهوت بار).
 function renderHud(p) {
     try {
-      if (p.hasTag("sh_hud_off")) return;
-      const plain = p.hasTag("sh_hud_plain");
+      const now = system.currentTick;
+      const plain = p.hasTag("sh_hud_plain"), off = p.hasTag("sh_hud_off");
       const st = getState(p);
-      const h = heldLine(p, st, plain);
-      let text = hudText(p, st, plain);
-      const strip = skillStrip(p, st, h.skillId, plain);
-      if (strip) text += "\n" + strip;
-      const m = tempMsg.get(p.id);
-      if (m && m.until > system.currentTick) text += "\n" + m.text;
-      else {
-        if (h.line) text += "\n" + h.line;
-        if (h.tip) text += "\n" + h.tip;
+      const h = off ? { line: "", tip: "" } : heldLine(p, st, plain);
+      if (!off) {
+        let text = hudText(p, st, plain);
+        const strip = skillStrip(p, st, h.skillId, plain);
+        if (strip) text += "\n" + strip;
+        p.onScreenDisplay.setActionBar(text);
       }
-      p.onScreenDisplay.setActionBar(text);
+      const low = [];
+      const b = banners.get(p.id);
+      if (b && b.until > now) low.push(b.text);
+      if (!off) {
+        low.push(riftHudLine(p, plain), towerHudLine(p, plain));
+        const m = tempMsg.get(p.id);
+        if (m && m.until > now) low.push(m.text);
+        else low.push(h.line, h.tip);
+      }
+      setBottomText(p, low.filter(Boolean).join("\n"));
     } catch (e) { /* */ }
 }
 system.runInterval(() => { for (const p of world.getAllPlayers()) renderHud(p); }, 5);
@@ -784,7 +809,7 @@ function startDraw(p, t) {
       const kk = POWER_KEYS[(i + offset) % POWER_KEYS.length];
       const pw = POWERS[kk], rar = rarityOf(kk);
       f.v = rarityIndexOf(kk);
-      try { p.onScreenDisplay.setTitle(`${pw.color}${pw.name}`, { subtitle: `${rar.color}${rar.name}`, fadeInDuration: 0, stayDuration: 6, fadeOutDuration: 0 }); } catch (e) { /* */ }
+      banner(p, `§l${pw.color}${pw.name} §r§8│ ${rar.color}${rar.name}`, 30);
       sfxPlayer(p, "sh.tick", 0.7, 0.8 + i * 0.04);
       glow(dim, { x: c.x, y: c.y + 2.2, z: c.z }, { color: RAR_RGB[f.v], size: 0.6, life: 0.4 });
     });
@@ -800,7 +825,7 @@ function startDraw(p, t) {
       s2.powerless = true;
       saveState(p, s2);
       applyVitality(p, true);
-      try { p.onScreenDisplay.setTitle("§8§lUNBOUND", { subtitle: "§7The crystal stays dark... your body answers instead", fadeInDuration: 8, stayDuration: 90, fadeOutDuration: 24 }); } catch (e) { /* */ }
+      banner(p, "§8§lUNBOUND\n§7The crystal stays dark... your body answers instead", 120);
       sfxPlayer(p, "sh.blackhole_end", 1, 0.7);
       SYS.unbound(dim, c);                                                     // البلورة تنطفي: دخان أسود وحبر
       say(p, "§8[Unbound] §fThe star gave you no power: one in two hundred. Instead your body refuses to break: §cstronger §fand §bfaster§f, and it grows with every rank. The Trainer has nothing to teach you; fight with weapons and your own fists.");
@@ -809,7 +834,7 @@ function startDraw(p, t) {
     grantPower(p, key);
     const pw = POWERS[key], rar = rarityOf(key), idx = rarityIndexOf(key);
     f.v = idx;
-    try { p.onScreenDisplay.setTitle(`§l${pw.color}${pw.name}`, { subtitle: `${rar.color}${rar.name}  ${rarityStars(key)}`, fadeInDuration: 6, stayDuration: 80, fadeOutDuration: 24 }); } catch (e) { /* */ }
+    banner(p, `§l${pw.color}${pw.name}\n${rar.color}${rar.name}  ${rarityStars(key)}`, 110);
     const col = RAR_RGB[idx];
     waveFx(dim, c, 6 + idx, 0, 14);
     SYS.reveal(dim, c, col, idx);                                              // شرار بلون الندرة يكبر مع الندرة (+ توتم للأسطورية، وانفجار التنين للخرافية)
@@ -923,9 +948,7 @@ async function openLore(player) {
   return openLore(player);
 }
 function introStory(player) {
-  try {
-    player.onScreenDisplay.setTitle("§l§9Anime Powers", { subtitle: `§7${LORE_TITLE}`, fadeInDuration: 20, stayDuration: 100, fadeOutDuration: 30 });
-  } catch (e) { /* */ }
+  banner(player, `§l§9Anime Powers\n§7${LORE_TITLE}`, 140);
   sfxPlayer(player, "sh.orbit", 0.8, 0.8);
   say(player, `§9[Story] §f${LORE[0][1].split("\n")[0]}`);
   say(player, "§7Open the Evolution Book > [World Story] to read the other chapters; every new rank unlocks one.");
@@ -1879,7 +1902,7 @@ function openRift(p, tierIdx, force) {
       const dir = dirs[((Math.round((Math.atan2(rift.z - q.location.z, rift.x - q.location.x) * 180) / Math.PI / 45) % 8) + 8) % 8];
       say(q, `${t.col}§l[${t.name}]§r §fA rift tore open ${dist} blocks to the ${dir}. Its warden is of the §l${t.col}${t.rank}§r§f rank. Close it before it spreads.`);
       sfxPlayer(q, "sh.blackhole", 0.8, 0.6);
-      try { q.onScreenDisplay.setTitle(`${t.col}§l${t.name.toUpperCase()}`, { subtitle: `§7${dist}m ${dir} · Warden: ${t.col}${t.rank}`, fadeInDuration: 5, stayDuration: 50, fadeOutDuration: 15 }); } catch (e) { /* */ }
+      banner(q, `${t.col}§l${t.name.toUpperCase()}\n§7${dist}m ${dir} · Warden: ${t.col}${t.rank}`, 80);
     }
     riftSave();
     return true;
@@ -1968,7 +1991,7 @@ function riftStartWave(n) {
   rift.wave = n;
   rift.pause = 0;
   for (const q of riftPlayersNear(48)) {
-    try { q.onScreenDisplay.setTitle(n === 3 ? `${t.col}§lTHE WARDEN` : `${t.col}§lWAVE ${n}/3`, { subtitle: n === 3 ? `§7Rank: ${t.col}${t.rank}` : `§7${t.name}`, fadeInDuration: 3, stayDuration: 30, fadeOutDuration: 10 }); } catch (e) { /* */ }
+    banner(q, n === 3 ? `${t.col}§lTHE WARDEN §r§8│ §7Rank: ${t.col}${t.rank}` : `${t.col}§lWAVE ${n}/3 §r§8│ §7${t.name}`, 50);
     sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
   }
   const dim = world.getDimension(rift.dim);
@@ -1995,6 +2018,30 @@ function riftBossPulse(boss) {
   }
   if (rift.tier >= 2 && riftMobs().length < 6) riftSpawnMob(riftMobType(), false);
 }
+// شكل الصدع 3D ودائرته الرونية: يتجددون قبل ما يخلص عمرهم (الكيان نفسه بيه مؤقت أمان بملف BP: الشكل 60 ثانية، الدائرة 30)،
+// فالجديد يطلع بنفس اللحظة اللي ينشال بيها القديم وما يختفي الصدع ولا ثانية. (قبل: الدائرة عمرها بالسكربت 55 ثانية ومؤقتها 30،
+// فكانت تختفي كل 30 ثانية لحد ما يرجع يطلعها.) وأول مرة بعد ما ترجع للعالم يشيل أي شكل صدع قديم باقي حتى ما يتكرر.
+function riftKeepFx(dim, t, c) {
+  const now = system.currentTick;
+  const fresh = (e, at, max) => e && valid(e) && now - (at || 0) >= 0 && now - (at || 0) < max;
+  if (!rift.ent && !rift.circle) {
+    try { for (const old of dim.getEntities({ tags: ["sh_rift_fx"], location: c, maxDistance: 32 })) removeFx(old); } catch (e) { /* */ }
+  }
+  if (!fresh(rift.ent, rift.entAt, 1000)) {
+    const old = rift.ent;
+    rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(rift), s: 10, life: 1100 });
+    rift.entAt = now;
+    try { if (rift.ent) rift.ent.addTag("sh_rift_fx"); } catch (e) { /* */ }
+    if (old !== rift.ent) removeFx(old);
+  } else { setShape(rift.ent, "sh:r", riftRadius(rift)); moveShape(rift.ent, c); }
+  if (!fresh(rift.circle, rift.circleAt, 500)) {
+    const old = rift.circle;
+    rift.circle = spawnFx(dim, "circle", { x: rift.x, y: rift.y, z: rift.z }, t.circle, 3 + rift.r * 0.45, 580);
+    rift.circleAt = now;
+    try { if (rift.circle) rift.circle.addTag("sh_rift_fx"); } catch (e) { /* */ }
+    if (old !== rift.circle) removeFx(old);
+  } else setShape(rift.circle, "sh:r", 3 + rift.r * 0.45);
+}
 function closeRift(victory, killer) {
   if (!rift) return;
   const r = rift, t = RIFT_TIERS[r.tier], dim = world.getDimension(r.dim);
@@ -2015,7 +2062,7 @@ function closeRift(victory, killer) {
   later(14, () => { for (const id of drops) { try { dim.spawnItem(new ItemStack(id, 1), { x: r.x + (Math.random() - 0.5), y: r.y + 1, z: r.z + (Math.random() - 0.5) }); } catch (e) { /* */ } } });
   for (const q of world.getAllPlayers()) {
     if (q.dimension.id !== r.dim || Math.hypot(q.location.x - r.x, q.location.z - r.z) > 60) continue;
-    try { q.onScreenDisplay.setTitle("§f§lRIFT SEALED", { subtitle: `${t.col}${t.name} §7· rewards dropped at the rift`, fadeInDuration: 4, stayDuration: 50, fadeOutDuration: 15 }); } catch (e) { /* */ }
+    banner(q, `§f§lRIFT SEALED\n${t.col}${t.name} §7· rewards dropped at the rift`, 80);
     const st = getState(q), amt = 80 * (r.tier + 1);
     const ups = addXp(st, amt);
     if (st.power) ups.push(...addPowerXp(st, amt, rarityOf(st.power).maxLv));
@@ -2052,10 +2099,7 @@ system.runInterval(() => {
     if (!near.length) { if (rift.age > RIFT_LIFE && rift.phase !== "battle") closeRift(false); return; }
     // الشكل: شق كبير يكبر ويه الفساد
     const c = riftShapeAt(rift);
-    if (!rift.ent || !valid(rift.ent)) rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(rift), s: 10, life: 1100 });
-    else { setShape(rift.ent, "sh:r", riftRadius(rift)); moveShape(rift.ent, c); }
-    if (!rift.circle || !valid(rift.circle)) rift.circle = spawnFx(dim, "circle", { x: rift.x, y: rift.y, z: rift.z }, t.circle, 3 + rift.r * 0.45, 1100);
-    else setShape(rift.circle, "sh:r", 3 + rift.r * 0.45);
+    riftKeepFx(dim, t, c);
     if (rift.age % 40 === 0) for (let y = 2; y < 26; y += 2) vP(dim, { x: rift.x, y: rift.y + y, z: rift.z }, PT.endrod, { eye: 2 });   // عمود نور يبين من بعيد
     for (let i = 0; i < 4; i++) {
       const a = Math.random() * Math.PI * 2, rr = 1 + Math.random() * rift.r;

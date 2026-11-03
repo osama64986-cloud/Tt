@@ -17,9 +17,23 @@ export const system = {
   runJob(gen) { const id = nextId++; tasks.set(id, { fn: () => { const r = gen.next(); if (r.done) tasks.delete(id); }, every: 1, next: tick + 1 }); return id; },
   afterEvents: evProxy(), beforeEvents: evProxy(),
 };
+// مؤقتات كيانات المؤثرات (minecraft:timer بملفات BP، sh:fx_*): باللعبة الكيان يختفي لما يخلص المؤقت، فالمحاكي يسوي نفس الشي
+const FX_TIMERS = {};
+function loadFxTimers(root) {
+  try {
+    const dir = path.join(root, "AnimePowers/BP/entities");
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.startsWith("sh_fx_")) continue;
+      const e = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"))["minecraft:entity"];
+      const t = e.components["minecraft:timer"];
+      if (t && !t.looping) FX_TIMERS[e.description.identifier] = Math.round(t.time * 20);
+    }
+  } catch (err) { /* */ }
+}
 function advance(n) {
   for (let i = 0; i < n; i++) {
     tick++;
+    for (const e of entities) if (e._dieAt !== undefined && e._valid && e._dieAt <= tick) e._valid = false;
     for (const [id, t] of [...tasks]) {
       if (!tasks.has(id) || t.next > tick) continue;
       try { t.fn(); } catch (e) { globalThis.__swallow && globalThis.__swallow(e); }
@@ -87,7 +101,7 @@ function mkDim(id) {
       if (id === "minecraft:colored_flame_particle" && vars && vars.v) { const r = vars.v["variable.color.r"], g = vars.v["variable.color.g"], b = vars.v["variable.color.b"]; if (r > 0.6 && b < 0.5 && r >= g * 0.9) { stats.badTint = stats.badTint || {}; const k = [r, g, b].map((x) => x.toFixed(2)).join(","); stats.badTint[k] = (stats.badTint[k] || 0) + 1; } }
       if (rec.on && loc) rec.particles.push({ t: tick, id, x: loc.x, y: loc.y, z: loc.z, v: vars && vars.v ? { ...vars.v } : {} }); stats.particles++; stats.pById = stats.pById || {}; stats.pById[id] = (stats.pById[id] || 0) + 1; },
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
-    spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); entities.push(e); return e; },
+    spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); if (FX_TIMERS[type]) e._dieAt = tick + FX_TIMERS[type]; entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return true; },
@@ -112,7 +126,14 @@ const player = mkEntity("minecraft:player", { x: 0, y: 64, z: 0 }, dims.overworl
 Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
   camera: { fade() {} },
-  onScreenDisplay: { setActionBar(t) { stats.actionBars.push(t); }, setTitle(t) { (stats.titles = stats.titles || []).push(t); }, setHudVisibility(v, els) { stats.hudHidden = v === 0 ? els : []; } },
+  // الشاشة: فوق يسار = شريط الأكشن، فوق الهوت بار = العنوان. actionBars يسجل الشاشة كاملة (فوق + تحت) حتى الاختبارات القديمة تلقى كل الكتابات،
+  // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
+  onScreenDisplay: {
+    setActionBar(t) { stats.top = String(t); stats.actionBars.push(stats.top + (stats.bottom ? "\n" + stats.bottom : "")); },
+    setTitle(t, o) { (stats.titles = stats.titles || []).push(t); stats.bottom = String(t); stats.titleOpts = o; stats.actionBars.push((stats.top || "") + "\n" + stats.bottom); },
+    clearTitle() { stats.bottom = ""; },
+    setHudVisibility(v, els) { stats.hudHidden = v === 0 ? els : []; },
+  },
   sendMessage(m) { stats.messages.push(String(m)); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   getRotation() { return { x: 0, y: 0 }; },
@@ -173,6 +194,7 @@ export const __sim = {
   fire, useItem, setState, baseState, spawnZombies, hold, cdReset: () => system_cd_reset(),
   stats, failures, get failuresArr() { return failures; },
   async runScenario(sc, root) {
+    loadFxTimers(root);
     const main = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/main.js"), "utf8");
     const skills = [...main.matchAll(/mk\("([a-z]+)", "([a-z]+)", "[^"]+", "(sh:skill_[a-z]+)"/g)].map((m) => ({ id: m[1], power: m[2], item: m[3] }));
     const powers = [...new Set(skills.map((s) => s.power))];
@@ -343,6 +365,17 @@ export const __sim = {
       if (!okPlain) failures.push("الواجهة البسيطة (sh_hud_plain) ما تطلع");
       player._tags.delete("sh_hud_plain");
     }
+    // v1.35.1: اللوحة فوق يسار = الأشرطة وشريط المهارات بس؛ معلومات الأيتم بإيدك فوق الهوت بار (كتابة صغيرة بدون خلفية)
+    {
+      hold("sh:skill_meteor"); stats.actionBars.length = 0; advance(20);
+      const top = stats.top || "", low = stats.bottom || "";
+      const ok = /Skills/.test(top) && !/Level \d/.test(top) && /Level \d/.test(low) && stats.titleOpts && stats.titleOpts.fadeInDuration === 0;
+      console.log(`  المكان: الأشرطة فوق يسار + معلومات المهارة فوق الهوت بار ${ok ? "✔" : "✖"} | فوق الهوت بار: ${low.replace(/§./g, "").replace(/\n/g, " ⏎ ")}`);
+      if (!ok) failures.push("معلومات الأيتم مو فوق الهوت بار (أو اللوحة فوق يسار بيها كتابات)");
+      hold(""); advance(30);
+      const cleared = !(stats.bottom || "").includes("Level");
+      if (!cleared) failures.push("الكتابة فوق الهوت بار ما تنمسح لما تنزل الأيتم");
+    }
     // كتاب + نافذة الحالة
     const ui = (await import("@minecraft/server-ui")).sim;
     ui.nextSelection = 99; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(3);
@@ -492,8 +525,30 @@ export const __sim = {
         advance(40); stats.actionBars.length = 0; advance(10);
         const hud = stats.actionBars[stats.actionBars.length - 1] || "";
         if (!hud.includes("Violet Rift")) failures.push("الصدع ما طلع بالـHUD");
+        // v1.35.1: سطر الصدع والإعلانات فوق الهوت بار (العنوان)، مو باللوحة فوق يسار (شريط الأكشن)
+        const riftLow = (stats.bottom || "").includes("Violet Rift") && !(stats.top || "").includes("Violet Rift");
+        const openBanner = (stats.titles || []).some((t) => t.includes("VIOLET RIFT"));
+        console.log(`  مكان الكتابة: سطر الصدع فوق الهوت بار ${riftLow ? "✔" : "✖"} | إعلان فتح الصدع فوق الهوت بار ${openBanner ? "✔" : "✖"}`);
+        if (!riftLow || !openBanner) failures.push("كتابات الصدع مو فوق الهوت بار");
+        stats.titles = [];
         console.log("  فساد الأرض: بلوكات =", (stats.blockSets || 0) - b0, "| HUD:", (hud.split("\n").find((l) => l.includes("Rift")) || "").replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "◆"));
         if ((stats.blockSets || 0) - b0 < 10) failures.push("الصدع ما فسد الأرض");
+        // شكل الصدع 3D ودائرته لازم يبقون ظاهرين طول الوقت (مع مؤقتات BP: الشكل 60 ثانية، الدائرة 30) وبدون تكرار
+        {
+          const SHR = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/shapes.js"), "utf8");
+          const vRift = Number((SHR.match(/"rift_violet": (\d+)/) || [])[1]);
+          let minS = 99, maxS = 0, minC = 99, maxC = 0, rOk = true;
+          for (let k = 0; k < 75; k++) {
+            advance(20);
+            const sh = entities.filter((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === vRift);
+            const ci = entities.filter((e) => e._valid && e.typeId === "sh:fx_circle" && e._tags.has("sh_rift_fx"));
+            minS = Math.min(minS, sh.length); maxS = Math.max(maxS, sh.length); minC = Math.min(minC, ci.length); maxC = Math.max(maxC, ci.length);
+            if (sh.some((e) => !(e.getProperty("sh:r") > 1))) rOk = false;
+          }
+          const ok = minS === 1 && maxS === 1 && minC === 1 && maxC === 1 && rOk;
+          console.log(`  شكل الصدع 3D خلال 75 ثانية: أقل ${minS} / أكثر ${maxS} | الدائرة الرونية: أقل ${minC} / أكثر ${maxC} | الحجم ${rOk ? "✔" : "✖"} ${ok ? "✔" : "✖"}`);
+          if (!ok) failures.push("شكل الصدع أو دائرته يختفي أو يتكرر");
+        }
         player.location = { x: rs.x + 4, y: 64, z: rs.z };
         const waves = [];
         for (let w = 1; w <= 3; w++) {
@@ -523,7 +578,11 @@ export const __sim = {
           else if (boss) { advance(200); fire("entityDie", { deadEntity: boss, damageSource: { damagingEntity: player } }); boss._valid = false; }
         }
         console.log("  " + waves.join("\n  "));
+        const waveBanners = [1, 2].every((n) => (stats.titles || []).some((t) => t.includes(`WAVE ${n}/3`))) && (stats.titles || []).some((t) => t.includes("THE WARDEN"));
         advance(40);
+        const sealBanner = (stats.titles || []).some((t) => t.includes("RIFT SEALED"));
+        console.log(`  إعلانات الموجات والزعيم فوق الهوت بار ${waveBanners ? "✔" : "✖"} | إعلان سد الصدع ${sealBanner ? "✔" : "✖"}`);
+        if (!waveBanners || !sealBanner) failures.push("إعلانات الصدع (الموجات/الزعيم/السد) ما طلعت فوق الهوت بار");
         const sealed = !JSON.parse(world._dyn.sh_rift || "null");
         const loot = (stats.items || []).filter((t) => t.startsWith("sh:") || t.startsWith("minecraft:"));
         console.log("  انسد =", sealed, "| مكافآت:", loot.join(", "));
@@ -598,7 +657,8 @@ export const __sim = {
         const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 60); entities.push(m);
         const d0 = stats.damage || 0; let seen = 0; const zones0 = stats.spawned;
         const pid = shape.startsWith("particle:") ? shape.slice(9) : null, pc0 = pid ? ((stats.pById || {})[pid] || 0) : 0;
-        for (let t = 0; t < 1500; t += 2) { advance(2); if (pid ? ((stats.pById || {})[pid] || 0) > pc0 : entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; }
+        const keepRange = type === "sh:ember_imp";                                // العفريت لو انقض أول مرة يقرب ويبقى قريب وما يرمي كرة النار (اختبار عشوائي): نرجعه للمسافة
+        for (let t = 0; t < 1500; t += 2) { advance(2); if (pid ? ((stats.pById || {})[pid] || 0) > pc0 : entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; if (keepRange && !seen) m.location = { x: 0, y: 64, z: dist }; }
         const dmg = Math.round((stats.damage || 0) - d0);
         console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}`);
         if (!seen) failures.push(`${type}: المهارة الخاصة (${shape}) ما طلعت`);
@@ -905,11 +965,11 @@ export const __sim = {
       // 2) المانا: مهارة غالية تنعاد بدون تصفير كولداون لحد ما تخلص المانا
       setState(baseState("star")); spawnZombies(); system_cd_reset();
       const msgs0 = stats.actionBars.length; let blocked = false, used = 0;
-      for (let i = 0; i < 12 && !blocked; i++) {
+      for (let i = 0; i < 16 && !blocked; i++) {
         const before = stats.damage || 0;
         fire("scriptEventReceive", { id: "sh:cdreset_cd_only", message: "", sourceEntity: player });
-        await useItem("sh:skill_meteor"); advance(2);
-        const bar = stats.actionBars.slice(-3).join(" ");
+        await useItem("sh:skill_meteor"); advance(5);                                  // دورة HUD كاملة (كل 5 تكات) حتى الرسالة أكيد تنعرض
+        const bar = (stats.bottom || "") + " " + stats.actionBars.slice(-4).join(" ");
         if (/Not enough mana/.test(bar)) blocked = true; else used++;
         advance(30);
       }
