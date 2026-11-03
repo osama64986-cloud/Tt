@@ -583,17 +583,20 @@ export const __sim = {
         // شكل الصدع 3D ودائرته لازم يبقون ظاهرين طول الوقت (مع مؤقتات BP: الشكل 60 ثانية، الدائرة 30) وبدون تكرار
         {
           const SHR = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/shapes.js"), "utf8");
-          const vRift = Number((SHR.match(/"rift_violet": (\d+)/) || [])[1]);
+          // v1.37.1: الصدع يختار واحد من 4 أشكال عشوائياً، والشكل يبقى نفسه بكل تجديد لحد ما يخلص الصدع
+          const vRifts = new Set([...SHR.matchAll(/"rift_violet(?:_[bcd])?": (\d+)/g)].map((m) => Number(m[1])));
+          const seenForms = new Set();
           let minS = 99, maxS = 0, minC = 99, maxC = 0, rOk = true;
           for (let k = 0; k < 75; k++) {
             advance(20);
-            const sh = entities.filter((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === vRift);
+            const sh = entities.filter((e) => e._valid && e.typeId === "sh:fx_shape" && vRifts.has(e.getProperty("sh:v")));
+            for (const e of sh) seenForms.add(e.getProperty("sh:v"));
             const ci = entities.filter((e) => e._valid && e.typeId === "sh:fx_circle" && e._tags.has("sh_rift_fx"));
             minS = Math.min(minS, sh.length); maxS = Math.max(maxS, sh.length); minC = Math.min(minC, ci.length); maxC = Math.max(maxC, ci.length);
             if (sh.some((e) => !(e.getProperty("sh:r") > 1))) rOk = false;
           }
-          const ok = minS === 1 && maxS === 1 && minC === 1 && maxC === 1 && rOk;
-          console.log(`  شكل الصدع 3D خلال 75 ثانية: أقل ${minS} / أكثر ${maxS} | الدائرة الرونية: أقل ${minC} / أكثر ${maxC} | الحجم ${rOk ? "✔" : "✖"} ${ok ? "✔" : "✖"}`);
+          const ok = minS === 1 && maxS === 1 && minC === 1 && maxC === 1 && rOk && vRifts.size === 4 && seenForms.size === 1;
+          console.log(`  شكل الصدع 3D خلال 75 ثانية: أقل ${minS} / أكثر ${maxS} | الدائرة الرونية: أقل ${minC} / أكثر ${maxC} | الحجم ${rOk ? "✔" : "✖"} | أشكال ${vRifts.size}، نفس الرسمة طول عمره ${seenForms.size === 1 ? "✔" : "✖"} ${ok ? "✔" : "✖"}`);
           if (!ok) failures.push("شكل الصدع أو دائرته يختفي أو يتكرر");
         }
         player.location = { x: rs.x + 4, y: 64, z: rs.z };
@@ -1027,9 +1030,9 @@ export const __sim = {
       for (let i = 0; i < N; i++) { kill("sh:grey_bear"); kill("sh:prayer_mantis"); }
       for (let i = 0; i < 12; i++) kill("sh:shadow_hound");                  // 55% لكل وحدة: 12 قتلة حتى ما يفشل الاختبار بالصدفة
       const dropped = new Set(stats.items), cnt = (id) => stats.items.filter((x) => x === id).length;
-      const rate = { hide: cnt("sh:bear_hide") / N, chitin: cnt("sh:mantis_chitin") / N, ebear: cnt("sh:essence_bear") / N, emantis: cnt("sh:essence_mantis") / N };
+      const rate = { hide: cnt("sh:bear_hide") / N, chitin: cnt("sh:mantis_chitin") / N, ebear: cnt("sh:soul_silver") / N, emantis: cnt("sh:soul_verdant") / N };   // v1.37.1: شعلات الروح
       const dropsOk = dropped.has("sh:shadow_pelt") && rate.hide > 0 && rate.hide <= 0.1 && rate.chitin > 0 && rate.chitin <= 0.07 && rate.ebear > 0 && rate.ebear <= 0.09 && rate.emantis > 0 && rate.emantis <= 0.1;
-      console.log(`  ندرة: جلد الدب ${(rate.hide * 100).toFixed(1)}% | قشرة السرعوف ${(rate.chitin * 100).toFixed(1)}% | جوهرة الدب ${(rate.ebear * 100).toFixed(1)}% | جوهرة السرعوف ${(rate.emantis * 100).toFixed(1)}% (من ${N} قتلة)`);
+      console.log(`  ندرة: جلد الدب ${(rate.hide * 100).toFixed(1)}% | قشرة السرعوف ${(rate.chitin * 100).toFixed(1)}% | شعلة فضية (الدب) ${(rate.ebear * 100).toFixed(1)}% | شعلة خضرة (السرعوف) ${(rate.emantis * 100).toFixed(1)}% (من ${N} قتلة)`);
       // 2) المانا: مهارة غالية تنعاد بدون تصفير كولداون لحد ما تخلص المانا
       setState(baseState("star")); spawnZombies(); system_cd_reset();
       const msgs0 = stats.actionBars.length; let blocked = false, used = 0;
@@ -1075,19 +1078,30 @@ export const __sim = {
       advance(420);
       const alch = entities.find((e) => e._valid && e.typeId === "sh:alchemist");
       inventory.fill(undefined);
-      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:essence_hound", 1); inventory[5] = new ItemStack("sh:essence_fox", 1); inventory[6] = new ItemStack("minecraft:potion", 1);
+      // v1.37.1: شاشة تشبه طاولة السحر. 6 أزرار بترتيب ثابت (0..2 صفوف الطبخ ×1 ×2 ×3، 3 الماء، 4 الشعلة، 5 الوصفات)
+      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:soul_crimson", 3); inventory[5] = new ItemStack("sh:soul_amber", 2); inventory[6] = new ItemStack("minecraft:potion", 2);
       const ui = (await import("@minecraft/server-ui")).sim;
-      ui.nextSelection = 0; ui.formsShown.length = 0;
+      ui.formsShown.length = 0; ui.queue = [0, 4, 0]; ui.cancelWhenEmpty = true;      // اطبخ ×1 (أحمر) ← بدّل الشعلة (برتقالي) ← اطبخ ×1
       if (alch) fire("playerInteractWithEntity", { player, target: alch });
-      await new Promise((r) => setTimeout(r, 20)); advance(2);
-      const brewed = inventory.some((it) => it && it.typeId === "sh:potion_vitality");
-      const paid = (inventory[3] && inventory[3].amount) === 3 && !inventory[4] && !inventory[5] && !inventory[6];   // قنينة الماء + الجوهرتين + جلدين
+      await new Promise((r) => setTimeout(r, 30)); advance(2);
+      const f0 = ui.formsShown[0] || { buttons: [], icons: [] };
+      const layoutOk = /§a§l§c§h/.test(f0.title || "") && f0.buttons.length === 6 && f0.buttons[0].startsWith("§k§r") && f0.buttons[1].startsWith("§o§r")
+        && /sh_soul_crimson/.test(f0.icons[4] || "") && /potion_bottle/.test(f0.icons[3] || "") && /sh_potion_vitality/.test(f0.icons[0] || "");
+      const got = (id) => inventory.filter((it) => it && it.typeId === id).reduce((a, it) => a + it.amount, 0);
+      const brewed = got("sh:potion_vitality") === 1 && got("sh:potion_might") === 1;
+      const paid = got("sh:soul_crimson") === 1 && got("sh:soul_amber") === 0 && got("minecraft:potion") === 0 && got("sh:shadow_pelt") === 5;
+      inventory.fill(undefined); ui.formsShown.length = 0; ui.queue = [];
+      advance(12); if (alch) fire("playerInteractWithEntity", { player, target: alch });
+      await new Promise((r) => setTimeout(r, 30)); advance(2);
+      const fe = ui.formsShown[0] || { buttons: [] };
+      const runesOk = fe.buttons.length === 6 && fe.buttons.slice(0, 3).every((b) => b.startsWith("§l§r"));
+      ui.cancelWhenEmpty = false;
       world.setDynamicProperty("sh_structs", "[]"); inventory.fill(undefined);
       console.log(`  مواد الوحوش ${dropsOk ? "✔" : "✖"} (${[...dropped].filter((x) => x.includes("hide") || x.includes("chitin") || x.includes("pelt") || x.includes("scythe") || x.includes("claw")).join(", ")})`);
       console.log(`  المانا: مهارة غالية انعادت ${used} مرات ثم ${blocked ? "انقفلت (مانا ما تكفي) ✔" : "ما انقفلت ✖"} | المانا بالـHUD ${manaShown ? "✔" : "✖"}`);
       console.log(`  الجرعات: تأثيرات ${potOk ? "✔" : "✖"} | تقويات محفوظة ${buffsOk ? "✔" : "✖"} (${Object.keys(buffs).join(",")}) | أيقونات بالـHUD ${/[-]/.test(hudBuff) ? "✔" : "✖"}`);
       console.log(`  طقم الصياد (بونص) ${setOk ? "✔" : "✖"} | رد طقم السرعوف ${countered ? "✔" : "✖"}`);
-      console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | طبخ جرعة ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"}`);
+      console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | ترتيب الشاشة ${layoutOk ? "✔" : "✖"} | طبخ جرعتين (تبديل الشعلة) ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"} | بدون شعلة = رونز ${runesOk ? "✔" : "✖"}`);
       // 6) الإنجازات (v1.36): تنفتح من حالة اللاعب ومن الأحداث، تعطي خبرة، وشاشاتها بالكتاب بصور (المقفول ??? وصورة _x)
       {
         const ACHJS = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/achievements.js"), "utf8");
@@ -1158,7 +1172,7 @@ export const __sim = {
       if (!blocked || used < 2 || !manaShown) failures.push("المانا ما تشتغل صح");
       if (!potOk || !buffsOk) failures.push("الجرعات ما تشتغل");
       if (!setOk || !countered) failures.push("بونص طقم الدرع ما يشتغل");
-      if (!alch || !brewed || !paid) failures.push("الخيميائي ما يشتغل");
+      if (!alch || !brewed || !paid || !layoutOk || !runesOk) failures.push("الخيميائي ما يشتغل");
       entities.forEach((x) => (x._valid = false)); entities.length = 0; system_cd_reset();
       player._hp = 20; player._max = 20; player.location = { x: 0, y: 64, z: 0 };
       fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });

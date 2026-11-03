@@ -2,7 +2,7 @@
   "format_version": "1.21.60",
   "minecraft:item": {
     "description": {
-      "identifier": "sh:essence_mantis",
+      "identifier": "sh:soul_silver",
       "menu_category": {
         "category": "items"
       }
@@ -10,14 +10,13 @@
     "components": {
       "minecraft:icon": {
         "textures": {
-          "default": "sh_essence_mantis"
+          "default": "sh_soul_silver"
         }
       },
       "minecraft:display_name": {
-        "value": "§aVerdant Essence"
+        "value": "§7Silver Soul Flame"
       },
-      "minecraft:max_stack_size": 64,
-      "minecraft:glint": true
+      "minecraft:max_stack_size": 64
     }
   }
 }

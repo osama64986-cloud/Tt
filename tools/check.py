@@ -224,6 +224,23 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص الواجهة فشل: {e}")
 
+# 8e) شاشة الخيميائي (RP/ui/server_form.json، طريقة Bedrock Wiki "Modifying Server Forms"): نعدل بس long_form و main_screen_content
+#     والعلامة بالعنوان لازم تطابق ALC_MARK بالسكربت، وإلا القائمة العادية والمخصصة يطلعن سوا أو ما يطلع شي
+try:
+    sf = load(os.path.join(RP, "ui", "server_form.json"))
+    for k in sf:
+        if k not in ("namespace", "long_form", "main_screen_content") and not k.startswith("sh_"):
+            err(f"server_form.json: عنصر {k} مو من المسموحة")
+    mk = re.search(r'const ALC_MARK = "([^"]+)"', open(os.path.join(BP, "scripts", "main.js"), encoding="utf-8").read())
+    raw = json.dumps(sf, ensure_ascii=False)
+    if not mk or raw.count(f"'{mk.group(1)}'") != 2:
+        err("server_form.json: علامة الخيميائي ما تطابق ALC_MARK بـ main.js")
+    for tex in set(re.findall(r'"(textures/ui/sh_[a-z_]+)"', raw)):
+        if not os.path.exists(os.path.join(RP, tex + ".png")):
+            err(f"server_form.json: الصورة {tex} مو موجودة")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص شاشة الخيميائي فشل: {e}")
+
 # 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
 if node and "--no-sim" not in sys.argv:
     r = subprocess.run([node, os.path.join(ROOT, "tools", "sim", "run_sim.mjs")], capture_output=True)

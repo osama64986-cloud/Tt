@@ -22,6 +22,8 @@ G = {
     "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "lens": 53, "rift_ring": 54, "sep": 55,
     "mana_full": 56, "mana_empty": 57, "mana": 58, "buff_might": 59, "buff_bulwark": 60, "buff_focus": 61, "buff_swift": 62,
     "dash": 63, "dash_cd": 47,
+    # شاشة الخيميائي (v1.37.1): خانة القدر الفاضية، قنينة الماء، 6 شعلات روح، 6 جرعات، سهم، وعلامة "ما تمتزج"
+    "alc_slot": 64, "alc_water": 65, "alc_flame0": 66, "alc_potion0": 72, "alc_arrow": 78, "alc_none": 79,
 }
 POWER_ORDER = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"]
 
@@ -297,6 +299,46 @@ def mana_icon():
     return c.outline()
 
 
+def _from_px(px):
+    """أيقونة 16×16 من gen_gear (Px) إلى خلية خط"""
+    c = Cell()
+    for (x, y), col in px.p.items():
+        c.put(x, y, col)
+    return c
+
+
+def alchemy_cells():
+    """رموز شاشة الخيميائي: نفس رسمات الأيتمات بالضبط (شعلات الروح والجرعات) + خانة وقنينة ماء وسهم"""
+    import gen_gear as GG
+    out = {}
+    slot = Cell()
+    for i in range(1, 15):
+        for j in (1, 14):
+            slot.put(i, j, (110, 96, 140)); slot.put(j, i, (110, 96, 140))
+    for i in range(2, 14):
+        for j in range(2, 14):
+            slot.put(i, j, (30, 24, 44, 200))
+    out[G["alc_slot"]] = slot
+    out[G["alc_water"]] = _from_px(GG.icon_potion((70, 120, 230)))
+    for i, fl in enumerate(GG.SOUL_FLAMES):
+        out[G["alc_flame0"] + i] = _from_px(GG.icon_soul_flame(fl[4]))
+    for i, po in enumerate(GG.POTIONS):
+        out[G["alc_potion0"] + i] = _from_px(GG.icon_potion(po[3]))
+    arrow = Cell()
+    for x in range(2, 13):                                                     # سهم لليمين: ساق + راس مثلث
+        arrow.put(x, 7, (240, 220, 160)); arrow.put(x, 8, (240, 220, 160))
+    for k in range(5):
+        arrow.put(13 - k, 7 - k, (240, 220, 160)); arrow.put(13 - k, 8 + k, (240, 220, 160))
+        arrow.put(12 - k, 7 - k, (200, 170, 100)); arrow.put(12 - k, 8 + k, (200, 170, 100))
+    out[G["alc_arrow"]] = arrow
+    none = Cell()
+    for k in range(3, 13):
+        for t in (0, 1):
+            none.put(k + t, k, (230, 70, 70)); none.put(15 - k - t, k, (230, 70, 70))
+    out[G["alc_none"]] = none
+    return out
+
+
 def dash_icon(on):
     """شحنة الداش: سهمين » (فاتح ذهبي-أبيض = جاهز، رمادي غامق = يشحن)"""
     c = Cell()
@@ -343,6 +385,8 @@ def build_sheet():
     cells[G["mana"]] = mana_icon()
     for k, col in (("might", (255, 140, 30)), ("bulwark", (140, 160, 184)), ("focus", (170, 80, 255)), ("swift", (90, 230, 120))):
         cells[G["buff_" + k]] = bottle(col)
+    for k, cell in alchemy_cells().items():
+        cells[k] = cell
     cells[G["dash"]] = dash_icon(True)
     cells[G["dash_cd"]] = dash_icon(False)
     for r in range(7):

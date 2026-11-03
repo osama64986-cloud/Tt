@@ -33,21 +33,40 @@ MATERIALS = [
     ("mantis_scythe", "Mantis Scythe", "§a", "Prayer Mantis", "scythe", ((210, 232, 180), (246, 255, 230), (110, 150, 90), (44, 32, 58))),
 ]
 
-# ───────────────────────── الجواهر (v1.37) ─────────────────────────
-# جوهرة لكل وحش: كرة صغيرة بيها شظية مثلثة متعرجة، بلون الوحش. نادرة كلش (2.5-5%)، والخيميائي يطبخ بيها الجرعات ويا قنينة ماء.
-# (المعرف، الاسم، اللون، الوحش، لون الجوهرة)
-ESSENCES = [
-    ("essence_hound", "Shadow Essence", "§5", "Shadow Hound", (150, 80, 225)),
-    ("essence_imp", "Ember Essence", "§6", "Ember Imp", (255, 128, 36)),
-    ("essence_scorpion", "Venom Essence", "§e", "Sand Scorpion", (206, 222, 60)),
-    ("essence_guard", "Rust Essence", "§3", "Rust Guard", (60, 176, 164)),
-    ("essence_gloom", "Gloom Essence", "§b", "Gloomhorn", (96, 206, 255)),
-    ("essence_seer", "Seer Essence", "§6", "Hollow Seer", (255, 188, 56)),
-    ("essence_fox", "Foxfire Essence", "§d", "Veilfox", (255, 116, 206)),
-    ("essence_mammoth", "Magma Essence", "§c", "Magmamoth", (236, 52, 30)),
-    ("essence_bear", "Wild Essence", "§7", "Grey Bear", (196, 198, 212)),
-    ("essence_mantis", "Verdant Essence", "§a", "Prayer Mantis", (84, 226, 92)),
+# ───────────────────────── لهب الروح (v1.37.1، بدل الجواهر) ─────────────────────────
+# شعلة روح لكل جرعة: اللون يكلك أي جرعة تسوي بيها. الوحوش تسقطها نادراً كلش، والخيميائي يطبخ:
+# قنينة ماء + شعلتين بنفس اللون = الجرعة بنفس اللون.
+# (المعرف، الاسم، اللون، الجرعة، [حافة، ظل، أساس، فاتح، قلب] ← تدرج بإزاحة لون: الظل يميل بارد، الفاتح يميل دافي)
+SOUL_FLAMES = [
+    ("soul_crimson", "Crimson Soul Flame", "§c", "potion_vitality", [(92, 14, 42), (168, 30, 52), (226, 58, 64), (255, 140, 112), (255, 236, 214)]),
+    ("soul_azure", "Azure Soul Flame", "§9", "potion_mana", [(18, 30, 96), (36, 82, 196), (72, 148, 255), (150, 210, 255), (232, 248, 255)]),
+    ("soul_amber", "Amber Soul Flame", "§6", "potion_might", [(104, 36, 8), (196, 88, 14), (255, 152, 32), (255, 214, 96), (255, 250, 218)]),
+    ("soul_silver", "Silver Soul Flame", "§7", "potion_bulwark", [(46, 50, 70), (104, 116, 140), (166, 178, 200), (218, 226, 240), (255, 255, 255)]),
+    ("soul_violet", "Violet Soul Flame", "§d", "potion_focus", [(56, 14, 96), (118, 42, 186), (170, 84, 255), (216, 162, 255), (250, 236, 255)]),
+    ("soul_verdant", "Verdant Soul Flame", "§a", "potion_swift", [(12, 64, 40), (30, 146, 64), (82, 218, 104), (172, 255, 160), (240, 255, 232)]),
 ]
+# رسمة الشعلة بكسل بكسل (مرسومة باليد، مو محسوبة): لسان طويل بالنص يلتف فوق، لسان يمين بينهم فراغ، جسم مدور،
+# قلب فاتح تحت بالنص، ظل على الحافة اليسار وتحت، وشرارات طايرة. الحافة (أغمق درجة بنفس اللون، مو أسود) تنحسب لحالها.
+FLAME_ROWS = [
+    "................",
+    "......3.........",
+    "......32........",
+    ".....232........",
+    ".....2232..3....",
+    "....12232..32...",
+    "....122332.232..",
+    "...1223332.2321.",
+    "...12233432232..",
+    "...12234443321..",
+    "...12344444321..",
+    "...12344444321..",
+    "....123444321...",
+    ".....1233321....",
+    "......11111.....",
+    "................",
+]
+FLAME_SPARKS = {(12, 1): 3, (2, 3): 2, (14, 10): 2}
+
 
 # ───────────────────────── الجرعات ─────────────────────────
 POTIONS = [
@@ -230,21 +249,23 @@ def icon_material(shape, pal):
     return P.outline()
 
 
-def icon_essence(color):
-    """جوهرة صغيرة (حتى تبين صغيرة بالإيد): كرة بلمعة + شظية مثلثة متعرجة طالعة منها، كلها بلون الوحش"""
+def icon_soul_flame(pal):
+    """شعلة الروح من FLAME_ROWS بألوان pal (5 درجات)، والحافة أغمق درجة حول كل بكسل"""
     P = Px()
-    light, dark = mix(color, (255, 255, 255), 0.55), mix(color, (0, 0, 0), 0.45)
-    # الشظية: مثلث رأسه فوق-يمين، قاعدته منشار (متعرجة)
-    for y in range(3, 9):
-        w = (y - 3) * 0.55
-        for x in range(16):
-            if abs(x + 0.5 - 10.5) <= w + 0.3 and not (y == 8 and x % 2 == 0):
-                P.put(x, y, light if x + 0.5 < 10.5 else color)
-    P.put(10, 2, (255, 255, 255))
-    # الكرة
-    P.fill(lambda x, y: (x - 7.5) ** 2 + (y - 10.5) ** 2 <= 3.4 ** 2,
-           lambda x, y: (255, 255, 255) if (x, y) == (6, 9) else light if (x - 6.5) ** 2 + (y - 9.5) ** 2 < 2 else (dark if (x - 8.5) ** 2 + (y - 11.5) ** 2 < 2.5 else color))
-    return P.outline()
+    fill = {}
+    for y, row in enumerate(FLAME_ROWS):
+        for x, ch in enumerate(row):
+            if ch in "1234":
+                fill[(x, y)] = int(ch)
+    fill.update(FLAME_SPARKS)
+    for (x, y), lv in fill.items():
+        P.put(x, y, pal[lv])
+    for (x, y) in list(fill):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + dx, y + dy)
+            if q not in fill and 0 <= q[0] < 16 and 0 <= q[1] < 16:
+                P.put(q[0], q[1], pal[0])
+    return P
 
 
 def icon_potion(color):
@@ -423,11 +444,17 @@ def main():
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
         td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
         wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64}))
-    for ident, name, col, mob, color in ESSENCES:
-        img = icon_essence(color).image()
+    for ident, name, col, potion, pal in SOUL_FLAMES:
+        img = icon_soul_flame(pal).image()
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
         td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
-        wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64, "minecraft:glint": True}))
+        wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64}))
+    for old in [f for f in os.listdir(os.path.join(BP, "items")) if f.startswith("sh_essence_")]:       # الجواهر القديمة (1.37.0) انشالت
+        os.remove(os.path.join(BP, "items", old))
+        png = os.path.join(tex_dir, old.replace(".json", ".png"))
+        if os.path.exists(png):
+            os.remove(png)
+        td.pop(old.replace(".json", ""), None)
     for ident, name, col, color, desc in POTIONS:
         img = icon_potion(color).image()
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
@@ -473,14 +500,14 @@ def main():
     # بيانات للسكربت (نفس الأسماء والأوصاف بالضبط)
     gear = {
         "materials": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _s, _p in MATERIALS},
-        "essences": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _col in ESSENCES},
+        "flames": {f"sh:{i}": {"name": f"{c}{n}", "potion": f"sh:{pot}"} for i, n, c, pot, _pal in SOUL_FLAMES},
         "potions": {f"sh:{i}": {"name": f"{c}{n}", "desc": d} for i, n, c, _col, d in POTIONS},
         "sets": {k: {"name": f"{c}{sn}", "pieces": [f"sh:{k}_{pc[0]}" for pc in PIECES], "mats": [ma, mb], "bonus": SET_BONUS[k]} for k, sn, c, (ma, mb), *_r in ARMOR_SETS},
     }
     with open(os.path.join(BP, "scripts", "gear.js"), "w", encoding="utf-8") as f:
         f.write("// يتولد تلقائياً من tools/gen_gear.py — لا تعدله يدوياً\n")
         f.write("export const GEAR = " + json.dumps(gear, ensure_ascii=False, indent=1) + ";\n")
-    print("gear ok:", len(MATERIALS), "materials,", len(ESSENCES), "essences,", len(POTIONS), "potions,", len(ARMOR_SETS) * 4, "armor pieces")
+    print("gear ok:", len(MATERIALS), "materials,", len(SOUL_FLAMES), "soul flames,", len(POTIONS), "potions,", len(ARMOR_SETS) * 4, "armor pieces")
     if prev:
         os.makedirs(prev, exist_ok=True)
         cols = 6

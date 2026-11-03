@@ -107,7 +107,19 @@
     "s94": "geometry.sh_shape_scythe_thrust",
     "s95": "geometry.sh_shape_scissor_lock",
     "s96": "geometry.sh_shape_molt_husk",
-    "s97": "geometry.sh_shape_husk_burst"
+    "s97": "geometry.sh_shape_husk_burst",
+    "s98": "geometry.sh_shape_rift_blue_b",
+    "s99": "geometry.sh_shape_rift_blue_c",
+    "s100": "geometry.sh_shape_rift_blue_d",
+    "s101": "geometry.sh_shape_rift_violet_b",
+    "s102": "geometry.sh_shape_rift_violet_c",
+    "s103": "geometry.sh_shape_rift_violet_d",
+    "s104": "geometry.sh_shape_rift_crimson_b",
+    "s105": "geometry.sh_shape_rift_crimson_c",
+    "s106": "geometry.sh_shape_rift_crimson_d",
+    "s107": "geometry.sh_shape_rift_abyss_b",
+    "s108": "geometry.sh_shape_rift_abyss_c",
+    "s109": "geometry.sh_shape_rift_abyss_d"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",
@@ -138,7 +150,7 @@
       "fang_jaw": "q.property('sh:v') == 35"
      },
      {
-      "rift": "q.property('sh:v') == 50 || q.property('sh:v') == 51 || q.property('sh:v') == 52 || q.property('sh:v') == 53"
+      "rift": "q.property('sh:v') == 50 || q.property('sh:v') == 98 || q.property('sh:v') == 99 || q.property('sh:v') == 100 || q.property('sh:v') == 51 || q.property('sh:v') == 101 || q.property('sh:v') == 102 || q.property('sh:v') == 103 || q.property('sh:v') == 52 || q.property('sh:v') == 104 || q.property('sh:v') == 105 || q.property('sh:v') == 106 || q.property('sh:v') == 53 || q.property('sh:v') == 107 || q.property('sh:v') == 108 || q.property('sh:v') == 109"
      },
      {
       "cyclone": "q.property('sh:v') == 76"

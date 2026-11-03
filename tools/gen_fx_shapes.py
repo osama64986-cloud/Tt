@@ -721,59 +721,110 @@ RIFT_COLORS = {
 }
 
 
-def _crack(S, bone, edge, hi, core, k=1.0, thick=0.0):
+# مسارات الشق (تعرج يمين/يسار من تحت لفوق) — الأول هو الأصلي، والباقي لأشكال الصدع الثانية (v1.37.1: رسمة عشوائية لكل صدع)
+RIFT_PATHS = [
+    [0, -2, -3.5, -2, 1, 3, 2, -1, -3, -2, 1, 2.5, 1, 0],
+    [0, 1.5, 3, 2, -1, -3.5, -2.5, 0, 2.5, 3, 1, -1.5, -1, 0],
+    [0, -1, 1.5, 3.5, 2, -0.5, -3, -3.5, -1, 1.5, 2, 0.5, -0.5, 0],
+    [0, 2, 0.5, -2, -3, -1, 1.5, 3.5, 2.5, 0, -2, -2.5, -1, 0],
+]
+
+
+def _crack(S, bone, edge, hi, core, k=1.0, thick=0.0, xs=None, dz=0.0, x0=0.0, y0c=0.0):
     """شق متعرج عمودي داخل bone (يواجه -Z): حافة متوهجة، لمعة، وقلب غامق.
-    thick = عمق إضافي بالنص حتى الشق يقطع الكرة ويبين على وجهها من قدام وورا."""
-    xs = [0, -2, -3.5, -2, 1, 3, 2, -1, -3, -2, 1, 2.5, 1, 0]
+    thick = عمق إضافي بالنص حتى الشق يقطع الكرة ويبين على وجهها من قدام وورا.
+    dz = عمق زايد شوية للشقوق الفرعية حتى وجوهها ما تنطبق على وجوه الشق الرئيسي (z-fighting)، x0/y0c = مكانه."""
+    xs = xs or RIFT_PATHS[0]
     n = len(xs)
     for i in range(n - 1):
         y0 = (-24 + i * 48 / (n - 1)) * k
         h = (48 / (n - 1)) * k
         t = abs((i + 0.5) / (n - 1) - 0.5) * 2
         w = (1.2 + 6.5 * (1 - t ** 1.6)) * k
-        x = (xs[i] + xs[i + 1]) / 2 * k
-        yc = y0 + h / 2
-        d = 1.2 + (thick * max(0.0, 1 - abs(yc) / 7.5) if thick else 0)
+        x = (xs[i] + xs[i + 1]) / 2 * k + x0
+        yc = y0 + h / 2 + y0c
+        d = 1.2 + dz + (thick * max(0.0, 1 - abs(yc) / 7.5) if thick else 0)
         # الطبقات الداخلية أقصر شوية من فوق وجوه (0.06 و 0.12) حتى ما تتطابق وجوهها العلوية والسفلية مع الحافة
         S.box((x, yc, 0), (w + 2.4, h, d), edge, bone=bone)
         S.box((x, yc, 0), (w + 0.9, h - 0.12, d + 0.4), hi, bone=bone, flat=True)
         S.box((x, yc, 0), (w, h - 0.24, d + 1.0), core, bone=bone, flat=True)
 
 
-def rift(S, edge, hi, core):
-    """صدع ثلاثي الأبعاد يبين حلو من كل الجهات:
-    كرة فراغ غامقة يقطعها شق متوهج (من قدام وورا)، شق ثاني متصالب يبين من الجنب،
-    حلقة نور مايلة حول الكرة، وحلقة شظايا تدور بالعكس.
-    الأنيميشن (rift): الصدع كله يرتفع وينزل ببطء، والحلقات تدور، والكرة تتنفس شوية."""
-    dark = mix(core, edge, 0.18)
+def _rift_core(S, core, dark, tall=0.0):
     S.bone("core", pivot=(0, 0, 0))
-    S.box((0, 0, 0), (8.5, 10.5, 8.5), dark, bone="core", flat=True)
-    S.box((0, 0, 0), (8.5, 10.5, 8.5), dark, bone="core", rot=[0, 45, 0], flat=True)
+    S.box((0, 0, 0), (8.5, 10.5 + tall, 8.5), dark, bone="core", flat=True)
+    S.box((0, 0, 0), (8.5, 10.5 + tall, 8.5), dark, bone="core", rot=[0, 45, 0], flat=True)
     S.box((0, 0, 0), (10, 7.5, 10), core, bone="core", rot=[0, 22.5, 0], flat=True)
     S.box((0, 0, 0), (10, 7.5, 10), core, bone="core", rot=[0, 67.5, 0], flat=True)
-    S.box((0, 0, 0), (6, 12.5, 6), core, bone="core", rot=[0, 22.5, 0], flat=True)
-    # الشقين: أمامي كبير يقطع الكرة، وجانبي أصغر
-    S.bone("crack_a", pivot=(0, 0, 0))
-    _crack(S, "crack_a", edge, hi, core, 1.0, thick=11.5)
-    S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 90, 0])
-    _crack(S, "crack_b", edge, hi, core, 0.7, thick=11.0)
-    for (y, side, L) in ((-10, 1, 6), (4, -1, 7), (14, 1, 5)):
-        for k in range(int(L)):
-            S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.3, 1.1, 0.9 if k % 2 else 0.8), edge if k % 2 else hi, bone="crack_a", flat=True)
-    # حلقة نور مايلة حول الكرة (تدور ببطء)
-    S.bone("orbit_b", pivot=(0, 0, 0), rot=[20, 0, 0])
-    for i in range(20):
-        ang = math.radians(i * 18)
-        S.box((math.cos(ang) * 8.6, 0, math.sin(ang) * 8.6), (2.8, 0.7, 2.8), hi if i % 2 else edge, bone="orbit_b", rot=[0, -i * 18, 0], flat=True)
-    # شظايا تطفو حواليه بارتفاعات مختلفة (تدور بالعكس)
+    S.box((0, 0, 0), (6, 12.5 + tall, 6), core, bone="core", rot=[0, 22.5, 0], flat=True)
+
+
+def _rift_ring(S, edge, hi, tilt=20, n=20, rad=8.6, gaps=0):
+    S.bone("orbit_b", pivot=(0, 0, 0), rot=[tilt, 0, 0])
+    for i in range(n):
+        if gaps and i % gaps == gaps - 1:
+            continue
+        ang = math.radians(i * 360 / n)
+        S.box((math.cos(ang) * rad, 0, math.sin(ang) * rad), (2.8, 0.7, 2.8), hi if i % 2 else edge, bone="orbit_b", rot=[0, -i * 360 / n, 0], flat=True)
+
+
+def _rift_shards(S, edge, hi, n=7, rad=14, amp=9, big=1.0):
     S.bone("orbit_a", pivot=(0, 0, 0))
-    for i in range(7):
-        ang = i * 360 / 7
-        x, z = math.cos(math.radians(ang)) * 14, math.sin(math.radians(ang)) * 14
-        y = math.sin(i * 1.9) * 9
-        sz = 1.5 + (i % 3) * 0.5
+    for i in range(n):
+        ang = i * 360 / n
+        x, z = math.cos(math.radians(ang)) * rad, math.sin(math.radians(ang)) * rad
+        y = math.sin(i * 1.9) * amp
+        sz = (1.5 + (i % 3) * 0.5) * big
         S.box((x, y, z), (sz, sz * 1.7, sz), hi if i % 2 else edge, bone="orbit_a", rot=[0, 45, 0])
         S.box((x, y + sz * 1.3, z), (sz * 0.5, sz * 0.8, sz * 0.5), mix(hi, (255, 255, 255), 0.5), bone="orbit_a", flat=True)
+
+
+def rift(S, edge, hi, core, form=0):
+    """صدع ثلاثي الأبعاد يبين حلو من كل الجهات (4 أشكال، السكربت يختار واحد عشوائي لكل صدع):
+      0 الأصلي: كرة فراغ يقطعها شق متوهج، شق ثاني متصالب من الجنب، حلقة نور مايلة، وحلقة شظايا تدور بالعكس.
+      1 المتفرع: الشق الكبير يتفرع من فوك لغصنين، والشق الثاني مايل 60، والحلقة مايلة للجهة الثانية.
+      2 المتكسر: شق رئيسي وشقين صغار مايلين (45 و-45)، حلقة مكسورة بفراغات، وشظايا أكثر وأبعد.
+      3 النجمة: ثلاث شقوق بزوايا 0 و60 و120 (من فوك تبين نجمة)، كرة أطول، شظايا أقل وأكبر.
+    الأنيميشن (rift) نفسها لكل الأشكال: الصدع يرتفع وينزل ببطء، والحلقات تدور، والكرة تتنفس شوية."""
+    dark = mix(core, edge, 0.18)
+    xs = RIFT_PATHS[form]
+    _rift_core(S, core, dark, tall=3.0 if form == 3 else 0.0)
+    S.bone("crack_a", pivot=(0, 0, 0))
+    _crack(S, "crack_a", edge, hi, core, 1.0, thick=11.5, xs=xs)
+    if form == 0:
+        S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 90, 0])
+        _crack(S, "crack_b", edge, hi, core, 0.7, thick=11.0)
+        for (y, side, L) in ((-10, 1, 6), (4, -1, 7), (14, 1, 5)):
+            for k in range(int(L)):
+                S.box((side * (5 + k * 1.1), y + k * 0.7 * side, 0), (1.3, 1.1, 0.9 if k % 2 else 0.8), edge if k % 2 else hi, bone="crack_a", flat=True)
+        _rift_ring(S, edge, hi)
+        _rift_shards(S, edge, hi)
+    elif form == 1:
+        S.bone("fork_l", parent="crack_a", pivot=(0, 12, 0), rot=[0, 0, 28])
+        _crack(S, "fork_l", edge, hi, core, 0.42, xs=RIFT_PATHS[2], dz=0.15, x0=-3.5, y0c=19)
+        S.bone("fork_r", parent="crack_a", pivot=(0, -12, 0), rot=[0, 0, -24])
+        _crack(S, "fork_r", edge, hi, core, 0.36, xs=RIFT_PATHS[3], dz=0.3, x0=3.0, y0c=-19)
+        S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 60, 0])
+        _crack(S, "crack_b", edge, hi, core, 0.62, thick=10.5, xs=RIFT_PATHS[1], dz=0.15)
+        _rift_ring(S, edge, hi, tilt=-24, n=22, rad=9.2)
+        _rift_shards(S, edge, hi, n=6, rad=13, amp=11)
+    elif form == 2:
+        S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 45, 0])
+        _crack(S, "crack_b", edge, hi, core, 0.5, thick=10.0, xs=RIFT_PATHS[3], dz=0.15, y0c=5)
+        S.bone("crack_c", pivot=(0, 0, 0), rot=[0, -45, 0])
+        _crack(S, "crack_c", edge, hi, core, 0.45, thick=10.0, xs=RIFT_PATHS[1], dz=0.3, y0c=-6)
+        for (y, side, L) in ((-15, -1, 5), (9, 1, 6)):
+            for k in range(int(L)):
+                S.box((side * (5 + k * 1.2), y - k * 0.6 * side, 0), (1.2, 1.0, 0.9 if k % 2 else 0.8), edge if k % 2 else hi, bone="crack_a", flat=True)
+        _rift_ring(S, edge, hi, tilt=32, n=24, rad=9.4, gaps=4)
+        _rift_shards(S, edge, hi, n=11, rad=16, amp=12, big=0.85)
+    else:
+        S.bone("crack_b", pivot=(0, 0, 0), rot=[0, 60, 0])
+        _crack(S, "crack_b", edge, hi, core, 0.85, thick=11.0, xs=RIFT_PATHS[2], dz=0.15)
+        S.bone("crack_c", pivot=(0, 0, 0), rot=[0, 120, 0])
+        _crack(S, "crack_c", edge, hi, core, 0.85, thick=11.0, xs=RIFT_PATHS[1], dz=0.3)
+        _rift_ring(S, edge, hi, tilt=12, n=18, rad=10)
+        _rift_shards(S, edge, hi, n=5, rad=15, amp=7, big=1.35)
 
 
 EXTRA_ANIMS["rift"] = {
@@ -782,11 +833,12 @@ EXTRA_ANIMS["rift"] = {
     "orbit_b": {"rotation": [0, "-q.life_time * 22", 0]},
     "core": {"scale": "1 + math.sin(q.life_time * 150) * 0.05"},
 }
-EXTRA_ANIM_SHAPES = {"rift": [f"rift_{k}" for k in RIFT_COLORS]}
+RIFT_FORMS = ["", "_b", "_c", "_d"]                                             # rift_blue (الأصلي)، rift_blue_b، rift_blue_c، rift_blue_d
+EXTRA_ANIM_SHAPES = {"rift": [f"rift_{k}{f}" for k in RIFT_COLORS for f in RIFT_FORMS]}
 
 
 for _k, (_e, _h, _c) in RIFT_COLORS.items():
-    shape(f"rift_{_k}")(lambda S, e=_e, h=_h, c=_c: rift(S, e, h, c))
+    shape(f"rift_{_k}")(lambda S, e=_e, h=_h, c=_c: rift(S, e, h, c, 0))
 
 
 # ───────────────────────── ضربات الوحوش ─────────────────────────
@@ -1418,6 +1470,12 @@ EXTRA_ANIM_SHAPES["sound_pulse"] = ["sound_wave", "echo_pulse"]
 # الحلقات الأرضية الكبيرة (عصفة الريح، موجة المستعر) تتوسع لـ7-14 بلوكة وسمكها يبقى رفيع
 EXTRA_ANIMS["flat_ring"] = {"body": {"scale": [1, "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))", 1]}}
 EXTRA_ANIM_SHAPES["flat_ring"] = ["wind_ring", "nova_ring"]
+
+# أشكال الصدع الثانية (v1.37.1) تنسجل بالآخر حتى أرقام كل الأشكال القديمة تبقى نفسها
+for _k, (_e, _h, _c) in RIFT_COLORS.items():
+    for _i, _f in enumerate(RIFT_FORMS[1:], start=1):
+        shape(f"rift_{_k}{_f}")(lambda S, e=_e, h=_h, c=_c, i=_i: rift(S, e, h, c, i))
+
 
 def build():
     shapes = []

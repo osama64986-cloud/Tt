@@ -50,46 +50,30 @@ export const GEAR = {
    "mob": "Prayer Mantis"
   }
  },
- "essences": {
-  "sh:essence_hound": {
-   "name": "§5Shadow Essence",
-   "mob": "Shadow Hound"
+ "flames": {
+  "sh:soul_crimson": {
+   "name": "§cCrimson Soul Flame",
+   "potion": "sh:potion_vitality"
   },
-  "sh:essence_imp": {
-   "name": "§6Ember Essence",
-   "mob": "Ember Imp"
+  "sh:soul_azure": {
+   "name": "§9Azure Soul Flame",
+   "potion": "sh:potion_mana"
   },
-  "sh:essence_scorpion": {
-   "name": "§eVenom Essence",
-   "mob": "Sand Scorpion"
+  "sh:soul_amber": {
+   "name": "§6Amber Soul Flame",
+   "potion": "sh:potion_might"
   },
-  "sh:essence_guard": {
-   "name": "§3Rust Essence",
-   "mob": "Rust Guard"
+  "sh:soul_silver": {
+   "name": "§7Silver Soul Flame",
+   "potion": "sh:potion_bulwark"
   },
-  "sh:essence_gloom": {
-   "name": "§bGloom Essence",
-   "mob": "Gloomhorn"
+  "sh:soul_violet": {
+   "name": "§dViolet Soul Flame",
+   "potion": "sh:potion_focus"
   },
-  "sh:essence_seer": {
-   "name": "§6Seer Essence",
-   "mob": "Hollow Seer"
-  },
-  "sh:essence_fox": {
-   "name": "§dFoxfire Essence",
-   "mob": "Veilfox"
-  },
-  "sh:essence_mammoth": {
-   "name": "§cMagma Essence",
-   "mob": "Magmamoth"
-  },
-  "sh:essence_bear": {
-   "name": "§7Wild Essence",
-   "mob": "Grey Bear"
-  },
-  "sh:essence_mantis": {
-   "name": "§aVerdant Essence",
-   "mob": "Prayer Mantis"
+  "sh:soul_verdant": {
+   "name": "§aVerdant Soul Flame",
+   "potion": "sh:potion_swift"
   }
  },
  "potions": {

@@ -314,7 +314,8 @@ function rarityStars(key) {
 // ───── رموز الـHUD المرسومة (RP/font/glyph_E5.png من tools/gen_hud_art.py): الرمز i = U+E500+i ─────
 const GI = { heart: 0, heart_half: 1, heart_empty: 2, rift: 3, wave_on: 4, wave_off: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
   pw_full: 10, pw_empty: 11, boss: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, lens: 53, rift_ring: 54, sep: 55,
-  mana_full: 56, mana_empty: 57, mana: 58, buff_might: 59, buff_bulwark: 60, buff_focus: 61, buff_swift: 62, dash: 63, dash_cd: 47 };
+  mana_full: 56, mana_empty: 57, mana: 58, buff_might: 59, buff_bulwark: 60, buff_focus: 61, buff_swift: 62, dash: 63, dash_cd: 47,
+  alc_slot: 64, alc_water: 65, alc_flame0: 66, alc_potion0: 72, alc_arrow: 78, alc_none: 79 };
 const GLYPH_POWERS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 const GL = (i) => String.fromCharCode(0xE500 + i);
 function gbar(frac, n, full, empty) {
@@ -2091,15 +2092,23 @@ function riftBossPulse(boss) {
 // شكل الصدع 3D ودائرته الرونية: يتجددون قبل ما يخلص عمرهم (الكيان نفسه بيه مؤقت أمان بملف BP: الشكل 60 ثانية، الدائرة 30)،
 // فالجديد يطلع بنفس اللحظة اللي ينشال بيها القديم وما يختفي الصدع ولا ثانية. (قبل: الدائرة عمرها بالسكربت 55 ثانية ومؤقتها 30،
 // فكانت تختفي كل 30 ثانية لحد ما يرجع يطلعها.) وأول مرة بعد ما ترجع للعالم يشيل أي شكل صدع قديم باقي حتى ما يتكرر.
+const RIFT_FORMS = ["", "_b", "_c", "_d"];                                      // نفس RIFT_FORMS بـ tools/gen_fx_shapes.py
 function riftKeepFx(dim, t, c) {
   const now = system.currentTick;
   const fresh = (e, at, max) => e && valid(e) && now - (at || 0) >= 0 && now - (at || 0) < max;
   if (!rift.ent && !rift.circle) {
     try { for (const old of dim.getEntities({ tags: ["sh_rift_fx"], location: c, maxDistance: 32 })) removeFx(old); } catch (e) { /* */ }
   }
+  // v1.37.1: رسمة عشوائية لكل صدع: واحد من 4 أشكال (الأصلي، المتفرع، المتكسر، النجمة) + ميل ولفة واتجاه وسرعة دوران خاصة بيه.
+  // تنحفظ ويا الصدع (rift.look) حتى التجديد والرجوع للعالم يطلعون نفس الرسمة لحد ما يخلص
+  if (!rift.look) {
+    const rnd = (a) => (Math.random() * 2 - 1) * a;
+    rift.look = { f: Math.floor(Math.random() * RIFT_FORMS.length), yaw: Math.floor(Math.random() * 360), p: rnd(12), a: rnd(16), s: (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 7) };
+  }
   if (!fresh(rift.ent, rift.entAt, 1000)) {
-    const old = rift.ent;
-    rift.ent = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(rift), s: 10, life: 1100 });
+    const old = rift.ent, L = rift.look;
+    const form = RIFT_FORMS[L.f] || "";
+    rift.ent = shapeFx(dim, `rift_${t.key}${SHAPE[`rift_${t.key}${form}`] !== undefined ? form : ""}`, c, { r: riftRadius(rift), s: L.s, p: L.p, a: L.a, yaw: L.yaw, life: 1100 });
     rift.entAt = now;
     try { if (rift.ent) rift.ent.addTag("sh_rift_fx"); } catch (e) { /* */ }
     if (old !== rift.ent) removeFx(old);
@@ -6866,19 +6875,20 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 
 // ═════════════════════════ v1.35: مواد الوحوش، دروع الوحوش، المانا والجرعات ═════════════════════════
 // المواد: كل وحش يطيح مادته (جلد، قشرة، قرن، مخلب...). تنصنع منها دروع بطاولة الصناعة أو تنطبخ جرعات عند الخيميائي.
-// v1.37: مواد وحوش الرتب العالية (للدروع) نادرة كلش، وكل وحش يسقط جوهرته (للخيميائي) نادراً كلش
+// v1.37: مواد وحوش الرتب العالية (للدروع) نادرة كلش. v1.37.1: وكل وحش يسقط نادراً كلش شعلة روح بلون جرعة
+//   (أحمر حياة، أزرق مانا، برتقالي قوة، فضي حصن، بنفسجي تركيز، أخضر سرعة)
 //   [المادة، الفرصة، أقل، أكثر]
 const MAT_DROPS = {
-  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2], ["sh:essence_hound", 0.025, 1, 1]],
-  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1], ["sh:essence_imp", 0.025, 1, 1]],
-  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2], ["sh:essence_scorpion", 0.025, 1, 1]],
-  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1], ["sh:essence_guard", 0.025, 1, 1]],
-  "sh:gloomhorn": [["sh:gloom_antler", 0.4, 1, 2], ["sh:essence_gloom", 0.03, 1, 1]],
-  "sh:hollow_seer": [["sh:hollow_lens", 0.4, 1, 1], ["sh:essence_seer", 0.03, 1, 1]],
-  "sh:veilfox": [["sh:spirit_fur", 0.45, 1, 2], ["sh:essence_fox", 0.03, 1, 1]],
-  "sh:magmamoth": [["sh:magma_scale", 0.08, 1, 1], ["sh:essence_mammoth", 0.04, 1, 1]],
-  "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:essence_bear", 0.04, 1, 1]],
-  "sh:prayer_mantis": [["sh:mantis_chitin", 0.03, 1, 1], ["sh:mantis_scythe", 0.015, 1, 1], ["sh:essence_mantis", 0.05, 1, 1]],
+  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2], ["sh:soul_crimson", 0.025, 1, 1]],
+  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1], ["sh:soul_amber", 0.025, 1, 1]],
+  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2], ["sh:soul_verdant", 0.025, 1, 1]],
+  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1], ["sh:soul_silver", 0.025, 1, 1]],
+  "sh:gloomhorn": [["sh:gloom_antler", 0.4, 1, 2], ["sh:soul_violet", 0.03, 1, 1]],
+  "sh:hollow_seer": [["sh:hollow_lens", 0.4, 1, 1], ["sh:soul_azure", 0.03, 1, 1]],
+  "sh:veilfox": [["sh:spirit_fur", 0.45, 1, 2], ["sh:soul_crimson", 0.03, 1, 1]],
+  "sh:magmamoth": [["sh:magma_scale", 0.08, 1, 1], ["sh:soul_amber", 0.04, 1, 1]],
+  "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:soul_silver", 0.04, 1, 1]],
+  "sh:prayer_mantis": [["sh:mantis_chitin", 0.03, 1, 1], ["sh:mantis_scythe", 0.015, 1, 1], ["sh:soul_verdant", 0.05, 1, 1]],
 };
 function dropMaterials(e) {
   const list = MAT_DROPS[e.typeId];
@@ -6889,7 +6899,7 @@ function dropMaterials(e) {
     try { e.dimension.spawnItem(new ItemStack(id, n), e.location); } catch (err) { /* */ }
   }
 }
-const dropNames = (id) => (MAT_DROPS[id] || []).map(([m, ch]) => `${(GEAR.materials[m] || GEAR.essences[m] || {}).name || m}${ch < 0.1 ? " §8(very rare)" : ""}`).join("§7, ");
+const dropNames = (id) => (MAT_DROPS[id] || []).map(([m, ch]) => `${(GEAR.materials[m] || GEAR.flames[m] || {}).name || m}${ch < 0.1 ? " §8(very rare)" : ""}`).join("§7, ");
 
 // ───── دروع الوحوش: لما تلبس القطع الأربعة من نفس الطقم ينفتح بونص الطقم ─────
 const SET_OF = {};
@@ -7049,8 +7059,8 @@ function manaHudLine(p, st, plain) {
 function gearHeld(id, showTip) {
   const m = GEAR.materials[id];
   if (m) return { line: `${m.name} §8│ §7Monster material (${m.mob})`, tip: showTip ? "§7Craft monster armor at a crafting table, or brew potions with the Alchemist (Sakura Village)" : "" };
-  const es = GEAR.essences[id];
-  if (es) return { line: `${es.name} §8│ §7Essence (${es.mob}), very rare`, tip: showTip ? "§7Bring it to the Alchemist with a water bottle to brew a potion" : "" };
+  const fl = GEAR.flames[id];
+  if (fl) return { line: `${fl.name} §8│ §7for the ${GEAR.potions[fl.potion].name.replace(/§./g, "")}`, tip: showTip ? "§7The Alchemist brews it: a water bottle and two flames of this color" : "" };
   const po = GEAR.potions[id];
   if (po) return { line: `${po.name}`, tip: showTip ? `§7${po.desc} §8(hold use to drink)` : "" };
   const pc = PIECE_OF[id];
@@ -7059,16 +7069,12 @@ function gearHeld(id, showTip) {
 }
 
 // ───── الخيميائي (قرية الساكورا): يطبخ الجرعات من مواد الوحوش ─────
-// v1.37: كل جرعة = قنينة ماء + جوهرتين (نادرات كلش) + مادة. الخيميائي ياخذ القنينة ويرجعها جرعة.
+// v1.37.1: كل جرعة = قنينة ماء + شعلتين روح بلون الجرعة. الخيميائي يفتح شاشة قدر: تحط العناصر وحدة وحدة وتطبخ.
 const WATER = "minecraft:potion";
-const ALCHEMY = [
-  ["sh:potion_vitality", [[WATER, 1], ["sh:essence_hound", 1], ["sh:essence_fox", 1], ["sh:shadow_pelt", 2]]],
-  ["sh:potion_mana", [[WATER, 1], ["sh:essence_seer", 1], ["sh:essence_imp", 1], ["sh:hollow_lens", 1]]],
-  ["sh:potion_might", [[WATER, 1], ["sh:essence_mammoth", 1], ["sh:essence_imp", 1], ["sh:ember_horn", 1]]],
-  ["sh:potion_bulwark", [[WATER, 1], ["sh:essence_guard", 1], ["sh:essence_bear", 1], ["sh:rust_core", 1]]],
-  ["sh:potion_focus", [[WATER, 1], ["sh:essence_gloom", 1], ["sh:essence_mantis", 1], ["sh:gloom_antler", 1]]],
-  ["sh:potion_swift", [[WATER, 1], ["sh:essence_fox", 1], ["sh:essence_scorpion", 1], ["sh:sand_carapace", 1]]],
-];
+const FLAME_OF = {};                                                            // الجرعة ← الشعلة
+for (const [fid, f] of Object.entries(GEAR.flames)) FLAME_OF[f.potion] = fid;
+const POTION_ORDER = ["sh:potion_vitality", "sh:potion_mana", "sh:potion_might", "sh:potion_bulwark", "sh:potion_focus", "sh:potion_swift"];
+const FLAME_ORDER = POTION_ORDER.map((p) => FLAME_OF[p]);
 // قنينة الماء: أي قنينة minecraft:potion، وإذا اللعبة تعطينا نوع الجرعة (مكون minecraft:potion بالنسخ الأحدث) ناخذ بس الماء
 function isWaterBottle(it) {
   if (!it || it.typeId !== WATER) return false;
@@ -7092,27 +7098,81 @@ function takeItems(p, typeId, n) {
     if (it.amount > k) { it.amount -= k; c.setItem(i, it); } else c.setItem(i, undefined);
   }
 }
-const matName = (id) => (id === WATER ? "Water Bottle" : (GEAR.materials[id] || GEAR.essences[id] || {}).name || id).replace(/§./g, "");
-async function openAlchemist(p, npc) {
-  const f = new ActionFormData().title("Alchemist").body("§7\"Bring me a water bottle and the essences the monsters leave behind. Essences are rare, very rare; every monster hides its own color.\"\n\n§fChoose a potion:");
-  const ok = ALCHEMY.map(([, cost]) => cost.every(([id, n]) => countItem(p, id) >= n));
-  ALCHEMY.forEach(([pid, cost], i) => {
-    const need = cost.map(([id, n]) => `${countItem(p, id) >= n ? "§2" : "§c"}${n} ${matName(id)}`).join("§8 + ");
-    f.button(`${ok[i] ? "" : "§8"}${GEAR.potions[pid].name.replace(/§./g, ok[i] ? "" : "")}\n${need}`);
-  });
-  f.button("§7Leave");
+const matName = (id) => (id === WATER ? "Water Bottle" : (GEAR.materials[id] || GEAR.flames[id] || {}).name || id).replace(/§./g, "");
+// شاشة الخيميائي (v1.37.1): تشبه شاشة طاولة السحر (Enchanting Table) بس مو نفسها، ومرسومة من RP/ui/server_form.json
+// (العنوان بيه العلامة §a§l§c§h). يسار: القدر وتحته خانتين (قنينة الماء + شعلة الروح) مثل خانة الأيتم واللازورد.
+// يمين: 3 صفوف بخلفيات صفوف طاولة السحر: اطبخ ×1، ×2، ×3 (التكلفة: شعلتين وقنينة لكل جرعة).
+// حسب الشعلة اللي بالخانة تطلع جرعتها بالصفوف، وضغطة وحدة على الصف تعطيك الجرعة. بدون شعلة الصفوف معتمة ومكتوبة بخط الرونز.
+// المواد تنسحب من الحقيبة نفسها (شاشات الفورم ما تسمح بسحب الأيتمات)، ولو عندك أكثر من لون تضغط خانة الشعلة حتى تبدله.
+// ترتيب الأزرار ثابت لأن الواجهة تربط كل مكان برقم الزر (collection_index):
+//   0..2 = الصفوف، 3 = خانة الماء، 4 = خانة الشعلة، 5 = كتاب الوصفات
+// علامة أول نص الصف (الواجهة تقراها وتختار الخلفية): §k§r تكدر تطبخ، §o§r الشعلة موجودة بس المواد ما تكفي، §l§r ماكو شعلة (رونز)
+const ALC_MARK = "§a§l§c§h";
+const ALC_ROW = { ok: "§k§r", short: "§o§r", none: "§l§r" };
+const ALC_RUNES = ["aqua vitae flamma", "anima ignis spiritus", "elixir umbra lux"];
+const alcPick = new Map();                                                      // اللاعب ← الشعلة اللي بالخانة
+const flameGlyph = (fid) => GL(GI.alc_flame0 + FLAME_ORDER.indexOf(fid));
+function alcFlame(p) {
+  const have = FLAME_ORDER.filter((fid) => countItem(p, fid) > 0);
+  if (!have.length) { alcPick.delete(p.id); return null; }
+  const cur = alcPick.get(p.id);
+  if (cur && have.includes(cur)) return cur;
+  const best = have.reduce((x, y) => (countItem(p, y) > countItem(p, x) ? y : x));
+  alcPick.set(p.id, best);
+  return best;
+}
+async function openAlchemist(p, npc, msg = "") {
+  const fid = alcFlame(p), nw = countItem(p, WATER), nf = fid ? countItem(p, fid) : 0;
+  const pid = fid ? GEAR.flames[fid].potion : null;
+  const pname = pid ? GEAR.potions[pid].name.replace(/§./g, "") : "";
+  const f = new ActionFormData().title(`${ALC_MARK}Alchemist`)
+    .body(msg || (!fid ? "§7Bring a water bottle and soul flames." : !nw ? "§7Bring a water bottle." : `${GEAR.flames[fid].name} §8> §f${pname}`));
+  for (let k = 1; k <= 3; k++) {
+    if (!pid) { f.button(`${ALC_ROW.none}${ALC_RUNES[k - 1]}`); continue; }
+    const ok = nw >= k && nf >= 2 * k;
+    const cost = `${nf >= 2 * k ? "§a" : "§c"}${flameGlyph(fid)}${2 * k}  ${nw >= k ? "§a" : "§c"}${GL(GI.alc_water)}${k}`;
+    f.button(`${ok ? ALC_ROW.ok : ALC_ROW.short}${ok ? "§f" : "§7"}${pname} §8x${k}\n${cost}`, `textures/items/${pid.replace("sh:", "sh_")}`);
+  }
+  if (nw) f.button(`§f${nw}`, "textures/items/potion_bottle_drinkable"); else f.button("");
+  if (fid) f.button(`§f${nf}`, `textures/items/${fid.replace("sh:", "sh_")}`); else f.button("");
+  f.button("§5Recipes", "textures/ui/sh_alc_book");
   const r = await showForm(p, f);
-  if (r.canceled || r.selection === undefined || r.selection >= ALCHEMY.length) return;
-  const [pid, cost] = ALCHEMY[r.selection];
-  if (!cost.every(([id, n]) => countItem(p, id) >= n)) { notify(p, "§cYou don't have the materials for that potion", 50); sfxPlayer(p, "note.bass", 0.6, 0.7); return; }
-  for (const [id, n] of cost) takeItems(p, id, n);
-  giveItem(p, pid, 1);
+  if (r.canceled || r.selection === undefined) return;
+  const sel = r.selection;
+  if (sel === 3) return openAlchemist(p, npc, "§7Fill a glass bottle with water.");
+  if (sel === 4) {
+    const have = FLAME_ORDER.filter((x) => countItem(p, x) > 0);
+    if (have.length > 1) { alcPick.set(p.id, have[(have.indexOf(fid) + 1) % have.length]); sfxPlayer(p, "sh.select", 0.6, 1.2); }
+    return openAlchemist(p, npc, have.length ? "" : "§7Monsters drop soul flames, very rarely.");
+  }
+  if (sel === 5) { await openRecipes(p); return openAlchemist(p, npc); }
+  if (sel > 2) return;
+  const k = sel + 1;
+  if (!pid) { sfxPlayer(p, "note.bass", 0.6, 0.7); return openAlchemist(p, npc, "§7You need a soul flame first."); }
+  if (countItem(p, WATER) < k || countItem(p, fid) < 2 * k) {
+    sfxPlayer(p, "note.bass", 0.6, 0.7);
+    return openAlchemist(p, npc, `§cNeed ${2 * k} ${GEAR.flames[fid].name.replace(/§./g, "")}s and ${k} water.`);
+  }
+  takeItems(p, WATER, k);
+  takeItems(p, fid, 2 * k);
+  giveItem(p, pid, k);
   const L = npc && valid(npc) ? npc.location : p.location;
   for (let i = 0; i < 3; i++) mcP(p.dimension, { x: L.x, y: L.y + 1.6, z: L.z }, "minecraft:mobspell_emitter", POTION_FX_COL[pid] || [1, 1, 1]);
   sfx(p.dimension, "random.potion.brewed", L, 1.0, 1.0);
   sfx(p.dimension, "bottle.fill", L, 0.8, 1.1);
-  notify(p, `§aBrewed: ${GEAR.potions[pid].name}`, 60);
-  achCount(p, "brew");
+  notify(p, `§aBrewed: ${GEAR.potions[pid].name}${k > 1 ? ` §fx${k}` : ""}`, 60);
+  achCount(p, "brew", k);
+  return openAlchemist(p, npc, `§aBrewed ${k}x ${pname}!`);
+}
+async function openRecipes(p) {
+  const f = new ActionFormData().title("Recipes")
+    .body("§7Every potion: §fone water bottle§7 and §ftwo soul flames§7 of its color. Monsters drop soul flames, very rarely.");
+  for (const pid of POTION_ORDER) {
+    const fl = GEAR.flames[FLAME_OF[pid]];
+    f.button(`${GEAR.potions[pid].name}\n§8Water + 2 ${fl.name.replace(/§./g, "")}`, `textures/items/${pid.replace("sh:", "sh_")}`);
+  }
+  f.button("§8Back");
+  await showForm(p, f);
 }
 const alchemistTalk = new Map();
 world.afterEvents.playerInteractWithEntity.subscribe((ev) => {
@@ -7312,7 +7372,7 @@ const MISSIONS = [
   ["shrine", "Hard", "Shrine Cleanser", "Cleanse a Sword Shrine (defeat both guardians).", "shrine", 1, false, 600, [["sh:skill_scroll", 3]], "shrine_dark_clear"],
   ["elite", "Hard", "Elite", "Reach the rank of Elite.", "rank", 3, false, 500, [["sh:skill_scroll", 2]], "rank_elite"],
   ["summit", "Hard", "Tower Summit", "Conquer the seventh floor of an Abyss Tower.", "tower7", 1, false, 800, [["sh:xp_scroll_big", 3]], "tower_top"],
-  ["brew1", "Hard", "First Brew", "Brew a potion at the Alchemist (a water bottle and two rare essences).", "brew", 1, true, 600, [["sh:skill_scroll", 2]], "first_brew"],
+  ["brew1", "Hard", "First Brew", "Brew a potion at the Alchemist (a water bottle and two soul flames of one color).", "brew", 1, true, 600, [["sh:skill_scroll", 2]], "first_brew"],
   ["mantis1", "Hard", "Molt and Fall", "Defeat a Prayer Mantis.", "mantis", 1, true, 800, [["sh:skill_scroll", 3]], "slay_mantis"],
   ["grade4", "Hard", "Abyss Gazer", "Seal a Grade 4 (Abyssal) rift.", "rift_abyss", 1, true, 1000, [["sh:skill_scroll", 4]], "rift_abyss"],
 ].map(([id, tier, name, desc, metric, need, delta, xp, items, icon]) => ({ id, tier, name, desc, metric, need, delta, xp, items, icon: `textures/ui/sh_ach/${icon}` }));

@@ -266,35 +266,23 @@
     "sh_mantis_boots": {
       "textures": "textures/items/sh_mantis_boots"
     },
-    "sh_essence_hound": {
-      "textures": "textures/items/sh_essence_hound"
+    "sh_soul_crimson": {
+      "textures": "textures/items/sh_soul_crimson"
     },
-    "sh_essence_imp": {
-      "textures": "textures/items/sh_essence_imp"
+    "sh_soul_azure": {
+      "textures": "textures/items/sh_soul_azure"
     },
-    "sh_essence_scorpion": {
-      "textures": "textures/items/sh_essence_scorpion"
+    "sh_soul_amber": {
+      "textures": "textures/items/sh_soul_amber"
     },
-    "sh_essence_guard": {
-      "textures": "textures/items/sh_essence_guard"
+    "sh_soul_silver": {
+      "textures": "textures/items/sh_soul_silver"
     },
-    "sh_essence_gloom": {
-      "textures": "textures/items/sh_essence_gloom"
+    "sh_soul_violet": {
+      "textures": "textures/items/sh_soul_violet"
     },
-    "sh_essence_seer": {
-      "textures": "textures/items/sh_essence_seer"
-    },
-    "sh_essence_fox": {
-      "textures": "textures/items/sh_essence_fox"
-    },
-    "sh_essence_mammoth": {
-      "textures": "textures/items/sh_essence_mammoth"
-    },
-    "sh_essence_bear": {
-      "textures": "textures/items/sh_essence_bear"
-    },
-    "sh_essence_mantis": {
-      "textures": "textures/items/sh_essence_mantis"
+    "sh_soul_verdant": {
+      "textures": "textures/items/sh_soul_verdant"
     }
   }
 }
