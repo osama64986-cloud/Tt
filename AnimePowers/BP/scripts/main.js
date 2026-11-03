@@ -5,7 +5,7 @@ import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
 import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo } from "./structures.js";
-import { setupDash, dashCooldown, dashHooks } from "./dash.js";
+import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
 import { ACH, ACH_CATS } from "./achievements.js";
@@ -211,11 +211,19 @@ const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
 const VILE_TYPES = ["sh:magmamoth", "sh:grey_bear"];
 const CURSED_TYPES = ["sh:prayer_mantis"];
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
+// درجات الصدع (v1.37، مثل درجات اللعنات): اللون = الدرجة والصعوبة، ونهاية الصدع وحش رتبة قوي يحدد صعوبته
+//   الدرجة 1 أزرق ضعيف: موجات Lowly، الحارس Grim | الدرجة 2 بنفسجي متوسط: Lowly + Grim، الحارس Vile
+//   الدرجة 3 قرمزي صعب: Grim + شوية Vile، الحارس Cursed | الدرجة 4 ذهبي-أسود صعب جداً: Grim + Vile، الحارس Cursed معزز جداً
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function riftMobType() {
-  if (rift && rift.tier >= 2 && Math.random() < 0.12) return VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)];
-  if (rift && rift.tier >= 1 && Math.random() < 0.3) return GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)];
-  return RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+  const g = rift ? (RIFT_TIERS[rift.tier] || {}).grade || 1 : 1, r = Math.random();
+  if (g >= 4) return r < 0.3 ? pick(VILE_TYPES) : pick(GRIM_TYPES);
+  if (g === 3) return r < 0.15 ? pick(VILE_TYPES) : r < 0.75 ? pick(GRIM_TYPES) : pick(RANK0_TYPES);
+  if (g === 2) return r < 0.3 ? pick(["sh:gloomhorn", "sh:hollow_seer"]) : pick(RANK0_TYPES);
+  return pick(RANK0_TYPES);
 }
+const RIFT_WARDENS = { 1: ["sh:gloomhorn", "sh:hollow_seer"], 2: VILE_TYPES, 3: CURSED_TYPES, 4: CURSED_TYPES };
+function riftBossType() { const g = rift ? (RIFT_TIERS[rift.tier] || {}).grade || 1 : 1; return pick(RIFT_WARDENS[g] || RIFT_WARDENS[1]); }
 
 // أسلحة الدفاع: ضرر إضافي فوق ضرر اليد، تشتغل حتى بدون قدرة
 const WEAPONS = {
@@ -239,7 +247,7 @@ const WEAPONS = {
     desc: "Every hit makes the enemy bleed. Use: Rending Pounce (leap on the enemy, three rakes that heal you). Sneak + use: Claw Storm." },
   // ثقيل جدا: يكسر الأرض فعلاً والبلوكات تسقط لك
   "sh:stone_maul": { extra: 11, sound: "sh.cleaver_hit", color: "green", knock: 2.0, name: "Stone Maul", shock: true, heavy: 2,
-    desc: "Every hit shakes the ground. Use: Earthbreaker (smash a crater, the blocks drop for you). Sneak + use: Seismic Fissure. Weakness: slows you a lot." },
+    desc: "Every hit shakes the ground. Use: Earthbreaker (a stone shockwave where you smash). Sneak + use: Seismic Fissure. It never breaks blocks. Weakness: slows you a lot." },
   // رمح: ترميه ويرجع، أو مطر رماح
   "sh:sunset_spear": { extra: 5, sound: "sh.dagger_hit", color: "red", knock: 0.4, name: "Sunset Spear",
     desc: "Use: Sunset Throw (it returns to you). Sneak + use: Spear Rain on the spot you aim at." },
@@ -306,7 +314,7 @@ function rarityStars(key) {
 // ───── رموز الـHUD المرسومة (RP/font/glyph_E5.png من tools/gen_hud_art.py): الرمز i = U+E500+i ─────
 const GI = { heart: 0, heart_half: 1, heart_empty: 2, rift: 3, wave_on: 4, wave_off: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
   pw_full: 10, pw_empty: 11, boss: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, lens: 53, rift_ring: 54, sep: 55,
-  mana_full: 56, mana_empty: 57, mana: 58, buff_might: 59, buff_bulwark: 60, buff_focus: 61, buff_swift: 62 };
+  mana_full: 56, mana_empty: 57, mana: 58, buff_might: 59, buff_bulwark: 60, buff_focus: 61, buff_swift: 62, dash: 63, dash_cd: 47 };
 const GLYPH_POWERS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 const GL = (i) => String.fromCharCode(0xE500 + i);
 function gbar(frac, n, full, empty) {
@@ -364,6 +372,13 @@ function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية ب
   return rows.join("\n");
 }
 
+// شحنات الداش باللوحة: سهمين لكل شحنة (فاتح = جاهز، غامق = يشحن)
+function dashGlyphs(p, plain) {
+  const d = dashInfo(p);
+  if (!d) return "";
+  if (plain) return "§e" + ">".repeat(d.charges) + "§8" + ">".repeat(d.max - d.charges);
+  return "§f" + GL(GI.dash).repeat(d.charges) + GL(GI.dash_cd).repeat(d.max - d.charges);
+}
 // شريط المهارات + نغمة خفيفة لما تخلص مهارة طويلة الكولداون
 const wasCooling = new Map();
 function skillStrip(p, st, heldId, plain) {
@@ -385,7 +400,7 @@ function skillStrip(p, st, heldId, plain) {
       }
       wasCooling.set(key, cooling);
       const secs = Math.ceil(left / 20);
-      txt = plain ? (cooling ? `§c${n}·${secs}` : `§a${n}✔`) : (cooling ? `§f${GL(GI.cool)}§c${secs}` : `§f${GL(GI.ready)}§a${n}`);
+      txt = plain ? (cooling ? `§c${n}:${secs}` : `§a${n}✔`) : (cooling ? `§f${GL(GI.cool)}§c${secs}` : `§f${GL(GI.ready)}§a${n}`);
     }
     return heldId === s.id ? (plain ? `§e[${txt}§e]` : `§f${GL(GI.held)}${txt}`) : txt;
   });
@@ -465,8 +480,9 @@ function renderHud(p) {
       const h = off ? { line: "", tip: "" } : heldLine(p, st, plain);
       if (!off) {
         let text = hudText(p, st, plain);
-        const strip = skillStrip(p, st, h.skillId, plain);
-        if (strip) text += "\n" + strip;
+        const strip = skillStrip(p, st, h.skillId, plain), dg = dashGlyphs(p, plain);
+        if (strip) text += "\n" + (dg ? dg + " " : "") + strip;                 // شحنات الداش أول سطر المهارات
+        else if (dg) text += "\n" + dg;
         p.onScreenDisplay.setActionBar(text);
       }
       const low = [];
@@ -630,11 +646,15 @@ function line(dim, from, to, color) {
   }
 }
 
+// علو الأصوات (v1.37، tools/tune_sounds.py): أصوات المود مضبوطة بـ sound_definitions (علو متوسط)، وهنا نوطي أصوات الفانيلا العالية
+// ونخلي صوت اللاعب لنفسه ما يتعدى 1 (فوق 1 ما يعلّي، بس يوسع المسافة؛ للعالم نخليها حتى اللي قريبين يسمعون).
+const VANILLA_GAIN = { "random.totem": 0.5, "random.explode": 0.6, "mob.wither.spawn": 0.5, "raid.horn": 0.7, "random.anvil_land": 0.7,
+  "mob.sheep.shear": 0.75, "random.levelup": 0.8, "mob.silverfish.kill": 0.8, "mob.polarbear.warning": 0.8 };
 function sfx(dim, id, loc, volume = 1, pitch = 1) {
-  try { dim.playSound(id, loc, { volume, pitch }); } catch (e) { /* */ }
+  try { dim.playSound(id, loc, { volume: Math.min(1.6, volume * (VANILLA_GAIN[id] || 1)), pitch }); } catch (e) { /* */ }
 }
 function sfxPlayer(p, id, volume = 1, pitch = 1) {
-  try { p.playSound(id, { volume, pitch }); } catch (e) { /* */ }
+  try { p.playSound(id, { volume: Math.min(1, volume * (VANILLA_GAIN[id] || 1)), pitch }); } catch (e) { /* */ }
 }
 function shake(p, amount = 0.1, secs = 0.12) {
   try { p.runCommand(`camerashake add @s ${amount} ${secs}`); } catch (e) { /* */ }
@@ -866,10 +886,12 @@ async function openPowerMenu(player) {
     // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو). والإنجازات تنفتح من هنا هم.
     const f = new ActionFormData().title("Evolution Book").body("§7Your power is not drawn yet. Find the §bStar Temple§7 and step on its golden plate.")
       .button("§1Guide me to the Star Temple", "textures/ui/sh_ach/star_touched")
-      .button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey");
+      .button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey")
+      .button(`§1[Missions] §8${misState(player).i}/${MISSIONS.length}`, "textures/ui/sh_ach/cat_conquest");
     const r = await showForm(player, f);
     if (r.canceled) return;
     if (r.selection === 1) { openAchievements(player); return; }
+    if (r.selection === 2) { openMissions(player); return; }
     ensureTemple(player);
     return;
   }
@@ -923,7 +945,7 @@ async function showRanks(player) {
   body += `§bJump:§f if you kill a monster two or more ranks above you, you rank up instantly (for the first ranks, up to ${RANKS[HARD_RANK_FROM]}).\n`;
   body += `§bAfterwards:§f killing a stronger monster gives triple experience but does not rank you up.\n`;
   body += "§bWeak:§f a monster three ranks below you gives half the experience.\n";
-  body += `§bDash:§f unlocks the moment you earn your first rank (${RANKS[1]}) and stays with you forever: double-tap left, right or back to dash 3 blocks that way. Cooldown by rank: ${RANKS.slice(1).map((n, i) => `${n} ${(dashCooldown(i + 1) / 20).toFixed(1)}s`).join(", ")}.\n\n`;
+  body += `§bDash:§f unlocks the moment you earn your first rank (${RANKS[1]}) and stays with you forever: double-tap left, right or back to dash ${DASH.dist} blocks that way. You cannot be hurt during the dash. Cooldown by rank: ${RANKS.slice(1).map((n, i) => `${n} ${(dashCooldown(i + 1) / 20).toFixed(1)}s`).join(", ")}. From ${RANKS[DASH.doubleFrom]} you get ${dashCharges(DASH.doubleFrom)} dashes in a row. The arrows at the start of your skills row show the dashes that are ready.\n\n`;
   body += "§7Experience comes from: killing monsters, XP scrolls, and some structure chests.";
   await showForm(player, new ActionFormData().title("Ranks").body(body).button("§aOK"));
 }
@@ -1065,12 +1087,14 @@ async function openBook(player) {
   form.button("§b[Status window and how to use skills]");
   form.button("§d[World Story]");
   form.button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey");
+  form.button(`§1[Missions] §8${misState(player).i}/${MISSIONS.length}`, "textures/ui/sh_ach/cat_conquest");
   const r = await showForm(player, form);
   if (r.canceled) return;
   if (r.selection === mine.length) { showRanks(player); return; }
   if (r.selection === mine.length + 1) { showStatus(player); return; }
   if (r.selection === mine.length + 2) { openLore(player); return; }
   if (r.selection === mine.length + 3) { openAchievements(player); return; }
+  if (r.selection === mine.length + 4) { openMissions(player); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: still locked`, 60); return; }
@@ -1897,19 +1921,6 @@ function canBreak(b) {
   return !CONTAINER_HINT.some((k) => id.includes(k));
 }
 // يكسر البلوكات كأن اللاعب حفرها (تسقط كأيتمات). max حد أعلى للأمان.
-function breakBlocks(dim, positions, max = 40) {
-  let n = 0;
-  for (const q of positions) {
-    if (n >= max) break;
-    try {
-      const b = dim.getBlock(q);
-      if (!canBreak(b)) continue;
-      dim.runCommand(`setblock ${q.x} ${q.y} ${q.z} air destroy`);
-      n++;
-    } catch (err) { /* */ }
-  }
-  return n;
-}
 
 // ═════════════════════════ الصدع (Rift) ═════════════════════════
 // يتفتح نادراً (محاولة كل دقيقتين باحتمال 8%) على بعد 40-70 بلوكة من لاعب، وحد أقصى صدع واحد بالعالم.
@@ -1917,10 +1928,10 @@ function breakBlocks(dim, positions, max = 40) {
 // يكبر كل 30 ثانية ويفسد الأرض حواليه (ترجع طبيعية لما يتسد). من يقرب لاعب 14 بلوكة تبدي 3 موجات، والثالثة زعيم.
 // قتل الزعيم = الصدع ينسد ومكافآت حسب لونه. إذا ما أحد سده خلال 20 دقيقة ينفجر ويطلق زعيمه بالعالم.
 const RIFT_TIERS = [
-  { key: "blue", name: "Blue Rift", rank: "Lowly", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:sculk", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
-  { key: "violet", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:crying_obsidian", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
-  { key: "crimson", name: "Crimson Rift", rank: "Dread", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:red_terracotta", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
-  { key: "abyss", name: "Abyssal Rift", rank: "Cataclysm", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:gilded_blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
+  { key: "blue", grade: 1, diff: "Weak", name: "Blue Rift", rank: "Grim", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:sculk", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
+  { key: "violet", grade: 2, diff: "Medium", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:crying_obsidian", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
+  { key: "crimson", grade: 3, diff: "Hard", name: "Crimson Rift", rank: "Cursed", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:red_terracotta", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
+  { key: "abyss", grade: 4, diff: "Very Hard", name: "Abyssal Rift", rank: "Cursed+", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:gilded_blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
 ];
 const RIFT_LIFE = 24000, RIFT_ENGAGE = 14, RIFT_MAX_R = 12;
 // كل أنواع أرضية الصدع (القديمة والجديدة) حتى الإرجاع يشتغل حتى لصدوع محفوظة من نسخ قبل
@@ -1956,9 +1967,9 @@ function openRift(p, tierIdx, force) {
       if (q.dimension.id !== dim.id) continue;
       const dist = Math.round(dist2d(q.location, rift)), dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
       const dir = dirs[((Math.round((Math.atan2(rift.z - q.location.z, rift.x - q.location.x) * 180) / Math.PI / 45) % 8) + 8) % 8];
-      say(q, `${t.col}§l[${t.name}]§r §fA rift tore open ${dist} blocks to the ${dir}. Its warden is of the §l${t.col}${t.rank}§r§f rank. Close it before it spreads.`);
+      say(q, `${t.col}§l[${t.name} · Grade ${t.grade}]§r §fA §l${t.col}${t.diff}§r§f rift tore open ${dist} blocks to the ${dir}. At its end waits a warden of the §l${t.col}${t.rank}§r§f rank. Close it before it spreads.`);
       sfxPlayer(q, "sh.blackhole", 0.8, 0.6);
-      banner(q, `${t.col}§l${t.name.toUpperCase()}\n§7${dist}m ${dir} · Warden: ${t.col}${t.rank}`, 80);
+      banner(q, `${t.col}§lGRADE ${t.grade} RIFT §r§7(${t.diff})\n§7${dist}m ${dir} · Warden: ${t.col}${t.rank}`, 80);
     }
     riftSave();
     return true;
@@ -2048,7 +2059,7 @@ function riftStartWave(n) {
   rift.pause = 0;
   for (const q of riftPlayersNear(48)) {
     // بداية الموجة مثل الغارة باللعبة: بوق الغارة الأصلي (raid.horn) + الشريط بأعلى الشاشة يتعبى + سطر قصير فوق الهوت بار
-    sfxPlayer(q, "raid.horn", 0.7, n === 3 ? 0.8 : 1);
+    sfxPlayer(q, "raid.horn", 0.6, n === 3 ? 0.8 : 1);
     sfxPlayer(q, n === 3 ? "sh.supernova_charge" : "sh.boundary", 1, n === 3 ? 0.6 : 0.8);
     notify(q, n === 3 ? `${t.col}Wave 3/3 §7· the warden of the rift appears §8(${t.rank})` : `${t.col}Wave ${n}/3 §7· ${t.waves[n - 1]} monsters`, 60);
   }
@@ -2057,7 +2068,7 @@ function riftStartWave(n) {
   rift.waveIds = []; rift.dead = []; rift.miss = 0; rift.expect = n === 3 ? 2 : t.waves[n - 1];
   riftBar();
   if (n === 3) {
-    later(20, () => { if (rift) { riftSpawnMob(riftMobType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
+    later(20, () => { if (rift) { riftSpawnMob(riftBossType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
   } else {
     const count = t.waves[n - 1];
     for (let i = 0; i < count; i++) later(i * 6, () => { if (rift) riftSpawnMob(riftMobType(), false); });
@@ -2123,6 +2134,7 @@ function closeRift(victory, killer) {
     if (q.dimension.id !== r.dim || Math.hypot(q.location.x - r.x, q.location.z - r.z) > 60) continue;
     banner(q, `§f§lRIFT SEALED\n${t.col}${t.name} §7· rewards dropped at the rift`, 80);
     if (t.key === "crimson" || t.key === "abyss") achCount(q, `rift_${t.key}`);
+    if (t.grade >= 2) achCount(q, "rift_g2");
     const st = getState(q), amt = 80 * (r.tier + 1);
     const ups = addXp(st, amt);
     if (st.power) ups.push(...addPowerXp(st, amt, rarityOf(st.power).maxLv));
@@ -2172,7 +2184,7 @@ system.runInterval(() => {
       if (riftPlayersNear(RIFT_ENGAGE).length) { rift.phase = "battle"; riftStartWave(1); }
       else if (rift.age > RIFT_LIFE) {
         // ما أحد سده: ينفجر ويطلق زعيمه بالعالم
-        const b = riftSpawnMob(riftMobType(), true);
+        const b = riftSpawnMob(riftBossType(), true);
         for (const q of world.getAllPlayers()) say(q, `${t.col}§l[${t.name}]§r §cThe rift erupted. Its warden now roams the land.`);
         if (b) { try { b.removeTag("sh_rift"); } catch (e) { /* */ } }
         closeRift(false);
@@ -2223,15 +2235,15 @@ function riftProgress() {
 function riftBar() {
   if (!rift) return;
   const t = riftTier(), dim = world.getDimension(rift.dim), loc = { x: rift.x, y: rift.y - 2.5, z: rift.z };
-  if (rift.phase !== "battle" || !rift.wave) { setHudBar("rift", dim, loc, `${t.col}${t.name} §7(${t.rank}) · spreading`, rift.r / RIFT_MAX_R); return; }
+  if (rift.phase !== "battle" || !rift.wave) { setHudBar("rift", dim, loc, `${t.col}${t.name} §7· Grade ${t.grade} (${t.diff})`, rift.r / RIFT_MAX_R); return; }
   const pr = riftProgress(), left = Math.max(0, pr.total - pr.done);
   setHudBar("rift", dim, loc, left ? `${t.col}Wave ${rift.wave}/3 §7· §f${left} left` : `${t.col}Wave ${rift.wave}/3 §7· §aCleared ✔`, pr.total ? left / pr.total : 0);
 }
 function riftStatusText(p) {
   const st = getState(p);
-  if (!rift) return `§5Rifts§7: none open right now. They tear open rarely; the warden's rank follows the rift's color. Sealed: ${st.rifts || 0}`;
+  if (!rift) return `§5Rifts§7: none open right now. Their color is their grade: §9Grade 1 Blue (weak, Grim warden)§7, §5Grade 2 Violet (medium, Vile warden)§7, §cGrade 3 Crimson (hard, Cursed warden)§7, §6Grade 4 Abyssal (very hard, empowered Cursed warden)§7. Sealed: ${st.rifts || 0}`;
   const t = riftTier();
-  return `${t.col}${t.name}§7 open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
+  return `${t.col}${t.name}§7 (Grade ${t.grade}, ${t.diff}) open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
 }
 
 // ═════════════════════════ ضربة الإيقاع (Rhythm Strike) ═════════════════════════
@@ -3136,12 +3148,12 @@ function groundY(dim, x, z, y) {
 }
 
 // ═════════════════════════ تلفيل الأسلحة (كل الأسلحة ما عدا الكاتانا اللي إلها نظامها) ═════════════════════════
-// كل سلاح يكبر لحاله: خبرة من الضرب (1 كل نص ثانية) ومن القتل وانت ماسكه. 5 ليفلات:
-//  Lv1 المهارة الأولى | Lv2 تنفتح المهارة الثانية (سنيك) +10% ضرر | Lv3 +20% وتصحى الهالة
-//  Lv4 +30% وتبريد المهارات أقل 20% | Lv5 (مستيقظ) +45% ضرر، المهارات أقوى 25%، هالة كاملة
-const WLV_MAX = 5, WLV_NEED = [0, 30, 70, 130, 210];
-const WLV_DMG = [1, 1, 1.1, 1.2, 1.3, 1.45], WLV_SKILL = [1, 1, 1.05, 1.1, 1.15, 1.4];
-const WLV_PERKS = ["", "Skill 1 (use)", "Skill 2 (sneak + use) unlocks, +10% damage", "+20% damage, the weapon's aura awakens", "+30% damage, skill cooldowns 20% shorter", "AWAKENED: +45% damage, skills hit 25% harder, full aura"];
+// كل سلاح يكبر لحاله: خبرة من الضرب (1 كل نص ثانية) ومن القتل وانت ماسكه. 4 ليفلات (v1.37، كانت 5)، وكل ليفل يزيد ضرر السلاح:
+//  Lv1 المهارة الأولى | Lv2 تنفتح المهارة الثانية (سنيك) +15% ضرر | Lv3 +30% وتصحى الهالة
+//  Lv4 (مستيقظ) +50% ضرر، المهارات أقوى 35% وتبريدها أقل 20%، هالة كاملة. كل سلاح بيه مهارتين بس.
+const WLV_MAX = 4, WLV_NEED = [0, 40, 100, 200];
+const WLV_DMG = [1, 1, 1.15, 1.3, 1.5], WLV_SKILL = [1, 1, 1.1, 1.2, 1.35];
+const WLV_PERKS = ["", "Skill 1 (use)", "Skill 2 (sneak + use) unlocks, +15% damage", "+30% damage, the weapon's aura awakens", "AWAKENED: +50% damage, skills hit 35% harder, cooldowns 20% shorter, full aura"];
 // هالة كل سلاح (مثل الصور): ذهب يلتف، لهب، ريح زرقاء، هالة خضراء، رونات حمراء، ظل بنفسجي
 const WEAPON_AURA = {
   "sh:dawn_dagger": { style: "swirl", cols: [[1, 0.85, 0.35], [1, 0.95, 0.65], [1, 1, 0.9]] },
@@ -3192,7 +3204,7 @@ function weaponAuraPoint(p, id, u) {
 function weaponAuraTick(p, id, lv, t, strong) {
   const a = WEAPON_AURA[id];
   if (!a) return;
-  const dim = p.dimension, n = strong ? 3 : lv >= 5 ? 3 : lv >= 3 ? 2 : 1;
+  const dim = p.dimension, n = strong ? 3 : lv >= WLV_MAX ? 3 : lv >= 3 ? 2 : 1;
   // كل سلاح بجزيء ماينكرافت يناسبه: ذهب يلف (خنجر)، لهب حقيقي (ساطور)، لمعات End Rod (سيف القسم)، ريح زرقاء (سيف الظل)،
   // نجوم خضر (مطرقة)، غبار أحمر (رمح)، نَفَس تنين (مخالب)
   for (let i = 0; i < n; i++) {
@@ -3206,7 +3218,7 @@ function weaponAuraBurst(p, id, ticks) {
     try { t += 2; if (!valid(p) || t > ticks) { system.clearRun(h); return; } weaponAuraTick(p, id, WLV_MAX, t, true); } catch (e) { system.clearRun(h); }
   }, 2);
 }
-// الهالة وانت ماسك السلاح: خفيفة بالبداية، تصحى بـLv3، وكاملة بـLv5
+// الهالة وانت ماسك السلاح: خفيفة بالبداية، تصحى بـLv3، وكاملة بـLv4
 system.runInterval(() => {
   const now = system.currentTick;
   for (const p of world.getAllPlayers()) {
@@ -3480,19 +3492,11 @@ const WEAPON_SKILLS = {
     } },
   ],
   "sh:stone_maul": [
-    { name: "Earthbreaker", cd: 120, desc: "Smash a real crater in front of you; the broken blocks drop for you", fn(p) {
+    // v1.37: المطرقة ما تكسر ولا تغير أي بلوك (طلب اللاعب): الحفرة والشق مؤثرات وأشكال بس، والضرر نفسه
+    { name: "Earthbreaker", cd: 120, desc: "Smash the ground in front of you: a shockwave of stone hits everything around the impact", fn(p) {
       const dim = p.dimension, c = frontOf(p, 2.4);
       const gy = groundY(dim, c.x, c.z, p.location.y);
       if (gy === undefined) { notify(p, "§7No ground to smash", 20); return false; }
-      const list = [];
-      for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
-        const x = Math.floor(c.x) + dx, z = Math.floor(c.z) + dz, dd = Math.hypot(dx, dz);
-        if (dd > 2.4 || Math.hypot(x + 0.5 - p.location.x, z + 0.5 - p.location.z) < 1.1) continue;
-        list.push({ x, y: gy + 1, z, d: dd }, { x, y: gy, z, d: dd });
-        if (dd < 1.5) list.push({ x, y: gy - 1, z, d: dd });
-      }
-      list.sort((a, b) => a.d - b.d);
-      const n = breakBlocks(dim, list, 32);
       const cc = { x: c.x, y: gy + 1, z: c.z };
       rockBurst(dim, cc, 6, 1.4);
       WEAPON.quake(dim, cc, 3.6);                                          // نفخات زئير + غبار + موجة حصى
@@ -3503,26 +3507,19 @@ const WEAPON_SKILLS = {
         try { e.applyKnockback({ x: 0, z: 0 }, 0.85); } catch (err) { /* */ }
         effect(e, "slowness", 40, 2);
       }
-      sfx(dim, "sh.guard_slam", cc, 1.4, 0.8);
+      sfx(dim, "sh.guard_slam", cc, 1.1, 0.8);
       shake(p, 0.35, 0.35);
-      if (n) notify(p, `§2${n} blocks broken`, 25);
       return true;
     } },
     { name: "Seismic Fissure", cd: 200, desc: "A fissure tears the ground forward for 10 blocks", fn(p) {
       const dim = p.dimension, d = flatDir(p), o = { ...p.location };
       const hit = new Set();
-      let budget = 26;
-      sfx(dim, "sh.guard_slam", o, 1.2, 0.6);
+      sfx(dim, "sh.guard_slam", o, 1.0, 0.6);
       shake(p, 0.25, 0.5);
       for (let t = 2; t <= 11; t++) later((t - 2) * 2, () => {
         const x = o.x + d.x * t, z = o.z + d.z * t;
         const gy = groundY(dim, x, z, o.y);
         if (gy === undefined) return;
-        const side = { x: -d.z, z: d.x };
-        const cells = [{ x: Math.floor(x), y: gy + 1, z: Math.floor(z) }, { x: Math.floor(x), y: gy, z: Math.floor(z) }];
-        if (t % 2 === 0) cells.push({ x: Math.floor(x + side.x), y: gy, z: Math.floor(z + side.z) });
-        const n = breakBlocks(dim, cells, Math.max(0, budget));
-        budget -= n;
         const c = { x, y: gy + 1, z };
         fling(dim, "rock_chunk", c, 2, 1.1);
         WEAPON.fissure(dim, c);
@@ -3609,7 +3606,7 @@ function weaponActive(p, id) {
   if (now < ready) { notify(p, `§7${sk.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15); return; }
   let ok = false;
   try { ok = sk.fn(p); } catch (e) { ok = false; }
-  if (ok) { const cd = typeof sk.cd === "function" ? sk.cd(p) : sk.cd; weaponCd.set(key, now + Math.round(cd * (wl >= 4 ? 0.8 : 1))); notify(p, `§f⚔ ${sk.name}`, 20); }
+  if (ok) { achCount(p, "cast"); const cd = typeof sk.cd === "function" ? sk.cd(p) : sk.cd; weaponCd.set(key, now + Math.round(cd * (wl >= WLV_MAX ? 0.8 : 1))); notify(p, `§f⚔ ${sk.name}`, 20); }
   else weaponCd.set(key, now + 6);
 }
 
@@ -4442,15 +4439,15 @@ Object.assign(SKILL_FN, {
 function i2c(k) { return k < 0.5 ? [0.4 + k, 0.6 + k * 0.4, 1.0] : [1.0, 0.85 + (k - 0.5) * 0.3, 0.4 + (k - 0.5) * 1.2]; }
 
 // ───────────────────────── كاتانا الهاوية: سلاح يتطور ومهاراته تتبدل بالسنيك ─────────────────────────
-// تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 5)، وكل ليفل يفتح مهارة جديدة.
+// تلاقيها بضريح السيف المظلم. كل قتلة وانت ماسكها تعطيها خبرة (ليفل 1 → 4)، وكل ليفل يزيد ضربتها ومهاراتها 15%.
 // السنيك (الجلوس) يبدل المهارة، والاستعمال ينفذها. المؤثرات: شظايا بكسل بنفسجية تحيط بالنصل.
 const KATANA = "sh:dark_katana";
-const KAT_MAX = 5;
-const KAT_NEED = [0, 40, 90, 160, 260]; // خبرة الانتقال من الليفل i إلى i+1
+const KAT_MAX = 4;
+const KAT_NEED = [0, 45, 120, 240]; // خبرة الانتقال من الليفل i إلى i+1
 const KATANA_PURPLE = [0.7, 0.35, 1.0];
 const KAT_PALETTE = [[0.7, 0.35, 1.0], [0.45, 0.35, 1.0], [0.95, 0.45, 1.0], [0.3, 0.5, 1.0], [1, 1, 1]];
 // شنو يضيف كل ليفل للكاتانا
-const KAT_PERKS = ["", "Base skills", "+12% damage", "Crescent fires twice, Execution finishes enemies under 30% health", "Execution jumps to a second enemy", "Triple crescent, Execution chains to two more enemies"];
+const KAT_PERKS = ["", "Base skills", "+15% damage", "+30% damage, Crescent fires twice, Execution finishes enemies under 30% health and jumps to a second enemy", "MAX: +45% damage, triple Crescent, Execution chains to two more enemies"];
 
 function getKat(p) {
   try {
@@ -4461,7 +4458,7 @@ function getKat(p) {
 }
 function saveKat(p, k) { try { p.setDynamicProperty("sh_kat", JSON.stringify(k)); } catch (e) { /* */ } }
 function katLv(p) { return getKat(p).lv; }
-const kd = (p, base) => Math.round(base * (1 + 0.12 * (katLv(p) - 1)));
+const kd = (p, base) => Math.round(base * (1 + 0.15 * (katLv(p) - 1)));
 function addKatXp(p, amount) {
   const k = getKat(p);
   if (k.lv >= KAT_MAX) return;
@@ -4593,7 +4590,7 @@ const KATANA_SKILLS = [
     const lv = katLv(p);
     katCrescent(p, 0, 0);
     if (lv >= 3) katCrescent(p, 35, 4);
-    if (lv >= 5) katCrescent(p, -35, 8);
+    if (lv >= KAT_MAX) katCrescent(p, -35, 8);
     katanaAura(p, 16, true);
     shake(p, 0.1, 0.12);
     return true;
@@ -4602,7 +4599,7 @@ const KATANA_SKILLS = [
     const lv = katLv(p);
     const t = katanaTarget(p, 12 + lv);
     if (!t) { notify(p, "§cNo enemy in front of you", 30); return false; }
-    katExecute(p, t, lv >= 5 ? 2 : lv >= 4 ? 1 : 0);
+    katExecute(p, t, lv >= KAT_MAX ? 2 : lv >= 3 ? 1 : 0);
     return true;
   } },
 ];
@@ -4714,6 +4711,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     const hp = target.getComponent("minecraft:health");
     if (!hp) return;
     let extra = w.extra;
+    if (held.typeId === KATANA) extra = Math.round(extra * (1 + 0.15 * (katLv(p) - 1)));     // الكاتانا: ضربتها تكبر ويا ليفلها
     if (WEAPON_SKILLS[held.typeId]) {
       extra = Math.round(extra * WLV_DMG[wlvOf(p, held.typeId)]);
       const now = system.currentTick;
@@ -6868,17 +6866,19 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
 
 // ═════════════════════════ v1.35: مواد الوحوش، دروع الوحوش، المانا والجرعات ═════════════════════════
 // المواد: كل وحش يطيح مادته (جلد، قشرة، قرن، مخلب...). تنصنع منها دروع بطاولة الصناعة أو تنطبخ جرعات عند الخيميائي.
+// v1.37: مواد وحوش الرتب العالية (للدروع) نادرة كلش، وكل وحش يسقط جوهرته (للخيميائي) نادراً كلش
+//   [المادة، الفرصة، أقل، أكثر]
 const MAT_DROPS = {
-  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2]],
-  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1]],
-  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2]],
-  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1]],
-  "sh:gloomhorn": [["sh:gloom_antler", 0.75, 1, 2]],
-  "sh:hollow_seer": [["sh:hollow_lens", 0.75, 1, 1]],
-  "sh:veilfox": [["sh:spirit_fur", 0.8, 1, 3]],
-  "sh:magmamoth": [["sh:magma_scale", 0.95, 2, 4]],
-  "sh:grey_bear": [["sh:bear_hide", 1.0, 3, 5], ["sh:bear_claw", 0.65, 1, 2]],
-  "sh:prayer_mantis": [["sh:mantis_chitin", 1.0, 3, 6], ["sh:mantis_scythe", 0.6, 1, 2]],
+  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2], ["sh:essence_hound", 0.025, 1, 1]],
+  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1], ["sh:essence_imp", 0.025, 1, 1]],
+  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2], ["sh:essence_scorpion", 0.025, 1, 1]],
+  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1], ["sh:essence_guard", 0.025, 1, 1]],
+  "sh:gloomhorn": [["sh:gloom_antler", 0.4, 1, 2], ["sh:essence_gloom", 0.03, 1, 1]],
+  "sh:hollow_seer": [["sh:hollow_lens", 0.4, 1, 1], ["sh:essence_seer", 0.03, 1, 1]],
+  "sh:veilfox": [["sh:spirit_fur", 0.45, 1, 2], ["sh:essence_fox", 0.03, 1, 1]],
+  "sh:magmamoth": [["sh:magma_scale", 0.08, 1, 1], ["sh:essence_mammoth", 0.04, 1, 1]],
+  "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:essence_bear", 0.04, 1, 1]],
+  "sh:prayer_mantis": [["sh:mantis_chitin", 0.03, 1, 1], ["sh:mantis_scythe", 0.015, 1, 1], ["sh:essence_mantis", 0.05, 1, 1]],
 };
 function dropMaterials(e) {
   const list = MAT_DROPS[e.typeId];
@@ -6889,7 +6889,7 @@ function dropMaterials(e) {
     try { e.dimension.spawnItem(new ItemStack(id, n), e.location); } catch (err) { /* */ }
   }
 }
-const dropNames = (id) => (MAT_DROPS[id] || []).map(([m]) => (GEAR.materials[m] || {}).name || m).join("§7, ");
+const dropNames = (id) => (MAT_DROPS[id] || []).map(([m, ch]) => `${(GEAR.materials[m] || GEAR.essences[m] || {}).name || m}${ch < 0.1 ? " §8(very rare)" : ""}`).join("§7, ");
 
 // ───── دروع الوحوش: لما تلبس القطع الأربعة من نفس الطقم ينفتح بونص الطقم ─────
 const SET_OF = {};
@@ -6956,7 +6956,7 @@ function manaOf(p, st) {
   }
   return v;
 }
-function spendMana(p, n) { MANA.set(p.id, Math.max(0, manaOf(p) - n)); }
+function spendMana(p, n) { MANA.set(p.id, Math.max(0, manaOf(p) - n)); achCount(p, "cast"); }
 function manaCost(skill) { return Math.max(8, Math.min(45, Math.round((skill.cooldown / 20) * 3) + 6)); }
 
 // ───── الجرعات: تنشرب (مسكة الاستعمال)، وتأثيرات التقوية تبقى 6-8 دقائق ─────
@@ -7049,6 +7049,8 @@ function manaHudLine(p, st, plain) {
 function gearHeld(id, showTip) {
   const m = GEAR.materials[id];
   if (m) return { line: `${m.name} §8│ §7Monster material (${m.mob})`, tip: showTip ? "§7Craft monster armor at a crafting table, or brew potions with the Alchemist (Sakura Village)" : "" };
+  const es = GEAR.essences[id];
+  if (es) return { line: `${es.name} §8│ §7Essence (${es.mob}), very rare`, tip: showTip ? "§7Bring it to the Alchemist with a water bottle to brew a potion" : "" };
   const po = GEAR.potions[id];
   if (po) return { line: `${po.name}`, tip: showTip ? `§7${po.desc} §8(hold use to drink)` : "" };
   const pc = PIECE_OF[id];
@@ -7057,32 +7059,42 @@ function gearHeld(id, showTip) {
 }
 
 // ───── الخيميائي (قرية الساكورا): يطبخ الجرعات من مواد الوحوش ─────
+// v1.37: كل جرعة = قنينة ماء + جوهرتين (نادرات كلش) + مادة. الخيميائي ياخذ القنينة ويرجعها جرعة.
+const WATER = "minecraft:potion";
 const ALCHEMY = [
-  ["sh:potion_vitality", [["sh:shadow_pelt", 3], ["sh:spirit_fur", 1]]],
-  ["sh:potion_mana", [["sh:hollow_lens", 2], ["sh:ember_horn", 2]]],
-  ["sh:potion_might", [["sh:magma_scale", 2], ["sh:ember_horn", 2]]],
-  ["sh:potion_bulwark", [["sh:rust_core", 2], ["sh:bear_hide", 1]]],
-  ["sh:potion_focus", [["sh:gloom_antler", 2], ["sh:hollow_lens", 1]]],
-  ["sh:potion_swift", [["sh:spirit_fur", 2], ["sh:sand_carapace", 2]]],
+  ["sh:potion_vitality", [[WATER, 1], ["sh:essence_hound", 1], ["sh:essence_fox", 1], ["sh:shadow_pelt", 2]]],
+  ["sh:potion_mana", [[WATER, 1], ["sh:essence_seer", 1], ["sh:essence_imp", 1], ["sh:hollow_lens", 1]]],
+  ["sh:potion_might", [[WATER, 1], ["sh:essence_mammoth", 1], ["sh:essence_imp", 1], ["sh:ember_horn", 1]]],
+  ["sh:potion_bulwark", [[WATER, 1], ["sh:essence_guard", 1], ["sh:essence_bear", 1], ["sh:rust_core", 1]]],
+  ["sh:potion_focus", [[WATER, 1], ["sh:essence_gloom", 1], ["sh:essence_mantis", 1], ["sh:gloom_antler", 1]]],
+  ["sh:potion_swift", [[WATER, 1], ["sh:essence_fox", 1], ["sh:essence_scorpion", 1], ["sh:sand_carapace", 1]]],
 ];
+// قنينة الماء: أي قنينة minecraft:potion، وإذا اللعبة تعطينا نوع الجرعة (مكون minecraft:potion بالنسخ الأحدث) ناخذ بس الماء
+function isWaterBottle(it) {
+  if (!it || it.typeId !== WATER) return false;
+  if (typeof it.getComponent !== "function") return true;
+  try { const pc = it.getComponent("minecraft:potion"); const id = pc && pc.potionEffectType && pc.potionEffectType.id; if (id) return /water/i.test(id) && !/breath/i.test(id); } catch (e) { /* */ }
+  return true;
+}
+const sameItem = (it, typeId) => !!it && (typeId === WATER ? isWaterBottle(it) : it.typeId === typeId);
 function countItem(p, typeId) {
   let n = 0;
-  try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && it.typeId === typeId) n += it.amount; } } catch (err) { /* */ }
+  try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (sameItem(it, typeId)) n += it.amount; } } catch (err) { /* */ }
   return n;
 }
 function takeItems(p, typeId, n) {
   const c = inv(p);
   for (let i = 0; i < c.size && n > 0; i++) {
     const it = c.getItem(i);
-    if (!it || it.typeId !== typeId) continue;
+    if (!sameItem(it, typeId)) continue;
     const k = Math.min(n, it.amount);
     n -= k;
     if (it.amount > k) { it.amount -= k; c.setItem(i, it); } else c.setItem(i, undefined);
   }
 }
-const matName = (id) => ((GEAR.materials[id] || {}).name || id).replace(/§./g, "");
+const matName = (id) => (id === WATER ? "Water Bottle" : (GEAR.materials[id] || GEAR.essences[id] || {}).name || id).replace(/§./g, "");
 async function openAlchemist(p, npc) {
-  const f = new ActionFormData().title("Alchemist").body("§7\"Bring me what the monsters leave behind, and I will brew you something worth drinking.\"\n\n§fChoose a potion:");
+  const f = new ActionFormData().title("Alchemist").body("§7\"Bring me a water bottle and the essences the monsters leave behind. Essences are rare, very rare; every monster hides its own color.\"\n\n§fChoose a potion:");
   const ok = ALCHEMY.map(([, cost]) => cost.every(([id, n]) => countItem(p, id) >= n));
   ALCHEMY.forEach(([pid, cost], i) => {
     const need = cost.map(([id, n]) => `${countItem(p, id) >= n ? "§2" : "§c"}${n} ${matName(id)}`).join("§8 + ");
@@ -7247,4 +7259,108 @@ async function openAchCat(player, cat) {
     .body(ok ? `§a✔ Unlocked\n\n§f${x.desc}\n\n§eReward: +${x.xp} XP` : `§7${x.secret ? "This one is a secret." : x.hint}\n\n§eReward: +${x.xp} XP`)
     .button("§8« Back", ok ? x.icon : x.iconLocked));
   return openAchCat(player, cat);
+}
+
+// ═════════════════════════ المهمات (v1.37) ═════════════════════════
+// مو قصة: طلبات بالتسلسل. تخلص وحدة تنفتح اللي بعدها، من السهلة للمتوسطة للصعبة. كل مهمة إلها جائزة.
+// metric: شنو نعد. delta: نعد من لحظة بداية المهمة (مثل "اقتل 30 وحش")، وإلا القيمة الحالية (مثل "وصل ليفل 5").
+// المهمة الأخيرة (استدعاء أقوى وحش بنواة كل وحش رتبة) مؤجلة لبعدين.
+const killsIn = (st, types) => types.reduce((n, t) => n + ((st.kills || {})[t] || 0), 0);
+const MIS_METRIC = {
+  level: (p, st) => st.level || 0,
+  rank: (p, st) => st.rank || 0,
+  drawn: (p, st) => (st.power || st.powerless ? 1 : 0),
+  trained: (p, st) => (ACH_CHECK.first_lesson(p, st) ? 1 : 0),
+  kills: (p, st) => killsOf(st),
+  grim: (p, st) => killsIn(st, GRIM_TYPES),
+  vile: (p, st) => killsIn(st, VILE_TYPES),
+  mantis: (p, st) => killsIn(st, CURSED_TYPES),
+  cast: (p, st, a) => a.c.cast || 0,
+  dash: (p, st, a) => a.c.dash || 0,
+  alchemist: (p, st) => (ACH_CHECK.meet_alchemist(p, st) ? 1 : 0),
+  materials: (p) => { let n = 0; try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && GEAR.materials[it.typeId]) n += it.amount; } } catch (e) { /* */ } return n; },
+  rifts: (p, st) => st.rifts || 0,
+  rift_g2: (p, st, a) => a.c.rift_g2 || 0,
+  rift_abyss: (p, st, a) => a.c.rift_abyss || 0,
+  armor: (p) => (wearsPiece(p) ? 1 : 0),
+  tower3: (p) => (structNear(p, "tower", 30, (s) => !!((s.cl || 0) & (1 << 2))) ? 1 : 0),
+  tower7: (p) => (structNear(p, "tower", 30, (s) => !!s.c) ? 1 : 0),
+  shrine: (p) => (structNear(p, "shrine", 40, (s) => !!s.c) || structNear(p, "lightshrine", 40, (s) => !!s.c) ? 1 : 0),
+  weapon: (p) => { let m = 0; try { for (const k of Object.values(wlvAll(p))) m = Math.max(m, k.lv || 1); m = Math.max(m, getKat(p).lv); } catch (e) { /* */ } return m; },
+  brew: (p, st, a) => a.c.brew || 0,
+};
+// [المعرف، الصعوبة، الاسم، الطلب، المقياس، العدد، من البداية؟، خبرة، أيتمات، صورة]
+const MISSIONS = [
+  ["first_steps", "Easy", "First Steps", "Reach level 5.", "level", 5, false, 60, [["sh:xp_scroll_small", 1]], "rank_trainee"],
+  ["first_hunt", "Easy", "First Hunt", "Defeat 5 monsters.", "kills", 5, true, 60, [["minecraft:bread", 8]], "first_blood"],
+  ["star_touched", "Easy", "The Fallen Star", "Draw your power at the Star Temple.", "drawn", 1, false, 80, [["sh:xp_scroll_small", 2]], "star_touched"],
+  ["lesson", "Easy", "The Trainer's Test", "Finish the Trainer's training.", "trained", 1, false, 80, [["sh:xp_scroll_small", 2]], "first_lesson"],
+  ["gift", "Easy", "Use Your Gift", "Use skills or weapon skills 20 times.", "cast", 20, true, 80, [["sh:xp_scroll_small", 2]], "honed"],
+  ["trainee", "Easy", "Trainee", "Reach the rank of Trainee.", "rank", 1, false, 100, [["sh:skill_scroll", 1]], "rank_trainee"],
+  ["quick_feet", "Easy", "Quick Feet", "Dash 10 times (double-tap left, right or back).", "dash", 10, true, 80, [["minecraft:golden_apple", 1]], "dash_50"],
+  ["brewer_met", "Easy", "The Old Brewer", "Find a Sakura Village and meet the Alchemist.", "alchemist", 1, false, 100, [["minecraft:glass_bottle", 6]], "meet_alchemist"],
+  ["collector", "Medium", "Hide Collector", "Carry 10 monster materials at once.", "materials", 10, false, 150, [["sh:xp_scroll_big", 1]], "first_material"],
+  ["hunter30", "Medium", "Monster Hunter", "Defeat 30 monsters.", "kills", 30, true, 180, [["sh:skill_scroll", 1]], "hunter_100"],
+  ["grim3", "Medium", "Grim Business", "Defeat 3 Grim-rank monsters (Gloomhorn, Hollow Seer, Veilfox).", "grim", 3, true, 200, [["sh:xp_scroll_big", 1]], "slay_gloom"],
+  ["rift1", "Medium", "Close a Tear", "Seal a rift.", "rifts", 1, true, 220, [["sh:skill_scroll", 1]], "rift_first"],
+  ["tailor", "Medium", "Tailored", "Wear a piece of monster armor.", "armor", 1, false, 180, [["sh:xp_scroll_big", 1]], "tailored"],
+  ["climb3", "Medium", "Climb", "Clear the third floor of an Abyss Tower.", "tower3", 1, false, 250, [["sh:skill_scroll", 1]], "visit_tower"],
+  ["warrior", "Medium", "Warrior", "Reach the rank of Warrior.", "rank", 2, false, 250, [["sh:skill_scroll", 2]], "rank_warrior"],
+  ["bond", "Medium", "Weapon Bond", "Raise any weapon to level 3.", "weapon", 3, false, 250, [["sh:xp_scroll_big", 2]], "armed"],
+  ["vile1", "Hard", "Vile Slayer", "Defeat a Vile-rank monster (Grey Bear or Magmamoth).", "vile", 1, true, 400, [["sh:skill_scroll", 2]], "slay_bear"],
+  ["grade2", "Hard", "Deeper Tears", "Seal a Grade 2 rift or harder.", "rift_g2", 1, true, 450, [["sh:xp_scroll_big", 2]], "rift_five"],
+  ["shrine", "Hard", "Shrine Cleanser", "Cleanse a Sword Shrine (defeat both guardians).", "shrine", 1, false, 600, [["sh:skill_scroll", 3]], "shrine_dark_clear"],
+  ["elite", "Hard", "Elite", "Reach the rank of Elite.", "rank", 3, false, 500, [["sh:skill_scroll", 2]], "rank_elite"],
+  ["summit", "Hard", "Tower Summit", "Conquer the seventh floor of an Abyss Tower.", "tower7", 1, false, 800, [["sh:xp_scroll_big", 3]], "tower_top"],
+  ["brew1", "Hard", "First Brew", "Brew a potion at the Alchemist (a water bottle and two rare essences).", "brew", 1, true, 600, [["sh:skill_scroll", 2]], "first_brew"],
+  ["mantis1", "Hard", "Molt and Fall", "Defeat a Prayer Mantis.", "mantis", 1, true, 800, [["sh:skill_scroll", 3]], "slay_mantis"],
+  ["grade4", "Hard", "Abyss Gazer", "Seal a Grade 4 (Abyssal) rift.", "rift_abyss", 1, true, 1000, [["sh:skill_scroll", 4]], "rift_abyss"],
+].map(([id, tier, name, desc, metric, need, delta, xp, items, icon]) => ({ id, tier, name, desc, metric, need, delta, xp, items, icon: `textures/ui/sh_ach/${icon}` }));
+const MIS_COL = { Easy: "§a", Medium: "§6", Hard: "§c" };
+function misState(p) {
+  try { const r = p.getDynamicProperty("sh_mis"); if (typeof r === "string") { const o = JSON.parse(r); return { i: Math.min(MISSIONS.length, o.i || 0), base: o.base || 0 }; } } catch (e) { /* */ }
+  return { i: 0, base: 0, fresh: true };
+}
+function misSave(p, m) { try { p.setDynamicProperty("sh_mis", JSON.stringify({ i: m.i, base: m.base })); } catch (e) { /* */ } }
+function misValue(p, mis, st, a) { try { return MIS_METRIC[mis.metric](p, st, a) || 0; } catch (e) { return 0; } }
+function misProgress(p, m, st, a) {
+  const mis = MISSIONS[m.i];
+  if (!mis) return null;
+  const v = misValue(p, mis, st || getState(p), a || achGet(p));
+  const cur = mis.delta ? Math.max(0, v - (m.base || 0)) : v;
+  return { mis, cur: Math.min(cur, mis.need), done: cur >= mis.need };
+}
+function misCheck(p) {
+  try {
+    let m = misState(p);
+    const st = getState(p), a = achGet(p);
+    if (m.fresh) { m = { i: 0, base: MISSIONS[0].delta ? misValue(p, MISSIONS[0], st, a) : 0 }; misSave(p, m); }
+    for (let guard = 0; guard < 3; guard++) {                                   // أكثر من مهمة ممكن تخلص سوه (مثل الليفل والرتبة)
+      const pr = misProgress(p, m, st, a);
+      if (!pr || !pr.done) break;
+      const mis = pr.mis;
+      try { const s2 = getState(p); const ups = addXp(s2, mis.xp); saveState(p, s2); announceUps(p, ups); } catch (e) { /* */ }
+      for (const [id, n] of mis.items) { try { giveItem(p, id, n); } catch (e) { /* */ } }
+      m.i++;
+      const next = MISSIONS[m.i];
+      m.base = next && next.delta ? misValue(p, next, getState(p), achGet(p)) : 0;
+      misSave(p, m);
+      banner(p, `${MIS_COL[mis.tier]}✔ Mission complete: §f${mis.name} §7(+${mis.xp} XP)${next ? `\n§7Next: ${MIS_COL[next.tier]}${next.name}` : ""}`, 90);
+      say(p, `${MIS_COL[mis.tier]}[Mission ${m.i}/${MISSIONS.length}] §f${mis.name} complete! §e+${mis.xp} XP${mis.items.length ? ` §7+ ${mis.items.map(([id, n]) => `${n} ${id.replace(/^.*:/, "").replace(/_/g, " ")}`).join(", ")}` : ""}${next ? `\n§7Next mission: ${MIS_COL[next.tier]}${next.name}§7: ${next.desc}` : "\n§6You finished every mission!"}`);
+      sfxPlayer(p, "random.levelup", 0.6, 1.2);
+    }
+  } catch (e) { /* */ }
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) misCheck(p); }, 40);
+async function openMissions(player) {
+  const m = misState(player), pr = misProgress(player, m);
+  const f = new ActionFormData().title("Missions")
+    .body(pr ? `§fMission ${m.i + 1}/${MISSIONS.length} ${MIS_COL[pr.mis.tier]}(${pr.mis.tier})\n§l${pr.mis.name}§r\n§7${pr.mis.desc}\n§fProgress: §e${pr.cur}/${pr.mis.need}\n§7Reward: §e+${pr.mis.xp} XP§7${pr.mis.items.length ? " + " + pr.mis.items.map(([id, n]) => `${n} ${id.replace(/^.*:/, "").replace(/_/g, " ")}`).join(", ") : ""}\n\n§8Finish it and the next one opens. Easy, then medium, then hard.`
+      : "§6You finished every mission. §7The last one, summoning the strongest monster, is coming later.");
+  MISSIONS.forEach((x, i) => {
+    if (i < m.i) f.button(`§2✔ ${x.name}\n§8${x.tier}`, x.icon);
+    else if (i === m.i) f.button(`${MIS_COL[x.tier]}▶ ${x.name}\n§8${pr ? `${pr.cur}/${x.need}` : ""} · ${x.tier}`, x.icon);
+    else f.button(`§8${x.name}\n§8${x.tier} · locked`, x.icon + "_x");
+  });
+  await showForm(player, f);
 }

@@ -50,6 +50,48 @@ export const GEAR = {
    "mob": "Prayer Mantis"
   }
  },
+ "essences": {
+  "sh:essence_hound": {
+   "name": "§5Shadow Essence",
+   "mob": "Shadow Hound"
+  },
+  "sh:essence_imp": {
+   "name": "§6Ember Essence",
+   "mob": "Ember Imp"
+  },
+  "sh:essence_scorpion": {
+   "name": "§eVenom Essence",
+   "mob": "Sand Scorpion"
+  },
+  "sh:essence_guard": {
+   "name": "§3Rust Essence",
+   "mob": "Rust Guard"
+  },
+  "sh:essence_gloom": {
+   "name": "§bGloom Essence",
+   "mob": "Gloomhorn"
+  },
+  "sh:essence_seer": {
+   "name": "§6Seer Essence",
+   "mob": "Hollow Seer"
+  },
+  "sh:essence_fox": {
+   "name": "§dFoxfire Essence",
+   "mob": "Veilfox"
+  },
+  "sh:essence_mammoth": {
+   "name": "§cMagma Essence",
+   "mob": "Magmamoth"
+  },
+  "sh:essence_bear": {
+   "name": "§7Wild Essence",
+   "mob": "Grey Bear"
+  },
+  "sh:essence_mantis": {
+   "name": "§aVerdant Essence",
+   "mob": "Prayer Mantis"
+  }
+ },
  "potions": {
   "sh:potion_vitality": {
    "name": "§cPotion of Vitality",

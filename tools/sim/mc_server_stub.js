@@ -63,7 +63,7 @@ export function mcWidth(line) {
 }
 
 // ───── أنواع ─────
-export class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
+export class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } getComponent() { return undefined; } }
 export class MolangVariableMap {
   constructor() { this.v = {}; }
   setFloat(k, x) { this.v[k] = x; }
@@ -260,7 +260,7 @@ export const __sim = {
       const hitDmg = async (lv) => { player.setDynamicProperty("sh_wlv", JSON.stringify({ "sh:ember_cleaver": { lv, xp: 0 } })); const d = stats.damage || 0; fire("entityHitEntity", { damagingEntity: player, hitEntity: z }); advance(1); return Math.round((stats.damage || 0) - d); };
       const dm1 = await hitDmg(1), dm5 = await hitDmg(5);
       const p0 = stats.particles; advance(40); const aura = stats.particles - p0;
-      console.log(`\nتلفيل الأسلحة: مهارة 2 بـLv1 = ${locked > 0 ? "مفتوحة ✖" : "مقفولة ✔"} | بعد 40 ضربة: Lv${lvHit && lvHit.lv} (${lvHit && lvHit.xp} XP) | بعد قتلة: Lv${lvKill && lvKill.lv} | ضرر الضربة Lv1=${dm1} Lv5=${dm5} | هالة Lv5 جزيئات=${aura}`);
+      console.log(`\nتلفيل الأسلحة: مهارة 2 بـLv1 = ${locked > 0 ? "مفتوحة ✖" : "مقفولة ✔"} | بعد 40 ضربة: Lv${lvHit && lvHit.lv} (${lvHit && lvHit.xp} XP) | بعد قتلة: Lv${lvKill && lvKill.lv} | ضرر الضربة Lv1=${dm1} Lv4=${dm5} | هالة Lv4 جزيئات=${aura}`);
       if (locked > 0) failures.push("المهارة الثانية للسلاح مفتوحة بـLv1");
       if (!lvHit || lvHit.lv < 2) failures.push("السلاح ما يتلفل من الضرب");
       if (!(dm5 > dm1)) failures.push("ضرر السلاح ما يكبر مع الليفل");
@@ -281,7 +281,10 @@ export const __sim = {
         if (dmg <= 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون ضرر`);
         if (shapes === 0 && stats.particles - p0 < 20) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون مؤثرات (لا أشكال ولا جزيئات)`);
         if (stats.sounds - s0 === 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: بدون صوت`);
-        if (wid === "sh:stone_maul" && (stats.broken || 0) - b0 === 0) failures.push(`المطرقة ما كسرت بلوكات (مهارة ${sneak ? 2 : 1})`);
+        // v1.37: ولا سلاح يكسر أو يغير بلوكات (المطرقة خصوصاً، طلب اللاعب)
+        const setT = (stats.setTypes || []).length;
+        if ((stats.broken || 0) - b0 > 0) failures.push(`${wid} مهارة ${sneak ? 2 : 1}: كسرت بلوكات (لازم ما تكسر)`);
+        if (wid === "sh:stone_maul" && (stats.setTypes || []).length !== setT) failures.push("المطرقة غيرت بلوكات");
         system_cd_reset();
       }
       player.isSneaking = false;
@@ -569,9 +572,9 @@ export const __sim = {
         const hud = stats.actionBars[stats.actionBars.length - 1] || "";
         // v1.36: الصدع بشريط أعلى الشاشة (مثل الغارة): "Violet Rift (Vile) · spreading"، وما ينكتب بالواجهة
         const bb0 = bossBar();
-        if (!bb0 || !/^Violet Rift \(Vile\) · spreading$/.test(bb0.name) || hud.includes("Violet Rift")) failures.push("شريط الصدع بأعلى الشاشة ما طلع (أو الصدع بعده مكتوب بالواجهة)");
+        if (!bb0 || !/^Violet Rift · Grade 2 \(Medium\)$/.test(bb0.name) || hud.includes("Violet Rift")) failures.push("شريط الصدع بأعلى الشاشة ما طلع (أو الصدع بعده مكتوب بالواجهة)");
         // v1.35.1: سطر الصدع والإعلانات فوق الهوت بار (العنوان)، مو باللوحة فوق يسار (شريط الأكشن)
-        const openBanner = (stats.titles || []).some((t) => t.includes("VIOLET RIFT"));
+        const openBanner = (stats.titles || []).some((t) => t.includes("GRADE 2 RIFT"));
         console.log(`  شريط أعلى الشاشة قبل المعركة: "${bb0 ? bb0.name : "-"}" (${bb0 ? Math.round(bb0.fill * 100) : 0}%) | إعلان فتح الصدع فوق الهوت بار ${openBanner ? "✔" : "✖"}`);
         if (!openBanner) failures.push("إعلان فتح الصدع ما طلع فوق الهوت بار");
         stats.titles = [];
@@ -608,6 +611,7 @@ export const __sim = {
           waves.push(`موجة ${w}: ${mobs.length} وحش${boss ? " + زعيم «" + boss.nameTag.replace(/§./g, "") + "»" : ""}`);
           if (!mobs.length) { failures.push(`موجة ${w} ما طلعت`); break; }
           if (w === 3 && !boss) failures.push("الزعيم ما طلع بالموجة 3");
+          if (w === 3 && boss && !["sh:magmamoth", "sh:grey_bear"].includes(boss.typeId)) failures.push(`حارس صدع الدرجة 2 لازم يكون وحش Vile (طلع ${boss.typeId})`);
           if (w === 1) {
             // خطأ قديم: لما تموت/تبتعد ووحوش الموجة تختفي (تحميل أو اختفاء)، الصدع كان يعبر للموجة اللي بعدها. هسه لازم يبقى بنفس الموجة ويرجع الوحوش
             const back = { ...player.location };
@@ -1018,10 +1022,14 @@ export const __sim = {
       // 1) مواد الوحوش
       stats.items = [];
       const kill = (t) => { const m = mkEntity(t, { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(m); m._valid = false; fire("entityDie", { deadEntity: m, damageSource: { damagingEntity: player } }); };
-      for (let i = 0; i < 4; i++) { kill("sh:grey_bear"); kill("sh:prayer_mantis"); }
+      // v1.37: مواد الرتب العالية نادرة كلش (الدب 5%، السرعوف 3%)، والجواهر نادرة كلش: 300 قتلة لكل واحد حتى نقيس النسبة
+      const N = 300;
+      for (let i = 0; i < N; i++) { kill("sh:grey_bear"); kill("sh:prayer_mantis"); }
       for (let i = 0; i < 12; i++) kill("sh:shadow_hound");                  // 55% لكل وحدة: 12 قتلة حتى ما يفشل الاختبار بالصدفة
-      const dropped = new Set(stats.items);
-      const dropsOk = ["sh:bear_hide", "sh:mantis_chitin", "sh:shadow_pelt"].every((x) => dropped.has(x));
+      const dropped = new Set(stats.items), cnt = (id) => stats.items.filter((x) => x === id).length;
+      const rate = { hide: cnt("sh:bear_hide") / N, chitin: cnt("sh:mantis_chitin") / N, ebear: cnt("sh:essence_bear") / N, emantis: cnt("sh:essence_mantis") / N };
+      const dropsOk = dropped.has("sh:shadow_pelt") && rate.hide > 0 && rate.hide <= 0.1 && rate.chitin > 0 && rate.chitin <= 0.07 && rate.ebear > 0 && rate.ebear <= 0.09 && rate.emantis > 0 && rate.emantis <= 0.1;
+      console.log(`  ندرة: جلد الدب ${(rate.hide * 100).toFixed(1)}% | قشرة السرعوف ${(rate.chitin * 100).toFixed(1)}% | جوهرة الدب ${(rate.ebear * 100).toFixed(1)}% | جوهرة السرعوف ${(rate.emantis * 100).toFixed(1)}% (من ${N} قتلة)`);
       // 2) المانا: مهارة غالية تنعاد بدون تصفير كولداون لحد ما تخلص المانا
       setState(baseState("star")); spawnZombies(); system_cd_reset();
       const msgs0 = stats.actionBars.length; let blocked = false, used = 0;
@@ -1067,13 +1075,13 @@ export const __sim = {
       advance(420);
       const alch = entities.find((e) => e._valid && e.typeId === "sh:alchemist");
       inventory.fill(undefined);
-      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:spirit_fur", 2);
+      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:essence_hound", 1); inventory[5] = new ItemStack("sh:essence_fox", 1); inventory[6] = new ItemStack("minecraft:potion", 1);
       const ui = (await import("@minecraft/server-ui")).sim;
       ui.nextSelection = 0; ui.formsShown.length = 0;
       if (alch) fire("playerInteractWithEntity", { player, target: alch });
       await new Promise((r) => setTimeout(r, 20)); advance(2);
       const brewed = inventory.some((it) => it && it.typeId === "sh:potion_vitality");
-      const paid = (inventory[3] && inventory[3].amount) === 2;
+      const paid = (inventory[3] && inventory[3].amount) === 3 && !inventory[4] && !inventory[5] && !inventory[6];   // قنينة الماء + الجوهرتين + جلدين
       world.setDynamicProperty("sh_structs", "[]"); inventory.fill(undefined);
       console.log(`  مواد الوحوش ${dropsOk ? "✔" : "✖"} (${[...dropped].filter((x) => x.includes("hide") || x.includes("chitin") || x.includes("pelt") || x.includes("scythe") || x.includes("claw")).join(", ")})`);
       console.log(`  المانا: مهارة غالية انعادت ${used} مرات ثم ${blocked ? "انقفلت (مانا ما تكفي) ✔" : "ما انقفلت ✖"} | المانا بالـHUD ${manaShown ? "✔" : "✖"}`);
@@ -1120,6 +1128,32 @@ export const __sim = {
         if (!achOk) failures.push("الإنجازات ما تشتغل صح");
         player.setDynamicProperty("sh_ach", undefined);
       }
+      // 7) المهمات (v1.37): بالتسلسل، تخلص وحدة تنفتح اللي بعدها، كل وحدة إلها جائزة، والصفحة بالكتاب
+      {
+        const ui3 = (await import("@minecraft/server-ui")).sim;
+        player.setDynamicProperty("sh_mis", undefined); player.setDynamicProperty("sh_ach", undefined); stats.titles = []; stats.messages.length = 0;
+        const s0 = baseState(null); s0.level = 1; s0.rank = 0; s0.training = {}; s0.kills = {}; setState(s0);
+        const misI = () => (JSON.parse(player.getDynamicProperty("sh_mis") || "{}").i || 0);
+        advance(45); const i0 = misI();
+        const s1 = JSON.parse(player.getDynamicProperty("sh")); s1.level = 5; setState(s1); advance(45); const i1 = misI();
+        const scrollGot = inventory.some((it) => it && it.typeId === "sh:xp_scroll_small");
+        const kill = (t) => { const m = mkEntity(t, { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(m); m._valid = false; fire("entityDie", { deadEntity: m, damageSource: { damagingEntity: player } }); };
+        for (let k = 0; k < 4; k++) kill("sh:shadow_hound"); advance(45); const i2a = misI();
+        kill("sh:shadow_hound"); advance(45); const i2 = misI();
+        const shown = (stats.titles || []).some((t) => /Mission complete: §fFirst Hunt/.test(t)) && stats.messages.some((m) => /\[Mission 2\/24\]/.test(m));
+        ui3.formsShown.length = 0; ui3.queue = []; ui3.cancelWhenEmpty = true;
+        await useItem("sh:evolution_book"); await new Promise((r) => setTimeout(r, 20));
+        const bk = ui3.formsShown[0] || { buttons: [] }, mi = bk.buttons.findIndex((b) => b.includes("[Missions]"));
+        ui3.formsShown.length = 0; ui3.queue = [mi];
+        await useItem("sh:evolution_book"); for (let k = 0; k < 4; k++) await new Promise((r) => setTimeout(r, 10));
+        const page = ui3.formsShown.find((f) => f.title === "Missions");
+        const pageOk = !!page && /Mission 3\/24/.test(page.body) && /The Fallen Star/.test(page.body) && /^§2✔ First Steps/.test(page.buttons[0]) && /▶ The Fallen Star/.test(page.buttons[2]) && /locked/.test(page.buttons[5]) && /_x$/.test(page.icons[5]);
+        ui3.queue = []; ui3.cancelWhenEmpty = false;
+        const misOk = i0 === 0 && i1 === 1 && scrollGot && i2a === 1 && i2 === 2 && shown && mi >= 0 && pageOk;
+        console.log(`  المهمات: تبدي من الأولى ${i0 === 0 ? "✔" : "✖"} | ليفل 5 ← تخلص الأولى + جائزة ${i1 === 1 && scrollGot ? "✔" : "✖"} | 4 قتلات ما تكفي ${i2a === 1 ? "✔" : "✖"} والخامسة تخلصها ${i2 === 2 ? "✔" : "✖"} | إعلان ${shown ? "✔" : "✖"} | صفحة الكتاب ${mi >= 0 && pageOk ? "✔" : "✖"}`);
+        if (!misOk) failures.push("المهمات ما تشتغل صح");
+        player.setDynamicProperty("sh_mis", undefined); inventory.fill(undefined);
+      }
       if (!dropsOk) failures.push("مواد الوحوش ما طاحت");
       if (!blocked || used < 2 || !manaShown) failures.push("المانا ما تشتغل صح");
       if (!potOk || !buffsOk) failures.push("الجرعات ما تشتغل");
@@ -1149,28 +1183,45 @@ export const __sim = {
       reset(); advance(40);
       a = at(); dbl({ x: 1, y: 0 }); b = at();
       const dx1 = b.x - a.x, dz1 = b.z - a.z;
-      const side1 = Math.abs(Math.abs(dx1) - 3) < 0.3 && Math.abs(dz1) < 0.5;
+      const side1 = Math.abs(Math.abs(dx1) - 3.5) < 0.3 && Math.abs(dz1) < 0.5;
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();                  // ضمن الكول داون (1.8 ثانية): ما يشتغل
       const blocked = Math.hypot(b.x - a.x, b.z - a.z) < 0.5;
       advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
-      const back = Math.abs(b.z - a.z + 3) < 0.3 && Math.abs(b.x - a.x) < 0.5;     // خلف = عكس اتجاه البصر (+z)
+      const back = Math.abs(b.z - a.z + 3.5) < 0.3 && Math.abs(b.x - a.x) < 0.5;     // خلف = عكس اتجاه البصر (+z)
       advance(60);
       // معايرة: جهاز x موجب عنده = يمين (السرعة تبين يمين لما x موجب)
       reset(); player._vel = { x: -0.2, y: 0, z: 0 }; tap({ x: 1, y: 0 }, 14); player._vel = { x: 0, y: 0, z: 0 }; idle(40);
       reset(); a = at(); dbl({ x: 1, y: 0 }); b = at();
-      const calibrated = b.x - a.x < -2.7;                                // يمين (نسبة للبصر +z) = -x
+      const calibrated = b.x - a.x < -3.2;                                // يمين (نسبة للبصر +z) = -x
       player._mv = { x: 0, y: 0 };
       // الكول داون حسب الرتبة: Trainee ثانيتين (40 تك)، Master 0.9 ثانية (18 تك).
       // الداش الأول يبدأ بالضغطة الثانية ويبقى بعده 12 تك؛ الضغطة السريعة (تك، تك، تك) ضغطتها الثانية بالتك 3 → الفاصل = 12 + انتظار + 3
       const quick = (v) => { tap(v, 1); idle(1); tap(v, 1); idle(10); };
       const cdTry = (rank, wait) => { setState({ ...baseState("star"), rank }); advance(80); reset(); dbl({ x: 1, y: 0 }); advance(wait); reset(); const p0 = at(); quick({ x: 1, y: 0 }); const p1 = at(); return Math.hypot(p1.x - p0.x, p1.z - p0.z) > 2.5; };
-      const tr1 = cdTry(1, 20), tr2 = cdTry(1, 26), ms1 = cdTry(6, 0), ms2 = cdTry(6, 4);
-      const cdOk = !tr1 && tr2 && !ms1 && ms2;
-      console.log(`  الكول داون بالرتبة: Trainee (35 تك ممنوع ${tr1 ? "✖" : "✔"}، 41 تك يشتغل ${tr2 ? "✔" : "✖"}) | Master (15 تك ممنوع ${ms1 ? "✖" : "✔"}، 19 تك يشتغل ${ms2 ? "✔" : "✖"})`);
-      if (!cdOk) failures.push("كول داون الداش حسب الرتبة غلط");
+      const tr1 = cdTry(1, 20), tr2 = cdTry(1, 26), cm1 = cdTry(4, 0);
+      // Legend/Master: شحنتين (داشين ورا بعض، الثالث ممنوع لحد ما ترجع شحنة)
+      const mTry = () => {                                               // 3 داشات سريعة (كل 7 تكات): الأول والثاني يشتغلون، الثالث (قبل 18 تك) ممنوع
+        setState({ ...baseState("star"), rank: 6 }); advance(80);
+        const fast = () => { reset(); const p0 = at(); tap({ x: 1, y: 0 }, 1); idle(1); tap({ x: 1, y: 0 }, 1); idle(4); const p1 = at(); return Math.hypot(p1.x - p0.x, p1.z - p0.z) > 2.5; };
+        const first = fast(), second = fast(), third = fast();
+        advance(40); const after = fast();
+        return { second: first && second, third, after };
+      };
+      const mt = mTry();
+      const cdOk = !tr1 && tr2 && !cm1 && mt.second && !mt.third && mt.after;
+      console.log(`  الكول داون بالرتبة: Trainee (35 تك ممنوع ${tr1 ? "✖" : "✔"}، 41 تك يشتغل ${tr2 ? "✔" : "✖"}) | Commander شحنة وحدة (فوراً ممنوع ${cm1 ? "✖" : "✔"}) | Master شحنتين (الثاني فوراً ${mt.second ? "✔" : "✖"}، الثالث ممنوع ${mt.third ? "✖" : "✔"}، وبعد الكول داون يرجع ${mt.after ? "✔" : "✖"})`);
+      if (!cdOk) failures.push("كول داون الداش حسب الرتبة (أو الشحنتين) غلط");
+      // حصانة لحظية وقت الداش + مؤشر الشحنات باللوحة (فاتح جاهز، غامق يشحن)
+      setState({ ...baseState("star"), rank: 2 }); advance(80); reset();
+      const res0 = (stats.effects || {}).resistance || 0;
+      advance(5); const readyGlyph = (stats.top || "").includes("\uE53F");
+      dbl({ x: 1, y: 0 }); const iframes = ((stats.effects || {}).resistance || 0) > res0;
+      advance(5); const cdGlyph = (stats.top || "").includes("\uE52F") && !(stats.top || "").includes("\uE53F");
+      console.log(`  حصانة وقت الداش ${iframes ? "✔" : "✖"} | مؤشر باللوحة: جاهز ${readyGlyph ? "✔" : "✖"} ← يشحن ${cdGlyph ? "✔" : "✖"}`);
+      if (!iframes || !readyGlyph || !cdGlyph) failures.push("حصانة الداش أو مؤشره باللوحة ما يشتغل");
       // دائم: حتى لو رجعت الرتبة 0 (مثلاً ريسيت) يبقى الداش
       setState({ ...baseState("star"), rank: 0 }); advance(60); reset(); a = at(); dbl({ x: 0, y: -1 }); b = at();
-      const forever = Math.abs(b.z - a.z + 3) < 0.3;
+      const forever = Math.abs(b.z - a.z + 3.5) < 0.3;
       advance(60); reset(); const fa = at(); dbl({ x: 0, y: 1 }); const fb = at();
       const noForward = Math.hypot(fb.x - fa.x, fb.z - fa.z) < 0.3;                     // للأمام ماكو داش
       if (!noForward) failures.push("الداش اشتغل للأمام");

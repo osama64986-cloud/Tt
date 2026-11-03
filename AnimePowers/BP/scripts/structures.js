@@ -712,7 +712,7 @@ const LOOT = {
   lightshrine: [["sh:silver_oath", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
   shrine: [["sh:dark_katana", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.6], ["minecraft:diamond", 1, 2, 0.5]],
   // صندوق قمة برج الهاوية (بعد قتل وحوش الطابق السابع)
-  tower: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 2, 0.85], ["pick:sh:magma_scale|sh:bear_hide|sh:mantis_chitin", 2, 4, 0.7], ["sh:xp_scroll_big", 2, 3, 1.0], ["sh:xp_scroll_small", 3, 5, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.35], ["minecraft:diamond", 2, 4, 0.85], ["minecraft:golden_apple", 1, 2, 0.9], ["minecraft:enchanted_golden_apple", 1, 1, 0.12], ["minecraft:ender_pearl", 2, 4, 0.5], ["minecraft:netherite_scrap", 1, 1, 0.15], ["minecraft:amethyst_shard", 4, 9, 0.7], ["sh:explorer_compass", 1, 1, 0.3], ["sh:monster_book", 1, 1, 0.2]],
+  tower: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 2, 0.85], ["pick:sh:shadow_pelt|sh:sand_carapace|sh:gloom_antler|sh:hollow_lens|sh:spirit_fur", 2, 4, 0.7], ["pick:sh:magma_scale|sh:bear_hide|sh:mantis_chitin", 1, 1, 0.08], ["pick:sh:essence_hound|sh:essence_imp|sh:essence_scorpion|sh:essence_guard|sh:essence_gloom|sh:essence_seer|sh:essence_fox", 1, 1, 0.25], ["sh:xp_scroll_big", 2, 3, 1.0], ["sh:xp_scroll_small", 3, 5, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.35], ["minecraft:diamond", 2, 4, 0.85], ["minecraft:golden_apple", 1, 2, 0.9], ["minecraft:enchanted_golden_apple", 1, 1, 0.12], ["minecraft:ender_pearl", 2, 4, 0.5], ["minecraft:netherite_scrap", 1, 1, 0.15], ["minecraft:amethyst_shard", 4, 9, 0.7], ["sh:explorer_compass", 1, 1, 0.3], ["sh:monster_book", 1, 1, 0.2]],
   altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
 };
 
@@ -909,8 +909,8 @@ function openSeal(dim, s) {
   try {
     dim.spawnParticle("minecraft:large_explosion", c);
     dim.spawnParticle("minecraft:totem_particle", c);
-    dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
-    dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.0 });
+    dim.playSound("random.levelup", c, { volume: 0.9, pitch: 0.8 });
+    dim.playSound("random.totem", c, { volume: 0.5, pitch: 1.0 });
   } catch (e) { /* */ }
   const sword = s.type === "lightshrine" ? "Oath of Light" : "Abyss Katana";
   for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 80 })) {
@@ -1024,7 +1024,7 @@ function towerTick() {
           if (!top) towerSeal(dim, s, k, true);
           try {
             p.sendMessage(top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters. §8The stairs stay sealed until the floor is cleared.`);
-            p.playSound(top ? "mob.wither.spawn" : "mob.evocation_illager.prepare_attack", { volume: top ? 0.6 : 0.8, pitch: top ? 1.2 : 0.8 });
+            p.playSound(top ? "mob.wither.spawn" : "mob.evocation_illager.prepare_attack", { volume: top ? 0.35 : 0.6, pitch: top ? 1.2 : 0.8 });
           } catch (e4) { /* */ }
         } else if (s.ft[k] && s.ft[k].length && !(s.cl & (1 << k))) {
           // وحوش الطابق تبخرت (اللاعب بعد): نرجع اللي ما انقتل لما يرجع للطابق
@@ -1056,8 +1056,8 @@ function towerChest(dim, s) {
   try {
     dim.spawnParticle("minecraft:large_explosion", c);
     dim.spawnParticle("minecraft:totem_particle", c);
-    dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
-    dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.1 });
+    dim.playSound("random.levelup", c, { volume: 0.9, pitch: 0.8 });
+    dim.playSound("random.totem", c, { volume: 0.5, pitch: 1.1 });
   } catch (e3) { /* */ }
   for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { p.sendMessage("§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
 }

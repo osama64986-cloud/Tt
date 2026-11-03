@@ -1,0 +1,552 @@
+{
+ "sh.seal": {
+  "mean_db": -14.5,
+  "peak_db": -1.1,
+  "max_momentary": -12.5,
+  "loudness": -12.5,
+  "target": -20.0,
+  "volume": 0.42,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.subtract": {
+  "mean_db": -10.8,
+  "peak_db": 0.0,
+  "max_momentary": -120.7,
+  "loudness": -9.8,
+  "target": -20.0,
+  "volume": 0.31,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.collapse": {
+  "mean_db": -12.0,
+  "peak_db": -1.1,
+  "max_momentary": -10.3,
+  "loudness": -10.3,
+  "target": -16.0,
+  "volume": 0.52,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.weight": {
+  "mean_db": -12.2,
+  "peak_db": -0.9,
+  "max_momentary": -10.4,
+  "loudness": -10.4,
+  "target": -16.0,
+  "volume": 0.52,
+  "category": "player",
+  "result": -16.1
+ },
+ "sh.silence": {
+  "mean_db": -15.3,
+  "peak_db": -1.6,
+  "max_momentary": -12.7,
+  "loudness": -12.7,
+  "target": -20.0,
+  "volume": 0.43,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.level_up": {
+  "mean_db": -13.8,
+  "peak_db": -0.7,
+  "max_momentary": -10.6,
+  "loudness": -10.6,
+  "target": -19.0,
+  "volume": 0.38,
+  "category": "ui",
+  "result": -19.0
+ },
+ "sh.rank_up": {
+  "mean_db": -15.0,
+  "peak_db": -0.9,
+  "max_momentary": -11.8,
+  "loudness": -11.8,
+  "target": -19.0,
+  "volume": 0.44,
+  "category": "ui",
+  "result": -18.9
+ },
+ "sh.talk": {
+  "mean_db": -13.2,
+  "peak_db": -0.9,
+  "max_momentary": -12.1,
+  "loudness": -12.1,
+  "target": -23.0,
+  "volume": 0.29,
+  "category": "ui",
+  "result": -22.9
+ },
+ "sh.mission": {
+  "mean_db": -13.7,
+  "peak_db": -0.8,
+  "max_momentary": -10.8,
+  "loudness": -10.8,
+  "target": -23.0,
+  "volume": 0.25,
+  "category": "ui",
+  "result": -22.8
+ },
+ "sh.select": {
+  "mean_db": -13.6,
+  "peak_db": -1.0,
+  "max_momentary": -11.5,
+  "loudness": -11.5,
+  "target": -23.0,
+  "volume": 0.27,
+  "category": "ui",
+  "result": -22.9
+ },
+ "sh.tick": {
+  "mean_db": -17.9,
+  "peak_db": -1.7,
+  "max_momentary": -120.7,
+  "loudness": -16.9,
+  "target": -23.0,
+  "volume": 0.5,
+  "category": "ui",
+  "result": -22.9
+ },
+ "sh.dagger_hit": {
+  "mean_db": -16.6,
+  "peak_db": -1.2,
+  "max_momentary": -120.7,
+  "loudness": -15.6,
+  "target": -20.0,
+  "volume": 0.6,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.cleaver_hit": {
+  "mean_db": -13.0,
+  "peak_db": -0.9,
+  "max_momentary": -12.5,
+  "loudness": -12.5,
+  "target": -20.0,
+  "volume": 0.42,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.transfer": {
+  "mean_db": -12.9,
+  "peak_db": -1.0,
+  "max_momentary": -11.1,
+  "loudness": -11.1,
+  "target": -20.0,
+  "volume": 0.36,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.divide": {
+  "mean_db": -17.6,
+  "peak_db": -0.9,
+  "max_momentary": -15.1,
+  "loudness": -15.1,
+  "target": -20.0,
+  "volume": 0.57,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.zero": {
+  "mean_db": -11.4,
+  "peak_db": -1.0,
+  "max_momentary": -9.5,
+  "loudness": -9.5,
+  "target": -16.0,
+  "volume": 0.47,
+  "category": "player",
+  "result": -16.1
+ },
+ "sh.reflect": {
+  "mean_db": -16.7,
+  "peak_db": -0.7,
+  "max_momentary": -12.9,
+  "loudness": -12.9,
+  "target": -20.0,
+  "volume": 0.44,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.boundary": {
+  "mean_db": -11.0,
+  "peak_db": -0.9,
+  "max_momentary": -10.0,
+  "loudness": -10.0,
+  "target": -16.0,
+  "volume": 0.5,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.absolute": {
+  "mean_db": -14.2,
+  "peak_db": -0.9,
+  "max_momentary": -12.2,
+  "loudness": -12.2,
+  "target": -16.0,
+  "volume": 0.65,
+  "category": "player",
+  "result": -15.9
+ },
+ "sh.pull": {
+  "mean_db": -10.7,
+  "peak_db": -1.1,
+  "max_momentary": -10.2,
+  "loudness": -10.2,
+  "target": -20.0,
+  "volume": 0.32,
+  "category": "player",
+  "result": -20.1
+ },
+ "sh.push": {
+  "mean_db": -13.8,
+  "peak_db": -1.0,
+  "max_momentary": -12.5,
+  "loudness": -12.5,
+  "target": -20.0,
+  "volume": 0.42,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.swap": {
+  "mean_db": -16.5,
+  "peak_db": -1.0,
+  "max_momentary": -14.1,
+  "loudness": -14.1,
+  "target": -23.0,
+  "volume": 0.36,
+  "category": "player",
+  "result": -23.0
+ },
+ "sh.fold": {
+  "mean_db": -13.2,
+  "peak_db": -0.6,
+  "max_momentary": -10.2,
+  "loudness": -10.2,
+  "target": -20.0,
+  "volume": 0.32,
+  "category": "player",
+  "result": -20.1
+ },
+ "sh.spacecollapse": {
+  "mean_db": -14.7,
+  "peak_db": -1.1,
+  "max_momentary": -15.2,
+  "loudness": -15.2,
+  "target": -16.0,
+  "volume": 0.91,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.echostrike": {
+  "mean_db": -15.3,
+  "peak_db": -0.5,
+  "max_momentary": -12.2,
+  "loudness": -12.2,
+  "target": -20.0,
+  "volume": 0.41,
+  "category": "player",
+  "result": -19.9
+ },
+ "sh.echoseal": {
+  "mean_db": -15.6,
+  "peak_db": -0.8,
+  "max_momentary": -11.7,
+  "loudness": -11.7,
+  "target": -20.0,
+  "volume": 0.38,
+  "category": "player",
+  "result": -20.1
+ },
+ "sh.sonar": {
+  "mean_db": -16.8,
+  "peak_db": -0.9,
+  "max_momentary": -11.9,
+  "loudness": -11.9,
+  "target": -20.0,
+  "volume": 0.39,
+  "category": "player",
+  "result": -20.1
+ },
+ "sh.echowave": {
+  "mean_db": -12.7,
+  "peak_db": -0.9,
+  "max_momentary": -9.8,
+  "loudness": -9.8,
+  "target": -16.0,
+  "volume": 0.49,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.chorus": {
+  "mean_db": -19.0,
+  "peak_db": -0.8,
+  "max_momentary": -14.6,
+  "loudness": -14.6,
+  "target": -20.0,
+  "volume": 0.54,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.imp_windup": {
+  "mean_db": -9.9,
+  "peak_db": -0.5,
+  "max_momentary": -9.7,
+  "loudness": -9.7,
+  "target": -18.0,
+  "volume": 0.38,
+  "category": "hostile",
+  "result": -18.1
+ },
+ "sh.imp_pounce": {
+  "mean_db": -11.7,
+  "peak_db": -0.5,
+  "max_momentary": -10.5,
+  "loudness": -10.5,
+  "target": -18.0,
+  "volume": 0.42,
+  "category": "hostile",
+  "result": -18.0
+ },
+ "sh.guard_windup": {
+  "mean_db": -9.9,
+  "peak_db": -0.9,
+  "max_momentary": -9.8,
+  "loudness": -9.8,
+  "target": -18.0,
+  "volume": 0.39,
+  "category": "hostile",
+  "result": -18.0
+ },
+ "sh.guard_slam": {
+  "mean_db": -13.5,
+  "peak_db": -1.0,
+  "max_momentary": -11.7,
+  "loudness": -11.7,
+  "target": -18.0,
+  "volume": 0.48,
+  "category": "hostile",
+  "result": -18.1
+ },
+ "sh.meteor_fall": {
+  "mean_db": -14.6,
+  "peak_db": -0.6,
+  "max_momentary": -10.9,
+  "loudness": -10.9,
+  "target": -16.0,
+  "volume": 0.56,
+  "category": "player",
+  "result": -15.9
+ },
+ "sh.meteor_hit": {
+  "mean_db": -15.3,
+  "peak_db": -1.1,
+  "max_momentary": -13.2,
+  "loudness": -13.2,
+  "target": -16.0,
+  "volume": 0.72,
+  "category": "player",
+  "result": -16.1
+ },
+ "sh.gravwell": {
+  "mean_db": -11.3,
+  "peak_db": -1.0,
+  "max_momentary": -12.1,
+  "loudness": -12.1,
+  "target": -16.0,
+  "volume": 0.64,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.orbit": {
+  "mean_db": -22.7,
+  "peak_db": -7.4,
+  "max_momentary": -18.3,
+  "loudness": -18.3,
+  "target": -23.0,
+  "volume": 0.58,
+  "category": "player",
+  "result": -23.0
+ },
+ "sh.const_mark": {
+  "mean_db": -20.5,
+  "peak_db": -6.2,
+  "max_momentary": -120.7,
+  "loudness": -19.5,
+  "target": -23.0,
+  "volume": 0.67,
+  "category": "player",
+  "result": -23.0
+ },
+ "sh.const_zap": {
+  "mean_db": -16.3,
+  "peak_db": -0.8,
+  "max_momentary": -12.9,
+  "loudness": -12.9,
+  "target": -20.0,
+  "volume": 0.44,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.stardash": {
+  "mean_db": -13.7,
+  "peak_db": -0.4,
+  "max_momentary": -120.7,
+  "loudness": -12.7,
+  "target": -20.0,
+  "volume": 0.43,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.blackhole": {
+  "mean_db": -11.4,
+  "peak_db": -0.6,
+  "max_momentary": -13.3,
+  "loudness": -13.3,
+  "target": -16.0,
+  "volume": 0.73,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.blackhole_end": {
+  "mean_db": -15.4,
+  "peak_db": -1.1,
+  "max_momentary": -12.4,
+  "loudness": -12.4,
+  "target": -16.0,
+  "volume": 0.66,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.supernova_charge": {
+  "mean_db": -12.4,
+  "peak_db": -0.5,
+  "max_momentary": -9.5,
+  "loudness": -9.5,
+  "target": -16.0,
+  "volume": 0.47,
+  "category": "player",
+  "result": -16.1
+ },
+ "sh.supernova_boom": {
+  "mean_db": -16.5,
+  "peak_db": -0.8,
+  "max_momentary": -11.8,
+  "loudness": -11.8,
+  "target": -16.0,
+  "volume": 0.62,
+  "category": "player",
+  "result": -16.0
+ },
+ "sh.ready": {
+  "mean_db": -22.9,
+  "peak_db": -8.3,
+  "max_momentary": -20.5,
+  "loudness": -20.5,
+  "target": -23.0,
+  "volume": 0.75,
+  "category": "ui",
+  "result": -23.0
+ },
+ "sh.compass": {
+  "mean_db": -20.3,
+  "peak_db": -7.0,
+  "max_momentary": -19.0,
+  "loudness": -19.0,
+  "target": -23.0,
+  "volume": 0.63,
+  "category": "ui",
+  "result": -23.0
+ },
+ "sh.kat_step": {
+  "mean_db": -15.0,
+  "peak_db": -0.6,
+  "max_momentary": -120.7,
+  "loudness": -14.0,
+  "target": -20.0,
+  "volume": 0.5,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.kat_wave": {
+  "mean_db": -14.3,
+  "peak_db": -0.6,
+  "max_momentary": -11.2,
+  "loudness": -11.2,
+  "target": -20.0,
+  "volume": 0.36,
+  "category": "player",
+  "result": -20.1
+ },
+ "sh.kat_storm": {
+  "mean_db": -13.6,
+  "peak_db": -0.1,
+  "max_momentary": -10.4,
+  "loudness": -10.4,
+  "target": -16.0,
+  "volume": 0.52,
+  "category": "player",
+  "result": -16.1
+ },
+ "sh.kat_exec": {
+  "mean_db": -15.4,
+  "peak_db": -0.8,
+  "max_momentary": -10.8,
+  "loudness": -10.8,
+  "target": -20.0,
+  "volume": 0.35,
+  "category": "player",
+  "result": -19.9
+ },
+ "sh.kat_levelup": {
+  "mean_db": -19.2,
+  "peak_db": -5.9,
+  "max_momentary": -16.1,
+  "loudness": -16.1,
+  "target": -19.0,
+  "volume": 0.72,
+  "category": "ui",
+  "result": -19.0
+ },
+ "sh.trait_rock": {
+  "mean_db": -13.7,
+  "peak_db": -0.9,
+  "max_momentary": -13.6,
+  "loudness": -13.6,
+  "target": -20.0,
+  "volume": 0.48,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.trait_fangs": {
+  "mean_db": -16.7,
+  "peak_db": -4.4,
+  "max_momentary": -16.3,
+  "loudness": -16.3,
+  "target": -20.0,
+  "volume": 0.65,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.trait_wings": {
+  "mean_db": -15.9,
+  "peak_db": -1.2,
+  "max_momentary": -11.6,
+  "loudness": -11.6,
+  "target": -20.0,
+  "volume": 0.38,
+  "category": "player",
+  "result": -20.0
+ },
+ "sh.trait_eye": {
+  "mean_db": -22.9,
+  "peak_db": -8.6,
+  "max_momentary": -18.8,
+  "loudness": -18.8,
+  "target": -23.0,
+  "volume": 0.62,
+  "category": "player",
+  "result": -23.0
+ }
+}

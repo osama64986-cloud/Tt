@@ -33,6 +33,22 @@ MATERIALS = [
     ("mantis_scythe", "Mantis Scythe", "§a", "Prayer Mantis", "scythe", ((210, 232, 180), (246, 255, 230), (110, 150, 90), (44, 32, 58))),
 ]
 
+# ───────────────────────── الجواهر (v1.37) ─────────────────────────
+# جوهرة لكل وحش: كرة صغيرة بيها شظية مثلثة متعرجة، بلون الوحش. نادرة كلش (2.5-5%)، والخيميائي يطبخ بيها الجرعات ويا قنينة ماء.
+# (المعرف، الاسم، اللون، الوحش، لون الجوهرة)
+ESSENCES = [
+    ("essence_hound", "Shadow Essence", "§5", "Shadow Hound", (150, 80, 225)),
+    ("essence_imp", "Ember Essence", "§6", "Ember Imp", (255, 128, 36)),
+    ("essence_scorpion", "Venom Essence", "§e", "Sand Scorpion", (206, 222, 60)),
+    ("essence_guard", "Rust Essence", "§3", "Rust Guard", (60, 176, 164)),
+    ("essence_gloom", "Gloom Essence", "§b", "Gloomhorn", (96, 206, 255)),
+    ("essence_seer", "Seer Essence", "§6", "Hollow Seer", (255, 188, 56)),
+    ("essence_fox", "Foxfire Essence", "§d", "Veilfox", (255, 116, 206)),
+    ("essence_mammoth", "Magma Essence", "§c", "Magmamoth", (236, 52, 30)),
+    ("essence_bear", "Wild Essence", "§7", "Grey Bear", (196, 198, 212)),
+    ("essence_mantis", "Verdant Essence", "§a", "Prayer Mantis", (84, 226, 92)),
+]
+
 # ───────────────────────── الجرعات ─────────────────────────
 POTIONS = [
     ("potion_vitality", "Potion of Vitality", "§c", (220, 40, 60), "Heals half your health at once and regenerates for 5 s."),
@@ -214,6 +230,23 @@ def icon_material(shape, pal):
     return P.outline()
 
 
+def icon_essence(color):
+    """جوهرة صغيرة (حتى تبين صغيرة بالإيد): كرة بلمعة + شظية مثلثة متعرجة طالعة منها، كلها بلون الوحش"""
+    P = Px()
+    light, dark = mix(color, (255, 255, 255), 0.55), mix(color, (0, 0, 0), 0.45)
+    # الشظية: مثلث رأسه فوق-يمين، قاعدته منشار (متعرجة)
+    for y in range(3, 9):
+        w = (y - 3) * 0.55
+        for x in range(16):
+            if abs(x + 0.5 - 10.5) <= w + 0.3 and not (y == 8 and x % 2 == 0):
+                P.put(x, y, light if x + 0.5 < 10.5 else color)
+    P.put(10, 2, (255, 255, 255))
+    # الكرة
+    P.fill(lambda x, y: (x - 7.5) ** 2 + (y - 10.5) ** 2 <= 3.4 ** 2,
+           lambda x, y: (255, 255, 255) if (x, y) == (6, 9) else light if (x - 6.5) ** 2 + (y - 9.5) ** 2 < 2 else (dark if (x - 8.5) ** 2 + (y - 11.5) ** 2 < 2.5 else color))
+    return P.outline()
+
+
 def icon_potion(color):
     P = Px()
     glass = (210, 226, 236)
@@ -390,6 +423,11 @@ def main():
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
         td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
         wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64}))
+    for ident, name, col, mob, color in ESSENCES:
+        img = icon_essence(color).image()
+        img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
+        td[f"sh_{ident}"] = {"textures": f"textures/items/sh_{ident}"}
+        wjson(os.path.join(BP, "items", f"sh_{ident}.json"), item_json(f"sh:{ident}", f"{col}{name}", f"sh_{ident}", {"minecraft:max_stack_size": 64, "minecraft:glint": True}))
     for ident, name, col, color, desc in POTIONS:
         img = icon_potion(color).image()
         img.save(os.path.join(tex_dir, f"sh_{ident}.png")); sheet.append(img)
@@ -435,13 +473,14 @@ def main():
     # بيانات للسكربت (نفس الأسماء والأوصاف بالضبط)
     gear = {
         "materials": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _s, _p in MATERIALS},
+        "essences": {f"sh:{i}": {"name": f"{c}{n}", "mob": mob} for i, n, c, mob, _col in ESSENCES},
         "potions": {f"sh:{i}": {"name": f"{c}{n}", "desc": d} for i, n, c, _col, d in POTIONS},
         "sets": {k: {"name": f"{c}{sn}", "pieces": [f"sh:{k}_{pc[0]}" for pc in PIECES], "mats": [ma, mb], "bonus": SET_BONUS[k]} for k, sn, c, (ma, mb), *_r in ARMOR_SETS},
     }
     with open(os.path.join(BP, "scripts", "gear.js"), "w", encoding="utf-8") as f:
         f.write("// يتولد تلقائياً من tools/gen_gear.py — لا تعدله يدوياً\n")
         f.write("export const GEAR = " + json.dumps(gear, ensure_ascii=False, indent=1) + ";\n")
-    print("gear ok:", len(MATERIALS), "materials,", len(POTIONS), "potions,", len(ARMOR_SETS) * 4, "armor pieces")
+    print("gear ok:", len(MATERIALS), "materials,", len(ESSENCES), "essences,", len(POTIONS), "potions,", len(ARMOR_SETS) * 4, "armor pieces")
     if prev:
         os.makedirs(prev, exist_ok=True)
         cols = 6

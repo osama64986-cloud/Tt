@@ -121,6 +121,11 @@ try:
             path = snd["name"] if isinstance(snd, dict) else snd
             if not os.path.exists(os.path.join(RP, path + ".ogg")):
                 err(f"ملف الصوت ناقص لـ {name}: {path}.ogg")
+            # v1.37: كل صوت للمود علوه مضبوط (tools/tune_sounds.py) وإله فئة يتحكم بيها اللاعب من الإعدادات
+            if name.startswith("sh.") and (not isinstance(snd, dict) or not 0.1 <= snd.get("volume", 1.0) <= 0.95):
+                err(f"صوت {name}: العلو مو مضبوط (شغّل tools/tune_sounds.py)")
+        if name.startswith("sh.") and d.get("category") not in ("ui", "player", "hostile"):
+            err(f"صوت {name}: الفئة لازم ui أو player أو hostile")
 except Exception as e:  # noqa: BLE001
     err(f"فحص الأصوات فشل: {e}")
 

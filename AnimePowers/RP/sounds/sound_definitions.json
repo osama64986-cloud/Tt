@@ -8,7 +8,7 @@
       "sounds": [
         {
           "name": "sounds/sh/seal",
-          "volume": 1.0
+          "volume": 0.42
         }
       ]
     },
@@ -19,7 +19,7 @@
       "sounds": [
         {
           "name": "sounds/sh/subtract",
-          "volume": 1.0
+          "volume": 0.31
         }
       ]
     },
@@ -30,7 +30,7 @@
       "sounds": [
         {
           "name": "sounds/sh/collapse",
-          "volume": 1.0
+          "volume": 0.52
         }
       ]
     },
@@ -41,7 +41,7 @@
       "sounds": [
         {
           "name": "sounds/sh/weight",
-          "volume": 1.0
+          "volume": 0.52
         }
       ]
     },
@@ -52,73 +52,73 @@
       "sounds": [
         {
           "name": "sounds/sh/silence",
-          "volume": 1.0
+          "volume": 0.43
         }
       ]
     },
     "sh.level_up": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 0,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/level_up",
-          "volume": 1.0
+          "volume": 0.38
         }
       ]
     },
     "sh.rank_up": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 0,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/rank_up",
-          "volume": 1.0
+          "volume": 0.44
         }
       ]
     },
     "sh.talk": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 0,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/talk",
-          "volume": 1.0
+          "volume": 0.29
         }
       ]
     },
     "sh.mission": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 0,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/mission",
-          "volume": 1.0
+          "volume": 0.25
         }
       ]
     },
     "sh.select": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 0,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/select",
-          "volume": 1.0
+          "volume": 0.27
         }
       ]
     },
     "sh.tick": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 3,
       "max_distance": 24,
       "sounds": [
         {
           "name": "sounds/sh/tick",
-          "volume": 1.0
+          "volume": 0.5
         }
       ]
     },
@@ -129,7 +129,7 @@
       "sounds": [
         {
           "name": "sounds/sh/dagger_hit",
-          "volume": 1.0
+          "volume": 0.6
         }
       ]
     },
@@ -140,7 +140,7 @@
       "sounds": [
         {
           "name": "sounds/sh/cleaver_hit",
-          "volume": 1.0
+          "volume": 0.42
         }
       ]
     },
@@ -151,7 +151,7 @@
       "sounds": [
         {
           "name": "sounds/sh/transfer",
-          "volume": 1.0
+          "volume": 0.36
         }
       ]
     },
@@ -162,7 +162,7 @@
       "sounds": [
         {
           "name": "sounds/sh/divide",
-          "volume": 1.0
+          "volume": 0.57
         }
       ]
     },
@@ -173,7 +173,7 @@
       "sounds": [
         {
           "name": "sounds/sh/zero",
-          "volume": 1.0
+          "volume": 0.47
         }
       ]
     },
@@ -184,7 +184,7 @@
       "sounds": [
         {
           "name": "sounds/sh/reflect",
-          "volume": 1.0
+          "volume": 0.44
         }
       ]
     },
@@ -195,7 +195,7 @@
       "sounds": [
         {
           "name": "sounds/sh/boundary",
-          "volume": 1.0
+          "volume": 0.5
         }
       ]
     },
@@ -206,7 +206,7 @@
       "sounds": [
         {
           "name": "sounds/sh/absolute",
-          "volume": 1.0
+          "volume": 0.65
         }
       ]
     },
@@ -217,7 +217,7 @@
       "sounds": [
         {
           "name": "sounds/sh/pull",
-          "volume": 1.0
+          "volume": 0.32
         }
       ]
     },
@@ -228,7 +228,7 @@
       "sounds": [
         {
           "name": "sounds/sh/push",
-          "volume": 1.0
+          "volume": 0.42
         }
       ]
     },
@@ -239,7 +239,7 @@
       "sounds": [
         {
           "name": "sounds/sh/swap",
-          "volume": 1.0
+          "volume": 0.36
         }
       ]
     },
@@ -250,7 +250,7 @@
       "sounds": [
         {
           "name": "sounds/sh/fold",
-          "volume": 1.0
+          "volume": 0.32
         }
       ]
     },
@@ -261,7 +261,7 @@
       "sounds": [
         {
           "name": "sounds/sh/spacecollapse",
-          "volume": 1.0
+          "volume": 0.91
         }
       ]
     },
@@ -272,7 +272,7 @@
       "sounds": [
         {
           "name": "sounds/sh/echostrike",
-          "volume": 1.0
+          "volume": 0.41
         }
       ]
     },
@@ -283,7 +283,7 @@
       "sounds": [
         {
           "name": "sounds/sh/echoseal",
-          "volume": 1.0
+          "volume": 0.38
         }
       ]
     },
@@ -294,7 +294,7 @@
       "sounds": [
         {
           "name": "sounds/sh/sonar",
-          "volume": 1.0
+          "volume": 0.39
         }
       ]
     },
@@ -305,7 +305,7 @@
       "sounds": [
         {
           "name": "sounds/sh/echowave",
-          "volume": 1.0
+          "volume": 0.49
         }
       ]
     },
@@ -316,7 +316,7 @@
       "sounds": [
         {
           "name": "sounds/sh/chorus",
-          "volume": 1.0
+          "volume": 0.54
         }
       ]
     },
@@ -327,7 +327,7 @@
       "sounds": [
         {
           "name": "sounds/sh/imp_windup",
-          "volume": 1.0
+          "volume": 0.38
         }
       ]
     },
@@ -338,7 +338,7 @@
       "sounds": [
         {
           "name": "sounds/sh/imp_pounce",
-          "volume": 1.0
+          "volume": 0.42
         }
       ]
     },
@@ -349,7 +349,7 @@
       "sounds": [
         {
           "name": "sounds/sh/guard_windup",
-          "volume": 1.0
+          "volume": 0.39
         }
       ]
     },
@@ -360,7 +360,7 @@
       "sounds": [
         {
           "name": "sounds/sh/guard_slam",
-          "volume": 1.0
+          "volume": 0.48
         }
       ]
     },
@@ -371,7 +371,7 @@
       "sounds": [
         {
           "name": "sounds/sh/meteor_fall",
-          "volume": 1.0
+          "volume": 0.56
         }
       ]
     },
@@ -382,7 +382,7 @@
       "sounds": [
         {
           "name": "sounds/sh/meteor_hit",
-          "volume": 1.0
+          "volume": 0.72
         }
       ]
     },
@@ -393,7 +393,7 @@
       "sounds": [
         {
           "name": "sounds/sh/gravwell",
-          "volume": 1.0
+          "volume": 0.64
         }
       ]
     },
@@ -404,7 +404,7 @@
       "sounds": [
         {
           "name": "sounds/sh/orbit",
-          "volume": 1.0
+          "volume": 0.58
         }
       ]
     },
@@ -415,7 +415,7 @@
       "sounds": [
         {
           "name": "sounds/sh/const_mark",
-          "volume": 1.0
+          "volume": 0.67
         }
       ]
     },
@@ -426,7 +426,7 @@
       "sounds": [
         {
           "name": "sounds/sh/const_zap",
-          "volume": 1.0
+          "volume": 0.44
         }
       ]
     },
@@ -437,7 +437,7 @@
       "sounds": [
         {
           "name": "sounds/sh/stardash",
-          "volume": 1.0
+          "volume": 0.43
         }
       ]
     },
@@ -448,7 +448,7 @@
       "sounds": [
         {
           "name": "sounds/sh/blackhole",
-          "volume": 1.0
+          "volume": 0.73
         }
       ]
     },
@@ -459,7 +459,7 @@
       "sounds": [
         {
           "name": "sounds/sh/blackhole_end",
-          "volume": 1.0
+          "volume": 0.66
         }
       ]
     },
@@ -470,7 +470,7 @@
       "sounds": [
         {
           "name": "sounds/sh/supernova_charge",
-          "volume": 1.0
+          "volume": 0.47
         }
       ]
     },
@@ -481,29 +481,29 @@
       "sounds": [
         {
           "name": "sounds/sh/supernova_boom",
-          "volume": 1.0
+          "volume": 0.62
         }
       ]
     },
     "sh.ready": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 4,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/ready",
-          "volume": 1.0
+          "volume": 0.75
         }
       ]
     },
     "sh.compass": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 4,
       "max_distance": 16,
       "sounds": [
         {
           "name": "sounds/sh/compass",
-          "volume": 1.0
+          "volume": 0.63
         }
       ]
     },
@@ -514,7 +514,7 @@
       "sounds": [
         {
           "name": "sounds/sh/kat_step",
-          "volume": 1.0
+          "volume": 0.5
         }
       ]
     },
@@ -525,7 +525,7 @@
       "sounds": [
         {
           "name": "sounds/sh/kat_wave",
-          "volume": 1.0
+          "volume": 0.36
         }
       ]
     },
@@ -536,7 +536,7 @@
       "sounds": [
         {
           "name": "sounds/sh/kat_storm",
-          "volume": 1.0
+          "volume": 0.52
         }
       ]
     },
@@ -547,18 +547,18 @@
       "sounds": [
         {
           "name": "sounds/sh/kat_exec",
-          "volume": 1.0
+          "volume": 0.35
         }
       ]
     },
     "sh.kat_levelup": {
-      "category": "player",
+      "category": "ui",
       "min_distance": 4,
       "max_distance": 24,
       "sounds": [
         {
           "name": "sounds/sh/kat_levelup",
-          "volume": 1.0
+          "volume": 0.72
         }
       ]
     },
@@ -569,7 +569,7 @@
       "sounds": [
         {
           "name": "sounds/sh/trait_rock",
-          "volume": 1.0
+          "volume": 0.48
         }
       ]
     },
@@ -580,7 +580,7 @@
       "sounds": [
         {
           "name": "sounds/sh/trait_fangs",
-          "volume": 1.0
+          "volume": 0.65
         }
       ]
     },
@@ -591,7 +591,7 @@
       "sounds": [
         {
           "name": "sounds/sh/trait_wings",
-          "volume": 1.0
+          "volume": 0.38
         }
       ]
     },
@@ -602,7 +602,7 @@
       "sounds": [
         {
           "name": "sounds/sh/trait_eye",
-          "volume": 1.0
+          "volume": 0.62
         }
       ]
     }

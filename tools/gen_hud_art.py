@@ -21,6 +21,7 @@ G = {
     "pw_full": 10, "pw_empty": 11, "boss": 12, "hp_full": 13, "hp_empty": 14,
     "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "lens": 53, "rift_ring": 54, "sep": 55,
     "mana_full": 56, "mana_empty": 57, "mana": 58, "buff_might": 59, "buff_bulwark": 60, "buff_focus": 61, "buff_swift": 62,
+    "dash": 63, "dash_cd": 47,
 }
 POWER_ORDER = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"]
 
@@ -296,6 +297,19 @@ def mana_icon():
     return c.outline()
 
 
+def dash_icon(on):
+    """شحنة الداش: سهمين » (فاتح ذهبي-أبيض = جاهز، رمادي غامق = يشحن)"""
+    c = Cell()
+    hi, lo = ((255, 246, 200), (240, 190, 70)) if on else ((96, 96, 110), (60, 60, 72))
+    for ox in (1, 7):
+        for k in range(6):
+            for t in range(3):
+                x = ox + k + t
+                c.put(x, 2 + k, hi if t == 0 else lo)
+                c.put(x, 13 - k, hi if t == 0 else lo)
+    return c.outline()
+
+
 def bottle(col):
     """قنينة جرعة صغيرة (أيقونة التقوية الشغالة)"""
     c = Cell()
@@ -329,6 +343,8 @@ def build_sheet():
     cells[G["mana"]] = mana_icon()
     for k, col in (("might", (255, 140, 30)), ("bulwark", (140, 160, 184)), ("focus", (170, 80, 255)), ("swift", (90, 230, 120))):
         cells[G["buff_" + k]] = bottle(col)
+    cells[G["dash"]] = dash_icon(True)
+    cells[G["dash_cd"]] = dash_icon(False)
     for r in range(7):
         cells[G["rank0"] + r] = crest(r)
     for i, k in enumerate(POWER_ORDER):
