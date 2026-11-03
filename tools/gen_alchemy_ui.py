@@ -1,6 +1,6 @@
 """صور شاشة الخيميائي (v1.37.1، تشبه شاشة طاولة السحر): القدر يسار الشاشة (بمكان الكتاب)، صور الخانات الفارغة
 (مثل صورة اللازورد الباهتة بخانة طاولة السحر)، وأيقونة كتاب الوصفات. كلها بكسل آرت مرسوم باليد بنفس دقة أيتمات ماينكرافت (16 بكسل).
-المخرجات (RP/textures/ui): sh_alc_cauldron.png (56×48)، sh_alc_ghost_water.png، sh_alc_ghost_flame.png، sh_alc_book.png (16×16)
+المخرجات (RP/textures/ui): sh_alc_cauldron.png (48×44)، sh_alc_ghost_water.png، sh_alc_ghost_flame.png، sh_alc_book.png (16×16)
 وصورة لوحة الخيميائي (للكتاب والصفحة) لما تعطيه مسار: python3 tools/gen_alchemy_ui.py [مجلد]"""
 import json
 import os
@@ -83,11 +83,12 @@ def alchemist_render(size=300):
 
 
 def cauldron_art():
-    """القدر (×2) وفوكه ثلاث شعلات روح طالعة منه: بمكان كتاب طاولة السحر"""
-    im = Image.new("RGBA", (56, 48), (0, 0, 0, 0))
-    im.alpha_composite(cauldron(2), (8, 16))
-    for x, y, c in ((1, 4, 0), (20, 0, 4), (39, 4, 1)):
-        im.alpha_composite(GG.icon_soul_flame(GG.SOUL_FLAMES[c][4]).image(1), (x, y))
+    """القدر (×2) وفوكه ثلاث أرواح صغيرة طالعة منه (بألوان مختلفة): بمكان كتاب طاولة السحر (48×44)"""
+    im = Image.new("RGBA", (48, 44), (0, 0, 0, 0))
+    im.alpha_composite(cauldron(2), (4, 12))
+    for x, y, c in ((-1, 2, 0), (16, -1, 4), (31, 2, 1)):
+        fl = GG.icon_soul_flame(GG.SOUL_FLAMES[c][4]).image(1)
+        im.alpha_composite(fl, (max(0, x), y) if x >= 0 else (0, y), (max(0, -x), 0) if x < 0 else (0, 0))
     return im
 
 
@@ -138,7 +139,7 @@ def icon_book():
 def main():
     os.makedirs(UI, exist_ok=True)
     cauldron_art().save(os.path.join(UI, "sh_alc_cauldron.png"))
-    ghost(GG.icon_potion((70, 120, 230)).image(1)).save(os.path.join(UI, "sh_alc_ghost_water.png"))
+    ghost(GG.icon_potion_kind("water", GG.WATER_COLOR).image(1)).save(os.path.join(UI, "sh_alc_ghost_water.png"))
     ghost(GG.icon_soul_flame(GG.SOUL_FLAMES[0][4]).image(1)).save(os.path.join(UI, "sh_alc_ghost_flame.png"))
     icon_book().save(os.path.join(UI, "sh_alc_book.png"))
     for old in ("sh_alchemy_banner.png", "sh_alc_takeout.png"):                 # صور التصميم القديم (v1.37.1 قبل التعديل)

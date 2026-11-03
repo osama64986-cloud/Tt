@@ -42,7 +42,7 @@
 
   "sh_alc_form": {
     "type": "panel",
-    "size": [250, 146],
+    "size": [200, 140],
     "anchor_from": "center",
     "anchor_to": "center",
     "layer": 2,
@@ -62,7 +62,7 @@
           "text": "Alchemist",
           "color": [0.3, 0.3, 0.3],
           "shadow": false,
-          "offset": [8, 7],
+          "offset": [8, 6],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
           "layer": 3
@@ -70,98 +70,122 @@
       },
       { "close@common.close_button": {} },
       {
-        "sh_content": {
-          "type": "panel",
-          "size": [234, 119],
-          "offset": [8, 20],
+        "sh_book": {
+          "type": "grid",
+          "collection_name": "form_buttons",
+          "grid_dimensions": [6, 1],
+          "size": [96, 16],
+          "offset": [76, 3],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 4,
+          "controls": [
+            { "sh_book_btn@server_form.sh_alc_iconbtn": { "grid_position": [5, 0], "$sh_icon": "textures/ui/sh_alc_book" } }
+          ]
+        }
+      },
+      {
+        "sh_art": {
+          "type": "image",
+          "texture": "textures/ui/sh_alc_cauldron",
+          "size": [48, 44],
+          "offset": [9, 20],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 3
+        }
+      },
+      {
+        "sh_slots": {
+          "type": "grid",
+          "collection_name": "form_buttons",
+          "grid_dimensions": [5, 1],
+          "size": [110, 18],
+          "offset": [-54, 68],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 3,
+          "controls": [
+            { "sh_water@server_form.sh_alc_cell": { "grid_position": [3, 0], "$sh_has_ghost": true, "$sh_ghost": "textures/ui/sh_alc_ghost_water" } },
+            { "sh_flame@server_form.sh_alc_cell": { "grid_position": [4, 0], "$sh_has_ghost": true, "$sh_ghost": "textures/ui/sh_alc_ghost_flame" } }
+          ]
+        }
+      },
+      {
+        "sh_rows_indent": {
+          "type": "image",
+          "texture": "textures/ui/cell_image",
+          "size": [126, 68],
+          "offset": [66, 19],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
           "layer": 2,
           "controls": [
             {
-              "sh_art": {
-                "type": "image",
-                "texture": "textures/ui/sh_alc_cauldron",
-                "size": [56, 48],
-                "offset": [6, 0],
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "layer": 3
-              }
-            },
-            {
-              "sh_slots": {
+              "sh_rows": {
                 "type": "grid",
                 "collection_name": "form_buttons",
-                "grid_dimensions": [6, 1],
-                "size": [132, 22],
-                "offset": [-64, 52],
+                "grid_dimensions": [1, 3],
+                "size": [124, 66],
+                "offset": [1, 1],
                 "anchor_from": "top_left",
                 "anchor_to": "top_left",
                 "layer": 3,
                 "controls": [
-                  { "sh_water@server_form.sh_alc_slot": { "grid_position": [3, 0], "$sh_ghost": "textures/ui/sh_alc_ghost_water" } },
-                  { "sh_flame@server_form.sh_alc_slot": { "grid_position": [4, 0], "$sh_ghost": "textures/ui/sh_alc_ghost_flame" } },
-                  { "sh_book@server_form.sh_alc_slot": { "grid_position": [5, 0], "$sh_ghost": "textures/ui/sh_alc_book", "$sh_count": false } }
-                ]
-              }
-            },
-            {
-              "sh_rows_indent": {
-                "type": "image",
-                "texture": "textures/ui/cell_image",
-                "size": [160, 86],
-                "offset": [74, 0],
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "layer": 2,
-                "controls": [
-                  {
-                    "sh_rows": {
-                      "type": "grid",
-                      "collection_name": "form_buttons",
-                      "grid_dimensions": [1, 3],
-                      "size": [158, 84],
-                      "offset": [1, 1],
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "layer": 3,
-                      "controls": [
-                        { "sh_row_1@server_form.sh_alc_row": { "grid_position": [0, 0] } },
-                        { "sh_row_2@server_form.sh_alc_row": { "grid_position": [0, 1] } },
-                        { "sh_row_3@server_form.sh_alc_row": { "grid_position": [0, 2] } }
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "sh_status": {
-                "type": "image",
-                "texture": "textures/ui/enchanting_dark_background",
-                "size": ["100%", 27],
-                "offset": [0, 0],
-                "anchor_from": "bottom_left",
-                "anchor_to": "bottom_left",
-                "layer": 2,
-                "controls": [
-                  {
-                    "sh_status_text": {
-                      "type": "label",
-                      "text": "#form_text",
-                      "size": ["100% - 8px", "default"],
-                      "offset": [4, 0],
-                      "anchor_from": "left_middle",
-                      "anchor_to": "left_middle",
-                      "color": [1, 1, 1],
-                      "shadow": true,
-                      "layer": 3
-                    }
-                  }
+                  { "sh_row_1@server_form.sh_alc_row": { "grid_position": [0, 0] } },
+                  { "sh_row_2@server_form.sh_alc_row": { "grid_position": [0, 1] } },
+                  { "sh_row_3@server_form.sh_alc_row": { "grid_position": [0, 2] } }
                 ]
               }
             }
+          ]
+        }
+      },
+      {
+        "sh_status": {
+          "type": "label",
+          "text": "#form_text",
+          "size": [184, "default"],
+          "offset": [8, 91],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "color": [0.3, 0.3, 0.3],
+          "shadow": false,
+          "layer": 3
+        }
+      },
+      {
+        "sh_bag_label": {
+          "type": "label",
+          "text": "Bag",
+          "color": [0.3, 0.3, 0.3],
+          "shadow": false,
+          "offset": [19, 104],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 3
+        }
+      },
+      {
+        "sh_bag": {
+          "type": "grid",
+          "collection_name": "form_buttons",
+          "grid_dimensions": [15, 1],
+          "size": [270, 18],
+          "offset": [-89, 114],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 3,
+          "controls": [
+            { "sh_bag_1@server_form.sh_alc_cell": { "grid_position": [6, 0] } },
+            { "sh_bag_2@server_form.sh_alc_cell": { "grid_position": [7, 0] } },
+            { "sh_bag_3@server_form.sh_alc_cell": { "grid_position": [8, 0] } },
+            { "sh_bag_4@server_form.sh_alc_cell": { "grid_position": [9, 0] } },
+            { "sh_bag_5@server_form.sh_alc_cell": { "grid_position": [10, 0] } },
+            { "sh_bag_6@server_form.sh_alc_cell": { "grid_position": [11, 0] } },
+            { "sh_bag_7@server_form.sh_alc_cell": { "grid_position": [12, 0] } },
+            { "sh_bag_8@server_form.sh_alc_cell": { "grid_position": [13, 0] } },
+            { "sh_bag_9@server_form.sh_alc_cell": { "grid_position": [14, 0] } }
           ]
         }
       }
@@ -223,7 +247,7 @@
         "sh_icon": {
           "type": "image",
           "size": [16, 16],
-          "offset": [5, 0],
+          "offset": [3, 0],
           "anchor_from": "left_middle",
           "anchor_to": "left_middle",
           "layer": 6,
@@ -241,7 +265,7 @@
           "color": [0, 0, 0],
           "alpha": 0.5,
           "size": [16, 16],
-          "offset": [5, 0],
+          "offset": [3, 0],
           "anchor_from": "left_middle",
           "anchor_to": "left_middle",
           "layer": 7,
@@ -255,8 +279,8 @@
         "sh_text": {
           "type": "label",
           "text": "#form_button_text",
-          "size": ["100% - 28px", "default"],
-          "offset": [25, 0],
+          "size": ["100% - 24px", "default"],
+          "offset": [22, 0],
           "anchor_from": "left_middle",
           "anchor_to": "left_middle",
           "color": [1, 1, 1],
@@ -273,8 +297,8 @@
           "type": "label",
           "text": "#form_button_text",
           "font_type": "rune",
-          "size": ["100% - 12px", "default"],
-          "offset": [6, 0],
+          "size": ["100% - 10px", "default"],
+          "offset": [5, 0],
           "anchor_from": "left_middle",
           "anchor_to": "left_middle",
           "color": [0.408, 0.368, 0.29],
@@ -289,13 +313,13 @@
     ]
   },
 
-  "sh_alc_slot": {
+  "sh_alc_cell": {
     "type": "panel",
-    "size": [20, 20],
+    "size": [18, 18],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
+    "$sh_has_ghost|default": false,
     "$sh_ghost|default": "textures/ui/cell_image",
-    "$sh_count|default": true,
     "controls": [
       {
         "sh_btn@common.button": {
@@ -313,7 +337,7 @@
                 "texture": "textures/ui/cell_image",
                 "layer": 1,
                 "controls": [
-                  { "sh_hl": { "type": "image", "texture": "textures/ui/White", "alpha": 0.35, "size": ["100% - 2px", "100% - 2px"], "layer": 9 } }
+                  { "sh_hl": { "type": "image", "texture": "textures/ui/White", "alpha": 0.35, "size": [16, 16], "layer": 9 } }
                 ]
               }
             },
@@ -327,9 +351,10 @@
           "texture": "$sh_ghost",
           "size": [16, 16],
           "layer": 4,
+          "ignored": "(not $sh_has_ghost)",
           "bindings": [
             { "binding_name": "#form_button_texture", "binding_type": "collection", "binding_collection_name": "form_buttons" },
-            { "binding_type": "view", "source_property_name": "((#form_button_texture = '') or (not $sh_count))", "target_property_name": "#visible" }
+            { "binding_type": "view", "source_property_name": "(#form_button_texture = '')", "target_property_name": "#visible" }
           ]
         }
       },
@@ -338,7 +363,6 @@
           "type": "image",
           "size": [16, 16],
           "layer": 5,
-          "ignored": "(not $sh_count)",
           "bindings": [
             { "binding_name": "#form_button_texture", "binding_name_override": "#texture", "binding_type": "collection", "binding_collection_name": "form_buttons" },
             { "binding_name": "#form_button_texture_file_system", "binding_name_override": "#texture_file_system", "binding_type": "collection", "binding_collection_name": "form_buttons" },
@@ -356,9 +380,42 @@
           "color": [1, 1, 1],
           "shadow": true,
           "layer": 6,
-          "ignored": "(not $sh_count)",
           "bindings": [
             { "binding_name": "#form_button_text", "binding_type": "collection", "binding_collection_name": "form_buttons" }
+          ]
+        }
+      }
+    ]
+  },
+
+  "sh_alc_iconbtn": {
+    "type": "panel",
+    "size": [16, 16],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "$sh_icon|default": "textures/ui/sh_alc_book",
+    "controls": [
+      {
+        "sh_btn@common.button": {
+          "size": ["100%", "100%"],
+          "$pressed_button_name": "button.form_button_click",
+          "layer": 1,
+          "bindings": [
+            { "binding_type": "collection_details", "binding_collection_name": "form_buttons" }
+          ],
+          "controls": [
+            { "default": { "type": "image", "texture": "$sh_icon", "layer": 2 } },
+            {
+              "hover": {
+                "type": "image",
+                "texture": "$sh_icon",
+                "layer": 2,
+                "controls": [
+                  { "sh_hl": { "type": "image", "texture": "textures/ui/White", "alpha": 0.3, "size": ["100%", "100%"], "layer": 3 } }
+                ]
+              }
+            },
+            { "pressed": { "type": "image", "texture": "$sh_icon", "alpha": 0.7, "layer": 2 } }
           ]
         }
       }

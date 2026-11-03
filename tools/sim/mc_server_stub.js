@@ -1078,30 +1078,33 @@ export const __sim = {
       advance(420);
       const alch = entities.find((e) => e._valid && e.typeId === "sh:alchemist");
       inventory.fill(undefined);
-      // v1.37.1: شاشة تشبه طاولة السحر. 6 أزرار بترتيب ثابت (0..2 صفوف الطبخ ×1 ×2 ×3، 3 الماء، 4 الشعلة، 5 الوصفات)
+      // v1.37.2: شاشة مستوحاة من طاولة السحر: 15 زر بترتيب ثابت (0..2 صفوف الطبخ، 3 خانة الماء، 4 خانة الشعلة، 5 الوصفات، 6..14 الحقيبة)
       inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:soul_crimson", 3); inventory[5] = new ItemStack("sh:soul_amber", 2); inventory[6] = new ItemStack("minecraft:potion", 2);
       const ui = (await import("@minecraft/server-ui")).sim;
-      ui.formsShown.length = 0; ui.queue = [0, 4, 0]; ui.cancelWhenEmpty = true;      // اطبخ ×1 (أحمر) ← بدّل الشعلة (برتقالي) ← اطبخ ×1
+      // حط الماء (الحقيبة 6) ← حط الأحمر (الحقيبة 6 بعد ما راح الماء) ← اطبخ ×1 ← طلّع الشعلة (خانة 4) ← حط البرتقالي (الحقيبة 7) ← اطبخ ×1
+      ui.formsShown.length = 0; ui.queue = [6, 6, 0, 4, 7, 0]; ui.cancelWhenEmpty = true;
       if (alch) fire("playerInteractWithEntity", { player, target: alch });
       await new Promise((r) => setTimeout(r, 30)); advance(2);
-      const f0 = ui.formsShown[0] || { buttons: [], icons: [] };
-      const layoutOk = /§a§l§c§h/.test(f0.title || "") && f0.buttons.length === 6 && f0.buttons[0].startsWith("§k§r") && f0.buttons[1].startsWith("§o§r")
-        && /sh_soul_crimson/.test(f0.icons[4] || "") && /potion_bottle/.test(f0.icons[3] || "") && /sh_potion_vitality/.test(f0.icons[0] || "");
+      const F = ui.formsShown, f0 = F[0] || { buttons: [], icons: [] }, f2 = F[2] || { buttons: [], icons: [] };
+      const layoutOk = /§a§l§c§h/.test(f0.title || "") && f0.buttons.length === 15 && f0.buttons.slice(0, 3).every((b) => b.startsWith("§l§r"))
+        && !f0.icons[3] && !f0.icons[4] && /potion_bottle/.test(f0.icons[6] || "") && /sh_soul_crimson/.test(f0.icons[7] || "") && /sh_soul_amber/.test(f0.icons[8] || "")
+        && f2.buttons[0].startsWith("§k§r") && f2.buttons[1].startsWith("§o§r") && /potion_bottle/.test(f2.icons[3] || "") && /sh_soul_crimson/.test(f2.icons[4] || "")
+        && /sh_potion_vitality/.test(f2.icons[0] || "") && !(f2.icons.slice(6).some((x) => /potion_bottle|soul_crimson/.test(x || "")));
       const got = (id) => inventory.filter((it) => it && it.typeId === id).reduce((a, it) => a + it.amount, 0);
       const brewed = got("sh:potion_vitality") === 1 && got("sh:potion_might") === 1;
       const paid = got("sh:soul_crimson") === 1 && got("sh:soul_amber") === 0 && got("minecraft:potion") === 0 && got("sh:shadow_pelt") === 5;
       inventory.fill(undefined); ui.formsShown.length = 0; ui.queue = [];
       advance(12); if (alch) fire("playerInteractWithEntity", { player, target: alch });
       await new Promise((r) => setTimeout(r, 30)); advance(2);
-      const fe = ui.formsShown[0] || { buttons: [] };
-      const runesOk = fe.buttons.length === 6 && fe.buttons.slice(0, 3).every((b) => b.startsWith("§l§r"));
+      const fe = ui.formsShown[0] || { buttons: [], body: "" };
+      const runesOk = fe.buttons.length === 15 && fe.buttons.slice(0, 3).every((b) => b.startsWith("§l§r")) && /no water bottles/.test(fe.body || "");
       ui.cancelWhenEmpty = false;
       world.setDynamicProperty("sh_structs", "[]"); inventory.fill(undefined);
       console.log(`  مواد الوحوش ${dropsOk ? "✔" : "✖"} (${[...dropped].filter((x) => x.includes("hide") || x.includes("chitin") || x.includes("pelt") || x.includes("scythe") || x.includes("claw")).join(", ")})`);
       console.log(`  المانا: مهارة غالية انعادت ${used} مرات ثم ${blocked ? "انقفلت (مانا ما تكفي) ✔" : "ما انقفلت ✖"} | المانا بالـHUD ${manaShown ? "✔" : "✖"}`);
       console.log(`  الجرعات: تأثيرات ${potOk ? "✔" : "✖"} | تقويات محفوظة ${buffsOk ? "✔" : "✖"} (${Object.keys(buffs).join(",")}) | أيقونات بالـHUD ${/[-]/.test(hudBuff) ? "✔" : "✖"}`);
       console.log(`  طقم الصياد (بونص) ${setOk ? "✔" : "✖"} | رد طقم السرعوف ${countered ? "✔" : "✖"}`);
-      console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | ترتيب الشاشة ${layoutOk ? "✔" : "✖"} | طبخ جرعتين (تبديل الشعلة) ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"} | بدون شعلة = رونز ${runesOk ? "✔" : "✖"}`);
+      console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | ترتيب الشاشة ${layoutOk ? "✔" : "✖"} | حط بالخانات من الحقيبة وطبخ جرعتين ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"} | بدون شعلة = رونز ${runesOk ? "✔" : "✖"}`);
       // 6) الإنجازات (v1.36): تنفتح من حالة اللاعب ومن الأحداث، تعطي خبرة، وشاشاتها بالكتاب بصور (المقفول ??? وصورة _x)
       {
         const ACHJS = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/achievements.js"), "utf8");

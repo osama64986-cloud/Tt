@@ -7099,59 +7099,70 @@ function takeItems(p, typeId, n) {
   }
 }
 const matName = (id) => (id === WATER ? "Water Bottle" : (GEAR.materials[id] || GEAR.flames[id] || {}).name || id).replace(/§./g, "");
-// شاشة الخيميائي (v1.37.1): تشبه شاشة طاولة السحر (Enchanting Table) بس مو نفسها، ومرسومة من RP/ui/server_form.json
-// (العنوان بيه العلامة §a§l§c§h). يسار: القدر وتحته خانتين (قنينة الماء + شعلة الروح) مثل خانة الأيتم واللازورد.
-// يمين: 3 صفوف بخلفيات صفوف طاولة السحر: اطبخ ×1، ×2، ×3 (التكلفة: شعلتين وقنينة لكل جرعة).
-// حسب الشعلة اللي بالخانة تطلع جرعتها بالصفوف، وضغطة وحدة على الصف تعطيك الجرعة. بدون شعلة الصفوف معتمة ومكتوبة بخط الرونز.
-// المواد تنسحب من الحقيبة نفسها (شاشات الفورم ما تسمح بسحب الأيتمات)، ولو عندك أكثر من لون تضغط خانة الشعلة حتى تبدله.
-// ترتيب الأزرار ثابت لأن الواجهة تربط كل مكان برقم الزر (collection_index):
-//   0..2 = الصفوف، 3 = خانة الماء، 4 = خانة الشعلة، 5 = كتاب الوصفات
-// علامة أول نص الصف (الواجهة تقراها وتختار الخلفية): §k§r تكدر تطبخ، §o§r الشعلة موجودة بس المواد ما تكفي، §l§r ماكو شعلة (رونز)
+// شاشة الخيميائي (v1.37.2): مستوحاة من شاشة طاولة السحر (Enchanting Table)، ومرسومة من RP/ui/server_form.json (العنوان بيه العلامة §a§l§c§h).
+//   فوك يسار: القدر (بمكان الكتاب) وتحته خانة قنينة الماء وخانة شعلة الروح (مثل خانة الأيتم واللازورد)، وفوك يمين 3 صفوف طبخ (×1 ×2 ×3).
+//   جوه: الحقيبة (Bag): صف خانات بيه قناني الماء وشعلات الروح اللي عندك. تدوس على أيتم بالحقيبة ينحط بخانته، وتدوس الخانة يرجع للحقيبة.
+//   لما تحط الماء والشعلة تطلع جرعة الشعلة بالصفوف، وضغطة وحدة على الصف تعطيك الجرعة. بدون شعلة الصفوف معتمة بخط الرونز.
+//   الخانات "تحجز" الأيتم من حقيبتك (ما ينسحب منها شي لحد ما تطبخ)، فإذا سكرت الشاشة ما يضيع شي، والخانات تبقى لما ترجع.
+// ترتيب الأزرار ثابت لأن الواجهة تربط كل مكان برقمه (collection_index):
+//   0..2 الصفوف، 3 خانة الماء، 4 خانة الشعلة، 5 كتاب الوصفات، 6..14 الحقيبة (9 خانات)
+// علامة أول نص الصف (الواجهة تقراها وتختار الخلفية): §k§r تكدر تطبخ، §o§r المواد ما تكفي، §l§r ماكو شعلة (رونز)
 const ALC_MARK = "§a§l§c§h";
 const ALC_ROW = { ok: "§k§r", short: "§o§r", none: "§l§r" };
 const ALC_RUNES = ["aqua vitae flamma", "anima ignis spiritus", "elixir umbra lux"];
-const alcPick = new Map();                                                      // اللاعب ← الشعلة اللي بالخانة
+const ALC_BAG = 9;
+const alcSlots = new Map();                                                     // اللاعب ← { water: محطوطة؟، flame: الشعلة اللي بالخانة }
 const flameGlyph = (fid) => GL(GI.alc_flame0 + FLAME_ORDER.indexOf(fid));
-function alcFlame(p) {
-  const have = FLAME_ORDER.filter((fid) => countItem(p, fid) > 0);
-  if (!have.length) { alcPick.delete(p.id); return null; }
-  const cur = alcPick.get(p.id);
-  if (cur && have.includes(cur)) return cur;
-  const best = have.reduce((x, y) => (countItem(p, y) > countItem(p, x) ? y : x));
-  alcPick.set(p.id, best);
-  return best;
+const itemTex = (id) => (id === WATER ? "textures/items/potion_bottle_drinkable" : `textures/items/${id.replace("sh:", "sh_")}`);
+const stackTxt = (n) => (n > 1 ? `§f${n}` : "");                                // مثل ماينكرافت: العدد يطلع بس إذا أكثر من 1
+function alcState(p) {
+  const st = alcSlots.get(p.id) || { water: false, flame: null };
+  if (st.water && countItem(p, WATER) <= 0) st.water = false;                  // خلصت القناني: الخانة تفرغ
+  if (st.flame && countItem(p, st.flame) <= 0) st.flame = null;
+  alcSlots.set(p.id, st);
+  return st;
 }
 async function openAlchemist(p, npc, msg = "") {
-  const fid = alcFlame(p), nw = countItem(p, WATER), nf = fid ? countItem(p, fid) : 0;
+  const st = alcState(p);
+  const nw = st.water ? countItem(p, WATER) : 0, fid = st.flame, nf = fid ? countItem(p, fid) : 0;
   const pid = fid ? GEAR.flames[fid].potion : null;
   const pname = pid ? GEAR.potions[pid].name.replace(/§./g, "") : "";
-  const f = new ActionFormData().title(`${ALC_MARK}Alchemist`)
-    .body(msg || (!fid ? "§7Bring a water bottle and soul flames." : !nw ? "§7Bring a water bottle." : `${GEAR.flames[fid].name} §8> §f${pname}`));
+  const bag = [];
+  if (!st.water && countItem(p, WATER) > 0) bag.push(WATER);
+  for (const x of FLAME_ORDER) if (x !== fid && countItem(p, x) > 0) bag.push(x);
+  const status = msg || (!st.water && !fid ? (bag.length ? "§8Tap a water bottle and a soul flame in your bag." : "§8You have no water bottles or soul flames.")
+    : !fid ? "§8Now put a soul flame in." : !st.water ? "§8Now put a water bottle in." : nf >= 2 ? `§2${pname} is ready to brew!` : "§4One potion needs 2 soul flames.");
+  const f = new ActionFormData().title(`${ALC_MARK}Alchemist`).body(status);
   for (let k = 1; k <= 3; k++) {
     if (!pid) { f.button(`${ALC_ROW.none}${ALC_RUNES[k - 1]}`); continue; }
     const ok = nw >= k && nf >= 2 * k;
     const cost = `${nf >= 2 * k ? "§a" : "§c"}${flameGlyph(fid)}${2 * k}  ${nw >= k ? "§a" : "§c"}${GL(GI.alc_water)}${k}`;
-    f.button(`${ok ? ALC_ROW.ok : ALC_ROW.short}${ok ? "§f" : "§7"}${pname} §8x${k}\n${cost}`, `textures/items/${pid.replace("sh:", "sh_")}`);
+    f.button(`${ok ? ALC_ROW.ok : ALC_ROW.short}${ok ? "§f" : "§7"}${pname.replace(/^Potion of /, "")} §8x${k}\n${cost}`, itemTex(pid));
   }
-  if (nw) f.button(`§f${nw}`, "textures/items/potion_bottle_drinkable"); else f.button("");
-  if (fid) f.button(`§f${nf}`, `textures/items/${fid.replace("sh:", "sh_")}`); else f.button("");
+  if (st.water) f.button(stackTxt(nw), itemTex(WATER)); else f.button("");
+  if (fid) f.button(stackTxt(nf), itemTex(fid)); else f.button("");
   f.button("§5Recipes", "textures/ui/sh_alc_book");
+  for (let i = 0; i < ALC_BAG; i++) { const id = bag[i]; if (id) f.button(stackTxt(countItem(p, id)), itemTex(id)); else f.button(""); }
   const r = await showForm(p, f);
   if (r.canceled || r.selection === undefined) return;
   const sel = r.selection;
-  if (sel === 3) return openAlchemist(p, npc, "§7Fill a glass bottle with water.");
-  if (sel === 4) {
-    const have = FLAME_ORDER.filter((x) => countItem(p, x) > 0);
-    if (have.length > 1) { alcPick.set(p.id, have[(have.indexOf(fid) + 1) % have.length]); sfxPlayer(p, "sh.select", 0.6, 1.2); }
-    return openAlchemist(p, npc, have.length ? "" : "§7Monsters drop soul flames, very rarely.");
+  if (sel === 3 || sel === 4) {                                                 // تدوس الخانة: الأيتم يرجع للحقيبة
+    if (sel === 3 && st.water) { st.water = false; sfxPlayer(p, "random.pop", 0.4, 1.4); }
+    if (sel === 4 && fid) { st.flame = null; sfxPlayer(p, "random.pop", 0.4, 1.4); }
+    return openAlchemist(p, npc);
   }
   if (sel === 5) { await openRecipes(p); return openAlchemist(p, npc); }
-  if (sel > 2) return;
+  if (sel >= 6) {                                                               // تدوس أيتم بالحقيبة: ينحط بخانته (الشعلة تبدل اللي قبلها)
+    const id = bag[sel - 6];
+    if (id === WATER) { st.water = true; sfxPlayer(p, "bottle.fill", 0.5, 1.2); }
+    else if (id) { st.flame = id; sfxPlayer(p, "sh.select", 0.6, 1.2); }
+    return openAlchemist(p, npc);
+  }
   const k = sel + 1;
-  if (!pid) { sfxPlayer(p, "note.bass", 0.6, 0.7); return openAlchemist(p, npc, "§7You need a soul flame first."); }
+  if (!pid || !st.water) { sfxPlayer(p, "note.bass", 0.6, 0.7); return openAlchemist(p, npc, !pid ? "§4Put a soul flame in first." : "§4Put a water bottle in first."); }
   if (countItem(p, WATER) < k || countItem(p, fid) < 2 * k) {
     sfxPlayer(p, "note.bass", 0.6, 0.7);
-    return openAlchemist(p, npc, `§cNeed ${2 * k} ${GEAR.flames[fid].name.replace(/§./g, "")}s and ${k} water.`);
+    return openAlchemist(p, npc, `§4Needs ${2 * k} soul flames and ${k} water bottle${k > 1 ? "s" : ""}.`);
   }
   takeItems(p, WATER, k);
   takeItems(p, fid, 2 * k);
@@ -7162,7 +7173,7 @@ async function openAlchemist(p, npc, msg = "") {
   sfx(p.dimension, "bottle.fill", L, 0.8, 1.1);
   notify(p, `§aBrewed: ${GEAR.potions[pid].name}${k > 1 ? ` §fx${k}` : ""}`, 60);
   achCount(p, "brew", k);
-  return openAlchemist(p, npc, `§aBrewed ${k}x ${pname}!`);
+  return openAlchemist(p, npc, `§2Brewed ${k}x ${pname}!`);
 }
 async function openRecipes(p) {
   const f = new ActionFormData().title("Recipes")

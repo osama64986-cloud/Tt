@@ -319,11 +319,11 @@ def alchemy_cells():
         for j in range(2, 14):
             slot.put(i, j, (30, 24, 44, 200))
     out[G["alc_slot"]] = slot
-    out[G["alc_water"]] = _from_px(GG.icon_potion((70, 120, 230)))
+    out[G["alc_water"]] = _from_px(GG.icon_potion_kind("water", GG.WATER_COLOR))
     for i, fl in enumerate(GG.SOUL_FLAMES):
         out[G["alc_flame0"] + i] = _from_px(GG.icon_soul_flame(fl[4]))
     for i, po in enumerate(GG.POTIONS):
-        out[G["alc_potion0"] + i] = _from_px(GG.icon_potion(po[3]))
+        out[G["alc_potion0"] + i] = _from_px(GG.icon_potion_kind(po[0].replace("potion_", ""), po[3]))
     arrow = Cell()
     for x in range(2, 13):                                                     # سهم لليمين: ساق + راس مثلث
         arrow.put(x, 7, (240, 220, 160)); arrow.put(x, 8, (240, 220, 160))
