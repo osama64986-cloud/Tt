@@ -267,5 +267,5 @@ def archer():
     return m.save()
 
 if __name__ == "__main__":
-    for fn in (imp, guard, hound, scorpion, archer):
+    for fn in (imp, guard, hound, scorpion):          # الرامي صار له مولد خاص (tools/gen_archer.py، هيكل عظمي v2)
         print(fn.__name__, "colors:", fn())
