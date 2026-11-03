@@ -1,0 +1,48 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sh:grizzly_helmet",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "sh_grizzly_helmet"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "§7Grizzly Hood"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:wearable": {
+        "slot": "slot.armor.head",
+        "protection": 3
+      },
+      "minecraft:durability": {
+        "max_durability": 420
+      },
+      "minecraft:enchantable": {
+        "slot": "armor_head",
+        "value": 12
+      },
+      "minecraft:repairable": {
+        "repair_items": [
+          {
+            "items": [
+              "sh:bear_hide"
+            ],
+            "repair_amount": "context.other->query.remaining_durability + 0.25 * context.other->query.max_durability"
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "minecraft:is_armor"
+        ]
+      }
+    }
+  }
+}

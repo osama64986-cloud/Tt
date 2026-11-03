@@ -4,9 +4,10 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath } from "./structures.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudLine } from "./structures.js";
 import { setupDash, dashCooldown } from "./dash.js";
 import { SHAPE } from "./shapes.js";
+import { GEAR } from "./gear.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
 import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS } from "./skillfx.js";
 
@@ -288,7 +289,8 @@ function rarityStars(key) {
 }
 // ───── رموز الـHUD المرسومة (RP/font/glyph_E5.png من tools/gen_hud_art.py): الرمز i = U+E500+i ─────
 const GI = { heart: 0, heart_half: 1, heart_empty: 2, rift: 3, wave_on: 4, wave_off: 5, gold_full: 6, gold_empty: 7, xp_full: 8, xp_empty: 9,
-  pw_full: 10, pw_empty: 11, boss: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, lens: 53, rift_ring: 54, sep: 55 };
+  pw_full: 10, pw_empty: 11, boss: 12, rank0: 16, power0: 32, ready: 48, cool: 49, lock: 50, held: 51, sword: 52, lens: 53, rift_ring: 54, sep: 55,
+  mana_full: 56, mana_empty: 57, mana: 58, buff_might: 59, buff_bulwark: 60, buff_focus: 61, buff_swift: 62 };
 const GLYPH_POWERS = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"];
 const GL = (i) => String.fromCharCode(0xE500 + i);
 function gbar(frac, n, full, empty) {
@@ -316,14 +318,12 @@ function hudArt(p, st) {
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
     l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
   } else l2 += st.powerless ? "  §8§lUnbound §r§c+STR §b+SPD" : "  §7No power: find the Star Temple";
-  const l3 = riftHudLine(p, false);
-  return l3 ? `${l1}\n${l2}\n${l3}` : `${l1}\n${l2}`;
+  const lm = manaHudLine(p, st, false);                                         // المانا والتقويات (v1.35)
+  return [l1, l2, lm, riftHudLine(p, false), towerHudLine(p, false)].filter(Boolean).join("\n");
 }
 function hudText(p, st, plain) {
   if (!plain) return hudArt(p, st);
-  const rl = riftHudLine(p, true);
-  if (rl) return hudPlain(p, st) + "\n" + rl;
-  return hudPlain(p, st);
+  return [hudPlain(p, st), manaHudLine(p, st, true), riftHudLine(p, true), towerHudLine(p, true)].filter(Boolean).join("\n");
 }
 function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية بدل رموز الواجهة (كانت ناقصة = خطأ ReferenceError بالواجهة البسيطة)
   const pw = POWERS[st.power];
@@ -395,7 +395,7 @@ function heldLine(p, st, plain) {
     const left = (cooldowns.get(`${p.id}:${sk.id}`) ?? 0) - now;
     return {
       skillId: sk.id,
-      line: `${POWERS[sk.power].color}${sk.name} §8│ §bLevel ${lv}${lv >= SKILL_MAX_LV ? " §6MAX" : ""} ${bar(lv >= SKILL_MAX_LV ? 1 : x / skillXpNeeded(lv), 5, "§b", "§8", plain)} §8│ ${stateOf(left)}`,
+      line: `${POWERS[sk.power].color}${sk.name} §8│ §bLevel ${lv}${lv >= SKILL_MAX_LV ? " §6MAX" : ""} ${bar(lv >= SKILL_MAX_LV ? 1 : x / skillXpNeeded(lv), 5, "§b", "§8", plain)} §8│ §9✦${manaCost(sk)} §8│ ${stateOf(left)}`,
       tip: showTip ? `§7${usageOf(sk)}` : "",
     };
   }
@@ -420,6 +420,8 @@ function heldLine(p, st, plain) {
   if (id === "sh:skill_scroll") return { line: "§b✦ Skill Upgrade Scroll", tip: showTip ? "§7Use: pick a skill and raise it a full level" : "" };
   if (id === "sh:evolution_book") return { line: "§eEvolution Book", tip: showTip ? "§7Use: skills, status window, ranks, story" : "" };
   if (id === "sh:monster_book") return { line: "§5Monster Book", tip: showTip ? "§7Use: info on the monsters you have killed" : "" };
+  const gh = gearHeld(id, showTip);
+  if (gh) return gh;
   const ws = WEAPON_SKILLS[id];
   if (ws) {
     const l0 = (weaponCd.get(`${p.id}:${id}:0`) ?? 0) - now, l1 = (weaponCd.get(`${p.id}:${id}:1`) ?? 0) - now;
@@ -951,7 +953,8 @@ async function openMonsterBook(player) {
   body += "\n";
   for (const [id, name, rank, tip] of MONSTER_INFO) {
     const k = kills[id] || 0;
-    body += `§e${name} §7(${rank}) §fKilled: §b${k}\n§7${k > 0 || id === "sh:training_archer" ? tip : "Kill one to reveal its info."}\n\n`;
+    const dn = dropNames(id);
+    body += `§e${name} §7(${rank}) §fKilled: §b${k}\n§7${k > 0 || id === "sh:training_archer" ? tip : "Kill one to reveal its info."}${dn && k > 0 ? `\n§6Drops: ${dn}` : ""}\n\n`;
   }
   await showForm(player, new ActionFormData().title("Monster Book").body(body).button("§aOK"));
 }
@@ -962,6 +965,7 @@ async function showStatus(player) {
   const st = getState(player);
   const pw = POWERS[st.power];
   let b = `§6◆ ${RANKS[st.rank]}§r  §bLv ${st.level}§r  §7(${st.xp}/${xpNeeded(st.level)} XP)\n${nextRankLine(st)}\n`;
+  if (st.power) b += `§9✦ Mana: ${Math.floor(manaOf(player, st))}/${manaMax(st)} §7(+${(4 + 0.5 * (st.rank || 0)).toFixed(1)}/s; each ability costs mana, weapons don't)\n`;
   if (pw) {
     const r = rarityOf(st.power);
     b += `\n${pw.color}${pw.name}§r ${rarityStars(st.power)}§r ${r.color}${r.name}§r\n§dPower level ${st.plevel || 1}/${r.maxLv}§r ${(st.plevel || 1) >= r.maxLv ? "§6(MAX)" : `§7(${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}\n`;
@@ -1344,6 +1348,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
         : t === "sh:hollow_seer" ? (roll < 0.4 ? "sh:xp_scroll_small" : roll < 0.7 ? "sh:xp_scroll_big" : roll < 0.78 ? "sh:skill_scroll" : null) : null;
       if (drop) ev.deadEntity.dimension.spawnItem(new ItemStack(drop, 1), ev.deadEntity.location);
     } catch (e2) { /* */ }
+    try { dropMaterials(ev.deadEntity); } catch (e5) { /* */ }                     // مواد الوحوش (جلود، قشور، مخالب...)
   } catch (e) { /* */ }
 });
 
@@ -1532,7 +1537,7 @@ function skillHitXp(by, target) {
   } catch (err) { /* */ }
 }
 function hurt(e, amount, by) {
-  try { e.applyDamage(amount * skillDmgMul(by) * weaponSkillMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
+  try { e.applyDamage(amount * skillDmgMul(by) * weaponSkillMul(by) * mightMul(by), { cause: EntityDamageCause.entityAttack, damagingEntity: by }); skillHitXp(by, e); } catch (err) { /* */ }
 }
 function viewDir(p) {
   try { return p.getViewDirection(); } catch (e) { return { x: 0, y: 0, z: 1 }; }
@@ -4510,15 +4515,24 @@ function useSkill(p, skill) {
     notify(p, `§7${skill.name}: wait ${((ready - now) / 20).toFixed(1)}s`, 15);
     return;
   }
+  // المانا: كل مهارة قدرة تكلف مانا حسب طول كولداونها (الأسلحة ما تكلف)
+  const cost = manaCost(skill), have = manaOf(p, st);
+  if (have < cost) {
+    notify(p, `§9Not enough mana §7(${Math.floor(have)}/${cost})`, 25);
+    sfxPlayer(p, "note.bass", 0.5, 0.6);
+    return;
+  }
   lastSkillUse.set(p.id, { id: skill.id, tick: now });
+  const fm = focusMul(p);                                                  // جرعة التركيز: كولداون أقصر 30%
   let res = false;
   try { res = SKILL_FN[skill.id](p); } catch (e) { res = false; }
   if (res && typeof res.then === "function") {
     cooldowns.set(key, now + 40); // يمنع الضغط المتكرر أثناء القائمة
-    res.then((ok) => cooldowns.set(key, system.currentTick + (ok ? skill.cooldown : 6))).catch(() => cooldowns.set(key, system.currentTick + 6));
+    res.then((ok) => { cooldowns.set(key, system.currentTick + (ok ? Math.round(skill.cooldown * fm) : 6)); if (ok) spendMana(p, cost); }).catch(() => cooldowns.set(key, system.currentTick + 6));
     return;
   }
-  cooldowns.set(key, now + (typeof res === "number" && res > 0 ? res : res ? skill.cooldown : 6));
+  if (res) spendMana(p, cost);
+  cooldowns.set(key, now + (typeof res === "number" && res > 0 ? Math.round(res * fm) : res ? Math.round(skill.cooldown * fm) : 6));
 }
 
 world.afterEvents.itemUse.subscribe((ev) => {
@@ -4655,7 +4669,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
         } catch (e) { /* */ }
       }, 3);
     }
-    try { target.applyDamage(extra, { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
+    try { target.applyDamage(extra * mightMul(p), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (e) { /* */ }
     sfx(p.dimension, w.sound, target.location, 1, 0.95 + Math.random() * 0.1);
     burst(target.dimension, headPos(target), w.knock ? 14 : 8, COLORS[w.color], w.knock ? 3 : 2, 0.18);
     if (w.knock) {
@@ -6730,9 +6744,260 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       const ups = addXp(st, amt);
       if (st.power) ups.push(...addPowerXp(st, amt, rarityOf(st.power).maxLv));
       saveState(p, st); announceUps(p, ups);
+    } else if (ev.id === "sh:cdreset_cd_only") {                       // للاختبار: يصفر الكولداون بس (المانا تبقى)
+      cooldowns.clear(); weaponCd.clear();
+    } else if (ev.id === "sh:clearbuffs") {                           // للاختبار: يشيل كل التقويات ويملي المانا
+      BUFFS.set(p.id, {}); try { p.setDynamicProperty("sh_buffs", "{}"); } catch (e3) { /* */ }
+      MANA.set(p.id, manaMax(getState(p)));
     } else if (ev.id === "sh:cdreset") {
       cooldowns.clear(); weaponCd.clear();
+      try { MANA.set(p.id, manaMax(getState(p))); } catch (e2) { /* */ }
       say(p, "§aCooldowns reset");
     }
   } catch (e) { /* */ }
 });
+
+// ═════════════════════════ v1.35: مواد الوحوش، دروع الوحوش، المانا والجرعات ═════════════════════════
+// المواد: كل وحش يطيح مادته (جلد، قشرة، قرن، مخلب...). تنصنع منها دروع بطاولة الصناعة أو تنطبخ جرعات عند الخيميائي.
+const MAT_DROPS = {
+  "sh:shadow_hound": [["sh:shadow_pelt", 0.55, 1, 2]],
+  "sh:ember_imp": [["sh:ember_horn", 0.45, 1, 1]],
+  "sh:sand_scorpion": [["sh:sand_carapace", 0.5, 1, 2]],
+  "sh:rust_guard": [["sh:rust_core", 0.45, 1, 1]],
+  "sh:gloomhorn": [["sh:gloom_antler", 0.75, 1, 2]],
+  "sh:hollow_seer": [["sh:hollow_lens", 0.75, 1, 1]],
+  "sh:veilfox": [["sh:spirit_fur", 0.8, 1, 3]],
+  "sh:magmamoth": [["sh:magma_scale", 0.95, 2, 4]],
+  "sh:grey_bear": [["sh:bear_hide", 1.0, 3, 5], ["sh:bear_claw", 0.65, 1, 2]],
+  "sh:prayer_mantis": [["sh:mantis_chitin", 1.0, 3, 6], ["sh:mantis_scythe", 0.6, 1, 2]],
+};
+function dropMaterials(e) {
+  const list = MAT_DROPS[e.typeId];
+  if (!list) return;
+  for (const [id, ch, lo, hi] of list) {
+    if (Math.random() > ch) continue;
+    const n = lo + Math.floor(Math.random() * (hi - lo + 1));
+    try { e.dimension.spawnItem(new ItemStack(id, n), e.location); } catch (err) { /* */ }
+  }
+}
+const dropNames = (id) => (MAT_DROPS[id] || []).map(([m]) => (GEAR.materials[m] || {}).name || m).join("§7, ");
+
+// ───── دروع الوحوش: لما تلبس القطع الأربعة من نفس الطقم ينفتح بونص الطقم ─────
+const SET_OF = {};
+for (const [k, st] of Object.entries(GEAR.sets)) for (const id of st.pieces) SET_OF[id] = k;
+const PIECE_OF = {};
+for (const [k, st] of Object.entries(GEAR.sets)) st.pieces.forEach((id, i) => { PIECE_OF[id] = { set: k, slot: i }; });
+const setActive = new Map(), absorbAt = new Map();
+function wornSet(p) {
+  try {
+    const eq = p.getComponent("minecraft:equippable");
+    if (!eq) return null;
+    let key = null;
+    for (const slot of [MC.EquipmentSlot.Head, MC.EquipmentSlot.Chest, MC.EquipmentSlot.Legs, MC.EquipmentSlot.Feet]) {
+      const it = eq.getEquipment(slot);
+      const k = it && SET_OF[it.typeId];
+      if (!k || (key && k !== key)) return null;
+      key = k;
+    }
+    return key;
+  } catch (err) { return null; }
+}
+function gearEffect(p, id, amp, ticks = 80) { try { p.addEffect(id, ticks, { amplifier: amp, showParticles: false }); } catch (err) { /* */ } }
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try {
+      const k = wornSet(p), prev = setActive.get(p.id);
+      if (k !== prev) {
+        setActive.set(p.id, k);
+        if (k) { notify(p, `§aSet bonus: ${GEAR.sets[k].name}§a! §7${GEAR.sets[k].bonus}`, 90); sfxPlayer(p, "random.levelup", 0.6, 1.6); }
+      }
+      if (!k) continue;
+      if (k === "hunter") { if (!hasBuff(p, "swift")) gearEffect(p, "speed", 0); gearEffect(p, "jump_boost", 0); }
+      else if (k === "grizzly") {
+        if (!hasBuff(p, "bulwark")) gearEffect(p, "resistance", 0);
+        if (system.currentTick - (absorbAt.get(p.id) ?? -9999) >= 600) { absorbAt.set(p.id, system.currentTick); gearEffect(p, "absorption", 0, 600); }
+      } else if (k === "mantis") { if (!hasBuff(p, "swift")) gearEffect(p, "speed", 0); if (!hasBuff(p, "might")) gearEffect(p, "strength", 0); }
+    } catch (err) { /* */ }
+  }
+}, 40);
+// طقم السرعوف: 20% من الضربات القريبة ترجع نصها للضارب (مثل وضعية الصلاة)
+let gearCountering = false;
+world.afterEvents.entityHurt.subscribe((ev) => {
+  try {
+    const p = ev.hurtEntity;
+    if (gearCountering || !p || p.typeId !== "minecraft:player" || setActive.get(p.id) !== "mantis") return;
+    const src = ev.damageSource && ev.damageSource.damagingEntity;
+    if (!src || src.id === p.id || !valid(src) || ev.damageSource.damagingProjectile) return;
+    if (Math.random() >= 0.2) return;
+    gearCountering = true;
+    try { src.applyDamage(Math.max(1, ev.damage * 0.5), { cause: EntityDamageCause.entityAttack, damagingEntity: p }); } catch (err) { /* */ } finally { gearCountering = false; }
+    MONSTER.mantisParry(p.dimension, { x: p.location.x, y: p.location.y + 1.2, z: p.location.z }, fwdTo(p.location, src.location));
+    sfx(p.dimension, "random.anvil_land", p.location, 0.5, 2.0);
+  } catch (err) { /* */ }
+});
+
+// ───── المانا: خزان يكبر مع الرتبة ويتجدد كل ثانية؛ مهارات القدرة تكلف مانا (الأسلحة لا) ─────
+const MANA = new Map();
+function manaMax(st) { return 100 + 20 * Math.max(0, (st && st.rank) || 0); }
+function manaOf(p, st) {
+  let v = MANA.get(p.id);
+  if (v === undefined) {
+    try { const s = p.getDynamicProperty("sh_mana"); v = typeof s === "number" ? s : manaMax(st || getState(p)); } catch (err) { v = 100; }
+    MANA.set(p.id, v);
+  }
+  return v;
+}
+function spendMana(p, n) { MANA.set(p.id, Math.max(0, manaOf(p) - n)); }
+function manaCost(skill) { return Math.max(8, Math.min(45, Math.round((skill.cooldown / 20) * 3) + 6)); }
+
+// ───── الجرعات: تنشرب (مسكة الاستعمال)، وتأثيرات التقوية تبقى 6-8 دقائق ─────
+const BUFF_LEN = { might: 480, bulwark: 480, focus: 360, swift: 360 };          // بالثواني
+const BUFF_NAME = { might: "§6Might", bulwark: "§7Bulwark", focus: "§dFocus", swift: "§aSwiftness" };
+const BUFFS = new Map();
+function buffsOf(p) {
+  let b = BUFFS.get(p.id);
+  if (!b) {
+    try { const raw = p.getDynamicProperty("sh_buffs"); b = typeof raw === "string" ? JSON.parse(raw) : {}; } catch (err) { b = {}; }
+    BUFFS.set(p.id, b);
+  }
+  return b;
+}
+function hasBuff(p, k) { try { return (buffsOf(p)[k] || 0) > 0; } catch (err) { return false; } }
+function mightMul(by) { return by && by.typeId === "minecraft:player" && hasBuff(by, "might") ? 1.25 : 1; }
+function focusMul(p) { return hasBuff(p, "focus") ? 0.7 : 1; }
+system.runInterval(() => {
+  const save = system.currentTick % 100 < 20;
+  for (const p of world.getAllPlayers()) {
+    try {
+      const b = buffsOf(p);
+      for (const k of Object.keys(b)) {
+        b[k] -= 1;
+        if (b[k] <= 0) { delete b[k]; notify(p, `${BUFF_NAME[k] || k} §7wore off`, 40); }
+      }
+      const st = getState(p);
+      if (st.power) {
+        const max = manaMax(st), rate = (4 + 0.5 * (st.rank || 0)) * (hasBuff(p, "focus") ? 2 : 1);
+        MANA.set(p.id, Math.min(max, manaOf(p, st) + rate));
+      }
+      if (save) {
+        p.setDynamicProperty("sh_buffs", JSON.stringify(b));
+        if (MANA.has(p.id)) p.setDynamicProperty("sh_mana", Math.round(MANA.get(p.id)));
+      }
+    } catch (err) { /* */ }
+  }
+}, 20);
+const POTION_FX_COL = { "sh:potion_vitality": [0.9, 0.2, 0.25], "sh:potion_mana": [0.25, 0.45, 1], "sh:potion_might": [1, 0.55, 0.12], "sh:potion_bulwark": [0.6, 0.66, 0.74], "sh:potion_focus": [0.7, 0.35, 1], "sh:potion_swift": [0.35, 0.9, 0.5] };
+function drinkPotion(p, id) {
+  const b = buffsOf(p), dim = p.dimension, L = p.location;
+  if (id === "sh:potion_vitality") {
+    try { const hc = p.getComponent("minecraft:health"); hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + hc.effectiveMax * 0.5)); } catch (err) { /* */ }
+    gearEffect(p, "regeneration", 1, 100);
+    for (let i = 0; i < 6; i++) mcP(dim, { x: L.x + (Math.random() - 0.5), y: L.y + 0.8 + Math.random() * 1.2, z: L.z + (Math.random() - 0.5) }, "minecraft:heart_particle");
+    notify(p, "§cVitality! §7Half your health restored", 50);
+  } else if (id === "sh:potion_mana") {
+    const st = getState(p);
+    MANA.set(p.id, manaMax(st));
+    notify(p, st.power ? "§9Mana refilled" : "§7You have no power to use mana with", 50);
+  } else {
+    const k = { "sh:potion_might": "might", "sh:potion_bulwark": "bulwark", "sh:potion_focus": "focus", "sh:potion_swift": "swift" }[id];
+    if (!k) return;
+    b[k] = BUFF_LEN[k];
+    const ticks = BUFF_LEN[k] * 20;
+    if (k === "might") gearEffect(p, "strength", 0, ticks);
+    if (k === "bulwark") gearEffect(p, "resistance", 0, ticks);
+    if (k === "swift") { gearEffect(p, "speed", 1, ticks); gearEffect(p, "jump_boost", 0, ticks); }
+    notify(p, `${BUFF_NAME[k]} §7for ${Math.round(BUFF_LEN[k] / 60)} minutes`, 60);
+  }
+  try { p.setDynamicProperty("sh_buffs", JSON.stringify(b)); } catch (err) { /* */ }
+  const c = POTION_FX_COL[id] || [1, 1, 1];
+  for (let i = 0; i < 3; i++) mcP(dim, { x: L.x, y: L.y + 1.0, z: L.z }, "minecraft:mobspell_emitter", c);
+  sfxPlayer(p, "random.levelup", 0.4, 1.8);
+}
+world.afterEvents.itemCompleteUse.subscribe((ev) => {
+  try {
+    const p = ev.source, id = ev.itemStack && ev.itemStack.typeId;
+    if (!p || p.typeId !== "minecraft:player" || !id || !GEAR.potions[id]) return;
+    drinkPotion(p, id);
+  } catch (err) { /* */ }
+});
+// سطر الـHUD: المانا والتقويات الشغالة
+function manaHudLine(p, st, plain) {
+  const parts = [];
+  if (st.power) {
+    const max = manaMax(st), m = Math.min(max, manaOf(p, st));
+    parts.push(plain ? `§9✦ Mana ${bar(m / max, 6, "§9", "§8", true)} §b${Math.floor(m)}§7/${max}` : `§f${GL(GI.mana)} ${gbar(m / max, 6, GI.mana_full, GI.mana_empty)} §b${Math.floor(m)}§7/${max}`);
+  }
+  const b = buffsOf(p);
+  for (const k of Object.keys(b)) {
+    const left = b[k], mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
+    parts.push(plain ? `${BUFF_NAME[k]} §f${mm}:${ss}` : `§f${GL(GI["buff_" + k])} §f${mm}:${ss}`);
+  }
+  return parts.join("  ");
+}
+// معلومات الأيتم بالإيد (مواد، جرعات، دروع)
+function gearHeld(id, showTip) {
+  const m = GEAR.materials[id];
+  if (m) return { line: `${m.name} §8│ §7Monster material (${m.mob})`, tip: showTip ? "§7Craft monster armor at a crafting table, or brew potions with the Alchemist (Sakura Village)" : "" };
+  const po = GEAR.potions[id];
+  if (po) return { line: `${po.name}`, tip: showTip ? `§7${po.desc} §8(hold use to drink)` : "" };
+  const pc = PIECE_OF[id];
+  if (pc) { const s = GEAR.sets[pc.set]; return { line: `${s.name} armor §8│ §7piece ${pc.slot + 1}/4`, tip: showTip ? `§7${s.bonus}` : "" }; }
+  return null;
+}
+
+// ───── الخيميائي (قرية الساكورا): يطبخ الجرعات من مواد الوحوش ─────
+const ALCHEMY = [
+  ["sh:potion_vitality", [["sh:shadow_pelt", 3], ["sh:spirit_fur", 1]]],
+  ["sh:potion_mana", [["sh:hollow_lens", 2], ["sh:ember_horn", 2]]],
+  ["sh:potion_might", [["sh:magma_scale", 2], ["sh:ember_horn", 2]]],
+  ["sh:potion_bulwark", [["sh:rust_core", 2], ["sh:bear_hide", 1]]],
+  ["sh:potion_focus", [["sh:gloom_antler", 2], ["sh:hollow_lens", 1]]],
+  ["sh:potion_swift", [["sh:spirit_fur", 2], ["sh:sand_carapace", 2]]],
+];
+function countItem(p, typeId) {
+  let n = 0;
+  try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && it.typeId === typeId) n += it.amount; } } catch (err) { /* */ }
+  return n;
+}
+function takeItems(p, typeId, n) {
+  const c = inv(p);
+  for (let i = 0; i < c.size && n > 0; i++) {
+    const it = c.getItem(i);
+    if (!it || it.typeId !== typeId) continue;
+    const k = Math.min(n, it.amount);
+    n -= k;
+    if (it.amount > k) { it.amount -= k; c.setItem(i, it); } else c.setItem(i, undefined);
+  }
+}
+const matName = (id) => ((GEAR.materials[id] || {}).name || id).replace(/§./g, "");
+async function openAlchemist(p, npc) {
+  const f = new ActionFormData().title("Alchemist").body("§7\"Bring me what the monsters leave behind, and I will brew you something worth drinking.\"\n\n§fChoose a potion:");
+  const ok = ALCHEMY.map(([, cost]) => cost.every(([id, n]) => countItem(p, id) >= n));
+  ALCHEMY.forEach(([pid, cost], i) => {
+    const need = cost.map(([id, n]) => `${countItem(p, id) >= n ? "§2" : "§c"}${n} ${matName(id)}`).join("§8 + ");
+    f.button(`${ok[i] ? "" : "§8"}${GEAR.potions[pid].name.replace(/§./g, ok[i] ? "" : "")}\n${need}`);
+  });
+  f.button("§7Leave");
+  const r = await showForm(p, f);
+  if (r.canceled || r.selection === undefined || r.selection >= ALCHEMY.length) return;
+  const [pid, cost] = ALCHEMY[r.selection];
+  if (!cost.every(([id, n]) => countItem(p, id) >= n)) { notify(p, "§cYou don't have the materials for that potion", 50); sfxPlayer(p, "note.bass", 0.6, 0.7); return; }
+  for (const [id, n] of cost) takeItems(p, id, n);
+  giveItem(p, pid, 1);
+  const L = npc && valid(npc) ? npc.location : p.location;
+  for (let i = 0; i < 3; i++) mcP(p.dimension, { x: L.x, y: L.y + 1.6, z: L.z }, "minecraft:mobspell_emitter", POTION_FX_COL[pid] || [1, 1, 1]);
+  sfx(p.dimension, "random.potion.brewed", L, 1.0, 1.0);
+  sfx(p.dimension, "bottle.fill", L, 0.8, 1.1);
+  notify(p, `§aBrewed: ${GEAR.potions[pid].name}`, 60);
+}
+const alchemistTalk = new Map();
+world.afterEvents.playerInteractWithEntity.subscribe((ev) => {
+  try {
+    if (!ev.target || ev.target.typeId !== "sh:alchemist") return;
+    const p = ev.player, last = alchemistTalk.get(p.id) ?? -100;
+    if (system.currentTick - last < 10) return;
+    alchemistTalk.set(p.id, system.currentTick);
+    openAlchemist(p, ev.target);
+  } catch (err) { /* */ }
+});
+

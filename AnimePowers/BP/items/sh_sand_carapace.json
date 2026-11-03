@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sh:sand_carapace",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "sh_sand_carapace"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "§eSand Carapace"
+      },
+      "minecraft:max_stack_size": 64
+    }
+  }
+}

@@ -44,6 +44,7 @@ export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
 export const GameMode = new Proxy({}, { get: (t, k) => String(k) });
 export const HudElement = { PaperDoll: 0, Armor: 1, ToolTips: 2, TouchControls: 3, Crosshair: 4, Hotbar: 5, Health: 6, ProgressBar: 7, Hunger: 8, AirBubbles: 9, HorseHealth: 10, StatusEffects: 11, ItemText: 12 };
 export const HudVisibility = { Hide: 0, Reset: 1 };
+export const EquipmentSlot = { Head: "Head", Chest: "Chest", Legs: "Legs", Feet: "Feet", Mainhand: "Mainhand", Offhand: "Offhand" };
 
 // تسجيل: لما rec.on يسجل كل جزيء انطلب (النوع والمكان والمتغيرات) وتحرك كل كيان، حتى تنرسم النتيجة الحقيقية بدل مشاهد مرسومة باليد
 export const rec = { on: false, particles: [], frames: [] };
@@ -125,7 +126,12 @@ Object.assign(player, {
   },
 });
 player._base = mkEntity("x", { x: 0, y: 0, z: 0 }, dims.overworld);
-player.getComponent = ((orig) => function (n) { if (n === "minecraft:inventory") return orig.call(this, n); return player._base.getComponent.call(this, n); })(player.getComponent);
+player.getComponent = ((orig) => function (n) {
+  if (n === "minecraft:inventory") return orig.call(this, n);
+  if (n === "minecraft:equippable") return { getEquipment: (slot) => (player._equip || {})[slot] };
+  if (n === "minecraft:health") { const s = this; return { get currentValue() { return s._hp; }, get effectiveMax() { return s._max; }, setCurrentValue(v) { s._hp = v; }, resetToMaxValue() { s._hp = s._max; } }; }
+  return player._base.getComponent.call(this, n);
+})(player.getComponent);
 
 export const world = {
   afterEvents: evProxy(), beforeEvents: evProxy(),
@@ -839,15 +845,25 @@ export const __sim = {
       const LOW = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"], GRIM = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"], HIGH = ["sh:magmamoth", "sh:grey_bear", "sh:prayer_mantis"];
       const tagged = () => entities.filter((e) => e._valid && e._tags.has("sh_tower"));
       const counts = [];
-      let ok13 = true, ok46 = true, once = true;
+      let ok13 = true, ok46 = true, once = true, sealOn = false, sealOff = false, orbs = false, hudFloor = "", hudClear = "";
       for (let k = 0; k < 6; k++) {
         const before = tagged().length;
         player.location = { x: 201.5, y: 64 + k * 7, z: 199.5 }; advance(20);
         const neu = tagged().slice(before);
         counts.push(neu.length);
         if (k <= 2 && (neu.length !== 3 + k || !neu.every((e) => LOW.includes(e.typeId)))) ok13 = false;
+        if (k === 0) {                                                       // ختم الدرج: زجاج بنفسجي لحد ما ينظف الطابق، وينكسر بموتهم
+          sealOn = stats.setTypes.some((q) => q[3] === "minecraft:purple_stained_glass" && q[1] === 64 + 6);
+          hudFloor = (stats.actionBars[stats.actionBars.length - 1] || "").replace(/§./g, "");
+          const xp0 = entities.filter((e) => e.typeId === "minecraft:xp_orb").length;
+          for (const e of neu) { e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); }
+          advance(20);
+          sealOff = stats.setTypes.filter((q) => q[3] === "minecraft:air" && q[1] === 64 + 6).length >= 4;
+          orbs = entities.filter((e) => e.typeId === "minecraft:xp_orb").length > xp0;
+          hudClear = (stats.actionBars[stats.actionBars.length - 1] || "").replace(/§./g, "");
+        }
         if (k >= 3 && (neu.length < 3 || !neu.some((e) => GRIM.includes(e.typeId)))) ok46 = false;
-        advance(20); if (tagged().length !== before + neu.length) once = false;          // ما يتكرر
+        advance(20); if (k > 0 && tagged().length !== before + neu.length) once = false;          // ما يتكرر
         neu.forEach((e) => (e._valid = false));
       }
       player.location = { x: 200.5, y: 64 + 42, z: 200.5 }; advance(20);
@@ -866,11 +882,92 @@ export const __sim = {
       const wr = JSON.parse(world.getDynamicProperty("sh_structs"))[0];
       console.log(`  الطوابق 1-6: ${counts.join("، ")} وحش | 1-3 Lowly بالعدد ${ok13 ? "✔" : "✖"} | 4-6 أقوى (Grim) ${ok46 ? "✔" : "✖"} | مرة وحدة ${once ? "✔" : "✖"}`);
       console.log(`  الطابق 7: ${types0} ${topOk ? "✔" : "✖"} | يرجعون إذا تبخروا ${respawned ? "✔" : "✖"} | صندوق قبل القتل ${chest0 ? "✖" : "✔(ما في)"} | صندوق بعد القتل ${chest.length === 1 ? "✔" : "✖"} (${chest[0] ? chest[0].slice(0, 3).join(",") : "-"}) | غنائم ${loot.length} | مكتمل ${wr.c ? "✔" : "✖"}`);
+      console.log(`  ختم الدرج ${sealOn ? "✔" : "✖"} | ينكسر لما ينظف الطابق ${sealOff ? "✔" : "✖"} | خبرة ${orbs ? "✔" : "✖"} | الـHUD: "${hudFloor.split("\n").find((l) => l.includes("Abyss")) || "-"}" ثم "${hudClear.split("\n").find((l) => l.includes("Abyss")) || "-"}"`);
+      if (!sealOn || !sealOff || !orbs || !/Floor 1\/7/.test(hudFloor) || !/Cleared/.test(hudClear)) failures.push("البرج: الختم أو الـHUD أو جوائز الطابق ما تشتغل");
       if (!ok13 || !ok46 || !once) failures.push("البرج: وحوش الطوابق 1-6 غلط أو تتكرر");
       if (!topOk || !respawned) failures.push("البرج: وحوش الطابق السابع ما ظهرت أو ما رجعت");
       if (chest0 || chest.length !== 1 || loot.length < 3 || !wr.c) failures.push("البرج: صندوق القمة ما ظهر صح");
       entities.forEach((x) => (x._valid = false)); entities.length = 0; world.setDynamicProperty("sh_structs", "[]");
       player._hp = 20; player._max = 20; player._valid = true; player.location = { x: 0, y: 64, z: 0 };
+    }
+    // v1.35: مواد الوحوش، الدروع، المانا والجرعات، البرج المختوم، الخيميائي
+    {
+      console.log("\nالعتاد والمانا والجرعات:");
+      entities.forEach((x) => (x._valid = false)); entities.length = 0;
+      player._hp = 40; player._max = 40; player._valid = true; player.location = { x: 0, y: 64, z: 0 };
+      // 1) مواد الوحوش
+      stats.items = [];
+      const kill = (t) => { const m = mkEntity(t, { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(m); m._valid = false; fire("entityDie", { deadEntity: m, damageSource: { damagingEntity: player } }); };
+      for (let i = 0; i < 4; i++) { kill("sh:grey_bear"); kill("sh:prayer_mantis"); }
+      for (let i = 0; i < 12; i++) kill("sh:shadow_hound");                  // 55% لكل وحدة: 12 قتلة حتى ما يفشل الاختبار بالصدفة
+      const dropped = new Set(stats.items);
+      const dropsOk = ["sh:bear_hide", "sh:mantis_chitin", "sh:shadow_pelt"].every((x) => dropped.has(x));
+      // 2) المانا: مهارة غالية تنعاد بدون تصفير كولداون لحد ما تخلص المانا
+      setState(baseState("star")); spawnZombies(); system_cd_reset();
+      const msgs0 = stats.actionBars.length; let blocked = false, used = 0;
+      for (let i = 0; i < 12 && !blocked; i++) {
+        const before = stats.damage || 0;
+        fire("scriptEventReceive", { id: "sh:cdreset_cd_only", message: "", sourceEntity: player });
+        await useItem("sh:skill_meteor"); advance(2);
+        const bar = stats.actionBars.slice(-3).join(" ");
+        if (/Not enough mana/.test(bar)) blocked = true; else used++;
+        advance(30);
+      }
+      advance(200);
+      const hudMana = (stats.actionBars[stats.actionBars.length - 1] || "");
+      const manaShown = /\/1[0-9]{2}/.test(hudMana.replace(/§./g, ""));
+      // 3) الجرعات: كل جرعة تنشرب (itemCompleteUse)
+      const eff0 = { ...(stats.effects || {}) };
+      for (const pid of ["sh:potion_vitality", "sh:potion_mana", "sh:potion_might", "sh:potion_bulwark", "sh:potion_focus", "sh:potion_swift"]) fire("itemCompleteUse", { source: player, itemStack: new ItemStack(pid) });
+      advance(25);
+      const eff = stats.effects || {};
+      const potOk = (eff.regeneration || 0) > (eff0.regeneration || 0) && (eff.strength || 0) > (eff0.strength || 0) && (eff.resistance || 0) > (eff0.resistance || 0) && (eff.speed || 0) > (eff0.speed || 0);
+      const buffs = JSON.parse(player.getDynamicProperty("sh_buffs") || "{}");
+      const buffsOk = ["might", "bulwark", "focus", "swift"].every((k) => buffs[k] > 0);
+      advance(10);
+      const hudBuff = stats.actionBars[stats.actionBars.length - 1] || "";
+      // التركيز: كولداون أقصر (المهارة تنعاد أسرع)
+      system_cd_reset(); await useItem("sh:skill_meteor"); advance(2);
+      // 4) طقم الدرع: 4 قطع صياد = سرعة وقفز
+      const sp0 = (stats.effects || {}).jump_boost || 0;
+      player._equip = { Head: new ItemStack("sh:hunter_helmet"), Chest: new ItemStack("sh:hunter_chestplate"), Legs: new ItemStack("sh:hunter_leggings"), Feet: new ItemStack("sh:hunter_boots") };
+      advance(90);
+      const setOk = ((stats.effects || {}).jump_boost || 0) > sp0 && stats.actionBars.some((b) => /Set bonus/.test(b));
+      // طقم السرعوف: الرد على الضربات (20%)
+      player._equip = { Head: new ItemStack("sh:mantis_helmet"), Chest: new ItemStack("sh:mantis_chestplate"), Legs: new ItemStack("sh:mantis_leggings"), Feet: new ItemStack("sh:mantis_boots") };
+      advance(50);
+      const foe = mkEntity("minecraft:zombie", { x: 1, y: 64, z: 1 }, dims.overworld, 500); entities.push(foe);
+      const fh0 = foe._hp;
+      for (let i = 0; i < 60; i++) fire("entityHurt", { hurtEntity: player, damage: 4, damageSource: { damagingEntity: foe, cause: "entityAttack" } });
+      const countered = foe._hp < fh0;
+      player._equip = {};
+      // 5) الخيميائي: يظهر بالقرية، ويطبخ جرعة لما تكون عندك المواد
+      world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 300, y: 64, z: 300, type: "village", rot: 0, seed: 5, v: 2, ok: 1 }]));
+      player.location = { x: 300, y: 64, z: 320 };
+      advance(420);
+      const alch = entities.find((e) => e._valid && e.typeId === "sh:alchemist");
+      inventory.fill(undefined);
+      inventory[3] = new ItemStack("sh:shadow_pelt", 5); inventory[4] = new ItemStack("sh:spirit_fur", 2);
+      const ui = (await import("@minecraft/server-ui")).sim;
+      ui.nextSelection = 0; ui.formsShown.length = 0;
+      if (alch) fire("playerInteractWithEntity", { player, target: alch });
+      await new Promise((r) => setTimeout(r, 20)); advance(2);
+      const brewed = inventory.some((it) => it && it.typeId === "sh:potion_vitality");
+      const paid = (inventory[3] && inventory[3].amount) === 2;
+      world.setDynamicProperty("sh_structs", "[]"); inventory.fill(undefined);
+      console.log(`  مواد الوحوش ${dropsOk ? "✔" : "✖"} (${[...dropped].filter((x) => x.includes("hide") || x.includes("chitin") || x.includes("pelt") || x.includes("scythe") || x.includes("claw")).join(", ")})`);
+      console.log(`  المانا: مهارة غالية انعادت ${used} مرات ثم ${blocked ? "انقفلت (مانا ما تكفي) ✔" : "ما انقفلت ✖"} | المانا بالـHUD ${manaShown ? "✔" : "✖"}`);
+      console.log(`  الجرعات: تأثيرات ${potOk ? "✔" : "✖"} | تقويات محفوظة ${buffsOk ? "✔" : "✖"} (${Object.keys(buffs).join(",")}) | أيقونات بالـHUD ${/[-]/.test(hudBuff) ? "✔" : "✖"}`);
+      console.log(`  طقم الصياد (بونص) ${setOk ? "✔" : "✖"} | رد طقم السرعوف ${countered ? "✔" : "✖"}`);
+      console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | طبخ جرعة ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"}`);
+      if (!dropsOk) failures.push("مواد الوحوش ما طاحت");
+      if (!blocked || used < 2 || !manaShown) failures.push("المانا ما تشتغل صح");
+      if (!potOk || !buffsOk) failures.push("الجرعات ما تشتغل");
+      if (!setOk || !countered) failures.push("بونص طقم الدرع ما يشتغل");
+      if (!alch || !brewed || !paid) failures.push("الخيميائي ما يشتغل");
+      entities.forEach((x) => (x._valid = false)); entities.length = 0; system_cd_reset();
+      player._hp = 20; player._max = 20; player.location = { x: 0, y: 64, z: 0 };
+      fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });
     }
     // الداش: ضغطتين على يمين/يسار/خلف
     {

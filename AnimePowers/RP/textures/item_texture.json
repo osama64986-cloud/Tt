@@ -175,6 +175,96 @@
     },
     "sh_silver": {
       "textures": "textures/items/sh_silver"
+    },
+    "sh_shadow_pelt": {
+      "textures": "textures/items/sh_shadow_pelt"
+    },
+    "sh_ember_horn": {
+      "textures": "textures/items/sh_ember_horn"
+    },
+    "sh_sand_carapace": {
+      "textures": "textures/items/sh_sand_carapace"
+    },
+    "sh_rust_core": {
+      "textures": "textures/items/sh_rust_core"
+    },
+    "sh_gloom_antler": {
+      "textures": "textures/items/sh_gloom_antler"
+    },
+    "sh_hollow_lens": {
+      "textures": "textures/items/sh_hollow_lens"
+    },
+    "sh_spirit_fur": {
+      "textures": "textures/items/sh_spirit_fur"
+    },
+    "sh_magma_scale": {
+      "textures": "textures/items/sh_magma_scale"
+    },
+    "sh_bear_hide": {
+      "textures": "textures/items/sh_bear_hide"
+    },
+    "sh_bear_claw": {
+      "textures": "textures/items/sh_bear_claw"
+    },
+    "sh_mantis_chitin": {
+      "textures": "textures/items/sh_mantis_chitin"
+    },
+    "sh_mantis_scythe": {
+      "textures": "textures/items/sh_mantis_scythe"
+    },
+    "sh_potion_vitality": {
+      "textures": "textures/items/sh_potion_vitality"
+    },
+    "sh_potion_mana": {
+      "textures": "textures/items/sh_potion_mana"
+    },
+    "sh_potion_might": {
+      "textures": "textures/items/sh_potion_might"
+    },
+    "sh_potion_bulwark": {
+      "textures": "textures/items/sh_potion_bulwark"
+    },
+    "sh_potion_focus": {
+      "textures": "textures/items/sh_potion_focus"
+    },
+    "sh_potion_swift": {
+      "textures": "textures/items/sh_potion_swift"
+    },
+    "sh_hunter_helmet": {
+      "textures": "textures/items/sh_hunter_helmet"
+    },
+    "sh_hunter_chestplate": {
+      "textures": "textures/items/sh_hunter_chestplate"
+    },
+    "sh_hunter_leggings": {
+      "textures": "textures/items/sh_hunter_leggings"
+    },
+    "sh_hunter_boots": {
+      "textures": "textures/items/sh_hunter_boots"
+    },
+    "sh_grizzly_helmet": {
+      "textures": "textures/items/sh_grizzly_helmet"
+    },
+    "sh_grizzly_chestplate": {
+      "textures": "textures/items/sh_grizzly_chestplate"
+    },
+    "sh_grizzly_leggings": {
+      "textures": "textures/items/sh_grizzly_leggings"
+    },
+    "sh_grizzly_boots": {
+      "textures": "textures/items/sh_grizzly_boots"
+    },
+    "sh_mantis_helmet": {
+      "textures": "textures/items/sh_mantis_helmet"
+    },
+    "sh_mantis_chestplate": {
+      "textures": "textures/items/sh_mantis_chestplate"
+    },
+    "sh_mantis_leggings": {
+      "textures": "textures/items/sh_mantis_leggings"
+    },
+    "sh_mantis_boots": {
+      "textures": "textures/items/sh_mantis_boots"
     }
   }
 }

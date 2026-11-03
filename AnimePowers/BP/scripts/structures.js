@@ -703,16 +703,16 @@ export function buildTemple(p, onDone) {
 // ملاحظة: لفائف تطور المهارات ما تنحط بالصناديق (من المدرب أو الكرييتف بس).
 const LOOT = {
   // الأسلحة صارت نادرة: المضمون بس صندوق معبد القرية الصغير (سلاح عشوائي) وضريح السيف (الكاتانا)
-  house: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
-  pantry: [["minecraft:bread", 3, 6, 0.9], ["minecraft:cooked_chicken", 2, 4, 0.7], ["minecraft:apple", 2, 4, 0.8], ["minecraft:carrot", 3, 6, 0.6], ["minecraft:potato", 3, 6, 0.6], ["minecraft:honey_bottle", 1, 2, 0.3]],
-  hokora: [["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
+  house: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 1, 0.05], ["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.15], ["sh:explorer_compass", 1, 1, 0.3], ["minecraft:bread", 2, 5, 0.9], ["minecraft:apple", 1, 3, 0.7], ["minecraft:torch", 4, 8, 0.6]],
+  pantry: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 1, 0.06], ["minecraft:bread", 3, 6, 0.9], ["minecraft:cooked_chicken", 2, 4, 0.7], ["minecraft:apple", 2, 4, 0.8], ["minecraft:carrot", 3, 6, 0.6], ["minecraft:potato", 3, 6, 0.6], ["minecraft:honey_bottle", 1, 2, 0.3]],
+  hokora: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 1, 0.15], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["sh:explorer_compass", 1, 1, 0.5], ["minecraft:golden_apple", 1, 1, 0.4]],
   ruins_small: [["sh:xp_scroll_small", 1, 2, 1.0], ["pick:sh:ember_cleaver|sh:sunset_spear", 1, 1, 0.08], ["minecraft:iron_ingot", 2, 5, 0.7]],
-  ruins: [["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.12], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
-  palace: [["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
+  ruins: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 1, 0.06], ["sh:xp_scroll_small", 1, 2, 1.0], ["sh:monster_book", 1, 1, 0.25], ["sh:explorer_compass", 1, 1, 0.3], ["pick:sh:ember_cleaver|sh:sunset_spear|sh:stone_maul", 1, 1, 0.12], ["minecraft:iron_ingot", 2, 5, 0.7], ["minecraft:cooked_porkchop", 2, 4, 0.6], ["minecraft:torch", 4, 8, 0.5]],
+  palace: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 1, 0.12], ["pick:sh:stone_maul|sh:sunset_spear|sh:ember_cleaver|sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws", 1, 1, 0.15], ["sh:xp_scroll_big", 1, 1, 0.8], ["sh:explorer_compass", 1, 1, 0.5], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.5], ["minecraft:cooked_beef", 4, 8, 0.9], ["minecraft:emerald", 3, 6, 0.8], ["minecraft:iron_ingot", 4, 8, 0.7]],
   lightshrine: [["sh:silver_oath", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
   shrine: [["sh:dark_katana", 1, 1, 1.0], ["sh:xp_scroll_big", 1, 2, 1.0], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.6], ["minecraft:diamond", 1, 2, 0.5]],
   // صندوق قمة برج الهاوية (بعد قتل وحوش الطابق السابع)
-  tower: [["sh:xp_scroll_big", 2, 3, 1.0], ["sh:xp_scroll_small", 3, 5, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.35], ["minecraft:diamond", 2, 4, 0.85], ["minecraft:golden_apple", 1, 2, 0.9], ["minecraft:enchanted_golden_apple", 1, 1, 0.12], ["minecraft:ender_pearl", 2, 4, 0.5], ["minecraft:netherite_scrap", 1, 1, 0.15], ["minecraft:amethyst_shard", 4, 9, 0.7], ["sh:explorer_compass", 1, 1, 0.3], ["sh:monster_book", 1, 1, 0.2]],
+  tower: [["pick:sh:potion_vitality|sh:potion_mana|sh:potion_might|sh:potion_bulwark|sh:potion_focus|sh:potion_swift", 1, 2, 0.85], ["pick:sh:magma_scale|sh:bear_hide|sh:mantis_chitin", 2, 4, 0.7], ["sh:xp_scroll_big", 2, 3, 1.0], ["sh:xp_scroll_small", 3, 5, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.35], ["minecraft:diamond", 2, 4, 0.85], ["minecraft:golden_apple", 1, 2, 0.9], ["minecraft:enchanted_golden_apple", 1, 1, 0.12], ["minecraft:ender_pearl", 2, 4, 0.5], ["minecraft:netherite_scrap", 1, 1, 0.15], ["minecraft:amethyst_shard", 4, 9, 0.7], ["sh:explorer_compass", 1, 1, 0.3], ["sh:monster_book", 1, 1, 0.2]],
   altar: [["sh:xp_scroll_big", 1, 2, 1.0], ["pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver", 1, 1, 0.25], ["sh:xp_scroll_small", 2, 3, 1.0], ["minecraft:golden_apple", 1, 1, 0.8], ["minecraft:diamond", 1, 2, 0.5]],
 };
 
@@ -848,6 +848,7 @@ function loadReg() {
 }
 function saveReg(r) {
   try { world.setDynamicProperty("sh_structs", JSON.stringify(r)); } catch (e) { /* */ }
+  try { towerCache.tick = -999; } catch (e) { /* */ }                          // سطر البرج بالـHUD يتحدث فوراً
 }
 // الضريحان القديمان (قبل 1.28.0: بحجم 27×27 وصندوق جاهز) ننساهن من السجل حتى ينبنون الجداد 45×45 بحراسهم (المباني القديمة تبقى بالعالم)
 function migrateReg(r) {
@@ -962,11 +963,42 @@ function towerSpawn(dim, s, plan, k, types, p, top) {
     try {
       if (!dim.isChunkLoaded(loc)) return;
       const e = dim.spawnEntity(type, loc);
-      try { e.addTag("sh_tower"); if (top) e.addTag("sh_tower_top"); } catch (e2) { /* */ }
+      try { e.addTag("sh_tower"); e.addTag(`sh_tf${k}`); if (top) e.addTag("sh_tower_top"); } catch (e2) { /* */ }
       try { if (guardHook) guardHook(e, p); } catch (e3) { /* */ }
     } catch (e1) { /* */ }
   });
 }
+// ختم الدرج: زجاج بنفسجي يسد فتحة الدرج فوق الطابق k لحد ما تنظفه (k = 0..5)
+function towerSealCells(s, k) {
+  const y0 = k * TOWER_FH, east = k % 2 === 0, xs = east ? [5, 6] : [-6, -5], sz = east ? -1 : 1;
+  const out = [];
+  for (const i of [4, 5]) for (const x of xs) { const [rx, rz] = rotXZ(x, (east ? 3 : -3) + sz * i, s.rot); out.push({ x: s.x + rx, y: s.y + y0 + TOWER_FH - 1, z: s.z + rz }); }
+  return out;
+}
+function towerSeal(dim, s, k, on) {
+  for (const c of towerSealCells(s, k)) { try { dim.setBlockType(c, on ? "minecraft:purple_stained_glass" : "minecraft:air"); } catch (e) { /* */ } }
+}
+// الطابق k انتهى: الختم ينكسر + جوائز (خبرة، وبالطوابق 3 و6 لفافة وأحياناً جرعة)
+function towerFloorCleared(dim, s, k) {
+  const fl = { x: s.x + 0.5, y: s.y + k * TOWER_FH + 0.5, z: s.z + 0.5 };
+  if (k < TOWER_FLOORS - 1) {
+    towerSeal(dim, s, k, false);
+    try {
+      for (let i = 0; i < 3 + k; i++) dim.spawnEntity("minecraft:xp_orb", { x: fl.x + (Math.random() - 0.5) * 2, y: fl.y + 0.5, z: fl.z + (Math.random() - 0.5) * 2 });
+      if (k === 2 || k === 5) {
+        dim.spawnItem(new ItemStack("sh:xp_scroll_small", 1), fl);
+        if (Math.random() < 0.35) dim.spawnItem(new ItemStack(pickOf(POTION_IDS), 1), fl);
+      }
+      dim.spawnParticle("minecraft:totem_particle", { x: fl.x, y: fl.y + 1, z: fl.z });
+      dim.playSound("random.levelup", fl, { volume: 0.9, pitch: 1.1 });
+      dim.playSound("random.glass", fl, { volume: 0.8, pitch: 0.7 });
+    } catch (e) { /* */ }
+    for (const p of dim.getPlayers({ location: fl, maxDistance: 30 })) { try { p.sendMessage(`§5[Abyss Tower] §aFloor ${k + 1} cleared! §7The seal on the stairs breaks.`); } catch (e) { /* */ } }
+  }
+}
+// مكان الخيميائي بخطة القرية (مسار حصى مفتوح للسما، فحص check_village)
+export const ALCHEMIST_SPOT = [2, 0, 17];
+const POTION_IDS = ["sh:potion_vitality", "sh:potion_mana", "sh:potion_might", "sh:potion_bulwark", "sh:potion_focus", "sh:potion_swift"];
 function towerTick() {
   let reg;
   for (const p of world.getAllPlayers()) {
@@ -979,21 +1011,27 @@ function towerTick() {
         const ly = p.location.y - s.y;
         if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
         const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
-        const plan = planTower(s.seed), dim = p.dimension;
-        s.fl = s.fl || 0;
+        const plan = planTower(s.seed), dim = p.dimension, top = k === TOWER_FLOORS - 1;
+        s.fl = s.fl || 0; s.ft = s.ft || {}; s.cl = s.cl || 0;
         if (!(s.fl & (1 << k))) {
           s.fl |= 1 << k;
-          const top = k === TOWER_FLOORS - 1;
           const types = towerFloorMobs(k);
+          s.ft[k] = [...types];
           if (top) { s.top = types; s.kt = []; }
           saveReg(reg);
           towerSpawn(dim, s, plan, k, types, p, top);
+          if (!top) towerSeal(dim, s, k, true);
           try {
-            p.sendMessage(top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters`);
+            p.sendMessage(top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters. §8The stairs stay sealed until the floor is cleared.`);
             p.playSound(top ? "mob.wither.spawn" : "mob.evocation_illager.prepare_attack", { volume: top ? 0.6 : 0.8, pitch: top ? 1.2 : 0.8 });
           } catch (e4) { /* */ }
-        } else if (k === TOWER_FLOORS - 1 && !s.c && s.top) {
-          // الحراس تبخروا (اللاعب بعد عن البرج): نرجع اللي ما انقتل
+        } else if (s.ft[k] && s.ft[k].length && !(s.cl & (1 << k))) {
+          // وحوش الطابق تبخرت (اللاعب بعد): نرجع اللي ما انقتل لما يرجع للطابق
+          const c = { x: s.x, y: s.y + plan.towerFloors[k].y, z: s.z };
+          const alive = dim.getEntities({ location: c, maxDistance: 14, tags: [`sh_tf${k}`] }).length + (top ? dim.getEntities({ location: c, maxDistance: 14, tags: ["sh_tower_top"] }).length : 0);
+          if (!alive) towerSpawn(dim, s, plan, k, s.ft[k], p, top);
+        } else if (top && !s.c && s.top && !s.ft[k]) {
+          // برج قديم (قبل 1.35): الطابق السابع بالطريقة القديمة
           const c = { x: s.x, y: s.y + plan.towerFloors[k].y, z: s.z };
           const alive = dim.getEntities({ location: c, maxDistance: 14, tags: ["sh_tower_top"] }).length;
           if (!alive) {
@@ -1006,34 +1044,77 @@ function towerTick() {
     } catch (e) { /* */ }
   }
 }
-// يستدعيه main.js لما يموت وحش عليه وسم sh_tower_top: نسجل القتل، ولما ينقتلون كلهم يطلع صندوق القمة
+function towerChest(dim, s) {
+  const plan = planTower(s.seed), rw = plan.rewardAt;
+  const [x, z] = rotXZ(rw.x, rw.z, s.rot);
+  const at = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
+  dim.setBlockType(at, "minecraft:chest");
+  const b = dim.getBlock(at);
+  if (b) fillChest(b, rw.key);
+  const c = { x: at.x + 0.5, y: at.y + 0.6, z: at.z + 0.5 };
+  try {
+    dim.spawnParticle("minecraft:large_explosion", c);
+    dim.spawnParticle("minecraft:totem_particle", c);
+    dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
+    dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.1 });
+  } catch (e3) { /* */ }
+  for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { p.sendMessage("§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
+}
+// يستدعيه main.js لما يموت وحش بالبرج: نشيله من قائمة طابقه، ولما يخلص الطابق ينكسر الختم (أو يطلع صندوق القمة)
 export function onTowerMobDeath(e) {
   try {
-    if (!e.hasTag("sh_tower_top")) return;
+    if (!e.hasTag("sh_tower")) return;
     const reg = loadReg(), loc = e.location, dim = e.dimension;
-    const s = reg.find((t) => t.type === "tower" && !t.c && t.top && Math.hypot(t.x - loc.x, t.z - loc.z) < 14);
+    const s = reg.find((t) => t.type === "tower" && Math.hypot(t.x - loc.x, t.z - loc.z) < 14);
     if (!s) return;
+    let k = -1;
+    for (let i = 0; i < TOWER_FLOORS; i++) if (e.hasTag(`sh_tf${i}`)) k = i;
+    if (k < 0 && e.hasTag("sh_tower_top")) k = TOWER_FLOORS - 1;
+    if (k < 0) return;
+    const top = k === TOWER_FLOORS - 1;
+    if (top && s.c) return;
+    if (s.ft && s.ft[k]) {
+      const i = s.ft[k].indexOf(e.typeId);
+      if (i >= 0) s.ft[k].splice(i, 1);
+      if (s.ft[k].length) {
+        saveReg(reg);
+        if (top) for (const p of dim.getPlayers({ location: loc, maxDistance: 40 })) { try { p.sendMessage("§5[Abyss Tower] §fOne master has fallen. §7Another still stands."); } catch (e2) { /* */ } }
+        return;
+      }
+      if (s.cl & (1 << k)) return;
+      s.cl = (s.cl || 0) | (1 << k);
+      if (top) s.c = 1;
+      saveReg(reg);
+      if (top) towerChest(dim, s); else towerFloorCleared(dim, s, k);
+      return;
+    }
+    if (!top || !s.top) return;                                                    // برج قديم: الطابق السابع بالطريقة القديمة
     s.kt = s.kt || [];
     s.kt.push(e.typeId);
     const left = [...s.top];
     for (const t of s.kt) { const i = left.indexOf(t); if (i >= 0) left.splice(i, 1); }
-    if (left.length) { saveReg(reg); for (const p of dim.getPlayers({ location: loc, maxDistance: 40 })) { try { p.sendMessage("§5[Abyss Tower] §fOne master has fallen. §7Another still stands."); } catch (e2) { /* */ } } return; }
+    if (left.length) { saveReg(reg); return; }
     s.c = 1; saveReg(reg);
-    const plan = planTower(s.seed), rw = plan.rewardAt;
-    const [x, z] = rotXZ(rw.x, rw.z, s.rot);
-    const at = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
-    dim.setBlockType(at, "minecraft:chest");
-    const b = dim.getBlock(at);
-    if (b) fillChest(b, rw.key);
-    const c = { x: at.x + 0.5, y: at.y + 0.6, z: at.z + 0.5 };
-    try {
-      dim.spawnParticle("minecraft:large_explosion", c);
-      dim.spawnParticle("minecraft:totem_particle", c);
-      dim.playSound("random.levelup", c, { volume: 1.2, pitch: 0.8 });
-      dim.playSound("random.totem", c, { volume: 1.0, pitch: 1.1 });
-    } catch (e3) { /* */ }
-    for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { p.sendMessage("§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
+    towerChest(dim, s);
   } catch (e) { /* */ }
+}
+// سطر الـHUD داخل البرج: رقم الطابق وكم وحش باقي
+var towerCache = { tick: -999, reg: [] };
+export function towerHudLine(p, plain) {
+  try {
+    if (system.currentTick - towerCache.tick > 20) { towerCache.reg = loadReg().filter((s) => s.type === "tower" && s.ok); towerCache.tick = system.currentTick; }
+    for (const s of towerCache.reg) {
+      if (Math.hypot(p.location.x - s.x - 0.5, p.location.z - s.z - 0.5) > 7.5) continue;
+      const ly = p.location.y - s.y;
+      if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
+      const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
+      const left = s.ft && s.ft[k] ? s.ft[k].length : 0;
+      const done = (s.cl || 0) & (1 << k) || (k === TOWER_FLOORS - 1 && s.c);
+      const st = done ? (k === TOWER_FLOORS - 1 ? "§dConquered" : "§aCleared, climb!") : left ? `§c${left} monster${left > 1 ? "s" : ""} left` : "§7...";
+      return `§5${plain ? "" : "▲ "}Abyss Tower §fFloor ${k + 1}/${TOWER_FLOORS} §8│ ${st}`;
+    }
+  } catch (e) { /* */ }
+  return "";
 }
 
 export function setupStructures(onGuardSpawn) {
@@ -1088,6 +1169,17 @@ export function setupStructures(onGuardSpawn) {
         if (d < 30 && !announced.has(key)) {
           announced.add(key);
           try { p.sendMessage(`§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
+        }
+        if (s.type === "village" && s.ok && d < 60) {                        // الخيميائي: شيخ واحد بكل قرية ساكورا (على المسار)
+          try {
+            const centre = { x: s.x, y: s.y + 1, z: s.z };
+            if (!p.dimension.getEntities({ type: "sh:alchemist", location: centre, maxDistance: 80 }).length) {
+              const [ax, az] = rotXZ(ALCHEMIST_SPOT[0], ALCHEMIST_SPOT[2], s.rot);
+              const loc = { x: s.x + ax + 0.5, y: s.y + ALCHEMIST_SPOT[1], z: s.z + az + 0.5 };
+              if (p.dimension.isChunkLoaded(loc)) { const e = p.dimension.spawnEntity("sh:alchemist", loc); try { e.addTag("sh_alchemist"); } catch (e2) { /* */ } }
+            }
+          } catch (e) { /* */ }
+          continue;
         }
         if (STRUCTURES[s.type].tower) continue;                              // البرج: وحوشه بالطوابق (towerTick)
         if (STRUCTURES[s.type].bosses) {                                    // الضريحان: حارسان قويان فقط لحد ما ينكسر الختم

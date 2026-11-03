@@ -175,6 +175,8 @@ for f in glob.glob(os.path.join(RP, "attachables", "*.json")):
     if d["identifier"] not in item_ids:
         err(f"{rel(f)}: الأيتم {d['identifier']} مو موجود")
     for g in d.get("geometry", {}).values():
+        if g.startswith("geometry.humanoid.armor"):                 # موديلات الدروع الأصلية باللعبة (مثل درع الحديد)
+            continue
         if g not in geo_ids:
             err(f"{rel(f)}: الموديل {g} مو موجود")
     for t in d.get("textures", {}).values():

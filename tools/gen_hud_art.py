@@ -20,6 +20,7 @@ G = {
     "wave_on": 4, "wave_off": 5, "gold_full": 6, "gold_empty": 7, "xp_full": 8, "xp_empty": 9,
     "pw_full": 10, "pw_empty": 11, "boss": 12, "hp_full": 13, "hp_empty": 14,
     "rank0": 16, "power0": 32, "ready": 48, "cool": 49, "lock": 50, "held": 51, "sword": 52, "lens": 53, "rift_ring": 54, "sep": 55,
+    "mana_full": 56, "mana_empty": 57, "mana": 58, "buff_might": 59, "buff_bulwark": 60, "buff_focus": 61, "buff_swift": 62,
 }
 POWER_ORDER = ["iron", "wind", "echo", "crystal", "accountant", "borrower", "distance", "law", "star"]
 
@@ -280,6 +281,34 @@ def icon(kind):
     return c.outline()
 
 
+def mana_icon():
+    """بلورة مانا زرقة (معين بلمعة)"""
+    c = Cell()
+    for y in range(2, 14):
+        w = 5 - abs(y - 7.5) * 0.75
+        for x in range(16):
+            if abs(x + 0.5 - 8) <= w:
+                t = (y - 2) / 11
+                col = mix((150, 190, 255), (40, 70, 200), t)
+                if x + 0.5 < 8 and y < 8:
+                    col = mix(col, (230, 240, 255), 0.45)
+                c.put(x, y, col)
+    return c.outline()
+
+
+def bottle(col):
+    """قنينة جرعة صغيرة (أيقونة التقوية الشغالة)"""
+    c = Cell()
+    glass = (210, 226, 236)
+    for y in range(16):
+        for x in range(16):
+            if (x + 0.5 - 8) ** 2 + (y + 0.5 - 10) ** 2 <= 4.6 ** 2:
+                c.put(x, y, mix(col, (255, 255, 255), 0.35) if (x - 6) ** 2 + (y - 9) ** 2 < 2 else (col if y >= 8 else glass))
+    c.rect(7, 3, 8, 5, glass)
+    c.rect(6, 2, 9, 2, (140, 98, 58))
+    return c.outline()
+
+
 def build_sheet():
     cells = {}
     cells[G["heart"]] = heart("full"); cells[G["heart_half"]] = heart("half"); cells[G["heart_empty"]] = heart("empty")
@@ -295,6 +324,11 @@ def build_sheet():
     cells[G["pw_empty"]] = seg(None, None, None, filled=False)
     cells[G["hp_full"]] = seg((226, 32, 52), (255, 130, 140), (140, 10, 30))
     cells[G["hp_empty"]] = seg(None, None, None, filled=False)
+    cells[G["mana_full"]] = seg((70, 110, 255), (160, 190, 255), (30, 50, 170))
+    cells[G["mana_empty"]] = seg(None, None, None, filled=False)
+    cells[G["mana"]] = mana_icon()
+    for k, col in (("might", (255, 140, 30)), ("bulwark", (140, 160, 184)), ("focus", (170, 80, 255)), ("swift", (90, 230, 120))):
+        cells[G["buff_" + k]] = bottle(col)
     for r in range(7):
         cells[G["rank0"] + r] = crest(r)
     for i, k in enumerate(POWER_ORDER):

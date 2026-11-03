@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "sh:craft_hunter_helmet"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "ABA",
+      "A A"
+    ],
+    "key": {
+      "A": {
+        "item": "sh:shadow_pelt"
+      },
+      "B": {
+        "item": "sh:sand_carapace"
+      }
+    },
+    "unlock": [
+      {
+        "item": "sh:shadow_pelt"
+      }
+    ],
+    "result": {
+      "item": "sh:hunter_helmet"
+    }
+  }
+}
