@@ -4,10 +4,11 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudLine } from "./structures.js";
-import { setupDash, dashCooldown } from "./dash.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo } from "./structures.js";
+import { setupDash, dashCooldown, dashHooks } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
+import { ACH, ACH_CATS } from "./achievements.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
 import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS } from "./skillfx.js";
 
@@ -312,53 +313,55 @@ function gbar(frac, n, full, empty) {
   const k = Math.max(0, Math.min(n, Math.round(frac * n)));
   return "§f" + GL(full).repeat(k) + GL(empty).repeat(n - k);
 }
-function gHearts(cur, max) {
-  const h = Math.max(0, Math.min(10, (cur / Math.max(1, max)) * 10));
+function gHearts(cur, max, n = 8) {                                              // 8 قلوب (كانت 10 وتعرّض اللوحة لحد أزرار الإيقاف والشات باللمس)
+  const h = Math.max(0, Math.min(n, (cur / Math.max(1, max)) * n));
   const full = Math.floor(h), half = h - full >= 0.5 ? 1 : 0;
-  return "§f" + GL(GI.heart).repeat(full) + GL(GI.heart_half).repeat(half) + GL(GI.heart_empty).repeat(10 - full - half);
+  return "§f" + GL(GI.heart).repeat(full) + GL(GI.heart_half).repeat(half) + GL(GI.heart_empty).repeat(n - full - half);
 }
+// اللوحة فوق يسار: أسطر قصيرة فوق بعض بدل أسطر عريضة، حتى ما توصل لأزرار الإيقاف والشات والإيموت اللي بأعلى الشاشة باللمس
+// (أعرض سطر ≈ 118 بكسل واجهة، فاللوحة تخلص قبل نص الشاشة). المحاكي يقيس العرض بعروض حروف ماينكرافت.
+//   1) شعار الرتبة + اسمها + شريط   2) 8 قلوب + الرقم   3) Lv + شريط + %   4) شعار القدرة + ليفلها + شريط
+//   5) المانا   6) التقويات (إذا شغالة)   7-8) المهارات (4 بكل سطر)
 function hudArt(p, st) {
   const pw = POWERS[st.power];
   const rp = rankProgress(st);
-  let hpTxt = "";
+  const rows = [`§f${GL(GI.rank0 + Math.min(6, st.rank))} §6${RANKS[st.rank]} ${gbar(rp.frac, 5, GI.gold_full, GI.gold_empty)}`];
   try {
     const h = p.getComponent("minecraft:health");
-    hpTxt = `${gHearts(h.currentValue, h.effectiveMax)} §c${Math.ceil(h.currentValue)}§7/${Math.ceil(h.effectiveMax)}`;
+    rows.push(`${gHearts(h.currentValue, h.effectiveMax)} §c${Math.ceil(h.currentValue)}§7/${Math.ceil(h.effectiveMax)}`);
   } catch (e) { /* */ }
-  const l1 = `§f${GL(GI.rank0 + Math.min(6, st.rank))} §6§l${RANKS[st.rank]}§r ${gbar(rp.frac, 6, GI.gold_full, GI.gold_empty)} §7${rp.max ? "MAX" : `${rp.cur}/${rp.need}`}  ${hpTxt}`;
   const need = xpNeeded(st.level);
-  let l2 = `§bLv §l${st.level}§r ${gbar(st.xp / need, 5, GI.xp_full, GI.xp_empty)} §7${Math.floor((st.xp / need) * 100)}%`;
+  rows.push(`§bLv ${st.level} ${gbar(st.xp / need, 5, GI.xp_full, GI.xp_empty)} §7${Math.floor((st.xp / need) * 100)}%`);
   if (pw) {
     const r = rarityOf(st.power), pl = st.plevel || 1;
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
-    l2 += `  §f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`;
-  } else l2 += st.powerless ? "  §8§lUnbound §r§c+STR §b+SPD" : "  §7No power: find the Star Temple";
+    rows.push(`§f${GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power)))} ${pw.color}Lv${pl}/${r.maxLv} ${gbar(pfrac, 5, GI.pw_full, GI.pw_empty)}`);
+  } else rows.push(st.powerless ? "§8Unbound §c+STR §b+SPD" : "§7No power yet");
   const lm = manaHudLine(p, st, false);                                         // المانا والتقويات (v1.35)
-  return [l1, l2, lm].filter(Boolean).join("\n");
+  if (lm) rows.push(lm);
+  return rows.join("\n");
 }
 function hudText(p, st, plain) {
   if (!plain) return hudArt(p, st);
   return [hudPlain(p, st), manaHudLine(p, st, true)].filter(Boolean).join("\n");
 }
-function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية بدل رموز الواجهة (كانت ناقصة = خطأ ReferenceError بالواجهة البسيطة)
+function hudPlain(p, st, plain = true) {        // plain: أشرطة نصية بدل رموز الواجهة، نفس الأسطر القصيرة
   const pw = POWERS[st.power];
   const rp = rankProgress(st);
-  let hp = "§c♥ --";
+  const rows = [`§6${RANKS[st.rank]} ${bar(rp.frac, 6, "§6", "§8", plain)} §7${rp.max ? "MAX" : `${rp.cur}/${rp.need}`}`];
   try {
     const h = p.getComponent("minecraft:health");
-    hp = `§c♥ ${bar(h.currentValue / h.effectiveMax, 6, "§c", "§8", plain)} §f${Math.ceil(h.currentValue)}§7/${Math.ceil(h.effectiveMax)}`;
+    rows.push(`§c♥ ${bar(h.currentValue / h.effectiveMax, 8, "§c", "§8", plain)} §f${Math.ceil(h.currentValue)}§7/${Math.ceil(h.effectiveMax)}`);
   } catch (e) { /* */ }
-  // سطر 1: الرتبة + تقدمها │ الصحة
-  const l1 = `§6◆ ${RANKS[st.rank]} ${bar(rp.frac, 6, "§6", "§8", plain)} §7${rp.max ? "MAX" : `${rp.cur}/${rp.need}`} §8│ ${hp}`;
-  // سطر 2: ليفل اللاعب + خبرته │ القدرة وتطورها
   const need = xpNeeded(st.level);
-  let l2 = `§bLv ${st.level} ${bar(st.xp / need, 6, "§b", "§8", plain)} §7${Math.floor((st.xp / need) * 100)}%`;
+  rows.push(`§bLv ${st.level} ${bar(st.xp / need, 6, "§b", "§8", plain)} §7${Math.floor((st.xp / need) * 100)}%`);
   if (pw) {
     const r = rarityOf(st.power), pl = st.plevel || 1;
     const pfrac = pl >= r.maxLv ? 1 : (st.pxp || 0) / powerXpNeeded(pl);
-    l2 += ` §8│ ${pw.color}${pw.name} §dLv${pl}/${r.maxLv} ${bar(pfrac, 5, "§d", "§8", plain)}`;
-  } else l2 += " §8│ §7No power";
-  return `${l1}\n${l2}`;
+    const short = pw.name.replace(/^The /, "").split(" ")[0];                    // اسم قصير حتى السطر يبقى ضيق
+    rows.push(`${pw.color}${short} §dLv${pl}/${r.maxLv} ${bar(pfrac, 5, "§d", "§8", plain)}`);
+  } else rows.push(st.powerless ? "§8Unbound" : "§7No power yet");
+  return rows.join("\n");
 }
 
 // شريط المهارات + نغمة خفيفة لما تخلص مهارة طويلة الكولداون
@@ -381,11 +384,14 @@ function skillStrip(p, st, heldId, plain) {
         if (!m || m.until <= now) notify(p, `§a✔ ${s.name} ready`, 25);
       }
       wasCooling.set(key, cooling);
-      txt = plain ? (cooling ? `§c${n}·${fmtSec(left)}` : `§a${n}✔`) : (cooling ? `§f${GL(GI.cool)}§c${n} ${fmtSec(left)}` : `§f${GL(GI.ready)}§a${n}`);
+      const secs = Math.ceil(left / 20);
+      txt = plain ? (cooling ? `§c${n}·${secs}` : `§a${n}✔`) : (cooling ? `§f${GL(GI.cool)}§c${secs}` : `§f${GL(GI.ready)}§a${n}`);
     }
     return heldId === s.id ? (plain ? `§e[${txt}§e]` : `§f${GL(GI.held)}${txt}`) : txt;
   });
-  return `§7Skills ${parts.join(plain ? " " : "  ")}`;
+  const rows = [];
+  for (let i = 0; i < parts.length; i += 4) rows.push(parts.slice(i, i + 4).join(" "));
+  return rows.join("\n");
 }
 
 // معلومات الأيتم اللي بإيدك + تلميح طريقة الاستعمال
@@ -449,8 +455,8 @@ function heldLine(p, st, plain) {
 
 // الشاشة قسمين:
 //   فوق يسار (شريط الأكشن + لوحة): الرتبة والصحة، الليفل والقدرة، المانا والتقويات، شريط المهارات.
-//   فوق الهوت بار (العنوان، صغير وبدون خلفية مثل اسم الأيتم): الإعلانات، الرسالة المؤقتة أو معلومات الأيتم وتلميحه،
-//   وبالأسفل (الأقرب للهوت بار) سطر Wave بالصدع أو Floor بالبرج: الرقم وشكد خلصت منه.
+//   فوق الهوت بار (العنوان، صغير وبدون خلفية مثل اسم الأيتم): الإعلانات، والرسالة المؤقتة أو معلومات الأيتم وتلميحه.
+//   موجات الصدع وطوابق البرج: شريط بأعلى الشاشة (Boss bar) مثل شريط الغارة باللعبة (انظر setHudBar).
 function renderHud(p) {
     try {
       const now = system.currentTick;
@@ -470,7 +476,6 @@ function renderHud(p) {
         const m = tempMsg.get(p.id);
         if (m && m.until > now) low.push(m.text);
         else low.push(h.tip, h.line);
-        low.push(riftHudLine(p, plain), towerHudLine(p, plain));               // سطر Wave/Floor: الأقرب للهوت بار
       }
       setBottomText(p, low.filter(Boolean).join("\n"));
     } catch (e) { /* */ }
@@ -858,7 +863,13 @@ async function openPowerMenu(player) {
     return;
   }
   if (!player.hasTag("sh_menu")) {
-    // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو)
+    // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو). والإنجازات تنفتح من هنا هم.
+    const f = new ActionFormData().title("Evolution Book").body("§7Your power is not drawn yet. Find the §bStar Temple§7 and step on its golden plate.")
+      .button("§1Guide me to the Star Temple", "textures/ui/sh_ach/star_touched")
+      .button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey");
+    const r = await showForm(player, f);
+    if (r.canceled) return;
+    if (r.selection === 1) { openAchievements(player); return; }
     ensureTemple(player);
     return;
   }
@@ -944,6 +955,7 @@ async function openLore(player) {
   if (r.canceled) return;
   const i = r.selection;
   if (i > st.rank) { notify(player, `§7This chapter unlocks at rank ${RANKS[i]}`, 60); return; }
+  achAddSet(player, "lore", i);
   await showForm(player, new ActionFormData().title(`${i + 1}. ${LORE[i][0]}`).body(LORE[i][1]).button("§aBack"));
   return openLore(player);
 }
@@ -1052,11 +1064,13 @@ async function openBook(player) {
   form.button("§e[Ranks and how to rise]");
   form.button("§b[Status window and how to use skills]");
   form.button("§d[World Story]");
+  form.button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey");
   const r = await showForm(player, form);
   if (r.canceled) return;
   if (r.selection === mine.length) { showRanks(player); return; }
   if (r.selection === mine.length + 1) { showStatus(player); return; }
   if (r.selection === mine.length + 2) { openLore(player); return; }
+  if (r.selection === mine.length + 3) { openAchievements(player); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: still locked`, 60); return; }
@@ -1599,6 +1613,40 @@ function spawnFx(dim, kind, loc, c, r, life, yaw) {
   } catch (err) { return undefined; }
 }
 function removeFx(e) { try { if (e && valid(e)) e.remove(); } catch (err) { /* */ } }
+// ───── شريط التقدم بأعلى الشاشة (Boss bar)، نفس طريقة ماينكرافت بشريط الغارة (Raid) وشريط الويذر ─────
+// كيان مخفي بدون موديل (sh:hud_bar مداه 48 بلوكة، sh:hud_bar_near مداه 11) مدفون بالأرض: اسمه = عنوان الشريط،
+// وصحته من 1000 = امتلاء الشريط (يفرغ كل ما تقتل، مثل الغارة). باللمس ماينكرافت تنزل الشريط تحت أزرار الإيقاف والشات تلقائياً.
+// إذا تغير العنوان ينعاد الكيان (حتى ما نعتمد إن اللعبة تحدث عنوان الشريط لما يتغير الاسم).
+const hudBars = new Map();
+function setHudBar(key, dim, loc, name, frac, near) {
+  let b = hudBars.get(key);
+  if (b && (!valid(b.e) || b.name !== name || b.dim !== dim.id || b.near !== !!near)) { removeFx(b.e); hudBars.delete(key); b = undefined; }
+  if (!b) {
+    let e;
+    try { e = dim.spawnEntity(near ? "sh:hud_bar_near" : "sh:hud_bar", loc); } catch (err) { return; }
+    try { e.nameTag = name; e.addTag("sh_hud_bar"); } catch (err) { /* */ }
+    b = { e, name, dim: dim.id, near: !!near, loc: { ...loc } };
+    hudBars.set(key, b);
+  } else if (Math.hypot(b.loc.x - loc.x, b.loc.y - loc.y, b.loc.z - loc.z) > 0.5) { moveShape(b.e, loc); b.loc = { ...loc }; }
+  b.seen = system.currentTick;
+  try { b.e.getComponent("minecraft:health").setCurrentValue(Math.max(1, Math.min(1000, Math.round(frac * 1000)))); } catch (err) { /* */ }
+}
+function dropHudBar(key) { const b = hudBars.get(key); if (b) { removeFx(b.e); hudBars.delete(key); } }
+// تنظيف كل ثانيتين: الشريط اللي ما تحدث ثانيتين ينشال، وأي شريط يتيم (باقي من قبل ما ترجع للعالم) قرب اللاعبين ينشال
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const [k, b] of hudBars) if (now - (b.seen || 0) > 40 || !valid(b.e)) { removeFx(b.e); hudBars.delete(k); }
+  const mine = new Set([...hudBars.values()].map((b) => b.e && b.e.id));
+  for (const p of world.getAllPlayers()) {
+    try { for (const e of p.dimension.getEntities({ tags: ["sh_hud_bar"], location: p.location, maxDistance: 96 })) if (!mine.has(e.id)) removeFx(e); } catch (err) { /* */ }
+  }
+}, 40);
+// البرج: شريط الطابق اللي واقف بيه اللاعب
+system.runInterval(() => {
+  for (const p of world.getAllPlayers()) {
+    try { const ti = towerHudInfo(p); if (ti) setHudBar(ti.key, p.dimension, ti.loc, ti.name, ti.frac, true); } catch (err) { /* */ }
+  }
+}, 10);
 function yawOf(from, to) { return (Math.atan2(-(to.x - from.x), to.z - from.z) * 180) / Math.PI; }
 // دائرة تتوسع (موجة صدى)
 function waveFx(dim, c, rmax, color, dur = 14) {
@@ -1997,6 +2045,7 @@ function riftStartWave(n) {
   const dim = world.getDimension(rift.dim);
   SYS.riftWave(dim, { x: rift.x, y: rift.y, z: rift.z });
   rift.waveIds = []; rift.dead = []; rift.miss = 0; rift.expect = n === 3 ? 2 : t.waves[n - 1];
+  riftBar();
   if (n === 3) {
     later(20, () => { if (rift) { riftSpawnMob(riftMobType(), true); for (let i = 0; i < 2; i++) riftSpawnMob(riftMobType(), false); } });
   } else {
@@ -2047,7 +2096,7 @@ function closeRift(victory, killer) {
   const r = rift, t = RIFT_TIERS[r.tier], dim = world.getDimension(r.dim);
   rift = null;
   riftSave();
-  removeFx(r.ent); removeFx(r.circle);
+  removeFx(r.ent); removeFx(r.circle); dropHudBar("rift");
   const c = riftShapeAt(r);
   const imp = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(r), s: 600, life: 16 });
   tween(12, 1, (k) => setShape(imp, "sh:r", riftRadius(r) * (1 - k)), () => { SYS.riftClose(dim, c); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
@@ -2063,6 +2112,7 @@ function closeRift(victory, killer) {
   for (const q of world.getAllPlayers()) {
     if (q.dimension.id !== r.dim || Math.hypot(q.location.x - r.x, q.location.z - r.z) > 60) continue;
     banner(q, `§f§lRIFT SEALED\n${t.col}${t.name} §7· rewards dropped at the rift`, 80);
+    if (t.key === "crimson" || t.key === "abyss") achCount(q, `rift_${t.key}`);
     const st = getState(q), amt = 80 * (r.tier + 1);
     const ups = addXp(st, amt);
     if (st.power) ups.push(...addPowerXp(st, amt, rarityOf(st.power).maxLv));
@@ -2074,7 +2124,7 @@ function closeRift(victory, killer) {
 }
 world.afterEvents.entityDie.subscribe((ev) => {
   try { if (rift && rift.bossId && ev.deadEntity.id === rift.bossId) closeRift(true, ev.damageSource && ev.damageSource.damagingEntity); } catch (e) { /* */ }
-  try { if (rift && (rift.waveIds || []).includes(ev.deadEntity.id) && !(rift.dead || []).includes(ev.deadEntity.id)) (rift.dead = rift.dead || []).push(ev.deadEntity.id); } catch (e) { /* */ }
+  try { if (rift && (rift.waveIds || []).includes(ev.deadEntity.id) && !(rift.dead || []).includes(ev.deadEntity.id)) { (rift.dead = rift.dead || []).push(ev.deadEntity.id); riftBar(); } } catch (e) { /* */ }
 });
 // القلب: كل ثانية
 system.runInterval(() => {
@@ -2100,6 +2150,7 @@ system.runInterval(() => {
     // الشكل: شق كبير يكبر ويه الفساد
     const c = riftShapeAt(rift);
     riftKeepFx(dim, t, c);
+    riftBar();
     if (rift.age % 40 === 0) for (let y = 2; y < 26; y += 2) vP(dim, { x: rift.x, y: rift.y + y, z: rift.z }, PT.endrod, { eye: 2 });   // عمود نور يبين من بعيد
     for (let i = 0; i < 4; i++) {
       const a = Math.random() * Math.PI * 2, rr = 1 + Math.random() * rift.r;
@@ -2152,21 +2203,19 @@ system.runInterval(() => {
     if (rift.age % 100 === 0) riftSave();
   } catch (e) { /* */ }
 }, 20);
-// سطر الصدع فوق الهوت بار (صغير وبدون خلفية):
-//   بالمعركة: كلمة Wave + رقم الموجة + شكد خلصت منها (شريط + قتلت/الكل). الموجة 3: وحوشها + الزعيم.
-//   قبل المعركة: اسم الصدع والمسافة والاتجاه بس.
+// شريط الصدع بأعلى الشاشة: قبل المعركة "Violet Rift (Vile) · spreading" (الشريط = شكد انتشر)،
+// وبالمعركة "Wave 2/3 · 3 left" (الشريط = وحوش الموجة الباقية، يفرغ كل ما تقتل)، ولما تخلصها "Cleared ✔".
 function riftProgress() {
   const ids = rift.waveIds || [], dead = (rift.dead || []).filter((id) => ids.includes(id)).length;
   const boss = rift.wave === 3 ? 1 : 0;
   return { done: dead, total: Math.max(rift.expect || 0, ids.length) + boss };
 }
-function riftHudLine(p, plain) {
-  if (!rift || p.dimension.id !== rift.dim) return "";
-  const t = riftTier(), dist = Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z));
-  if (rift.phase !== "battle" || !rift.wave) return `${t.col}${t.name} §7${dist}m ${compassArrow(p, rift)}`;
-  if (dist > 48) return "";
-  const pr = riftProgress(), full = pr.total > 0 && pr.done >= pr.total;
-  return `§6Wave §f${rift.wave}§7/3  ${bar(pr.total ? pr.done / pr.total : 0, 8, full ? "§a" : t.col, "§8", plain)}  §f${pr.done}§7/${pr.total}${rift.wave === 3 && !plain ? " §f" + GL(GI.boss) : ""}`;
+function riftBar() {
+  if (!rift) return;
+  const t = riftTier(), dim = world.getDimension(rift.dim), loc = { x: rift.x, y: rift.y - 2.5, z: rift.z };
+  if (rift.phase !== "battle" || !rift.wave) { setHudBar("rift", dim, loc, `${t.col}${t.name} §7(${t.rank}) · spreading`, rift.r / RIFT_MAX_R); return; }
+  const pr = riftProgress(), left = Math.max(0, pr.total - pr.done);
+  setHudBar("rift", dim, loc, left ? `${t.col}Wave ${rift.wave}/3 §7· §f${left} left` : `${t.col}Wave ${rift.wave}/3 §7· §aCleared ✔`, pr.total ? left / pr.total : 0);
 }
 function riftStatusText(p) {
   const st = getState(p);
@@ -4567,6 +4616,7 @@ function useSkill(p, skill) {
   const cost = manaCost(skill), have = manaOf(p, st);
   if (have < cost) {
     notify(p, `§9Not enough mana §7(${Math.floor(have)}/${cost})`, 25);
+    achCount(p, "mana_dry");
     sfxPlayer(p, "note.bass", 0.5, 0.6);
     return;
   }
@@ -4593,7 +4643,7 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (SCROLLS[id]) { useScroll(p, id); return; }
     if (id === "sh:skill_scroll") { useSkillScroll(p); return; }
     if (id === "sh:star_shard") { useStarShard(p); return; }
-    if (id === "sh:explorer_compass") { useCompass(p); return; }
+    if (id === "sh:explorer_compass") { achCount(p, "compass"); useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
     const skill = ITEM_TO_SKILL[id];
     if (skill) useSkill(p, skill);
@@ -4793,6 +4843,7 @@ async function useSkillScroll(p) {
   for (let i = 0; i < 36; i++) pix(p.dimension, { x: p.location.x + (Math.random() - 0.5) * 1.4, y: p.location.y + Math.random() * 2, z: p.location.z + (Math.random() - 0.5) * 1.4 }, { color: i % 2 ? col : [1, 1, 1], size: 0.14, life: 0.9, speed: 0.7, rise: 1.8 });
   sfxPlayer(p, "sh.kat_levelup", 0.9, 1.1);
   notify(p, `§b${sk.name} reached level ${lv + 1}`, 70);
+  achCount(p, "scroll");
 }
 
 // ───────────────────────── لفائف الخبرة ─────────────────────────
@@ -6936,6 +6987,7 @@ system.runInterval(() => {
 }, 20);
 const POTION_FX_COL = { "sh:potion_vitality": [0.9, 0.2, 0.25], "sh:potion_mana": [0.25, 0.45, 1], "sh:potion_might": [1, 0.55, 0.12], "sh:potion_bulwark": [0.6, 0.66, 0.74], "sh:potion_focus": [0.7, 0.35, 1], "sh:potion_swift": [0.35, 0.9, 0.5] };
 function drinkPotion(p, id) {
+  achAddSet(p, "potions", id);
   const b = buffsOf(p), dim = p.dimension, L = p.location;
   if (id === "sh:potion_vitality") {
     try { const hc = p.getComponent("minecraft:health"); hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + hc.effectiveMax * 0.5)); } catch (err) { /* */ }
@@ -6970,17 +7022,18 @@ world.afterEvents.itemCompleteUse.subscribe((ev) => {
 });
 // سطر الـHUD: المانا والتقويات الشغالة
 function manaHudLine(p, st, plain) {
-  const parts = [];
+  const rows = [];
   if (st.power) {
     const max = manaMax(st), m = Math.min(max, manaOf(p, st));
-    parts.push(plain ? `§9✦ Mana ${bar(m / max, 6, "§9", "§8", true)} §b${Math.floor(m)}§7/${max}` : `§f${GL(GI.mana)} ${gbar(m / max, 6, GI.mana_full, GI.mana_empty)} §b${Math.floor(m)}§7/${max}`);
+    rows.push(plain ? `§9✦ ${bar(m / max, 6, "§9", "§8", true)} §b${Math.floor(m)}§7/${max}` : `§f${GL(GI.mana)} ${gbar(m / max, 5, GI.mana_full, GI.mana_empty)} §b${Math.floor(m)}§7/${max}`);
   }
-  const b = buffsOf(p);
+  const b = buffsOf(p), bs = [];
   for (const k of Object.keys(b)) {
-    const left = b[k], mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
-    parts.push(plain ? `${BUFF_NAME[k]} §f${mm}:${ss}` : `§f${GL(GI["buff_" + k])} §f${mm}:${ss}`);
+    const left = b[k], t = left >= 60 ? `${Math.ceil(left / 60)}m` : `${left}s`;
+    bs.push(plain ? `${BUFF_NAME[k]} §f${t}` : `§f${GL(GI["buff_" + k])}§f${t}`);
   }
-  return parts.join("  ");
+  for (let i = 0; i < bs.length; i += plain ? 2 : 4) rows.push(bs.slice(i, i + (plain ? 2 : 4)).join(" "));
+  return rows.join("\n");
 }
 // معلومات الأيتم بالإيد (مواد، جرعات، دروع)
 function gearHeld(id, showTip) {
@@ -7037,6 +7090,7 @@ async function openAlchemist(p, npc) {
   sfx(p.dimension, "random.potion.brewed", L, 1.0, 1.0);
   sfx(p.dimension, "bottle.fill", L, 0.8, 1.1);
   notify(p, `§aBrewed: ${GEAR.potions[pid].name}`, 60);
+  achCount(p, "brew");
 }
 const alchemistTalk = new Map();
 world.afterEvents.playerInteractWithEntity.subscribe((ev) => {
@@ -7049,3 +7103,138 @@ world.afterEvents.playerInteractWithEntity.subscribe((ev) => {
   } catch (err) { /* */ }
 });
 
+// ═════════════════════════ الإنجازات (v1.36) ═════════════════════════
+// القائمة والصور من tools/gen_achievements.py (achievements.js + RP/textures/ui/sh_ach). تنفتح من كتاب التطور > [Achievements].
+// المقفول: صورة معتمة بعلامة استفهام، الاسم ??? وتلميح. كل إنجاز يعطي خبرة لما ينفتح، ويطلع فوق الهوت بار + بالشات.
+// التخزين على اللاعب (sh_ach): u = المفتوحة، c = عدادات الأحداث (طبخ، جرعات، قراءة القصة، داش...).
+const ACH_BY_ID = Object.fromEntries(ACH.map((a) => [a.id, a]));
+function achGet(p) {
+  try { const r = p.getDynamicProperty("sh_ach"); if (typeof r === "string") { const o = JSON.parse(r); o.u = o.u || {}; o.c = o.c || {}; return o; } } catch (e) { /* */ }
+  return { u: {}, c: {} };
+}
+function achSave(p, a) { try { p.setDynamicProperty("sh_ach", JSON.stringify(a)); } catch (e) { /* */ } }
+function achDone(p) { const a = achGet(p); return ACH.filter((x) => a.u[x.id]).length; }
+function achCount(p, key, n = 1) { try { const a = achGet(p); a.c[key] = (a.c[key] || 0) + n; achSave(p, a); achCheck(p); } catch (e) { /* */ } }
+function achAddSet(p, key, v) {
+  try { const a = achGet(p); const l = a.c[key] = a.c[key] || []; if (!l.includes(v)) { l.push(v); achSave(p, a); achCheck(p); } } catch (e) { /* */ }
+}
+function achUnlock(p, id) {
+  const def = ACH_BY_ID[id];
+  if (!def) return false;
+  const a = achGet(p);
+  if (a.u[id]) return false;
+  a.u[id] = 1;
+  achSave(p, a);
+  try { const st = getState(p); const ups = addXp(st, def.xp); saveState(p, st); announceUps(p, ups); } catch (e) { /* */ }
+  banner(p, `§6★ Achievement: §f${def.name} §7(+${def.xp} XP)`, 90);
+  say(p, `§6[Achievement] §f${def.name} §7— ${def.desc} §e+${def.xp} XP`);
+  sfxPlayer(p, "random.levelup", 0.7, 1.4);
+  return true;
+}
+// الشروط: كل إنجاز يتفحص من حالة اللاعب والعالم (كل ثانيتين، وفوراً بعد الأحداث)
+function structNear(p, type, extra, cond) {
+  try {
+    if (p.dimension.id !== "minecraft:overworld") return false;
+    const spec = STRUCT_HALF[type] || 12;
+    return getStructs().some((s) => s.type === type && Math.hypot(s.x - p.location.x, s.z - p.location.z) <= spec + extra && (!cond || cond(s)));
+  } catch (e) { return false; }
+}
+const STRUCT_HALF = { temple: 12, village: 38, palace: 26, ruins: 14, shrine: 23, tower: 9, lightshrine: 23 };
+const killsOf = (st) => Object.values(st.kills || {}).reduce((x, y) => x + y, 0);
+function heldId(p) { try { const it = inv(p).getItem(p.selectedSlotIndex); return it ? it.typeId : ""; } catch (e) { return ""; } }
+function hasMaterial(p) {
+  try { const c = inv(p); for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && GEAR.materials[it.typeId]) return true; } } catch (e) { /* */ }
+  return false;
+}
+function wearsPiece(p) {
+  try {
+    const eq = p.getComponent("minecraft:equippable");
+    return [MC.EquipmentSlot.Head, MC.EquipmentSlot.Chest, MC.EquipmentSlot.Legs, MC.EquipmentSlot.Feet].some((sl) => { const it = eq.getEquipment(sl); return it && PIECE_OF[it.typeId]; });
+  } catch (e) { return false; }
+}
+const ACH_CHECK = {
+  star_touched: (p, st) => !!st.power || !!st.powerless,
+  unbound: (p, st) => !!st.powerless,
+  first_lesson: (p, st) => !!(st.power && st.training && st.training[st.power] && st.training[st.power].status === "done"),
+  awakened: (p, st) => !!st.power && (st.plevel || 1) >= 3,
+  peak_power: (p, st) => !!st.power && (st.plevel || 1) >= rarityOf(st.power).maxLv,
+  honed: (p, st) => !!st.power && Object.values(SKILLS).some((s) => s.power === st.power && skillLevel(st, s.id) >= SKILL_MAX_LV),
+  scroll_reader: (p, st, a) => (a.c.scroll || 0) >= 1,
+  lorekeeper: (p, st, a) => (a.c.lore || []).length >= 3,
+  rank_trainee: (p, st) => st.rank >= 1, rank_warrior: (p, st) => st.rank >= 2, rank_elite: (p, st) => st.rank >= 3,
+  rank_commander: (p, st) => st.rank >= 4, rank_legend: (p, st) => st.rank >= 5, rank_master: (p, st) => st.rank >= 6,
+  visit_village: (p) => structNear(p, "village", 0), visit_palace: (p) => structNear(p, "palace", 0), visit_ruins: (p) => structNear(p, "ruins", 0),
+  visit_tower: (p) => structNear(p, "tower", 0), visit_shrine: (p) => structNear(p, "shrine", 0), visit_lightshrine: (p) => structNear(p, "lightshrine", 0),
+  meet_alchemist: (p) => { try { return p.dimension.getEntities({ type: "sh:alchemist", location: p.location, maxDistance: 6 }).length > 0; } catch (e) { return false; } },
+  shrine_dark_clear: (p) => structNear(p, "shrine", 40, (s) => !!s.c),
+  shrine_light_clear: (p) => structNear(p, "lightshrine", 40, (s) => !!s.c),
+  tower_half: (p) => structNear(p, "tower", 30, (s) => !!((s.cl || 0) & (1 << 3))),
+  tower_top: (p) => structNear(p, "tower", 30, (s) => !!s.c),
+  rift_first: (p, st) => (st.rifts || 0) >= 1, rift_five: (p, st) => (st.rifts || 0) >= 5,
+  rift_crimson: (p, st, a) => (a.c.rift_crimson || 0) >= 1, rift_abyss: (p, st, a) => (a.c.rift_abyss || 0) >= 1,
+  first_blood: (p, st) => killsOf(st) >= 1, hunter_100: (p, st) => killsOf(st) >= 100,
+  scholar: (p, st) => Object.keys(st.kills || {}).filter((k) => (st.kills[k] || 0) > 0).length >= 8,
+  slay_gloom: (p, st) => ((st.kills || {})["sh:gloomhorn"] || 0) >= 1, slay_seer: (p, st) => ((st.kills || {})["sh:hollow_seer"] || 0) >= 1,
+  slay_fox: (p, st) => ((st.kills || {})["sh:veilfox"] || 0) >= 1, slay_bear: (p, st) => ((st.kills || {})["sh:grey_bear"] || 0) >= 1,
+  slay_mammoth: (p, st) => ((st.kills || {})["sh:magmamoth"] || 0) >= 1, slay_mantis: (p, st) => ((st.kills || {})["sh:prayer_mantis"] || 0) >= 1,
+  first_material: (p) => hasMaterial(p),
+  tailored: (p) => wearsPiece(p),
+  full_set: (p) => !!wornSet(p),
+  first_brew: (p, st, a) => (a.c.brew || 0) >= 1,
+  potion_six: (p, st, a) => (a.c.potions || []).length >= 6,
+  mana_dry: (p, st, a) => (a.c.mana_dry || 0) >= 1,
+  armed: (p) => { const id = heldId(p); return id === KATANA || !!WEAPON_SKILLS[id]; },
+  weapon_max: (p) => { const id = heldId(p); try { return (id === KATANA && getKat(p).lv >= KAT_MAX) || (!!WEAPON_SKILLS[id] && getWlv(p, id).lv >= WLV_MAX); } catch (e) { return false; } },
+  rhythm_finale: (p, st) => (st.rhyBest || 0) >= 10,
+  dash_50: (p, st, a) => (a.c.dash || 0) >= 50,
+  pathfinder: (p, st, a) => (a.c.compass || 0) >= 1,
+};
+function achCheck(p) {
+  try {
+    const a = achGet(p), st = getState(p);
+    for (const x of ACH) {
+      if (a.u[x.id]) continue;
+      const f = ACH_CHECK[x.id];
+      let ok = false;
+      try { ok = !!(f && f(p, st, a)); } catch (e) { ok = false; }
+      if (ok) achUnlock(p, x.id);
+    }
+  } catch (e) { /* */ }
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) achCheck(p); }, 40);
+dashHooks.push((p) => achCount(p, "dash"));
+// شاشات الإنجازات: الفئات ← القائمة (صورة لكل إنجاز، المقفول ??? وتلميح) ← التفاصيل
+async function openAchievements(player) {
+  const a = achGet(player);
+  const got = ACH.filter((x) => a.u[x.id]).length;
+  const f = new ActionFormData().title("Achievements")
+    .body(`§fUnlocked: §e${got}§f/${ACH.length}\n§7Locked achievements show §f???§7 and a hint. Each one gives XP when you unlock it.`);
+  for (const c of ACH_CATS) {
+    const list = ACH.filter((x) => x.cat === c.key), n = list.filter((x) => a.u[x.id]).length;
+    f.button(`${n === list.length ? "§2" : "§0"}${c.name}\n§8${n}/${list.length}`, c.icon);
+  }
+  const r = await showForm(player, f);
+  if (r.canceled) return;
+  const cat = ACH_CATS[r.selection];
+  if (cat) return openAchCat(player, cat);
+}
+async function openAchCat(player, cat) {
+  const a = achGet(player);
+  const list = ACH.filter((x) => x.cat === cat.key);
+  const f = new ActionFormData().title(cat.name).body(`§f${list.filter((x) => a.u[x.id]).length}/${list.length} unlocked`);
+  for (const x of list) {
+    const ok = !!a.u[x.id];
+    f.button(ok ? `§2✔ ${x.name}\n§8${x.desc}` : `§8???\n§8${x.secret ? "A secret..." : x.hint}`, ok ? x.icon : x.iconLocked);
+  }
+  f.button("§8« Back");
+  const r = await showForm(player, f);
+  if (r.canceled) return;
+  if (r.selection === list.length) return openAchievements(player);
+  const x = list[r.selection];
+  if (!x) return;
+  const ok = !!a.u[x.id];
+  await showForm(player, new ActionFormData().title(ok ? x.name : "???")
+    .body(ok ? `§a✔ Unlocked\n\n§f${x.desc}\n\n§eReward: +${x.xp} XP` : `§7${x.secret ? "This one is a secret." : x.hint}\n\n§eReward: +${x.xp} XP`)
+    .button("§8« Back", ok ? x.icon : x.iconLocked));
+  return openAchCat(player, cat);
+}

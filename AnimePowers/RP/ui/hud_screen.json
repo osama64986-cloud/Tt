@@ -1,19 +1,27 @@
 {
   "namespace": "hud",
-
   "sh_player_doll": {
     "type": "panel",
-    "size": [ 36, 50 ],
+    "size": [
+      36,
+      50
+    ],
     "anchor_from": "top_left",
     "anchor_to": "top_left",
-    "offset": [ 2, 2 ],
+    "offset": [
+      2,
+      2
+    ],
     "layer": 2,
     "controls": [
       {
         "doll_frame": {
           "type": "image",
           "texture": "textures/ui/sh_hud_portrait",
-          "size": [ "100%", "100%" ],
+          "size": [
+            "100%",
+            "100%"
+          ],
           "layer": 1
         }
       },
@@ -22,58 +30,85 @@
           "type": "custom",
           "renderer": "live_player_renderer",
           "layer": 3,
-          "size": [ "100% - 6px", "100% - 7px" ],
-          "offset": [ 0, -1 ],
+          "size": [
+            "100% - 6px",
+            "100% - 7px"
+          ],
+          "offset": [
+            0,
+            -1
+          ],
           "anchor_from": "center",
           "anchor_to": "center"
         }
       }
     ]
   },
-
   "hud_actionbar_text": {
     "anchor_from": "top_left",
     "anchor_to": "top_left",
-    "offset": [ 39, 2 ],
+    "offset": [
+      39,
+      2
+    ],
     "texture": "textures/ui/sh_hud_panel",
-    "size": [ "100%c + 16px", "100%c + 9px" ]
+    "size": [
+      "100%c + 16px",
+      "100%c + 9px"
+    ]
   },
-
   "hud_actionbar_text/actionbar_message": {
     "text_alignment": "left",
     "anchor_from": "left_middle",
     "anchor_to": "left_middle",
-    "offset": [ 8, 0 ]
+    "offset": [
+      8,
+      0
+    ]
   },
-
   "hud_title_text": {
-    "size": [ "100%", "100%c" ],
+    "size": [
+      "100%",
+      "100%c"
+    ],
     "anchor_from": "bottom_middle",
     "anchor_to": "bottom_middle",
-    "offset": [ 0, -60 ]
+    "offset": [
+      0,
+      -60
+    ]
   },
-
   "hud_title_text/title_frame/title_background": {
     "visible": false
   },
-
   "hud_title_text/title_frame/title": {
     "font_size": "normal",
-    "offset": [ 0, 0 ],
+    "offset": [
+      0,
+      0
+    ],
     "shadow": true,
     "enable_profanity_filter": false
   },
-
   "hud_title_text/subtitle_frame": {
     "ignored": true
   },
-
+  "root_panel/boss_health_panel/boss_hud_panel/boss_health_grid": {
+    "offset": [
+      56,
+      2
+    ]
+  },
   "root_panel": {
     "modifications": [
       {
         "array_name": "controls",
         "operation": "insert_front",
-        "value": [ { "sh_doll@hud.sh_player_doll": {} } ]
+        "value": [
+          {
+            "sh_doll@hud.sh_player_doll": {}
+          }
+        ]
       }
     ]
   }

@@ -26,3 +26,5 @@ entity.sh:prayer_mantis.name=Prayer Mantis
 item.spawn_egg.entity.sh:prayer_mantis.name=Prayer Mantis Egg
 entity.sh:alchemist.name=Alchemist
 item.spawn_egg.entity.sh:alchemist.name=Alchemist Egg
+entity.sh:hud_bar.name=Progress
+entity.sh:hud_bar_near.name=Progress

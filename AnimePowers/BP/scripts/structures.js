@@ -1101,7 +1101,9 @@ export function onTowerMobDeath(e) {
 }
 // سطر الـHUD داخل البرج: رقم الطابق وكم وحش باقي
 var towerCache = { tick: -999, reg: [] };
-export function towerHudLine(p, plain) {
+// شريط التقدم بأعلى الشاشة داخل البرج (مثل شريط الغارة باللعبة): "Abyss Tower · Floor 3/7 · 2 left"، والشريط يفرغ كل ما تقتل.
+// يرجع بيانات الشريط للطابق اللي واقف بيه اللاعب، و main.js يرسمه بكيان sh:hud_bar_near مخفي جوه أرضية الطابق.
+export function towerHudInfo(p) {
   try {
     if (system.currentTick - towerCache.tick > 20) { towerCache.reg = loadReg().filter((s) => s.type === "tower" && s.ok); towerCache.tick = system.currentTick; }
     for (const s of towerCache.reg) {
@@ -1109,17 +1111,20 @@ export function towerHudLine(p, plain) {
       const ly = p.location.y - s.y;
       if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
       const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
-      // سطر فوق الهوت بار: كلمة Floor + رقم الطابق + شكد خلصت منه (شريط + قتلت/الكل)
       const left = s.ft && s.ft[k] ? s.ft[k].length : 0;
-      const done = (s.cl || 0) & (1 << k) || (k === TOWER_FLOORS - 1 && s.c);
-      const total = Math.max(left, (s.fn && s.fn[k]) || (s.ft && s.ft[k] ? left : 0)), killed = done ? total : total - left;
-      const n = Math.max(0, Math.min(8, Math.round(total ? (killed / total) * 8 : done ? 8 : 0))), ch = plain ? "|" : "█";
-      const bar = (done ? "§a" : "§d") + ch.repeat(n) + "§8" + ch.repeat(8 - n);
-      const tail = done ? (k === TOWER_FLOORS - 1 ? "  §dConquered ✔" : "  §aCleared, climb! ✔") : "";
-      return `§dFloor §f${k + 1}§7/${TOWER_FLOORS}  ${bar}${total ? `  §f${killed}§7/${total}` : ""}${tail}`;
+      const done = !!((s.cl || 0) & (1 << k) || (k === TOWER_FLOORS - 1 && s.c));
+      const total = Math.max(left, (s.fn && s.fn[k]) || 0);
+      if (!done && !left) return null;                                               // الطابق بعده ما بدى
+      const st = done ? (k === TOWER_FLOORS - 1 ? "§dConquered ✔" : "§aCleared ✔ climb") : `§f${left} left`;
+      return {
+        key: `tower:${s.x},${s.z}`,
+        loc: { x: s.x + 0.5, y: s.y + k * TOWER_FH - 0.5, z: s.z + 0.5 },          // جوه بلوك أرضية الطابق (ما يبين)
+        name: `§5Abyss Tower §7· §dFloor ${k + 1}/${TOWER_FLOORS} §7· ${st}`,
+        frac: done ? 0 : total ? left / total : 1,
+      };
     }
   } catch (e) { /* */ }
-  return "";
+  return null;
 }
 
 export function setupStructures(onGuardSpawn) {

@@ -42,6 +42,26 @@ function advance(n) {
   }
 }
 
+// عرض السطر بالبكسل مثل ماينكرافت (خط default: أغلب الحروف 6 مع الفراغ، الضيقة أقل، العريض +1، رموز glyph_E5 حسب رسمها)
+const MC_NARROW = { " ": 4, "!": 2, "'": 2, ",": 2, ".": 2, ":": 2, ";": 2, "|": 2, i: 2, l: 3, I: 4, t: 4, "[": 4, "]": 4, "(": 5, ")": 5, f: 5, k: 5, "<": 5, ">": 5, "*": 5, "{": 5, "}": 5, '"': 5, "`": 3, "@": 7, "~": 7 };
+const GLYPH_W = {0: 8.5, 1: 8.5, 2: 8.5, 3: 8.5, 4: 7.5, 5: 7.5, 6: 8.5, 7: 8.5, 8: 8.5, 9: 8.5, 10: 8.5, 11: 8.5, 12: 7.5, 13: 8.5, 14: 8.5, 16: 8.5, 17: 8.0, 18: 8.0, 19: 8.0, 20: 8.0, 21: 9.0, 22: 9.0, 32: 8.0, 33: 8.0, 34: 7.5, 35: 7.0, 36: 8.5, 37: 7.5, 38: 9.0, 39: 9.0, 40: 9.0, 48: 9.0, 49: 9.0, 50: 9.0, 51: 7.5, 52: 8.5, 53: 9.0, 54: 9.0, 55: 5.0, 56: 8.5, 57: 8.5, 58: 8.0, 59: 8.0, 60: 8.0, 61: 8.0, 62: 8.0};
+// شريط أعلى الشاشة (Boss bar): كيان sh:hud_bar / sh:hud_bar_near — عنوانه اسمه، وامتلاؤه صحته من 1000
+function bossBar(type = "sh:hud_bar") {
+  const e = entities.find((x) => x._valid && x.typeId === type);
+  return e ? { name: (e.nameTag || "").replace(/§./g, ""), fill: e._hp / 1000, e } : null;
+}
+export function mcWidth(line) {
+  let w = 0, bold = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === "§") { const c = line[i + 1] || ""; i++; if (c === "l") bold = true; else if (c === "r" || /[0-9a-f]/.test(c)) bold = false; continue; }
+    const cp = ch.codePointAt(0);
+    if (cp >= 0xE500 && cp <= 0xE5FF) { w += GLYPH_W[cp - 0xE500] ?? 9; continue; }
+    w += (cp > 127 ? 9 : (MC_NARROW[ch] ?? 6)) + (bold ? 1 : 0);
+  }
+  return w;
+}
+
 // ───── أنواع ─────
 export class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 export class MolangVariableMap {
@@ -369,11 +389,34 @@ export const __sim = {
     {
       hold("sh:skill_meteor"); stats.actionBars.length = 0; advance(20);
       const top = stats.top || "", low = stats.bottom || "";
-      const ok = /Skills/.test(top) && !/Level \d/.test(top) && /Level \d/.test(low) && stats.titleOpts && stats.titleOpts.fadeInDuration === 0;
+      const ok = /[\uE530\uE531\uE533]/.test(top) && !/Level \d/.test(top) && /Level \d/.test(low) && stats.titleOpts && stats.titleOpts.fadeInDuration === 0;
       console.log(`  المكان: الأشرطة فوق يسار + معلومات المهارة فوق الهوت بار ${ok ? "✔" : "✖"} | فوق الهوت بار: ${low.replace(/§./g, "").replace(/\n/g, " ⏎ ")}`);
       if (!ok) failures.push("معلومات الأيتم مو فوق الهوت بار (أو اللوحة فوق يسار بيها كتابات)");
       hold(""); advance(30);
       const cleared = !(stats.bottom || "").includes("Level");
+      // v1.36: اللوحة فوق يسار ضيقة حتى ما توصل لأزرار الإيقاف/الشات/الإيموت بأعلى الشاشة باللمس: أسوأ حالة
+      // (رتبة Commander، ليفل 120، صحة 120، كل المهارات بكولداون، 4 تقويات، مانا 3 أرقام) وأعرض سطر ≤ 120 بكسل، و8 قلوب
+      {
+        const s0 = baseState("star"); s0.rank = 4; s0.level = 120; s0.xp = 0; s0.plevel = 10; setState(s0);
+        player._hp = 120; player._max = 120; system_cd_reset();
+        for (const sk of skills.filter((x) => x.power === "star")) { await useItem(sk.item); advance(1); }
+        for (const pid of ["sh:potion_might", "sh:potion_bulwark", "sh:potion_focus", "sh:potion_swift"]) fire("itemCompleteUse", { source: player, itemStack: new ItemStack(pid) });
+        hold(""); advance(10);
+        const widths = {};
+        for (const pl of [false, true]) {
+          if (pl) player._tags.add("sh_hud_plain"); else player._tags.delete("sh_hud_plain");
+          advance(10);
+          widths[pl ? "plain" : "art"] = (stats.top || "").split("\n").map((l) => [mcWidth(l), l.replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "◆")]);
+        }
+        player._tags.delete("sh_hud_plain");
+        const maxArt = Math.max(...widths.art.map((x) => x[0])), maxPlain = Math.max(...widths.plain.map((x) => x[0]));
+        const hearts = widths.art.find((x) => x[1].includes("120/120")), nHearts = hearts ? (hearts[1].match(/◆/g) || []).length : 0;
+        const okW = maxArt <= 120 && maxPlain <= 120 && nHearts === 8 && widths.art.length >= 6;
+        console.log(`  عرض اللوحة فوق يسار (أسوأ حالة): أعرض سطر ${maxArt} بكسل (البسيطة ${maxPlain})، أسطر ${widths.art.length}، قلوب ${nHearts} ${okW ? "✔" : "✖"}`);
+        for (const [w, l] of widths.art) console.log(`    ${String(w).padStart(5)} │ ${l}`);
+        if (!okW) failures.push("اللوحة فوق يسار عريضة (توصل لأزرار الإيقاف/الشات باللمس) أو القلوب مو 8");
+        player._hp = 20; player._max = 20; system_cd_reset(); fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });
+      }
       if (!cleared) failures.push("الكتابة فوق الهوت بار ما تنمسح لما تنزل الأيتم");
     }
     // كتاب + نافذة الحالة
@@ -382,15 +425,15 @@ export const __sim = {
     ui.nextSelection = 99; await Promise.resolve();
     const book = ui.formsShown[0];
     console.log("\nكتاب التطور: أزرار", book ? book.buttons.length : 0);
-    const last = book ? book.buttons.length - 1 : 0;
-    ui.nextSelection = last - 1; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 20));
+    const btn = (txt) => (book ? book.buttons.findIndex((b) => b.includes(txt)) : -1);           // الأزرار بأسمائها (الأخير صار [Achievements])
+    ui.nextSelection = btn("[Status window"); ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 20));
     const status = ui.formsShown.find((f) => f.title === "Status Window");
     console.log(status ? "نافذة الحالة تفتح ✔" : "نافذة الحالة ما فتحت");
     if (!status) failures.push("نافذة الحالة ما فتحت");
     else console.log(status.body.replace(/§./g, "").split("\n").slice(0, 14).join("\n"));
     // حكاية العالم
     {
-      ui.nextSelection = 99; ui.formsShown.length = 0; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 30));
+      ui.nextSelection = btn("[World Story]"); ui.formsShown.length = 0; ui.cancelWhenEmpty = false; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 30));
       const lore = ui.formsShown.find((f) => f.title === "The Tale of the Fallen Star");
       console.log(lore ? "حكاية العالم تفتح ✔ (" + lore.buttons.length + " فصول)" : "حكاية العالم ما فتحت");
       if (!lore) failures.push("حكاية العالم ما فتحت");
@@ -524,12 +567,13 @@ export const __sim = {
         const b0 = stats.blockSets || 0;
         advance(40); stats.actionBars.length = 0; advance(10);
         const hud = stats.actionBars[stats.actionBars.length - 1] || "";
-        if (!hud.includes("Violet Rift")) failures.push("الصدع ما طلع بالـHUD");
+        // v1.36: الصدع بشريط أعلى الشاشة (مثل الغارة): "Violet Rift (Vile) · spreading"، وما ينكتب بالواجهة
+        const bb0 = bossBar();
+        if (!bb0 || !/^Violet Rift \(Vile\) · spreading$/.test(bb0.name) || hud.includes("Violet Rift")) failures.push("شريط الصدع بأعلى الشاشة ما طلع (أو الصدع بعده مكتوب بالواجهة)");
         // v1.35.1: سطر الصدع والإعلانات فوق الهوت بار (العنوان)، مو باللوحة فوق يسار (شريط الأكشن)
-        const riftLow = (stats.bottom || "").includes("Violet Rift") && !(stats.top || "").includes("Violet Rift");
         const openBanner = (stats.titles || []).some((t) => t.includes("VIOLET RIFT"));
-        console.log(`  مكان الكتابة: سطر الصدع فوق الهوت بار ${riftLow ? "✔" : "✖"} | إعلان فتح الصدع فوق الهوت بار ${openBanner ? "✔" : "✖"}`);
-        if (!riftLow || !openBanner) failures.push("كتابات الصدع مو فوق الهوت بار");
+        console.log(`  شريط أعلى الشاشة قبل المعركة: "${bb0 ? bb0.name : "-"}" (${bb0 ? Math.round(bb0.fill * 100) : 0}%) | إعلان فتح الصدع فوق الهوت بار ${openBanner ? "✔" : "✖"}`);
+        if (!openBanner) failures.push("إعلان فتح الصدع ما طلع فوق الهوت بار");
         stats.titles = [];
         console.log("  فساد الأرض: بلوكات =", (stats.blockSets || 0) - b0, "| HUD:", (hud.split("\n").find((l) => l.includes("Rift")) || "").replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "◆"));
         if ((stats.blockSets || 0) - b0 < 10) failures.push("الصدع ما فسد الأرض");
@@ -551,7 +595,7 @@ export const __sim = {
         }
         player.location = { x: rs.x + 4, y: 64, z: rs.z };
         const waves = [], waveLines = [];
-        const lowWave = () => ((stats.bottom || "").split("\n").map((l) => l.replace(/§./g, "").replace(/[\uE500-\uE5FF]/g, "☠")).find((l) => /^Wave \d\/3/.test(l)) || "");
+        const lowWave = () => { const b = bossBar(); return b ? `${b.name} [${Math.round(b.fill * 100)}%]` : ""; };
         for (let w = 1; w <= 3; w++) {
           // ننتظر لحد ما تطلع الموجة كاملة (توقيت فحص الصدع كل 20 تك يختلف حسب اللي قبله)
           let mobs = [];
@@ -584,12 +628,13 @@ export const __sim = {
         }
         console.log("  " + waves.join("\n  "));
         // سطر Wave فوق الهوت بار: كلمة Wave + رقم الموجة + شكد خلصت (قتلت/الكل)، ويكمل لما تقتلهم
-        const num = (l) => { const m = l.match(/(\d+)\/(\d+)\s*☠?\s*$/); return m ? [Number(m[1]), Number(m[2])] : null; };
-        const [s1, e1, s2, e2, s3] = waveLines, a1 = num(s1 || ""), b1 = num(e1 || ""), a3 = num(s3 || "");
-        const waveOk = /^Wave 1\/3/.test(s1 || "") && a1 && a1[0] === 0 && a1[1] > 0 && b1 && b1[0] === b1[1] && /^Wave 2\/3/.test(s2 || "") && /^Wave 3\/3/.test(s3 || "") && a3 && a3[1] >= 2
-          && !(stats.titles || []).some((t) => /WAVE \d\/3/.test(t));
-        console.log(`  سطر الموجة فوق الهوت بار ${waveOk ? "✔" : "✖"}: ${waveLines.map((l) => `"${l}"`).join(" → ")}`);
-        if (!waveOk) failures.push("سطر الموجة (Wave رقم + شكد خلصت) فوق الهوت بار ما يطلع صح");
+        // شريط الموجة بأعلى الشاشة: "Wave 1/3 · 5 left" ممتلي، بعد القتل "Cleared ✔" فارغ، ثم الموجة 2 و3 (وحوشها + الزعيم)
+        const [s1, e1, s2, e2, s3] = waveLines;
+        const waveOk = /^Wave 1\/3 · \d+ left \[100%\]$/.test(s1 || "") && /^Wave 1\/3 · Cleared ✔ \[0%\]$/.test(e1 || "") && /^Wave 2\/3 · \d+ left \[100%\]$/.test(s2 || "")
+          && /^Wave 2\/3 · Cleared ✔/.test(e2 || "") && /^Wave 3\/3 · [3-9] left/.test(s3 || "") && !(stats.titles || []).some((t) => /WAVE \d\/3/.test(t))
+          && !(stats.bottom || "").includes("Wave") && !(stats.top || "").includes("Wave");
+        console.log(`  شريط الموجة بأعلى الشاشة ${waveOk ? "✔" : "✖"}: ${waveLines.map((l) => `"${l}"`).join(" → ")}`);
+        if (!waveOk) failures.push("شريط الموجة بأعلى الشاشة (Wave رقم + الباقي) ما يشتغل صح");
         advance(40);
         const sealBanner = (stats.titles || []).some((t) => t.includes("RIFT SEALED"));
         if (!sealBanner) failures.push("إعلان سد الصدع ما طلع فوق الهوت بار");
@@ -924,13 +969,13 @@ export const __sim = {
         if (k <= 2 && (neu.length !== 3 + k || !neu.every((e) => LOW.includes(e.typeId)))) ok13 = false;
         if (k === 0) {                                                       // ختم الدرج: زجاج بنفسجي لحد ما ينظف الطابق، وينكسر بموتهم
           sealOn = stats.setTypes.some((q) => q[3] === "minecraft:purple_stained_glass" && q[1] === 64 + 6);
-          hudFloor = (stats.actionBars[stats.actionBars.length - 1] || "").replace(/§./g, "");
+          advance(10); hudFloor = (bossBar("sh:hud_bar_near") || { name: "" }).name;
           const xp0 = entities.filter((e) => e.typeId === "minecraft:xp_orb").length;
           for (const e of neu) { e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); }
           advance(20);
           sealOff = stats.setTypes.filter((q) => q[3] === "minecraft:air" && q[1] === 64 + 6).length >= 4;
           orbs = entities.filter((e) => e.typeId === "minecraft:xp_orb").length > xp0;
-          hudClear = (stats.actionBars[stats.actionBars.length - 1] || "").replace(/§./g, "");
+          hudClear = (bossBar("sh:hud_bar_near") || { name: "" }).name;
         }
         if (k >= 3 && (neu.length < 3 || !neu.some((e) => GRIM.includes(e.typeId)))) ok46 = false;
         advance(20); if (k > 0 && tagged().length !== before + neu.length) once = false;          // ما يتكرر
@@ -952,8 +997,8 @@ export const __sim = {
       const wr = JSON.parse(world.getDynamicProperty("sh_structs"))[0];
       console.log(`  الطوابق 1-6: ${counts.join("، ")} وحش | 1-3 Lowly بالعدد ${ok13 ? "✔" : "✖"} | 4-6 أقوى (Grim) ${ok46 ? "✔" : "✖"} | مرة وحدة ${once ? "✔" : "✖"}`);
       console.log(`  الطابق 7: ${types0} ${topOk ? "✔" : "✖"} | يرجعون إذا تبخروا ${respawned ? "✔" : "✖"} | صندوق قبل القتل ${chest0 ? "✖" : "✔(ما في)"} | صندوق بعد القتل ${chest.length === 1 ? "✔" : "✖"} (${chest[0] ? chest[0].slice(0, 3).join(",") : "-"}) | غنائم ${loot.length} | مكتمل ${wr.c ? "✔" : "✖"}`);
-      console.log(`  ختم الدرج ${sealOn ? "✔" : "✖"} | ينكسر لما ينظف الطابق ${sealOff ? "✔" : "✖"} | خبرة ${orbs ? "✔" : "✖"} | الـHUD: "${hudFloor.split("\n").find((l) => l.startsWith("Floor")) || "-"}" ثم "${hudClear.split("\n").find((l) => l.startsWith("Floor")) || "-"}"`);
-      if (!sealOn || !sealOff || !orbs || !/Floor 1\/7 .* 0\/3/.test(hudFloor) || !/Floor 1\/7 .* 3\/3\s+Cleared/.test(hudClear)) failures.push("البرج: الختم أو سطر Floor (رقم الطابق + شكد خلصت) أو جوائز الطابق ما تشتغل");
+      console.log(`  ختم الدرج ${sealOn ? "✔" : "✖"} | ينكسر لما ينظف الطابق ${sealOff ? "✔" : "✖"} | خبرة ${orbs ? "✔" : "✖"} | شريط أعلى الشاشة: "${hudFloor || "-"}" ثم "${hudClear || "-"}"`);
+      if (!sealOn || !sealOff || !orbs || !/^Abyss Tower · Floor 1\/7 · 3 left$/.test(hudFloor) || !/^Abyss Tower · Floor 1\/7 · Cleared ✔ climb$/.test(hudClear)) failures.push("البرج: الختم أو شريط الطابق بأعلى الشاشة أو جوائز الطابق ما تشتغل");
       if (!ok13 || !ok46 || !once) failures.push("البرج: وحوش الطوابق 1-6 غلط أو تتكرر");
       if (!topOk || !respawned) failures.push("البرج: وحوش الطابق السابع ما ظهرت أو ما رجعت");
       if (chest0 || chest.length !== 1 || loot.length < 3 || !wr.c) failures.push("البرج: صندوق القمة ما ظهر صح");
@@ -1030,6 +1075,46 @@ export const __sim = {
       console.log(`  الجرعات: تأثيرات ${potOk ? "✔" : "✖"} | تقويات محفوظة ${buffsOk ? "✔" : "✖"} (${Object.keys(buffs).join(",")}) | أيقونات بالـHUD ${/[-]/.test(hudBuff) ? "✔" : "✖"}`);
       console.log(`  طقم الصياد (بونص) ${setOk ? "✔" : "✖"} | رد طقم السرعوف ${countered ? "✔" : "✖"}`);
       console.log(`  الخيميائي ظهر بالقرية ${alch ? "✔" : "✖"} | طبخ جرعة ${brewed ? "✔" : "✖"} | أخذ المواد ${paid ? "✔" : "✖"}`);
+      // 6) الإنجازات (v1.36): تنفتح من حالة اللاعب ومن الأحداث، تعطي خبرة، وشاشاتها بالكتاب بصور (المقفول ??? وصورة _x)
+      {
+        const ACHJS = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/achievements.js"), "utf8");
+        const achIds = [...ACHJS.matchAll(/"id": "([a-z0-9_]+)"/g)].map((m) => m[1]);
+        const mainJs = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/main.js"), "utf8");
+        const checkBlock = mainJs.slice(mainJs.indexOf("const ACH_CHECK = {"), mainJs.indexOf("function achCheck(p)"));
+        const noCheck = achIds.filter((id) => !new RegExp(`\\b${id}:`).test(checkBlock));
+        const ui2 = (await import("@minecraft/server-ui")).sim;
+        player.setDynamicProperty("sh_ach", undefined); stats.titles = []; stats.messages.length = 0;
+        const s0 = baseState("star"); s0.rank = 1; setState(s0);
+        const xp0 = s0.xp || 0;
+        advance(45);
+        const achU = () => (JSON.parse(player.getDynamicProperty("sh_ach") || "{}").u || {});
+        const auto = ["star_touched", "first_lesson", "rank_trainee"].every((id) => achU()[id]);
+        const xpUp = JSON.parse(player.getDynamicProperty("sh")).xp > xp0 || JSON.parse(player.getDynamicProperty("sh")).level > s0.level;
+        const shown = (stats.titles || []).some((t) => /Achievement: /.test(t)) && stats.messages.some((m) => /\[Achievement\]/.test(m));
+        for (const pid of ["sh:potion_vitality", "sh:potion_mana", "sh:potion_might", "sh:potion_bulwark", "sh:potion_focus", "sh:potion_swift"]) fire("itemCompleteUse", { source: player, itemStack: new ItemStack(pid) });
+        for (let i = 0; i < 16 && !achU().mana_dry; i++) { fire("scriptEventReceive", { id: "sh:cdreset_cd_only", message: "", sourceEntity: player }); await useItem("sh:skill_meteor"); advance(6); }
+        ui2.queue = []; ui2.cancelWhenEmpty = true;
+        await useItem("sh:explorer_compass"); await new Promise((r) => setTimeout(r, 20)); advance(45);
+        const events = ["potion_six", "mana_dry", "pathfinder"].filter((id) => !achU()[id]);
+        // الشاشات: الكتاب ← [Achievements] ← Journey ← أول إنجاز (تفاصيل)
+        ui2.formsShown.length = 0; ui2.queue = []; ui2.cancelWhenEmpty = true;
+        await useItem("sh:evolution_book"); await new Promise((r) => setTimeout(r, 20));
+        const book = ui2.formsShown[0] || { buttons: [] };
+        const bi = book.buttons.findIndex((b) => b.includes("[Achievements]"));
+        ui2.formsShown.length = 0; ui2.queue = [bi, 0, 1];
+        await useItem("sh:evolution_book"); for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 10));
+        const [fb, fc, fl, fd] = ui2.formsShown;
+        const catsOk = fc && fc.title === "Achievements" && fc.buttons.length === 7 && fc.icons.every((ic) => /^textures\/ui\/sh_ach\/cat_/.test(ic || ""));
+        const listOk = fl && fl.title === "Journey" && fl.icons[0] === "textures/ui/sh_ach/star_touched" && /✔ Star-Touched/.test(fl.buttons[0])
+          && fl.icons[1] === "textures/ui/sh_ach/unbound_x" && /^§8\?\?\?/.test(fl.buttons[1]) && /A secret/.test(fl.buttons[1]);
+        const detailOk = fd && fd.title === "???" && /secret/.test(fd.body);
+        ui2.queue = []; ui2.cancelWhenEmpty = false;
+        const iconsOk = achIds.every((id) => fs.existsSync(path.join(root, `AnimePowers/RP/textures/ui/sh_ach/${id}.png`)) && fs.existsSync(path.join(root, `AnimePowers/RP/textures/ui/sh_ach/${id}_x.png`)));
+        const achOk = achIds.length >= 40 && !noCheck.length && auto && xpUp && shown && !events.length && bi >= 0 && catsOk && listOk && detailOk && iconsOk;
+        console.log(`  الإنجازات: ${achIds.length} إنجاز | شرط لكل واحد ${noCheck.length ? "✖ " + noCheck.join(",") : "✔"} | تنفتح لحالها + خبرة + إعلان ${auto && xpUp && shown ? "✔" : "✖"} | أحداث (جرعات، مانا، بوصلة) ${events.length ? "✖ " + events.join(",") : "✔"} | شاشات الكتاب بالصور ${bi >= 0 && catsOk && listOk && detailOk ? "✔" : "✖"} | الصور موجودة ${iconsOk ? "✔" : "✖"}`);
+        if (!achOk) failures.push("الإنجازات ما تشتغل صح");
+        player.setDynamicProperty("sh_ach", undefined);
+      }
       if (!dropsOk) failures.push("مواد الوحوش ما طاحت");
       if (!blocked || used < 2 || !manaShown) failures.push("المانا ما تشتغل صح");
       if (!potOk || !buffsOk) failures.push("الجرعات ما تشتغل");
