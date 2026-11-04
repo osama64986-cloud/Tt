@@ -1,0 +1,46 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:vfx",
+   "materials": {
+    "glow": "entity_alphablend",
+    "blend": "entity_alphablend"
+   },
+   "textures": {
+    "c0": "textures/entity/vfx/vfx_0",
+    "c1": "textures/entity/vfx/vfx_1",
+    "c2": "textures/entity/vfx/vfx_2",
+    "c3": "textures/entity/vfx/vfx_3",
+    "c4": "textures/entity/vfx/vfx_4",
+    "c5": "textures/entity/vfx/vfx_5",
+    "c6": "textures/entity/vfx/vfx_6",
+    "c7": "textures/entity/vfx/vfx_7",
+    "c8": "textures/entity/vfx/vfx_8",
+    "c9": "textures/entity/vfx/vfx_9",
+    "c10": "textures/entity/vfx/vfx_10"
+   },
+   "geometry": {
+    "beam": "geometry.ab.vfx_beam",
+    "orb": "geometry.ab.vfx_orb"
+   },
+   "animations": {
+    "beam": "animation.ab.vfx_beam",
+    "orb": "animation.ab.vfx_orb"
+   },
+   "scripts": {
+    "animate": [
+     {
+      "beam": "query.property('ab:kind') == 0"
+     },
+     {
+      "orb": "query.property('ab:kind') == 1"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.ab.vfx"
+   ]
+  }
+ }
+}

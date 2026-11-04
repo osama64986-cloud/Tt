@@ -292,10 +292,194 @@ def build_entities():
         json.dump(render_controllers(), f, indent=1)
 
 
+# ---------------------------------------------------------------- 3D VFX entity (beams + energy balls)
+VFX_COLORS = [  # (core, edge) per colour slot used by the script
+    ((255, 255, 255), (80, 180, 255)),   # 0 Kamehameha
+    ((255, 240, 255), (190, 80, 255)),   # 1 Galick Gun
+    ((255, 255, 235), (255, 220, 60)),   # 2 Final Flash
+    ((255, 255, 255), (150, 215, 255)),  # 3 Big Bang
+    ((255, 245, 240), (255, 40, 40)),    # 4 Red
+    ((240, 250, 255), (40, 110, 255)),   # 5 Blue
+    ((255, 240, 255), (170, 50, 255)),   # 6 Hollow Purple
+    ((230, 160, 255), (90, 10, 130)),    # 7 Hakai
+    ((255, 255, 255), (110, 200, 255)),  # 8 Spirit Bomb
+    ((255, 255, 240), (255, 200, 40)),   # 9 gold
+    ((255, 255, 255), (220, 230, 255)),  # 10 white/silver
+]
+
+
+def vfx_textures():
+    from PIL import ImageDraw
+    d = os.path.join(RP, "textures", "entity", "vfx")
+    os.makedirs(d, exist_ok=True)
+    for i, (core, edge) in enumerate(VFX_COLORS):
+        core = tuple(int(edge[k] + (255 - edge[k]) * 0.5) for k in range(3))  # tinted core, not pure white
+        img = Image.new("RGBA", (32, 32))
+        px = img.load()
+        for y in range(32):
+            for x in range(32):
+                r = max(abs(x - 15.5), abs(y - 15.5)) / 16.0  # 0 centre .. 1 edge
+                t = min(1.0, r ** 1.1)
+                c = tuple(int(core[k] + (edge[k] - core[k]) * t) for k in range(3))
+                # streaks of brighter energy
+                if (x + y * 3) % 11 == 0:
+                    c = tuple(min(255, int(v * 1.15) + 20) for v in c)
+                px[x, y] = c + (int(255 * (1 - 0.55 * t)),)
+        img.save(os.path.join(d, f"vfx_{i}.png"))
+    # particle textures: ring (shockwave) and 4-point star (impact flash)
+    ring = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    rp = ring.load()
+    for y in range(32):
+        for x in range(32):
+            dd = ((x - 15.5) ** 2 + (y - 15.5) ** 2) ** 0.5
+            a = max(0.0, 1 - abs(dd - 13) / 3.0)
+            rp[x, y] = (255, 255, 255, int(255 * a))
+    ring.save(os.path.join(RP, "textures", "particle", "ab_ring.png"))
+    star = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    sp = star.load()
+    for y in range(32):
+        for x in range(32):
+            dx, dy = abs(x - 15.5) / 16, abs(y - 15.5) / 16
+            a = max(0.0, 1 - (dx * dy) ** 0.5 * 4 - (dx * dx + dy * dy) * 0.6)
+            sp[x, y] = (255, 255, 255, int(255 * min(1, a)))
+    star.save(os.path.join(RP, "textures", "particle", "ab_star.png"))
+
+
+def _face_uv(size=32):
+    f = {"uv": [0, 0], "uv_size": [size, size]}
+    return {k: dict(f) for k in ("north", "south", "east", "west", "up", "down")}
+
+
+def vfx_geometry():
+    uv = _face_uv()
+    beam = {
+        "description": {"identifier": "geometry.ab.vfx_beam", "texture_width": 32, "texture_height": 32,
+                        "visible_bounds_width": 128, "visible_bounds_height": 128, "visible_bounds_offset": [0, 0, 0]},
+        "bones": [
+            {"name": "root", "pivot": [0, 0, 0]},
+            {"name": "shaft", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-2, -2, -16], "size": [4, 4, 16], "uv": uv},
+            ]},
+            {"name": "outer_shaft", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-5, -5, -16], "size": [10, 10, 16], "uv": uv},
+                {"origin": [-5, -5, -16], "size": [10, 10, 16], "uv": uv, "rotation": [0, 0, 45], "pivot": [0, 0, 0]},
+            ]},
+            {"name": "spiral", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-7.5, -0.75, -16], "size": [1.5, 1.5, 16], "uv": uv},
+                {"origin": [6, -0.75, -16], "size": [1.5, 1.5, 16], "uv": uv},
+                {"origin": [-0.75, 6, -16], "size": [1.5, 1.5, 16], "uv": uv},
+                {"origin": [-0.75, -7.5, -16], "size": [1.5, 1.5, 16], "uv": uv},
+            ]},
+            {"name": "muzzle", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-6, -6, -6], "size": [12, 12, 12], "uv": uv},
+                {"origin": [-6, -6, -6], "size": [12, 12, 12], "uv": uv, "rotation": [45, 45, 0], "pivot": [0, 0, 0]},
+            ]},
+        ],
+    }
+    orb = {
+        "description": {"identifier": "geometry.ab.vfx_orb", "texture_width": 32, "texture_height": 32,
+                        "visible_bounds_width": 64, "visible_bounds_height": 64, "visible_bounds_offset": [0, 0, 0]},
+        "bones": [
+            {"name": "root", "pivot": [0, 0, 0]},
+            {"name": "core", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-4, -4, -4], "size": [8, 8, 8], "uv": uv},
+                {"origin": [-4, -4, -4], "size": [8, 8, 8], "uv": uv, "rotation": [45, 45, 0], "pivot": [0, 0, 0]},
+            ]},
+            {"name": "outer_shell", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv},
+                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [45, 0, 0], "pivot": [0, 0, 0]},
+                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [0, 45, 0], "pivot": [0, 0, 0]},
+                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [0, 0, 45], "pivot": [0, 0, 0]},
+            ]},
+        ],
+    }
+    return {"format_version": "1.12.0", "minecraft:geometry": [beam, orb]}
+
+
+def build_vfx():
+    vfx_textures()
+    with open(os.path.join(RP, "models", "entity", "vfx.geo.json"), "w") as f:
+        json.dump(vfx_geometry(), f, indent=1)
+    bp = {
+        "format_version": "1.21.60",
+        "minecraft:entity": {
+            "description": {
+                "identifier": "ab:vfx", "is_spawnable": False, "is_summonable": True,
+                "properties": {
+                    "ab:kind": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
+                    "ab:color": {"type": "int", "range": [0, len(VFX_COLORS) - 1], "default": 0, "client_sync": True},
+                    "ab:len": {"type": "float", "range": [0, 80], "default": 0, "client_sync": True},
+                    "ab:size": {"type": "float", "range": [0, 40], "default": 1, "client_sync": True},
+                    "ab:pitch": {"type": "float", "range": [-90, 90], "default": 0, "client_sync": True},
+                },
+            },
+            "components": {
+                "minecraft:type_family": {"family": ["ab_vfx", "inanimate"]},
+                "minecraft:collision_box": {"width": 0.01, "height": 0.01},
+                "minecraft:physics": {"has_gravity": False, "has_collision": False},
+                "minecraft:pushable": {"is_pushable": False, "is_pushable_by_piston": False},
+                "minecraft:damage_sensor": {"triggers": [{"cause": "all", "deals_damage": "no"}]},
+                "minecraft:health": {"value": 1, "max": 1},
+                "minecraft:knockback_resistance": {"value": 1},
+                "minecraft:fire_immune": True,
+            },
+        },
+    }
+    with open(os.path.join(BP, "entities", "vfx.json"), "w") as f:
+        json.dump(bp, f, indent=1)
+    client = {
+        "format_version": "1.10.0",
+        "minecraft:client_entity": {
+            "description": {
+                "identifier": "ab:vfx",
+                "materials": {"glow": "entity_alphablend", "blend": "entity_alphablend"},
+                "textures": {f"c{i}": f"textures/entity/vfx/vfx_{i}" for i in range(len(VFX_COLORS))},
+                "geometry": {"beam": "geometry.ab.vfx_beam", "orb": "geometry.ab.vfx_orb"},
+                "animations": {"beam": "animation.ab.vfx_beam", "orb": "animation.ab.vfx_orb"},
+                "scripts": {"animate": [{"beam": "query.property('ab:kind') == 0"}, {"orb": "query.property('ab:kind') == 1"}]},
+                "render_controllers": ["controller.render.ab.vfx"],
+            }
+        },
+    }
+    with open(os.path.join(RP, "entity", "vfx.entity.json"), "w") as f:
+        json.dump(client, f, indent=1)
+    rc_path = os.path.join(RP, "render_controllers", "ab.render_controllers.json")
+    rc = json.load(open(rc_path))
+    rc["render_controllers"]["controller.render.ab.vfx"] = {
+        "arrays": {
+            "textures": {"Array.c": [f"Texture.c{i}" for i in range(len(VFX_COLORS))]},
+            "geometries": {"Array.g": ["Geometry.beam", "Geometry.orb"]},
+        },
+        "geometry": "Array.g[query.property('ab:kind')]",
+        "materials": [{"*": "Material.glow"}, {"outer*": "Material.blend"}],
+        "textures": ["Array.c[query.property('ab:color')]"],
+        "ignore_lighting": True,
+    }
+    json.dump(rc, open(rc_path, "w"), indent=1)
+    an_path = os.path.join(RP, "animations", "ab.animation.json")
+    an = json.load(open(an_path))
+    L, W = "query.property('ab:len')", "query.property('ab:size')"
+    an["animations"]["animation.ab.vfx_beam"] = {"loop": True, "bones": {
+        "root": {"rotation": ["query.property('ab:pitch')", 0, 0]},
+        "shaft": {"scale": [W, W, L]},
+        "outer_shaft": {"scale": [W, W, L], "rotation": [0, 0, "query.life_time * 360.0"]},
+        "spiral": {"scale": [W, W, L], "rotation": [0, 0, "-query.life_time * 900.0"]},
+        "muzzle": {"scale": [f"{W} * (1.0 + math.sin(query.life_time * 1800.0) * 0.12)"] * 3,
+                   "rotation": [0, "query.life_time * 500.0", 0]},
+    }}
+    an["animations"]["animation.ab.vfx_orb"] = {"loop": True, "bones": {
+        "core": {"scale": [f"{W} * 0.9"] * 3, "rotation": ["query.life_time * 300.0", "query.life_time * 420.0", 0]},
+        "outer_shell": {"scale": [f"{W} * (1.0 + math.sin(query.life_time * 1500.0) * 0.06)"] * 3,
+                        "rotation": [0, "-query.life_time * 260.0", "query.life_time * 180.0"]},
+    }}
+    json.dump(an, open(an_path, "w"), indent=1)
+
+
 if __name__ == "__main__":
     build_entities()
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     HEADS.update(build_characters())
+    build_vfx()
     build_icons()
     validate_json()
     print("built", build_zip())

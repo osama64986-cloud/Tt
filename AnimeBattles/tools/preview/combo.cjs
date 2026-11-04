@@ -18,25 +18,26 @@ const pose = (name) => {
 const need = {};
 const scenes = [
   { title: "Goku — Right jab", caster: ["goku", "base", "jab_r"], target: ["vegeta", "base"], fx: "hit", near: 1 },
-  { title: "Goku — Knee", caster: ["goku", "base", "knee"], target: ["vegeta", "base"], fx: "hit", near: 1 },
+  { title: "Goku — Left jab", caster: ["goku", "base", "jab_l"], target: ["vegeta", "base"], fx: "hit", near: 1 },
   { title: "Goku — Rush barrage", caster: ["goku", "ssj", "rush"], target: ["vegeta", "ssj"], fx: "rush", near: 1 },
-  { title: "Goku — Uppercut", caster: ["goku", "ssb", "upper"], target: ["vegeta", "ssb"], fx: "upper", near: 1 },
-  { title: "Goku — Roundhouse finisher", caster: ["goku", "ui", "round"], target: ["vegeta", "ue"], fx: "big", near: 1 },
+  { title: "Goku — Right roundhouse", caster: ["goku", "ssb", "round"], target: ["vegeta", "ssb"], fx: "kickR", near: 1 },
+  { title: "Goku — Axe kick (from above)", caster: ["goku", "ui", "knee"], target: ["vegeta", "ue"], fx: "axe", near: 1 },
   { title: "Vegeta — Left jab", caster: ["vegeta", "base", "jab_l"], target: ["goku", "base"], fx: "hit", near: 1 },
-  { title: "Vegeta — Elbow", caster: ["vegeta", "ssj", "elbow"], target: ["goku", "ssj"], fx: "hit", near: 1 },
-  { title: "Vegeta — Front kick", caster: ["vegeta", "ssb", "kick"], target: ["goku", "ssb"], fx: "hit", near: 1 },
+  { title: "Vegeta — Rush barrage", caster: ["vegeta", "ssj", "rush"], target: ["goku", "ssj"], fx: "rush", near: 1 },
+  { title: "Vegeta — Left roundhouse", caster: ["vegeta", "ssb", "elbow"], target: ["goku", "ssb"], fx: "kickL", near: 1 },
   { title: "Vegeta — Point-blank ki", caster: ["vegeta", "ue", "pose_point"], target: ["goku", "ui"], fx: "kiburst", near: 1 },
   { title: "Gojo — Jab", caster: ["gojo", "blindfold", "jab_r"], target: ["vegeta", "base"], fx: "chit", near: 1 },
   { title: "Gojo — Blinks behind…", caster: ["gojo", "eyes", null], target: ["goku", "base"], fx: "blink", behind: 1 },
-  { title: "…and roundhouse kicks", caster: ["gojo", "eyes", "round"], target: ["goku", "base"], fx: "cbig", near: 1 },
-  { title: "Gojo — Knee", caster: ["gojo", "blindfold", "knee"], target: ["goku", "ssj"], fx: "chit", near: 1 },
-  { title: "Gojo — Uppercut", caster: ["gojo", "eyes", "upper"], target: ["vegeta", "ssj"], fx: "cupper", near: 1 },
+  { title: "…left roundhouse", caster: ["gojo", "eyes", "elbow"], target: ["goku", "base"], fx: "ckickL", near: 1 },
+  { title: "Gojo — Rush barrage", caster: ["gojo", "blindfold", "rush"], target: ["goku", "ssj"], fx: "crush", near: 1 },
+  { title: "Gojo — Axe kick", caster: ["gojo", "eyes", "knee"], target: ["vegeta", "ssj"], fx: "caxe", near: 1 },
   { title: "Gojo — Black Flash finisher", caster: ["gojo", "eyes", "kick"], target: ["vegeta", "base"], fx: "blackflash2", near: 1 },
 ];
 for (const s of scenes) { need[s.caster[0] + ":" + s.caster[1]] = 1; if (s.target) need[s.target[0] + ":" + s.target[1]] = 1; }
 const models = {};
 for (const k of Object.keys(need)) { const [c, f] = k.split(":"); models[k] = load(c, f); }
-for (const s of scenes) s.pose = s.caster[2] === "rush" ? { rightArm: [-120, 10, 0], leftArm: [-65, -10, 0], body: [8, 10, 0], rightLeg: [-15, 0, 0], leftLeg: [15, 0, 0] } : pose(s.caster[2]);
+for (const s of scenes) s.pose = s.caster[2] === "rush" ? { rightArm: [-118, 12, 0], leftArm: [-62, -12, 0], body: [8, 10, 0], rightLeg: [-15, 0, 0], leftLeg: [15, 0, 0] } : pose(s.caster[2]);
+const vfxTex = [...Array(11).keys()].map((i) => "data:image/png;base64," + fs.readFileSync(path.join(RP, "textures/entity/vfx", `vfx_${i}.png`)).toString("base64"));
 const orb = "data:image/png;base64," + fs.readFileSync(path.join(RP, "textures/particle/ab_orb.png")).toString("base64");
 const three = fs.readFileSync(path.join(__dirname, "node_modules/three/build/three.module.js"), "utf8");
 const COLS = 5, W = 420, H = 330;
@@ -46,7 +47,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8"></head><body styl
 <div id="labels"></div>
 <script type="module">
 ${three.replace(/export \{[\s\S]*?\};\s*$/m, "")}
-const scenes = ${JSON.stringify(scenes)}, models = ${JSON.stringify(models)}, ORB = "${orb}";
+const scenes = ${JSON.stringify(scenes)}, models = ${JSON.stringify(models)}, ORB = "${orb}", VFXT = ${JSON.stringify(vfxTex)};
 const COLS = ${COLS}, W = ${W}, H = ${H}, ROWS = ${rows};
 const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setSize(W * COLS, H * ROWS); renderer.setScissorTest(true); renderer.autoClear = false;
@@ -92,7 +93,23 @@ async function build(key, poseRot) {
   return root;
 }
 // ---- particles (units: 16 = one block)
-let orbTex;
+let orbTex; const VT = [];
+const vmat = (slot, op, add) => new MeshBasicMaterial({ map: VT[slot], transparent: true, opacity: op, depthWrite: false, side: DoubleSide, blending: add ? AdditiveBlending : NormalBlending });
+function vbox(g, w, h, d, z, rz, rx, ry, m) { const b = new Mesh(new BoxGeometry(w, h, d), m); b.position.z = z; const p = new Group(); p.rotation.set(rx || 0, ry || 0, rz || 0); p.add(b); g.add(p); }
+function vBeam(sc, from, to, slot, size) {
+  const g = new Group(); g.position.set(...from); g.lookAt(new Vector3(...to)); const L = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+  vbox(g, 4 * size, 4 * size, L, L / 2, 0, 0, 0, vmat(slot, 0.98, false));
+  vbox(g, 10 * size, 10 * size, L, L / 2, 0, 0, 0, vmat(slot, 0.45, true)); vbox(g, 10 * size, 10 * size, L, L / 2, Math.PI / 4, 0, 0, vmat(slot, 0.45, true));
+  for (const [x, y] of [[6.75, 0], [-6.75, 0], [0, 6.75], [0, -6.75]]) { const b = new Mesh(new BoxGeometry(1.5 * size, 1.5 * size, L), vmat(slot, 0.8, true)); b.position.set(x * size, y * size, L / 2); g.add(b); }
+  vbox(g, 12 * size, 12 * size, 12 * size, 0, 0, 0, 0, vmat(slot, 0.7, true)); vbox(g, 12 * size, 12 * size, 12 * size, 0, 0, Math.PI / 4, Math.PI / 4, vmat(slot, 0.7, true));
+  sc.add(g);
+}
+function vOrb(sc, c, slot, size) {
+  const g = new Group(); g.position.set(...c);
+  vbox(g, 7.2 * size, 7.2 * size, 7.2 * size, 0, 0, 0, 0, vmat(slot, 0.98, false)); vbox(g, 7.2 * size, 7.2 * size, 7.2 * size, 0, 0, Math.PI / 4, Math.PI / 4, vmat(slot, 0.98, false));
+  for (const r of [[0, 0, 0], [Math.PI / 4, 0, 0], [0, Math.PI / 4, 0], [0, 0, Math.PI / 4]]) vbox(g, 16 * size, 16 * size, 16 * size, 0, r[2], r[0], r[1], vmat(slot, 0.35, true));
+  sc.add(g);
+}
 function P(scene, p, c, s, solid = false, stretch = 1) {
   const m = new SpriteMaterial({ map: orbTex, color: new Color(c[0], c[1], c[2]), blending: solid ? NormalBlending : AdditiveBlending, depthWrite: false, transparent: true, opacity: solid ? (scene.userData.dim || 0.85) : 0.42 });
   const sp = new Sprite(m); sp.position.set(p[0], p[1], p[2]); sp.scale.set(s, s * stretch, 1); scene.add(sp);
@@ -113,10 +130,23 @@ function burst(sc, c, color, r, n) { for (let i = 0; i < n; i++) { const v = sph
 function sphere(sc, c, r, color, n, size, solid = false) { for (let i = 0; i < n; i++) P(sc, add(c, sph(), r), color, size, solid); }
 function aura(sc, color, n = 90) { for (let i = 0; i < n; i++) { const a = rnd() * 6.283, rr = 7 + rnd() * 6; P(sc, [Math.cos(a) * rr, 2 + rnd() * 36, Math.sin(a) * rr], color, 4 + rnd() * 3, false, 3.2); } }
 const HIT = [0, 22, -20];
+function flashHit(sc, c, color, strong) { P(sc, c, C.white, strong ? 30 : 16); P(sc, c, color, strong ? 22 : 12);
+  for (let i = 0; i < (strong ? 16 : 8); i++) { const a = rnd() * 6.283, b = rnd() * 3.14 - 1.57; const d = [Math.cos(a) * Math.cos(b), Math.sin(b), Math.sin(a) * Math.cos(b)];
+    for (let k = 1; k < 6; k++) P(sc, add(c, d, k * (strong ? 3.2 : 2.2)), color, 2.4 - k * 0.3); }
+  if (strong) for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283; P(sc, [c[0] + Math.cos(a) * 16, c[1] + Math.sin(a) * 16, c[2]], color, 3.5); } }
+function arc(sc, kind, color) { for (let k = 0; k <= 14; k++) { const a = k / 14 * Math.PI; let p;
+  if (kind === "R") p = [Math.cos(a) * -20, 14, -Math.sin(a) * 20]; else if (kind === "L") p = [Math.cos(a) * 20, 14, -Math.sin(a) * 20]; else p = [0, 26 + Math.cos(a) * 22, -Math.sin(a) * 20];
+  P(sc, p, color, 7); if (k % 3 === 0) P(sc, p, C.white, 4); } }
 const FX = {
-  hit(sc) { burst(sc, HIT, C.gold, 10, 30); P(sc, HIT, C.white, 16); },
-  chit(sc) { burst(sc, HIT, C.blue, 10, 30); P(sc, HIT, C.white, 14); },
-  rush(sc) { for (let i = 0; i < 8; i++) { const p = [rnd() * 10 - 5, 18 + rnd() * 10, -18 - rnd() * 4]; P(sc, p, C.gold, 10); P(sc, p, C.white, 5); }
+  hit(sc) { flashHit(sc, HIT, C.gold, false); },
+  chit(sc) { flashHit(sc, HIT, C.blue, false); },
+  kickR(sc) { arc(sc, 'R', C.ssb); flashHit(sc, [0, 16, -22], C.ssb, true); aura(sc, C.ssb, 50); },
+  kickL(sc) { arc(sc, 'L', C.ssb); flashHit(sc, [0, 16, -22], C.ssb, true); aura(sc, C.ssb, 50); },
+  ckickL(sc) { arc(sc, 'L', C.blue); flashHit(sc, [0, 16, -22], C.blue, true); },
+  axe(sc) { arc(sc, 'D', C.silver); flashHit(sc, [0, 26, -24], C.silver, true); for (let i = 0; i < 36; i++) { const a = i / 36 * 6.283; P(sc, [Math.cos(a) * 26, 1, -30 + Math.sin(a) * 26], C.white, 5); } aura(sc, C.silver, 50); },
+  caxe(sc) { arc(sc, 'D', C.blue); flashHit(sc, [0, 26, -24], C.blue, true); for (let i = 0; i < 36; i++) { const a = i / 36 * 6.283; P(sc, [Math.cos(a) * 26, 1, -30 + Math.sin(a) * 26], C.blue, 5); } },
+  crush(sc) { for (let i = 0; i < 7; i++) flashHit(sc, [rnd() * 10 - 5, 18 + rnd() * 10, -20], C.blue, false); },
+  rush(sc) { for (let i = 0; i < 7; i++) flashHit(sc, [rnd() * 10 - 5, 18 + rnd() * 10, -20], C.gold, false);
     for (let k = 0; k < 4; k++) P(sc, [k % 2 ? 5 : -5, 22 - k, -12 - k], C.white, 7, false, 0.4); aura(sc, C.gold, 60); },
   upper(sc) { burst(sc, [0, 30, -20], C.ssb, 14, 40); P(sc, [0, 30, -20], C.white, 18); aura(sc, C.ssb, 60); },
   big(sc) { burst(sc, HIT, C.silver, 18, 70); for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283; P(sc, [Math.cos(a) * 16, 22 + Math.sin(a) * 16, -22], C.white, 4); } aura(sc, C.silver, 60); },
@@ -126,10 +156,10 @@ const FX = {
   cupper(sc) { burst(sc, [0, 30, -20], C.blue, 14, 40); P(sc, [0, 30, -20], C.white, 16); },
   blackflash2(sc) { const c = [0, 16, -20]; sphere(sc, c, 7, C.black, 60, 8, true); burst(sc, c, C.red, 15, 80);
     for (let i = 0; i < 14; i++) { const v = sph(); P(sc, add(c, v, 13), C.black, 9, true, 0.3); } },
-  kame(sc) { beam(sc, C.kame, 11); },
-  galick(sc) { beam(sc, C.galick, 10); },
-  flash(sc) { beam(sc, C.flash, 19); aura(sc, C.gold, 60); },
-  spirit(sc) { const c = [0, 100, 0]; sphere(sc, c, 34, C.kame, 420, 9); P(sc, c, C.kame, 80); P(sc, c, C.kame, 60);
+  kame(sc) { vBeam(sc, HAND, TGT, 0, 0.95); vOrb(sc, TGT, 0, 1.6); for (let i = 0; i < 30; i++) { const v = sph(); P(sc, add(TGT, v, 14 + rnd() * 10), C.kame, 3, false, 3); } },
+  galick(sc) { vBeam(sc, HAND, TGT, 1, 0.95); vOrb(sc, TGT, 1, 1.5); for (let i = 0; i < 30; i++) { const v = sph(); P(sc, add(TGT, v, 14 + rnd() * 10), C.galick, 3, false, 3); } },
+  flash(sc) { vBeam(sc, HAND, TGT, 2, 1.95); vOrb(sc, TGT, 2, 2.4); aura(sc, C.gold, 60); },
+  spirit(sc) { const c = [0, 100, 0]; vOrb(sc, c, 8, 4.4);
     for (let i = 0; i < 70; i++) { const v = sph(); P(sc, add(c, v, 60 + rnd() * 40), C.kame, 3, false, 1); } },
   aura_blue(sc) { aura(sc, C.ssb, 160); for (let i = 0; i < 40; i++) { const a = i / 40 * 6.283; P(sc, [Math.cos(a) * 26, 1, Math.sin(a) * 26], C.ssb, 9); } },
   ui(sc) { aura(sc, C.silver, 110); for (let k = 1; k <= 2; k++) for (let i = 0; i < 25; i++) P(sc, [k * 9 + rnd() * 4, 4 + rnd() * 28, rnd() * 4], C.silver, 5, false, 2);
@@ -138,16 +168,15 @@ const FX = {
     for (let s = 0; s < 1; s += 0.012) { const p = add(from, [to[0] - from[0], to[1] - from[1], to[2] - from[2]], s); const a = s * 30;
       P(sc, [p[0] + Math.cos(a) * 12, p[1] + Math.sin(a) * 12, p[2]], C.gold, 11); }
     burst(sc, to, C.gold, 30, 90); aura(sc, C.gold, 60); },
-  bigbang(sc) { P(sc, [0, 19, -50], C.bigbang, 30); P(sc, [0, 19, -50], C.white, 16); for (let s = -14; s > -50; s -= 3) P(sc, [0, 19, s], C.bigbang, 10);
-    burst(sc, TGT, C.bigbang, 40, 120); aura(sc, C.ssb, 70); },
-  hakai(sc) { const c = [0, 18, -90]; for (let k = 0; k < 3; k++) sphere(sc, c, 10 + k * 7, k % 2 ? C.ego : C.hakai, 70, 8, true); P(sc, [0, 19, -14], C.hakai, 14, true); aura(sc, C.ego, 90); },
+  bigbang(sc) { vOrb(sc, [0, 19, -50], 3, 0.9); for (let s = -14; s > -44; s -= 3) P(sc, [0, 19, s], C.bigbang, 6); vOrb(sc, TGT, 3, 3.4); aura(sc, C.ssb, 70); },
+  hakai(sc) { const c = [0, 18, -90]; vOrb(sc, [0, 19, -40], 7, 0.7); for (let k = 0; k < 3; k++) sphere(sc, c, 10 + k * 7, k % 2 ? C.ego : C.hakai, 70, 8, true); P(sc, [0, 19, -14], C.hakai, 14, true); aura(sc, C.ego, 90); },
   infinity(sc) { for (let r of [14, 17]) for (let i = 0; i < 26; i++) { const a = i / 26 * 6.283; P(sc, [Math.cos(a) * r, 18 + Math.sin(a * 3) * 2, Math.sin(a) * r - 4], C.blue, 4); }
     for (let i = 0; i < 6; i++) P(sc, [rnd() * 6 - 3, 16 + rnd() * 6, -22 - rnd() * 4], C.white, 6); },
-  blue(sc) { const c = [0, 20, -88]; P(sc, c, C.blue, 40); P(sc, c, C.white, 16);
+  blue(sc) { const c = [0, 20, -88]; vOrb(sc, c, 5, 1.8);
     for (let i = 0; i < 160; i++) { const a = rnd() * 6.283, rr = 8 + rnd() * 34; P(sc, [c[0] + Math.cos(a) * rr, c[1] + (rnd() - 0.5) * 16, c[2] + Math.sin(a) * rr], C.blue, 3 + rnd() * 3); }
     for (let i = 0; i < 30; i++) { const a = i / 30 * 6.283; P(sc, [c[0] + Math.cos(a) * 30, c[1] + Math.sin(a * 2) * 6, c[2] + Math.sin(a) * 30], C.blue, 6); } },
-  red(sc) { for (let s = -14; s > -88; s -= 5) P(sc, [0, 20, s], C.red, 7); burst(sc, [0, 18, -98], C.red, 46, 160); },
-  purple(sc) { const c = [0, 22, -56]; sphere(sc, c, 22, C.purple, 260, 10); P(sc, c, C.purple, 50); P(sc, c, C.purple, 30); P(sc, c, C.white, 10);
+  red(sc) { for (let s = -14; s > -80; s -= 5) P(sc, [0, 20, s], C.red, 5); vOrb(sc, [0, 20, -60], 4, 0.6); vOrb(sc, [0, 18, -100], 4, 2.6); for (let i = 0; i < 40; i++) { const v = sph(); P(sc, add([0, 18, -100], v, 24 + rnd() * 14), C.red, 3, false, 3); } },
+  purple(sc) { const c = [0, 22, -56]; vOrb(sc, c, 6, 2.5);
     for (let s = -14; s > -34; s -= 3) P(sc, [0, 22, s], C.purple, 18); P(sc, [-12, 22, -10], C.blue, 12); P(sc, [12, 22, -10], C.red, 12); },
   domain(sc) { sc.userData.dim = 0.3; for (let i = 0; i < 900; i++) { const v = sph(); if (v[0] > 0.2) continue; P(sc, add([0, 18, -48], v, 96), C.void, 22, true); } sphere(sc, [0, 18, -48], 80, C.white, 220, 3);
     for (let i = 0; i < 40; i++) { const v = sph(); P(sc, add([0, 18, -48], v, rnd() * 70), [0.6, 0.9, 1], 2.5); }
@@ -156,7 +185,7 @@ const FX = {
     for (let i = 0; i < 14; i++) { const v = sph(); P(sc, add(c, v, 14), C.black, 9, true, 0.3); } },
 };
 (async () => {
-  orbTex = await ld(ORB);
+  orbTex = await ld(ORB); for (let i = 0; i < VFXT.length; i++) { VT[i] = await ld(VFXT[i]); VT[i].magFilter = NearestFilter; VT[i].colorSpace = SRGBColorSpace; }
   for (let i = 0; i < scenes.length; i++) {
     const s = scenes[i];
     const sc = new Scene(); sc.background = new Color(s.fx === "domain" ? 0x10142a : 0x7fa8d8);

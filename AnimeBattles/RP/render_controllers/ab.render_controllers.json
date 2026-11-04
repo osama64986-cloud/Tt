@@ -85,6 +85,44 @@
    "textures": [
     "Array.skins[query.property('ab:form')]"
    ]
+  },
+  "controller.render.ab.vfx": {
+   "arrays": {
+    "textures": {
+     "Array.c": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5",
+      "Texture.c6",
+      "Texture.c7",
+      "Texture.c8",
+      "Texture.c9",
+      "Texture.c10"
+     ]
+    },
+    "geometries": {
+     "Array.g": [
+      "Geometry.beam",
+      "Geometry.orb"
+     ]
+    }
+   },
+   "geometry": "Array.g[query.property('ab:kind')]",
+   "materials": [
+    {
+     "*": "Material.glow"
+    },
+    {
+     "outer*": "Material.blend"
+    }
+   ],
+   "textures": [
+    "Array.c[query.property('ab:color')]"
+   ],
+   "ignore_lighting": true
   }
  }
 }

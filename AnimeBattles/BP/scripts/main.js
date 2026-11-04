@@ -13,7 +13,7 @@ const UNBREAKABLE = new Set([
   "minecraft:repeating_command_block", "minecraft:structure_block", "minecraft:jigsaw", "minecraft:end_portal_frame",
   "minecraft:end_portal", "minecraft:portal", "minecraft:light_block", "minecraft:allow", "minecraft:deny", "minecraft:border_block",
 ]);
-const IGNORE_TYPES = new Set(["minecraft:item", "minecraft:xp_orb", "minecraft:arrow", "minecraft:armor_stand", "minecraft:painting",
+const IGNORE_TYPES = new Set(["ab:vfx", "minecraft:item", "minecraft:xp_orb", "minecraft:arrow", "minecraft:armor_stand", "minecraft:painting",
   "minecraft:leash_knot", "minecraft:fishing_hook", "minecraft:falling_block", "minecraft:tnt", "minecraft:boat", "minecraft:minecart"]);
 
 function setting(key, fallback) {
@@ -80,6 +80,37 @@ const C = {
   heal: { red: 0.6, green: 1, blue: 0.8 },
   team: { [RED]: { red: 1, green: 0.2, blue: 0.2 }, [BLUE]: { red: 0.2, green: 0.45, blue: 1 } },
 };
+
+// ------------------------------------------------------------------ 3D energy entities (beams + balls)
+const SLOT = new Map([[C.kameBlue, 0], [C.ssbBlue, 0], [C.galick, 1], [C.ego, 1], [C.flash, 2], [C.bigBang, 3], [C.red, 4], [C.kaioken, 4],
+  [C.blue, 5], [C.purple, 6], [C.hakai, 7], [C.kiYellow, 9], [C.gold, 9], [C.silver, 10], [C.white, 10]]);
+const slotOf = (c) => SLOT.get(c) ?? 10;
+const vfxAlive = new Map();
+function spawnVfx(dim, kind, loc, o) {
+  try {
+    const v = dim.spawnEntity("ab:vfx", loc);
+    v.setProperty("ab:kind", kind);
+    v.setProperty("ab:color", o.slot ?? 10);
+    v.setProperty("ab:size", clamp(o.size ?? 1, 0, 40));
+    v.setProperty("ab:len", 0);
+    if (o.dir) orientVfx(v, loc, o.dir);
+    vfxAlive.set(v.id, now() + (o.life ?? 200));
+    return v;
+  } catch (e) { warn("vfx", e); return undefined; }
+}
+function orientVfx(v, loc, dir) {
+  const yaw = (Math.atan2(-dir.x, dir.z) * 180) / Math.PI;
+  const pitch = (-Math.asin(clamp(dir.y, -1, 1)) * 180) / Math.PI;
+  try { v.teleport(loc, { rotation: { x: 0, y: yaw } }); v.setProperty("ab:pitch", clamp(pitch, -90, 90)); } catch (e) { /* ignore */ }
+}
+function vset(v, k, val) { try { if (v && v.isValid) v.setProperty(k, val); } catch (e) { /* ignore */ } }
+function killVfx(v) { try { if (v && v.isValid) { vfxAlive.delete(v.id); v.remove(); } } catch (e) { /* ignore */ } }
+function fadeVfx(v, from, ticks = 5) {
+  every(1, ticks, (i) => { vset(v, "ab:size", from * (1 - (i + 1) / ticks)); if (i === ticks - 1) killVfx(v); });
+}
+function shake(dim, loc, power = 0.25, secs = 0.3) {
+  try { dim.runCommand(`camerashake add @a[x=${Math.floor(loc.x)},y=${Math.floor(loc.y)},z=${Math.floor(loc.z)},r=14] ${power} ${secs} positional`); } catch (e) { /* ignore */ }
+}
 
 // ------------------------------------------------------------------ effects
 function fx(dim, kind, loc, color, size, life, extra) {
@@ -271,6 +302,13 @@ function solidAt(dim, p) {
 }
 function explosion(src, pos, o) {
   const dim = src.dimension;
+  const ball = spawnVfx(dim, 1, pos, { slot: o.slot ?? slotOf(o.color), size: 0.3, life: 40 });
+  every(1, 5, (i) => vset(ball, "ab:size", (0.3 + o.radius * 0.28 * (i + 1))));
+  later(7, () => fadeVfx(ball, 0.3 + o.radius * 1.4, 5));
+  fx(dim, "shock", V.up(pos, -o.radius * 0.4), o.color, o.radius * 3.2, 0.6);
+  fx(dim, "flash", pos, C.white, o.radius * 1.8, 0.25);
+  fx(dim, "streak", pos, o.color, 1.6 + o.radius * 0.2, 0.5, { count: Math.ceil((14 + o.radius * 4) * fxLevel()), speed: 8 + o.radius * 2 });
+  if (o.radius >= 3) shake(dim, pos, Math.min(0.6, 0.12 * o.radius), 0.4);
   burst(dim, pos, o.color, 26 + o.radius * 6, o.radius * 3, 0.5 + o.radius * 0.08, 0.8);
   burst(dim, pos, C.white, 10 + o.radius * 2, o.radius * 1.5, 0.4, 0.5);
   sphereFx(dim, pos, o.radius * 0.6, o.color, 10 + o.radius * 3, 0.9, "orb", 0.5);
@@ -293,16 +331,19 @@ function beam(src, target, o) {
   const spacing = 0.5 / fxLevel();
   const side = sideOf(dir);
   const up2 = V.norm({ x: dir.y * side.z - dir.z * side.y, y: dir.z * side.x - dir.x * side.z, z: dir.x * side.y - dir.y * side.x });
+  const bsize = o.width * 0.85;
+  const shaft = spawnVfx(dim, 0, start, { slot: o.slot ?? slotOf(o.color), size: bsize, dir, life: 120 });
+  fx(dim, "shock_v", start, o.color, o.width * 3, 0.4);
   const id = system.runInterval(() => {
     try {
-      if (!src.isValid || ended) { system.clearRun(id); return; }
+      if (!src.isValid || ended) { system.clearRun(id); killVfx(shaft); return; }
       const prev = reach;
       reach = Math.min(len, reach + grow);
+      vset(shaft, "ab:len", reach);
       for (let s = prev; s <= reach; s += spacing) {
         const p = V.add(start, V.mul(dir, s));
-        if (!griefing() && solidAt(dim, p)) { reach = s; ended = true; break; }
-        fx(dim, "orb", p, C.white, o.width * 0.7, 0.5);
-        fx(dim, "orb", p, o.color, o.width * 1.6, 0.6);
+        if (!griefing() && solidAt(dim, p)) { reach = s; ended = true; vset(shaft, "ab:len", reach); break; }
+        if (Math.floor(s * 2) % 3 === 0) fx(dim, "orb", p, o.color, o.width * 1.3, 0.35);
         const a = s * 1.3;
         const off = V.add(V.mul(side, Math.cos(a) * o.width), V.mul(up2, Math.sin(a) * o.width));
         fx(dim, "orb", V.add(p, off), o.color, o.width * 0.45, 0.45);
@@ -311,7 +352,7 @@ function beam(src, target, o) {
       fx(dim, "orb", start, o.color, o.width * 2.4, 0.2);
       fx(dim, "orb", start, C.white, o.width * 1.2, 0.15);
       fx(dim, "orb", V.add(start, V.mul(dir, reach)), o.color, o.width * 2.2, 0.2);
-      for (let s = 0; s < prev; s += 1.6) fx(dim, "orb", V.add(start, V.mul(dir, s)), o.color, o.width * 1.5, 0.35);
+      fx(dim, "streak", V.add(start, V.mul(dir, reach)), o.color, 1.2 + o.width * 0.4, 0.3, { count: 4 * fxLevel(), speed: 6 });
       for (let s = prev; s <= reach; s += 1) {
         const p = V.add(start, V.mul(dir, s));
         hitArea(src, p, o.width * 0.8 + 0.7, o.dmg, hit, { knock: 0.8, lift: 0.2 });
@@ -321,6 +362,7 @@ function beam(src, target, o) {
         ended = true;
         system.clearRun(id);
         const tip = V.add(start, V.mul(dir, reach));
+        later(8, () => fadeVfx(shaft, bsize, 6));
         explosion(src, tip, { radius: o.blast ?? 2.5, dmg: o.dmg * 0.35, color: o.color, carve: o.carve ? o.carve + 1 : 0 });
       }
     } catch (e) { warn("beam", e); system.clearRun(id); }
@@ -334,9 +376,10 @@ function projectile(src, start, dir, o) {
   const hit = new Set();
   const team = teamOf(src);
   const sub = Math.max(1, Math.ceil(o.speed));
+  const ball = o.size >= 0.7 ? spawnVfx(dim, 1, start, { slot: o.slot ?? slotOf(o.color), size: o.size * 0.62, life: 400 }) : undefined;
   const id = system.runInterval(() => {
     try {
-      if (done || !src.isValid) { system.clearRun(id); return; }
+      if (done || !src.isValid) { system.clearRun(id); killVfx(ball); return; }
       if (o.homing && alive(o.homing)) dir = V.norm(V.add(dir, V.mul(V.norm(V.sub(aim(o.homing), pos)), o.homingStrength ?? 0.08)));
       for (let i = 0; i < sub && !done; i++) {
         pos = V.add(pos, V.mul(dir, o.speed / sub));
@@ -355,8 +398,10 @@ function projectile(src, start, dir, o) {
         }
         if (travelled >= o.maxDist) done = true;
       }
+      try { if (ball && ball.isValid) ball.teleport(pos); } catch (e) { /* ignore */ }
       if (done) {
         system.clearRun(id);
+        killVfx(ball);
         if (o.explode) explosion(src, pos, o.explode);
         o.onEnd?.(pos);
       }
@@ -367,6 +412,14 @@ function projectile(src, start, dir, o) {
 function chargeOrb(src, target, ticks, color, fromSize, toSize, pose) {
   setPose(src, pose);
   slow(src, ticks + 4, 6);
+  const ball = spawnVfx(src.dimension, 1, handPos(src, alive(target) ? target : src).pos, { slot: slotOf(color), size: fromSize * 0.5, life: ticks + 20 });
+  every(1, ticks, (i) => {
+    if (!src.isValid) { killVfx(ball); return false; }
+    const { pos } = handPos(src, alive(target) ? target : src);
+    try { if (ball && ball.isValid) ball.teleport(pos); } catch (e) { /* ignore */ }
+    vset(ball, "ab:size", (fromSize + (toSize - fromSize) * (i / ticks)) * 0.55);
+    if (i === ticks - 1) killVfx(ball);
+  });
   every(2, Math.ceil(ticks / 2), (i) => {
     if (!src.isValid) return false;
     const t = alive(target) ? target : src;
@@ -537,6 +590,14 @@ const GOKU = {
         announce(e, "§b§lEveryone, lend me your energy!  §f(Spirit Bomb)");
         sound(e.dimension, "beacon.power", e.location, 2, 0.6);
         const ticks = 90;
+        const sb = spawnVfx(e.dimension, 1, V.up(e.location, 4.6), { slot: 8, size: 0.6, life: ticks + 10 });
+        every(1, ticks, (i) => {
+          if (!e.isValid) { killVfx(sb); return false; }
+          const r = 0.6 + (2.9 * i) / ticks;
+          try { if (sb && sb.isValid) sb.teleport(V.up(e.location, 4 + r)); } catch (err) { /* ignore */ }
+          vset(sb, "ab:size", r * 1.25);
+          if (i === ticks - 1) killVfx(sb);
+        });
         every(3, ticks / 3, (i) => {
           if (!e.isValid) return false;
           const r = 0.6 + (2.9 * i * 3) / ticks;
@@ -730,6 +791,9 @@ const GOJO = {
         sound(dim, "mob.endermen.portal", center, 2, 0.5);
         carve(dim, center, 2);
         later(10, () => setPose(e, 0));
+        const vb = spawnVfx(dim, 1, center, { slot: 5, size: 0.4, life: 60 });
+        every(1, 8, (i) => vset(vb, "ab:size", 0.4 + i * 0.18));
+        later(38, () => fadeVfx(vb, 1.8, 4));
         every(2, 20, (i) => {
           if (!e.isValid) return false;
           fx(dim, "orb", center, C.blue, 1.4, 0.2);
@@ -777,8 +841,14 @@ const GOJO = {
         busy(s, 50); face(e, aim(t)); setPose(e, 1); slow(e, 38, 8);
         announce(e, "§5§lHollow Technique: Purple");
         sound(dim, "beacon.activate", e.location, 2, 0.5);
+        const bb = spawnVfx(dim, 1, e.location, { slot: 5, size: 0.7, life: 50 });
+        const rb = spawnVfx(dim, 1, e.location, { slot: 4, size: 0.7, life: 50 });
         every(2, 17, (i) => {
-          if (!e.isValid) return false;
+          if (!e.isValid) { killVfx(bb); killVfx(rb); return false; }
+          const tt0 = alive(t) ? t : e;
+          const hp0 = handPos(e, tt0), sd0 = sideOf(hp0.dir), k0 = 1 - i / 16;
+          try { bb.teleport(V.add(hp0.pos, V.mul(sd0, 1.6 * k0))); rb.teleport(V.add(hp0.pos, V.mul(sd0, -1.6 * k0))); } catch (err) { /* ignore */ }
+          if (i === 16) { killVfx(bb); killVfx(rb); }
           const tt = alive(t) ? t : e;
           const { pos, dir } = handPos(e, tt);
           const side = sideOf(dir);
@@ -793,7 +863,7 @@ const GOJO = {
           const { pos, dir } = handPos(e, tt);
           const f = formOf(e);
           sound(dim, "mob.warden.sonic_boom", pos, 2, 0.7);
-          projectile(e, pos, dir, { speed: 0.9, maxDist: 60, radius: 2.2 + f, size: 4 + f * 1.5, color: C.purple, core: C.white,
+          projectile(e, pos, dir, { speed: 0.9, maxDist: 60, radius: 2.2 + f, size: 4 + f * 1.5, color: C.purple, core: C.white, slot: 6,
             pierce: true, carve: 2.5 + f, dmg: 220 * powerOf(e) / 100 });
           later(10, () => setPose(e, 0));
         });
@@ -828,22 +898,22 @@ const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO };
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
 const MOVES = {
-  jab_r: { pose: 5, t: 4, dmg: 9, kb: 0.35 },
-  jab_l: { pose: 6, t: 4, dmg: 9, kb: 0.35 },
-  kick: { pose: 7, t: 6, dmg: 14, kb: 1.1, lift: 0.25 },
-  round: { pose: 8, t: 7, dmg: 18, kb: 2.0, lift: 0.3, strong: true },
-  upper: { pose: 9, t: 6, dmg: 16, kb: 0.4, lift: 0.9, strong: true },
-  knee: { pose: 10, t: 5, dmg: 13, kb: 0.5, lift: 0.45 },
-  rush: { pose: 11, t: 14, dmg: 4, hits: 6, kb: 0.12 },
-  elbow: { pose: 12, t: 5, dmg: 13, kb: 0.8 },
+  jab_r: { pose: 5, t: 3, dmg: 8, kb: 0.3, arc: "punch" },
+  jab_l: { pose: 6, t: 3, dmg: 8, kb: 0.3, arc: "punch" },
+  kick: { pose: 7, t: 5, dmg: 13, kb: 1.1, lift: 0.25, arc: "front" },
+  kick_r: { pose: 8, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "right" },
+  upper: { pose: 9, t: 5, dmg: 15, kb: 0.4, lift: 0.9, strong: true, arc: "up" },
+  axe: { pose: 10, t: 7, dmg: 20, kb: 0.4, lift: -0.6, strong: true, arc: "down", ground: true },
+  rush: { pose: 11, t: 16, dmg: 3.5, hits: 8, kb: 0.1, arc: "punch" },
+  kick_l: { pose: 12, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },
   kiburst: { pose: 4, t: 7, ki: true, dmg: 24, kb: 2.6, strong: true },
   blink: { tp: "behind", t: 3 },
   blinkfront: { tp: "front", t: 3 },
 };
 const COMBOS = {
-  "ab:goku": [["jab_r", "jab_l", "knee", "rush", "upper", "round"], ["jab_l", "jab_r", "jab_l", "kick", "rush", "round"], ["elbow", "jab_r", "upper", "kick"]],
-  "ab:vegeta": [["jab_l", "jab_r", "elbow", "kick", "rush", "kiburst"], ["knee", "jab_r", "jab_l", "round", "kiburst"], ["jab_r", "jab_r", "upper", "rush", "round"]],
-  "ab:gojo": [["jab_r", "jab_l", "blink", "round", "blinkfront", "upper"], ["kick", "blink", "jab_r", "jab_l", "blink", "round"], ["jab_l", "jab_r", "knee", "blink", "kick"]],
+  "ab:goku": [["jab_r", "jab_l", "jab_r", "rush", "kick_r", "axe"], ["rush", "kick_l", "kick_r", "upper", "axe"], ["jab_l", "jab_r", "rush", "rush", "kick_l"]],
+  "ab:vegeta": [["jab_l", "jab_r", "rush", "kick_l", "kiburst"], ["jab_r", "jab_l", "jab_r", "kick_r", "axe", "kiburst"], ["rush", "axe", "kick_r"]],
+  "ab:gojo": [["jab_r", "jab_l", "blink", "kick_l", "blinkfront", "rush", "axe"], ["rush", "blink", "kick_r", "blink", "axe"], ["jab_l", "jab_r", "jab_l", "blink", "kick_l"]],
 };
 const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue };
 
@@ -865,16 +935,49 @@ function afterimage(e) {
   fx(e.dimension, "aura", e.location, C.white, 0.9, 0.35, { count: 10 * fxLevel(), speed: 0 });
 }
 
-function impact(e, t, strong, color) {
+// Visual impact: star flash, speed-line streaks, sparks; strong hits add a shockwave ring and camera shake.
+function impact(e, t, strong, color, mv) {
   const dim = t.dimension;
   const c = V.add(aim(t), V.mul(V.norm(V.sub(aim(e), aim(t))), 0.45));
-  fx(dim, "orb", c, C.white, strong ? 1.7 : 0.9, 0.15);
-  burst(dim, c, color, strong ? 22 : 10, strong ? 5 : 3, 0.3, 0.35);
+  fx(dim, "flash", c, C.white, strong ? 2.6 : 1.3, strong ? 0.22 : 0.14);
+  fx(dim, "flash", c, color, strong ? 1.8 : 0.9, 0.18);
+  fx(dim, "streak", c, color, strong ? 1.5 : 0.9, 0.35, { count: Math.ceil((strong ? 16 : 7) * fxLevel()), speed: strong ? 11 : 7 });
+  burst(dim, c, color, strong ? 14 : 6, strong ? 5 : 3, 0.22, 0.3);
   if (strong) {
-    ring(dim, c, 1.3, color, 16, 0.3);
-    sound(dim, "random.explode", c, 0.45, 1.5);
+    fx(dim, "shock_v", c, color, 3.2, 0.35);
+    shake(dim, c, 0.18, 0.2);
   }
-  sound(dim, "random.anvil_land", c, 0.35, 1.9 + Math.random() * 0.2);
+  if (mv?.ground) {
+    fx(dim, "shock", V.up(t.location, 0.1), color, 6, 0.5);
+    fx(dim, "aura", t.location, { red: 0.4, green: 0.37, blue: 0.33 }, 1.2, 1.0, { count: 14 * fxLevel(), speed: 1 });
+  }
+  sound(dim, "random.anvil_land", c, 0.18, 2);
+}
+
+// Swing trails: an arc of light where the fist / leg travels.
+function swingArc(e, t, kind, color) {
+  if (!kind || kind === "punch") {
+    const { pos, dir } = handPos(e, t);
+    for (let k = 0; k < 4; k++) fx(e.dimension, "orb", V.add(pos, V.mul(dir, k * 0.35)), color, 0.35 - k * 0.05, 0.18);
+    return;
+  }
+  const base = V.up(e.location, kind === "up" ? 1.2 : kind === "down" ? 1.6 : 0.9);
+  const fwd = V.norm({ x: t.location.x - e.location.x, y: 0, z: t.location.z - e.location.z });
+  const side = sideOf(fwd);
+  for (let k = 0; k <= 10; k++) {
+    const a = (k / 10) * Math.PI;
+    let p;
+    if (kind === "left" || kind === "right") {
+      const sgn = kind === "left" ? 1 : -1;
+      p = V.add(base, V.add(V.mul(side, Math.cos(a) * 1.3 * sgn), V.mul(fwd, Math.sin(a) * 1.3)));
+    } else if (kind === "down") {
+      p = V.add(base, V.add(V.mul(fwd, Math.sin(a) * 1.3), { x: 0, y: Math.cos(a) * 1.4, z: 0 }));
+    } else {
+      p = V.add(base, V.add(V.mul(fwd, Math.sin(a) * 1.2), { x: 0, y: -Math.cos(a) * 1.1, z: 0 }));
+    }
+    fx(e.dimension, "orb", p, color, 0.45, 0.25);
+    if (k % 3 === 0) fx(e.dimension, "orb", p, C.white, 0.22, 0.2);
+  }
 }
 
 function comboStep(e, t, mv, last) {
@@ -904,10 +1007,11 @@ function comboStep(e, t, mv, last) {
         sound(e.dimension, "mob.wither.shoot", t.location, 1, 1.4);
       }
       deal(e, t, mv.dmg * pw * (last ? 1.3 : 1));
-      impact(e, t, mv.strong || last, color);
+      swingArc(e, t, mv.arc, color);
+      impact(e, t, mv.strong || last, color, mv);
       const n = V.norm(V.sub(t.location, e.location));
       const kb = mv.kb * (last ? 1.8 : 1);
-      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, mv.lift ?? 0.08); } catch (err) { /* ignore */ }
+      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, Math.max(0, mv.lift ?? 0.08)); } catch (err) { /* ignore */ }
       if (isFighter(t) && !last) { const ts = state(t); ts.stunUntil = Math.max(ts.stunUntil, now() + 6); }
       if (last && e.typeId === "ab:gojo" && Math.random() < 0.25) {
         deal(e, t, 35 * pw);
@@ -1042,6 +1146,11 @@ system.runInterval(() => {
         updateFighter(f, tick);
         if (tick % 10 === 0) updateTag(f);
       } catch (e) { warn("fighter", e); }
+    }
+    if (tick % 20 === 0) {
+      let vs = [];
+      try { vs = dim.getEntities({ type: "ab:vfx" }); } catch (e) { /* ignore */ }
+      for (const v of vs) { const exp = vfxAlive.get(v.id); if (exp === undefined || exp < tick) { vfxAlive.delete(v.id); try { v.remove(); } catch (e) { /* ignore */ } } }
     }
     if (tick % 10 === 0) {
       for (const tag of [RED, BLUE]) {

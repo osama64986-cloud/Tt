@@ -65,4 +65,5 @@ fire("use", { source: player, itemStack: { typeId: "ab:kill_stick" } });
 console.log("kill stick use:", player.actionbar);
 console.log("particles:", stats.particles, "sounds:", stats.sounds, "blocks carved:", stats.carved);
 console.log("transform events:", [...new Set(stats.events.filter((e) => e.includes("form_") && !e.endsWith("form_0")))]);
+console.log("vfx spawned:", stats.vfx, " camera shakes:", stats.cmds, " vfx left alive:", allEntities.filter((e) => e.typeId === "ab:vfx" && e.isValid).length);
 console.log("SCRIPT ERRORS:", stats.errors.length ? stats.errors : "none");

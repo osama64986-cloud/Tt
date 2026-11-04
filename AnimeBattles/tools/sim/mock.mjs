@@ -42,17 +42,23 @@ class Dim {
     return entities.filter((e) => e.isValid && e.dimension === this &&
       (!o.families || o.families.every((f) => e.families.includes(f))) &&
       (!o.excludeFamilies || !o.excludeFamilies.some((f) => e.families.includes(f))) &&
-      (!o.tags || o.tags.every((t) => e.tags.has(t))) &&
+      (!o.tags || o.tags.every((t) => e.tags.has(t))) && (!o.type || e.typeId === o.type) &&
       (!o.location || Math.hypot(e.location.x - o.location.x, e.location.y - o.location.y, e.location.z - o.location.z) <= o.maxDistance));
   }
   getPlayers(o) { return this.getEntities(o).filter((e) => e.typeId === "minecraft:player"); }
   spawnParticle(id, loc, m) {
-    if (!["ab:orb", "ab:orb_solid", "ab:burst", "ab:aura"].includes(id)) throw new Error("unknown particle " + id);
+    if (!["ab:orb", "ab:orb_solid", "ab:burst", "ab:aura", "ab:streak", "ab:shock", "ab:shock_v", "ab:flash"].includes(id)) throw new Error("unknown particle " + id);
     for (const k of ["variable.color", "variable.size", "variable.life"]) if (!(k in m.v)) throw new Error("missing var " + k);
     if (![loc.x, loc.y, loc.z].every(Number.isFinite)) throw new Error("bad particle loc");
     stats.particles[id] = (stats.particles[id] ?? 0) + 1;
   }
   playSound() { stats.sounds++; }
+  runCommand(c) { stats.cmds = (stats.cmds ?? 0) + 1; return { successCount: 1 }; }
+  spawnEntity(id, loc) {
+    if (id !== "ab:vfx") throw new Error("unexpected spawn " + id);
+    const e = new Entity(id, loc, { families: ["ab_vfx"], hp: 1 });
+    e.dimension = this; stats.vfx = (stats.vfx ?? 0) + 1; return e;
+  }
   getBlock(p) {
     const self = this;
     return {
@@ -104,7 +110,8 @@ export class Entity {
   getProperty(k) { this.#check(); return this.props[k]; }
   setProperty(k, v) {
     this.#check();
-    if (k === "ab:pose" && (v < 0 || v > 12)) throw new Error("pose out of range " + v);
+    const R = { "ab:pose": [0, 12], "ab:kind": [0, 1], "ab:color": [0, 10], "ab:len": [0, 80], "ab:size": [0, 40], "ab:pitch": [-90, 90] }[k];
+    if (R && (typeof v !== "number" || Number.isNaN(v) || v < R[0] || v > R[1])) throw new Error(`property ${k} out of range: ${v}`);
     this.props[k] = v;
   }
   triggerEvent(ev) {
