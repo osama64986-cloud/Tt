@@ -2644,3 +2644,267 @@ def yuji_hair(m, c, style):  # noqa: F811
         m.strand([x, 31.9, -4.0], [x * 0.12, -1, -0.9], 2.4, 2.8, hp)
     if style == "yuji_final":
         m.mirror_strand([3.9, 30.6, -1.2], [0.7, 0.35, -0.1], 3.4, 2.8, hp)
+
+
+_luffy_hair_prev_impl = luffy_hair
+
+# ==================================================================================
+# SUKUNA (redraw) + LUFFY GEARS (redraw)
+# ==================================================================================
+FACE32["sukuna"] = dict(eye="narrow", brow="sharp", mouth="none", marks=["sukuna_face"])
+FACE32["sukuna_megumi"] = dict(eye="narrow", brow="sharp", mouth="none", marks=["sukuna_face"])
+FACE32["sukuna_heian"] = dict(eye="narrow", brow="sharp", mouth="none", marks=["sukuna_face", "heian_mask"])
+FACE32["luffy_g4"] = dict(eye="round", brow="angled", mouth="clench", marks=["luffy_scar"])
+_face32_v2 = face32
+
+
+def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
+    marks = spec.get("marks", [])
+    base_spec = dict(spec, marks=[m for m in marks if m not in ("sukuna_face", "heian_mask")])
+    if base_spec.get("mouth") in ("none", "clench"):
+        base_spec["mouth"] = "neutral" if base_spec["mouth"] == "clench" else "none"
+    _face32_v2(px, W, H, base_spec, hair, iris, skin)
+    k = W / 32.0
+    sr = ramp(skin)
+    ink, t, white, red = (20, 12, 14), (16, 10, 14), (250, 250, 250), (210, 28, 38)
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+
+    def both(x, y, c):
+        put(x, y, c); put(31 - x, y, c)
+    if spec.get("mouth") == "clench":  # Gear 4: gritted teeth
+        for x in range(12, 20):
+            put(x, 26, ink); put(x, 28, ink); put(x, 27, white if x % 2 else (200, 200, 200))
+    if "sukuna_face" in marks:
+        # second pair of eyes opening under the natural eyes
+        for x in range(8, 13):
+            both(x, 23, ink)
+        for x in (10, 11):
+            both(x, 24, red)
+        both(9, 24, ink); both(12, 24, ink)
+        # one thick band across each cheek, angled down toward the nose
+        for x in range(0, 7):
+            both(x, 26 + (x > 3), t); both(x, 27 + (x > 3), t) if x < 6 else None
+        # streak across the bridge of the nose
+        for x in range(13, 19):
+            put(x, 21, t)
+        # forehead mark
+        for y in (12, 13, 14):
+            put(15, y, t); put(16, y, t)
+        put(14, 12, t); put(17, 12, t)
+        # chin marks
+        for y in (29, 30, 31):
+            put(13, y, t); put(18, y, t)
+        # confident smirk, a glimpse of fangs on one side
+        mc = (110, 40, 40)
+        for x in range(12, 19):
+            put(x, 27, mc)
+        put(19, 26, mc); put(20, 25, mc)
+        put(17, 28, white); put(18, 28, white)
+    if "heian_mask" in marks:
+        bone, bone_sh = (228, 218, 200), (196, 184, 166)
+        for y in range(12, 31):
+            for x in range(0, 12):
+                if (x - 5) ** 2 / 36 + (y - 21) ** 2 / 100 < 1:
+                    put(x, y, bone if (x * 2 + y) % 9 else bone_sh)
+        for x in range(3, 9):
+            put(x, 18, ink)
+        for x in (5, 6):
+            put(x, 19, red)
+        for x in range(2, 10, 2):
+            put(x, 27, ink); put(x + 1, 28, ink)
+
+
+# ---------------------------------------------------------------- Sukuna bodies
+def sukuna_yuji_hair(m, c):
+    hp = hair_paint(c)
+    shell(m, c, hairline=30.2, sideburn=False, teeth=0.3)
+    for x, z, dz in ((-2.6, -2.6, 0.9), (-0.9, -2.9, 0.95), (0.9, -2.9, 0.95), (2.6, -2.6, 0.9),
+                     (-3.5, -0.2, 1.0), (3.5, -0.2, 1.0), (-1.8, 1.6, 1.0), (1.8, 1.6, 1.0)):
+        m.strand([x, 31.6, z], [x * 0.12, 0.85, dz], 5.6, 3.4, hp, bend=(0, -0.18, 0.08))
+
+
+def megumi_hair(m, c):  # noqa: F811 — Megumi's porcupine hair
+    hp = hair_paint(c)
+    shell(m, c, hairline=29.4, sideburn=False)
+    for k in range(12):
+        a = k * 2 * math.pi / 12
+        x, z = math.sin(a) * 3.1, -math.cos(a) * 3.1
+        up = 1.0 if z > -2 else 0.7
+        m.strand([x, 31.4, z], [math.sin(a) * 0.9, up, -math.cos(a) * 0.9 + 0.25], 6, 3.4, hp, bend=(0, -0.2, 0))
+    m.strand([0, 32, 0.3], [0, 1, 0.2], 6.5, 3.8, hp)
+    for x in (-2, 0, 2):
+        m.strand([x, 31.6, -4.1], [x * 0.15, -1, -0.9], 2.6, 2.4, hp)
+
+
+def heian_hair(m, c):  # noqa: F811
+    hp = hair_paint(c)
+    shell(m, c, hairline=30.0, sideburn=False, teeth=0.3)
+    for k in range(10):
+        a = k * 2 * math.pi / 10
+        x, z = math.sin(a) * 3, -math.cos(a) * 3
+        if z < -2.4:
+            continue
+        m.strand([x, 31.5, z], [math.sin(a) * 0.7, 0.9, -math.cos(a) * 0.7 + 0.6], 6.5, 3.8, hp, bend=(0, -0.2, 0.1))
+    m.strand([0, 31.8, -1], [0, 1, 0.5], 6, 4, hp)
+
+
+def sukuna_heian_body(m):  # noqa: F811
+    m.bones = BONES_4ARMS
+    tat = (16, 10, 14)
+
+    def torso(face, px, w, h, base):
+        if face != "north":
+            return
+        cx, cy = w // 2, int(h * 0.64)
+        for x in range(cx - 7, cx + 8):  # the mouth on his abdomen
+            _put(px, w, h, x, cy, tat); _put(px, w, h, x, cy + 5, tat)
+            _put(px, w, h, x, cy + 1, (250, 250, 250) if x % 2 == 0 else (120, 20, 30))
+            _put(px, w, h, x, cy + 4, (250, 250, 250) if x % 2 == 1 else (120, 20, 30))
+            _put(px, w, h, x, cy + 2, (110, 16, 26)); _put(px, w, h, x, cy + 3, (90, 10, 20))
+        for y in range(3, int(h * 0.5)):  # chest tattoo lines
+            _put(px, w, h, cx - 8, y, tat); _put(px, w, h, cx + 7, y, tat)
+        for x in range(cx - 8, cx + 8):
+            _put(px, w, h, x, int(h * 0.5), tat)
+    base_body(m, layered(SKIN, [torso]), layered(SKIN, [lines((SIDES, [[(0, 0.86), (1, 0.86)], [(0, 0.92), (1, 0.92)]]), tat)]),
+              solid((200, 196, 190)), head_paint((226, 140, 150), (200, 30, 40), True, "sukuna_heian"))
+
+    def open_robe(face, px, w, h, base):
+        if face == "north":
+            for y in range(h):
+                half = int(w * 0.3 * (1 - y / h)) + 4
+                for x in range(w // 2 - half, w // 2 + half):
+                    if y < h * 0.85:
+                        px[x, y] = (0, 0, 0, 0)
+    robe = (238, 236, 230)
+    m.box("body", [-4.5, 11.5, -2.5], [9, 12.5, 5], layered(robe, [open_robe]))
+    m.box("body", [-4.7, 10.5, -2.7], [9.4, 2.2, 5.4], layered((40, 34, 46), [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (90, 80, 100))]))
+    m.strand([-1.5, 10.6, -2.8], [-0.2, -1, -0.15], 5, 1.6, solid((40, 34, 46)), bone="body", segs=2)
+    # wide kimono sleeves hanging from the upper arms
+    both_arms(m, [3.4, 14, -3], [5.6, 10, 6], layered(robe, [lines((SIDES, [[(0, 0.95), (1, 0.95)]]), dark(robe, 0.75))]))
+    # hakama
+    both_legs(m, [-0.6, 0, -2.8], [5.2, 11, 5.6], layered((206, 200, 194), [lines((SIDES, [[(0.3, 0), (0.25, 1)], [(0.7, 0), (0.75, 1)]]), (160, 154, 148))]))
+    # the second pair of arms: bare, tattooed, coming out below the sleeves
+    for bone, x in (("rightArm2", 5.4), ("leftArm2", -9.0)):
+        m.box(bone, [x, 7.5, -0.4], [3.6, 11, 3.6], layered(SKIN, [lines((SIDES, [[(0, 0.8), (1, 0.8)], [(0, 0.86), (1, 0.86)], [(0, 0.15), (1, 0.15)]]), tat)]))
+        m.box(bone, [x - 0.4, 15.5, -0.8], [4.4, 3.5, 4.4], solid(robe))
+
+
+# ---------------------------------------------------------------- Luffy gears
+HAKI = (22, 18, 24)
+
+
+def haki_flames(face, px, w, h, base):
+    if face not in SIDES:
+        return
+    for c in range(2, w, 6):
+        for y in range(int(h * 0.1), h - 1):
+            x = int(c + math.sin(y * 0.3 + c * 0.7) * 1.8)
+            _put(px, w, h, x, y, (196, 34, 28))
+            if y % 9 < 3:
+                _put(px, w, h, x + 1, y, (240, 110, 40))
+
+
+def haki():
+    return layered(HAKI, [haki_flames])
+
+
+def steam_puffs(m, ring_y, rx, rz, n=9, size=3.2, bone="body"):
+    for k in range(n):
+        a = k * 2 * math.pi / n
+        s = size * (0.85 + 0.3 * ((k * 37) % 5) / 5)
+        m.box(bone, [math.cos(a) * rx - s / 2, ring_y + (k % 3) * 0.4, math.sin(a) * rz - s / 2], [s, s * 0.8, s], solid((250, 250, 252)))
+
+
+def luffy_gear_head(m, hair, face, iris=(40, 30, 30)):
+    m.box("head", [-4, 24, -4], [8, 8, 8], head_paint(hair, iris, True, face))
+    ears(m)
+
+
+def luffy_body(m, form):  # noqa: F811
+    if form in ("base", "g2", "g3", "g5"):
+        _luffy_body_v2(m, form)
+        if form == "g2":  # steam rising off pink skin
+            steam_puffs(m, 22.5, 5.2, 3.2, n=7, size=2.4)
+            m.box("rightArm", [5.5, 14, -1.2], [2.2, 2, 2.2], solid((250, 246, 248)))
+            m.box("leftArm", [-7.7, 16, 0.2], [2.2, 2, 2.2], solid((250, 246, 248)))
+        if form == "g3":  # Bone Balloon: the right arm is inflated into a giant haki fist
+            m.cubes = [c for c in m.cubes if c["bone"] != "rightArm"]
+            m.box("rightArm", [3.6, 16, -2.6], [5.2, 8, 5.2], solid(SKIN))
+            m.box("rightArm", [3.75, 19.5, -2.8], [5, 4.75, 5.6], solid(VEST))
+            m.box("rightArm", [2.2, 5, -4.2], [8.5, 11.5, 8.5], haki())
+            m.box("rightArm", [1.6, 1, -4.8], [9.7, 5.5, 9.7], layered(HAKI, [lines((("north", "east", "west"), [[(0.25, 0.3), (0.25, 0.7)], [(0.5, 0.3), (0.5, 0.7)], [(0.75, 0.3), (0.75, 0.7)]]), (70, 64, 80))]))
+        return
+    face = "luffy_g4"
+    hair = (22, 20, 26)
+    luffy_gear_head(m, hair, face)
+    skin_t = (238, 132, 118)
+    if form == "g4b":  # Boundman: giant haki-coated upper body, huge forearms, cloud scarf
+        m.box("body", [-6.5, 17, -4], [13, 7.5, 8], haki())                          # broad haki chest
+        m.box("body", [-4.5, 12, -2.6], [9, 5.5, 5.2], layered(skin_t, [x_scar]))     # skin abdomen
+        for sx in (1, -1):  # round shoulders
+            x = 5.2 if sx == 1 else -11.2
+            m.box("body", [x, 18, -3.2], [6, 6, 6.4], haki())
+            m.box("body", [x, 18, -3.2], [6, 6, 6.4], haki(), rot=[0, 0, 45], pivot=[x + 3, 21, 0])
+        both_arms(m, [5.2, 13, -2.8], [5.5, 6, 5.6], haki())                          # upper arm
+        both_arms(m, [4.6, 4, -3.8], [7.6, 9.5, 7.6], haki())                         # massive forearm + fist
+        m.box("body", [-5, 10.5, -3], [10, 2, 6], solid(SASH))
+        both_legs(m, [-0.5, 6, -2.6], [5, 6, 5.2], solid(SHORTS))
+        both_legs(m, [-0.7, 0, -2.8], [5.4, 6.5, 5.6], haki())
+        steam_puffs(m, 23.2, 7.2, 4.6, n=11, size=3.4)
+        return
+    if form == "g4s":  # Snakeman: lean, long haki arms, a long steam cape
+        m.box("body", [-4.2, 12, -2.2], [8.4, 12, 4.4], layered(skin_t, [x_scar, torso_flames]))
+        m.box("body", [-5.2, 19.5, -2.8], [10.4, 4.5, 5.6], haki())                  # haki across the shoulders
+        both_arms(m, [4, 9, -2], [3.8, 15, 4], haki())
+        m.box("body", [-4.6, 10.5, -2.6], [9.2, 1.8, 5.2], solid(SASH))
+        both_legs(m, [-0.3, 5, -2.3], [4.6, 7, 4.6], solid(SHORTS))
+        both_legs(m, [-0.2, 0, -2.2], [4.4, 5.5, 4.4], haki())
+        steam_puffs(m, 23, 5.4, 3.4, n=8, size=2.8)
+        for k, x in enumerate((-3, 0, 3)):
+            m.strand([x, 24, 3], [x * 0.06, -1, 0.22], 18 - abs(x), 4.2, solid((248, 248, 250)), bone="body", thick=0.35)
+        return
+    # Tankman: a huge round rubber belly
+    m.box("body", [-8, 8, -7], [16, 15, 14], layered(skin_t, [x_scar]))
+    m.box("body", [-8, 8, -7], [16, 15, 14], layered(skin_t, []), rot=[0, 45, 0], pivot=[0, 15.5, 0])
+    m.box("body", [-6.5, 20, -5], [13, 4.5, 10], haki())
+    both_arms(m, [6.5, 12, -2.6], [5, 10, 5.2], haki())
+    m.box("body", [-6, 6.5, -5], [12, 2, 10], solid(SASH))
+    both_legs(m, [-0.6, 0, -2.6], [5.2, 7, 5.2], haki())
+    steam_puffs(m, 23, 5.8, 4.2, n=9, size=3)
+
+
+def luffy_hair(m, c, g5=False, form="base"):  # noqa: F811
+    hp = hair_paint(c)
+    if g5:  # Nika: white hair billowing upward like clouds of flame
+        for x, z, L in ((-2.6, -2.2, 7.5), (0, -2.6, 8.5), (2.6, -2.2, 7.5), (-3.6, 0.6, 7), (3.6, 0.6, 7),
+                        (-1.8, 2.6, 7.5), (1.8, 2.6, 7.5), (0, 0.4, 9)):
+            m.strand([x, 31.8, z], [x * 0.2, 1, z * 0.12 + 0.2], L, 4.8, hp, bend=(x * 0.05, -0.05, 0.14))
+        m.mirror_strand([4.3, 30, -1], [0.8, 0.6, 0], 5.5, 3.6, hp, bend=(0, 0.12, 0))
+        return
+    if form.startswith("g4"):  # hair blown up and back by the haki
+        for x, z in ((-2.4, -1.8), (0, -2.2), (2.4, -1.8), (-3.3, 0.8), (3.3, 0.8), (-1.2, 1.8), (1.2, 1.8)):
+            m.strand([x, 31.8, z], [x * 0.18, 1, 0.7], 6.5 if form == "g4s" else 5.5, 3.6, hp, bend=(0, -0.15, 0.15))
+        m.strand([0.2, 31.6, -4.2], [0.1, -1, -0.8], 2.6, 2.6, hp)
+        return
+    _luffy_hair_prev(m, c, False, form)
+
+
+_luffy_hair_prev = _luffy_hair_prev_impl
+
+
+_build_v3 = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "sukuna" and form == "yuji":
+        m = Model()
+        yuji_body(m, "sukuna")
+        sukuna_yuji_hair(m, (226, 140, 150))
+        return m
+    return _build_v3(char, form)

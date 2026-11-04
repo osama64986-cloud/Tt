@@ -41,7 +41,17 @@ models.forEach((m, i) => loader.load(m.tex, (tex) => {
   const T = m.geo.description.texture_width;
   const mat = new MeshLambertMaterial({ map: tex, transparent: false, alphaTest: 0.5, side: DoubleSide });
   const group = new Group();
+  const boneHolder = {};
+  for (const b of m.geo.bones) {
+    if (!b.rotation) continue;
+    const bg = new Group(); const D2 = Math.PI / 180;
+    bg.position.set(-b.pivot[0], b.pivot[1], b.pivot[2]); bg.rotation.order = "ZYX";
+    bg.rotation.set(-b.rotation[0] * D2, -b.rotation[1] * D2, b.rotation[2] * D2);
+    const inner = new Group(); inner.position.set(b.pivot[0], -b.pivot[1], -b.pivot[2]); bg.add(inner);
+    group.add(bg); boneHolder[b.name] = inner;
+  }
   for (const b of m.geo.bones) for (const c of b.cubes || []) {
+    const holder = boneHolder[b.name] || group;
     const inf = c.inflate || 0;
     const g = new BoxGeometry(c.size[0] + 2 * inf, c.size[1] + 2 * inf, c.size[2] + 2 * inf);
     const uv = g.attributes.uv;
@@ -64,10 +74,10 @@ models.forEach((m, i) => loader.load(m.tex, (tex) => {
       pg.rotation.set(-c.rotation[0] * Math.PI / 180, -c.rotation[1] * Math.PI / 180, c.rotation[2] * Math.PI / 180);
       mesh.position.set(center[0] - pv[0], center[1] - pv[1], center[2] - pv[2]);
       pg.add(mesh);
-      group.add(pg);
+      holder.add(pg);
     } else {
       mesh.position.set(center[0], center[1], center[2]);
-      group.add(mesh);
+      holder.add(mesh);
     }
   }
   for (const [row, angle] of [[0, -0.35], [1, Math.PI / 2 + 0.2], [2, Math.PI * 0.85]]) {
