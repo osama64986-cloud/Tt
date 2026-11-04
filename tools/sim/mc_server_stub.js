@@ -127,7 +127,7 @@ function mkDim(id) {
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return !globalThis.__unloaded; },
     getEntities(q = {}) {
-      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis','sh:hollow_harvester'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis','sh:hollow_harvester'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
+      return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis'], sh_rank4: ['sh:hollow_harvester'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis','sh:hollow_harvester'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
     },
     getPlayers(q) {      // بالتسجيل بس نحترم فلتر المسافة مثل اللعبة (باقي الاختبارات تبقى تضرب دائماً حتى تتأكد المهارة تطلع)
@@ -1055,8 +1055,12 @@ export const __sim = {
       const heard = (id) => stats.soundIds.has(id);
       const SHH = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
       stats.shapeV = {};
+      // 0) V1.1: رتبته Dread (فوق الملعونة) وتبين بالاسم فوقه
+      clear(); let m = harv(9); advance(24); const dreadTag = /\[Dread/.test(m.nameTag || "");
+      if (!dreadTag) failures.push(`الحاصد: لازم رتبته Dread فوق الملعونة (الاسم: ${m.nameTag})`);
+      console.log(`  الرتبة Dread فوق الملعونة ${dreadTag ? "✔" : "✖"} (${m.nameTag})`);
       // 1) الخيوط تسحب
-      clear(); let m = harv(9); stats.soundIds.clear();
+      clear(); m = harv(9); stats.soundIds.clear();
       const strings = waitState(m, 1, 9); const k0 = stats.knock || 0, d0 = stats.damage || 0;
       let yanked = false; for (let t = 0; t < 30 && !yanked; t += 2) { advance(2); if (m.getProperty("sh:state") === 2) yanked = true; }
       const pulled = (stats.knock || 0) > k0 && (stats.damage || 0) > d0, strSnd = heard("sh.harv_string_cast") && heard("sh.harv_yank");

@@ -31,7 +31,7 @@ MON = {
                           egg=("#4c8a32", "#c060ff"), states=6,
                           props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
                                  "sh:camo": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
-    "hollow_harvester": dict(ident="sh:hollow_harvester", name="Hollow Harvester", rank="sh_rank3", hp=320, speed=0.27, atk=12, w=1.1, h=3.0, kb=0.8, xp=60,
+    "hollow_harvester": dict(ident="sh:hollow_harvester", name="Hollow Harvester", rank="sh_rank4", hp=440, speed=0.27, atk=15, w=1.1, h=3.0, kb=0.85, xp=90,
                              egg=("#4a3c58", "#e2b85c"), states=5,
                              props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
     "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=0.6, h=1.2, kb=0.1, xp=2,

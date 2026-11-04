@@ -31,12 +31,12 @@
    "minecraft:type_family": {
     "family": [
      "sh_monster",
-     "sh_rank3"
+     "sh_rank4"
     ]
    },
    "minecraft:health": {
-    "value": 320,
-    "max": 320
+    "value": 440,
+    "max": 440
    },
    "minecraft:collision_box": {
     "width": 1.1,
@@ -58,7 +58,7 @@
     "is_pushable_by_piston": true
    },
    "minecraft:attack": {
-    "damage": 12
+    "damage": 15
    },
    "minecraft:despawn": {
     "despawn_from_distance": {
@@ -103,10 +103,10 @@
     "priority": 8
    },
    "minecraft:knockback_resistance": {
-    "value": 0.8
+    "value": 0.85
    },
    "minecraft:experience_reward": {
-    "on_death": "query.last_hit_by_player ? 60 : 0"
+    "on_death": "query.last_hit_by_player ? 90 : 0"
    },
    "minecraft:ambient_sound_interval": {
     "value": 8.0,

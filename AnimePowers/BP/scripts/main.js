@@ -199,13 +199,13 @@ function usageOf(s) {
 
 
 // رتب الوحوش (سلم خاص بيهم، مطابق لألوان الصدوع): كل رتبة وحش تقابل رتبة لاعب بنفس الرقم
-// V1: الأوصاف تطابق درجات الصدع الحالية (الأزرق حارسه Grim، البنفسجي Vile، القرمزي Cursed، الهاوي أقوى)
+// V1: الأوصاف تطابق درجات الصدع الحالية (الأزرق حارسه Grim، البنفسجي Vile، القرمزي Cursed، الهاوي Dread)
 const MON_RANKS = [
   { name: "Lowly", col: "§9", desc: "the weakest spawn of the Abyss" },
   { name: "Grim", col: "§a", desc: "dark-hearted hunters that stalk travellers at dusk (they guard blue rifts)" },
   { name: "Vile", col: "§5", desc: "beasts the Abyss has tainted (they guard violet rifts)" },
   { name: "Cursed", col: "§d", desc: "they carry the Abyss's own strength (they guard crimson rifts)" },
-  { name: "Dread", col: "§c", desc: "veterans of a hundred hunts" },
+  { name: "Dread", col: "§c", desc: "above the Cursed: reapers of the Abyss (they guard Abyssal rifts)" },
   { name: "Calamity", col: "§6", desc: "one of them can empty a village" },
   { name: "Cataclysm", col: "§4", desc: "the Abyss's own wardens (black-gold Abyssal rifts)" },
 ];
@@ -228,7 +228,8 @@ const MONSTERS = {
   "sh:bear_cub": { rank: 0, xp: 6 },
   // الرتبة الرابعة (Cursed): نادر جداً بالعالم
   "sh:prayer_mantis": { rank: 3, xp: 320 },
-  "sh:hollow_harvester": { rank: 3, xp: 320 },
+  // V1.1: الرتبة الخامسة (Dread، فوق الملعونة): الحاصد الأجوف
+  "sh:hollow_harvester": { rank: 4, xp: 480 },
 };
 const MONSTER_CAP = 3; // أقصى عدد وحوش الرتبة الأولى قرب لاعب واحد
 const MONSTER_SPAWN_TICKS = 1200; // محاولة ظهور كل دقيقة (غيّرها إذا تريد أبطأ أو أسرع)
@@ -250,11 +251,12 @@ const effRank = (info, tier) => Math.min(RANKS.length - 1, info.rank + Math.floo
 const RANK0_TYPES = ["sh:ember_imp", "sh:rust_guard", "sh:shadow_hound", "sh:sand_scorpion"];
 const GRIM_TYPES = ["sh:gloomhorn", "sh:hollow_seer", "sh:veilfox"];
 const VILE_TYPES = ["sh:magmamoth", "sh:grey_bear"];
-const CURSED_TYPES = ["sh:prayer_mantis", "sh:hollow_harvester"];
+const CURSED_TYPES = ["sh:prayer_mantis"];
+const DREAD_TYPES = ["sh:hollow_harvester"];                   // V1.1: فوق الملعونة
 // وحوش الصدع: من الصدع البنفسجي وفوق، 30% منهم من رتبة Grim
 // درجات الصدع (v1.37، مثل درجات اللعنات): اللون = الدرجة والصعوبة، ونهاية الصدع وحش رتبة قوي يحدد صعوبته
 //   الدرجة 1 أزرق ضعيف: موجات Lowly، الحارس Grim | الدرجة 2 بنفسجي متوسط: Lowly + Grim، الحارس Vile
-//   الدرجة 3 قرمزي صعب: Grim + شوية Vile، الحارس Cursed | الدرجة 4 ذهبي-أسود صعب جداً: Grim + Vile، الحارس Cursed معزز جداً
+//   الدرجة 3 قرمزي صعب: Grim + شوية Vile، الحارس Cursed | الدرجة 4 ذهبي-أسود صعب جداً: Grim + Vile، الحارس Dread (الحاصد الأجوف) معزز
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function riftMobType() {
   const g = rift ? (RIFT_TIERS[rift.tier] || {}).grade || 1 : 1, r = Math.random();
@@ -263,7 +265,7 @@ function riftMobType() {
   if (g === 2) return r < 0.3 ? pick(["sh:gloomhorn", "sh:hollow_seer"]) : pick(RANK0_TYPES);
   return pick(RANK0_TYPES);
 }
-const RIFT_WARDENS = { 1: ["sh:gloomhorn", "sh:hollow_seer"], 2: VILE_TYPES, 3: CURSED_TYPES, 4: CURSED_TYPES };
+const RIFT_WARDENS = { 1: ["sh:gloomhorn", "sh:hollow_seer"], 2: VILE_TYPES, 3: CURSED_TYPES, 4: DREAD_TYPES };   // الصدع الهاوي: حارسه الحاصد الأجوف (Dread)
 function riftBossType() { const g = rift ? (RIFT_TIERS[rift.tier] || {}).grade || 1 : 1; return pick(RIFT_WARDENS[g] || RIFT_WARDENS[1]); }
 
 // أسلحة الدفاع: ضرر إضافي فوق ضرر اليد، تشتغل حتى بدون قدرة
@@ -1232,7 +1234,7 @@ const MONSTER_INFO = [
   ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
   ["sh:grey_bear", "Grey Bear", "Vile to Cataclysm", "A grey bear that fights standing on two legs, with a silver crescent on its chest and a clawed scar over one eye. BEAR HUG: it spreads its arms and grabs whoever is in front of it, squeezes three times and throws them; hit it 3 times or dash out to break free. RENDING CLAWS: four alternating claw swipes that scratch your body and make you bleed (stacks up to 3). CUB CALL: it roars and two cubs run at you and cling to your legs, slowing you; kill a cub and the bear goes into a rage. DEEP HIBERNATION: when hurt it falls asleep and heals; strike it and it wakes in a WRATH that blasts you away. Thick pelt: hits on its front do 30% less damage, hits on its back 20% more."],
   ["sh:prayer_mantis", "Prayer Mantis", "Cursed to Cataclysm", "A leaf-green mantis with a long raised neck, glowing violet eyes and two folded scythe arms. It is very rare in the wild. PRAYER STANCE: a cursed halo rises behind its head and it raises both scythes; any hit you land is turned back at you DOUBLED as an X of blades, so wait it out or keep your distance. LEAF CAMOUFLAGE: a whirl of leaves and it turns half transparent, creeps close and stabs with both scythes; hit it to reveal it early. SCISSOR LOCK: two huge blades close around your waist and pin you for 1.5 s before a final snip; DASH to break it. MOLT: at half health it sheds its old shell, which explodes a moment later (run!), and the fresh mantis is faster and attacks more often."],
-  ["sh:hollow_harvester", "Hollow Harvester", "Cursed to Cataclysm", "A cursed scarecrow that roams the world, a block and a quarter taller than you: a burlap sack head with violet eyes and a stitched grin, a straw hat, a torn coat, and a huge scythe in its hand. It moves in stiff, puppet-like jerks and is very rare in the wild. PUPPET STRINGS: from 4-15 blocks it points at you and a string shoots from its hand; a moment later it DRAGS you to it, so DASH to snap the string first. HOLLOW STARE: its head tilts and its eyes flare; if you are looking at it you are slowed (Slowness I only, no darkness), so look away. SEALING SCYTHE: up close it raises the scythe over its head and reaps in front of it; if it hits you, the skill or weapon in your hand is SEALED for 8 s (switch to another one). WEAKNESS: FIRE. Fire hurts it three times as much, and while it burns it flails and cannot use its skills. Very rarely it drops its scythe, the Harvester's Scythe: the only way to get one."],
+  ["sh:hollow_harvester", "Hollow Harvester", "Dread to Cataclysm", "Its rank is Dread, above the Cursed: a reaper of the Abyss and the warden of Abyssal rifts. A scarecrow a block and a quarter taller than you: a burlap sack head with violet eyes and a stitched grin, a straw hat, a torn coat, and a huge scythe gripped in its straw hand. It moves in stiff, puppet-like jerks and is very rare in the wild. PUPPET STRINGS: from 4-15 blocks it points at you and a string shoots from its hand; a moment later it DRAGS you to it, so DASH to snap the string first. HOLLOW STARE: its head tilts and its eyes flare; if you are looking at it you are slowed (Slowness I only, no darkness), so look away. SEALING SCYTHE: up close it raises the scythe over its head and reaps in front of it; if it hits you, the skill or weapon in your hand is SEALED for 8 s (switch to another one). WEAKNESS: FIRE. Fire hurts it three times as much, and while it burns it flails and cannot use its skills. Very rarely it drops its scythe, the Harvester's Scythe: the only way to get one."],
   ["sh:cursed_villager", "Cursed Villager", "Curse", "Very rarely a villager near you is CURSED. Black marks spread over its body in three stages over about five minutes, and at the last stage its eyes glow violet. Then it convulses and TURNS into a monster of a random rank: most often Lowly, sometimes Grim, rarely Vile and very rarely Cursed. Defeat it before it turns to end the curse."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
@@ -2163,7 +2165,7 @@ const RIFT_TIERS = [
   { key: "blue", grade: 1, diff: "Weak", name: "Blue Rift", rank: "Grim", col: "§9", rgb: [0.3, 0.65, 1], weight: 60, minRank: 0, ground: "minecraft:sculk", circle: 2, mob: 0, boss: 12, waves: [4, 6], skill: 0.25, weapon: 0.1 },
   { key: "violet", grade: 2, diff: "Medium", name: "Violet Rift", rank: "Vile", col: "§5", rgb: [0.65, 0.32, 1], weight: 25, minRank: 1, ground: "minecraft:crying_obsidian", circle: 1, mob: 2, boss: 20, waves: [5, 7], skill: 0.6, weapon: 0.25 },
   { key: "crimson", grade: 3, diff: "Hard", name: "Crimson Rift", rank: "Cursed", col: "§c", rgb: [1, 0.2, 0.25], weight: 12, minRank: 2, ground: "minecraft:red_terracotta", circle: 5, mob: 4, boss: 32, waves: [6, 8], skill: 1, weapon: 0.45 },
-  { key: "abyss", grade: 4, diff: "Very Hard", name: "Abyssal Rift", rank: "Cursed+", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:gilded_blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
+  { key: "abyss", grade: 4, diff: "Very Hard", name: "Abyssal Rift", rank: "Dread", col: "§6", rgb: [1, 0.8, 0.3], weight: 3, minRank: 3, ground: "minecraft:gilded_blackstone", circle: 0, mob: 6, boss: 48, waves: [7, 9], skill: 2, weapon: 1 },
 ];
 const RIFT_LIFE = 24000, RIFT_ENGAGE = 14, RIFT_MAX_R = 12;
 // كل أنواع أرضية الصدع (القديمة والجديدة) حتى الإرجاع يشتغل حتى لصدوع محفوظة من نسخ قبل
@@ -2486,7 +2488,7 @@ function riftBar() {
 }
 function riftStatusText(p) {
   const st = getState(p);
-  if (!rift) return `§5Rifts§7: none open right now. Their color is their grade: §9Grade 1 Blue (weak, Grim warden)§7, §5Grade 2 Violet (medium, Vile warden)§7, §cGrade 3 Crimson (hard, Cursed warden)§7, §6Grade 4 Abyssal (very hard, empowered Cursed warden)§7. Sealed: ${st.rifts || 0}`;
+  if (!rift) return `§5Rifts§7: none open right now. Their color is their grade: §9Grade 1 Blue (weak, Grim warden)§7, §5Grade 2 Violet (medium, Vile warden)§7, §cGrade 3 Crimson (hard, Cursed warden)§7, §6Grade 4 Abyssal (very hard, Dread warden)§7. Sealed: ${st.rifts || 0}`;
   const t = riftTier();
   return `${t.col}${t.name}§7 (Grade ${t.grade}, ${t.diff}) open (warden rank ${t.col}${t.rank}§7), ${Math.round(Math.hypot(rift.x - p.location.x, rift.z - p.location.z))} blocks away, ${rift.phase === "battle" ? `wave ${rift.wave}/3` : "spreading"}. Sealed: ${st.rifts || 0}`;
 }
@@ -4239,7 +4241,7 @@ Object.assign(SKILL_FN, {
   prison(p) {
     const t = raycastTarget(p, 20);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
-    const resist = BOSS_TYPES.has(t.typeId) || VILE_TYPES.includes(t.typeId) || CURSED_TYPES.includes(t.typeId);   // الزعماء والوحوش العالية (Vile/Cursed): حبس أقصر
+    const resist = BOSS_TYPES.has(t.typeId) || VILE_TYPES.includes(t.typeId) || CURSED_TYPES.includes(t.typeId) || DREAD_TYPES.includes(t.typeId);   // الزعماء والوحوش العالية (Vile وفوق): حبس أقصر
     const dur = resist ? 40 : 100;
     effect(t, "slowness", dur, 8);
     effect(t, "jump_boost", dur, 200);
@@ -5140,13 +5142,15 @@ function trySpawnMonster(p, force) {
     const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_monster"] });
     if (near.length >= MONSTER_CAP + (force ? 2 : 0)) return undefined;
     if (!force && Math.random() < 0.4) return undefined;
-    // الوحوش القوية جداً نادرة بالعالم: Vile (الماغماموث، الدب) 3% وCursed (السرعوف) 1.5% من كل محاولة، وبس إذا ماكو وحش قوي ثاني قريب
+    // الوحوش القوية جداً نادرة بالعالم: Vile (الماغماموث، الدب) 3%، Cursed (السرعوف) 1.6% (1% من رتبة 4)، والفزاعة Dread (الحاصد الأجوف،
+    // فوق الملعونة) 0.6% بس للاعب رتبة 4 وفوق، من كل محاولة، وبس إذا ماكو وحش قوي ثاني قريب
     const strongNear = near.some((e) => (MONSTERS[e.typeId] || {}).rank >= 2) || p.dimension.getEntities({ location: p.location, maxDistance: 110, families: ["sh_monster"] }).some((e) => (MONSTERS[e.typeId] || {}).rank >= 2);
     const roll = Math.random();
-    const cursed = !force && !strongNear && st.rank >= 3 && roll < 0.015;
-    const vile = !force && !strongNear && !cursed && st.rank >= 2 && roll < 0.045;
-    const grim = st.rank >= 1 && !force && !cursed && !vile && Math.random() < 0.15;
-    const id = cursed ? CURSED_TYPES[Math.floor(Math.random() * CURSED_TYPES.length)] : vile ? VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
+    const dread = !force && !strongNear && st.rank >= 4 && roll < 0.006;
+    const cursed = !force && !strongNear && !dread && st.rank >= 3 && roll < 0.016;
+    const vile = !force && !strongNear && !cursed && !dread && st.rank >= 2 && roll < 0.046;
+    const grim = st.rank >= 1 && !force && !cursed && !vile && !dread && Math.random() < 0.15;
+    const id = dread ? DREAD_TYPES[0] : cursed ? CURSED_TYPES[Math.floor(Math.random() * CURSED_TYPES.length)] : vile ? VILE_TYPES[Math.floor(Math.random() * VILE_TYPES.length)] : grim ? GRIM_TYPES[Math.floor(Math.random() * GRIM_TYPES.length)] : RANK0_TYPES[Math.floor(Math.random() * RANK0_TYPES.length)];
     const m = spawnOnSurface(p.dimension, id, p.location.x, p.location.z, 10, force ? 16 : 26, force ? 30 : 44);
     if (m) scaleMonster(m, st.rank);
     return m;
@@ -7104,7 +7108,7 @@ world.afterEvents.entityHurt.subscribe((ev) => {
     });
   } catch (err) { /* */ }
 });
-// ═════════════════════════ الحاصد الأجوف (Hollow Harvester، Cursed) — v1.39 ═════════════════════════
+// ═════════════════════════ الحاصد الأجوف (Hollow Harvester، Dread فوق الملعونة) — v1.39 ═════════════════════════
 // فزاعة ملعونة تتجول بالعالم (أطول من اللاعب ببلوكة وربع، المنجل بإيده). المهارات مثبتة بطلب اللاعب (MOD_GUIDE §56):
 //  1) Puppet Strings: خيط يطلع من إيده اليسار وينمسك بيك، وبعد ثلثين ثانية يسحبك لعنده. الداش قبل السحبة يقطع الخيط.
 //  2) Hollow Stare: يميل راسه وعيونه تضوي؛ إذا انت تباوع عليه تبطأ بأوطى مستوى بس (Slowness I) وبدون ظلام. لف وجهك وما يأثر.
@@ -7188,7 +7192,7 @@ function harvesterTick(e, st) {
         const dx = L.x - vic.location.x, dz = L.z - vic.location.z, d = Math.hypot(dx, dz) || 1;
         const pull = Math.max(0.5, Math.min(1.8, (d - 2.0) / 6.5));                      // يوقعك تقريباً بلوكتين قدامه
         try { vic.applyKnockback({ x: (dx / d) * pull, z: (dz / d) * pull }, 0.32); } catch (err) { /* */ }
-        hurtPlayer(vic, 4, e);
+        hurtPlayer(vic, 5, e);                                                            // V1.1: رتبة Dread (كانت 4)
         HARVEST.yank(dim, hand, chestV); cue(dim, "harv_yank", L);
         notify(vic, "§cThe strings drag you to the Harvester!", 30);
       }
@@ -7237,7 +7241,7 @@ function harvesterTick(e, st) {
       for (const pl of dim.getPlayers({ location: L, maxDistance: 4.6 })) {
         const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
         if ((vx * f.x + vz * f.z) / l < 0.1) continue;
-        hurtPlayer(pl, 10, e);
+        hurtPlayer(pl, 12, e);                                                            // V1.1: رتبة Dread (كانت 10)
         try { pl.applyKnockback({ x: (vx / l) * 0.5, z: (vz / l) * 0.5 }, 0.2); } catch (err) { /* */ }
         sealHeld(pl);
       }

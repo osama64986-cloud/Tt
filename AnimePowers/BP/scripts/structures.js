@@ -1035,7 +1035,8 @@ export function towerFloorMobs(k) {
     return [...Array.from({ length: grim }, () => pickOf(TOWER_GRIM)), ...Array.from({ length: low }, () => pickOf(TOWER_LOWLY))];
   }
   const pool = [...TOWER_HIGH].sort(() => Math.random() - 0.5);                                     // 7: وحش أو اثنين عاليين (مختلفين)
-  return pool.slice(0, Math.random() < 0.5 ? 1 : 2);
+  if (pool[0] === "sh:hollow_harvester") return [pool[0]];                                           // V1.1: الحاصد (Dread، فوق الملعونة) يحرس القمة وحده
+  return pool.filter((t) => t !== "sh:hollow_harvester").slice(0, Math.random() < 0.5 ? 1 : 2);
 }
 function towerSpawn(dim, s, plan, k, types, p, top) {
   const fl = plan.towerFloors[k];
