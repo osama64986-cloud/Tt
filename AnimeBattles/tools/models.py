@@ -29,7 +29,7 @@ class Model:
         self.cubes = []  # dict(bone, frm, size, pivot, rot, inflate, paint)
 
     def box(self, bone, frm, size, paint, rot=None, pivot=None, inflate=0.0):
-        size = [max(0.25, round(s * 4) / 4) for s in size]
+        size = [max(0.0, round(s * 4) / 4) for s in size]
         self.cubes.append(dict(bone=bone, frm=list(frm), size=size, rot=rot, pivot=pivot, inflate=inflate, paint=paint))
 
     def strand(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, bone="hair", thick=None):
@@ -1101,3 +1101,300 @@ SUIT = (26, 40, 128)
 ARMOR = (236, 236, 228)
 ARMOR_GOLD = (222, 168, 36)
 UNI = (22, 25, 40)
+
+
+# ==================================================================================
+# CUT-OUT HAIR (studied from Dragon Universe / Dragon Evolution): hair silhouettes are
+# drawn as 2D spike shapes with transparent pixels on zero-thickness planes placed
+# around the head at several angles, so the anime silhouette reads from every side.
+# ==================================================================================
+
+def _plane(m, bone, center, w, h, ry, rx, paint):
+    cx, cy, cz = center
+    m.cubes.append(dict(bone=bone, frm=[cx - w / 2, cy - h / 2, cz], size=[w, h, 0], rot=[rx, ry, 0],
+                        pivot=[cx, cy, cz], inflate=0.0, paint=paint))
+
+
+Model.plane = _plane
+
+
+def spike_paint(base, spikes, core, w, h, cut_below=None, place=None):
+    """Silhouette of spikes radiating from `core` (cx, cy, r) in plane units, pixel shaded.
+
+    spikes: (angle_deg, length, base_width) in plane units. `place` = (center, ry) lets us
+    drop pixels that would sit in front of the face.
+    """
+    rp = ramp(base)
+    ink = dark(base, 0.4) if sum(base) > 360 else (8, 8, 12)
+    cx, cy, cr = core
+    axes = [(math.cos(math.radians(a)), math.sin(math.radians(a)), L, bw) for a, L, bw in spikes]
+
+    def inside(u, v):
+        du, dv = u - cx, v - cy
+        if du * du + dv * dv <= cr * cr:
+            return 0.05
+        best = None
+        for ax, ay, L, bw in axes:
+            along = du * ax + dv * ay
+            if along <= 0 or along > L:
+                continue
+            perp = abs(du * ay - dv * ax)
+            k = max(0.0, (along - cr) / max(0.1, L - cr))
+            half = bw / 2 * (1 - k) ** 0.9 + 0.15
+            if perp <= half:
+                t = along / L
+                best = t if best is None else max(best, t)
+        return best
+
+    def blocked(u, v):
+        if not place:
+            return False
+        (pcx, pcy, pcz), ry = place
+        lx = w / 2 - u  # north-face texture runs from local +X to -X
+        th = math.radians(ry)
+        wx, wy, wz = pcx + lx * math.cos(th), pcy + (v - h / 2), pcz - lx * math.sin(th)
+        return wz < -2.6 and wy < 31.6 and abs(wx) < 5.2
+
+    def p(face, img):
+        if face not in ("north", "south"):
+            return
+        W, H = img.size
+        px = img.load()
+        mask = [[None] * W for _ in range(H)]
+        for y in range(H):
+            for x in range(W):
+                u = (x + 0.5) / S
+                if face == "south":
+                    u = w - u
+                v = h - (y + 0.5) / S
+                if (cut_below is not None and v < cut_below) or blocked(u, v):
+                    continue
+                mask[y][x] = inside(u, v)
+        for y in range(H):
+            for x in range(W):
+                t = mask[y][x]
+                if t is None:
+                    px[x, y] = (0, 0, 0, 0)
+                    continue
+                edge = any(not (0 <= x + dx < W and 0 <= y + dy < H) or mask[y + dy][x + dx] is None
+                           for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                if edge:
+                    c = ink
+                else:
+                    k = 1.0 + 3.0 * t + (0.5 if (x + 2 * y) % 5 == 0 else 0) - (0.7 if (2 * x + y) % 7 == 0 else 0)
+                    c = rp[max(0, min(4, int(k)))]
+                px[x, y] = c + (255,)
+    return p
+
+
+def cap_paint(base, teeth=True):
+    """Hair cap whose lower edge is cut into jagged locks (front and sides)."""
+    hp = hair_paint(base)
+
+    def p(face, img):
+        hp(face, img)
+        if not teeth or face not in ("north", "east", "west"):
+            return
+        W, H = img.size
+        px = img.load()
+        tooth = max(3, W // 6)
+        for x in range(W):
+            k = x % tooth
+            depth = int(H * 0.45 * (1 - abs(k - tooth / 2) / (tooth / 2)))
+            for y in range(H - 1, H - 1 - (int(H * 0.5) - depth), -1):
+                if y >= 0:
+                    px[x, y] = (0, 0, 0, 0)
+    return p
+
+
+def hair_set(m, base, layout):
+    """layout: list of (center, w, h, ry, rx, spikes, core) planes."""
+    for center, w, h, ry, rx, spikes, core in layout:
+        m.plane("hair", center, w, h, ry, rx, spike_paint(base, spikes, core, w, h, place=(center, ry)))
+
+
+def _ring(y, spikes_for, size=22, core_r=3.6, angles=(0, 45, 90, 135)):
+    out = []
+    for i, ry in enumerate(angles):
+        out.append(((0, y, 0), size, size, ry, 0, spikes_for(i), (size / 2, size / 2, core_r)))
+    return out
+
+
+def goku_hair_base(m, c):
+    m.box("hair", [-4.35, 28.75, -4.35], [8.7, 4, 8.7], cap_paint(c, teeth=False))
+    sets = [
+        [(15, 9.5, 5), (48, 10.5, 5), (82, 10, 4.5), (115, 10, 4.5), (148, 10, 5), (180, 9, 4.5), (-15, 7.5, 4)],
+        [(28, 10, 5), (64, 11, 4.5), (98, 10, 4.5), (132, 10.5, 5), (165, 9.5, 4.5), (-5, 8, 4)],
+        [(5, 9, 4.5), (38, 10.5, 5), (72, 10, 4.5), (108, 10.5, 5), (142, 10, 4.5), (175, 8.5, 4.5), (205, 7, 4)],
+        [(20, 9.5, 4.5), (55, 10, 5), (90, 10.5, 4.5), (125, 10, 5), (160, 9.5, 4.5), (195, 7.5, 4)],
+    ]
+    hair_set(m, c, _ring(28.5, lambda i: sets[i]))
+    bang = [(245, 5.5, 3.2), (272, 5.2, 3), (300, 5.5, 3.2)]
+    m.plane("hair", (0, 31.6, -4.6), 10, 8, 0, 0, spike_paint(c, bang, (5, 7.4, 2.2), 10, 8))
+
+
+def goku_hair_ssj(m, c):
+    m.box("hair", [-4.35, 28.75, -4.35], [8.7, 4, 8.7], cap_paint(c, teeth=False))
+    def sp(i):
+        base = [(22, 11, 5), (48, 13, 5), (72, 14.5, 5), (96, 14.5, 5), (120, 13.5, 5), (146, 12, 5), (170, 9.5, 4.5), (0, 9, 4.5)]
+        return [(a + (i * 9) % 18 - 9, l, bw) for a, l, bw in base]
+    hair_set(m, c, _ring(28.5, sp, size=30))
+    m.plane("hair", (-0.6, 31.6, -4.6), 8, 9, 0, 0, spike_paint(c, [(262, 6.8, 2.6)], (4, 8.6, 1.4), 8, 9))
+
+
+def goku_hair_ssj3(m, c):
+    m.box("hair", [-4.35, 28.75, -4.35], [8.7, 4, 8.7], cap_paint(c, teeth=False))
+    def sp(i):
+        return [(35, 9.5, 5), (70, 10.5, 5), (105, 10.5, 5), (140, 9.5, 5), (5, 8, 4.5), (175, 8, 4.5)]
+    hair_set(m, c, _ring(28.5, sp))
+    mane = [(252, 22, 7), (270, 23, 8), (288, 22, 7), (236, 17, 6), (304, 17, 6)]
+    for ry, z in ((0, 4.6), (40, 3.4), (-40, 3.4)):
+        m.plane("hair", (0, 25, z), 18, 30, ry, 6, spike_paint(c, mane, (9, 26, 3.5), 18, 30))
+    bang = [(250, 6.5, 3.4), (272, 7, 3.2), (294, 6.5, 3.4)]
+    m.plane("hair", (0, 31.6, -4.6), 10, 9, 0, 0, spike_paint(c, bang, (5, 8.4, 2.2), 10, 9))
+
+
+def vegeta_hair(m, c):
+    m.box("hair", [-4.35, 29.5, -4.35], [8.7, 3.25, 8.7], cap_paint(c, teeth=False))
+    m.box("hair", [-0.75, 28.75, -4.45], [1.5, 2.5, 0.5], hair_paint(c), rot=[0, 0, 45], pivot=[0, 29.5, -4.2])
+    def sp(i):
+        return [(64, 13, 6), (77, 16.5, 6), (90, 19, 6.5), (103, 16.5, 6), (116, 13, 6), (48, 9.5, 5.5), (132, 9.5, 5.5)]
+    hair_set(m, c, _ring(29, sp, size=42, core_r=3.8))
+
+
+def gojo_hair_up(m, c):
+    m.box("hair", [-4.3, 29, -4.3], [8.6, 3.75, 8.6], cap_paint(c, teeth=False))
+    def sp(i):
+        off = (i % 2) * 12
+        return [(a + off, l, 4.2) for a, l in ((20, 8), (46, 9), (72, 9.5), (98, 9.5), (124, 9), (150, 8), (176, 6.5))]
+    hair_set(m, c, _ring(28.8, sp, size=22))
+
+
+def gojo_hair_down(m, c):
+    m.box("hair", [-4.3, 29.25, -4.3], [8.6, 3.5, 8.6], cap_paint(c, teeth=False))
+    def sp(i):
+        off = (i % 2) * 10
+        return [(a + off, l, 4) for a, l in ((-35, 6.8), (-10, 6.8), (20, 6.5), (55, 6.5), (90, 6.2), (125, 6.5), (160, 6.8), (190, 6.8), (215, 6.5))]
+    hair_set(m, c, _ring(28.5, sp, size=18))
+    bang = [(242, 6.2, 3.2), (258, 6.8, 3), (276, 7, 3), (294, 6.6, 3), (310, 5.8, 3.2)]
+    m.plane("hair", (0, 31.2, -4.6), 11, 9, 0, 0, spike_paint(c, bang, (5.5, 8, 2.2), 11, 9))
+
+
+def shell_paint(base, hairline=29.3, peak=False, back_to=25.0, sideburn=True, teeth=1.0):
+    """Head-hugging hair layer: transparent face, jagged hairline, hair on top/sides/back."""
+    rp = ramp(base)
+    ink = dark(base, 0.4) if sum(base) > 360 else (8, 8, 12)
+
+    def p(face, img):
+        W, H = img.size
+        px = img.load()
+        if face == "down":
+            for y in range(H):
+                for x in range(W):
+                    px[x, y] = (0, 0, 0, 0)
+            return
+        mask = [[False] * W for _ in range(H)]
+        for y in range(H):
+            for x in range(W):
+                yy = 32 - (y + 0.5) * 8 / H  # model y of this row
+                fx = (x + 0.5) / W
+                if face == "up":
+                    on = True
+                elif face == "south":
+                    on = yy >= back_to - 0.8 * abs(math.sin(fx * math.pi * 4)) * teeth
+                elif face in ("east", "west"):
+                    front = fx if face == "east" else 1 - fx  # 1 = at the face
+                    lim = 28.6 - 0.7 * abs(math.sin(fx * math.pi * 3)) * teeth
+                    if sideburn and front > 0.8:
+                        lim = 26.6
+                    lim = min(lim, back_to + (28.6 - back_to) * front)
+                    on = yy >= lim
+                else:  # north: jagged locks over the forehead
+                    lim = hairline - 0.9 * teeth * abs(math.sin(fx * math.pi * 5))
+                    if peak:
+                        lim = min(lim, hairline + 0.6 - 2.2 * max(0.0, 1 - abs(fx - 0.5) * 6))
+                    on = yy >= lim
+                mask[y][x] = on
+        for y in range(H):
+            for x in range(W):
+                if not mask[y][x]:
+                    px[x, y] = (0, 0, 0, 0)
+                    continue
+                edge = face != "up" and (y + 1 >= H or not mask[y + 1][x])
+                t = 1 - y / max(1, H - 1)
+                k = 1.6 + 2.0 * t + FACE_LIGHT[face] * 0.6 + (0.6 if x % 3 == 1 else 0) - (0.6 if x % 3 == 0 and t < 0.6 else 0)
+                px[x, y] = (ink if edge else rp[max(0, min(4, int(k)))]) + (255,)
+    return p
+
+
+def shell(m, c, **kw):
+    m.box("hair", [-4, 24, -4], [8, 8, 8], shell_paint(c, **kw), inflate=0.45)
+
+
+_orig_box = Model.box
+
+
+def _box_no_caps(self, bone, frm, size, paint, rot=None, pivot=None, inflate=0.0):
+    # Old cube caps are replaced by the head-hugging shell (see hair_* functions below).
+    if getattr(paint, "_is_cap", False):
+        return
+    return _orig_box(self, bone, frm, size, paint, rot, pivot, inflate)
+
+
+Model.box = _box_no_caps
+_cap_paint = cap_paint
+
+
+def cap_paint(base, teeth=True):  # noqa: F811
+    p = _cap_paint(base, teeth)
+    p._is_cap = True
+    return p
+
+
+def _with_shell(fn, **kw):
+    def wrapped(m, c):
+        shell(m, c, **kw)
+        fn(m, c)
+    return wrapped
+
+
+goku_hair_base = _with_shell(goku_hair_base, hairline=29.0)
+goku_hair_ssj = _with_shell(goku_hair_ssj, hairline=29.2)
+goku_hair_ssj3 = _with_shell(goku_hair_ssj3, hairline=29.0, back_to=24.2)
+vegeta_hair = _with_shell(vegeta_hair, hairline=30.0, peak=True, teeth=0.4)
+gojo_hair_up = _with_shell(gojo_hair_up, hairline=29.6, sideburn=False)
+gojo_hair_down = _with_shell(gojo_hair_down, hairline=28.6)
+
+
+def _fix_bangs(fn):
+    """Front bang planes: hide the part above the head top (y > 32.4); drop the old widow's-peak stick."""
+    def wrapped(m, c):
+        start = len(m.cubes)
+        fn(m, c)
+        keep = []
+        for cube in m.cubes[start:]:
+            if cube["size"] == [1.5, 2.5, 0.5]:
+                continue
+            if cube["size"][2] == 0 and cube["frm"][2] < -4.4:
+                top = cube["pivot"][1] + cube["size"][1] / 2
+                inner = cube["paint"]
+
+                def clipped(face, img, inner=inner, top=top):
+                    inner(face, img)
+                    px = img.load()
+                    W, H = img.size
+                    for y in range(H):
+                        if top - (y + 0.5) / S > 32.4:
+                            for x in range(W):
+                                px[x, y] = (0, 0, 0, 0)
+                cube["paint"] = clipped
+            keep.append(cube)
+        m.cubes[start:] = keep
+    return wrapped
+
+
+goku_hair_base = _fix_bangs(goku_hair_base)
+goku_hair_ssj = _fix_bangs(goku_hair_ssj)
+goku_hair_ssj3 = _fix_bangs(goku_hair_ssj3)
+vegeta_hair = _fix_bangs(vegeta_hair)
+gojo_hair_down = _fix_bangs(gojo_hair_down)
