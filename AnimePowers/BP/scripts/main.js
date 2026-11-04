@@ -1086,6 +1086,8 @@ function introStory(player) {
   sfxPlayer(player, "sh.orbit", 0.8, 0.8);
   sayRaw(player, langOf(player), "§d[Etheria] §f", pickLang(langOf(player), CHRONICLE[0][1]).split("\n")[0]);
   say(player, "§7Open the Evolution Book: §d[Story Mode]§7 follows your journey, §d[World Story]§7 tells how Etheria began, and §b[Settings]§7 switches the language (English / Arabic).");
+  // سطر عربي للاعب العربي اللي بعده ما غيّر اللغة (يوصله للإعدادات): جاهز متشكل ومقلوب لأنه ينرسل بدون ترجمة
+  if (langOf(player) !== "ar") { try { player.sendMessage(arVisual("§bللعربية: افتح كتاب التطور ثم [الإعدادات] واختر اللغة العربية.", 220)); } catch (e) { /* */ } }
 }
 // نص جاهز بلغة اللاعب (مثل نصوص story.js) يطلع بالدردشة: العربي يتشكل وينقلب ويتقطع بدون ما يمر على القاموس
 function sayRaw(p, lang, prefix, text) {
@@ -5366,7 +5368,7 @@ function houndShadowLeap(e, tp, st) {
       gateShape(dim, "shade_portal", g, yawOf(g, tp.location), 1.1, 4); }                          // V1: ويطلع من بوابة ثانية وراك
     setMState(e, 3);
     sfx(dim, "sh.kat_step", dest, 0.9, 0.7);
-    later(4, () => {
+    later(7, () => {                                                       // V1: 0.35 ث تحذير (البوابة والصوت) قبل العضة: وقت رد فعل عادل
       if (!valid(e) || !valid(tp)) return;
       popShape(dim, "fang_jaw", center3(tp), 0.9, 1.3, 9, { yaw: yawOf(tp.location, e.location) });
       if (dist2d(e.location, tp.location) < 3) { hurtPlayer(tp, 4, e); try { tp.addEffect("slowness", 40, { amplifier: 1 }); } catch (err) { /* */ } }
@@ -6075,7 +6077,7 @@ function seerTick(e, st) {
   // ── 1) الشعاع البرتقالي: يرفع كفه قدام عينه ويطلق مباشرة (بدون تحذير). الشعاع من جزيئات ماينكرافت:
   //       قلب لمعات End Rod وخيطين غبار ملتفين حوله (مثل شعاع الحارس)، شرار ونار ودخان عند نقطة الضربة ──
   if (st.skill === "beam") {
-    if (tp && st.t <= 14) st.aim = center3(tp);
+    if (tp && st.t <= 12) st.aim = center3(tp);                             // V1: التصويب يثبت 0.4 ث قبل الإطلاق (وقت عادل للتنحي)
     const f = st.aim ? fwdTo(L, st.aim) : { x: 0, z: 1 };
     const hand = { x: L.x + f.x * 0.95, y: L.y + 2.3, z: L.z + f.z * 0.95 };
     if (st.t < 20) {
@@ -6083,7 +6085,7 @@ function seerTick(e, st) {
         const a = Math.random() * Math.PI * 2, rr = 0.9 - st.t * 0.04;
         pix(dim, { x: hand.x + Math.cos(a) * rr, y: hand.y + Math.sin(a) * rr, z: hand.z }, { color: i % 2 ? ORANGE : [1, 0.85, 0.5], size: 0.16, life: 0.25, speed: 0.1 });
       }
-      if (st.t >= 14) glow(dim, hand, { color: ORANGE, size: 0.5, life: 0.2 });
+      if (st.t >= 12) glow(dim, hand, { color: ORANGE, size: 0.5, life: 0.2 });
     }
     if (st.t === 20 && st.aim) {
       const dx = st.aim.x - hand.x, dy = st.aim.y - hand.y, dz = st.aim.z - hand.z, l = Math.hypot(dx, dy, dz) || 1;
@@ -7277,6 +7279,12 @@ world.afterEvents.entityDie.subscribe((ev) => {
   } catch (err) { /* */ }
 });
 const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick, [MANTIS]: mantisTick, [HARVESTER]: harvesterTick };
+// V1: منظّف دوري (كل 30 ثانية): حالات الوحوش اللي ماتت أو انشالت من العالم تنمسح من الذاكرة (كانت تتراكم بالجلسات الطويلة).
+// وحش بس ابتعد (منطقته ما محملة) ترجع حالته من جديد لما يرجع: نفس اللي يصير لما ينفتح العالم مرة ثانية
+system.runInterval(() => {
+  const gone = (id) => { try { return !world.getEntity(id); } catch (e) { return true; } };
+  for (const m of [mstate, gst, archerAI, dmgMulCache, hitXpAt]) for (const id of [...m.keys()]) if (gone(id)) { if (m === gst) dropSkillShapes(gst.get(id)); m.delete(id); }
+}, 600);
 world.afterEvents.entityDie.subscribe((ev) => {                      // V1: الوحش مات بنص مهارة: أشكالها تنشال وحالته تنمسح
   try { const e = ev.deadEntity; if (!e || !CUSTOM_TICK[e.typeId]) return; dropSkillShapes(gst.get(e.id)); gst.delete(e.id); } catch (err) { /* */ }
 });
