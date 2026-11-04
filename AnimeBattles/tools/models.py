@@ -1522,3 +1522,26 @@ FACES["vegeta"] = [
     ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
     ".......n........", "......,n,.......", "......mmmmm.....", "...........m....", ",,............,,",
 ]
+
+
+# ---------------------------------------------------------------- SSJ3 (improved)
+def goku_hair_ssj3_v2(m, c):
+    hp = hair_paint(c)
+    # crown rising up and back
+    m.strand([0, 32, -0.6], [0, 1, 0.5], 7.5, 5.25, hp, bend=(0, -0.1, 0.1))
+    m.mirror_strand([2.6, 32, -0.4], [0.55, 1, 0.35], 7, 4.75, hp, bend=(0.05, -0.15, 0.1))
+    m.mirror_strand([3.9, 30.5, 0.6], [1, 0.55, 0.45], 6, 4.25, hp, bend=(0, -0.2, 0.1))
+    # short front bangs that stay above the eyes
+    m.strand([-2.3, 31.9, -4.1], [-0.3, -1, -0.65], 2.9, 3.1, hp)
+    m.strand([0.2, 32.1, -4.2], [0.05, -1, -0.7], 2.6, 2.8, hp)
+    m.strand([2.5, 31.9, -4.1], [0.35, -1, -0.6], 2.7, 2.9, hp)
+    # the mane: long jagged locks fanning down the back to the knees
+    for x, L in ((-3.6, 21), (-1.8, 24), (0, 25), (1.8, 24), (3.6, 21)):
+        m.strand([x, 30.6, 3.9], [x * 0.07, -1, 0.2], L, 4.75, hp, thick=0.72, bend=(x * 0.01, 0, 0.02))
+    for x in (-2.6, 0, 2.6):
+        m.strand([x, 27.5, 4.7], [x * 0.06, -1, 0.28], 19, 5.25, hp, thick=0.7)
+    m.mirror_strand([4.3, 30, 1.4], [0.18, -1, 0.14], 17, 4.25, hp, thick=0.75)
+    m.mirror_strand([4.4, 31, -1.6], [0.25, -1, 0.05], 8, 3.25, hp)
+
+
+goku_hair_ssj3 = _hair3d(goku_hair_ssj3_v2, hairline=29.2, back_to=24.0)
