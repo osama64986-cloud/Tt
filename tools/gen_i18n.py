@@ -17,7 +17,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "AnimePowers", "BP", "scripts")
 I18N = os.path.join(ROOT, "tools", "i18n")
-FILES = ["main.js", "structures.js", "achievements.js", "gear.js", "dash.js", "story.js"]
+FILES = ["main.js", "structures.js", "achievements.js", "gear.js", "dash.js", "logic.js", "story.js"]
 
 # نصوص مو للاعب (معرّفات، مسارات، أحداث، جزيئات، أصوات...)
 SKIP_RE = re.compile(
@@ -234,6 +234,10 @@ def main():
     bad = [k for k, v in ar.items() if sorted(re.findall(r"\{\d\}", k)) != sorted(re.findall(r"\{\d\}", v))]
     for k in bad:
         print("خانات مو متطابقة:", json.dumps(k, ensure_ascii=False), "→", json.dumps(ar[k], ensure_ascii=False))
+    extra_path = os.path.join(I18N, "ar_extra.json")                   # كلمات مفردة (اتجاهات...) يدوية
+    if os.path.exists(extra_path):
+        for k, v in json.load(open(extra_path, encoding="utf-8")).items():
+            ar.setdefault(k, v)
     used = {k: v for k, v in ar.items() if v and k not in bad}
     missing = [k for k in order if k not in ar]
     with open(os.path.join(SCRIPTS, "lang_ar.js"), "w", encoding="utf-8") as f:

@@ -9,6 +9,7 @@ export class ActionFormData {
   button(t, icon) { this.buttons.push(t); this.icons.push(icon); return this; }
   async show() {
     sim.formsShown.push({ title: this._title, body: this._body, buttons: this.buttons, icons: this.icons });
+    if (globalThis.__allText) for (const t of [this._title, this._body, ...this.buttons]) if (typeof t === "string") for (const ln of t.split("\n")) if (ln.trim()) globalThis.__allText.add(ln);
     // أمان: شاشات ترجع لبعضها (رجوع ← قائمة) بدون توقف ما تدور للأبد بالمحاكي (العداد يتصفر أول ما يرتاح الكود)
     chain++; if (!chainTimer) chainTimer = setTimeout(() => { chain = 0; chainTimer = null; }, 0);
     if (chain > 300) return { canceled: true, cancelationReason: "UserClosed" };

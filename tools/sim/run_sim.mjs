@@ -60,6 +60,24 @@ console.log("أصوات مستعملة:", [...W.stats.soundIds].sort().join(" ")
   if (!an.some((a) => a === "idle" || a === "idle_combat")) W.failures.push("أنميشن الوقوف ما اشتغل");
   if (mo.controller !== "sh_move" || !/query\.is_/.test(mo.stopExpression || "")) W.failures.push("حلقات حركة اللاعب لازم تكون بطبقة sh_move وتوقف لما تتغير الحالة");
 }
+{
+  // V1: تغطية الترجمة: كل سطر إنكليزي طلع للاعب خلال المحاكي نمرره على القاموس العربي؛ السطور اللي بقت بيها كلمات إنكليزية تنكتب بملف
+  const { trText } = await import(pathToFileURL(path.join(tmp, "scripts/i18n.js")).href);
+  const KEEP = /^(Lv|XP|S|V1|V1\.5|MAX|HUD|OK|STR|SPD|X)$/;                                   // رموز تبقى إنكليزي حتى بالعربي
+  // نصوص story.js بلغتين (العربي جاهز بيها) ونصوص الإعدادات بالإنكليزي ما تحتاج قاموس
+  const ST = await import(pathToFileURL(path.join(tmp, "scripts/story.js")).href);
+  const bil = new Set();
+  const addEn = (o) => { if (o && typeof o.en === "string") for (const ln of o.en.split("\n")) if (ln.trim()) bil.add(ln.trim()); };
+  ST.CHRONICLE.forEach(([t, b]) => { addEn(t); addEn(b); }); addEn(ST.CHRONICLE_TITLE); addEn(ST.STORY_TITLE); addEn(ST.STORY_END.t); addEn(ST.STORY_END.n);
+  ST.STORY.forEach((c) => { addEn(c.t); c.steps.forEach((x) => { addEn(x.n); addEn(x.o); }); });
+  const isBil = (l) => { const p = l.replace(/§./g, "").trim(); for (const b of bil) if (p.includes(b) || b.includes(p.replace(/^[^A-Za-z]+|[^A-Za-z.]+$/g, ""))) return true; return /HUD panel|Story mission on screen|now speaks English/.test(p); };
+  const lines = [...(globalThis.__allText || [])].filter((l) => !/[\u0600-\u06FF\uFE70-\uFEFF]/.test(l) && /[A-Za-z]{3}/.test(l.replace(/§./g, "")) && !isBil(l));
+  const I18 = await import(pathToFileURL(path.join(tmp, "scripts/i18n.js")).href);
+  const left = lines.filter((l) => { const t = (/[│]/.test(l) ? I18.trSeg(l) : trText(l)).replace(/§./g, ""); return (t.match(/[A-Za-z]{2,}/g) || []).some((w) => !KEEP.test(w)); });
+  const pct = lines.length ? (100 * (lines.length - left.length)) / lines.length : 100;
+  console.log(`تغطية الترجمة العربية: ${pct.toFixed(1)}% من ${lines.length} سطر طلع للاعب (باقي ${left.length})`);
+  fs.writeFileSync(path.join(root, "tools/i18n/untranslated_runtime.txt"), left.sort().join("\n") + "\n");
+}
 if (errors.size) {
   console.log(`\nأخطاء مبلوعة (${errors.size}):`);
   for (const [k, n] of errors) console.log(` x${n}  ${k}`);

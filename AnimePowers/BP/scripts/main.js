@@ -38,10 +38,12 @@ class ActionFormData {
   button(text, icon) { this._btn.push([text, icon]); return this; }
   show(player) {
     const lang = langOf(player), f = new RawActionForm();
-    const raw = lang !== "ar" || (typeof this._t === "string" && this._t.includes("§a§l§c§h"));   // شاشة الخيميائي المرسومة: نصوصها بخلاياها
-    f.title(raw ? this._t : i18nShow(lang, this._t, "title"));
-    if (this._b !== undefined) f.body(raw ? this._b : AR_MARK + i18nShow(lang, this._b, "form"));
+    const alc = typeof this._t === "string" && this._t.startsWith("§a§l§c§h");        // شاشة الخيميائي المرسومة: أزرارها خلايا بعلامات
+    const raw = lang !== "ar";
+    f.title(raw ? this._t : alc ? "§a§l§c§h" + i18nShow(lang, this._t.slice(8), "title") : i18nShow(lang, this._t, "title"));
+    if (this._b !== undefined) f.body(raw ? this._b : alc ? i18nShow(lang, this._b, "title") : AR_MARK + i18nShow(lang, this._b, "form"));
     for (const [t, ic] of this._btn) {
+      if (alc) { if (ic) f.button(t, ic); else f.button(t); continue; }
       const tt = raw ? t : t.split("\n").map((ln) => i18nShow(lang, ln, "button")).join("\n");   // سطر الزر ما يتقطع (نصوص الأزرار قصيرة)
       if (ic) f.button(tt, ic); else f.button(tt);
     }
@@ -1188,7 +1190,9 @@ async function openStory(player) {
   return openStory(player);
 }
 // اسم أيتم قصير للمكافآت (من أسماء الأسلحة/الجرعات إن وجد، وإلا من المعرّف)
-function itemLabel(id) { return (WEAPONS[id] && WEAPONS[id].name) || id.replace(/^.*:/, "").replace(/_/g, " "); }
+// V1: أسماء مكافآت مرتبة (بدل «xp scroll small» من المعرّف) وتترجم بالعربي
+const ITEM_LABELS = { "sh:xp_scroll_small": "Small XP Scroll", "sh:xp_scroll_big": "Big XP Scroll", "sh:skill_scroll": "Skill Upgrade Scroll", "minecraft:bread": "Bread", "minecraft:golden_apple": "Golden Apple", "minecraft:glass_bottle": "Glass Bottle" };
+function itemLabel(id) { return ITEM_LABELS[id] || (WEAPONS[id] && WEAPONS[id].name) || id.replace(/^.*:/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()); }
 
 // زر الإعدادات بلغتين (حتى اللي ما يقرا الإنكليزي يلگاه): بالإنكليزي الكلمة العربية لازم تنرسل جاهزة (متشكلة ومقلوبة)
 const settingsLabel = (lang) => (lang === "ar" ? "§b[الإعدادات / Settings]" : `§b[Settings / ${arVisual("الإعدادات")}§b]`);
@@ -1891,7 +1895,7 @@ system.runInterval(() => {
       if (ti) setHudBar(ti.key, p.dimension, ti.loc, ti.name, ti.frac, true);
       // أول ما توصل طابق بيه وحوش: سطر قصير فوق الهوت بار (الطابق وعدد الوحوش)
       const was = towerSeen.get(p.id), now = ti ? `${ti.key}:${ti.floor}` : "";
-      if (ti && now !== was && !ti.done) notify(p, `§5Abyss Tower §7· §dFloor ${ti.floor}/7 §7· ${ti.left} monster${ti.left > 1 ? "s" : ""}`, 60);
+      if (ti && now !== was && !ti.done) notify(p, `§5Abyss Tower §7· §dFloor ${ti.floor}/7 §7· monsters left: ${ti.left}`, 60);
       towerSeen.set(p.id, now);
     } catch (err) { /* */ }
   }
@@ -8092,7 +8096,7 @@ function misCheck(p) {
       m.base = next && next.delta ? misValue(p, next, getState(p), achGet(p)) : 0;
       misSave(p, m);
       banner(p, `${MIS_COL[mis.tier]}✔ Mission complete: §f${mis.name} §7(+${mis.xp} XP)${next ? `\n§7Next: ${MIS_COL[next.tier]}${next.name}` : ""}`, 90);
-      say(p, `${MIS_COL[mis.tier]}[Mission ${m.i}/${MISSIONS.length}] §f${mis.name} complete! §e+${mis.xp} XP${mis.items.length ? ` §7+ ${mis.items.map(([id, n]) => `${n} ${id.replace(/^.*:/, "").replace(/_/g, " ")}`).join(", ")}` : ""}${next ? `\n§7Next mission: ${MIS_COL[next.tier]}${next.name}§7: ${next.desc}` : "\n§6You finished every mission!"}`);
+      say(p, `${MIS_COL[mis.tier]}[Mission ${m.i}/${MISSIONS.length}] §f${mis.name} complete! §e+${mis.xp} XP${mis.items.length ? ` §7+ ${mis.items.map(([id, n]) => `${n} ${itemLabel(id)}`).join(", ")}` : ""}${next ? `\n§7Next mission: ${MIS_COL[next.tier]}${next.name}§7: ${next.desc}` : "\n§6You finished every mission!"}`);
       sfxPlayer(p, "random.levelup", 0.6, 1.2);
     }
   } catch (e) { /* */ }
@@ -8101,7 +8105,7 @@ system.runInterval(() => { for (const p of world.getAllPlayers()) misCheck(p); }
 async function openMissions(player) {
   const m = misState(player), pr = misProgress(player, m);
   const f = new ActionFormData().title("Missions")
-    .body(pr ? `§fMission ${m.i + 1}/${MISSIONS.length} ${MIS_COL[pr.mis.tier]}(${pr.mis.tier})\n§l${pr.mis.name}§r\n§7${pr.mis.desc}\n§fProgress: §e${pr.cur}/${pr.mis.need}\n§7Reward: §e+${pr.mis.xp} XP§7${pr.mis.items.length ? " + " + pr.mis.items.map(([id, n]) => `${n} ${id.replace(/^.*:/, "").replace(/_/g, " ")}`).join(", ") : ""}\n\n§8Finish it and the next one opens. Easy, then medium, then hard.`
+    .body(pr ? `§fMission ${m.i + 1}/${MISSIONS.length} ${MIS_COL[pr.mis.tier]}(${pr.mis.tier})\n§l${pr.mis.name}§r\n§7${pr.mis.desc}\n§fProgress: §e${pr.cur}/${pr.mis.need}\n§7Reward: §e+${pr.mis.xp} XP§7${pr.mis.items.length ? " + " + pr.mis.items.map(([id, n]) => `${n} ${itemLabel(id)}`).join(", ") : ""}\n\n§8Finish it and the next one opens. Easy, then medium, then hard.`
       : "§6You finished every mission. §7The last one, summoning the strongest monster, is coming later.");
   MISSIONS.forEach((x, i) => {
     if (i < m.i) f.button(`§2✔ ${x.name}\n§8${x.tier}`, x.icon);

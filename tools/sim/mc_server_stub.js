@@ -152,12 +152,12 @@ Object.assign(player, {
   // الشاشة: فوق يسار = شريط الأكشن، فوق الهوت بار = العنوان. actionBars يسجل الشاشة كاملة (فوق + تحت) حتى الاختبارات القديمة تلقى كل الكتابات،
   // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
   onScreenDisplay: {
-    setActionBar(t) { stats.top = String(t); stats.actionBars.push(stats.top + (stats.bottom ? "\n" + stats.bottom : "")); },
-    setTitle(t, o) { (stats.titles = stats.titles || []).push(t); stats.bottom = String(t); stats.titleOpts = o; stats.actionBars.push((stats.top || "") + "\n" + stats.bottom); },
+    setActionBar(t) { stats.top = String(t); stats.actionBars.push(stats.top + (stats.bottom ? "\n" + stats.bottom : "")); seenText(t); },
+    setTitle(t, o) { (stats.titles = stats.titles || []).push(t); stats.bottom = String(t); stats.titleOpts = o; stats.actionBars.push((stats.top || "") + "\n" + stats.bottom); seenText(t); if (o && o.subtitle) seenText(o.subtitle); },
     clearTitle() { stats.bottom = ""; },
     setHudVisibility(v, els) { stats.hudHidden = v === 0 ? els : []; },
   },
-  sendMessage(m) { stats.messages.push(String(m)); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
+  sendMessage(m) { stats.messages.push(String(m)); seenText(m); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   getRotation() { return { x: 0, y: 0 }; },
   inputInfo: { getMovementVector: () => player._mv || { x: 0, y: 0 } },
@@ -187,6 +187,9 @@ export const world = {
 };
 
 const fire = (name, payload) => { for (const fn of subs[name] || []) fn(payload); };
+// V1: كل نص طلع للاعب (دردشة، واجهة، عناوين، قوائم) حتى نقيس تغطية الترجمة العربية بآخر المحاكي
+globalThis.__allText = globalThis.__allText || new Set();
+function seenText(t) { if (typeof t === "string" && globalThis.__allText.size < 60000) for (const ln of t.split("\n")) if (ln.trim()) globalThis.__allText.add(ln); }
 
 // ───── السيناريو ─────
 const failures = [];
@@ -223,6 +226,9 @@ export const __sim = {
     const powers = [...new Set(skills.map((s) => s.power))];
     console.log(`مهارات: ${skills.length} | قدرات: ${powers.length}`);
     advance(80); // تشغيل intervals الأولية
+    // V1: طور القصة يعطي خبرة لما تخلص خطواته؛ بباقي الاختبارات نخليه منتهي حتى ما يغيّر المستوى/الرتبة بنصها (اختباره لوحده تحت)
+    const STORY_DONE = JSON.stringify({ i: 99, base: 0, hide: true, ann: 99 });
+    player.setDynamicProperty("sh_story", STORY_DONE);
     fire("playerSpawn", { player, initialSpawn: true });
     advance(100);
     const results = [];
@@ -493,7 +499,7 @@ export const __sim = {
       if (!flash || !gap || !next) failures.push("طور القصة: اكتملت المهمة/الاختفاء/المهمة الجاية ما اشتغلت");
       if (!(xp1 > xp0) || stS.i !== 1) failures.push("طور القصة: الخطوة ما انحسبت أو بدون مكافأة");
       if (stOld.i !== 2 || xpOld1 !== xpOld0) failures.push("طور القصة: اللاعب القديم ما انحسب صح");
-      player.setDynamicProperty("sh_story", undefined); setState(baseState("iron"));
+      player.setDynamicProperty("sh_story", STORY_DONE); setState(baseState("iron"));
     }
     // V1: اللغة العربية من الإعدادات (نفس طريق اللاعب: الكتاب ← الإعدادات ← اللغة): تتشكل (أشكال العرض FE70-FEFF، بدون حروف منفصلة)
     // بالقوائم والدردشة والمتتبع، وترجع إنكليزي
@@ -518,7 +524,7 @@ export const __sim = {
       if (!isShaped(chat)) failures.push("العربي: رسائل الدردشة ما تشكّلت");
       if (!(trk.startsWith("§r§r§r") && isShaped(trk))) failures.push("العربي: متتبع القصة ما تشكّل");
       if (back !== "en") failures.push("العربي: الإعدادات ما ترجّع الإنكليزي");
-      player.setDynamicProperty("sh_story", undefined); ui.queue = []; ui.nextSelection = 0; ui.cancelWhenEmpty = false;
+      player.setDynamicProperty("sh_story", STORY_DONE); ui.queue = []; ui.nextSelection = 0; ui.cancelWhenEmpty = false;
       try { player.removeTag("sh_hud_off"); } catch (e) { /* */ }
     }
     // الظهور المتدرج
@@ -1244,7 +1250,7 @@ export const __sim = {
         if (k === 0) {                                                       // ختم الدرج: زجاج بنفسجي لحد ما ينظف الطابق، وينكسر بموتهم
           sealOn = stats.setTypes.some((q) => q[3] === "minecraft:purple_stained_glass" && q[1] === 64 + 6);
           advance(10); hudFloor = (bossBar("sh:hud_bar_near") || { name: "" }).name;
-          if (!(stats.titles || []).some((t) => /Abyss Tower §7· §dFloor 1\/7 §7· 3 monsters/.test(t))) failures.push("البرج: سطر الطابق (الرقم وعدد الوحوش) ما طلع فوق الهوت بار");
+          if (!(stats.titles || []).some((t) => /Abyss Tower §7· §dFloor 1\/7 §7· monsters left: 3/.test(t))) failures.push("البرج: سطر الطابق (الرقم وعدد الوحوش) ما طلع فوق الهوت بار");
           const xp0 = entities.filter((e) => e.typeId === "minecraft:xp_orb").length;
           for (const e of neu) { e._valid = false; fire("entityDie", { deadEntity: e, damageSource: {} }); }
           advance(20);

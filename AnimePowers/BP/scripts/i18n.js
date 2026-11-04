@@ -181,18 +181,25 @@ const exact = new Map(), tpl = [];
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 for (const [en, ar] of Object.entries(AR)) {
   if (!/\{\d\}/.test(en)) { exact.set(en, ar); continue; }
-  const parts = en.split(/(\{\d\})/), order = [];
-  let re = "^";
-  for (const p of parts) {
-    const m = /^\{(\d)\}$/.exec(p);
-    if (m) { re += "([\\s\\S]+?)"; order.push(+m[1]); } else re += esc(p);
-  }
   // قالب كله خانات (بدون كلام) يطابق كل شي: ما نستعمله
   if (!/[A-Za-z]{2}/.test(en.replace(/\{\d\}/g, ""))) continue;
-  tpl.push({ re: new RegExp(re + "$"), order, ar, lit: en.replace(/\{\d\}|§./g, "").length });
+  // خانات لاصقة ({0}{1} = لون + اسم عادةً) تصير خانة وحدة إذا نفس الترتيب بالعربي، حتى الاسم يترجم كامل
+  const parts = en.split(/((?:\{\d\})+)/), groups = [];
+  let re = "^";
+  for (const p of parts) {
+    if (!p) continue;
+    if (/^(?:\{\d\})+$/.test(p)) {
+      if (p.length > 3 && ar.includes(p)) { re += "([\\s\\S]*?)"; groups.push([p]); }
+      else for (const one of p.match(/\{\d\}/g)) { re += "([\\s\\S]*?)"; groups.push([one]); }
+    } else re += esc(p);
+  }
+  tpl.push({ re: new RegExp(re + "$"), reG: new RegExp(re.split("*?").join("*") + "$"), groups, ar, lit: en.replace(/\{\d\}|§./g, "").length });
 }
 tpl.sort((a, b) => b.lit - a.lit);                                                    // الأطول كلاماً أول (أدق)
 const cache = new Map();
+// كم كلمة إنكليزية باقية (عدا رموز تبقى حتى بالعربي: Lv، XP، S...)
+const KEEP_EN = /^(Lv|XP|S|V1|MAX|HUD|OK|X)$/;
+function enWords(s) { return (String(s).replace(/§./g, "").match(/[A-Za-z]{2,}/g) || []).filter((w) => !KEEP_EN.test(w)).length; }
 function lookup(s, depth) {
   if (s === "" || !/[A-Za-z]/.test(s)) return s;
   const hit = exact.get(s);
@@ -207,9 +214,19 @@ function lookup(s, depth) {
   for (const t of tpl) {
     const m = t.re.exec(s);
     if (!m) continue;
-    let out = t.ar;
-    t.order.forEach((k, gi) => { out = out.split(`{${k}}`).join(trPiece(m[gi + 1], depth + 1)); });
-    return out;
+    const fill = (mm) => { let out = t.ar; t.groups.forEach(([ph], gi) => { out = out.split(ph).join(trPiece(mm[gi + 1], depth + 1)); }); return out; };
+    const a = fill(m), mg = t.reG.exec(s);
+    if (!mg) return a;
+    const b = fill(mg);
+    return enWords(b) < enWords(a) ? b : a;
+  }
+  // رموز/أرقام/مسافات حوالي الكلام (✔ جاهزة، Epic★★★★، (AWAKENED)، 3. اسم): نترجم الكلام اللي بالنص
+  const core = /^([^A-Za-z]*)([A-Za-z](?:[\s\S]*[A-Za-z])?)([^A-Za-z]*)$/.exec(s);
+  if (core && (core[1] || core[3])) {
+    const pun = /^[.!?:]/.test(core[3]) ? core[3][0] : "";
+    if (pun) { const h5 = exact.get(core[2] + pun); if (h5 !== undefined) return core[1] + h5 + core[3].slice(1); }
+    const h4 = exact.get(core[2]);
+    if (h4 !== undefined) return core[1] + h4 + core[3];
   }
   return null;
 }
@@ -234,10 +251,20 @@ export function trText(s) {
   if (typeof s !== "string" || !s) return s;
   const c = cache.get(s);
   if (c !== undefined) return c;
-  const out = s.split("\n").map((line) => { const r = lookup(line, 0); return r !== null ? r : trSegments(line, 0); }).join("\n");
+  const out = s.split("\n").map((line) => { const r = lookup(line, 0); if (r !== null && enWords(r) === 0) return r; const g = trSegments(line, 0); return r !== null && enWords(r) <= enWords(g) ? r : g; }).join("\n");
   if (cache.size > 1500) cache.clear();
   cache.set(s, out);
   return out;
+}
+// سطور الواجهة المرتبة (أسماء بين رموز ألوان وفواصل): السطر كامل إذا إله ترجمة، وإلا كل قطعة لوحدها (أدق من القوالب هنا)
+export function trSeg(s) {
+  if (typeof s !== "string" || !s) return s;
+  return s.split("\n").map((line) => {
+    const e = exact.get(line);
+    if (e !== undefined) return e;
+    const a = lookup(line, 0), b = trSegments(line, 0);
+    return a !== null && enWords(a) <= enWords(b) ? a : b;
+  }).join("\n");
 }
 // نسبة التغطية (للاختبار): كم سطر من النص لگينا إله ترجمة
 export function covered(s) { const r = trText(s); return r !== s || !/[A-Za-z]{3}/.test(s); }
@@ -249,8 +276,8 @@ export const AR_MARK = "§r§r§r";                                             
 // النص للاعب: en = يرجع مثل ما هو؛ ar = يترجم + يقطع + يشكّل ويقلب
 export function show(lang, s, where = "chat") {
   if (lang !== "ar" || typeof s !== "string" || !s) return s;
+  if (where === "hud" || where === "seg") return trSeg(s).split("\n").map(segLine).join("\n");
   const t = trText(s);
-  if (where === "hud" || where === "seg") return t.split("\n").map(segLine).join("\n");
   return visual(t, WIDTH[where] ?? 0);
 }
 // الواجهة والسطور المرتبة (أيقونات وفواصل │): ما نقلب السطر كله (تتخربط الأشرطة المرسومة)، بس كل مقطع عربي ينقلب بمكانه
