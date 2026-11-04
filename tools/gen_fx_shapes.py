@@ -1538,23 +1538,28 @@ def _(S):
 
 @shape("sand_stinger", ground=True)
 def _(S):
-    """إبرة العقرب العملاقة تطلع من الأرض: ذيل مقسم يتقوس لقدام وينتهي بكيس سم أخضر وإبرة حادة، ورمل يتطاير عند القاعدة"""
-    y, z = 0.0, 0.0
-    for k, (w, h, ang) in enumerate(((7, 5, 0), (6.4, 5, -8), (5.8, 4.6, -18), (5.2, 4.4, -30), (4.6, 4.0, -44))):
-        bn = S.bone(f"seg{k}", pivot=(0, y, z), rot=[ang, 0, 0])
-        S.box((0, y + h / 2, z), (w, h, w), CHIT if k % 2 else CHIT_HI, bone=bn)
-        S.box((0, y + h / 2, z - w / 2 - 0.2), (w * 0.5, h * 0.6, 0.4), CHIT_HI, bone=bn)
-        r = math.radians(-ang)
-        y += h * math.cos(r) * 0.95
-        z -= h * math.sin(r) * 0.95
-    bn = S.bone("bulb", pivot=(0, y, z), rot=[-62, 0, 0])
-    S.box((0, y + 2.6, z), (5.4, 5.2, 5.4), VENOM, bone=bn)
-    S.box((0, y + 2.6, z), (3.6, 3.6, 5.8), VENOM_HI, bone=bn, flat=True)
-    S.box((0, y + 6.4, z), (1.8, 3.2, 1.8), CLAW_DK, bone=bn)
-    S.box((0, y + 8.6, z), (0.9, 2.0, 0.9), (20, 20, 24), bone=bn)
+    """إبرة العقرب العملاقة تطلع من الأرض: ذيل من 5 قطع متسلسلة (يطلع شبه عمودي وبعدين كل قطعة تلف أكثر لقدام، مجموع 142°) يتقوس فوق
+    الهدف (-Z) وينتهي بكيس سم أخضر وإبرة سودة تأشر لقدام وتحت، ورمل يتطاير عند القاعدة"""
+    y, parent = 0.0, "body"
+    for k, (w, h, ang) in enumerate(((7.0, 5.6, 0), (6.4, 5.4, 10), (5.8, 5.0, 22), (5.2, 4.6, 34), (4.6, 4.2, 40))):
+        bn = S.bone(f"seg{k}", parent=parent, pivot=(0, y, 0), rot=[ang, 0, 0])
+        S.box((0, y + h / 2, 0), (w, h, w), CHIT if k % 2 else CHIT_HI, bone=bn)
+        S.box((0, y + h * 0.55, -w / 2 - 0.2), (w * 0.5, h * 0.6, 0.4), CHIT_HI, bone=bn)        # صفيحة الظهر
+        S.box((0, y + h - 0.3, 0), (w + 0.6, 0.6, w + 0.6), CLAW_DK, bone=bn)                 # حلقة المفصل
+        y += h
+        parent = bn
+    bn = S.bone("bulb", parent=parent, pivot=(0, y, 0), rot=[36, 0, 0])
+    S.box((0, y + 2.6, 0), (5.4, 5.2, 5.4), VENOM, bone=bn)
+    S.box((0, y + 2.6, 0), (3.6, 3.6, 5.8), VENOM_HI, bone=bn, flat=True)
+    S.box((0, y + 6.2, 0), (2.0, 2.6, 2.0), CLAW_DK, bone=bn)
+    S.box((0, y + 8.2, 0), (1.0, 2.0, 1.0), (20, 20, 24), bone=bn)
+    S.box((0, y + 9.6, 0), (0.5, 1.0, 0.5), VENOM_HI, bone=bn, flat=True)                     # قطرة سم بالرأس
     for i in range(6):
         a = math.radians(i * 60)
-        S.box((math.cos(a) * 5.5, 0.6, math.sin(a) * 5.5), (2.4, 1.2, 2.4), SAND_A)
+        S.box((math.cos(a) * 5.5, 0.6, math.sin(a) * 5.5), (2.4, 1.2, 2.4), SAND_A if i % 2 else SAND_B)
+    for i in range(5):
+        a = math.radians(i * 72 + 30)
+        S.box((math.cos(a) * 8.5, 0.35, math.sin(a) * 8.5), (1.4, 0.7, 1.4), SAND_C)
 
 
 @shape("spirit_antlers")

@@ -659,13 +659,25 @@ export function planTower(seed) {
 }
 
 const PLANNERS = { tower: planTower, village: planVillage, palace: planPalace, ruins: planRuins, shrine: planShrine, temple: planTemple, lightshrine: planLightShrine };
-// يرجع أقرب معبد مسجل (أو لا شي)
+// يرجع أقرب معبد مسجل (أو لا شي). V1: مكان المعبد محفوظ كمان بخاصية مستقلة (sh_temple_at)؛ إذا السجل ضاع منه المعبد
+// نرجعه للسجل منها، حتى ما ينبني معبد استيقاظ ثاني أبداً
 export function findTemple(pos, maxD = 1e9) {
-  let best, bd = maxD;
+  let best, bd = maxD, any = false;
   for (const s of loadReg()) {
     if (s.type !== "temple") continue;
+    any = true;
     const d = Math.hypot(s.x - pos.x, s.z - pos.z);
     if (d < bd) { bd = d; best = s; }
+  }
+  if (!any) {
+    try {
+      const raw = world.getDynamicProperty("sh_temple_at");
+      const t = typeof raw === "string" ? JSON.parse(raw) : undefined;
+      if (t && typeof t.x === "number") {
+        const reg = loadReg(); reg.push({ ...t, type: "temple", ok: 1 }); saveReg(reg);
+        if (Math.hypot(t.x - pos.x, t.z - pos.z) < maxD) best = reg[reg.length - 1];
+      }
+    } catch (e) { /* */ }
   }
   return best;
 }
@@ -689,12 +701,11 @@ export function buildTemple(p, onDone) {
   const rot = Math.abs(dz) >= Math.abs(dx) ? (dz > 0 ? 0 : 2) : (dx < 0 ? 1 : 3);
   const reg = loadReg();
   const seed = Math.floor(Math.random() * 1e9);
-  const rec = { x: site.x, y: site.y, z: site.z, type: "temple", rot, seed };
+  const rec = { x: site.x, y: site.y, z: site.z, type: "temple", rot, seed, v: 2, pi: 0 };
   reg.push(rec);
   saveReg(reg);
-  try { world.setDynamicProperty("sh_temple_built", true); } catch (e) { /* */ }
-  const gen = execute(dim, site.x, site.y, site.z, rot, planTemple(seed), fillChest);
-  system.runJob((function* () { try { yield* gen; } finally { try { if (onDone) onDone(rec); } catch (e) { /* */ } } })());
+  try { world.setDynamicProperty("sh_temple_built", true); world.setDynamicProperty("sh_temple_at", JSON.stringify({ x: rec.x, y: rec.y, z: rec.z, rot, seed })); } catch (e) { /* */ }
+  runBuild(dim, rec, onDone);
   return rec;
 }
 
@@ -756,9 +767,25 @@ function setPerm(dim, at, perm) {
   else { const blk = dim.getBlock(at); if (blk) blk.setPermutation(perm); }
 }
 
-function* execute(dim, ox, oy, oz, rot, plan, onChest) {
+// V1: هل مكان العملية محمل؟ (إذا اللاعب بعد وانشالت المنطقة من الذاكرة، البلوكات ما تنحط وكانت البناية تطلع ناقصة للأبد)
+function opLoaded(dim, ox, oy, oz, rot, op) {
+  try {
+    if (op[0] === "box") {
+      const [ax, az] = rotXZ(op[1], op[3], rot), [bx, bz] = rotXZ(op[4], op[6], rot);
+      return dim.isChunkLoaded({ x: ox + ax, y: oy, z: oz + az }) && dim.isChunkLoaded({ x: ox + bx, y: oy, z: oz + bz });
+    }
+    if (op[0] === "bed") { const [hx, hz] = rotXZ(op[4], op[5], rot); if (!dim.isChunkLoaded({ x: ox + hx, y: oy, z: oz + hz })) return false; }
+    const [x, z] = rotXZ(op[1], op[3], rot);
+    return dim.isChunkLoaded({ x: ox + x, y: oy, z: oz + z });
+  } catch (e) { return false; }
+}
+// ينفذ الخطة من العملية from. يرجع -1 لما تخلص، أو رقم العملية اللي وقف عندها إذا وصل لمكان مو محمل (تكمل بعدين).
+// onProgress(i) كل 150 عملية حتى التقدم ينحفظ (لو انسد العالم بنص البناء تكمل من وين وقفت)
+function* execute(dim, ox, oy, oz, rot, plan, onChest, from = 0, onProgress) {
   let count = 0;
-  for (const op of plan.ops) {
+  for (let i = from; i < plan.ops.length; i++) {
+    const op = plan.ops[i];
+    if (!opLoaded(dim, ox, oy, oz, rot, op)) return i;
     try {
       if (op[0] === "box") {
         const [ax, az] = rotXZ(op[1], op[3], rot), [bx, bz] = rotXZ(op[4], op[6], rot);
@@ -804,7 +831,27 @@ function* execute(dim, ox, oy, oz, rot, plan, onChest) {
       }
     } catch (e) { /* موضع غير صالح: نكمل */ }
     if (++count % 3 === 0) yield;
+    if (onProgress && count % 150 === 0) onProgress(i + 1);
   }
+  return -1;
+}
+// V1: يبني (أو يكمل) بناية مسجلة بالخلفية. التقدم ينحفظ بـ rec.pi؛ إذا وقف (منطقة مو محملة) يرجع يكمل لما يقرب لاعب.
+// لما تخلص: ok = 1 (الحراس والخيميائي ووحوش البرج تشتغل بس على البنايات الكاملة)
+let building = 0;
+function setProgress(rec, i) {
+  const reg = loadReg(), e = reg.find((q) => q.x === rec.x && q.z === rec.z && q.type === rec.type);
+  if (e && !e.ok) { e.pi = i; saveReg(reg); }
+}
+function runBuild(dim, rec, onDone) {
+  building++;
+  const gen = execute(dim, rec.x, rec.y, rec.z, rec.rot, planOf(rec.type, rec.seed), fillChest, rec.pi || 0, (i) => setProgress(rec, i));
+  system.runJob((function* () {
+    let r = rec.pi || 0;
+    try { r = yield* gen; } catch (e) { /* */ } finally {
+      building = Math.max(0, building - 1);
+      if (r === -1) { markBuilt(rec.x, rec.z, rec.type); try { if (onDone) onDone(rec); } catch (e) { /* */ } } else setProgress(rec, r);
+    }
+  })());
 }
 
 // ───────────────────────── اختيار الموقع ─────────────────────────
@@ -838,33 +885,67 @@ function pickSite(dim, center, minD, maxD, half) {
 }
 
 // ───────────────────────── السجل والتشغيل ─────────────────────────
-let migrating = false;
+// V1: السجل يتخزن على أجزاء (كل خاصية نص حدها ~32 ألف حرف): sh_structs + sh_structs_1.. وعددها بـ sh_structs_n،
+// حتى العوالم اللي بيها مئات البنايات ما يوقف حفظها (لو وقف الحفظ ممكن تنبني بناية فوق بناية، أو يرجع ينبني معبد ثاني).
+// ونخلي نسخة محللة بالذاكرة (القراءة كانت JSON.parse كل كم تكة)؛ تنقرأ من جديد بس إذا تغير النص المخزن.
+const REG_KEY = "sh_structs", REG_PART = 30000;
+let regCache = null, regRaw0;
+function readRegRaw() {
+  let raw = world.getDynamicProperty(REG_KEY);
+  if (typeof raw !== "string") return undefined;
+  const n = world.getDynamicProperty(`${REG_KEY}_n`);
+  if (typeof n === "number") for (let i = 1; i <= n; i++) { const part = world.getDynamicProperty(`${REG_KEY}_${i}`); if (typeof part === "string") raw += part; }
+  return raw;
+}
 function loadReg() {
-  try {
-    const raw = world.getDynamicProperty("sh_structs");
-    if (typeof raw === "string") { const r = JSON.parse(raw); if (!migrating) { migrating = true; try { return migrateReg(r); } finally { migrating = false; } } return r; }
-  } catch (e) { /* */ }
-  return [];
+  let raw0;
+  try { raw0 = world.getDynamicProperty(REG_KEY); } catch (e) { /* */ }
+  if (regCache && raw0 === regRaw0) return regCache;
+  let r = [];
+  try { const raw = readRegRaw(); if (raw !== undefined) { const j = JSON.parse(raw); if (Array.isArray(j)) r = j; } } catch (e) { /* */ }
+  regCache = r; regRaw0 = raw0;
+  migrateReg(r);                                                              // (إذا شال شي يحفظ ويبدل regCache)
+  return regCache;
 }
 function saveReg(r) {
-  try { world.setDynamicProperty("sh_structs", JSON.stringify(r)); } catch (e) { /* */ }
+  regCache = r;
+  try {
+    const txt = JSON.stringify(r), parts = [];
+    for (let i = 0; i < txt.length; i += REG_PART) parts.push(txt.slice(i, i + REG_PART));
+    if (!parts.length) parts.push("[]");
+    const old = world.getDynamicProperty(`${REG_KEY}_n`);
+    for (let i = 1; i < parts.length; i++) world.setDynamicProperty(`${REG_KEY}_${i}`, parts[i]);
+    for (let i = parts.length; i <= (typeof old === "number" ? old : 0); i++) world.setDynamicProperty(`${REG_KEY}_${i}`, undefined);
+    world.setDynamicProperty(`${REG_KEY}_n`, parts.length - 1);
+    world.setDynamicProperty(REG_KEY, parts[0]);
+    regRaw0 = parts[0];
+  } catch (e) { /* */ }
   try { towerCache.tick = -999; } catch (e) { /* */ }                          // سطر البرج بالـHUD يتحدث فوراً
+}
+// كل بنايات العالم (للبوصلة والمعبد وغيرها بـ main.js): نفس النسخة اللي بالذاكرة، للقراءة بس
+export function structList() { return loadReg(); }
+// الخطط ثابتة حسب البذرة: نخلي آخر كم خطة بالذاكرة (برج الهاوية كان ينخطط من جديد كل نص ثانية واللاعب جواه)
+const planCache = new Map();
+function planOf(type, seed) {
+  const k = `${type}:${seed}`;
+  let pl = planCache.get(k);
+  if (!pl) { pl = PLANNERS[type](seed); planCache.set(k, pl); if (planCache.size > 12) planCache.delete(planCache.keys().next().value); }
+  return pl;
 }
 // الضريحان القديمان (قبل 1.28.0: بحجم 27×27 وصندوق جاهز) ننساهن من السجل حتى ينبنون الجداد 45×45 بحراسهم (المباني القديمة تبقى بالعالم)
 function migrateReg(r) {
   const out = r.filter((s) => !((s.type === "shrine" || s.type === "lightshrine") && !s.v));
   if (out.length !== r.length) saveReg(out);
-  return out;
 }
 function markBuilt(x, z, type) {
   const reg = loadReg();
   const e = reg.find((s) => s.x === x && s.z === z && s.type === type);
-  if (e) { e.ok = 1; saveReg(reg); }
+  if (e) { e.ok = 1; delete e.pi; saveReg(reg); }
 }
 let guardHook;
 // الحارسان القويان: نظهر اللي ما انقتل وما هو موجود (إذا تبخر بالبعد نعيده). النوع يتحدد من خطة الضريح (plan.spawns)
 function ensureBosses(p, s) {
-  const plan = PLANNERS[s.type](s.seed);
+  const plan = planOf(s.type, s.seed);
   const dim = p.dimension, centre = { x: s.x, y: s.y + 1, z: s.z }, dead = s.kt || [];
   for (const sp of plan.spawns) {
     if (dead.includes(sp.type)) continue;
@@ -898,7 +979,7 @@ export function onShrineBossDeath(typeId, loc, dim, tagged = true) {
 }
 // الختم ينكسر: صندوق السيف يظهر قدام المنارة، مع أصوات وجزيئات ماينكرافت
 function openSeal(dim, s) {
-  const plan = PLANNERS[s.type](s.seed), rw = plan.rewardAt;
+  const plan = planOf(s.type, s.seed), rw = plan.rewardAt;
   if (!rw) return;
   const [x, z] = rotXZ(rw.x, rw.z, s.rot);
   const loc = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
@@ -918,12 +999,11 @@ function openSeal(dim, s) {
   }
 }
 
-let building = false;
 const announced = new Set();
 
 // الضريح نادر وسيفه مهم، فإذا بُنيت 3 بنايات بدون ضريح نضمنه بالجاية (حتى ما يقعد اللاعب يدور عليه للأبد)
 const SHRINE_PITY = 2;
-function chooseType(reg = []) {
+export function chooseType(reg = []) {
   const has = (t) => reg.some((s) => s.type === t);
   if (!has("shrine") && reg.length >= SHRINE_PITY) return "shrine";
   if (!has("lightshrine") && has("shrine") && reg.length >= SHRINE_PITY + 2) return "lightshrine";
@@ -1011,7 +1091,7 @@ function towerTick() {
         const ly = p.location.y - s.y;
         if (ly < -0.5 || ly >= TOWER_FH * TOWER_FLOORS) continue;
         const k = Math.max(0, Math.min(TOWER_FLOORS - 1, Math.floor((ly + 0.2) / TOWER_FH)));
-        const plan = planTower(s.seed), dim = p.dimension, top = k === TOWER_FLOORS - 1;
+        const plan = planOf("tower", s.seed), dim = p.dimension, top = k === TOWER_FLOORS - 1;
         s.fl = s.fl || 0; s.ft = s.ft || {}; s.cl = s.cl || 0;
         if (!(s.fl & (1 << k))) {
           s.fl |= 1 << k;
@@ -1046,7 +1126,7 @@ function towerTick() {
   }
 }
 function towerChest(dim, s) {
-  const plan = planTower(s.seed), rw = plan.rewardAt;
+  const plan = planOf("tower", s.seed), rw = plan.rewardAt;
   const [x, z] = rotXZ(rw.x, rw.z, s.rot);
   const at = { x: s.x + x, y: s.y + rw.y, z: s.z + z };
   dim.setBlockType(at, "minecraft:chest");
@@ -1149,8 +1229,8 @@ export function setupStructures(onGuardSpawn) {
         if (reg.some((s) => Math.hypot(s.x - site.x, s.z - site.z) < 125)) continue;
         const seed = Math.floor(Math.random() * 1e9);
         const rot = Math.floor(Math.random() * 4);
-        const plan = PLANNERS[type](seed);
-        reg.push({ x: site.x, y: site.y, z: site.z, type, rot, seed, v: 2 });
+        const rec = { x: site.x, y: site.y, z: site.z, type, rot, seed, v: 2, pi: 0 };
+        reg.push(rec);
         saveReg(reg);
         // نخبر اللاعب وين طلعت البناية (حتى ما يدور بدون فايدة)
         try {
@@ -1160,13 +1240,26 @@ export function setupStructures(onGuardSpawn) {
           p.sendMessage(`§6[Explore] §fA structure appeared nearby: §e${spec.name}§f, ${Math.round(Math.hypot(dx, dz))} blocks to the ${dir}. §7Use the Explorer's Compass.`);
           if (!p.getDynamicProperty("sh_ctarget")) p.setDynamicProperty("sh_ctarget", type);
         } catch (e6) { /* */ }
-        building = true;
-        const gen = execute(p.dimension, site.x, site.y, site.z, rot, plan, fillChest);
-        const job = system.runJob((function* () { try { yield* gen; } finally { building = false; markBuilt(site.x, site.z, type); } })());
+        runBuild(p.dimension, rec);
         return;
-      } catch (e) { building = false; }
+      } catch (e) { /* */ }
     }
   }, 400);
+  // V1: إكمال البنايات اللي انقطع بناؤها (اللاعب بعد، أو انسد العالم بنص البناء): لما يقرب لاعب والمنطقة محملة
+  system.runInterval(() => {
+    if (building) return;
+    try {
+      const dim = world.getDimension("minecraft:overworld");
+      for (const s of loadReg()) {
+        if (s.ok || typeof s.pi !== "number" || !STRUCTURES[s.type]) continue;
+        if (!world.getAllPlayers().some((p) => p.dimension.id === dim.id && Math.hypot(p.location.x - s.x, p.location.z - s.z) < 96)) continue;
+        const half = s.type === "temple" ? TEMPLE_HALF : STRUCTURES[s.type].half;
+        if (![[half, half], [-half, half], [half, -half], [-half, -half]].every(([dx, dz]) => dim.isChunkLoaded({ x: s.x + dx, y: s.y, z: s.z + dz }))) continue;
+        runBuild(dim, s);
+        return;
+      }
+    } catch (e) { /* */ }
+  }, 100);
 
   // كشف الموقع + إعادة ظهور الحراس
   system.runInterval(() => {
@@ -1199,7 +1292,7 @@ export function setupStructures(onGuardSpawn) {
         }
         if (d < 40 && STRUCTURES[s.type].guards > 0) {
           try {
-            const plan = PLANNERS[s.type](s.seed);
+            const plan = planOf(s.type, s.seed);
             const near = p.dimension.getEntities({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 24, families: ["sh_rank0"] });
             if (near.length >= STRUCTURES[s.type].guards) continue;
             for (const sp of plan.spawns) {

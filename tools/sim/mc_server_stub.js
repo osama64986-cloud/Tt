@@ -125,7 +125,7 @@ function mkDim(id) {
     spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); if (FX_TIMERS[type]) e._dieAt = tick + FX_TIMERS[type]; entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
     getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
-    isChunkLoaded() { return true; },
+    isChunkLoaded() { return !globalThis.__unloaded; },
     getEntities(q = {}) {
       return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis','sh:hollow_harvester'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis','sh:hollow_harvester'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
         && (!q.location || !q.maxDistance || Math.hypot(e.location.x - q.location.x, e.location.z - q.location.z) <= q.maxDistance));
@@ -538,6 +538,20 @@ export const __sim = {
         const keep = st.power;
         player.location = { x: temple.x + 0.5, y: temple.y + 1, z: temple.z + 0.5 }; advance(300);
         if (JSON.parse(player.getDynamicProperty("sh")).power !== keep) failures.push("البلورة غيرت قدرة موجودة");
+        // V1: معبد الاستيقاظ مرة وحدة: أمر التجربة ما يبني ثاني، ولو ضاع من السجل يرجع من sh_temple_at بدل ما ينبني جديد
+        const temples = () => { const raw = (world._dyn.sh_structs || "[]") + Array.from({ length: world._dyn.sh_structs_n || 0 }, (_, i) => world._dyn[`sh_structs_${i + 1}`] || "").join(""); return JSON.parse(raw).filter((r) => r.type === "temple"); };
+        const builtOk = temples()[0] && temples()[0].ok === 1 && temples()[0].pi === undefined;
+        fire("scriptEventReceive", { id: "sh:temple", message: "here", sourceEntity: player }); advance(40);
+        const afterCmd = temples().length;
+        const st2 = JSON.parse(player.getDynamicProperty("sh")); const pw = st2.power; st2.power = null; st2.powerless = false; player.setDynamicProperty("sh", JSON.stringify(st2));
+        world.setDynamicProperty("sh_structs", JSON.stringify(JSON.parse(world._dyn.sh_structs).filter((r) => r.type !== "temple")));
+        fire("playerSpawn", { player, initialSpawn: false }); advance(400);
+        const healed = temples();
+        st2.power = pw; player.setDynamicProperty("sh", JSON.stringify(st2));
+        console.log(`  معبد الاستيقاظ: كامل ok ${builtOk ? "✔" : "✖"} | بعد أمر التجربة عدد المعابد ${afterCmd} ${afterCmd === 1 ? "✔" : "✖"} | ضاع من السجل ورجع بنفس المكان ${healed.length === 1 && healed[0].x === temple.x && healed[0].z === temple.z ? "✔" : "✖"}`);
+        if (!builtOk) failures.push("معبد الاستيقاظ ما انعلم كامل (ok) بعد البناء");
+        if (afterCmd !== 1) failures.push("أمر التجربة بنى معبد استيقاظ ثاني");
+        if (!(healed.length === 1 && healed[0].x === temple.x && healed[0].z === temple.z)) failures.push("معبد الاستيقاظ انبنى مرة ثانية بعد ما ضاع من السجل");
       }
       // بلا قدرة (Unbound): قوة وسرعة
       const effs0 = effectLog.length;
@@ -726,7 +740,9 @@ export const __sim = {
       const sid = (n) => Number((SH.match(new RegExp('"' + n + '": (\\d+)')) || [])[1]);
       const cases = [["sh:ember_imp", 9, "fireball"], ["sh:rust_guard", 9, "rock_chunk"], ["sh:shadow_hound", 7, "fang_jaw"], ["sh:sand_scorpion", 8, "particle:minecraft:splash_spell_emitter"]];   // العقرب: انفجار السم صار رشة جرعة حقيقية (جزيء) مو شكل
       console.log("\nمهارات الوحوش الخاصة:");
+      const extraLow = { "sh:shadow_hound": ["shade_portal"], "sh:sand_scorpion": ["sand_mound", "sand_stinger"] };   // V1: أشكال 3D لمهارات الوحوش
       for (const [type, dist, shape] of cases) {
+        stats.shapeV = {};
         entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 400; player._max = 400; player._valid = true;
         const m = mkEntity(type, { x: 0, y: 64, z: dist }, dims.overworld, 60); entities.push(m);
         const d0 = stats.damage || 0; let seen = 0; const zones0 = stats.spawned;
@@ -734,7 +750,9 @@ export const __sim = {
         const keepRange = type === "sh:ember_imp";                                // العفريت لو انقض أول مرة يقرب ويبقى قريب وما يرمي كرة النار (اختبار عشوائي): نرجعه للمسافة
         for (let t = 0; t < 1500; t += 2) { advance(2); if (pid ? ((stats.pById || {})[pid] || 0) > pc0 : entities.some((e) => e._valid && e.typeId === "sh:fx_shape" && e.getProperty("sh:v") === sid(shape))) seen++; player.location = { x: 0, y: 64, z: 0 }; if (keepRange && !seen) m.location = { x: 0, y: 64, z: dist }; }
         const dmg = Math.round((stats.damage || 0) - d0);
-        console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}`);
+        const ex = (extraLow[type] || []).map((n) => `${n}×${stats.shapeV[sid(n)] || 0}`).join(" ");
+        console.log(`  ${type.padEnd(18)} مسافة ${dist}: شكل ${shape} ${seen ? "✔" : "✖"} | ضرر للاعب ${dmg} | كيانات ${stats.spawned - zones0}${ex ? " | " + ex : ""}`);
+        for (const n of extraLow[type] || []) if (!stats.shapeV[sid(n)]) failures.push(`${type}: الشكل ${n} ما انرسم`);
         if (!seen) failures.push(`${type}: المهارة الخاصة (${shape}) ما طلعت`);
         if (dmg <= 0) failures.push(`${type}: ما ضرب اللاعب`);
       }
@@ -761,7 +779,7 @@ export const __sim = {
       const want = { "sh:gloomhorn": { 3: "نبض القلب", 2: "الاندفاع والنطح", 4: "روح الغزال" }, "sh:hollow_seer": { 1: "الشعاع البرتقالي", 2: "جذور الأرض", 3: "زفير التجميد" }, "sh:veilfox": { 1: "ثعبان نار الثعلب", 2: "دوّامة المرايا", 3: "مطر الشمس", 4: "رفع القمر" }, "sh:magmamoth": { 1: "دكة الشقوق", 2: "كنس الجحيم", 3: "اندفاع الأنياب", 4: "القصف البركاني", 5: "درع الماغما" } , "sh:grey_bear": { 1: "عناق الدب", 4: "الخرمشة", 5: "نداء الجراء", 6: "السبات" } };
       const plans = { "sh:gloomhorn": [[2.5, 400], [9, 2400]], "sh:hollow_seer": [[4, 2800], [7, 2000], [14, 1200]], "sh:veilfox": [[4, 3600], [12, 3600]], "sh:magmamoth": [[4, 3600], [12, 4200]], "sh:grey_bear": [[2.5, 3600], [8, 3600]] };
       const SHP = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
-      const wantShapes = { "sh:gloomhorn": ["spirit_stag"], "sh:hollow_seer": ["root_spike", "soul_orb"], "sh:veilfox": ["foxfire"], "sh:magmamoth": ["fireball"], "sh:grey_bear": [] };
+      const wantShapes = { "sh:gloomhorn": ["spirit_stag", "spirit_antlers", "soul_wave", "soul_chain"], "sh:hollow_seer": ["root_spike", "soul_orb", "seer_beam"], "sh:veilfox": ["foxfire", "fox_moon"], "sh:magmamoth": ["fireball", "magma_ring", "magma_fissure", "magma_geyser", "magma_plates"], "sh:grey_bear": ["bear_claws", "roar_wave", "bear_grip", "sleep_z"] };
       for (const type of Object.keys(want)) {
         const seenStates = new Set(); let dmgNear = 0, dmgFar = 0;
         stats.shapeV = {}; stats.pById = {};
@@ -790,6 +808,16 @@ export const __sim = {
           if (!beamFlame || !pb["minecraft:glow_particle"]) failures.push("الشعاع: جزيئات الشعاع ما انرسمت");
         }
         if (dmgNear <= 0 || dmgFar <= 0) failures.push(`${type}: ما ضرب اللاعب`);
+        {                                                                     // V1: الوحش يموت بنص مهارة: أشكال الحالة (قرون، كفوف، Z، سلاسل) تنشال
+          const LIVE = ["spirit_antlers", "soul_chain", "bear_grip", "sleep_z", "hollow_eyes", "puppet_string"].map((n) => SHP[n]);
+          const liveNow = () => entities.filter((e) => e._valid && e.typeId === "sh:fx_shape" && LIVE.includes(e.getProperty("sh:v"))).length;
+          const mm = entities.find((e) => e._valid && e.typeId === type);
+          let leak = -1;
+          if (mm) { for (let t = 0; t < 1200 && !liveNow(); t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; }
+            if (liveNow()) { mm._valid = false; fire("entityDie", { deadEntity: mm, damageSource: { damagingEntity: player } }); advance(6); leak = liveNow(); } }
+          if (leak > 0) failures.push(`${type}: شكل مهارة بقى معلق بعد موت الوحش (${leak})`);
+          if (leak >= 0) console.log(`  ${"".padEnd(16)} موت بنص المهارة: أشكال معلقة ${leak}`);
+        }
       }
       {
         entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000; player._valid = true;
@@ -943,6 +971,8 @@ export const __sim = {
       const harv = (z) => { const m = mkEntity("sh:hollow_harvester", { x: 0, y: 64, z }, dims.overworld, 320); m._max = 320; m._yaw = 180; entities.push(m); return m; };
       const waitState = (m, want, z, maxT = 6000) => { for (let t = 0; t < maxT; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (m.getProperty("sh:state") === want) return true; if (m.getProperty("sh:state") === 0 && t % 40 === 0) m.location = { x: 0, y: 64, z }; } return false; };
       const heard = (id) => stats.soundIds.has(id);
+      const SHH = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "../../../scripts/shapes.js"), "utf8").match(/SHAPE = (\{.*?\});/)[1]);
+      stats.shapeV = {};
       // 1) الخيوط تسحب
       clear(); let m = harv(9); stats.soundIds.clear();
       const strings = waitState(m, 1, 9); const k0 = stats.knock || 0, d0 = stats.damage || 0;
@@ -965,6 +995,7 @@ export const __sim = {
       clear(); hold("sh:ember_cleaver"); m = harv(2.5); const d1 = stats.damage || 0;
       const reap = waitState(m, 4, 2.5); for (let t = 0; t < 16; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; }
       const reapDmg = Math.round((stats.damage || 0) - d1);
+      const harvShapes = ["puppet_string", "hollow_eyes", "reap_arc", "seal_sigil"].map((n) => [n, stats.shapeV[SHH[n]] || 0]);   // V1: أشكال 3D لمهارات الفزاعة
       m._valid = false; stats.actionBars = []; stats.titles = [];
       fire("itemUse", { source: player, itemStack: new ItemStack("sh:ember_cleaver") }); advance(10);
       const blocked = stats.actionBars.concat(stats.titles || []).some((t) => /SEALED/.test(t));
@@ -1002,6 +1033,8 @@ export const __sim = {
       console.log(`  المنجل الخاتم ${reap ? "✔" : "✖"} ضرر ${reapDmg} | الساطور مختوم ${blocked ? "✔" : "✖"} | المطرقة حرة ${otherFree ? "✔" : "✖"} | بعد 8 ثواني ينفك ${freed ? "✔" : "✖"}`);
       console.log(`  النار: يتخبط ${burnState ? "✔" : "✖"} يتفحم ${hot ? "✔" : "✖"} بدون مهارات ${!skillWhileBurning ? "✔" : "✖"} يرجع ${recovered ? "✔" : "✖"} ينطفي التفحم ${cooled ? "✔" : "✖"} | المنجل نادر ${(scyRate * 100).toFixed(1)}% (${scythes}/${NK}) ${scyRate > 0.015 && scyRate < 0.1 ? "✔" : "✖"}`);
       console.log(`  سلاح المنجل: حصدة ضرر ${arcDmg} صوت ${arcSnd ? "✔" : "✖"} | خيوط تسحب ${strPulled ? "✔" : "✖"} | حصاد الضعيف ${reaped ? "✔" : "✖"}`);
+      console.log(`  أشكال المهارات: ${harvShapes.map(([n, c]) => `${n}×${c}`).join(" ")}`);
+      for (const [n, c] of harvShapes) if (!c) failures.push(`الحاصد: الشكل ${n} ما انرسم`);
       if (!strings || !yanked || !pulled || !strSnd) failures.push("الحاصد: خيوط الدمية ما سحبت");
       if (!strings2 || !snapped || yank2) failures.push("الحاصد: الداش ما يقطع الخيوط");
       if (!stare || !stareOk) failures.push("الحاصد: النظرة الجوفاء لازم Slowness I بس وبدون ظلام");
@@ -1073,6 +1106,47 @@ export const __sim = {
       }
       entities.forEach((x) => (x._valid = false)); entities.length = 0; world.setDynamicProperty("sh_structs", "[]");
       player._hp = 20; player._max = 20; player._valid = true;
+    }
+    // V1: البنايات الفريدة والسجل: كل ضريح مرة وحدة بالعالم، السجل على أجزاء، والبناء المقطوع يكمل من وين وقف
+    {
+      console.log("\nالبنايات الفريدة والسجل:");
+      const ST = await import(new URL("../../../scripts/structures.js", import.meta.url).href);
+      let dupe = 0;
+      const both = [{ type: "village" }, { type: "shrine" }, { type: "lightshrine" }, { type: "tower" }, { type: "temple" }];
+      for (let i = 0; i < 4000; i++) { const t = ST.chooseType(both); if (t === "shrine" || t === "lightshrine" || t === "temple") dupe++; }
+      const pity1 = ST.chooseType([{ type: "village" }, { type: "tower" }]) === "shrine";
+      const pity2 = ST.chooseType([{ type: "village" }, { type: "tower" }, { type: "shrine" }, { type: "ruins" }]) === "lightshrine";
+      // سجل كبير (900 بناية) على أجزاء: ينقرى كامل، ويضيف بناية وينحفظ أجزاء كل وحدة أقل من 30 ألف حرف
+      const big = Array.from({ length: 900 }, (_, i) => ({ x: 5000 + i * 200, y: 64, z: 5000, type: "tower", rot: 0, seed: i, v: 2, ok: 1, fl: 127, cl: 63, ft: { 0: [], 1: [] }, fn: { 0: 3, 1: 4 } }));
+      const txt = JSON.stringify(big); world._dyn = { ...world._dyn };
+      const parts = []; for (let i = 0; i < txt.length; i += 30000) parts.push(txt.slice(i, i + 30000));
+      parts.forEach((q, i) => world.setDynamicProperty(i ? `sh_structs_${i}` : "sh_structs", q)); world.setDynamicProperty("sh_structs_n", parts.length - 1);
+      const readBack = ST.structList().length;
+      world.setDynamicProperty("sh_temple_at", JSON.stringify({ x: 7, y: 64, z: 7, rot: 0, seed: 3 }));
+      ST.findTemple({ x: 0, y: 64, z: 0 });                                       // ما بالسجل معبد: يرجع من sh_temple_at وينحفظ
+      const n2 = world._dyn.sh_structs_n || 0, saved = [world._dyn.sh_structs, ...Array.from({ length: n2 }, (_, i) => world._dyn[`sh_structs_${i + 1}`])];
+      const partsOk = saved.every((q) => typeof q === "string" && q.length <= 30000), total = JSON.parse(saved.join("")).length;
+      // البناء المقطوع: خرائب تنبني، المنطقة تنشال بنصها (اللاعب بعد) فتوقف وتحفظ التقدم، وترجع تكمل من نفس المكان لما يرجع
+      world.setDynamicProperty("sh_structs", JSON.stringify([{ x: 40, y: 64, z: 0, type: "ruins", rot: 0, seed: 9, v: 2, pi: 0 }])); world.setDynamicProperty("sh_structs_n", 0);
+      world.setDynamicProperty("sh_temple_at", undefined);
+      entities.forEach((x) => (x._valid = false)); entities.length = 0; player.location = { x: 0, y: 64, z: 0 };
+      const reg1 = () => JSON.parse(world._dyn.sh_structs)[0];
+      let started = false; for (let t = 0; t < 200 && !started; t += 2) { advance(2); started = (reg1().pi || 0) > 0; }
+      globalThis.__unloaded = true; advance(60);
+      const paused = reg1(), pausedAt = paused.pi;
+      advance(300); const still = reg1().pi === pausedAt && !reg1().ok;          // وهي مقطوعة ما تتحرك
+      globalThis.__unloaded = false;
+      let done = false; for (let t = 0; t < 20000 && !done; t += 10) { advance(10); done = reg1().ok === 1; }
+      const fin = reg1();
+      console.log(`  الضريحين ما يتكررون (4000 اختيار) ${dupe === 0 ? "✔" : "✖ " + dupe} | ضمان الضريح المظلم ${pity1 ? "✔" : "✖"} ثم المضيء ${pity2 ? "✔" : "✖"}`);
+      console.log(`  سجل 900 بناية على ${parts.length} أجزاء: انقرى ${readBack} ${readBack === 900 ? "✔" : "✖"} | انحفظ ${total} بأجزاء ≤30000 ${partsOk && total === 901 ? "✔" : "✖"}`);
+      console.log(`  بناء مقطوع: بدى ${started ? "✔" : "✖"} | وقف عند ${pausedAt} بدون ok ${!paused.ok && pausedAt > 0 ? "✔" : "✖"} | ما يتحرك وهو مقطوع ${still ? "✔" : "✖"} | كمل وخلص ${fin.ok === 1 && fin.pi === undefined ? "✔" : "✖"}`);
+      if (dupe) failures.push(`الضريح أو المعبد ممكن يتكرر (${dupe} مرة من 4000)`);
+      if (!pity1 || !pity2) failures.push("ضمان ظهور الضريحين ما يشتغل");
+      if (readBack !== 900 || !partsOk || total !== 901) failures.push("سجل البنايات على أجزاء ما ينقرى أو ينحفظ صح");
+      if (!started || paused.ok || !(pausedAt > 0) || !still || fin.ok !== 1 || fin.pi !== undefined) failures.push("البناء المقطوع ما يكمل من وين وقف");
+      globalThis.__unloaded = false; entities.forEach((x) => (x._valid = false)); entities.length = 0;
+      world.setDynamicProperty("sh_structs", "[]"); world.setDynamicProperty("sh_structs_n", 0);
     }
     // برج الهاوية: وحوش كل طابق تطلع أول ما يوصله اللاعب (مرة وحدة)، والطابق السابع وحوش عالية؛ موتهم يطلّع صندوق القمة
     {

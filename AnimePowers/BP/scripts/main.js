@@ -4,7 +4,7 @@ import { ActionFormData } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo } from "./structures.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo, structList } from "./structures.js";
 import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
@@ -5558,14 +5558,8 @@ const COMPASS_TARGETS = [
   { key: "nearest", name: "Nearest (any destination)" },
 ];
 const COMPASS_NAMES = { tower: "Abyss Tower", village: "Sakura Village", palace: "Sunset Palace", ruins: "Temple Ruins", shrine: "Dark Sword Shrine", temple: "Star Temple", lightshrine: "Light Sword Shrine" };
-const structCache = { tick: -9999, list: [] };
-function getStructs() {
-  if (system.currentTick - structCache.tick > 100) {
-    structCache.tick = system.currentTick;
-    try { const raw = world.getDynamicProperty("sh_structs"); structCache.list = typeof raw === "string" ? JSON.parse(raw) : []; } catch (e) { structCache.list = []; }
-  }
-  return structCache.list;
-}
+// كل البنايات المسجلة (V1: من سجل structures.js نفسه، المخزن على أجزاء والمحفوظ بالذاكرة)
+function getStructs() { try { return structList(); } catch (e) { return []; } }
 const trainerCache = new Map();
 function trainerPos(p) {
   const c = trainerCache.get(p.id), now = system.currentTick;
@@ -7280,7 +7274,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       else { const t = RIFT_TIERS.findIndex((x) => x.key === msg); const ok = openRift(p, t >= 0 ? t : 0, true); say(p, ok ? "§aA rift opened near you" : "§cCould not open a rift here (one is already open, or no ground)"); }
 
     } else if (ev.id === "sh:shard" || ev.id === "sh:temple") {
-      if (msg === "here" || ev.id === "sh:temple") { buildTemple(p, (rec) => guideTemple(p, rec)); say(p, "§bA Star Temple is rising near you"); }
+      // معبد الاستيقاظ مرة وحدة بالعالم (حتى أمر التجربة ما يبني ثاني): إذا موجود يدلك عليه
+      const t0 = findTemple(p.location);
+      if (t0) { guideTemple(p, t0); say(p, "§7The Star Temple already exists. §8It appears only once in a world."); }
+      else if (msg === "here" || ev.id === "sh:temple") { buildTemple(p, (rec) => guideTemple(p, rec)); say(p, "§bA Star Temple is rising near you"); }
       else ensureTemple(p);
     } else if (ev.id === "sh:redraw") {
       const st = getState(p); st.power = null; st.powerless = false; saveState(p, st); removeSkillItems(p); say(p, "§bYour power was released. Step on a temple crystal to draw again.");
