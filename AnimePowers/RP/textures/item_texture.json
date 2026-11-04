@@ -1,0 +1,273 @@
+{
+  "resource_pack_name": "sh",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "sh_book": {
+      "textures": "textures/items/sh_book"
+    },
+    "sh_seal": {
+      "textures": "textures/items/sh_seal"
+    },
+    "sh_subtract": {
+      "textures": "textures/items/sh_subtract"
+    },
+    "sh_weight": {
+      "textures": "textures/items/sh_weight"
+    },
+    "sh_silence": {
+      "textures": "textures/items/sh_silence"
+    },
+    "sh_dagger": {
+      "textures": "textures/items/sh_dagger"
+    },
+    "sh_cleaver": {
+      "textures": "textures/items/sh_cleaver"
+    },
+    "sh_transfer": {
+      "textures": "textures/items/sh_transfer"
+    },
+    "sh_divide": {
+      "textures": "textures/items/sh_divide"
+    },
+    "sh_zero": {
+      "textures": "textures/items/sh_zero"
+    },
+    "sh_reflect": {
+      "textures": "textures/items/sh_reflect"
+    },
+    "sh_boundary": {
+      "textures": "textures/items/sh_boundary"
+    },
+    "sh_absolute": {
+      "textures": "textures/items/sh_absolute"
+    },
+    "sh_pull": {
+      "textures": "textures/items/sh_pull"
+    },
+    "sh_push": {
+      "textures": "textures/items/sh_push"
+    },
+    "sh_swap": {
+      "textures": "textures/items/sh_swap"
+    },
+    "sh_fold": {
+      "textures": "textures/items/sh_fold"
+    },
+    "sh_spacecollapse": {
+      "textures": "textures/items/sh_spacecollapse"
+    },
+    "sh_echostrike": {
+      "textures": "textures/items/sh_echostrike"
+    },
+    "sh_echoseal": {
+      "textures": "textures/items/sh_echoseal"
+    },
+    "sh_sonar": {
+      "textures": "textures/items/sh_sonar"
+    },
+    "sh_echowave": {
+      "textures": "textures/items/sh_echowave"
+    },
+    "sh_chorus": {
+      "textures": "textures/items/sh_chorus"
+    },
+    "sh_scroll_small": {
+      "textures": "textures/items/sh_scroll_small"
+    },
+    "sh_scroll_big": {
+      "textures": "textures/items/sh_scroll_big"
+    },
+    "sh_shadow": {
+      "textures": "textures/items/sh_shadow"
+    },
+    "sh_maul": {
+      "textures": "textures/items/sh_maul"
+    },
+    "sh_spear": {
+      "textures": "textures/items/sh_spear"
+    },
+    "sh_compass": {
+      "textures": "textures/items/sh_compass"
+    },
+    "sh_monster_book": {
+      "textures": "textures/items/sh_monster_book"
+    },
+    "sh_ironskin": {
+      "textures": "textures/items/sh_ironskin"
+    },
+    "sh_ironfist": {
+      "textures": "textures/items/sh_ironfist"
+    },
+    "sh_windrun": {
+      "textures": "textures/items/sh_windrun"
+    },
+    "sh_windleap": {
+      "textures": "textures/items/sh_windleap"
+    },
+    "sh_gale": {
+      "textures": "textures/items/sh_gale"
+    },
+    "sh_time": {
+      "textures": "textures/items/sh_time"
+    },
+    "sh_shards": {
+      "textures": "textures/items/sh_shards"
+    },
+    "sh_crystalshield": {
+      "textures": "textures/items/sh_crystalshield"
+    },
+    "sh_prison": {
+      "textures": "textures/items/sh_prison"
+    },
+    "sh_burst": {
+      "textures": "textures/items/sh_burst"
+    },
+    "sh_rockskin": {
+      "textures": "textures/items/sh_rockskin"
+    },
+    "sh_fangs": {
+      "textures": "textures/items/sh_fangs"
+    },
+    "sh_windwings": {
+      "textures": "textures/items/sh_windwings"
+    },
+    "sh_huntereye": {
+      "textures": "textures/items/sh_huntereye"
+    },
+    "sh_adapt": {
+      "textures": "textures/items/sh_adapt"
+    },
+    "sh_spacerewind": {
+      "textures": "textures/items/sh_spacerewind"
+    },
+    "sh_claws": {
+      "textures": "textures/items/sh_claws"
+    },
+    "sh_katana": {
+      "textures": "textures/items/sh_katana"
+    },
+    "sh_meteor": {
+      "textures": "textures/items/sh_meteor"
+    },
+    "sh_gravwell": {
+      "textures": "textures/items/sh_gravwell"
+    },
+    "sh_orbit": {
+      "textures": "textures/items/sh_orbit"
+    },
+    "sh_constellation": {
+      "textures": "textures/items/sh_constellation"
+    },
+    "sh_stardash": {
+      "textures": "textures/items/sh_stardash"
+    },
+    "sh_blackhole": {
+      "textures": "textures/items/sh_blackhole"
+    },
+    "sh_supernova": {
+      "textures": "textures/items/sh_supernova"
+    },
+    "sh_skill_scroll": {
+      "textures": "textures/items/sh_skill_scroll"
+    },
+    "sh_star_shard": {
+      "textures": "textures/items/sh_star_shard"
+    },
+    "sh_silver": {
+      "textures": "textures/items/sh_silver"
+    },
+    "sh_bear_hide": {
+      "textures": "textures/items/sh_bear_hide"
+    },
+    "sh_bear_claw": {
+      "textures": "textures/items/sh_bear_claw"
+    },
+    "sh_potion_vitality": {
+      "textures": "textures/items/sh_potion_vitality"
+    },
+    "sh_potion_mana": {
+      "textures": "textures/items/sh_potion_mana"
+    },
+    "sh_potion_might": {
+      "textures": "textures/items/sh_potion_might"
+    },
+    "sh_potion_bulwark": {
+      "textures": "textures/items/sh_potion_bulwark"
+    },
+    "sh_potion_focus": {
+      "textures": "textures/items/sh_potion_focus"
+    },
+    "sh_potion_swift": {
+      "textures": "textures/items/sh_potion_swift"
+    },
+    "sh_grizzly_helmet": {
+      "textures": "textures/items/sh_grizzly_helmet"
+    },
+    "sh_grizzly_chestplate": {
+      "textures": "textures/items/sh_grizzly_chestplate"
+    },
+    "sh_grizzly_leggings": {
+      "textures": "textures/items/sh_grizzly_leggings"
+    },
+    "sh_grizzly_boots": {
+      "textures": "textures/items/sh_grizzly_boots"
+    },
+    "sh_soul_crimson": {
+      "textures": "textures/items/sh_soul_crimson"
+    },
+    "sh_soul_azure": {
+      "textures": "textures/items/sh_soul_azure"
+    },
+    "sh_soul_amber": {
+      "textures": "textures/items/sh_soul_amber"
+    },
+    "sh_soul_silver": {
+      "textures": "textures/items/sh_soul_silver"
+    },
+    "sh_soul_violet": {
+      "textures": "textures/items/sh_soul_violet"
+    },
+    "sh_soul_verdant": {
+      "textures": "textures/items/sh_soul_verdant"
+    },
+    "sh_raw_dawnsteel": {
+      "textures": "textures/items/sh_raw_dawnsteel"
+    },
+    "sh_dawnsteel_ingot": {
+      "textures": "textures/items/sh_dawnsteel_ingot"
+    },
+    "sh_raw_abyssium": {
+      "textures": "textures/items/sh_raw_abyssium"
+    },
+    "sh_abyssium_ingot": {
+      "textures": "textures/items/sh_abyssium_ingot"
+    },
+    "sh_dawnsteel_helmet": {
+      "textures": "textures/items/sh_dawnsteel_helmet"
+    },
+    "sh_dawnsteel_chestplate": {
+      "textures": "textures/items/sh_dawnsteel_chestplate"
+    },
+    "sh_dawnsteel_leggings": {
+      "textures": "textures/items/sh_dawnsteel_leggings"
+    },
+    "sh_dawnsteel_boots": {
+      "textures": "textures/items/sh_dawnsteel_boots"
+    },
+    "sh_abyssium_helmet": {
+      "textures": "textures/items/sh_abyssium_helmet"
+    },
+    "sh_abyssium_chestplate": {
+      "textures": "textures/items/sh_abyssium_chestplate"
+    },
+    "sh_abyssium_leggings": {
+      "textures": "textures/items/sh_abyssium_leggings"
+    },
+    "sh_abyssium_boots": {
+      "textures": "textures/items/sh_abyssium_boots"
+    },
+    "sh_scythe": {
+      "textures": "textures/items/sh_scythe"
+    }
+  }
+}

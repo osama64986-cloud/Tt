@@ -1,0 +1,222 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "sh:fx_shape",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "default": "textures/entity/sh_fx_shapes"
+   },
+   "geometry": {
+    "s0": "geometry.sh_shape_crystal_spike",
+    "s1": "geometry.sh_shape_crystal_lance",
+    "s2": "geometry.sh_shape_crystal_gem",
+    "s3": "geometry.sh_shape_crystal_cluster",
+    "s4": "geometry.sh_shape_crystal_cage",
+    "s5": "geometry.sh_shape_crystal_plate",
+    "s6": "geometry.sh_shape_crystal_nova",
+    "s7": "geometry.sh_shape_iron_fist",
+    "s8": "geometry.sh_shape_wind_crescent",
+    "s9": "geometry.sh_shape_tornado",
+    "s10": "geometry.sh_shape_wings",
+    "s11": "geometry.sh_shape_sound_ring",
+    "s12": "geometry.sh_shape_echo_glyph",
+    "s13": "geometry.sh_shape_digit_0",
+    "s14": "geometry.sh_shape_digit_1",
+    "s15": "geometry.sh_shape_digit_2",
+    "s16": "geometry.sh_shape_digit_3",
+    "s17": "geometry.sh_shape_digit_4",
+    "s18": "geometry.sh_shape_digit_5",
+    "s19": "geometry.sh_shape_digit_6",
+    "s20": "geometry.sh_shape_digit_7",
+    "s21": "geometry.sh_shape_digit_8",
+    "s22": "geometry.sh_shape_digit_9",
+    "s23": "geometry.sh_shape_sym_minus",
+    "s24": "geometry.sh_shape_sym_divide",
+    "s25": "geometry.sh_shape_arrow_gold",
+    "s26": "geometry.sh_shape_arrow_blue",
+    "s27": "geometry.sh_shape_weight",
+    "s28": "geometry.sh_shape_rune_pillar",
+    "s29": "geometry.sh_shape_mirror",
+    "s30": "geometry.sh_shape_clock",
+    "s31": "geometry.sh_shape_gavel",
+    "s32": "geometry.sh_shape_padlock",
+    "s33": "geometry.sh_shape_space_cube",
+    "s34": "geometry.sh_shape_hourglass",
+    "s35": "geometry.sh_shape_fang_jaw",
+    "s36": "geometry.sh_shape_hunter_eye",
+    "s37": "geometry.sh_shape_meteor",
+    "s38": "geometry.sh_shape_star5",
+    "s39": "geometry.sh_shape_black_hole",
+    "s40": "geometry.sh_shape_vortex",
+    "s41": "geometry.sh_shape_nova",
+    "s42": "geometry.sh_shape_slash_violet",
+    "s43": "geometry.sh_shape_slash_fire",
+    "s44": "geometry.sh_shape_slash_gold",
+    "s45": "geometry.sh_shape_claw_marks",
+    "s46": "geometry.sh_shape_spear_proj",
+    "s47": "geometry.sh_shape_afterimage",
+    "s48": "geometry.sh_shape_rock_chunk",
+    "s49": "geometry.sh_shape_sun_chain",
+    "s50": "geometry.sh_shape_rift_blue",
+    "s51": "geometry.sh_shape_rift_violet",
+    "s52": "geometry.sh_shape_rift_crimson",
+    "s53": "geometry.sh_shape_rift_abyss",
+    "s54": "geometry.sh_shape_slash_teal",
+    "s55": "geometry.sh_shape_slash_venom",
+    "s56": "geometry.sh_shape_fireball",
+    "s57": "geometry.sh_shape_venom_glob",
+    "s58": "geometry.sh_shape_draw_common",
+    "s59": "geometry.sh_shape_draw_uncommon",
+    "s60": "geometry.sh_shape_draw_rare",
+    "s61": "geometry.sh_shape_draw_epic",
+    "s62": "geometry.sh_shape_draw_legendary",
+    "s63": "geometry.sh_shape_draw_mythic",
+    "s64": "geometry.sh_shape_draw_void",
+    "s65": "geometry.sh_shape_slash_silver",
+    "s66": "geometry.sh_shape_beam_orange",
+    "s67": "geometry.sh_shape_seer_thorn",
+    "s68": "geometry.sh_shape_root_spike",
+    "s69": "geometry.sh_shape_soul_orb",
+    "s70": "geometry.sh_shape_spirit_stag",
+    "s71": "geometry.sh_shape_foxfire",
+    "s72": "geometry.sh_shape_light_lance",
+    "s73": "geometry.sh_shape_ghost_sword",
+    "s74": "geometry.sh_shape_wind_trail",
+    "s75": "geometry.sh_shape_wind_ring",
+    "s76": "geometry.sh_shape_cyclone",
+    "s77": "geometry.sh_shape_sound_wave",
+    "s78": "geometry.sh_shape_echo_pulse",
+    "s79": "geometry.sh_shape_star_beam",
+    "s80": "geometry.sh_shape_grav_well",
+    "s81": "geometry.sh_shape_nova_core",
+    "s82": "geometry.sh_shape_nova_ring",
+    "s83": "geometry.sh_shape_comet",
+    "s84": "geometry.sh_shape_fusion_rings",
+    "s85": "geometry.sh_shape_seal_stamp",
+    "s86": "geometry.sh_shape_fire_ring",
+    "s87": "geometry.sh_shape_x_cut",
+    "s88": "geometry.sh_shape_claw_violet",
+    "s89": "geometry.sh_shape_stone_ring",
+    "s90": "geometry.sh_shape_warp_gate",
+    "s91": "geometry.sh_shape_prayer_halo",
+    "s92": "geometry.sh_shape_scythe_x",
+    "s93": "geometry.sh_shape_leaf_swirl",
+    "s94": "geometry.sh_shape_scythe_thrust",
+    "s95": "geometry.sh_shape_scissor_lock",
+    "s96": "geometry.sh_shape_molt_husk",
+    "s97": "geometry.sh_shape_husk_burst",
+    "s98": "geometry.sh_shape_rift_blue_b",
+    "s99": "geometry.sh_shape_rift_blue_c",
+    "s100": "geometry.sh_shape_rift_blue_d",
+    "s101": "geometry.sh_shape_rift_violet_b",
+    "s102": "geometry.sh_shape_rift_violet_c",
+    "s103": "geometry.sh_shape_rift_violet_d",
+    "s104": "geometry.sh_shape_rift_crimson_b",
+    "s105": "geometry.sh_shape_rift_crimson_c",
+    "s106": "geometry.sh_shape_rift_crimson_d",
+    "s107": "geometry.sh_shape_rift_abyss_b",
+    "s108": "geometry.sh_shape_rift_abyss_c",
+    "s109": "geometry.sh_shape_rift_abyss_d",
+    "s110": "geometry.sh_shape_howl_ring",
+    "s111": "geometry.sh_shape_shade_portal",
+    "s112": "geometry.sh_shape_sand_mound",
+    "s113": "geometry.sh_shape_sand_stinger",
+    "s114": "geometry.sh_shape_spirit_antlers",
+    "s115": "geometry.sh_shape_soul_wave",
+    "s116": "geometry.sh_shape_soul_chain",
+    "s117": "geometry.sh_shape_seer_beam",
+    "s118": "geometry.sh_shape_fox_moon",
+    "s119": "geometry.sh_shape_magma_fissure",
+    "s120": "geometry.sh_shape_magma_ring",
+    "s121": "geometry.sh_shape_magma_geyser",
+    "s122": "geometry.sh_shape_magma_plates",
+    "s123": "geometry.sh_shape_bear_grip",
+    "s124": "geometry.sh_shape_bear_claws",
+    "s125": "geometry.sh_shape_roar_wave",
+    "s126": "geometry.sh_shape_sleep_z",
+    "s127": "geometry.sh_shape_puppet_string",
+    "s128": "geometry.sh_shape_hollow_eyes",
+    "s129": "geometry.sh_shape_seal_sigil",
+    "s130": "geometry.sh_shape_reap_arc"
+   },
+   "animations": {
+    "fx": "animation.sh_fx.shape",
+    "wings": "animation.sh_fx.shape_wings",
+    "clock": "animation.sh_fx.shape_clock",
+    "fang_jaw": "animation.sh_fx.shape_fang_jaw",
+    "rift": "animation.sh_fx.shape_rift",
+    "cyclone": "animation.sh_fx.shape_cyclone",
+    "nova_core": "animation.sh_fx.shape_nova_core",
+    "fusion_rings": "animation.sh_fx.shape_fusion_rings",
+    "warp_gate": "animation.sh_fx.shape_warp_gate",
+    "seal_sigil": "animation.sh_fx.shape_seal_sigil",
+    "sleep_z": "animation.sh_fx.shape_sleep_z",
+    "hollow_eyes": "animation.sh_fx.shape_hollow_eyes",
+    "leaf_swirl": "animation.sh_fx.shape_leaf_swirl",
+    "scissor_lock": "animation.sh_fx.shape_scissor_lock",
+    "beam": "animation.sh_fx.shape_beam",
+    "sound_pulse": "animation.sh_fx.shape_sound_pulse",
+    "flat_ring": "animation.sh_fx.shape_flat_ring"
+   },
+   "scripts": {
+    "animate": [
+     "fx",
+     {
+      "wings": "q.property('sh:v') == 10"
+     },
+     {
+      "clock": "q.property('sh:v') == 30"
+     },
+     {
+      "fang_jaw": "q.property('sh:v') == 35"
+     },
+     {
+      "rift": "q.property('sh:v') == 50 || q.property('sh:v') == 98 || q.property('sh:v') == 99 || q.property('sh:v') == 100 || q.property('sh:v') == 51 || q.property('sh:v') == 101 || q.property('sh:v') == 102 || q.property('sh:v') == 103 || q.property('sh:v') == 52 || q.property('sh:v') == 104 || q.property('sh:v') == 105 || q.property('sh:v') == 106 || q.property('sh:v') == 53 || q.property('sh:v') == 107 || q.property('sh:v') == 108 || q.property('sh:v') == 109"
+     },
+     {
+      "cyclone": "q.property('sh:v') == 76"
+     },
+     {
+      "nova_core": "q.property('sh:v') == 81"
+     },
+     {
+      "fusion_rings": "q.property('sh:v') == 84"
+     },
+     {
+      "warp_gate": "q.property('sh:v') == 90"
+     },
+     {
+      "seal_sigil": "q.property('sh:v') == 129"
+     },
+     {
+      "sleep_z": "q.property('sh:v') == 126"
+     },
+     {
+      "hollow_eyes": "q.property('sh:v') == 128"
+     },
+     {
+      "leaf_swirl": "q.property('sh:v') == 93"
+     },
+     {
+      "scissor_lock": "q.property('sh:v') == 95"
+     },
+     {
+      "beam": "q.property('sh:v') == 79 || q.property('sh:v') == 116 || q.property('sh:v') == 117 || q.property('sh:v') == 119 || q.property('sh:v') == 127"
+     },
+     {
+      "sound_pulse": "q.property('sh:v') == 77 || q.property('sh:v') == 78"
+     },
+     {
+      "flat_ring": "q.property('sh:v') == 75 || q.property('sh:v') == 82 || q.property('sh:v') == 115 || q.property('sh:v') == 110"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.sh_fx_shape"
+   ]
+  }
+ }
+}

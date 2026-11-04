@@ -1,0 +1,1618 @@
+{
+  "format_version": "1.14.0",
+  "sound_definitions": {
+    "sh.absolute": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/block/bell/bell_use01",
+          "volume": 0.8,
+          "pitch": 0.57
+        },
+        {
+          "name": "sounds/block/bell/bell_use02",
+          "volume": 0.8,
+          "pitch": 0.57
+        },
+        {
+          "name": "sounds/block/bell/bell_use01",
+          "volume": 0.8,
+          "pitch": 0.558
+        },
+        {
+          "name": "sounds/block/bell/bell_use02",
+          "volume": 0.8,
+          "pitch": 0.558
+        },
+        {
+          "name": "sounds/block/bell/bell_use01",
+          "volume": 0.8,
+          "pitch": 0.582
+        },
+        {
+          "name": "sounds/block/bell/bell_use02",
+          "volume": 0.8,
+          "pitch": 0.582
+        }
+      ]
+    },
+    "sh.blackhole": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/portal/trigger",
+          "volume": 0.35,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.blackhole_end": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/block/beacon/deactivate",
+          "volume": 0.8,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.boundary": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/block/trial_spawner/charge_activate",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.chorus": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/amethyst/resonate1",
+          "volume": 0.95
+        },
+        {
+          "name": "sounds/block/amethyst/resonate2",
+          "volume": 0.95
+        },
+        {
+          "name": "sounds/block/amethyst/resonate3",
+          "volume": 0.95
+        },
+        {
+          "name": "sounds/block/amethyst/resonate4",
+          "volume": 0.95
+        }
+      ]
+    },
+    "sh.cleaver_hit": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/mob/irongolem/hit1",
+          "volume": 0.55,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/irongolem/hit2",
+          "volume": 0.55,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/irongolem/hit3",
+          "volume": 0.55,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/irongolem/hit4",
+          "volume": 0.55,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.collapse": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/amethyst_cluster/break1",
+          "volume": 0.72,
+          "pitch": 0.72
+        },
+        {
+          "name": "sounds/block/amethyst_cluster/break2",
+          "volume": 0.72,
+          "pitch": 0.72
+        },
+        {
+          "name": "sounds/block/amethyst_cluster/break3",
+          "volume": 0.72,
+          "pitch": 0.72
+        },
+        {
+          "name": "sounds/block/amethyst_cluster/break4",
+          "volume": 0.72,
+          "pitch": 0.72
+        }
+      ]
+    },
+    "sh.compass": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/item/lock_compass1",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/item/lock_compass2",
+          "volume": 0.5,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.const_mark": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/fireworks/twinkle1",
+          "volume": 0.5,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.const_zap": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/fireworks/blast1",
+          "volume": 0.6,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.curse_burst": {
+      "category": "hostile",
+      "min_distance": 8,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/husk/convert1",
+          "volume": 0.9,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/mob/husk/convert2",
+          "volume": 0.9,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.curse_free": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/zombie/unfect",
+          "volume": 0.7,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.curse_mark": {
+      "category": "hostile",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/mob/warden/heartbeat_1",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_2",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_3",
+          "volume": 0.6,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/warden/heartbeat_4",
+          "volume": 0.6,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.curse_turn": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/zombie/remedy",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.curse_whisper": {
+      "category": "hostile",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/cave/cave1",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave2",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave3",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave4",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave5",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave6",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave7",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave8",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave9",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave10",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave11",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave12",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave13",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave14",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave15",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave16",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave17",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave18",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave19",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave20",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave21",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave22",
+          "volume": 0.25,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/cave/cave23",
+          "volume": 0.25,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.dagger_hit": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/item/spear/attackhit1",
+          "volume": 0.6,
+          "pitch": 1.25
+        },
+        {
+          "name": "sounds/item/spear/attackhit2",
+          "volume": 0.6,
+          "pitch": 1.25
+        },
+        {
+          "name": "sounds/item/spear/attackhit3",
+          "volume": 0.6,
+          "pitch": 1.25
+        }
+      ]
+    },
+    "sh.divide": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/vault/eject_item1",
+          "volume": 0.8,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/block/vault/eject_item2",
+          "volume": 0.8,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/block/vault/eject_item3",
+          "volume": 0.8,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.echoseal": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/particle/soulspeed1",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed2",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed3",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed4",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed5",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed6",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed7",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed8",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed9",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed10",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed11",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed12",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/particle/soulspeed13",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.echostrike": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/note/bassattack",
+          "volume": 0.6
+        }
+      ]
+    },
+    "sh.echowave": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/warden/sonic_boom1",
+          "volume": 0.45,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/warden/sonic_boom2",
+          "volume": 0.45,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/warden/sonic_boom3",
+          "volume": 0.45,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/warden/sonic_boom4",
+          "volume": 0.45,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.fold": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/evocation_illager/cast1",
+          "volume": 0.6,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/evocation_illager/cast2",
+          "volume": 0.6,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.gravwell": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/mob/breeze/whirl1",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/mob/breeze/whirl2",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/mob/breeze/whirl3",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/mob/breeze/whirl4",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/mob/breeze/whirl5",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.guard_slam": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/item/mace/smash_ground1",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/item/mace/smash_ground2",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/item/mace/smash_ground3",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/item/mace/smash_ground4",
+          "volume": 0.7,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.guard_windup": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/irongolem/throw",
+          "volume": 0.7,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_burn": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/fire/ignite",
+          "volume": 0.8,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_death": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/death",
+          "volume": 0.8,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_reap": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 36,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/riptide_mono1",
+          "volume": 0.5,
+          "pitch": 0.75
+        }
+      ]
+    },
+    "sh.harv_reap_raise": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/evocation_illager/prepare_attack1",
+          "volume": 0.6,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/mob/evocation_illager/prepare_attack2",
+          "volume": 0.6,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_seal": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/block/respawn_anchor/deplete1",
+          "volume": 0.7,
+          "pitch": 1.25
+        },
+        {
+          "name": "sounds/block/respawn_anchor/deplete2",
+          "volume": 0.7,
+          "pitch": 1.25
+        }
+      ]
+    },
+    "sh.harv_seal_tail": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/block/enchanting_table/enchant1",
+          "volume": 0.6,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/block/enchanting_table/enchant2",
+          "volume": 0.6,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/block/enchanting_table/enchant3",
+          "volume": 0.6,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.harv_snap": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/random/bowhit1",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit2",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit3",
+          "volume": 0.7,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/random/bowhit4",
+          "volume": 0.7,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.harv_stare": {
+      "category": "hostile",
+      "min_distance": 6,
+      "max_distance": 40,
+      "sounds": [
+        {
+          "name": "sounds/mob/guardian/curse",
+          "volume": 0.4,
+          "pitch": 1.15
+        }
+      ]
+    },
+    "sh.harv_string": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_middle1",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle2",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle3",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/loading_middle4",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.harv_string_cast": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_start",
+          "volume": 0.8,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.harv_sway": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/sway1",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway2",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway3",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/mob/creaking/sway4",
+          "volume": 0.7,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.harv_twitch": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/mob/creaking/twitch",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.harv_yank": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/shoot1",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/shoot2",
+          "volume": 0.7,
+          "pitch": 0.7
+        },
+        {
+          "name": "sounds/crossbow/shoot3",
+          "volume": 0.7,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.imp_pounce": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/vex/charge1",
+          "volume": 0.7,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/vex/charge2",
+          "volume": 0.7,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/vex/charge3",
+          "volume": 0.7,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.imp_windup": {
+      "category": "hostile",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/blaze/breathe1",
+          "volume": 0.14,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/blaze/breathe2",
+          "volume": 0.14,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/blaze/breathe3",
+          "volume": 0.14,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/blaze/breathe4",
+          "volume": 0.14,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.kat_exec": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/item/mace/smash_air1",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/item/mace/smash_air2",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/item/mace/smash_air3",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.kat_levelup": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/random/smithing_table1",
+          "volume": 0.6,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/random/smithing_table2",
+          "volume": 0.6,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/random/smithing_table3",
+          "volume": 0.6,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.kat_step": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/mob/endermen/portal",
+          "volume": 0.5,
+          "pitch": 1.3
+        },
+        {
+          "name": "sounds/mob/endermen/portal2",
+          "volume": 0.5,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.kat_wave": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/riptide_mono1",
+          "volume": 0.5,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.level_up": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/random/levelup",
+          "volume": 0.5
+        }
+      ]
+    },
+    "sh.meteor_fall": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/ghast/fireball4",
+          "volume": 0.6,
+          "pitch": 0.6
+        }
+      ]
+    },
+    "sh.meteor_hit": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/random/explode1",
+          "volume": 0.5,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/random/explode2",
+          "volume": 0.5,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/random/explode3",
+          "volume": 0.5,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/random/explode4",
+          "volume": 0.5,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.mission": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/random/toast",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.orbit": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/conduit/short1",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short2",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short3",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short4",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short5",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short6",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short7",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short8",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/block/conduit/short9",
+          "volume": 0.6
+        }
+      ]
+    },
+    "sh.pull": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/breeze/inhale1",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/breeze/inhale1",
+          "volume": 0.8,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/mob/breeze/inhale2",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/breeze/inhale2",
+          "volume": 0.8,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.push": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/item/wind_charge/wind_burst1",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/item/wind_charge/wind_burst2",
+          "volume": 0.6
+        },
+        {
+          "name": "sounds/item/wind_charge/wind_burst3",
+          "volume": 0.6
+        }
+      ]
+    },
+    "sh.rank_up": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 24,
+      "sounds": [
+        {
+          "name": "sounds/block/beacon/activate",
+          "volume": 0.6,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.ready": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/note/icechime",
+          "volume": 0.3,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.reflect": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/amethyst/shimmer",
+          "volume": 0.9
+        }
+      ]
+    },
+    "sh.scythe_hit": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/pierce1",
+          "volume": 0.5,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/item/trident/pierce2",
+          "volume": 0.5,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/item/trident/pierce3",
+          "volume": 0.5,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.scythe_reap": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/item/trident/riptide_mono1",
+          "volume": 0.4,
+          "pitch": 0.95
+        }
+      ]
+    },
+    "sh.scythe_string": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/loading_middle1",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle2",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle3",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/loading_middle4",
+          "volume": 0.6,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.scythe_swing": {
+      "category": "player",
+      "min_distance": 3,
+      "max_distance": 20,
+      "sounds": [
+        {
+          "name": "sounds/item/spear/attackmiss1",
+          "volume": 0.48,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/item/spear/attackmiss2",
+          "volume": 0.48,
+          "pitch": 0.8
+        },
+        {
+          "name": "sounds/item/spear/attackmiss3",
+          "volume": 0.48,
+          "pitch": 0.8
+        }
+      ]
+    },
+    "sh.scythe_yank": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 28,
+      "sounds": [
+        {
+          "name": "sounds/crossbow/shoot1",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/shoot2",
+          "volume": 0.6,
+          "pitch": 0.85
+        },
+        {
+          "name": "sounds/crossbow/shoot3",
+          "volume": 0.6,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.seal": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/respawn_anchor/charge1",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/block/respawn_anchor/charge2",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/block/respawn_anchor/charge3",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.select": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/note/harp",
+          "volume": 0.35,
+          "pitch": 1.5
+        }
+      ]
+    },
+    "sh.silence": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/respawn_anchor/deplete1",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/block/respawn_anchor/deplete2",
+          "volume": 0.7,
+          "pitch": 0.9
+        }
+      ]
+    },
+    "sh.sonar": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking1",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking2",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking3",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking4",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking5",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/block/sculk_sensor/sculk_clicking6",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.spacecollapse": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/random/explode1",
+          "volume": 0.45,
+          "pitch": 0.6
+        },
+        {
+          "name": "sounds/random/explode2",
+          "volume": 0.45,
+          "pitch": 0.6
+        },
+        {
+          "name": "sounds/random/explode3",
+          "volume": 0.45,
+          "pitch": 0.6
+        },
+        {
+          "name": "sounds/random/explode4",
+          "volume": 0.45,
+          "pitch": 0.6
+        }
+      ]
+    },
+    "sh.stardash": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/fireworks/launch1",
+          "volume": 0.6,
+          "pitch": 1.3
+        }
+      ]
+    },
+    "sh.subtract": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/trial_spawner/close_shutter",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.supernova_boom": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/fireworks/largeBlast1",
+          "volume": 0.7,
+          "pitch": 0.85
+        }
+      ]
+    },
+    "sh.supernova_charge": {
+      "category": "player",
+      "min_distance": 6,
+      "max_distance": 48,
+      "sounds": [
+        {
+          "name": "sounds/mob/warden/sonic_charge1",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/warden/sonic_charge2",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/warden/sonic_charge3",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/mob/warden/sonic_charge4",
+          "volume": 0.5,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.swap": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/endermen/portal",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/mob/endermen/portal2",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.talk": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/item/book/open_flip1",
+          "volume": 0.95
+        },
+        {
+          "name": "sounds/item/book/open_flip2",
+          "volume": 0.95
+        },
+        {
+          "name": "sounds/item/book/open_flip3",
+          "volume": 0.95
+        }
+      ]
+    },
+    "sh.tick": {
+      "category": "ui",
+      "min_distance": 2,
+      "max_distance": 16,
+      "sounds": [
+        {
+          "name": "sounds/random/click",
+          "volume": 0.2,
+          "pitch": 1.5
+        }
+      ]
+    },
+    "sh.trait_eye": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/end_portal/eyeplace1",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace2",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace3",
+          "volume": 0.7
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace1",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace2",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace3",
+          "volume": 0.7,
+          "pitch": 0.9
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace1",
+          "volume": 0.7,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace2",
+          "volume": 0.7,
+          "pitch": 1.1
+        },
+        {
+          "name": "sounds/block/end_portal/eyeplace3",
+          "volume": 0.7,
+          "pitch": 1.1
+        }
+      ]
+    },
+    "sh.trait_fangs": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/evocation_illager/fangs",
+          "volume": 0.7
+        }
+      ]
+    },
+    "sh.trait_rock": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/item/mace/smash_ground1",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/item/mace/smash_ground2",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/item/mace/smash_ground3",
+          "volume": 0.5,
+          "pitch": 1.2
+        },
+        {
+          "name": "sounds/item/mace/smash_ground4",
+          "volume": 0.5,
+          "pitch": 1.2
+        }
+      ]
+    },
+    "sh.trait_wings": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/mob/phantom/flap1",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/phantom/flap2",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/phantom/flap3",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/phantom/flap4",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/phantom/flap5",
+          "volume": 0.8
+        },
+        {
+          "name": "sounds/mob/phantom/flap6",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.transfer": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/vault/insert",
+          "volume": 0.8
+        }
+      ]
+    },
+    "sh.weight": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/random/anvil_land",
+          "volume": 0.3,
+          "pitch": 0.7
+        }
+      ]
+    },
+    "sh.zero": {
+      "category": "player",
+      "min_distance": 4,
+      "max_distance": 32,
+      "sounds": [
+        {
+          "name": "sounds/block/vault/deactivate",
+          "volume": 0.8,
+          "pitch": 0.9
+        }
+      ]
+    }
+  }
+}

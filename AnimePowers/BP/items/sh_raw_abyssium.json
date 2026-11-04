@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sh:raw_abyssium",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "sh_raw_abyssium"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "§5Raw Abyssium"
+      },
+      "minecraft:max_stack_size": 64
+    }
+  }
+}

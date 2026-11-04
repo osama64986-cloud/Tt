@@ -1,0 +1,55 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sh_cursed_villager.twitch": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time*1700)*0.7*query.property('sh:stage') + (math.mod(query.life_time, 3.2 - query.property('sh:stage')*0.6) < 0.12 ? 6 + query.property('sh:stage')*5 : 0)",
+            0,
+            "math.sin(query.life_time*37)*2.2*query.property('sh:stage')"
+          ]
+        },
+        "body": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time*53)*0.8*query.property('sh:stage')"
+          ]
+        }
+      }
+    },
+    "animation.sh_cursed_villager.convulse": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "-28 + math.sin(query.life_time*2200)*6",
+            "math.sin(query.life_time*1300)*14",
+            "math.sin(query.life_time*1700)*10"
+          ]
+        },
+        "arms": {
+          "rotation": [
+            "-60 + math.sin(query.life_time*1900)*14",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            "-6 + math.sin(query.life_time*2100)*3",
+            0,
+            "math.sin(query.life_time*1500)*4"
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time*900))*0.6",
+            0
+          ]
+        }
+      }
+    }
+  }
+}

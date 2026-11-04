@@ -1,0 +1,34 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "sh:fx_circle",
+   "materials": {
+    "default": "entity_alphablend"
+   },
+   "textures": {
+    "c0": "textures/entity/sh_fx_circle_0",
+    "c1": "textures/entity/sh_fx_circle_1",
+    "c2": "textures/entity/sh_fx_circle_2",
+    "c3": "textures/entity/sh_fx_circle_3",
+    "c4": "textures/entity/sh_fx_circle_4",
+    "c5": "textures/entity/sh_fx_circle_5",
+    "c6": "textures/entity/sh_fx_circle_6"
+   },
+   "geometry": {
+    "default": "geometry.sh_fx_circle"
+   },
+   "animations": {
+    "fx": "animation.sh_fx.circle"
+   },
+   "scripts": {
+    "animate": [
+     "fx"
+    ]
+   },
+   "render_controllers": [
+    "controller.render.sh_fx_circle"
+   ]
+  }
+ }
+}

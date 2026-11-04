@@ -1,0 +1,41 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sh_weapon.hold_third_person": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "rotation": [
+            -17.5,
+            0,
+            0
+          ],
+          "position": [
+            -5,
+            -8,
+            0
+          ],
+          "scale": 0.65
+        }
+      }
+    },
+    "animation.sh_weapon.hold_first_person": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "rotation": [
+            -20,
+            20,
+            0
+          ],
+          "position": [
+            3,
+            -7,
+            -2
+          ],
+          "scale": 0.7
+        }
+      }
+    }
+  }
+}

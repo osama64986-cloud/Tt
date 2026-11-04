@@ -1,0 +1,424 @@
+{
+ "format_version": "1.8.0",
+ "animations": {
+  "animation.sh_fx.circle": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": [
+      "query.property('sh:r')",
+      "1",
+      "query.property('sh:r')"
+     ]
+    },
+    "disc": {
+     "rotation": [
+      0,
+      "query.life_time*40",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.portal": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": "query.property('sh:r')*math.min(1,query.life_time*5)"
+    },
+    "ring": {
+     "rotation": [
+      0,
+      0,
+      "query.life_time*240"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.plate": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": "query.property('sh:r')*math.min(1,query.life_time*4)",
+     "position": [
+      0,
+      "math.sin(query.life_time*180)*0.8",
+      0
+     ]
+    },
+    "plate": {
+     "rotation": [
+      0,
+      "query.life_time*150",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.crystal": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": "query.property('sh:r')*math.min(1,query.life_time*6)"
+    },
+    "spike": {
+     "rotation": [
+      "query.property('sh:p')",
+      0,
+      "query.life_time*60"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.body": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": "query.property('sh:r')"
+    },
+    "head": {
+     "rotation": [
+      "query.property('sh:p')",
+      0,
+      0
+     ]
+    },
+    "arm_r": {
+     "rotation": [
+      "math.cos(query.life_time * 560.0) * 55.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      "-math.cos(query.life_time * 560.0) * 55.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "leg_r": {
+     "rotation": [
+      "-math.cos(query.life_time * 560.0) * 60.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    },
+    "leg_l": {
+     "rotation": [
+      "math.cos(query.life_time * 560.0) * 60.0 * query.property('sh:mv')",
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape": {
+   "loop": true,
+   "bones": {
+    "spin": {
+     "rotation": [
+      0,
+      "query.life_time * query.property('sh:s')",
+      0
+     ],
+     "scale": "query.property('sh:r') * math.min(1.0, 0.3 + query.life_time * 7.0)"
+    },
+    "tilt": {
+     "rotation": [
+      "query.property('sh:p')",
+      0,
+      0
+     ]
+    },
+    "roll": {
+     "rotation": [
+      0,
+      0,
+      "query.property('sh:a') + query.life_time * query.property('sh:w')"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_wings": {
+   "loop": true,
+   "bones": {
+    "wl": {
+     "rotation": [
+      0,
+      0,
+      "-18 - math.sin(q.life_time * 640) * 28"
+     ]
+    },
+    "wr": {
+     "rotation": [
+      0,
+      0,
+      "18 + math.sin(q.life_time * 640) * 28"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_clock": {
+   "loop": true,
+   "bones": {
+    "hand_m": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 900"
+     ]
+    },
+    "hand_h": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 75"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_fang_jaw": {
+   "loop": true,
+   "bones": {
+    "jaw_u": {
+     "rotation": [
+      "-math.max(0, 38 - q.life_time * 230)",
+      0,
+      0
+     ]
+    },
+    "jaw_l": {
+     "rotation": [
+      "math.max(0, 38 - q.life_time * 230)",
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_rift": {
+   "loop": true,
+   "bones": {
+    "tilt": {
+     "position": [
+      0,
+      "math.sin(q.life_time * 80) * 2.4",
+      0
+     ]
+    },
+    "orbit_a": {
+     "rotation": [
+      0,
+      "q.life_time * 34",
+      0
+     ]
+    },
+    "orbit_b": {
+     "rotation": [
+      0,
+      "-q.life_time * 22",
+      0
+     ]
+    },
+    "core": {
+     "scale": "1 + math.sin(q.life_time * 150) * 0.05"
+    }
+   }
+  },
+  "animation.sh_fx.shape_cyclone": {
+   "loop": true,
+   "bones": {
+    "cy_a": {
+     "rotation": [
+      0,
+      "q.life_time * 760",
+      0
+     ]
+    },
+    "cy_b": {
+     "rotation": [
+      0,
+      "q.life_time * 540",
+      0
+     ]
+    },
+    "cy_c": {
+     "rotation": [
+      0,
+      "q.life_time * 380",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_nova_core": {
+   "loop": true,
+   "bones": {
+    "ring_a": {
+     "rotation": [
+      0,
+      "q.life_time * 300",
+      0
+     ]
+    },
+    "ring_b": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 420"
+     ]
+    },
+    "core": {
+     "scale": "1 + math.sin(q.life_time * 900) * 0.08"
+    }
+   }
+  },
+  "animation.sh_fx.shape_fusion_rings": {
+   "loop": true,
+   "bones": {
+    "ga": {
+     "rotation": [
+      0,
+      "q.life_time * 260",
+      0
+     ]
+    },
+    "gb": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 330"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_warp_gate": {
+   "loop": true,
+   "bones": {
+    "swirl": {
+     "rotation": [
+      0,
+      0,
+      "q.life_time * 420"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_beam": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "scale": [
+      1,
+      1,
+      "math.max(0.05, q.property('sh:l'))"
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_sound_pulse": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "scale": [
+      1,
+      "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, q.property('sh:r')))",
+      1
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_flat_ring": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "scale": [
+      1,
+      "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))",
+      1
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_leaf_swirl": {
+   "loop": true,
+   "bones": {
+    "lw_a": {
+     "rotation": [
+      0,
+      "q.life_time * 420",
+      0
+     ]
+    },
+    "lw_b": {
+     "rotation": [
+      0,
+      "-q.life_time * 300",
+      0
+     ]
+    },
+    "lw_c": {
+     "rotation": [
+      0,
+      "q.life_time * 520",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_scissor_lock": {
+   "loop": true,
+   "bones": {
+    "sa": {
+     "rotation": [
+      0,
+      "-math.max(0, 62 - q.life_time * 380)",
+      0
+     ]
+    },
+    "sb": {
+     "rotation": [
+      0,
+      "math.max(0, 62 - q.life_time * 380)",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_seal_sigil": {
+   "loop": true,
+   "bones": {
+    "rings": {
+     "rotation": [
+      0,
+      "q.life_time * 120",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_sleep_z": {
+   "loop": true,
+   "bones": {
+    "z0": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 0.0) * 4, 0, 1)"
+    },
+    "z1": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 0.5) * 4, 0, 1)"
+    },
+    "z2": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 1.0) * 4, 0, 1)"
+    }
+   }
+  },
+  "animation.sh_fx.shape_hollow_eyes": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "scale": "1 + math.sin(q.life_time * 720) * 0.08"
+    }
+   }
+  }
+ }
+}

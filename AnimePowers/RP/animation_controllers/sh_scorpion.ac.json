@@ -1,0 +1,71 @@
+{
+ "format_version": "1.10.0",
+ "animation_controllers": {
+  "controller.animation.sh_scorpion.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "attack": "query.property('sh:state') == 2"
+      },
+      {
+       "close": "query.property('sh:state') == 3"
+      }
+     ]
+    },
+    "windup": {
+     "animations": [
+      "windup"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "attack": "query.property('sh:state') == 2"
+      },
+      {
+       "close": "query.property('sh:state') == 3"
+      }
+     ]
+    },
+    "attack": {
+     "animations": [
+      "attack"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "close": "query.property('sh:state') == 3"
+      }
+     ]
+    },
+    "close": {
+     "animations": [
+      "close"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "attack": "query.property('sh:state') == 2"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:magmamoth",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_magmamoth",
+        "hot": "textures/entity/sh_magmamoth_hot"
+      },
+      "geometry": {
+        "default": "geometry.sh_magmamoth"
+      },
+      "animations": {
+        "idle": "animation.sh_magmamoth.idle",
+        "walk": "animation.sh_magmamoth.walk",
+        "state": "controller.animation.sh_magmamoth.state",
+        "look": "animation.sh.look",
+        "stomp": "animation.sh_magmamoth.stomp",
+        "breath": "animation.sh_magmamoth.breath",
+        "run": "animation.sh_magmamoth.run",
+        "eruption": "animation.sh_magmamoth.eruption",
+        "armor": "animation.sh_magmamoth.armor",
+        "lower": "animation.sh_magmamoth.lower",
+        "death": "animation.sh_magmamoth.death",
+        "attack": "animation.sh_magmamoth.attack"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "attack"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_mammoth"
+      ],
+      "spawn_egg": {
+        "base_color": "#2c2a30",
+        "overlay_color": "#ff7a1c"
+      }
+    }
+  }
+}

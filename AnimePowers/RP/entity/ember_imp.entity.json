@@ -1,0 +1,47 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:ember_imp",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_imp"
+      },
+      "geometry": {
+        "default": "geometry.sh_imp"
+      },
+      "animations": {
+        "walk": "animation.sh_imp.walk",
+        "look": "animation.sh.look",
+        "windup": "animation.sh_imp.windup",
+        "attack": "animation.sh_imp.pounce",
+        "state": "controller.animation.sh_imp.state",
+        "idle": "animation.sh_imp.idle",
+        "close": "animation.sh_imp.rake",
+        "move": "animation.sh_imp.move"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "move"
+        ],
+        "scale": "1.25"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#2c2830",
+        "overlay_color": "#ff781e"
+      },
+      "particle_effects": {
+        "fx": "minecraft:basic_flame_particle"
+      }
+    }
+  }
+}

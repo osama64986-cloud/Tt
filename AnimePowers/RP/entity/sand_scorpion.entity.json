@@ -1,0 +1,42 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:sand_scorpion",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_scorpion"
+      },
+      "geometry": {
+        "default": "geometry.sh_scorpion"
+      },
+      "animations": {
+        "idle": "animation.sh_scorpion.idle",
+        "walk": "animation.sh_scorpion.walk",
+        "state": "controller.animation.sh_scorpion.state",
+        "windup": "animation.sh_scorpion.windup",
+        "attack": "animation.sh_scorpion.strike",
+        "close": "animation.sh_scorpion.pinch",
+        "move": "animation.sh_scorpion.move"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "move"
+        ],
+        "scale": "1.15"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#96602e",
+        "overlay_color": "#96ff5a"
+      }
+    }
+  }
+}

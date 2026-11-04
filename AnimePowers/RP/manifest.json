@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "§dEtheria §fV1 §7- RP",
+    "description": "Etheria V1: models, animations, sounds and interface",
+    "uuid": "23626314-a797-40ba-a405-8e75d9a904d8",
+    "version": [
+      1,
+      40,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "e352b44b-459c-4866-a3e0-e1098790da82",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

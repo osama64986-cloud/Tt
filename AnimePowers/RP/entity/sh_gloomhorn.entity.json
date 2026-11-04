@@ -1,0 +1,43 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:gloomhorn",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_gloomhorn"
+      },
+      "geometry": {
+        "default": "geometry.sh_gloomhorn"
+      },
+      "animations": {
+        "idle": "animation.sh_gloomhorn.idle",
+        "walk": "animation.sh_gloomhorn.walk",
+        "windup": "animation.sh_gloomhorn.windup",
+        "charge": "animation.sh_gloomhorn.charge",
+        "heartbeat": "animation.sh_gloomhorn.heartbeat",
+        "lanterns": "animation.sh_gloomhorn.lanterns",
+        "state": "controller.animation.sh_gloomhorn.state",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#1e1c28",
+        "overlay_color": "#5ae6ff"
+      }
+    }
+  }
+}
