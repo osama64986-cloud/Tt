@@ -1,0 +1,8 @@
+pack.name=Anime Battles
+pack.description=Goku, Vegeta and Gojo with real abilities
+entity.ab:goku.name=Goku
+entity.ab:vegeta.name=Vegeta
+entity.ab:gojo.name=Gojo Satoru
+item.spawn_egg.entity.ab:goku.name=Spawn Goku
+item.spawn_egg.entity.ab:vegeta.name=Spawn Vegeta
+item.spawn_egg.entity.ab:gojo.name=Spawn Gojo Satoru

@@ -1,0 +1,90 @@
+{
+ "format_version": "1.10.0",
+ "render_controllers": {
+  "controller.render.ab.goku": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.ssj",
+      "Texture.ssj3",
+      "Texture.ssb",
+      "Texture.ui"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.ssj",
+      "Geometry.ssj3",
+      "Geometry.ssj",
+      "Geometry.base"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.vegeta": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.ssj",
+      "Texture.ssb",
+      "Texture.ue"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.base",
+      "Geometry.base",
+      "Geometry.base"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.gojo": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.blindfold",
+      "Texture.eyes"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.blindfold",
+      "Geometry.eyes"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  }
+ }
+}

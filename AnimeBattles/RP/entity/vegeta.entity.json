@@ -1,0 +1,59 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:vegeta",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "base": "textures/entity/vegeta/base",
+    "ssj": "textures/entity/vegeta/ssj",
+    "ssb": "textures/entity/vegeta/ssb",
+    "ue": "textures/entity/vegeta/ue"
+   },
+   "geometry": {
+    "base": "geometry.ab.vegeta_base"
+   },
+   "animations": {
+    "look": "animation.ab.look_at_target",
+    "move": "animation.ab.move",
+    "idle": "animation.ab.idle",
+    "attack": "animation.ab.attack",
+    "pose_beam": "animation.ab.pose_beam",
+    "pose_cup": "animation.ab.pose_cup",
+    "pose_raise": "animation.ab.pose_raise",
+    "pose_point": "animation.ab.pose_point"
+   },
+   "scripts": {
+    "animate": [
+     "look",
+     "move",
+     "idle",
+     {
+      "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "pose_beam": "query.property('ab:pose') == 1"
+     },
+     {
+      "pose_cup": "query.property('ab:pose') == 2"
+     },
+     {
+      "pose_raise": "query.property('ab:pose') == 3"
+     },
+     {
+      "pose_point": "query.property('ab:pose') == 4"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.ab.vegeta"
+   ],
+   "spawn_egg": {
+    "base_color": "#223496",
+    "overlay_color": "#eeeee4"
+   }
+  }
+ }
+}
