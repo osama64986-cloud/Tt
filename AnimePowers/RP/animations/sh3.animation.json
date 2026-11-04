@@ -8,28 +8,28 @@
     "tail": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*360)*16",
+      "-(math.sin(query.anim_time*360)*16)",
       0
      ]
     },
     "tail2": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*360-50)*24",
+      "-(math.sin(query.anim_time*360-50)*24)",
       0
      ]
     },
     "tail3": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*360-100)*32",
-      "math.sin(query.anim_time*360-100)*8"
+      "-(math.sin(query.anim_time*360-100)*32)",
+      "-(math.sin(query.anim_time*360-100)*8)"
      ]
     },
     "head": {
      "rotation": [
       "math.sin(query.anim_time*120)*3",
-      "math.sin(query.anim_time*60)*6",
+      "-(math.sin(query.anim_time*60)*6)",
       0
      ]
     },
@@ -88,21 +88,21 @@
     "tail": {
      "rotation": [
       0,
-      "math.sin(query.modified_distance_moved*42)*18",
+      "-(math.sin(query.modified_distance_moved*42)*18)",
       0
      ]
     },
     "tail2": {
      "rotation": [
       0,
-      "math.sin(query.modified_distance_moved*42-50)*26",
+      "-(math.sin(query.modified_distance_moved*42-50)*26)",
       0
      ]
     },
     "tail3": {
      "rotation": [
       0,
-      "math.sin(query.modified_distance_moved*42-100)*34",
+      "-(math.sin(query.modified_distance_moved*42-100)*34)",
       0
      ]
     }
@@ -134,7 +134,7 @@
       "0.6": [
        0,
        0.8,
-       0.5
+       -0.5
       ]
      }
     },
@@ -160,7 +160,7 @@
       "0.6": [
        0,
        1.0,
-       1.5
+       -1.5
       ]
      }
     },
@@ -181,14 +181,14 @@
     "tail": {
      "rotation": [
       -20,
-      "math.sin(query.life_time*600)*14",
+      "-(math.sin(query.life_time*600)*14)",
       0
      ]
     },
     "tail2": {
      "rotation": [
       0,
-      "math.sin(query.life_time*600-60)*18",
+      "-(math.sin(query.life_time*600-60)*18)",
       0
      ]
     }
@@ -206,7 +206,7 @@
      "position": [
       0,
       0.8,
-      0.5
+      -0.5
      ]
     },
     "head": {
@@ -218,7 +218,7 @@
      "position": [
       0,
       1.0,
-      1.5
+      -1.5
      ]
     },
     "leg_fl": {
@@ -238,21 +238,21 @@
     "tail": {
      "rotation": [
       -24,
-      "math.sin(query.life_time*700)*16",
+      "-(math.sin(query.life_time*700)*16)",
       0
      ]
     },
     "tail2": {
      "rotation": [
       0,
-      "math.sin(query.life_time*700-60)*20",
+      "-(math.sin(query.life_time*700-60)*20)",
       0
      ]
     },
     "tail3": {
      "rotation": [
       0,
-      "math.sin(query.life_time*700-120)*28",
+      "-(math.sin(query.life_time*700-120)*28)",
       0
      ]
     }
@@ -309,12 +309,12 @@
       "0.12": [
        0,
        0,
-       -2.5
+       2.5
       ],
       "0.22": [
        0,
        0,
-       0.5
+       -0.5
       ],
       "0.32": [
        0,
@@ -324,12 +324,12 @@
       "0.42": [
        0,
        0,
-       -2.5
+       2.5
       ],
       "0.5": [
        0,
        0,
-       0.5
+       -0.5
       ],
       "0.6": [
        0,
@@ -411,28 +411,28 @@
     "claw_l": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*240)*6",
+      "-(math.sin(query.anim_time*240)*6)",
       0
      ]
     },
     "claw_r": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*240+90)*-6",
+      "-(math.sin(query.anim_time*240+90)*-6)",
       0
      ]
     },
     "fing_l": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*360)*8",
+      "-(math.sin(query.anim_time*360)*8)",
       0
      ]
     },
     "fing_r": {
      "rotation": [
       0,
-      "math.sin(query.anim_time*360)*-8",
+      "-(math.sin(query.anim_time*360)*-8)",
       0
      ]
     }
@@ -444,21 +444,21 @@
     "legs_l": {
      "rotation": [
       0,
-      "math.cos(query.modified_distance_moved*60) * 18 * query.modified_move_speed",
-      "math.abs(math.cos(query.modified_distance_moved*60))*6"
+      "-(math.cos(query.modified_distance_moved*60) * 18 * query.modified_move_speed)",
+      "-(math.abs(math.cos(query.modified_distance_moved*60))*6)"
      ]
     },
     "legs_r": {
      "rotation": [
       0,
-      "math.cos(query.modified_distance_moved*60) * -18 * query.modified_move_speed",
-      "math.abs(math.sin(query.modified_distance_moved*60))*-6"
+      "-(math.cos(query.modified_distance_moved*60) * -18 * query.modified_move_speed)",
+      "-(math.abs(math.sin(query.modified_distance_moved*60))*-6)"
      ]
     },
     "body": {
      "rotation": [
       0,
-      "math.sin(query.modified_distance_moved*60)*3",
+      "-(math.sin(query.modified_distance_moved*60)*3)",
       0
      ]
     }
@@ -498,7 +498,7 @@
     "sting": {
      "rotation": [
       -30,
-      "math.sin(query.life_time*1200)*8",
+      "-(math.sin(query.life_time*1200)*8)",
       0
      ]
     },
@@ -517,14 +517,14 @@
     "claw_l": {
      "rotation": [
       0,
-      -25,
+      25,
       0
      ]
     },
     "claw_r": {
      "rotation": [
       0,
-      25,
+      -25,
       0
      ]
     }
@@ -590,12 +590,12 @@
       ],
       "0.15": [
        0,
-       -30,
+       30,
        0
       ],
       "0.3": [
        0,
-       15,
+       -15,
        0
       ],
       "0.7": [
@@ -614,12 +614,12 @@
       ],
       "0.15": [
        0,
-       30,
+       -30,
        0
       ],
       "0.3": [
        0,
-       -15,
+       15,
        0
       ],
       "0.7": [
@@ -638,22 +638,22 @@
       ],
       "0.15": [
        0,
-       40,
+       -40,
        0
       ],
       "0.28": [
        0,
-       -6,
+       6,
        0
       ],
       "0.4": [
        0,
-       40,
+       -40,
        0
       ],
       "0.55": [
        0,
-       -6,
+       6,
        0
       ],
       "0.7": [
@@ -672,22 +672,22 @@
       ],
       "0.15": [
        0,
-       -40,
+       40,
        0
       ],
       "0.28": [
        0,
-       6,
+       -6,
        0
       ],
       "0.4": [
        0,
-       -40,
+       40,
        0
       ],
       "0.55": [
        0,
-       6,
+       -6,
        0
       ],
       "0.7": [

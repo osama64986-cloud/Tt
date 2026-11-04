@@ -274,7 +274,14 @@ class Rig:
             "bones": self.bones}]}
         with open(os.path.join(RP, "models", "entity", f"{self.ident}.geo.json"), "w") as f:
             json.dump(geo, f, separators=(",", ":"))
+        _handed()
         return sum(len(b["cubes"]) for b in self.bones)
+
+
+def _handed():
+    """V1.1: الأرقام هنا انضبطت بالمعاينة القديمة (معكوسة)؛ نقلبها لحساب اللعبة بعد الكتابة (tools/handed.py)"""
+    import handed
+    handed.run("apply")
 
 
 # ════════════════════════════ القرن القاتم (Gloomhorn): أيل شبحي ════════════════════════════

@@ -26,7 +26,7 @@
     "head": {
      "rotation": [
       "math.sin(query.life_time*70)*2",
-      "math.sin(query.life_time*35)*8",
+      "-(math.sin(query.life_time*35)*8)",
       0
      ]
     },
@@ -34,14 +34,14 @@
      "rotation": [
       "math.sin(query.life_time*90)*2",
       0,
-      "-2 - math.sin(query.life_time*90)*1.5"
+      "-(-2 - math.sin(query.life_time*90)*1.5)"
      ]
     },
     "arm_r": {
      "rotation": [
       "-math.sin(query.life_time*90)*2",
       0,
-      "2 + math.sin(query.life_time*90)*1.5"
+      "-(2 + math.sin(query.life_time*90)*1.5)"
      ]
     }
    }
@@ -80,7 +80,7 @@
     "body": {
      "rotation": [
       "4*query.modified_move_speed",
-      "math.cos(query.modified_distance_moved*38.17)*3*query.modified_move_speed",
+      "-(math.cos(query.modified_distance_moved*38.17)*3*query.modified_move_speed)",
       0
      ]
     },
@@ -102,14 +102,14 @@
      "rotation": [
       0,
       0,
-      "-math.sin(query.life_time*240)*3*query.modified_move_speed"
+      "-(-math.sin(query.life_time*240)*3*query.modified_move_speed)"
      ]
     },
     "cape_r": {
      "rotation": [
       0,
       0,
-      "math.sin(query.life_time*240)*3*query.modified_move_speed"
+      "-(math.sin(query.life_time*240)*3*query.modified_move_speed)"
      ]
     }
    }
@@ -167,15 +167,15 @@
     "arm_r": {
      "rotation": [
       "math.sin(query.life_time*100 + 40)*2",
-      "math.sin(query.life_time*100)*2",
+      "-(math.sin(query.life_time*100)*2)",
       0
      ]
     },
     "head": {
      "rotation": [
       0,
-      "math.sin(query.life_time*30)*10",
-      "math.sin(query.life_time*55)*2"
+      "-(math.sin(query.life_time*30)*10)",
+      "-(math.sin(query.life_time*55)*2)"
      ]
     },
     "cape_b": {
@@ -189,14 +189,14 @@
      "rotation": [
       0,
       0,
-      "-math.sin(query.life_time*70 + 30)*1.5"
+      "-(-math.sin(query.life_time*70 + 30)*1.5)"
      ]
     },
     "cape_r": {
      "rotation": [
       0,
       0,
-      "math.sin(query.life_time*70 + 30)*1.5"
+      "-(math.sin(query.life_time*70 + 30)*1.5)"
      ]
     }
    }
@@ -207,14 +207,14 @@
     "arm_l": {
      "rotation": [
       0,
-      -15,
-      16
+      15,
+      -16
      ]
     },
     "arm_r": {
      "rotation": [
       -30,
-      25,
+      -25,
       0
      ]
     },
@@ -243,7 +243,7 @@
      "rotation": [
       96,
       0,
-      -12
+      12
      ]
     }
    }
@@ -256,22 +256,22 @@
      "rotation": {
       "0.0": [
        0,
-       23,
+       -23,
        0
       ],
       "0.35": [
        4,
-       33,
+       -33,
        0
       ],
       "0.75": [
        0,
-       23,
+       -23,
        0
       ],
       "1.6": [
        -9,
-       15,
+       -15,
        0
       ]
      }
@@ -280,32 +280,32 @@
      "rotation": {
       "0.0": [
        0,
-       -23,
+       23,
        0
       ],
       "0.35": [
        -6,
-       -13,
+       13,
        0
       ],
       "0.6": [
        3,
-       -20,
+       20,
        0
       ],
       "0.72": [
        -2,
-       -28,
+       28,
        0
       ],
       "0.75": [
        0,
-       -23,
+       23,
        0
       ],
       "1.6": [
        0,
-       -17,
+       17,
        0
       ]
      }
@@ -314,12 +314,12 @@
      "rotation": {
       "0.0": [
        -90,
-       -14,
+       14,
        0
       ],
       "1.6": [
        -92,
-       -12,
+       12,
        0
       ]
      }
@@ -328,37 +328,37 @@
      "rotation": {
       "0.0": [
        -78,
-       64,
+       -64,
        0
       ],
       "0.3": [
        -200,
        0,
-       40
+       -40
       ],
       "0.45": [
        -190,
-       15,
-       20
+       -15,
+       -20
       ],
       "0.6": [
        -210,
-       -30,
-       60
+       30,
+       -60
       ],
       "0.68": [
        -155,
-       -30,
-       60
+       30,
+       -60
       ],
       "0.73": [
        -72,
-       50,
-       12
+       -50,
+       -12
       ],
       "1.6": [
        -73,
-       66,
+       -66,
        0
       ]
      }
@@ -434,27 +434,27 @@
       "0.31": [
        -65,
        0,
-       -57
+       57
       ],
       "0.45": [
        -105,
-       -32,
-       -55
+       32,
+       55
       ],
       "0.6": [
        -84.4,
-       -64.2,
-       -13.3
+       64.2,
+       13.3
       ],
       "0.68": [
        -73.5,
-       -81.4,
-       8.9
+       81.4,
+       -8.9
       ],
       "0.72": [
        -68,
-       -90,
-       20
+       90,
+       -20
       ]
      }
     },
@@ -499,7 +499,7 @@
       "1.6": [
        0,
        0,
-       -3
+       3
       ]
      },
      "scale": {
@@ -605,17 +605,17 @@
      "rotation": {
       "0.0": [
        12,
-       9,
+       -9,
        0
       ],
       "0.15": [
        6,
-       17,
+       -17,
        0
       ],
       "0.5": [
        0,
-       23,
+       -23,
        0
       ]
      }
@@ -623,7 +623,7 @@
     "head": {
      "rotation": [
       0,
-      -21,
+      21,
       0
      ]
     },
@@ -631,17 +631,17 @@
      "rotation": {
       "0.0": [
        -100,
-       -14,
+       14,
        0
       ],
       "0.12": [
        -82,
-       -14,
+       14,
        0
       ],
       "0.5": [
        -90,
-       -14,
+       14,
        0
       ]
      }
@@ -650,17 +650,17 @@
      "rotation": {
       "0.0": [
        -55,
-       150,
+       -150,
        0
       ],
       "0.15": [
        -62,
-       140,
+       -140,
        0
       ],
       "0.5": [
        -78,
-       64,
+       -64,
        0
       ]
      }
@@ -684,17 +684,17 @@
       "0.0": [
        0,
        0,
-       -10
+       10
       ],
       "0.1": [
        0,
        0,
-       6
+       -6
       ],
       "0.25": [
        0,
        0,
-       -2
+       2
       ],
       "0.5": [
        0,
@@ -783,28 +783,28 @@
     "body": {
      "rotation": [
       0,
-      23,
+      -23,
       0
      ]
     },
     "head": {
      "rotation": [
       0,
-      -23,
+      23,
       0
      ]
     },
     "arm_l": {
      "rotation": [
       -90,
-      -14,
+      14,
       0
      ]
     },
     "arm_r": {
      "rotation": [
       -78,
-      64,
+      -64,
       0
      ]
     },

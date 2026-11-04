@@ -365,6 +365,11 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص شاشة الخيميائي فشل: {e}")
 
+# V1.1: الموديلات والأنيميشن اللي انضبطت بالمعاينة القديمة (معكوسة) لازم تكون مقلوبة لحساب اللعبة (tools/handed.py)
+r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "handed.py"), "--check"], capture_output=True)
+if r.returncode != 0:
+    err("يمين/يسار: " + r.stdout.decode("utf-8", "replace")[-1200:])
+
 # 9) المحاكي: يشغل كل المهارات والكاتانا والبوصلة والـHUD على عالم وهمي ويكشف الأخطاء المبلوعة
 if node and "--no-sim" not in sys.argv:
     r = subprocess.run([node, os.path.join(ROOT, "tools", "sim", "run_sim.mjs")], capture_output=True)

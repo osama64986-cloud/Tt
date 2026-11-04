@@ -61,6 +61,8 @@ class Mod:
         out.save(os.path.join(TEX, f"sh_{self.name}.png"))
         with open(os.path.join(GEO, f"sh_{self.name}.geo.json"), "w", encoding="utf-8") as f:
             json.dump(self.geo, f, separators=(",", ":"))
+        import handed                                                           # V1.1: قلب يمين/يسار لحساب اللعبة (tools/handed.py)
+        handed.run("apply")
         return len(self.palette)
 
 

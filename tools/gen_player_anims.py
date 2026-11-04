@@ -271,6 +271,8 @@ def main():
     os.makedirs(os.path.join(RP, "animations"), exist_ok=True)
     with open(os.path.join(RP, "animations", "sh_player.animation.json"), "w", encoding="utf-8") as f:
         json.dump({"format_version": "1.8.0", "animations": anims}, f, indent=1)
+    import handed                                  # V1.1: الأرقام انضبطت بالمعاينة القديمة (معكوسة): نقلبها لحساب اللعبة،
+    handed.run("apply")                            # والداش يسار/يمين يتبادلون (المراية تقلب الجهة). المعاينة تحت تبقى بالحساب القديم
     info = {n: {"id": f"animation.sh.player.{n}", "len": ANIMS[n][0]} for n in ANIMS}
     for n in ("sprint", "idle", "idle_combat", "walk"):
         info[n] = {"id": f"animation.sh.player.{n}", "len": 0}
