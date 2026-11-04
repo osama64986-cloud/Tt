@@ -104,7 +104,7 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     addEffect(id, dur, o) { effectLog.push(id); (this._effs = this._effs || {})[id] = { dur, amp: o && o.amplifier }; stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l, o) { this.location = { x: l.x, y: l.y, z: l.z }; if (o && o.facingLocation) { this._yaw = (Math.atan2(-(o.facingLocation.x - l.x), o.facingLocation.z - l.z) * 180) / Math.PI; } else if (o && o.rotation) this._yaw = o.rotation.y; }, remove() { this._valid = false; }, kill() { this._valid = false; },
     setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire(sec) { this._fire = tick + Math.round((sec || 0) * 20); stats.fires = (stats.fires || 0) + 1; },
-    setRotation(r) { if (r) this._yaw = r.y; }, getRotation() { return { x: 0, y: this._yaw || 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; },
+    setRotation(r) { if (r) this._yaw = r.y; }, getRotation() { return { x: 0, y: this._yaw || 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; }, clearVelocity() {},
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },
     getHeadLocation() { return { x: this.location.x, y: this.location.y + 1.62, z: this.location.z }; },
@@ -244,6 +244,31 @@ export const __sim = {
       console.log(`${r.id.padEnd(16)} ${String(r.particles).padStart(6)} ${String(r.fx).padStart(7)} ${String(r.sounds).padStart(6)} ${String(Math.round(r.damage)).padStart(5)}`);
       if (r.particles === 0 && r.fx === 0) failures.push(`${r.id}: بدون مؤثرات بصرية`);
       if (r.sounds === 0) failures.push(`${r.id}: بدون صوت`);
+    }
+    // V1: سجن البلورات حبس حقيقي: المكان ينقفل (حتى لو انضرب أو اندفع) ومهارات الوحش الخاصة توقف لحد ما ينكسر
+    {
+      setState(baseState("crystal")); spawnZombies(1); system_cd_reset();
+      const z = entities[0]; await useItem("sh:skill_prison"); advance(2);
+      const at0 = { ...z.location };
+      z.location = { x: at0.x + 3, y: at0.y, z: at0.z + 2 }; advance(4);
+      const locked = Math.hypot(z.location.x - at0.x, z.location.z - at0.z) < 0.2;
+      advance(120); z.location = { x: at0.x + 3, y: at0.y, z: at0.z + 2 }; advance(4);
+      const freed = Math.hypot(z.location.x - at0.x, z.location.z - at0.z) > 1;
+      // وحش Grim محبوس: ما يستعمل مهارات خلال الحبس، ويرجع يستعملها بعده
+      entities.length = 0; system_cd_reset(); player.location = { x: 0, y: 64, z: 0 }; player._hp = 2000; player._max = 2000;
+      const g = mkEntity("sh:gloomhorn", { x: 0, y: 64, z: 5 }, dims.overworld, 90); entities.push(g);
+      const gv = player.getEntitiesFromViewDirection; player.getEntitiesFromViewDirection = () => [{ entity: g, distance: 5 }];
+      await useItem("sh:skill_prison"); player.getEntitiesFromViewDirection = gv;
+      let skillIn = false, skillAfter = false, gd0 = stats.damage || 0;
+      for (let t = 0; t < 96; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (g.getProperty("sh:state")) skillIn = true; }
+      const dmgIn = Math.round((stats.damage || 0) - gd0);
+      for (let t = 0; t < 1200 && !skillAfter; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; if (g.getProperty("sh:state")) skillAfter = true; }
+      console.log(`\nسجن البلورات: المكان مقفول ${locked ? "✔" : "✖"} | ينفك بعده ${freed ? "✔" : "✖"} | وحش محبوس بدون مهارات ${!skillIn && dmgIn === 0 ? "✔" : "✖"} | يرجع بعد الحبس ${skillAfter ? "✔" : "✖"}`);
+      if (!locked) failures.push("سجن البلورات: الوحش يطلع من مكانه");
+      if (!freed) failures.push("سجن البلورات: الوحش بقى مقفول بعد ما انتهى");
+      if (skillIn || dmgIn) failures.push("سجن البلورات: الوحش المحبوس استعمل مهارته");
+      if (!skillAfter) failures.push("سجن البلورات: الوحش ما رجع يستعمل مهاراته بعد الحبس");
+      entities.length = 0; player._hp = 20; player._max = 20; system_cd_reset();
     }
     // الأسلحة: كل سلاح مهارتين (استعمال / سنيك + استعمال)
     setState(baseState("star")); player.setDynamicProperty("sh_kat", JSON.stringify({ lv: 5, xp: 0 }));
@@ -440,10 +465,61 @@ export const __sim = {
     // حكاية العالم
     {
       ui.nextSelection = btn("[World Story]"); ui.formsShown.length = 0; ui.cancelWhenEmpty = false; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 30));
-      const lore = ui.formsShown.find((f) => f.title === "The Tale of the Fallen Star");
-      console.log(lore ? "حكاية العالم تفتح ✔ (" + lore.buttons.length + " فصول)" : "حكاية العالم ما فتحت");
+      const lore = ui.formsShown.find((f) => f.title === "The Chronicle of Etheria");
+      console.log(lore ? "سجلّ إثيريا يفتح ✔ (" + lore.buttons.length + " فصول)" : "سجلّ إثيريا ما فتح");
       if (!lore) failures.push("حكاية العالم ما فتحت");
+      else if (lore.buttons.length !== 8) failures.push("سجلّ إثيريا لازم 8 (مقدمة + 7 فصول)");
       ui.nextSelection = 0;
+    }
+    // V1: طور القصة: المتتبع فوق يمين (العنوان الفرعي)، «اكتملت المهمة» ثم يختفي ثم الجاية، والمكافأة؛ ولاعب قديم ينحسبله اللي خلصه بدون مكافأة
+    {
+      const subOf = () => (stats.titleOpts && stats.titleOpts.subtitle) || "";
+      player.setDynamicProperty("sh_story", undefined); player.setDynamicProperty("sh_lang", undefined);
+      setState({ ...baseState(null), power: null, training: {} }); advance(30);
+      const sub0 = subOf().replace(/§./g, "");
+      const xp0 = JSON.parse(player.getDynamicProperty("sh")).xp || 0;
+      setState({ ...JSON.parse(player.getDynamicProperty("sh")), power: "iron" });
+      let flash = "", gap = false, next = "";
+      for (let t = 0; t < 200 && !next; t += 5) { advance(5); const sb = subOf().replace(/§./g, ""); if (/Mission complete/.test(sb)) flash = sb; else if (flash && sb.trim() === "") gap = true; else if (flash && gap && /Trainer/.test(sb)) next = sb; }
+      const xp1 = JSON.parse(player.getDynamicProperty("sh")).xp || 0, stS = JSON.parse(player.getDynamicProperty("sh_story"));
+      // لاعب قديم: عنده قدرة وخلص التدريب ورتبته محارب: الخطوات اللي مو «من لحظة الفتح» تنحسب بهدوء
+      player.setDynamicProperty("sh_story", undefined);
+      setState({ ...baseState("iron"), rank: 2, level: 30 }); const xpOld0 = JSON.parse(player.getDynamicProperty("sh")).xp || 0;
+      advance(30);
+      const stOld = JSON.parse(player.getDynamicProperty("sh_story")), xpOld1 = JSON.parse(player.getDynamicProperty("sh")).xp || 0;
+      console.log(`\nطور القصة: المتتبع "${sub0.replace(/\n/g, " / ")}" ${/Awaken your power/.test(sub0) ? "✔" : "✖"} | اكتملت ${flash ? "✔" : "✖"} ثم اختفت ${gap ? "✔" : "✖"} ثم الجاية ${next ? "✔" : "✖"} | مكافأة +${xp1 - xp0} ${xp1 > xp0 ? "✔" : "✖"} | خطوة ${stS.i}`);
+      console.log(`  لاعب قديم: وقف عند الخطوة ${stOld.i} (${stOld.i === 2 ? "✔ اصطاد الوحوش" : "✖"}) بدون مكافأة ${xpOld1 === xpOld0 ? "✔" : "✖"}`);
+      if (!/Awaken your power/.test(sub0)) failures.push("طور القصة: المتتبع ما يعرض أول مهمة");
+      if (!flash || !gap || !next) failures.push("طور القصة: اكتملت المهمة/الاختفاء/المهمة الجاية ما اشتغلت");
+      if (!(xp1 > xp0) || stS.i !== 1) failures.push("طور القصة: الخطوة ما انحسبت أو بدون مكافأة");
+      if (stOld.i !== 2 || xpOld1 !== xpOld0) failures.push("طور القصة: اللاعب القديم ما انحسب صح");
+      player.setDynamicProperty("sh_story", undefined); setState(baseState("iron"));
+    }
+    // V1: اللغة العربية من الإعدادات (نفس طريق اللاعب: الكتاب ← الإعدادات ← اللغة): تتشكل (أشكال العرض FE70-FEFF، بدون حروف منفصلة)
+    // بالقوائم والدردشة والمتتبع، وترجع إنكليزي
+    {
+      const isShaped = (t) => /[\uFE70-\uFEFF]/.test(t) && !/[\u0621-\u064A]/.test(t.replace(/§./g, ""));
+      player.setDynamicProperty("sh_story", undefined);
+      const openBook = async (queue) => { ui.formsShown.length = 0; ui.queue = [...queue]; ui.cancelWhenEmpty = true; await useItem("sh:evolution_book"); advance(5); await new Promise((r) => setTimeout(r, 40)); return ui.formsShown; };
+      const en = (await openBook([]))[0] || { buttons: [] };
+      const sIdx = en.buttons.findIndex((b) => /Settings/.test(b));
+      await openBook([sIdx, 0]);
+      const langNow = player.getDynamicProperty("sh_lang");
+      const bk = (await openBook([]))[0] || { body: "", buttons: [] };
+      stats.messages.length = 0; advance(40);
+      const chat = stats.messages.join("\n"), trk = (stats.titleOpts && stats.titleOpts.subtitle) || "";
+      await openBook([sIdx, 0]);
+      const back = player.getDynamicProperty("sh_lang");
+      const okForm = bk.body.startsWith("§r§r§r") && bk.buttons.some(isShaped);
+      console.log(`العربي: الإعدادات تحوّل للعربي ${langNow === "ar" ? "✔" : "✖"} | الكتاب بخط أكبر ومتشكل ${okForm ? "✔" : "✖"} | زر الإعدادات ${sIdx >= 0 ? "✔" : "✖"} | الدردشة متشكلة ${isShaped(chat) ? "✔" : "✖"} | المتتبع ${trk.startsWith("§r§r§r") && isShaped(trk) ? "✔" : "✖"} | يرجع إنكليزي ${back === "en" ? "✔" : "✖"}`);
+      if (langNow !== "ar") failures.push("العربي: زر اللغة بالإعدادات ما حوّل للعربي");
+      if (!okForm) failures.push("العربي: الكتاب ما تشكّل أو بدون علامة الخط الأكبر");
+      if (sIdx < 0) failures.push("العربي: زر الإعدادات ما موجود");
+      if (!isShaped(chat)) failures.push("العربي: رسائل الدردشة ما تشكّلت");
+      if (!(trk.startsWith("§r§r§r") && isShaped(trk))) failures.push("العربي: متتبع القصة ما تشكّل");
+      if (back !== "en") failures.push("العربي: الإعدادات ما ترجّع الإنكليزي");
+      player.setDynamicProperty("sh_story", undefined); ui.queue = []; ui.nextSelection = 0; ui.cancelWhenEmpty = false;
+      try { player.removeTag("sh_hud_off"); } catch (e) { /* */ }
     }
     // الظهور المتدرج
     {

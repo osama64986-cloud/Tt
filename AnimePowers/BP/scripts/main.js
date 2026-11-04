@@ -1,6 +1,6 @@
 import { world, system, ItemStack, MolangVariableMap, EntityDamageCause } from "@minecraft/server";
 import * as MC from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
+import { ActionFormData as RawActionForm } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
@@ -13,6 +13,41 @@ import { PANIM } from "./panims.js";
 import { ACH, ACH_CATS } from "./achievements.js";
 import { P as vP, nearEye as vNearEye, PT, dustRing as vDustRing } from "./vfx.js";
 import { IRON, WIND, ECHO, CRYSTAL, ACCOUNT, SPACE, LAW, STAR, TRAIT, TRAIT_COLOR, WEAPON, MONSTER, SYS, HARVEST, CURSE } from "./skillfx.js";
+import { show as i18nShow, pick as pickLang, AR_MARK, visual as arVisual, trText } from "./i18n.js";
+import { CHRONICLE, CHRONICLE_TITLE, STORY, STORY_STEPS, STORY_END, STORY_TITLE } from "./story.js";
+
+// ───────────────────────── V1: لغة كل لاعب (إعدادات المود بالكتاب) ─────────────────────────
+// "en" أو "ar" بخاصية sh_lang. كل نص يطلع للاعب يمر من هنا: القوائم (ActionFormData تحت)، الدردشة (say)،
+// الإشعارات والإعلانات والواجهة (renderHud)، ومتتبع القصة. العربي يترجم من القاموس ويتشكل وينقلب (i18n.js).
+const langCache = new Map();
+function langOf(p) {
+  const c = langCache.get(p.id);
+  if (c) return c;
+  let l = "en";
+  try { l = p.getDynamicProperty("sh_lang") === "ar" ? "ar" : "en"; } catch (e) { /* */ }
+  langCache.set(p.id, l);
+  return l;
+}
+function setLang(p, l) { try { p.setDynamicProperty("sh_lang", l); } catch (e) { /* */ } langCache.set(p.id, l); }
+const T = (p, s, where = "chat") => i18nShow(langOf(p), s, where);
+// القوائم: نفس واجهة ActionFormData، بس وقت العرض تترجم للاعب (العنوان، النص بخط عربي أكبر، الأزرار)
+class ActionFormData {
+  constructor() { this._t = ""; this._b = undefined; this._btn = []; }
+  title(t) { this._t = t; return this; }
+  body(b) { this._b = b; return this; }
+  button(text, icon) { this._btn.push([text, icon]); return this; }
+  show(player) {
+    const lang = langOf(player), f = new RawActionForm();
+    const raw = lang !== "ar" || (typeof this._t === "string" && this._t.includes("§a§l§c§h"));   // شاشة الخيميائي المرسومة: نصوصها بخلاياها
+    f.title(raw ? this._t : i18nShow(lang, this._t, "title"));
+    if (this._b !== undefined) f.body(raw ? this._b : AR_MARK + i18nShow(lang, this._b, "form"));
+    for (const [t, ic] of this._btn) {
+      const tt = raw ? t : t.split("\n").map((ln) => i18nShow(lang, ln, "button")).join("\n");   // سطر الزر ما يتقطع (نصوص الأزرار قصيرة)
+      if (ic) f.button(tt, ic); else f.button(tt);
+    }
+    return f.show(player);
+  }
+}
 
 // ───────────────────────── البيانات ─────────────────────────
 const TRAIN_NEED = 3;
@@ -162,14 +197,15 @@ function usageOf(s) {
 
 
 // رتب الوحوش (سلم خاص بيهم، مطابق لألوان الصدوع): كل رتبة وحش تقابل رتبة لاعب بنفس الرقم
+// V1: الأوصاف تطابق درجات الصدع الحالية (الأزرق حارسه Grim، البنفسجي Vile، القرمزي Cursed، الهاوي أقوى)
 const MON_RANKS = [
-  { name: "Lowly", col: "§9", desc: "the weakest spawn of the Abyss (blue rifts)" },
-  { name: "Grim", col: "§a", desc: "dark-hearted hunters that stalk travellers at dusk" },
-  { name: "Vile", col: "§5", desc: "the Abyss has tainted them (violet rifts)" },
-  { name: "Cursed", col: "§d", desc: "they hit harder and carry the Abyss's strength" },
-  { name: "Dread", col: "§c", desc: "veterans of a hundred hunts (crimson rifts)" },
+  { name: "Lowly", col: "§9", desc: "the weakest spawn of the Abyss" },
+  { name: "Grim", col: "§a", desc: "dark-hearted hunters that stalk travellers at dusk (they guard blue rifts)" },
+  { name: "Vile", col: "§5", desc: "beasts the Abyss has tainted (they guard violet rifts)" },
+  { name: "Cursed", col: "§d", desc: "they carry the Abyss's own strength (they guard crimson rifts)" },
+  { name: "Dread", col: "§c", desc: "veterans of a hundred hunts" },
   { name: "Calamity", col: "§6", desc: "one of them can empty a village" },
-  { name: "Cataclysm", col: "§4", desc: "the Abyss's own wardens (black-gold rifts)" },
+  { name: "Cataclysm", col: "§4", desc: "the Abyss's own wardens (black-gold Abyssal rifts)" },
 ];
 const monRankName = (rk) => (rk < 0 ? "Training" : MON_RANKS[Math.min(MON_RANKS.length - 1, rk)].name);
 // وحوش: rank -1 = وحش تدريب (بلا رتبة)
@@ -287,17 +323,19 @@ function banner(p, text, ticks = 60) {
   renderHud(p);                                                                 // تنعرض فوراً (عجلة سحب القدرة تتبدل أسرع من دورة الـHUD)
 }
 // الكتابة فوق الهوت بار: تنرسل كعنوان (title)، وملف RP/ui/hud_screen.json ينقل العنوان فوق الهوت بار، صغير وبدون خلفية
+// V1: العنوان الفرعي (subtitle) يحمل مهمة القصة: ملف hud_screen.json يعرضه صغير فوق يمين الشاشة. فكل عنوان ينرسل ويا المهمة
+// (أو " " إذا ماكو)، وإذا ماكو كتابة تحت بس أكو مهمة نرسل عنوان " " (ما يبين) حتى تبقى المهمة ظاهرة.
 const bottomSent = new Map();
-function setBottomText(p, text) {
-  if (!text) {
+function setBottomText(p, text, sub = "") {
+  if (!text && !sub) {
     if (bottomSent.get(p.id)) { try { p.onScreenDisplay.clearTitle(); } catch (e) { /* */ } bottomSent.set(p.id, ""); }
     return;
   }
-  p.onScreenDisplay.setTitle(text, { fadeInDuration: 0, stayDuration: 14, fadeOutDuration: 4 });
-  bottomSent.set(p.id, text);
+  p.onScreenDisplay.setTitle(text || " ", { fadeInDuration: 0, stayDuration: 14, fadeOutDuration: 4, subtitle: sub || " " });
+  bottomSent.set(p.id, `${text}\u0001${sub}`);
 }
 function say(p, text) {
-  try { p.sendMessage(text); } catch (e) { /* */ }
+  try { p.sendMessage(T(p, text, "chat")); } catch (e) { /* */ }
 }
 
 // ───────────────────────── واجهة اللاعب (HUD) ─────────────────────────
@@ -485,24 +523,25 @@ function renderHud(p) {
     try {
       const now = system.currentTick;
       const plain = p.hasTag("sh_hud_plain"), off = p.hasTag("sh_hud_off");
-      const st = getState(p);
+      const st = getState(p), lang = langOf(p);
       const h = off ? { line: "", tip: "" } : heldLine(p, st, plain);
       if (!off) {
         let text = hudText(p, st, plain);
         const strip = skillStrip(p, st, h.skillId, plain), dg = dashGlyphs(p, plain);
         if (strip) text += "\n" + (dg ? dg + " " : "") + strip;                 // شحنات الداش أول سطر المهارات
         else if (dg) text += "\n" + dg;
-        p.onScreenDisplay.setActionBar(text);
+        p.onScreenDisplay.setActionBar(i18nShow(lang, text, "hud"));
       }
+      // تحت: الإعلانات والرسائل جمل (تنقلب كاملة بالعربي)، وسطر الأيتم وتلميحه مرتبين بفواصل (كل مقطع عربي ينقلب بمكانه)
       const low = [];
       const b = banners.get(p.id);
-      if (b && b.until > now) low.push(b.text);
+      if (b && b.until > now) low.push(i18nShow(lang, b.text, "title"));
       if (!off) {
         const m = tempMsg.get(p.id);
-        if (m && m.until > now) low.push(m.text);
-        else low.push(h.tip, h.line);
+        if (m && m.until > now) low.push(i18nShow(lang, m.text, "title"));
+        else low.push(i18nShow(lang, h.tip, "seg"), i18nShow(lang, h.line, "seg"));
       }
-      setBottomText(p, low.filter(Boolean).join("\n"));
+      setBottomText(p, low.filter(Boolean).join("\n"), storyTracker(p, lang, now));
     } catch (e) { /* */ }
 }
 system.runInterval(() => { for (const p of world.getAllPlayers()) renderHud(p); }, 5);
@@ -945,19 +984,21 @@ async function openPowerMenu(player) {
   const st0 = getState(player);
   if (st0.power) return openBook(player);
   if (st0.powerless) {
-    await showForm(player, new ActionFormData().title("Unbound").body("§8The crystal stayed dark for you.§r\n\nYou carry no power, but your body grows with your rank:\n§c+ Strength§7 (more at Warrior and Legend)\n§b+ Speed§7 (more at Elite)\n§7+ Resistance at Commander\n\nFight with the mod's weapons and the Rhythm Strike (from Elite, 30% stronger for the Unbound).").button("§aOK"));
+    // V1: بلا قدرة (Unbound) عنده كتاب كامل هم: القصة والرتب والحالة والإنجازات والمهمات والإعدادات
+    const f = new ActionFormData().title("Evolution Book").body("§8The crystal stayed dark for you.§r\n\nYou carry no power, but your body grows with your rank:\n§c+ Strength§7 (more at Warrior and Legend)\n§b+ Speed§7 (more at Elite)\n§7+ Resistance at Commander\n\nFight with the mod's weapons and the Rhythm Strike (from Elite, 30% stronger for the Unbound).");
+    const extra = bookExtras(player, f, true);
+    const r = await showForm(player, f);
+    if (!r.canceled) extra[r.selection]();
     return;
   }
   if (!player.hasTag("sh_menu")) {
-    // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو). والإنجازات تنفتح من هنا هم.
+    // السحب يصير بمعبد النجمة: ندلك عليه (أو نبنيه إذا ماكو). والقصة والإنجازات والمهمات والإعدادات تنفتح من هنا هم.
     const f = new ActionFormData().title("Evolution Book").body("§7Your power is not drawn yet. Find the §bStar Temple§7 and step on its golden plate.")
-      .button("§1Guide me to the Star Temple", "textures/ui/sh_ach/star_touched")
-      .button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey")
-      .button(`§1[Missions] §8${misState(player).i}/${MISSIONS.length}`, "textures/ui/sh_ach/cat_conquest");
+      .button("§1Guide me to the Star Temple", "textures/ui/sh_ach/star_touched");
+    const extra = bookExtras(player, f, false);
     const r = await showForm(player, f);
     if (r.canceled) return;
-    if (r.selection === 1) { openAchievements(player); return; }
-    if (r.selection === 2) { openMissions(player); return; }
+    if (r.selection >= 1) { extra[r.selection - 1](); return; }
     ensureTemple(player);
     return;
   }
@@ -1016,42 +1057,159 @@ async function showRanks(player) {
   await showForm(player, new ActionFormData().title("Ranks").body(body).button("§aOK"));
 }
 
-// ───────────────────────── حكاية العالم: «النجمة الساقطة» ─────────────────────────
-// 7 فصول، فصل لكل رتبة. الفصل ينفتح لما توصل رتبته (حتى تكون الرتب لها معنى بالحكاية).
-const LORE_TITLE = "The Tale of the Fallen Star";
-const LORE = [
-  ["The Night the Star Fell",
-    "A thousand years ago, on the longest night the world remembers, a great star named \"Siraj al-Fajr\" fell from the sky. Its heart did not burn out: it froze into a crystal and sank into the earth, and wherever its light reached, temples grew around it.\n\nWhoever steps into that light draws a power, and the crystal shows its worth in color: white for common, then green, blue, violet, gold, and the red of the rarest. Once in two hundred souls the crystal stays dark. Those are the Unbound: no power answers them, so their own bodies grow stronger instead."],
-  ["The Order of Dawn",
-    "The first who carried powers founded the \"Order of Dawn\" to keep them from the wrong hands. They set seven ranks, one for each night the star burned: Novice, Trainee, Warrior, Elite, Commander, Legend, and Master.\n\nNo rank was ever given by birth or gold, only by what you defeat and what you learn. The Trainer is the last of the Order who still teaches. They built Sakura Village as their first home and planted pink trees so they would remember that beauty deserves protection."],
-  ["The Abyss",
-    "But the star did not fall alone. A black void followed it as a shadow follows its owner: \"the Abyss\". Whatever it touches loses its color, then its name.\n\nFrom it came the creatures you fight: the Ember Imp was born from the ashes of burned villages, the Rust Guard watched a temple until it forgot what it guarded, the Shadow Hound hunts on the star's old trail, and the Sand Scorpion carries the Abyss's own venom in its tail."],
-  ["The Rifts",
-    "The Abyss still breathes through wounds in the world: the Rifts. They open without warning, spread rot around them, and spill out waves of its creatures. At the end of each wave stands a Warden, and the color of the Rift tells its rank: blue for the Lowly, violet for the Vile, crimson for the Dread, and black-gold for the Cataclysm.\n\nSeal a Rift by defeating its Warden. Leave it open, and the Warden walks free."],
-  ["Sunset Palace",
-    "When the Abyss came for the Order, its last commanders made their stand in a palace on the edge of the horizon, \"Sunset Palace\", where the final light of their days fell. They fought with a spear of sunlight and a maul of living stone.\n\nThe palace fell, but the Abyss paid for it and sank back into the deep. Its towers still hide the weapons the guards could not carry away. Weapons remember: the more you fight with one, the more it gives back."],
-  ["The Abyss Katana",
-    "Light alone could not close the Abyss, so the last smith of the Order forged a blade from its own darkness: \"the Abyss Katana\". Every victory makes it sharper, and every strike takes a little of you.\n\nHe buried it in the \"Dark Sword Shrine\" beneath guards who never sleep and said: \"Only one who can carry it without being carried by it may lift it.\" The Explorer's Compass knows the way.\n\nThe smith's apprentice could not sleep while only darkness guarded the world. From the last light of the fallen star she forged its opposite: \"the Oath of Light\", a silver sword that never dulls. It rests in the \"Light Sword Shrine\", beneath a beam that rises to the sky. Whoever holds both blades holds the balance of the world."],
-  ["The Heart of the Abyss",
-    "You are the \"Master\" now, and here is what the Trainer never said: the Abyss is not an enemy from outside. It is the rest of the fallen star, still searching for its heart, the crystal in the temples. Every Rift is it reaching out; every creature is its call.\n\nYou can close it forever, or return the heart and let the star rise again. Your choice will write the final chapter.\n\n§7(The final chapter arrives in a future update)"],
-];
+// ───────────────────────── V1: «سجلّ إثيريا» (قصة نشأة العالم) ─────────────────────────
+// المقدمة مفتوحة دائماً، وبعدها فصل لكل رتبة (الفصل i ينفتح برتبة i-1). النصوص بلغتين بـ story.js.
 async function openLore(player) {
-  const st = getState(player);
-  const form = new ActionFormData().title(LORE_TITLE).body(`§7One chapter per rank. Your rank: §e${RANKS[st.rank]}§7 (${Math.min(LORE.length, st.rank + 1)}/${LORE.length} chapters unlocked)`);
-  LORE.forEach((c, i) => form.button(i <= st.rank ? `§d${i + 1}. ${c[0]}` : `§8${i + 1}. §c[Locked] rank ${RANKS[i]}`));
+  const st = getState(player), lang = langOf(player);
+  const open = (i) => i === 0 || i - 1 <= st.rank;
+  const n = CHRONICLE.filter((c, i) => open(i)).length;
+  const form = new ActionFormData().title(pickLang(lang, CHRONICLE_TITLE))
+    .body(lang === "ar" ? `§7المقدمة مفتوحة، وبعدها فصل لكل رتبة. رتبتك: §e${RANKS[st.rank]}§7 (${n}/${CHRONICLE.length} مفتوحة)` : `§7The prologue is open, then one chapter per rank. Your rank: §e${RANKS[st.rank]}§7 (${n}/${CHRONICLE.length} unlocked)`);
+  CHRONICLE.forEach((c, i) => {
+    const label = i === 0 ? pickLang(lang, { en: "Prologue", ar: "المقدمة" }) : `${i}`;
+    form.button(open(i) ? `§d${label}. ${pickLang(lang, c[0])}` : `§8${label}. §c${lang === "ar" ? "مقفول: رتبة" : "[Locked] rank"} ${RANKS[i - 1]}`);
+  });
   const r = await showForm(player, form);
   if (r.canceled) return;
   const i = r.selection;
-  if (i > st.rank) { notify(player, `§7This chapter unlocks at rank ${RANKS[i]}`, 60); return; }
+  if (!open(i)) { notify(player, `§7This chapter unlocks at rank ${RANKS[i - 1]}`, 60); return; }
   achAddSet(player, "lore", i);
-  await showForm(player, new ActionFormData().title(`${i + 1}. ${LORE[i][0]}`).body(LORE[i][1]).button("§aBack"));
+  await showForm(player, new ActionFormData().title(pickLang(lang, CHRONICLE[i][0])).body(pickLang(lang, CHRONICLE[i][1])).button("§aBack"));
   return openLore(player);
 }
 function introStory(player) {
-  banner(player, `§l§9Anime Powers\n§7${LORE_TITLE}`, 140);
+  banner(player, `§l§dEtheria §fV1\n§7${pickLang(langOf(player), CHRONICLE_TITLE)}`, 140);
   sfxPlayer(player, "sh.orbit", 0.8, 0.8);
-  say(player, `§9[Story] §f${LORE[0][1].split("\n")[0]}`);
-  say(player, "§7Open the Evolution Book > [World Story] to read the other chapters; every new rank unlocks one.");
+  sayRaw(player, langOf(player), "§d[Etheria] §f", pickLang(langOf(player), CHRONICLE[0][1]).split("\n")[0]);
+  say(player, "§7Open the Evolution Book: §d[Story Mode]§7 follows your journey, §d[World Story]§7 tells how Etheria began, and §b[Settings]§7 switches the language (English / Arabic).");
+}
+// نص جاهز بلغة اللاعب (مثل نصوص story.js) يطلع بالدردشة: العربي يتشكل وينقلب ويتقطع بدون ما يمر على القاموس
+function sayRaw(p, lang, prefix, text) {
+  try { p.sendMessage(lang === "ar" ? arVisual(trText(prefix) + text, 175) : prefix + text); } catch (e) { /* */ }
+}
+
+// ───────────────────────── V1: طور القصة ─────────────────────────
+// الخطوات بالترتيب (STORY_STEPS)؛ الحالة بخاصية sh_story = { i: الخطوة الحالية، base: بداية العد، hide: إخفاء المتتبع }.
+// لما تخلص خطوة: مكافأة، والمتتبع (فوق يمين) يكتب «اكتملت المهمة» 3.5 ثانية ويختفي، وبعد ثانيتين تطلع الخطوة الجاية
+// وحكايتها بالدردشة. لاعب قديم (قبل V1) أول مرة: الخطوات اللي مخلصها من قبل تنحسب بهدوء بدون مكافأة.
+const STORY_FLASH = 70, STORY_GAP = 40;
+const storyFx = new Map();                         // pid -> { flashUntil, showAt, done: الخطوة اللي خلصت (للعرض) }
+function storyState(p) {
+  try { const r = p.getDynamicProperty("sh_story"); if (typeof r === "string") { const o = JSON.parse(r); return { i: Math.min(STORY_STEPS.length, o.i || 0), base: o.base || 0, hide: !!o.hide, ann: o.ann ?? -1 }; } } catch (e) { /* */ }
+  return { i: 0, base: 0, hide: false, ann: -1, fresh: true };
+}
+function storySave(p, s) { try { p.setDynamicProperty("sh_story", JSON.stringify({ i: s.i, base: s.base, hide: s.hide, ann: s.ann })); } catch (e) { /* */ } }
+function storyProgress(p, s, st, a) {
+  const step = STORY_STEPS[s.i];
+  if (!step) return null;
+  const v = misValue(p, step, st || getState(p), a || achGet(p));
+  const cur = step.delta ? Math.max(0, v - (s.base || 0)) : v;
+  return { step, cur: Math.min(cur, step.need), done: cur >= step.need };
+}
+function storyBase(p, step, st, a) { return step && step.delta ? misValue(p, step, st, a) : 0; }
+function storyAnnounce(p, s) {
+  const step = STORY_STEPS[s.i], lang = langOf(p);
+  if (!step || s.ann === s.i) return;
+  s.ann = s.i; storySave(p, s);
+  const ch = STORY[step.ch];
+  sayRaw(p, lang, "", `§d${pickLang(lang, ch.t)}\n§f${pickLang(lang, step.n)}\n§e▶ ${pickLang(lang, step.o)}`);
+  sfxPlayer(p, "sh.select", 0.6, 0.8);
+}
+function storyCheck(p) {
+  try {
+    let s = storyState(p);
+    const st = getState(p), a = achGet(p), now = system.currentTick;
+    if (s.fresh) {                                                     // أول مرة: نعدّي اللي مخلّص من قبل (بدون مكافآت)
+      s = { i: 0, base: 0, hide: false, ann: -1 };
+      while (s.i < STORY_STEPS.length && !STORY_STEPS[s.i].delta) { const pr = storyProgress(p, s, st, a); if (!pr || !pr.done) break; s.i++; }
+      s.base = storyBase(p, STORY_STEPS[s.i], st, a);
+      storySave(p, s);
+    }
+    const fx = storyFx.get(p.id) || {};
+    if (fx.showAt && now < fx.showAt) return;                           // لسه نعرض «اكتملت المهمة»
+    if (s.ann !== s.i && s.i < STORY_STEPS.length) storyAnnounce(p, s);
+    const pr = storyProgress(p, s, st, a);
+    if (!pr || !pr.done) return;
+    const step = pr.step;
+    try { const s2 = getState(p); const ups = addXp(s2, step.xp); saveState(p, s2); announceUps(p, ups); } catch (e) { /* */ }
+    for (const [id, n] of step.items) { try { giveItem(p, id, n); } catch (e) { /* */ } }
+    s.i++;
+    s.base = storyBase(p, STORY_STEPS[s.i], getState(p), achGet(p));
+    storySave(p, s);
+    storyFx.set(p.id, { flashUntil: now + STORY_FLASH, showAt: now + STORY_FLASH + STORY_GAP, done: s.i - 1 });
+    sfxPlayer(p, "random.levelup", 0.5, 1.4);
+    if (s.i >= STORY_STEPS.length) later(STORY_FLASH + STORY_GAP, () => { if (valid(p)) { const l = langOf(p); sayRaw(p, l, "", `§6${pickLang(l, STORY_END.t)}\n§f${pickLang(l, STORY_END.n)}`); } });
+  } catch (e) { /* */ }
+}
+system.runInterval(() => { for (const p of world.getAllPlayers()) storyCheck(p); }, 20);
+// المتتبع فوق يمين (سطرين صغار): الفصل، والمهمة + التقدم. يرجع نص جاهز للعرض (العربي متشكل ومقلوب)
+function storyTracker(p, lang, now) {
+  const s = storyState(p);
+  if (s.hide) return "";
+  const fx = storyFx.get(p.id);
+  if (fx && now < fx.flashUntil) {
+    const step = STORY_STEPS[fx.done];
+    const txt = `§d${step ? pickLang(lang, STORY[step.ch].t) : ""}\n§a✔ ${lang === "ar" ? "اكتملت المهمة" : "Mission complete"}`;
+    return lang === "ar" ? AR_MARK + arVisual(txt, 165) : txt;
+  }
+  if (fx && now < fx.showAt) return "";
+  const pr = storyProgress(p, s);
+  if (!pr) return "";
+  const prog = pr.step.need > 1 ? ` §e${pr.cur}/${pr.step.need}` : "";
+  const txt = `§d${pickLang(lang, STORY[pr.step.ch].t)}\n§f${pickLang(lang, pr.step.o)}${prog}`;
+  return lang === "ar" ? AR_MARK + arVisual(txt, 165) : txt;
+}
+async function openStory(player) {
+  const s = storyState(player), lang = langOf(player), pr = storyProgress(player, s);
+  const curCh = pr ? pr.step.ch : STORY.length;
+  let body;
+  if (pr) body = `§d${pickLang(lang, STORY[pr.step.ch].t)}\n\n§f${pickLang(lang, pr.step.n)}\n\n§e▶ ${pickLang(lang, pr.step.o)}${pr.step.need > 1 ? ` §7(${pr.cur}/${pr.step.need})` : ""}\n§7${lang === "ar" ? `المكافأة: ${pr.step.xp}+ خبرة` : `Reward: +${pr.step.xp} XP`}${pr.step.items.length ? " + " + pr.step.items.map(([id, n]) => `${n} ${itemLabel(id)}`).join(", ") : ""}`;
+  else body = `§6${pickLang(lang, STORY_END.t)}\n\n§f${pickLang(lang, STORY_END.n)}`;
+  const f = new ActionFormData().title(pickLang(lang, STORY_TITLE)).body(body);
+  STORY.forEach((c, ci) => {
+    if (ci < curCh) f.button(`§2✔ ${pickLang(lang, c.t)}`);
+    else if (ci === curCh) f.button(`§e▶ ${pickLang(lang, c.t)}`);
+    else f.button(`§8${lang === "ar" ? "؟؟؟ (مقفول)" : "??? (locked)"}`);
+  });
+  f.button(s.hide ? (lang === "ar" ? "§7إظهار المهمة على الشاشة" : "§7Show the mission on screen") : (lang === "ar" ? "§7إخفاء المهمة من الشاشة" : "§7Hide the mission from the screen"));
+  const r = await showForm(player, f);
+  if (r.canceled) return;
+  if (r.selection === STORY.length) { const s2 = storyState(player); s2.hide = !s2.hide; storySave(player, s2); return openStory(player); }
+  const ci = r.selection;
+  if (ci > curCh) { notify(player, "§7Finish the current chapter first", 50); return; }
+  // صفحة الفصل: حكاية كل خطوة وصلتها
+  const steps = STORY[ci].steps, lines = [];
+  steps.forEach((st, k) => {
+    const gi = STORY_STEPS.findIndex((x) => x.id === st.id);
+    if (gi > s.i) return;
+    lines.push(`§f${pickLang(lang, st.n)}\n${gi < s.i ? "§2✔" : "§e▶"} ${pickLang(lang, st.o)}`);
+  });
+  await showForm(player, new ActionFormData().title(pickLang(lang, STORY[ci].t)).body(lines.join("\n\n")).button("§aBack"));
+  return openStory(player);
+}
+// اسم أيتم قصير للمكافآت (من أسماء الأسلحة/الجرعات إن وجد، وإلا من المعرّف)
+function itemLabel(id) { return (WEAPONS[id] && WEAPONS[id].name) || id.replace(/^.*:/, "").replace(/_/g, " "); }
+
+// زر الإعدادات بلغتين (حتى اللي ما يقرا الإنكليزي يلگاه): بالإنكليزي الكلمة العربية لازم تنرسل جاهزة (متشكلة ومقلوبة)
+const settingsLabel = (lang) => (lang === "ar" ? "§b[الإعدادات / Settings]" : `§b[Settings / ${arVisual("الإعدادات")}§b]`);
+// ───────────────────────── V1: إعدادات المود (بالكتاب) ─────────────────────────
+async function openSettings(player) {
+  const lang = langOf(player), hide = storyState(player).hide, hudOff = player.hasTag("sh_hud_off");
+  const f = new ActionFormData().title(lang === "ar" ? "الإعدادات" : "Settings")
+    .body(lang === "ar" ? "§7إعدادات إثيريا (لك أنت بس). اللغة تغيّر كتاب التطور والرسائل والواجهة.\n§8أسماء الأيتمات من ملفات لغة اللعبة، وبيدروك ما بيه لغة عربية، فتبقى بالإنكليزي." : "§7Etheria settings (only for you). The language changes the Evolution Book, messages and the HUD.\n§8Item names come from the game's own language files, so they stay in the game's language.")
+    .button(lang === "ar" ? "§bاللغة: العربية\n§7اضغط للإنكليزية (English)" : `§bLanguage: English\n§7Tap for Arabic (${arVisual("العربية")}§7)`)
+    .button(lang === "ar" ? `§dمهمة القصة على الشاشة: ${hide ? "مخفية" : "ظاهرة"}` : `§dStory mission on screen: ${hide ? "hidden" : "shown"}`)
+    .button(lang === "ar" ? `§eلوحة الواجهة: ${hudOff ? "مطفأة" : "شغالة"}` : `§eHUD panel: ${hudOff ? "off" : "on"}`);
+  const r = await showForm(player, f);
+  if (r.canceled) return;
+  if (r.selection === 0) {
+    const nl = lang === "ar" ? "en" : "ar";
+    setLang(player, nl);
+    sfxPlayer(player, "sh.select", 0.7, 1.2);
+    say(player, nl === "ar" ? "§aصارت لغة إثيريا العربية." : "§aEtheria now speaks English.");
+  } else if (r.selection === 1) { const s2 = storyState(player); s2.hide = !s2.hide; storySave(player, s2); }
+  else if (r.selection === 2) { try { if (hudOff) player.removeTag("sh_hud_off"); else player.addTag("sh_hud_off"); } catch (e) { /* */ } }
+  return openSettings(player);
 }
 
 // ───────────────────────── كتاب الوحوش ─────────────────────────
@@ -1127,6 +1285,21 @@ async function showStatus(player) {
   await showForm(player, new ActionFormData().title("Status Window").body(b).button("§aOK"));
 }
 
+// أزرار الكتاب المشتركة (V1): طور القصة أول شي، وبعدها الرتب والحالة وقصة العالم والإنجازات والمهمات والإعدادات
+function bookExtras(player, form, withStatus) {
+  const lang = langOf(player), s = storyState(player), acts = [];
+  const add = (label, icon, fn) => { if (icon) form.button(label, icon); else form.button(label); acts.push(fn); };
+  add(`§d[${lang === "ar" ? "طور القصة" : "Story Mode"}] §8${Math.min(s.i, STORY_STEPS.length)}/${STORY_STEPS.length}`, "textures/ui/sh_ach/lorekeeper", () => openStory(player));
+  if (withStatus) {
+    add("§e[Ranks and how to rise]", undefined, () => showRanks(player));
+    add("§b[Status window and how to use skills]", undefined, () => showStatus(player));
+  }
+  add("§d[World Story]", undefined, () => openLore(player));
+  add(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey", () => openAchievements(player));
+  add(`§1[Missions] §8${misState(player).i}/${MISSIONS.length}`, "textures/ui/sh_ach/cat_conquest", () => openMissions(player));
+  add(settingsLabel(lang), undefined, () => openSettings(player));
+  return acts;
+}
 function skillProg(lv, xp) { return lv >= SKILL_MAX_LV ? "§6(MAX)" : `(${xp || 0}/${skillXpNeeded(lv)})`; }
 async function openBook(player) {
   const st = getState(player);
@@ -1151,18 +1324,10 @@ async function openBook(player) {
       form.button(`§8${s.name}\n§c${need}`);
     }
   }
-  form.button("§e[Ranks and how to rise]");
-  form.button("§b[Status window and how to use skills]");
-  form.button("§d[World Story]");
-  form.button(`§6[Achievements] §8${achDone(player)}/${ACH.length}`, "textures/ui/sh_ach/cat_journey");
-  form.button(`§1[Missions] §8${misState(player).i}/${MISSIONS.length}`, "textures/ui/sh_ach/cat_conquest");
+  const extra = bookExtras(player, form, true);
   const r = await showForm(player, form);
   if (r.canceled) return;
-  if (r.selection === mine.length) { showRanks(player); return; }
-  if (r.selection === mine.length + 1) { showStatus(player); return; }
-  if (r.selection === mine.length + 2) { openLore(player); return; }
-  if (r.selection === mine.length + 3) { openAchievements(player); return; }
-  if (r.selection === mine.length + 4) { openMissions(player); return; }
+  if (r.selection >= mine.length) { extra[r.selection - mine.length](); return; }
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: still locked`, 60); return; }
@@ -1351,7 +1516,7 @@ function announceUps(player, ups) {
       burst(player.dimension, headPos(player), 30, COLORS.gold, 3.5, 0.25);
       notify(player, `§6You reached rank ${RANKS[u.rank]}! §c+4 health`, 100);
       applyVitality(player, true);
-      if (LORE[u.rank]) say(player, `§d[Story] A new chapter unlocked: "${LORE[u.rank][0]}". Open the Evolution Book > [World Story]`);
+      if (CHRONICLE[u.rank + 1]) { const l = langOf(player); sayRaw(player, l, "", l === "ar" ? `§d[سجلّ إثيريا] انفتح فصل جديد: «${CHRONICLE[u.rank + 1][0].ar}». افتح كتاب التطور ← [قصة العالم]` : `§d[Chronicle] A new chapter unlocked: "${CHRONICLE[u.rank + 1][0].en}". Open the Evolution Book > [World Story]`); }
       waveFx(player.dimension, player.location, 6, 0, 14);
       say(player, `§6[Rank] §fYour rank is now §e${RANKS[u.rank]}`);
       try { if (needsDraw(getState(player))) later(60, () => ensureTemple(player)); } catch (e) { /* */ }
@@ -3179,6 +3344,7 @@ Object.assign(SKILL_FN, {
         e.addEffect("slowness", 60, { amplifier: 9, showParticles: false });
         e.addEffect("weakness", 60, { amplifier: 3, showParticles: false });
       } catch (err) { /* */ }
+      freezeEntity(e, 60);                                                   // V1: تجميد حقيقي (مكان مقفول ومهارات واقفة)
       followShape(e, "clock", 60, { r: 0.6, s: 90, dy: 0.8 });
     }
     sfx(dim, "sh.weight", p.location, 1.2, 0.6);
@@ -3790,6 +3956,28 @@ world.afterEvents.entityHurt.subscribe((ev) => {
 
 // ───────────────────────── سيد البلورات + مستعير الصفات + الارتداد ─────────────────────────
 const BOSS_TYPES = new Set(["minecraft:ender_dragon", "minecraft:wither", "minecraft:warden", "minecraft:elder_guardian"]);
+// V1: تجميد حقيقي (سجن البلورات، قانون الزمن): المكان ينقفل كل تكتين (حتى الدفع والضرب والمهارات اللي تنقل الوحش
+// ما تطلعه) ومهارات الوحش الخاصة توقف لحد ما ينتهي. id -> { e, at, until }
+const frozenAt = new Map();
+function freezeEntity(e, ticks) {
+  const cur = frozenAt.get(e.id), until = system.currentTick + ticks;
+  frozenAt.set(e.id, { e, at: cur ? cur.at : { ...e.location }, until: Math.max(until, cur ? cur.until : 0) });
+  return frozenAt.get(e.id).at;
+}
+const isImprisoned = (e) => { const f = frozenAt.get(e.id); return !!f && f.until > system.currentTick; };
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const [id, f] of frozenAt) {
+    try {
+      if (!valid(f.e) || now > f.until) { frozenAt.delete(id); continue; }
+      const L = f.e.location;
+      if (Math.hypot(L.x - f.at.x, L.z - f.at.z) > 0.12 || Math.abs(L.y - f.at.y) > 0.4) {
+        try { f.e.teleport(f.at, { keepVelocity: false, rotation: f.e.getRotation() }); } catch (err) { /* */ }
+        try { f.e.clearVelocity(); } catch (err) { /* */ }
+      }
+    } catch (err) { frozenAt.delete(id); }
+  }
+}, 2);
 const CRYSTAL_PINK = [1.0, 0.6, 0.85];
 const crystals = new Map(); // id هدف -> { e, pid, n, until }
 const MAX_CRYSTALS = 8;
@@ -4038,11 +4226,14 @@ Object.assign(SKILL_FN, {
   prison(p) {
     const t = raycastTarget(p, 20);
     if (!t) { notify(p, "§cNo target in front of you", 30); return false; }
-    const dur = BOSS_TYPES.has(t.typeId) ? 40 : 100;
+    const resist = BOSS_TYPES.has(t.typeId) || VILE_TYPES.includes(t.typeId) || CURSED_TYPES.includes(t.typeId);   // الزعماء والوحوش العالية (Vile/Cursed): حبس أقصر
+    const dur = resist ? 40 : 100;
     effect(t, "slowness", dur, 8);
     effect(t, "jump_boost", dur, 200);
     effect(t, "weakness", dur, 1);
     addCrystal(t, p, 2);
+    // V1: حبس حقيقي: المكان ينقفل (حتى الدفع والضرب والمهارات اللي تنقل الوحش ما تطلعه) ومهاراته الخاصة توقف لحد ما ينكسر
+    const lockAt = freezeEntity(t, dur);
     // قفص بلوري يطلع من الأرض ويحبس الهدف
     let size = 1.1;
     try { const bb = t.getComponent("minecraft:collision_box"); if (bb && bb.width) size = Math.max(1, Math.min(2.6, bb.width * 1.5)); } catch (e) { /* */ }
@@ -4054,17 +4245,17 @@ Object.assign(SKILL_FN, {
     let k2 = 0;
     const h = system.runInterval(() => {
       try {
-        k2 += 4;
+        k2 += 2;
         if (!valid(t) || k2 > dur) {
           system.clearRun(h); removeFx(cage);
           if (valid(t)) { CRYSTAL.prisonBreak(t.dimension, center3(t)); fling(t.dimension, "crystal_gem", center3(t), 5, 1, 0.6, 1); sfx(t.dimension, "sh.collapse", t.location, 0.8, 1.6); }
           return;
         }
-        moveShape(cage, t.location);
-        if (k2 % 8 === 0) CRYSTAL.prisonTick(t.dimension, t.location, size * 0.6);
+        moveShape(cage, lockAt);
+        if (k2 % 8 === 0) CRYSTAL.prisonTick(t.dimension, lockAt, size * 0.6);
       } catch (e) { system.clearRun(h); removeFx(cage); }
-    }, 4);
-    notify(p, BOSS_TYPES.has(t.typeId) ? "§dThe boss resists: short imprisonment" : "§dImprisoned", 40);
+    }, 2);
+    notify(p, resist ? "§dIt resists: short imprisonment" : "§dImprisoned", 40);
     return true;
   },
   burst(p) {
@@ -5225,6 +5416,7 @@ function runMonsterSkills() {
         try {
           const cfg = MONSTER_SKILLS[type];
           ambientFx(dim, e, type);
+          if (isImprisoned(e)) continue;                                      // V1: محبوس بالبلورات: لا مهارات
           let st = mstate.get(e.id);
           if (!st) { st = { phase: 0, t: 0, cd: 40 + Math.random() * 60 }; mstate.set(e.id, st); }
           if (st.phase === 0) {
@@ -7086,6 +7278,7 @@ system.runInterval(() => {
       try { list = dim.getEntities({ type }); } catch (e) { continue; }
       for (const e of list) {
         try {
+          if (isImprisoned(e)) continue;                                      // V1: محبوس بالبلورات: لا مهارات
           let st = gst.get(e.id);
           if (!st) { st = { phase: 0, t: 0, cd: 30 + Math.random() * 40, skill: "" }; gst.set(e.id, st); }
           CUSTOM_TICK[type](e, st);

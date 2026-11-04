@@ -109,8 +109,85 @@
         "value": [
           {
             "sh_doll@hud.sh_player_doll": {}
+          },
+          {
+            "sh_story@hud.sh_story_tracker": {}
           }
         ]
+      }
+    ]
+  },
+  "sh_story_tracker": {
+    "type": "panel",
+    "anchor_from": "top_right",
+    "anchor_to": "top_right",
+    "offset": [
+      -4,
+      26
+    ],
+    "size": [
+      "45%",
+      "100%c"
+    ],
+    "layer": 3,
+    "controls": [
+      {
+        "sh_story_en": {
+          "type": "label",
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "size": [
+            "100%",
+            "default"
+          ],
+          "text": "#text",
+          "text_alignment": "right",
+          "font_scale_factor": 0.8,
+          "shadow": true,
+          "localize": false,
+          "layer": 31,
+          "bindings": [
+            {
+              "binding_name": "#hud_subtitle_text_string",
+              "binding_name_override": "#text",
+              "binding_type": "global"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "((#text - '§r§r§r') = #text)",
+              "target_property_name": "#visible"
+            }
+          ]
+        }
+      },
+      {
+        "sh_story_ar": {
+          "type": "label",
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "size": [
+            "100%",
+            "default"
+          ],
+          "text": "#text",
+          "text_alignment": "right",
+          "font_scale_factor": 0.95,
+          "shadow": true,
+          "localize": false,
+          "layer": 31,
+          "bindings": [
+            {
+              "binding_name": "#hud_subtitle_text_string",
+              "binding_name_override": "#text",
+              "binding_type": "global"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "(not ((#text - '§r§r§r') = #text))",
+              "target_property_name": "#visible"
+            }
+          ]
+        }
       }
     ]
   }
