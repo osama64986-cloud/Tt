@@ -148,7 +148,7 @@ Object.assign(player, {
   id: "player1", selectedSlotIndex: 0, isSneaking: false, name: "Tester",
   camera: { fade() {} },
   getGameMode() { return "Survival"; },                                          // مثل الـAPI الحقيقي (GameMode)
-  playAnimation(id, opts) { (stats.anims = stats.anims || []).push(id); stats.animOpts = opts; },   // v1.39: أنميشن اللاعب
+  playAnimation(id, opts) { (stats.anims = stats.anims || []).push(id); if (opts && opts.controller === "sh_act") stats.animOpts = opts; else stats.moveOpts = opts; },   // v1.39: أنميشن اللاعب (V1: sh_move للوقوف/المشي/الركض)
   // الشاشة: فوق يسار = شريط الأكشن، فوق الهوت بار = العنوان. actionBars يسجل الشاشة كاملة (فوق + تحت) حتى الاختبارات القديمة تلقى كل الكتابات،
   // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
   onScreenDisplay: {
@@ -980,10 +980,11 @@ export const __sim = {
       for (let t = 0; t < 56; t += 2) { advance(2); player.location = { x: 0, y: 64, z: 0 }; const st = m.getProperty("sh:state"); if (st === 5) burnState = true; if (st >= 1 && st <= 4) skillWhileBurning = true; if (m.getProperty("sh:hot") === 1) hot = true; }
       for (let t = 0; t < 30; t += 2) advance(2);
       const recovered = m.getProperty("sh:state") !== 5; advance(80); const cooled = m.getProperty("sh:hot") === 0;
-      // 6) المنجل يسقط دائماً
+      // 6) المنجل يسقط بنسبة نادرة كلش (V1: 5%)
       clear(); stats.items = [];
-      for (let i = 0; i < 20; i++) { const h = mkEntity("sh:hollow_harvester", { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(h); h._valid = false; fire("entityDie", { deadEntity: h, damageSource: { damagingEntity: player } }); }
-      const scythes = stats.items.filter((x) => x === "sh:harvest_scythe").length;
+      const NK = 600;
+      for (let i = 0; i < NK; i++) { const h = mkEntity("sh:hollow_harvester", { x: 2, y: 64, z: 2 }, dims.overworld, 10); entities.push(h); h._valid = false; fire("entityDie", { deadEntity: h, damageSource: { damagingEntity: player } }); }
+      const scythes = stats.items.filter((x) => x === "sh:harvest_scythe").length, scyRate = scythes / NK;
       // 7) سلاح المنجل: الحصدة العريضة، وخيوط الدمية (Lv2) تسحب الأعداء، والحصاد (+50%) على عدو صحته واطية
       clear(); spawnZombies(4, true); player._hp = 2000; stats.soundIds.clear(); hold("sh:harvest_scythe"); const d2 = stats.damage || 0;
       fire("itemUse", { source: player, itemStack: new ItemStack("sh:harvest_scythe") }); advance(6);
@@ -999,7 +1000,7 @@ export const __sim = {
       console.log(`  خيوط ${strings ? "✔" : "✖"} سحبة ${yanked && pulled ? "✔" : "✖"} صوت ${strSnd ? "✔" : "✖"} | الداش يقطعها ${strings2 && snapped && !yank2 ? "✔" : "✖"} صوت ${snapSnd ? "✔" : "✖"}`);
       console.log(`  نظرة ${stare ? "✔" : "✖"} بطء I بدون ظلام ${stareOk ? "✔" : "✖"} | لف وجهك ينجيك ${stare2 && dodged ? "✔" : "✖"}`);
       console.log(`  المنجل الخاتم ${reap ? "✔" : "✖"} ضرر ${reapDmg} | الساطور مختوم ${blocked ? "✔" : "✖"} | المطرقة حرة ${otherFree ? "✔" : "✖"} | بعد 8 ثواني ينفك ${freed ? "✔" : "✖"}`);
-      console.log(`  النار: يتخبط ${burnState ? "✔" : "✖"} يتفحم ${hot ? "✔" : "✖"} بدون مهارات ${!skillWhileBurning ? "✔" : "✖"} يرجع ${recovered ? "✔" : "✖"} ينطفي التفحم ${cooled ? "✔" : "✖"} | المنجل سقط ${scythes}/20`);
+      console.log(`  النار: يتخبط ${burnState ? "✔" : "✖"} يتفحم ${hot ? "✔" : "✖"} بدون مهارات ${!skillWhileBurning ? "✔" : "✖"} يرجع ${recovered ? "✔" : "✖"} ينطفي التفحم ${cooled ? "✔" : "✖"} | المنجل نادر ${(scyRate * 100).toFixed(1)}% (${scythes}/${NK}) ${scyRate > 0.015 && scyRate < 0.1 ? "✔" : "✖"}`);
       console.log(`  سلاح المنجل: حصدة ضرر ${arcDmg} صوت ${arcSnd ? "✔" : "✖"} | خيوط تسحب ${strPulled ? "✔" : "✖"} | حصاد الضعيف ${reaped ? "✔" : "✖"}`);
       if (!strings || !yanked || !pulled || !strSnd) failures.push("الحاصد: خيوط الدمية ما سحبت");
       if (!strings2 || !snapped || yank2) failures.push("الحاصد: الداش ما يقطع الخيوط");
@@ -1007,7 +1008,7 @@ export const __sim = {
       if (!stare2 || !dodged) failures.push("الحاصد: اللي يلف وجهه لازم ينجو من النظرة");
       if (!reap || reapDmg <= 0 || !blocked || !otherFree || !freed) failures.push("الحاصد: المنجل الخاتم (قفل الأيتم بالإيد 8 ثواني) ما اشتغل صح");
       if (!burnState || !hot || skillWhileBurning || !recovered || !cooled) failures.push("الحاصد: ضعف النار ما اشتغل");
-      if (scythes !== 20) failures.push("الحاصد: المنجل لازم يسقط بكل قتلة");
+      if (!(scyRate > 0.015 && scyRate < 0.1)) failures.push("الحاصد: المنجل لازم يسقط بنسبة نادرة (~5%)");
       if (arcDmg <= 0 || !arcSnd || !strPulled || !reaped) failures.push("منجل الحاصد: مهاراته أو الحصاد ما اشتغلت");
       clear(); player._hp = 20; player._max = 20;
     }

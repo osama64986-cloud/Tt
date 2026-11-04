@@ -31,7 +31,7 @@ MON = {
                           egg=("#4c8a32", "#c060ff"), states=6,
                           props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
                                  "sh:camo": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
-    "hollow_harvester": dict(ident="sh:hollow_harvester", name="Hollow Harvester", rank="sh_rank3", hp=320, speed=0.27, atk=12, w=1.1, h=2.9, kb=0.8, xp=60,
+    "hollow_harvester": dict(ident="sh:hollow_harvester", name="Hollow Harvester", rank="sh_rank3", hp=320, speed=0.27, atk=12, w=1.1, h=3.0, kb=0.8, xp=60,
                              egg=("#4a3c58", "#e2b85c"), states=5,
                              props={"sh:hot": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True}}),
     "bear_cub": dict(ident="sh:bear_cub", name="Bear Cub", rank="sh_cub", hp=12, speed=0.36, atk=1, w=0.6, h=1.2, kb=0.1, xp=2,
@@ -412,7 +412,7 @@ def mantis_anims(A):
 
 
 def harvester_anims(A):
-    """الحاصد الأجوف: يتحرك مثل دمية خيوط (رجات مفاجئة، راس يتدلى ويميل، صليب الدمية فوقه يتأرجح).
+    """الحاصد الأجوف: فزاعة تتحرك متيبسة مثل دمية (رجات مفاجئة، راس يتدلى ويميل).
     الإيد اليمين ماسكة المنجل: لما ترتفع الإيد، عظمة المنجل تلف بعكسها حتى النصل يبقى فوق (ارتفاع فوق الراس ثم حصدة لتحت)."""
     S = "animation.sh_hollow_harvester."
     D = "query.modified_distance_moved"
@@ -424,16 +424,14 @@ def harvester_anims(A):
         "hat": {"rotation": [0, 0, f"math.sin({LT}*41)*2"]},
         "arm_l": {"rotation": [f"math.sin({LT}*47)*6", 0, f"5 + math.sin({LT}*39)*4"]},
         "arm_r": {"rotation": [f"math.sin({LT}*47 + 40)*3", 0, -3]},
-        "leg_l": {"rotation": [f"math.sin({LT}*47)*2", 0, 0]}, "leg_r": {"rotation": [f"-math.sin({LT}*47)*2", 0, 0]},
-        "control": {"position": [0, f"math.sin({LT}*60)*0.5", 0], "rotation": [0, f"math.sin({LT}*25)*5", 0]}}}
-    A[S + "walk"] = {"loop": True, "bones": {                                             # مشية دمية: رجلين متيبسة وقفزات صغيرة كأن الخيوط ترفعه
+        "leg_l": {"rotation": [f"math.sin({LT}*47)*2", 0, 0]}, "leg_r": {"rotation": [f"-math.sin({LT}*47)*2", 0, 0]}}}
+    A[S + "walk"] = {"loop": True, "bones": {                                             # مشية متيبسة بقفزات صغيرة مثل دمية
         "leg_l": {"rotation": [f"math.cos({D}*26)*34*{MS}", 0, 0]},
         "leg_r": {"rotation": [f"-math.cos({D}*26)*34*{MS}", 0, 0]},
         "body": {"position": [0, f"math.abs(math.sin({D}*26))*1.4*{MS}", 0], "rotation": [f"6*{MS}", 0, f"math.sin({D}*26)*5*{MS}"]},
         "arm_l": {"rotation": [f"-math.cos({D}*26)*26*{MS}", 0, 0]},
         "arm_r": {"rotation": [f"-math.cos({D}*26)*8*{MS}", 0, 0]},
-        "head": {"rotation": [0, 0, f"math.sin({D}*52)*7*{MS}"]},
-        "control": {"position": [0, f"math.abs(math.sin({D}*26))*0.8*{MS}", 0]}}}
+        "head": {"rotation": [0, 0, f"math.sin({D}*52)*7*{MS}"]}}}
     at = "variable.attack_time*180"
     A[S + "attack"] = {"loop": True, "bones": {                                           # ضربة عادية: ترفع المنجل وتقطع لقدام
         "arm_r": {"rotation": [f"-math.sin({at})*100", 0, f"math.sin({at})*12"]},
@@ -442,30 +440,26 @@ def harvester_anims(A):
     A[S + "strings"] = {"loop": True, "bones": {                                          # خيوط الدمية (1): الإيد اليسار تأشر عليك وترتجف
         "arm_l": {"rotation": [f"-82 + math.sin({LT}*1400)*2", -10, -8]},
         "body": {"rotation": [-6, -14, 0]}, "head": {"rotation": [4, 0, 16]},
-        "arm_r": {"rotation": [6, 0, -4]}, "control": {"rotation": [14, 0, 0]}}}
-    A[S + "yank"] = {"loop": "hold_on_last_frame", "animation_length": 0.5, "bones": {    # السحبة (2): الإيد ترجع بقوة والصليب ينسحب
+        "arm_r": {"rotation": [6, 0, -4]}}}
+    A[S + "yank"] = {"loop": "hold_on_last_frame", "animation_length": 0.5, "bones": {    # السحبة (2): الإيد ترجع بقوة
         "arm_l": {"rotation": {"0.0": [-82, -10, -8], "0.12": [30, 0, -14], "0.5": [10, 0, -5]}},
         "body": {"rotation": {"0.0": [-6, -14, 0], "0.12": [-14, 12, 0], "0.5": [0, 0, 0]}},
-        "head": {"rotation": {"0.0": [4, 0, 16], "0.12": [-10, 0, -8], "0.5": [0, 0, 0]}},
-        "control": {"rotation": {"0.0": [14, 0, 0], "0.12": [-22, 0, 0], "0.5": [0, 0, 0]}}}}
+        "head": {"rotation": {"0.0": [4, 0, 16], "0.12": [-10, 0, -8], "0.5": [0, 0, 0]}}}}
     A[S + "stare"] = {"loop": True, "bones": {                                            # النظرة الجوفاء (3): الراس مايل كلش ويرتجف
         "head": {"rotation": [f"12 + math.sin({LT}*1800)*1.2", 0, f"34 + math.sin({LT}*1500)*1.5"]},
-        "body": {"rotation": [12, 0, 0]}, "arm_l": {"rotation": [8, 0, 8]}, "arm_r": {"rotation": [6, 0, -6]},
-        "control": {"rotation": [0, 0, -10], "position": [0, -1, 0]}}}
+        "body": {"rotation": [12, 0, 0]}, "arm_l": {"rotation": [8, 0, 8]}, "arm_r": {"rotation": [6, 0, -6]}}}
     A[S + "reap"] = {"loop": "hold_on_last_frame", "animation_length": 1.1, "bones": {    # المنجل الخاتم (4): يرفعه فوق راسه ثم حصدة قوية لقدام
         "arm_r": {"rotation": {"0.0": [0, 0, 0], "0.45": [-150, 0, -16], "0.55": [-154, 0, -16], "0.72": [-40, 0, 34], "0.9": [-22, 0, 20], "1.1": [0, 0, 0]}},
         "scythe": {"rotation": {"0.0": [0, 0, 0], "0.45": [120, 0, 0], "0.55": [122, 0, 0], "0.72": [110, 0, 0], "0.9": [60, 0, 0], "1.1": [0, 0, 0]}},
         "body": {"rotation": {"0.0": [0, 0, 0], "0.45": [-10, 30, 0], "0.55": [-10, 32, 0], "0.72": [16, -35, 0], "1.1": [0, 0, 0]}},
         "arm_l": {"rotation": {"0.0": [0, 0, 0], "0.45": [-30, 0, 20], "0.72": [10, 0, 10], "1.1": [0, 0, 0]}},
-        "head": {"rotation": {"0.0": [0, 0, 0], "0.5": [-8, 0, 0], "0.72": [14, 0, 0], "1.1": [0, 0, 0]}},
-        "control": {"rotation": {"0.0": [0, 0, 0], "0.5": [-12, 0, 0], "0.72": [18, 0, 0], "1.1": [0, 0, 0]}}}}
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.5": [-8, 0, 0], "0.72": [14, 0, 0], "1.1": [0, 0, 0]}}}}
     A[S + "burn"] = {"loop": True, "bones": {                                             # يحترق (5): يتخبط ويهز إيديه وراسه
         "arm_l": {"rotation": [f"-60 + math.sin({LT}*900)*50", 0, f"20 + math.sin({LT}*700)*15"]},
         "arm_r": {"rotation": [f"-40 + math.sin({LT}*900 + 90)*30", 0, -15]},
         "head": {"rotation": [f"math.sin({LT}*1100)*10", f"math.sin({LT}*800)*20", f"math.sin({LT}*1300)*12"]},
-        "body": {"rotation": [f"math.sin({LT}*1000)*4", f"math.sin({LT}*600)*10", 0]},
-        "control": {"rotation": [f"math.sin({LT}*900)*10", 0, f"math.sin({LT}*700)*10"]}}}
-    A[S + "death"] = {"loop": "hold_on_last_frame", "animation_length": 1.4, "bones": {   # الخيوط تنقطع: يطيح كومة، القبعة تطيح، والصليب يرتفع ويبتعد
+        "body": {"rotation": [f"math.sin({LT}*1000)*4", f"math.sin({LT}*600)*10", 0]}}}
+    A[S + "death"] = {"loop": "hold_on_last_frame", "animation_length": 1.4, "bones": {   # يطيح كومة قش والقبعة تطيح
         "root": {"position": {"0.0": [0, 0, 0], "0.5": [0, -8, 0], "1.0": [0, -13, 0]}},
         "leg_l": {"rotation": {"0.0": [0, 0, 0], "0.5": [-80, 0, -10], "1.0": [-90, 0, -15]}},
         "leg_r": {"rotation": {"0.0": [0, 0, 0], "0.5": [-80, 0, 10], "1.0": [-90, 0, 15]}},
@@ -474,8 +468,7 @@ def harvester_anims(A):
         "arm_l": {"rotation": {"0.0": [0, 0, 0], "1.0": [-20, 0, 30]}},
         "arm_r": {"rotation": {"0.0": [0, 0, 0], "1.0": [-10, 0, -20]}},
         "scythe": {"rotation": {"0.0": [0, 0, 0], "0.6": [0, 0, 0], "1.0": [60, 0, -10]}},
-        "hat": {"position": {"0.0": [0, 0, 0], "0.7": [2, 2, -1], "1.4": [5, -14, -6]}, "rotation": {"0.0": [0, 0, 0], "0.7": [0, 0, -20], "1.4": [-40, 0, -70]}},
-        "control": {"position": {"0.0": [0, 0, 0], "0.5": [0, 6, 0], "1.4": [0, 22, 0]}, "rotation": {"0.0": [0, 0, 0], "1.4": [0, 90, 0]}}}}
+        "hat": {"position": {"0.0": [0, 0, 0], "0.7": [2, 2, -1], "1.4": [5, -14, -6]}, "rotation": {"0.0": [0, 0, 0], "0.7": [0, 0, -20], "1.4": [-40, 0, -70]}}}}
 
 
 def build():

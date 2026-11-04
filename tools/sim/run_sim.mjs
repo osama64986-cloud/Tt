@@ -55,6 +55,10 @@ console.log("أصوات مستعملة:", [...W.stats.soundIds].sort().join(" ")
   if (need.some((r) => !an.some((a) => r.test(a)))) W.failures.push("أنميشن اللاعب ما انشغل (ضربة سلاح، مهارة، داش)");
   const op = W.stats.animOpts || {};
   if (!/is_first_person/.test(op.stopExpression || "")) W.failures.push("أنميشن اللاعب ما يوقف بالمنظور الأول");
+  // V1: حلقات الحركة (الوقوف/وقفة القتال/المشي/الركض) بالطبقة sh_move وتوقف بالعميل لما تتغير الحالة
+  const mo = W.stats.moveOpts || {};
+  if (!an.some((a) => a === "idle" || a === "idle_combat")) W.failures.push("أنميشن الوقوف ما اشتغل");
+  if (mo.controller !== "sh_move" || !/query\.is_/.test(mo.stopExpression || "")) W.failures.push("حلقات حركة اللاعب لازم تكون بطبقة sh_move وتوقف لما تتغير الحالة");
 }
 if (errors.size) {
   console.log(`\nأخطاء مبلوعة (${errors.size}):`);

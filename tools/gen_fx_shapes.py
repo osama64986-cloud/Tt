@@ -1316,6 +1316,9 @@ EXTRA_ANIMS["nova_core"] = {"ring_a": {"rotation": [0, "q.life_time * 300", 0]},
                             "core": {"scale": "1 + math.sin(q.life_time * 900) * 0.08"}}
 EXTRA_ANIMS["fusion_rings"] = {"ga": {"rotation": [0, "q.life_time * 260", 0]}, "gb": {"rotation": [0, 0, "q.life_time * 330"]}}
 EXTRA_ANIMS["warp_gate"] = {"swirl": {"rotation": [0, 0, "q.life_time * 420"]}}
+EXTRA_ANIMS["seal_sigil"] = {"rings": {"rotation": [0, "q.life_time * 120", 0]}}
+EXTRA_ANIMS["sleep_z"] = {f"z{k}": {"scale": f"math.clamp((math.mod(q.life_time, 1.5) - {k * 0.5}) * 4, 0, 1)"} for k in range(3)}
+EXTRA_ANIMS["hollow_eyes"] = {"body": {"scale": "1 + math.sin(q.life_time * 720) * 0.08"}}
 
 # ───────────────────────── السرعوف المصلّي (Prayer Mantis، Cursed) ─────────────────────────
 LEAF, LEAF_HI, LEAF_LO = (112, 192, 72), (176, 232, 112), (48, 108, 40)
@@ -1463,18 +1466,292 @@ EXTRA_ANIMS["leaf_swirl"] = {"lw_a": {"rotation": [0, "q.life_time * 420", 0]}, 
 EXTRA_ANIMS["scissor_lock"] = {"sa": {"rotation": [0, "-math.max(0, 62 - q.life_time * 380)", 0]},       # تبدأ مفتوحة لبرا وتنسد خلال 0.16 ثانية
                                "sb": {"rotation": [0, "math.max(0, 62 - q.life_time * 380)", 0]}}
 EXTRA_ANIMS["beam"] = {"body": {"scale": [1, 1, "math.max(0.05, q.property('sh:l'))"]}}
-EXTRA_ANIM_SHAPES["beam"] = ["star_beam"]
+EXTRA_ANIM_SHAPES["beam"] = ["star_beam", "soul_chain", "seer_beam", "magma_fissure", "puppet_string"]
 # أعمدة الصوت تنبض، وطولها ما يكبر مع نصف القطر (الحلقة تتوسع لـ12 بلوكة بس الأعمدة تبقى ~2 بلوكة)
 EXTRA_ANIMS["sound_pulse"] = {"body": {"scale": [1, "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, q.property('sh:r')))", 1]}}
 EXTRA_ANIM_SHAPES["sound_pulse"] = ["sound_wave", "echo_pulse"]
 # الحلقات الأرضية الكبيرة (عصفة الريح، موجة المستعر) تتوسع لـ7-14 بلوكة وسمكها يبقى رفيع
 EXTRA_ANIMS["flat_ring"] = {"body": {"scale": [1, "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))", 1]}}
-EXTRA_ANIM_SHAPES["flat_ring"] = ["wind_ring", "nova_ring"]
+EXTRA_ANIM_SHAPES["flat_ring"] = ["wind_ring", "nova_ring", "soul_wave", "howl_ring"]
 
 # أشكال الصدع الثانية (v1.37.1) تنسجل بالآخر حتى أرقام كل الأشكال القديمة تبقى نفسها
 for _k, (_e, _h, _c) in RIFT_COLORS.items():
     for _i, _f in enumerate(RIFT_FORMS[1:], start=1):
         shape(f"rift_{_k}{_f}")(lambda S, e=_e, h=_h, c=_c, i=_i: rift(S, e, h, c, i))
+
+
+# ═════════════════════════ V1: أشكال مهارات الوحوش (كل مهارة خاصة إلها جسم 3D) ═════════════════════════
+SHD, SHM, SHH = (40, 20, 70), (110, 60, 200), (200, 160, 255)          # ظل بنفسجي (ذئب الظل)
+SAND_A, SAND_B, SAND_C = (226, 190, 110), (196, 160, 88), (244, 220, 160)
+CHIT, CHIT_HI, VENOM, VENOM_HI = (128, 86, 44), (176, 128, 66), (110, 236, 80), (200, 255, 170)
+SOUL_D, SOUL_C, SOUL_W = (50, 120, 200), (110, 230, 255), (225, 250, 255)
+ORG_D, ORG, ORG_HI, ORG_W = (196, 64, 8), (255, 124, 26), (255, 196, 84), (255, 252, 226)
+BAS_D, BAS, BAS_HI = (34, 28, 30), (64, 54, 56), (98, 86, 84)
+MAG_D, MAG, MAG_HI, MAG_W = (190, 40, 10), (255, 110, 20), (255, 190, 60), (255, 246, 200)
+GHOST, GHOST_LO, CLAW_DK = (226, 234, 244), (176, 188, 206), (58, 58, 70)
+STR_C, HV, HV_HI, HV_D = (232, 224, 204), (150, 70, 230), (226, 186, 255), (60, 20, 104)
+
+
+@shape("howl_ring")
+def _(S):
+    """عواء ذئب الظل: حلقة أفقية مسننة (أشواك ظل للبرا) وخط داخلي مضيء: تكبر من الذئب"""
+    n = 18
+    for i in range(n):
+        a = i * 360 / n
+        ra = math.radians(a)
+        cx, cz = math.cos(ra) * 12, math.sin(ra) * 12
+        S.box((cx, 0, cz), (4.6, 1.6, 1.4), SHM, rot=[0, -a + 90, 0])
+        L = 4.5 if i % 2 else 2.6
+        S.box((math.cos(ra) * (12 + L / 2 + 0.6), 0.6 if i % 2 else 0.2, math.sin(ra) * (12 + L / 2 + 0.6)), (L, 0.9, 0.9), SHD, rot=[0, -a, 0])
+    ring(S, (0, 0.2, 0), 10.4, 18, (3.6, 0.5, 0.5), SHH)
+
+
+@shape("shade_portal")
+def _(S):
+    """بوابة ظل عمودية (يختفي بيها الذئب ويطلع منها): بيضوية حافتها بنفسجية متكسرة وقلبها أسود، ومجسات تحت"""
+    S.box((0, 14, 0.3), (11, 24, 0.5), VOIDC, flat=True)
+    S.box((0, 14, 0.1), (7, 18, 0.5), (24, 10, 44), flat=True)
+    n = 22
+    for i in range(n):
+        t = 2 * math.pi * i / n
+        x, y = math.sin(t) * 8, 14 + math.cos(t) * 14
+        S.box((x, y, 0), (2.4 if i % 3 else 3.2, 2.4, 1.2), SHM if i % 2 else SHH, flat=i % 2 == 0)
+    for x, L in ((-4, 5), (0, 7), (4, 4.5)):
+        S.box((x, -L / 2 + 1, 0), (1.2, L, 1.0), SHD)
+
+
+@shape("sand_mound", ground=True)
+def _(S):
+    """كومة رمل (العقرب يغوص/يطلع): قبة بلوكات رمل بثلاث درجات وفتحة غامقة فوق وحصى حواليها"""
+    for i in range(10):
+        a = math.radians(i * 36)
+        S.box((math.cos(a) * 9, 1.0, math.sin(a) * 9), (5, 2, 5), SAND_B if i % 2 else SAND_A)
+    for i in range(7):
+        a = math.radians(i * 51 + 20)
+        S.box((math.cos(a) * 5.5, 2.6, math.sin(a) * 5.5), (4.4, 2.4, 4.4), SAND_A if i % 2 else SAND_C)
+    S.box((0, 3.6, 0), (6, 2.2, 6), SAND_C)
+    S.box((0, 4.75, 0), (3, 0.5, 3), (40, 30, 20), flat=True)
+    for i in range(8):
+        a = math.radians(i * 45 + 10)
+        S.box((math.cos(a) * 13, 0.5, math.sin(a) * 13), (1.6, 1.0, 1.6), SAND_B)
+
+
+@shape("sand_stinger", ground=True)
+def _(S):
+    """إبرة العقرب العملاقة تطلع من الأرض: ذيل مقسم يتقوس لقدام وينتهي بكيس سم أخضر وإبرة حادة، ورمل يتطاير عند القاعدة"""
+    y, z = 0.0, 0.0
+    for k, (w, h, ang) in enumerate(((7, 5, 0), (6.4, 5, -8), (5.8, 4.6, -18), (5.2, 4.4, -30), (4.6, 4.0, -44))):
+        bn = S.bone(f"seg{k}", pivot=(0, y, z), rot=[ang, 0, 0])
+        S.box((0, y + h / 2, z), (w, h, w), CHIT if k % 2 else CHIT_HI, bone=bn)
+        S.box((0, y + h / 2, z - w / 2 - 0.2), (w * 0.5, h * 0.6, 0.4), CHIT_HI, bone=bn)
+        r = math.radians(-ang)
+        y += h * math.cos(r) * 0.95
+        z -= h * math.sin(r) * 0.95
+    bn = S.bone("bulb", pivot=(0, y, z), rot=[-62, 0, 0])
+    S.box((0, y + 2.6, z), (5.4, 5.2, 5.4), VENOM, bone=bn)
+    S.box((0, y + 2.6, z), (3.6, 3.6, 5.8), VENOM_HI, bone=bn, flat=True)
+    S.box((0, y + 6.4, z), (1.8, 3.2, 1.8), CLAW_DK, bone=bn)
+    S.box((0, y + 8.6, z), (0.9, 2.0, 0.9), (20, 20, 24), bone=bn)
+    for i in range(6):
+        a = math.radians(i * 60)
+        S.box((math.cos(a) * 5.5, 0.6, math.sin(a) * 5.5), (2.4, 1.2, 2.4), SAND_A)
+
+
+@shape("spirit_antlers")
+def _(S):
+    """قرون روح القرن القاتم وهو يندفع: قرنين متفرعين متوهجين قدام راسه (تبنى لقدام -Z)"""
+    for sx in (-1, 1):
+        bn = S.bone(f"ant{sx}", pivot=(sx * 2, 0, 0), rot=[0, 0, -sx * 24])
+        for k in range(6):
+            S.box((sx * 2, 2 + k * 2.4, -k * 1.2), (1.6, 2.6, 1.6), SOUL_C if k % 2 else SOUL_W, bone=bn, flat=k >= 4)
+        for (k, dz, L) in ((1, -3.5, 4.5), (3, -4.5, 4.0), (5, -3.0, 3.0)):
+            S.box((sx * 2, 2 + k * 2.4, -k * 1.2 + dz / 2 - 0.5), (1.2, 1.2, L), SOUL_D if k == 1 else SOUL_C, bone=bn)
+
+
+@shape("soul_wave", ground=True)
+def _(S):
+    """نبضة قلب القرن القاتم: حلقة روح رفيعة على الأرض (تكبر)، شريط سماوي وخط أبيض فوقه"""
+    ring(S, (0, 0.3, 0), 16, 24, (4.6, 0.6, 1.4), SOUL_C)
+    ring(S, (0, 0.7, 0), 16, 24, (4.2, 0.3, 0.6), SOUL_W, phase=7.5)
+
+
+@shape("soul_chain")
+def _(S):
+    """سلسلة روح (تتمدد بالطول sh:l): حلقات تتناوب أفقي/عمودي على -Z، بنفسجي وسماوي"""
+    for k in range(8):
+        z = -1.0 - k * 2.0
+        if k % 2:
+            S.box((0, 0, z), (0.5, 1.6, 2.4), SOUL_C, flat=True)
+        else:
+            S.box((0, 0, z), (1.6, 0.5, 2.4), (178, 140, 255), flat=True)
+
+
+@shape("seer_beam")
+def _(S):
+    """شعاع الرائي (يتمدد بالطول sh:l): مقطع ثماني بأربع طبقات توهج من 0 لـ-16، وحلقتين طاقة"""
+    for i, (w, col) in enumerate(((4.2, ORG_D), (3.2, ORG), (2.2, ORG_HI), (1.1, ORG_W))):
+        S.box((0, 0, -8), (w, w, 16 - i * 0.04), col, flat=True)
+        S.box((0, 0, -8), (w, w, 15.96 - i * 0.04), col, rot=[0, 0, 45], flat=True)
+    for z in (-4.0, -12.0):
+        for k in range(8):
+            a = math.radians(k * 45)
+            S.box((math.cos(a) * 2.35, math.sin(a) * 2.35, z), (0.9, 0.5, 0.45), ORG_W if k % 2 else ORG_HI, rot=[0, 0, k * 45 + 90], flat=True)
+
+
+@shape("fox_moon")
+def _(S):
+    """هلال قمر ثعلب الحجاب (يطير عليك): هلال فضي بقلب أبيض وحافة بنفسجية"""
+    crescent(S, (140, 90, 230), (214, 206, 255), (255, 255, 255))
+
+
+@shape("magma_fissure", ground=True)
+def _(S):
+    """شق ماغما بالأرض (يتمدد بالطول sh:l): متعرج بقطع بكسل، حافة بازلت غامقة وقلب ماغما مضيء وتشققات جانبية"""
+    zig = [0, 1.2, -0.8, 1.0, -1.1, 0.6, -0.4, 0.8]
+    for k in range(8):
+        z0, x = -1.0 - k * 2.0, zig[k]
+        S.box((x, 0.2, z0), (3.4, 0.4, 2.2), BAS_D)
+        S.box((x, 0.45, z0), (1.6, 0.4, 2.3), MAG if k % 2 else MAG_HI, flat=True)
+        S.box((x, 0.7, z0), (0.7, 0.2, 2.3), MAG_W, flat=True)
+        if k % 3 == 1:
+            sx = 1 if x <= 0 else -1
+            S.box((x + sx * 2.2, 0.3, z0), (2.2, 0.3, 0.6), MAG_D, flat=True)
+
+
+@shape("magma_ring", ground=True)
+def _(S):
+    """دكة الماموث: حلقة صخور بازلت مكسورة على الأرض وبينها ماغما مضيئة، وشقوق قصيرة للبرا"""
+    n = 14
+    for i in range(n):
+        a = i * 360 / n
+        ra = math.radians(a)
+        S.box((math.cos(ra) * 13, 1.2, math.sin(ra) * 13), (5.0, 2.4 if i % 2 else 1.6, 3.2), BAS if i % 2 else BAS_HI, rot=[0, -a + 90, 0])
+        rb = math.radians(a + 360 / n / 2)
+        S.box((math.cos(rb) * 13, 0.4, math.sin(rb) * 13), (1.0, 0.6, 3.0), MAG_HI, rot=[0, -(a + 360 / n / 2) + 90, 0], flat=True)
+        if i % 2 == 0:
+            S.box((math.cos(ra) * 18, 0.25, math.sin(ra) * 18), (5.0, 0.4, 1.0), MAG, rot=[0, -a, 0], flat=True)
+    ring(S, (0, 0.2, 0), 8, 12, (4.0, 0.4, 1.0), MAG_D)
+
+
+@shape("magma_geyser", ground=True)
+def _(S):
+    """فوران ماغما بنهاية الشق: عمود حمم يعرض فوق بنقط، وصخور بازلت عند القاعدة"""
+    for k, (w, col) in enumerate(((5.0, MAG_D), (4.4, MAG), (4.0, MAG_HI), (3.6, MAG), (4.4, MAG_HI), (5.6, MAG_W))):
+        S.box((0, 2 + k * 3.4, 0), (w, 3.4, w), col, flat=k >= 4)
+    for (x, y, z, w) in ((3, 20, 1, 2.2), (-3, 19, -2, 2.0), (1, 22.5, -3, 1.6), (-2, 23, 2, 1.4)):
+        S.box((x, y, z), (w, w, w), MAG_W if w < 2 else MAG_HI, flat=True)
+    for i in range(6):
+        a = math.radians(i * 60 + 15)
+        S.box((math.cos(a) * 5, 1.0, math.sin(a) * 5), (3.0, 2.0, 3.0), BAS if i % 2 else BAS_D)
+
+
+@shape("magma_plates")
+def _(S):
+    """درع الماغما: 4 صفائح بازلت بعروق ماغما تدور حول الماموث على بعد 2.5 بلوكة × sh:r (برا الجسم والخرطوم، وتحت الأنياب)"""
+    for i in range(4):
+        bn = S.bone(f"pl{i}", rot=[0, i * 90, 0])
+        S.box((0, 0, -40), (10, 12, 1.8), BAS, bone=bn)
+        S.box((0, 0, -41.0), (1.1, 10, 0.4), MAG_HI, bone=bn, flat=True)
+        S.box((-2.8, 1.6, -41.0), (4.0, 0.9, 0.4), MAG, bone=bn, flat=True)
+        S.box((2.6, -2.2, -41.0), (3.4, 0.9, 0.4), MAG, bone=bn, flat=True)
+        S.box((0, 6.6, -40), (8, 1.3, 2.0), BAS_HI, bone=bn)
+        S.box((0, -6.6, -40), (8, 1.3, 2.0), BAS_D, bone=bn)
+
+
+@shape("bear_grip")
+def _(S):
+    """مسكة الدب: كفين روح عملاقين يسكرون على الضحية من الجانبين (كف + 4 مخالب)"""
+    for sx in (-1, 1):
+        S.box((sx * 9, 0, 0), (2.4, 11, 8), GHOST)
+        S.box((sx * 9.5, 0, 0), (1.4, 8, 6), GHOST_LO)
+        for k, y in enumerate((-4.5, -1.5, 1.5, 4.5)):
+            S.box((sx * 6.4, y, -1.0), (3.4, 1.8, 1.8), GHOST)
+            S.box((sx * 4.2, y, -1.2), (1.4, 1.2, 1.2), CLAW_DK)
+
+
+@shape("bear_claws")
+def _(S):
+    """خرمشة الدب: ثلاث خطوط مخالب عملاقة مايلة بقلب أبيض وحافة حمراء غامقة (تواجه -Z)"""
+    for k in (-1, 0, 1):
+        bn = S.bone(f"cl{k}", pivot=(k * 4.2, 0, 0), rot=[0, 0, 34])
+        for j in range(9):
+            t = j / 8
+            w = 0.4 + 1.6 * math.sin(math.pi * t)
+            S.box((k * 4.2, -12 + j * 3.0, 0), (w + 0.8, 3.1, 0.6), (150, 28, 34), bone=bn)
+            S.box((k * 4.2, -12 + j * 3.0, -0.3), (w, 3.1, 0.6), (255, 255, 255) if 2 <= j <= 6 else GHOST, bone=bn, flat=True)
+
+
+@shape("roar_wave")
+def _(S):
+    """زئير الدب: ثلاث أقواس صدمة تكبر لقدام (-Z)، رمادي فاتح مثل دخان الزئير"""
+    for z, r, col in ((-4, 6, (236, 236, 240)), (-10, 10, (210, 212, 220)), (-16, 14, (184, 186, 196))):
+        n = 12
+        for i in range(n):
+            a = -70 + i * 140 / (n - 1)
+            ra = math.radians(a)
+            S.box((math.sin(ra) * r, math.cos(ra) * r * 0.55, z), (2.6, 1.2, 1.0), col, flat=True)
+
+
+@shape("sleep_z")
+def _(S):
+    """سبات الدب: ثلاث حروف Z تصعد مايلة وتكبر، وحدة ورا وحدة (z0 ثم z1 ثم z2) وتعيد كل 1.5 ثانية"""
+    Z = ["####", "  # ", " #  ", "####"]
+    for k, (ox, oy, sc) in enumerate(((0, 0, 0.9), (4.5, 6.0, 1.2), (9.5, 13.5, 1.6))):
+        bn = S.bone(f"z{k}", pivot=(ox, oy, 0))
+        for r, row in enumerate(Z):
+            for c, ch in enumerate(row):
+                if ch == "#":
+                    S.box((ox + (c - 1.5) * sc, oy + (1.5 - r) * sc, 0), (sc, sc, 0.6), (190, 220, 255) if k % 2 else (240, 248, 255), bone=bn, flat=True)
+
+
+@shape("puppet_string")
+def _(S):
+    """خيط الدمية (يتمدد بالطول sh:l): خيط فاتح وعقد بنفسجية"""
+    S.box((0, 0, -8), (0.45, 0.45, 16), STR_C, flat=True)
+    for z in (-3.0, -9.0, -14.0):
+        S.box((0, 0, z), (1.0, 1.0, 1.0), HV, flat=True)
+
+
+@shape("hollow_eyes")
+def _(S):
+    """النظرة الجوفاء: عينين بنفسجيتين كبار يضوون قدام وجه الفزاعة (طبقات مثل المعين وحدقة غامقة)"""
+    for sx in (-1, 1):
+        cx = sx * 7
+        for w, h, col, fl in ((10, 4, HV_D, False), (8, 6, HV, True), (5, 7.4, HV_HI, True)):
+            S.box((cx, 0, 0), (w, h, 0.8), col, flat=fl)
+        S.box((cx, 0, -0.5), (2.0, 4.6, 0.6), (20, 6, 30), flat=True)
+        S.box((cx - sx * 1.6, 1.4, -0.6), (1.0, 1.0, 0.5), (255, 255, 255), flat=True)
+
+
+@shape("seal_sigil")
+def _(S):
+    """الختم: دائرة رونات أفقية تدور حول خصر اللاعب المختوم (حلقتين وعلامات)، وقفل بنفسجي معلق بالحلقة قدامه (لا يدور)"""
+    rg = S.bone("rings")
+    ring(S, (0, 0, 0), 11, 20, (3.6, 0.5, 0.8), HV, bone=rg)
+    ring(S, (0, 0.3, 0), 8, 16, (3.0, 0.4, 0.5), HV_HI, phase=11, bone=rg)
+    for i in range(8):
+        a = math.radians(i * 45)
+        S.box((math.cos(a) * 9.5, 0.2, math.sin(a) * 9.5), (1.6, 0.4, 1.6), HV_HI if i % 2 else HV_D, bone=rg, rot=[0, -i * 45, 0], flat=True)
+    S.box((0, -2.0, -11.6), (3.4, 3.0, 1.4), HV_D)                     # جسم القفل
+    S.box((0, -2.0, -12.35), (2.6, 2.2, 0.2), HV, flat=True)
+    S.box((0, -1.8, -12.5), (0.6, 1.2, 0.2), (20, 6, 30), flat=True)  # فتحة المفتاح
+    for sx in (-1, 1):
+        S.box((sx * 1.0, 0.4, -11.6), (0.6, 1.8, 0.6), HV_HI, flat=True)
+    S.box((0, 1.5, -11.6), (2.6, 0.6, 0.6), HV_HI, flat=True)
+
+
+@shape("reap_arc", ground=True)
+def _(S):
+    """حصدة المنجل: هلال أفقي عريض قدام الحاصد (بنفسجي غامق للبرا وأبيض بالحد)"""
+    n = 23
+    for k in range(n):
+        u = k / (n - 1)
+        a = -80 + u * 160
+        ra = math.radians(a)
+        t = math.sin(math.pi * u) ** 1.4
+        w = 0.6 + 5.2 * t
+        for r, col, f, fl in ((20 + w * 0.3, HV_D, 0.35, False), (18.6, HV, 0.6, False), (17.0 - w * 0.1, (250, 240, 255), 0.3, True)):
+            S.box((math.sin(ra) * r, 0.5, -math.cos(ra) * r), (2 * math.pi * 18 / 360 * 7.2, 0.9, max(0.4, w * f)), col, rot=[0, -a, 0] if abs(a) > 1e-6 else None, flat=fl)
 
 
 def build():
@@ -1497,7 +1774,7 @@ def write(path, data, compact=True):
 
 def main():
     shapes = build()
-    assert len(shapes) <= 128
+    assert len(shapes) <= 250
     write(os.path.join(RP, "models", "entity", "sh_fx_shapes.geo.json"),
           {"format_version": "1.12.0", "minecraft:geometry": [s.geometry() for s in shapes]})
     img = Image.new("RGBA", (ATLAS_W, ATLAS_W), (0, 0, 0, 0))
@@ -1512,7 +1789,7 @@ def main():
             "description": {
                 "identifier": "sh:fx_shape", "is_spawnable": False, "is_summonable": True, "is_experimental": False,
                 "properties": {
-                    "sh:v": {"type": "int", "range": [0, 127], "default": 0, "client_sync": True},
+                    "sh:v": {"type": "int", "range": [0, 255], "default": 0, "client_sync": True},
                     "sh:r": {"type": "float", "range": [0, 40], "default": 1, "client_sync": True},
                     "sh:p": {"type": "float", "range": [-180, 180], "default": 0, "client_sync": True},
                     "sh:a": {"type": "float", "range": [-360, 360], "default": 0, "client_sync": True},

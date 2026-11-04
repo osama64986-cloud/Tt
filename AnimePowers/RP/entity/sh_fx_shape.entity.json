@@ -119,7 +119,28 @@
     "s106": "geometry.sh_shape_rift_crimson_d",
     "s107": "geometry.sh_shape_rift_abyss_b",
     "s108": "geometry.sh_shape_rift_abyss_c",
-    "s109": "geometry.sh_shape_rift_abyss_d"
+    "s109": "geometry.sh_shape_rift_abyss_d",
+    "s110": "geometry.sh_shape_howl_ring",
+    "s111": "geometry.sh_shape_shade_portal",
+    "s112": "geometry.sh_shape_sand_mound",
+    "s113": "geometry.sh_shape_sand_stinger",
+    "s114": "geometry.sh_shape_spirit_antlers",
+    "s115": "geometry.sh_shape_soul_wave",
+    "s116": "geometry.sh_shape_soul_chain",
+    "s117": "geometry.sh_shape_seer_beam",
+    "s118": "geometry.sh_shape_fox_moon",
+    "s119": "geometry.sh_shape_magma_fissure",
+    "s120": "geometry.sh_shape_magma_ring",
+    "s121": "geometry.sh_shape_magma_geyser",
+    "s122": "geometry.sh_shape_magma_plates",
+    "s123": "geometry.sh_shape_bear_grip",
+    "s124": "geometry.sh_shape_bear_claws",
+    "s125": "geometry.sh_shape_roar_wave",
+    "s126": "geometry.sh_shape_sleep_z",
+    "s127": "geometry.sh_shape_puppet_string",
+    "s128": "geometry.sh_shape_hollow_eyes",
+    "s129": "geometry.sh_shape_seal_sigil",
+    "s130": "geometry.sh_shape_reap_arc"
    },
    "animations": {
     "fx": "animation.sh_fx.shape",
@@ -131,6 +152,9 @@
     "nova_core": "animation.sh_fx.shape_nova_core",
     "fusion_rings": "animation.sh_fx.shape_fusion_rings",
     "warp_gate": "animation.sh_fx.shape_warp_gate",
+    "seal_sigil": "animation.sh_fx.shape_seal_sigil",
+    "sleep_z": "animation.sh_fx.shape_sleep_z",
+    "hollow_eyes": "animation.sh_fx.shape_hollow_eyes",
     "leaf_swirl": "animation.sh_fx.shape_leaf_swirl",
     "scissor_lock": "animation.sh_fx.shape_scissor_lock",
     "beam": "animation.sh_fx.shape_beam",
@@ -165,19 +189,28 @@
       "warp_gate": "q.property('sh:v') == 90"
      },
      {
+      "seal_sigil": "q.property('sh:v') == 129"
+     },
+     {
+      "sleep_z": "q.property('sh:v') == 126"
+     },
+     {
+      "hollow_eyes": "q.property('sh:v') == 128"
+     },
+     {
       "leaf_swirl": "q.property('sh:v') == 93"
      },
      {
       "scissor_lock": "q.property('sh:v') == 95"
      },
      {
-      "beam": "q.property('sh:v') == 79"
+      "beam": "q.property('sh:v') == 79 || q.property('sh:v') == 116 || q.property('sh:v') == 117 || q.property('sh:v') == 119 || q.property('sh:v') == 127"
      },
      {
       "sound_pulse": "q.property('sh:v') == 77 || q.property('sh:v') == 78"
      },
      {
-      "flat_ring": "q.property('sh:v') == 75 || q.property('sh:v') == 82"
+      "flat_ring": "q.property('sh:v') == 75 || q.property('sh:v') == 82 || q.property('sh:v') == 115 || q.property('sh:v') == 110"
      }
     ]
    },

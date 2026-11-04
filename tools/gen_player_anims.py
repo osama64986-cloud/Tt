@@ -1,4 +1,4 @@
-"""أنميشن اللاعب (v1.39): ضربات الأسلحة، حركات المهارات، الداش، الصد، والركض.
+"""أنميشن اللاعب (v1.39 + V1): ضربات الأسلحة، حركات المهارات، الداش، الصد، الوقوف، المشي، وقفة القتال، والركض.
 البحث (Microsoft Learn: Animations، Entity.playAnimation، PlayAnimationOptions، actor_animation):
   - الأنميشن بحزمة الموارد وتنشغل من السكربت بـ Entity.playAnimation(اسم، {blendOutTime، stopExpression، controller}).
     اسم controller مختلف = طبقة منفصلة، فالضربة والركض يشتغلون سوا.
@@ -107,22 +107,36 @@ ANIMS = {
         "rightArm": {"rot": {0: [-20, 0, 0], 0.1: [-88, 0, -12], 0.4: [-88, 0, -12], 0.5: [-20, 0, 0]}},
         "leftArm": {"rot": {0: [-20, 0, 0], 0.1: [-88, 0, 12], 0.4: [-88, 0, 12], 0.5: [-20, 0, 0]}},
     }),
-    # ── الحركة ──
-    # داش للجنب/لورا: الموديل يميل باتجاه الحركة والذراعين لورا (مثل الأنمي)
-    "dash_left": (0.36, {
-        "root": {"rot": {0: R0, 0.06: [6, 0, 18], 0.24: [6, 0, 16], 0.36: R0}},
-        "rightArm": {"rot": {0: R0, 0.06: [38, 0, -26], 0.24: [36, 0, -24], 0.36: R0}},
-        "leftArm": {"rot": {0: R0, 0.06: [34, 0, 30], 0.24: [32, 0, 28], 0.36: R0}},
+    # ── الحركة (V1) ──
+    # داش للجنب: تحضير صغير (ينزل وميلة عكسية)، انطلاقة: الجسم يميل كلش باتجاه الحركة، الرجل القائدة ممدودة لبرا والثانية مطوية،
+    # الذراعين ممدودة لورا (مثل الأنمي)، ثبات وهو ينزلق، ورجوع بارتداد خفيف (follow-through)
+    "dash_left": (0.4, {
+        "root": {"rot": {0: R0, 0.04: [2, 0, -5], 0.09: [6, 0, 22], 0.26: [5, 0, 18], 0.33: [0, 0, -4], 0.4: R0},
+                 "pos": {0: R0, 0.04: [0, -1.0, 0], 0.09: [0, -0.6, 0], 0.26: [0, -0.4, 0], 0.4: R0}},
+        "leftLeg": {"rot": {0: R0, 0.09: [0, 0, -26], 0.26: [0, 0, -22], 0.4: R0}},
+        "rightLeg": {"rot": {0: R0, 0.09: [-24, 0, -6], 0.26: [-20, 0, -4], 0.4: R0}},
+        "rightArm": {"rot": {0: R0, 0.04: [-10, 0, -8], 0.09: [40, 0, -30], 0.26: [36, 0, -26], 0.4: R0}},
+        "leftArm": {"rot": {0: R0, 0.04: [-10, 0, 8], 0.09: [34, 0, 34], 0.26: [30, 0, 30], 0.4: R0}},
+        "head": {"rot": {0: R0, 0.09: [0, 0, -14], 0.26: [0, 0, -12], 0.4: R0}},
     }),
-    "dash_right": (0.36, {
-        "root": {"rot": {0: R0, 0.06: [6, 0, -18], 0.24: [6, 0, -16], 0.36: R0}},
-        "rightArm": {"rot": {0: R0, 0.06: [34, 0, -30], 0.24: [32, 0, -28], 0.36: R0}},
-        "leftArm": {"rot": {0: R0, 0.06: [38, 0, 26], 0.24: [36, 0, 24], 0.36: R0}},
+    "dash_right": (0.4, {
+        "root": {"rot": {0: R0, 0.04: [2, 0, 5], 0.09: [6, 0, -22], 0.26: [5, 0, -18], 0.33: [0, 0, 4], 0.4: R0},
+                 "pos": {0: R0, 0.04: [0, -1.0, 0], 0.09: [0, -0.6, 0], 0.26: [0, -0.4, 0], 0.4: R0}},
+        "rightLeg": {"rot": {0: R0, 0.09: [0, 0, 26], 0.26: [0, 0, 22], 0.4: R0}},
+        "leftLeg": {"rot": {0: R0, 0.09: [-24, 0, 6], 0.26: [-20, 0, 4], 0.4: R0}},
+        "rightArm": {"rot": {0: R0, 0.04: [-10, 0, -8], 0.09: [34, 0, -34], 0.26: [30, 0, -30], 0.4: R0}},
+        "leftArm": {"rot": {0: R0, 0.04: [-10, 0, 8], 0.09: [40, 0, 30], 0.26: [36, 0, 26], 0.4: R0}},
+        "head": {"rot": {0: R0, 0.09: [0, 0, 14], 0.26: [0, 0, 12], 0.4: R0}},
     }),
-    "dash_back": (0.36, {
-        "root": {"rot": {0: R0, 0.06: [-16, 0, 0], 0.24: [-14, 0, 0], 0.36: R0}},
-        "rightArm": {"rot": {0: R0, 0.06: [-48, 0, -16], 0.24: [-44, 0, -14], 0.36: R0}},
-        "leftArm": {"rot": {0: R0, 0.06: [-48, 0, 16], 0.24: [-44, 0, 14], 0.36: R0}},
+    # داش لورا: ينحني لقدام لحظة ثم يرجع بقفزة لورا: الجسم مايل لورا، رجل لورا ورجل لقدام، والذراعين لقدام للتوازن
+    "dash_back": (0.4, {
+        "root": {"rot": {0: R0, 0.04: [6, 0, 0], 0.09: [-18, 0, 0], 0.26: [-15, 0, 0], 0.33: [4, 0, 0], 0.4: R0},
+                 "pos": {0: R0, 0.04: [0, -1.0, 0], 0.09: [0, -0.4, 0], 0.4: R0}},
+        "rightLeg": {"rot": {0: R0, 0.09: [-30, 0, 4], 0.26: [-26, 0, 4], 0.4: R0}},
+        "leftLeg": {"rot": {0: R0, 0.09: [26, 0, -4], 0.26: [22, 0, -4], 0.4: R0}},
+        "rightArm": {"rot": {0: R0, 0.04: [12, 0, 0], 0.09: [-52, 0, -18], 0.26: [-46, 0, -16], 0.4: R0}},
+        "leftArm": {"rot": {0: R0, 0.04: [12, 0, 0], 0.09: [-52, 0, 18], 0.26: [-46, 0, 16], 0.4: R0}},
+        "head": {"rot": {0: R0, 0.09: [10, 0, 0], 0.26: [8, 0, 0], 0.4: R0}},
     }),
     # الصد المثالي: الذراعين تتصالب قدام الوجه لحظة
     "guard": (0.42, {
@@ -131,12 +145,32 @@ ANIMS = {
         "waist": {"rot": {0: R0, 0.06: [-8, 0, 0], 0.26: [-6, 0, 0], 0.42: R0}},
     }),
 }
-# الركض (يدوم طول ما تركض): الجسم مايل لقدام والذراعين ممدودة لورا (ركضة الأنمي)، والرجلين تبقى تمشي مثل اللعبة.
-# الراس يرجع يباوع مثل اللعبة (target_x/y_rotation) ناقص ميلان الجسم حتى عيونه تبقى لقدام
-SPRINT = {"waist": {"rotation": [14, 0, 0]},
-          "head": {"rotation": ["query.target_x_rotation - 14", "query.target_y_rotation", 0]},
-          "rightArm": {"rotation": ["58 + math.sin(query.life_time * 900) * 4", 0, -10]},
-          "leftArm": {"rotation": ["58 - math.sin(query.life_time * 900) * 4", 0, 10]}}
+# ── حلقات الحركة (V1): تنضاف فوق حركة اللعبة (مو بدالها)، وتطفي بالمنظور الأول (blend_weight) ──
+# variable.tcos0 = نفس موجة خطوات اللاعب باللعبة (من player.entity.json)، فالمشي يمشي ويا الرجلين بالضبط.
+LT = "query.life_time"
+# الوقوف: تنفس هادي (الصدر يرتفع وينزل)، الذراعين ترتخي للجناب وتتمايل متأخرة شوية، الراس يتبع النفس، وتحويل وزن بطيء
+IDLE = {"waist": {"rotation": [f"math.sin({LT} * 80) * 0.9", 0, 0], "position": [0, f"math.sin({LT} * 80) * 0.15", 0]},
+        "head": {"rotation": [f"math.sin({LT} * 80 + 70) * 1.2", 0, 0]},
+        "rightArm": {"rotation": [f"math.sin({LT} * 80 + 40) * 1.4", 0, f"-1.5 - math.sin({LT} * 80 + 40) * 1.2"]},
+        "leftArm": {"rotation": [f"math.sin({LT} * 80 + 40) * 1.4", 0, f"1.5 + math.sin({LT} * 80 + 40) * 1.2"]},
+        "root": {"rotation": [0, 0, f"math.sin({LT} * 14) * 1.0"]}}
+# وقفة القتال (ماسك سلاح من أسلحة المود): الجسم ملفوف شوية، إيد السلاح لقدام، والإيد الثانية مرفوعة للحماية، وتنفس أسرع
+IDLE_COMBAT = {"waist": {"rotation": [f"4 + math.sin({LT} * 120) * 1.0", -12, 0], "position": [0, f"math.sin({LT} * 120) * 0.18", 0]},
+               "head": {"rotation": [f"-4 + math.sin({LT} * 120 + 70) * 1.0", 12, 0]},
+               "rightArm": {"rotation": [f"-16 + math.sin({LT} * 120 + 40) * 2", 6, -4]},
+               "leftArm": {"rotation": [f"-28 + math.sin({LT} * 120 + 40) * 2", -18, 6]},
+               "rightLeg": {"rotation": [-6, 4, 2]}, "leftLeg": {"rotation": [8, -4, -2]}}
+# المشي: الكتفين تلف عكس الرجلين، ميلة خفيفة لقدام، والجسم ينزل شوية لما الخطوة مفتوحة ويرتفع لما الرجلين تعبر بعض
+WALK = {"waist": {"rotation": [f"query.modified_move_speed * 3", "-variable.tcos0 * 0.12", 0],
+                  "position": [0, "-math.abs(variable.tcos0) * 0.012", 0]},
+        "head": {"rotation": [0, "variable.tcos0 * 0.08", 0]},
+        "rightArm": {"rotation": [0, 0, -2]}, "leftArm": {"rotation": [0, 0, 2]}}
+# الركض: الجسم مايل لقدام والذراعين ممدودة لورا (ركضة الأنمي) وتتمايل ويا الخطوة، والجسم ينط شوية ويلف ويا الرجلين،
+# والراس يرجع يباوع لقدام (target_x/y_rotation) ناقص ميلان الجسم حتى عيونه تبقى لقدام
+SPRINT = {"waist": {"rotation": [14, "-variable.tcos0 * 0.1", 0], "position": [0, "-math.abs(variable.tcos0) * 0.015", 0]},
+          "head": {"rotation": ["query.target_x_rotation - 14", "query.target_y_rotation + variable.tcos0 * 0.08", 0]},
+          "rightArm": {"rotation": ["58 + variable.tcos0 * 0.12", 0, -10]},
+          "leftArm": {"rotation": ["58 - variable.tcos0 * 0.12", 0, 10]}}
 FP_OFF = "1.0 - variable.is_first_person"
 
 
@@ -161,6 +195,8 @@ def build():
         anims[f"animation.sh.player.{name}"] = {"animation_length": length, "loop": False, "override_previous_animation": True,
                                                 "blend_weight": FP_OFF, "bones": bj}
     anims["animation.sh.player.sprint"] = {"loop": True, "override_previous_animation": True, "blend_weight": FP_OFF, "bones": SPRINT}
+    for name, bones in (("idle", IDLE), ("idle_combat", IDLE_COMBAT), ("walk", WALK)):        # V1: الوقوف والمشي (فوق حركة اللعبة)
+        anims[f"animation.sh.player.{name}"] = {"loop": True, "blend_weight": FP_OFF, "bones": bones}
     return anims
 
 
@@ -236,7 +272,8 @@ def main():
     with open(os.path.join(RP, "animations", "sh_player.animation.json"), "w", encoding="utf-8") as f:
         json.dump({"format_version": "1.8.0", "animations": anims}, f, indent=1)
     info = {n: {"id": f"animation.sh.player.{n}", "len": ANIMS[n][0]} for n in ANIMS}
-    info["sprint"] = {"id": "animation.sh.player.sprint", "len": 0}
+    for n in ("sprint", "idle", "idle_combat", "walk"):
+        info[n] = {"id": f"animation.sh.player.{n}", "len": 0}
     with open(os.path.join(BP, "scripts", "panims.js"), "w", encoding="utf-8") as f:
         f.write("// يتولد تلقائياً من tools/gen_player_anims.py — لا تعدله يدوياً\n")
         f.write("export const PANIM = " + json.dumps(info, indent=1) + ";\n")

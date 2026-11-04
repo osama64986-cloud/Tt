@@ -696,13 +696,13 @@ export const HARVEST = {
   // جو: قشة تطيح ببطء + لمعة بالعين أحياناً
   ambient(dim, L) {
     if (Math.random() < 0.18) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(1.0, 2.2), z: L.z + rnd(-0.4, 0.4) }, PT.wax, { c: STRAW_C, d: { x: 0, y: -0.3, z: 0 }, eye: 1.0 });
-    if (Math.random() < 0.06) P(dim, up(L, 2.25), PT.glow, { c: HOLLOW_C, eye: 1.0 });
+    if (Math.random() < 0.06) P(dim, up(L, 2.39), PT.glow, { c: HOLLOW_C, eye: 1.0 });
   },
-  // الموت: قش يتطاير + نفخة موت، والصليب يطلع لفوق ويختفي (لمعات)
+  // الموت: قش يتطاير + نفخة موت + روح بنفسجية تطلع من الكيس
   death(dim, L) {
     for (let i = 0; i < 16; i++) P(dim, { x: L.x + rnd(-0.6, 0.6), y: L.y + rnd(0.3, 2.2), z: L.z + rnd(-0.6, 0.6) }, PT.wax, { c: STRAW_C, eye: 0 });
     P(dim, up(L, 1.2), PT.poof, { f: { "aabb.x": 0.5, "aabb.y": 1.2, "aabb.z": 0.5 }, eye: 0 });
-    for (let i = 0; i < 6; i++) later(i * 3, () => P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + 3.4 + i * 0.4, z: L.z + rnd(-0.4, 0.4) }, PT.endrod, { eye: 0 }));
+    for (let i = 0; i < 4; i++) later(i * 3, () => P(dim, { x: L.x + rnd(-0.2, 0.2), y: L.y + 1.6 + i * 0.35, z: L.z + rnd(-0.2, 0.2) }, PT.soul, { d: { x: 0, y: 0.5, z: 0 }, eye: 0 }));
   },
   // ضربة الحصاد (سلاح اللاعب على عدو صحته واطية): هلال صغير بنفسجي + أرواح
   reapHit(dim, c, from) { slash(dim, c, norm(sub(c, from)), 1.0, 1.8, 30, [PT.breath, PT.glow], { c: SEAL_C, steps: 1, n: 12, eye: 1.0 }); P(dim, c, PT.soul, { d: { x: 0, y: 0.4, z: 0 }, eye: 1.0 }); critBurst(dim, up(c, 0.7), 10, true); },

@@ -256,7 +256,7 @@ const WEAPONS = {
     desc: "Use: Sunset Throw (it returns to you). Sneak + use: Spear Rain on the spot you aim at." },
   // v1.39 منجل الحاصد: يسقط بس من الحاصد الأجوف. كل ضربة على عدو صحته أقل من الثلث "تحصده" (+50%)
   "sh:harvest_scythe": { extra: 7, sound: "sh.scythe_hit", color: "purple", knock: 0.5, name: "Harvester's Scythe", special: "reap",
-    desc: "The Hollow Harvester's scythe; defeating it is the only way to get one. Every hit on an enemy below a third of its health REAPS it (+50% damage). Use: Reaping Arc. Sneak + use: Puppet Strings." },
+    desc: "The Hollow Harvester's scythe. It very rarely drops from the Harvester, and that is the only way to get one. Every hit on an enemy below a third of its health REAPS it (+50% damage). Use: Reaping Arc. Sneak + use: Puppet Strings." },
 };
 
 // الوحوش اللي ينفع عليها قانون الصمت (عندها حدث sh:silence)
@@ -1066,7 +1066,7 @@ const MONSTER_INFO = [
   ["sh:magmamoth", "Magmamoth", "Vile to Cataclysm", "A volcanic mammoth, about 4 blocks tall on long legs, of armoured basalt and glowing magma cracks. FISSURE STOMP: a shock ring, then eight magma cracks race outward and burst one spot at a time (stand between the cracks). INFERNO SWEEP: from 7+ blocks away it raises its trunk and sweeps a real jet of flames from the trunk tip across you, leaving fire patches. TUSK STAMPEDE: it scrapes, charges, re-aims and charges again; whoever it catches is tossed by the tusks, and it leaves a trail of fire. VOLCANIC BOMBARDMENT: it hurls burning boulders high that arc down onto you. MAGMA ARMOR: its cracks blaze white-hot and it takes much less damage for nine seconds."],
   ["sh:grey_bear", "Grey Bear", "Vile to Cataclysm", "A grey bear that fights standing on two legs, with a silver crescent on its chest and a clawed scar over one eye. BEAR HUG: it spreads its arms and grabs whoever is in front of it, squeezes three times and throws them; hit it 3 times or dash out to break free. RENDING CLAWS: four alternating claw swipes that scratch your body and make you bleed (stacks up to 3). CUB CALL: it roars and two cubs run at you and cling to your legs, slowing you; kill a cub and the bear goes into a rage. DEEP HIBERNATION: when hurt it falls asleep and heals; strike it and it wakes in a WRATH that blasts you away. Thick pelt: hits on its front do 30% less damage, hits on its back 20% more."],
   ["sh:prayer_mantis", "Prayer Mantis", "Cursed to Cataclysm", "A leaf-green mantis with a long raised neck, glowing violet eyes and two folded scythe arms. It is very rare in the wild. PRAYER STANCE: a cursed halo rises behind its head and it raises both scythes; any hit you land is turned back at you DOUBLED as an X of blades, so wait it out or keep your distance. LEAF CAMOUFLAGE: a whirl of leaves and it turns half transparent, creeps close and stabs with both scythes; hit it to reveal it early. SCISSOR LOCK: two huge blades close around your waist and pin you for 1.5 s before a final snip; DASH to break it. MOLT: at half health it sheds its old shell, which explodes a moment later (run!), and the fresh mantis is faster and attacks more often."],
-  ["sh:hollow_harvester", "Hollow Harvester", "Cursed to Cataclysm", "A cursed scarecrow that moves like a marionette: a burlap sack head with violet eyes and a stitched grin, a straw hat, and a wooden puppet cross floating above it with strings to its shoulders. It carries a huge scythe and is very rare in the wild. PUPPET STRINGS: from 4-15 blocks it points at you and a string latches on; a moment later it DRAGS you to it, so DASH to snap the string first. HOLLOW STARE: its head tilts and its eyes flare; if you are looking at it you are slowed (Slowness I only, no darkness), so look away. SEALING SCYTHE: up close it raises the scythe over its head and reaps in front of it; if it hits you, the skill or weapon in your hand is SEALED for 8 s (switch to another one). WEAKNESS: FIRE. Fire hurts it three times as much, and while it burns it flails and cannot use its skills. It always drops its scythe, the Harvester's Scythe: the only way to get one."],
+  ["sh:hollow_harvester", "Hollow Harvester", "Cursed to Cataclysm", "A cursed scarecrow that roams the world, a block and a quarter taller than you: a burlap sack head with violet eyes and a stitched grin, a straw hat, a torn coat, and a huge scythe in its hand. It moves in stiff, puppet-like jerks and is very rare in the wild. PUPPET STRINGS: from 4-15 blocks it points at you and a string shoots from its hand; a moment later it DRAGS you to it, so DASH to snap the string first. HOLLOW STARE: its head tilts and its eyes flare; if you are looking at it you are slowed (Slowness I only, no darkness), so look away. SEALING SCYTHE: up close it raises the scythe over its head and reaps in front of it; if it hits you, the skill or weapon in your hand is SEALED for 8 s (switch to another one). WEAKNESS: FIRE. Fire hurts it three times as much, and while it burns it flails and cannot use its skills. Very rarely it drops its scythe, the Harvester's Scythe: the only way to get one."],
   ["sh:cursed_villager", "Cursed Villager", "Curse", "Very rarely a villager near you is CURSED. Black marks spread over its body in three stages over about five minutes, and at the last stage its eyes glow violet. Then it convulses and TURNS into a monster of a random rank: most often Lowly, sometimes Grim, rarely Vile and very rarely Cursed. Defeat it before it turns to end the curse."],
   ["sh:sand_scorpion", "Sand Scorpion", "Lowly to Cataclysm", "Its tail spits a venom glob up close. From 5-12 blocks it burrows underground; a red circle locks under you before it erupts, poisoning and launching you."],
 ];
@@ -1856,23 +1856,30 @@ function popShape(dim, name, loc, r0, r1, ticks, o = {}) {
   tween(ticks, 1, (k) => setShape(e, "sh:r", r0 + (r1 - r0) * (o.ease === "out" ? 1 - (1 - k) * (1 - k) : k)));
   return e;
 }
-// شعاع بين نقطتين: star_beam طوله بلوكة × sh:r ويتمدد بالطول بـ sh:l (خطوط الكوكبة ومسار الومضة)
-function beamShape(dim, a, b, life, r = 1) {
+// شعاع بين نقطتين: شكل طوله بلوكة × sh:r ويتمدد بالطول بـ sh:l (star_beam، وV1: seer_beam، soul_chain، puppet_string، magma_fissure)
+function beamShape(dim, a, b, life, r = 1, name = "star_beam") {
   const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, L = Math.hypot(dx, dy, dz) || 0.01, d = { x: dx / L, y: dy / L, z: dz / L };
-  return shapeFx(dim, "star_beam", a, { r, yaw: dirYaw(d), p: dirPitch(d), l: L / r, life });
+  return shapeFx(dim, name, a, { r, yaw: dirYaw(d), p: dirPitch(d), l: L / r, life });
+}
+// V1: شكل يكبر بسرعة (grow تك، تسارع ناعم) ويبقى لحد life
+function growShape(dim, name, loc, r, grow, life, o = {}) {
+  const e = shapeFx(dim, name, loc, { ...o, r: 0.05, life });
+  if (e) tween(Math.max(1, grow), 1, (k) => setShape(e, "sh:r", 0.05 + (r - 0.05) * (1 - (1 - k) * (1 - k))));
+  return e;
 }
 function aimBeam(e, a, b, r = 1) {
   if (!e || !valid(e)) return;
   const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, L = Math.hypot(dx, dy, dz) || 0.01, d = { x: dx / L, y: dy / L, z: dz / L };
   moveShape(e, a, dirYaw(d)); setShape(e, "sh:p", dirPitch(d)); setShape(e, "sh:l", Math.min(64, L / r));
 }
-// بوابة المسافة (warp_gate): تنفتح خلال 4 تكات، تبقى hold، وتنسد خلال 5
-function warpGate(dim, loc, yaw, r = 1, hold = 6) {
-  const g = shapeFx(dim, "warp_gate", loc, { r: 0.1, yaw, life: hold + 12 });
+// بوابة (warp_gate، V1: shade_portal): تنفتح خلال 4 تكات، تبقى hold، وتنسد خلال 5
+function gateShape(dim, name, loc, yaw, r = 1, hold = 6) {
+  const g = shapeFx(dim, name, loc, { r: 0.1, yaw, life: hold + 12 });
   if (!g) return undefined;
   tween(4, 1, (k) => setShape(g, "sh:r", 0.1 + (r - 0.1) * k), () => later(hold, () => tween(5, 1, (k) => setShape(g, "sh:r", Math.max(0.01, r * (1 - k))))));
   return g;
 }
+function warpGate(dim, loc, yaw, r = 1, hold = 6) { return gateShape(dim, "warp_gate", loc, yaw, r, hold); }
 // شكل يطير بخط مستقيم (قذيفة): onStep(pos) يرجع true حتى يوقف
 function flyShape(dim, name, from, d, speed, maxDist, o = {}, onStep, onEnd) {
   const yaw = dirYaw(d), pitch = dirPitch(d);
@@ -2421,7 +2428,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
 // الوحش يندفع ويتشل ثانيتين ونص، وضربتك الجاية خلال ثانيتين ونص = ضربة مضادة قوية.
 // الضغط المتكرر ما ينفع: بعد كل ضغطة لازم تنتظر ثانية حتى تنحسب ضغطة صد جديدة.
 // ───── أنميشن اللاعب (v1.39، tools/gen_player_anims.py): playAnimation بطبقتين ─────
-// "sh_act" للضربات والمهارات والداش والصد (وحدة تبدل اللي قبلها)، و"sh_move" للركض. الأنميشن يوقف بالمنظور الأول
+// "sh_act" للضربات والمهارات والداش والصد (وحدة تبدل اللي قبلها)، و"sh_move" للوقوف والمشي والركض. الأنميشن يوقف بالمنظور الأول
 // (variable.is_first_person) حتى إيدك بعيونك تبقى مثل اللعبة، ويبين للي يشوفونك وبالمنظور الثالث.
 const WEAPON_ANIM = { "sh:dark_katana": "slash", "sh:silver_oath": "slash", "sh:shadow_blade": "slash", "sh:dawn_dagger": "stab",
   "sh:ember_cleaver": "cleave", "sh:stone_maul": "heavy", "sh:sunset_spear": "thrust", "sh:shadow_claws": "claw", "sh:harvest_scythe": "reap" };
@@ -2445,17 +2452,33 @@ function pAnim(p, name) {
   if (!a || !p || typeof p.playAnimation !== "function") return;
   try { p.playAnimation(a.id, { controller: "sh_act", blendOutTime: 0.12, stopExpression: "query.any_animation_finished || variable.is_first_person" }); } catch (e) { /* */ }
 }
-// الركض: يبدي لما تبدي تركض، ويوقف بالعميل نفسه لما توقف (أو تسبح/تطير/تركب)
-const sprintOn = new Set();
+// V1 حركة اللاعب: حالة وحدة بالطبقة "sh_move" (الأحدث يبدل اللي قبله بنعومة): وقوف، وقفة قتال (ماسك سلاح من المود)، مشي، ركض.
+// كل حلقة توقف بالعميل نفسه لما تتغير الحالة (stopExpression)، والسكربت يشغل الجديدة. بالمنظور الأول وزنها صفر (blend_weight).
+const MOVE_STOP = {
+  idle: "query.is_moving || query.is_sneaking || query.is_sprinting || query.is_riding || query.is_swimming || query.is_gliding || query.is_sleeping",
+  walk: "!query.is_moving || query.is_sneaking || query.is_sprinting || query.is_riding || query.is_swimming || query.is_gliding || query.is_sleeping",
+  sprint: "!query.is_sprinting || query.is_riding || query.is_swimming || query.is_gliding",
+};
+MOVE_STOP.idle_combat = MOVE_STOP.idle;
+const moveState = new Map();
+function moveWanted(p) {
+  if (p.isSwimming || p.isGliding || p.isSleeping || p.isSneaking || p.getComponent("minecraft:riding")) return "";
+  if (p.isSprinting) return "sprint";
+  const v = p.getVelocity();
+  if (Math.hypot(v.x, v.z) > 0.05) return "walk";
+  let held;
+  try { held = inv(p).getItem(p.selectedSlotIndex); } catch (e) { /* */ }
+  return held && (WEAPONS[held.typeId] || held.typeId === KATANA) ? "idle_combat" : "idle";
+}
 system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     try {
-      if (p.isSprinting && !sprintOn.has(p.id)) {
-        sprintOn.add(p.id);
-        p.playAnimation(PANIM.sprint.id, { controller: "sh_move", blendOutTime: 0.2,
-          stopExpression: "!query.is_sprinting || variable.is_first_person || query.is_riding || query.is_swimming || query.is_gliding" });
-      } else if (!p.isSprinting) sprintOn.delete(p.id);
-    } catch (e) { sprintOn.delete(p.id); }
+      const want = moveWanted(p);
+      if (want === (moveState.get(p.id) || "")) continue;
+      moveState.set(p.id, want);
+      if (!want || typeof p.playAnimation !== "function") continue;
+      p.playAnimation(PANIM[want].id, { controller: "sh_move", blendOutTime: want === "sprint" ? 0.2 : 0.3, stopExpression: MOVE_STOP[want] });
+    } catch (e) { moveState.delete(p.id); }
   }
 }, 4);
 
@@ -5134,8 +5157,11 @@ function houndShadowLeap(e, tp, st) {
     const from = { ...e.location }, dest = behindSpot(tp, e.location);
     if (!dest) { endSpecial(st, e, 40); return; }
     WEAPON.shadowPuff(dim, from);                                         // يذوب بدخان ظل (حبر + بوابة + نفخة)
+    gateShape(dim, "shade_portal", from, yawOf(from, tp.location), 1.1, 3);                       // V1: بوابة ظل وين اختفى
     safeTeleport(e, dest, tp.location);
     WEAPON.shadowPuff(dim, dest);
+    { const u = fwdTo(tp.location, dest), g = { x: dest.x + u.x * 0.6, y: dest.y, z: dest.z + u.z * 0.6 };
+      gateShape(dim, "shade_portal", g, yawOf(g, tp.location), 1.1, 4); }                          // V1: ويطلع من بوابة ثانية وراك
     setMState(e, 3);
     sfx(dim, "sh.kat_step", dest, 0.9, 0.7);
     later(4, () => {
@@ -5154,6 +5180,7 @@ function scorpionBurrow(e, tp, st) {
   sfx(dim, "sh.guard_windup", e.location, 0.8, 1.6);
   rockBurst(dim, e.location, 4, 0.7);
   MONSTER.burrowDig(dim, e.location);
+  growShape(dim, "sand_mound", e.location, 1.2, 5, 30);                                           // V1: كومة الرمل وين غاص
   try { e.addEffect("invisibility", 34, { amplifier: 0, showParticles: false }); e.addEffect("slowness", 34, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
   let lock;
   const tick = system.runInterval(() => {
@@ -5172,6 +5199,9 @@ function scorpionBurrow(e, tp, st) {
     setMState(e, 2);
     rockBurst(dim, lock, 6, 1.3);
     MONSTER.burrowErupt(dim, lock);                                       // انفجار رمل + رشة سم خضرا
+    growShape(dim, "sand_mound", lock, 1.4, 3, 22);                                                // V1: الرمل ينفجر لفوق
+    { const a = Math.random() * Math.PI * 2, sp = { x: lock.x + Math.cos(a) * 0.9, y: lock.y, z: lock.z + Math.sin(a) * 0.9 };
+      growShape(dim, "sand_stinger", sp, 1.15, 4, 16, { yaw: yawOf(sp, lock) }); }                 // وإبرة عملاقة تطلع جنبك وتتقوس فوقك
     sfx(dim, "sh.guard_slam", lock, 1, 1.3);
     for (const pl of playersNear(dim, lock, 2.0)) { hurtPlayer(pl, 6, e); try { pl.addEffect("poison", 100, { amplifier: 0 }); pl.applyKnockback({ x: 0, z: 0 }, 0.9); } catch (err) { /* */ } }
     later(12, () => endSpecial(st, e, 110));
@@ -5459,6 +5489,8 @@ system.runInterval(() => {
                 sfx(dim, "sh.imp_windup", L, 1.6, 0.45);
                 try { dim.playSound("mob.wolf.growl", L, { volume: 1.5, pitch: 0.5 }); } catch (err) { /* */ }
                 MONSTER.howl(dim, L);                                         // زئير (نفخات الـRavager) + موجة ظل تتوسع + غيوم غضب
+                popShape(dim, "howl_ring", { x: L.x, y: L.y + 0.9, z: L.z }, 0.3, 2.6, 12, { ease: "out", s: 60 });          // V1: حلقة العواء المسننة
+                later(4, () => popShape(dim, "howl_ring", { x: L.x, y: L.y + 0.3, z: L.z }, 0.3, 3.4, 12, { ease: "out", s: -40 }));
                 for (const pl of dim.getPlayers({ location: L, maxDistance: 14 })) {
                   try { pl.addEffect("slowness", 100, { amplifier: 1 }); } catch (err) { /* */ }
                   notify(pl, "§5The howl slows you!", 40);
@@ -5627,7 +5659,14 @@ function segDist(p, a, b) {
   const t = Math.max(0, Math.min(1, ((p.x - a.x) * abx + (p.y - a.y) * aby + (p.z - a.z) * abz) / l2));
   return Math.hypot(p.x - (a.x + abx * t), p.y - (a.y + aby * t), p.z - (a.z + abz * t));
 }
-function grimEnd(e, st, cd) { st.phase = 0; st.skill = ""; st.t = 0; st.cd = cd + Math.random() * cd * 0.5; setMState(e, 0); }
+// V1: أشكال المهارة اللي تعيش ويا الحالة (قرون، كفوف، Z، عيون، خيط، سلاسل) تنشال ويا نهاية المهارة أو موت الوحش
+const SKILL_SHAPE_KEYS = ["ant", "grip", "zzz", "eyes", "str"];
+function dropSkillShapes(st) {
+  if (!st) return;
+  for (const k of SKILL_SHAPE_KEYS) if (st[k]) { removeFx(st[k]); st[k] = undefined; }
+  if (st.chains) { for (const c of st.chains) removeFx(c.sh); st.chains = undefined; }
+}
+function grimEnd(e, st, cd) { dropSkillShapes(st); st.phase = 0; st.skill = ""; st.t = 0; st.cd = cd + Math.random() * cd * 0.5; setMState(e, 0); }
 
 // ── القرن القاتم: اندفاع القرون، فوانيس الروح، ضربة الجذور ──
 // قلب الغزال (بالنموذج: 20 بكسل فوق، بالنص) ومكانه بالعالم
@@ -5663,16 +5702,21 @@ function gloomTick(e, st) {
       const d = st.dir || { x: 0, z: 1 };
       // (بدون خط أحمر قبل الاندفاع بطلب اللاعب) الحك بالحافر بس
       if (st.t % 4 === 2) rockBurst(dim, { x: L.x + d.x * 0.9, y: L.y, z: L.z + d.z * 0.9 }, 2, 0.4);
-      if (st.t >= 18) { st.phase = 2; st.t = 0; setMState(e, 2); sfx(dim, "sh.stardash", L, 1.2, 0.6); }
+      if (st.t >= 18) {
+        st.phase = 2; st.t = 0; setMState(e, 2); sfx(dim, "sh.stardash", L, 1.2, 0.6);
+        st.ant = growShape(dim, "spirit_antlers", { x: L.x + d.x * 1.4, y: L.y + 1.5, z: L.z + d.z * 1.4 }, 1.2, 4, 30, { yaw: dirYaw({ x: d.x, y: 0, z: d.z }) });   // V1: قرون روح قدام راسه
+      }
       return;
     }
     const d = st.dir || { x: 0, z: 1 };
     const nx = L.x + d.x * 0.9, nz = L.z + d.z * 0.9;
     if (st.t > 22 || !airAt(dim, nx, L.y + 0.5, nz) || !airAt(dim, nx, L.y + 1.6, nz)) {
       waveFx(dim, L, 4, 1, 10); rockBurst(dim, L, 5, 0.8); sfx(dim, "sh.guard_slam", L, 1.1, 0.8);
+      if (st.ant) { removeFx(st.ant); st.ant = undefined; }
       grimEnd(e, st, 70); return;
     }
     try { e.teleport({ x: nx, y: L.y, z: nz }, { facingLocation: { x: nx + d.x, y: L.y + 1, z: nz + d.z } }); } catch (err) { /* */ }
+    moveShape(st.ant, { x: nx + d.x * 1.4, y: L.y + 1.5, z: nz + d.z * 1.4 }, dirYaw({ x: d.x, y: 0, z: d.z }));
     glow(dim, { x: L.x, y: L.y + 1.4, z: L.z }, { color: SOUL, size: 0.3, life: 0.5, rise: 0.2 });
     for (const sx of [-1, 1]) pix(dim, { x: L.x - d.z * sx * 0.35, y: L.y + 0.05, z: L.z + d.x * sx * 0.35 }, { color: st.t % 4 ? SOUL : [0.85, 1, 1], size: 0.2, life: 2.0, speed: 0 });
     // النطحة: أول لاعب قدام قرونه
@@ -5688,6 +5732,7 @@ function gloomTick(e, st) {
       impactFx(dim, horn, SOUL, false);
       for (let k = 0; k < 16; k++) pix(dim, horn, { color: k % 2 ? SOUL : [0.95, 1, 1], size: 0.2, life: 0.6, speed: 3 });
       sfx(dim, "sh.guard_slam", L, 1.4, 1.1); sfx(dim, "random.anvil_land", L, 0.6, 0.6);
+      if (st.ant) { removeFx(st.ant); st.ant = undefined; }
       grimEnd(e, st, 70);
     }
     return;
@@ -5739,6 +5784,7 @@ function gloomTick(e, st) {
     const H = gloomHeart(e);
     if (st.t === 10 || st.t === 20 || st.t === 30) {
       const n = st.t / 10, hitB = new Set(), C = { ...L };
+      popShape(dim, "soul_wave", { x: C.x, y: C.y + 0.05, z: C.z }, 1.0, 7.5, 10);                  // V1: حلقة الروح تتوسع ويا الدقة
       sfx(dim, "note.bass", L, 1.6, 0.5); sfx(dim, "sh.guard_slam", L, 0.7 + n * 0.2, 0.5);
       impactFx(dim, H, [0.8, 0.6, 1], n >= 2);
       for (let k = 0; k < 10 + n * 2; k++) pix(dim, H, { color: k % 2 ? SOUL : [0.8, 0.6, 1], size: 0.18, life: 0.5, speed: 2.2 });
@@ -5757,7 +5803,7 @@ function gloomTick(e, st) {
         });
       }
       if (n === 3) {
-        st.chains = dim.getPlayers({ location: L, maxDistance: 8 }).map((pl) => ({ pl, t: 0 }));
+        st.chains = dim.getPlayers({ location: L, maxDistance: 8 }).map((pl) => ({ pl, t: 0, sh: beamShape(dim, H, center3(pl), 42, 0.9, "soul_chain") }));   // V1: سلسلة روح حقيقية
         for (const c of st.chains) { notify(c.pl, "§5Soul chains drain your life! Run!", 40); sfx(dim, "sh.pull", c.pl.location, 0.8, 0.7); }
       }
     }
@@ -5765,11 +5811,12 @@ function gloomTick(e, st) {
       for (const c of st.chains) {
         if (c.gone) continue;
         if (!valid(c.pl) || Math.hypot(c.pl.location.x - L.x, c.pl.location.z - L.z) > 10) {
-          c.gone = true;
+          c.gone = true; removeFx(c.sh);
           if (valid(c.pl)) { burst(dim, center3(c.pl), 12, VIOLET, 2.5, 0.18); sfx(dim, "random.anvil_land", c.pl.location, 0.4, 1.8); }
           continue;
         }
         soulChain(dim, H, center3(c.pl));
+        aimBeam(c.sh, H, center3(c.pl), 0.9);
         if (st.t % 8 === 0) {
           hurtPlayer(c.pl, 1.5, e);
           try { const h = e.getComponent("minecraft:health"); h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 2)); } catch (err) { /* */ }
@@ -5778,7 +5825,7 @@ function gloomTick(e, st) {
         }
       }
     }
-    if (st.t >= 68) { st.chains = undefined; grimEnd(e, st, 70); }
+    if (st.t >= 68) { for (const c of st.chains || []) removeFx(c.sh); st.chains = undefined; grimEnd(e, st, 70); }
   }
 }
 
@@ -5848,6 +5895,7 @@ function seerTick(e, st) {
       for (let k = 0.5; k <= 22; k += 0.5) { if (!airAt(dim, hand.x + d.x * k, hand.y + d.y * k, hand.z + d.z * k)) break; len = k; }
       len = Math.max(len, 1);
       st.beam = { a: hand, b: { x: hand.x + d.x * len, y: hand.y + d.y * len, z: hand.z + d.z * len } };
+      beamShape(dim, hand, st.beam.b, 12, 0.9, "seer_beam");                                      // V1: الشعاع البرتقالي جسم 3D
       sfx(dim, "sh.supernova_boom", L, 0.8, 1.7);
       for (const pl of dim.getPlayers({ location: L, maxDistance: 24 })) {
         if (segDist(center3(pl), hand, st.beam.b) > 0.95) continue;
@@ -6111,8 +6159,8 @@ function veilTick(e, st) {
         for (let k = -1; k <= 1; k++) {
           const a0 = Math.atan2(dz, dx) + k * 0.3, hl = Math.hypot(dx, dz) || 1, dir = { x: Math.cos(a0) * hl / l, y: dy / l, z: Math.sin(a0) * hl / l };
           const hit = new Set();
-          flyFx(dim, from, dir, 1.3, 26, (pos) => {
-            MONSTER.moonStep(dim, pos, dir);                                  // هلال قمر من لمعات End Rod يطير لك
+          flyShape(dim, "fox_moon", from, dir, 1.3, 26, { r: 0.42, a: k * 22 }, (pos) => {          // V1: هلال قمر 3D يطير لك
+            MONSTER.moonStep(dim, pos, dir);                                  // + لمعات End Rod
             for (const p2 of dim.getPlayers({ location: pos, maxDistance: 1.7 })) {
               if (hit.has(p2.id)) continue;
               hit.add(p2.id); hurtPlayer(p2, 7, valid(e) ? e : undefined); MONSTER.foxMoonHit(dim, center3(p2));
@@ -6127,7 +6175,8 @@ function veilTick(e, st) {
   }
 }
 // ═════════════════════════ ماغماموث (Magmamoth، Vile): ماموث بركاني بخمس مهارات خاصة ═════════════════════════
-// كل نار هنا لهب ماينكرافت الأصلي (small_flame_particle = لهب المشعل البرتقالي الطبيعي) + جمرات lava_particle + glow_particle ملوّن، بدون أشكال مصنوعة
+// كل نار هنا لهب ماينكرافت الأصلي (small_flame_particle = لهب المشعل البرتقالي الطبيعي) + جمرات lava_particle + glow_particle ملوّن.
+// V1: الدكة والدرع لهم أجسام بكسل 3D (حلقة صخر، شقوق ماغما تركض بالأرض، فوران، صفائح بازلت) فوق الجزيئات
 const MAGC = [1.0, 0.42, 0.08], MAGY = [1.0, 0.78, 0.25];
 const MOUTH_F = 5.0, MOUTH_H = 3.0;                               // فوهة الخرطوم أثناء النفخ (مقيسة من أنيميشن النموذج): 5 بلوكات لقدام و3 ارتفاع
 const setHot = (e, v) => { try { e.setProperty("sh:hot", v); } catch (err) { /* */ } };
@@ -6190,16 +6239,23 @@ function mammothTick(e, st) {
       const C = { x: L.x, y: L.y, z: L.z }, hitS = new Set(), a0 = Math.random() * 6.28;
       sfx(dim, "sh.guard_slam", C, 1.6, 0.5); sfx(dim, "sh.collapse", C, 1.0, 0.7);
       MONSTER.mamStomp(dim, C); rockBurst(dim, C, 8, 1.1);
+      growShape(dim, "magma_ring", { x: C.x, y: C.y + 0.02, z: C.z }, 1.7, 4, 32, { yaw: Math.random() * 360 });   // V1: حلقة صخر وماغما مكسورة
       for (let k = 0; k < 3; k++) later(k, () => fireRing(dim, C, 1.2 + k * 1.2, 22 + k * 8));
       for (const pl of dim.getPlayers({ location: C, maxDistance: 3.8 })) { hurtPlayer(pl, 7, e); pushAway(C, pl, 2.0, 0.6); notify(pl, "§6Magma Stomp!", 30); hitS.add(pl.id); }
       for (let j = 0; j < 8; j++) {
         const ang = a0 + (j / 8) * Math.PI * 2, dx = Math.cos(ang), dz = Math.sin(ang);
+        for (let sg = 0; sg < 3; sg++) {                                                             // V1: الشق نفسه جسم بكسل يركض بالأرض (3 قطع تلحق ارتفاع الأرض)
+          const d0 = 2.5 + sg * 3.15, mx = C.x + dx * (d0 + 1.6), mz = C.z + dz * (d0 + 1.6), gy = groundAt(dim, mx, mz, C.y);
+          later(1 + sg * 3, () => { const fs = shapeFx(dim, "magma_fissure", { x: C.x + dx * d0, y: gy + 0.02, z: C.z + dz * d0 }, { r: 1.5, yaw: dirYaw({ x: dx, y: 0, z: dz }), l: 0.05, life: 32 - sg * 3 });
+            if (fs) tween(3, 1, (q) => setShape(fs, "sh:l", 0.05 + 2.05 * q)); });
+        }
         for (let k = 1; k <= 9; k++) {
           const px = C.x + dx * (2.5 + k * 1.05), pz = C.z + dz * (2.5 + k * 1.05), py = groundAt(dim, px, pz, C.y);
           later(k, () => {
             MONSTER.mamCrack(dim, { x: px, y: py, z: pz });
             later(7, () => {
               MONSTER.mamErupt(dim, { x: px, y: py, z: pz }, k % 3 === 0);
+              if (k === 9) growShape(dim, "magma_geyser", { x: px, y: py, z: pz }, 0.9, 3, 14);       // V1: فوران بنهاية كل شق
               for (const pl of dim.getPlayers({ location: { x: px, y: py + 1, z: pz }, maxDistance: 1.3 })) {
                 if (hitS.has(pl.id)) continue;
                 hitS.add(pl.id); hurtPlayer(pl, 6, valid(e) ? e : undefined); try { pl.setOnFire(2, true); } catch (err) { /* */ }
@@ -6337,6 +6393,7 @@ function mammothTick(e, st) {
       try { e.addEffect("resistance", 190, { amplifier: 2, showParticles: false }); } catch (err) { /* */ }
       sfx(dim, "sh.supernova_boom", L, 1.0, 0.6); sfx(dim, "sh.chorus", L, 1.2, 0.4);
       MONSTER.mamArmor(dim, L);
+      followShape(e, "magma_plates", 180, { r: 1.4, feet: true, dy: 0.8, s: 70 });                  // V1: صفائح بازلت تدور حوله (3.5 بلوكة، تحت الأنياب)
       for (let h = 0; h < 4; h++) later(h * 2, () => fireRing(dim, L, 2.2 + h * 0.5, 24, 0.3 + h * 0.9));
       for (const pl of dim.getPlayers({ location: L, maxDistance: 24 })) notify(pl, "§6The Magmamoth's cracks blaze: damage reduced!", 50);
     }
@@ -6371,7 +6428,11 @@ system.runInterval(() => {                                                   // 
 }, 20);
 const hpOf = (e) => { try { return e.getComponent("minecraft:health").currentValue; } catch (err) { return 0; } };
 // خرمشة على جسم اللاعب: 3 خطوط مخالب مائلة ومتوازية على وجهه المقابل للدب (شرار عظمي + بكسلات حمرا)
-function clawMarks(dim, at, from, side, top = 1.35) { MONSTER.bearClaw(dim, at, from, side, top); }
+function clawMarks(dim, at, from, side, top = 1.35) {
+  MONSTER.bearClaw(dim, at, from, side, top);
+  const u = fwdTo(at, from);                                             // V1: خطوط المخالب 3D: نص بلوكة قدام اللاعب (جهة الدب) وتحت عيونه حتى ما تغطي الشاشة
+  popShape(dim, "bear_claws", { x: at.x + u.x * 0.5, y: at.y + top - 0.35, z: at.z + u.z * 0.5 }, 0.3, 0.62, 6, { yaw: yawOf(from, at), a: side >= 0 ? 0 : -68, ease: "out" });
+}
 function bearRage(e, st, ticks) {
   st.rage = Math.max(st.rage || 0, ticks); setHot(e, 1);
   try { e.addEffect("speed", ticks, { amplifier: 0, showParticles: false }); e.addEffect("strength", ticks, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
@@ -6379,6 +6440,7 @@ function bearRage(e, st, ticks) {
 // نفَس الزئير: نفخات دخان ماينكرافت (explosion_particle) طالعة من الفم لقدام
 function roarPuff(dim, L, f, n = 14) {
   const m = { x: L.x + f.x * 1.6, y: L.y + 2.7, z: L.z + f.z * 1.6 };
+  popShape(dim, "roar_wave", { x: m.x, y: m.y - 0.6, z: m.z }, 0.5, 1.7, 9, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }), ease: "out" });   // V1: أقواس صدمة الزئير
   for (let i = 0; i < n; i++) mcP(dim, m, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": f.x * 0.45 + (Math.random() - 0.5) * 0.25, "velocity.y": (Math.random() - 0.3) * 0.12, "velocity.z": f.z * 0.45 + (Math.random() - 0.5) * 0.25 });
 }
 // عصرة العناق: حلقة شرار عظمي تنضغط على خصر اللاعب (بعيد عن عيونه حتى ما تغطي الشاشة) + شرارة ضربة حرجة
@@ -6388,6 +6450,11 @@ function swipeArc(dim, L, f, side) { MONSTER.bearSwipe(dim, L, f, side); }
 // حلقة دخان على الأرض تنتشر لبرا (زئير/صحوة/سقوط)
 function dustRing(dim, c, n, speed, r0 = 0.8) {
   for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; mcP(dim, { x: c.x + Math.cos(a) * r0, y: c.y + 0.25, z: c.z + Math.sin(a) * r0 }, "minecraft:explosion_particle", undefined, undefined, { "velocity.x": Math.cos(a) * speed, "velocity.y": 0.02, "velocity.z": Math.sin(a) * speed }); }
+}
+// راس الدب وهو نايم (أنيميشن السبات ينزله لقدام): 1.4 لقدام و1.5 فوق الأرض
+function bearSleepHead(e) {
+  const L = e.location; let yaw = 0; try { yaw = (e.getRotation().y * Math.PI) / 180; } catch (err) { /* */ }
+  return { x: L.x - Math.sin(yaw) * 1.4, y: L.y + 1.5, z: L.z + Math.cos(yaw) * 1.4 };
 }
 function bearTick(e, st) {
   const dim = e.dimension, L = e.location;
@@ -6435,6 +6502,7 @@ function bearTick(e, st) {
         if (!st.victim) { grimEnd(e, st, 50); return; }                       // فلت من المسكة
         st.stage = 1; st.t = 0; st.f = f; st.hits = 0; st.hpLast = hpOf(e); setMState(e, 2);
         notify(st.victim, "§cThe Grey Bear grabs you! §7Hit it 3 times or dash to break free", 40); MONSTER.bearGrab(dim, { x: L.x + f.x * 1.25, y: L.y + 0.7, z: L.z + f.z * 1.25 });
+        st.grip = growShape(dim, "bear_grip", { x: L.x + f.x * 1.25, y: L.y + 1.6, z: L.z + f.z * 1.25 }, 1.1, 3, 80, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }) });   // V1: كفوف روح تمسكك
         sfx(dim, "mob.polarbear.warning", L, 1.5, 0.6);
       }
       return;
@@ -6442,6 +6510,7 @@ function bearTick(e, st) {
     const pl = st.victim;
     if (!pl || !valid(pl)) { grimEnd(e, st, 60); return; }
     const f = st.f, hold = { x: L.x + f.x * 1.25, y: L.y + 0.7, z: L.z + f.z * 1.25 };
+    if (st.stage === 1) moveShape(st.grip, { x: hold.x, y: L.y + 1.6, z: hold.z }, dirYaw({ x: f.x, y: 0, z: f.z }));
     if (st.stage === 1) {
       if (st.t > 2 && Math.hypot(pl.location.x - hold.x, pl.location.z - hold.z) > 1.1) {   // انفلت (داش أو دفع)
         notify(pl, "§aYou slipped out of the Bear Hug!", 30); MONSTER.bearBreak(dim, center3(pl));
@@ -6530,10 +6599,12 @@ function bearTick(e, st) {
   if (st.skill === "sleep") {
     if (st.t === 2) {
       st.hpLast = hpOf(e); sfx(dim, "mob.polarbear.idle", L, 1.2, 0.5);
+      st.zzz = shapeFx(dim, "sleep_z", bearSleepHead(e), { r: 0.75, life: 104 });                 // V1: حروف Z تطلع من راسه النايم
       for (const q of dim.getPlayers({ location: L, maxDistance: 20 })) notify(q, "§7The Grey Bear falls into a deep sleep... §8(it heals; strike it and it wakes in a wrath)", 50);
     }
     const h = hpOf(e);
-    if (st.t > 4 && h < st.hpLast - 0.01) { st.skill = "wrath"; st.t = 0; setMState(e, 5); return; }   // انضرب: يصحى بغضب
+    if (st.t > 4 && h < st.hpLast - 0.01) { dropSkillShapes(st); st.skill = "wrath"; st.t = 0; setMState(e, 5); return; }   // انضرب: يصحى بغضب
+    if (st.zzz && st.t % 4 === 0) { const hp = bearSleepHead(e), np = nearestPlayer(e, 32); moveShape(st.zzz, hp, np ? yawOf(hp, np.p.location) : undefined); }
     if (st.t % 20 === 0) {
       try { const hc = e.getComponent("minecraft:health"); hc.setCurrentValue(Math.min(hc.effectiveMax, hc.currentValue + hc.effectiveMax * 0.03)); } catch (err) { /* */ }
       MONSTER.bearHeal(dim, L);
@@ -6835,12 +6906,12 @@ world.afterEvents.entityHurt.subscribe((ev) => {
   } catch (err) { /* */ }
 });
 // ═════════════════════════ الحاصد الأجوف (Hollow Harvester، Cursed) — v1.39 ═════════════════════════
-// فزاعة ملعونة تتحرك مثل دمية خيوط (صليب دمية عائم فوق راسه). المهارات مثبتة بطلب اللاعب (MOD_GUIDE §56):
+// فزاعة ملعونة تتجول بالعالم (أطول من اللاعب ببلوكة وربع، المنجل بإيده). المهارات مثبتة بطلب اللاعب (MOD_GUIDE §56):
 //  1) Puppet Strings: خيط يطلع من إيده اليسار وينمسك بيك، وبعد ثلثين ثانية يسحبك لعنده. الداش قبل السحبة يقطع الخيط.
 //  2) Hollow Stare: يميل راسه وعيونه تضوي؛ إذا انت تباوع عليه تبطأ بأوطى مستوى بس (Slowness I) وبدون ظلام. لف وجهك وما يأثر.
 //  3) Sealing Scythe: يرفع المنجل فوق راسه ويحصد قدامه؛ إذا ضربك يختم المهارة (أو السلاح) اللي بإيدك 8 ثواني بس.
 //  الضعف: النار. ضرر النار عليه ×3 (damage_sensor بملف الكيان)، ولما يشتعل: يتخبط، تتوقف مهاراته، وتكستشره يتفحم (sh:hot).
-//  ينقتل = يسقط منجله دائماً (Harvester's Scythe): هذي الطريقة الوحيدة للحصول عليه.
+//  ينقتل = يسقط منجله بنسبة نادرة كلش (5%): هذي الطريقة الوحيدة للحصول عليه.
 const HARVESTER = "sh:hollow_harvester";
 const SEAL_TICKS = 160;
 const isBurning = (e) => { try { return !!e.getComponent("minecraft:onfire"); } catch (err) { return false; } };
@@ -6849,6 +6920,8 @@ function harvFrame(e) {
   return { f, left: { x: f.z, z: -f.x } };
 }
 function harvEnd(e, st, cd) { st.victim = undefined; st.anchor = undefined; grimEnd(e, st, cd); }
+// إيد الفزاعة اليسرى (اللي ترمي خيط الدمية) بعد تكبير V1 (×1.075)
+function harvHand(L, f, left) { return { x: L.x + f.x * 0.97 + left.x * 0.39, y: L.y + 1.99, z: L.z + f.z * 0.97 + left.z * 0.39 }; }
 function harvesterTick(e, st) {
   const dim = e.dimension, L = e.location;
   const face = (loc) => { try { e.teleport(e.location, { facingLocation: { x: loc.x, y: e.location.y + 1, z: loc.z } }); } catch (err) { /* */ } };
@@ -6900,9 +6973,11 @@ function harvesterTick(e, st) {
       const vic = st.victim;
       if (!vic || !valid(vic)) { harvEnd(e, st, 30); return; }
       face(vic.location);
-      const hand = { x: L.x + f.x * 0.9 + left.x * 0.36, y: L.y + 1.85, z: L.z + f.z * 0.9 + left.z * 0.36 };
+      const hand = harvHand(L, f, left);
       const chestV = { x: vic.location.x, y: vic.location.y + 1.1, z: vic.location.z };
       HARVEST.string(dim, hand, chestV, st.t);
+      if (st.t === 2) st.str = beamShape(dim, hand, chestV, 40, 1.5, "puppet_string");              // V1: خيط الدمية جسم 3D بعقد بنفسجية
+      else aimBeam(st.str, hand, chestV, 1.5);
       if (st.t === 4) HARVEST.stringAttach(dim, chestV);
       if (st.t > 2 && Math.hypot(vic.location.x - st.anchor.x, vic.location.z - st.anchor.z) > 2.6) {     // داش: الخيط انقطع
         HARVEST.snap(dim, vic.location); cue(dim, "harv_snap", vic.location);
@@ -6920,6 +6995,10 @@ function harvesterTick(e, st) {
       }
       return;
     }
+    if (st.str && valid(st.victim)) {                                                                // الخيط يسحب ويا الضحية وبعدين يرتخي ويختفي
+      if (st.t <= 4) aimBeam(st.str, harvHand(L, f, left), { x: st.victim.location.x, y: st.victim.location.y + 1.1, z: st.victim.location.z }, 1.5);
+      else { removeFx(st.str); st.str = undefined; }
+    }
     if (st.t >= 10) harvEnd(e, st, 70);
     return;
   }
@@ -6927,13 +7006,15 @@ function harvesterTick(e, st) {
   if (st.skill === "stare") {
     if (tp) face(tp.location);
     try { e.addEffect("slowness", 6, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
-    const eyeY = L.y + 2.22, ex = { x: L.x + f.x * 0.3, z: L.z + f.z * 0.3 };
-    const eyeA = { x: ex.x + left.x * 0.12, y: eyeY, z: ex.z + left.z * 0.12 }, eyeB = { x: ex.x - left.x * 0.12, y: eyeY - 0.02, z: ex.z - left.z * 0.12 };
+    const eyeY = L.y + 2.39, ex = { x: L.x + f.x * 0.32, z: L.z + f.z * 0.32 };
+    const eyeA = { x: ex.x + left.x * 0.13, y: eyeY, z: ex.z + left.z * 0.13 }, eyeB = { x: ex.x - left.x * 0.13, y: eyeY - 0.02, z: ex.z - left.z * 0.13 };
     if (st.t % 4 === 0) HARVEST.stareEyes(dim, eyeA, eyeB);
-    if (st.t === 2) cue(dim, "harv_stare", L);
+    const eyeAt = { x: L.x + f.x * 0.36, y: eyeY, z: L.z + f.z * 0.36 };
+    if (st.t === 2) { cue(dim, "harv_stare", L); st.eyes = growShape(dim, "hollow_eyes", eyeAt, 0.32, 6, 32, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }) }); }   // V1: عيون بنفسجية كبار تضوي قدام وجهه
+    else if (st.eyes) moveShape(st.eyes, eyeAt, dirYaw({ x: f.x, y: 0, z: f.z }));
     if (st.t === 12) {
       for (const pl of dim.getPlayers({ location: L, maxDistance: 13 })) {
-        const vx = L.x - pl.location.x, vy = L.y + 2.0 - (pl.location.y + 1.62), vz = L.z - pl.location.z, l = Math.hypot(vx, vy, vz) || 1;
+        const vx = L.x - pl.location.x, vy = L.y + 2.15 - (pl.location.y + 1.62), vz = L.z - pl.location.z, l = Math.hypot(vx, vy, vz) || 1;
         const v = viewDir(pl);
         if ((v.x * vx + v.y * vy + v.z * vz) / l < 0.55) { notify(pl, "§7You looked away from the Hollow Stare", 25); continue; }
         try { pl.addEffect("slowness", 100, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
@@ -6949,9 +7030,10 @@ function harvesterTick(e, st) {
     if (tp && st.t <= 10) face(tp.location);
     try { e.addEffect("slowness", 6, { amplifier: 3, showParticles: false }); } catch (err) { /* */ }
     if (st.t === 2) cue(dim, "harv_reap_raise", L);
-    if (st.t === 6 || st.t === 8) HARVEST.reapCharge(dim, { x: L.x - f.x * 0.2, y: L.y + 3.6, z: L.z - f.z * 0.2 });
+    if (st.t === 6 || st.t === 8) HARVEST.reapCharge(dim, { x: L.x - f.x * 0.2, y: L.y + 3.87, z: L.z - f.z * 0.2 });
     if (st.t === 12) {
       HARVEST.reapSweep(dim, L, { x: f.x, y: 0, z: f.z }, 3.2);
+      popShape(dim, "reap_arc", { x: L.x, y: L.y + 1.1, z: L.z }, 1.5, 2.7, 7, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }), ease: "out" });   // V1: هلال الحصدة 3D قدامه
       cue(dim, "harv_reap", L);
       for (const pl of dim.getPlayers({ location: L, maxDistance: 4.6 })) {
         const vx = pl.location.x - L.x, vz = pl.location.z - L.z, l = Math.hypot(vx, vz) || 1;
@@ -6983,6 +7065,7 @@ function sealHeld(pl) {
   if (!m) { m = new Map(); sealedItems.set(pl.id, m); }
   m.set(id, system.currentTick + SEAL_TICKS);
   HARVEST.seal(pl.dimension, pl.location); cue(pl.dimension, "harv_seal", pl.location);
+  followShape(pl, "seal_sigil", SEAL_TICKS, { r: 0.9, feet: true, dy: 1.0, faceYaw: () => { try { return pl.getRotation().y; } catch (err) { return undefined; } } });   // V1: ختم 3D حول خصرك
   notify(pl, `§5⛓ ${sealName(id)} is SEALED for 8s §7(your other skills still work)`, 50);
   for (let k = 10; k < SEAL_TICKS; k += 20) later(k, () => { if (valid(pl) && sealLeft(pl, id) > 0) HARVEST.sealTick(pl.dimension, pl.location); });
   later(SEAL_TICKS + 1, () => { if (valid(pl) && sealLeft(pl, id) === 0) { notify(pl, `§d${sealName(id)} is free again`, 30); sfxPlayer(pl, "sh.ready", 0.8, 1.0); } });
@@ -6997,6 +7080,9 @@ world.afterEvents.entityDie.subscribe((ev) => {
   } catch (err) { /* */ }
 });
 const CUSTOM_TICK = { "sh:gloomhorn": gloomTick, "sh:hollow_seer": seerTick, "sh:veilfox": veilTick, "sh:magmamoth": mammothTick, [BEAR]: bearTick, [CUB]: cubTick, [MANTIS]: mantisTick, [HARVESTER]: harvesterTick };
+world.afterEvents.entityDie.subscribe((ev) => {                      // V1: الوحش مات بنص مهارة: أشكالها تنشال وحالته تنمسح
+  try { const e = ev.deadEntity; if (!e || !CUSTOM_TICK[e.typeId]) return; dropSkillShapes(gst.get(e.id)); gst.delete(e.id); } catch (err) { /* */ }
+});
 system.runInterval(() => {
   for (const dimId of ["overworld", "nether", "the_end"]) {
     let dim;
@@ -7257,8 +7343,8 @@ const MAT_DROPS = {
   "sh:magmamoth": [["sh:soul_amber", 0.04, 1, 1]],
   "sh:grey_bear": [["sh:bear_hide", 0.05, 1, 1], ["sh:bear_claw", 0.02, 1, 1], ["sh:soul_silver", 0.04, 1, 1]],
   "sh:prayer_mantis": [["sh:soul_verdant", 0.05, 1, 1]],
-  // v1.39: الحاصد الأجوف يسقط منجله دائماً (الطريقة الوحيدة للحصول عليه) + شعلة روح نادرة
-  "sh:hollow_harvester": [["sh:harvest_scythe", 1, 1, 1], ["sh:soul_violet", 0.05, 1, 1]],
+  // V1 (طلب اللاعب): الحاصد يسقط منجله بنسبة نادرة كلش (5%)، وهو الطريقة الوحيدة للحصول عليه + شعلة روح نادرة
+  "sh:hollow_harvester": [["sh:harvest_scythe", 0.05, 1, 1], ["sh:soul_violet", 0.05, 1, 1]],
 };
 function dropMaterials(e) {
   const list = MAT_DROPS[e.typeId];

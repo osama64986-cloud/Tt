@@ -1,7 +1,7 @@
 """يغلف المود بملف واحد .mcaddon  (يحافظ على الـ UUID الموجودة، ما يولد جديدة).
 
 الاستعمال (من أي مكان):
-    python3 tools/package.py            # يفحص ثم يغلف إلى dist/AnimePowers_v<النسخة>.mcaddon
+    python3 tools/package.py            # يفحص ثم يغلف إلى dist/Etheria_V1.mcaddon (الاسم العام للنسخة، والرقم الداخلي بالمانيفست)
     python3 tools/package.py --no-check # يتخطى الفحص
     python3 tools/package.py -o اسم.mcaddon
 
@@ -36,7 +36,7 @@ def main():
 
     with open(os.path.join(SRC, "BP", "manifest.json"), encoding="utf-8") as f:
         ver = ".".join(str(n) for n in json.load(f)["header"]["version"])
-    out = args.out or os.path.join(ROOT, "dist", f"AnimePowers_v{ver}.mcaddon")
+    out = args.out or os.path.join(ROOT, "dist", "Etheria_V1.mcaddon")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
 
     count = 0

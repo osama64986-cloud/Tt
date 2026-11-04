@@ -385,6 +385,40 @@
      ]
     }
    }
+  },
+  "animation.sh_fx.shape_seal_sigil": {
+   "loop": true,
+   "bones": {
+    "rings": {
+     "rotation": [
+      0,
+      "q.life_time * 120",
+      0
+     ]
+    }
+   }
+  },
+  "animation.sh_fx.shape_sleep_z": {
+   "loop": true,
+   "bones": {
+    "z0": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 0.0) * 4, 0, 1)"
+    },
+    "z1": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 0.5) * 4, 0, 1)"
+    },
+    "z2": {
+     "scale": "math.clamp((math.mod(q.life_time, 1.5) - 1.0) * 4, 0, 1)"
+    }
+   }
+  },
+  "animation.sh_fx.shape_hollow_eyes": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "scale": "1 + math.sin(q.life_time * 720) * 0.08"
+    }
+   }
   }
  }
 }

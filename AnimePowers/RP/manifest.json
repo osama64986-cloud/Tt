@@ -1,12 +1,12 @@
 {
   "format_version": 2,
   "header": {
-    "name": "§6Anime Powers §7- RP",
-    "description": "Models, sounds and particles",
+    "name": "§dEtheria §fV1 §7- RP",
+    "description": "Etheria V1: models, animations, sounds and interface",
     "uuid": "23626314-a797-40ba-a405-8e75d9a904d8",
     "version": [
       1,
-      39,
+      40,
       0
     ],
     "min_engine_version": [

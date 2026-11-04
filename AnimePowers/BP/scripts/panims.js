@@ -54,15 +54,15 @@ export const PANIM = {
  },
  "dash_left": {
   "id": "animation.sh.player.dash_left",
-  "len": 0.36
+  "len": 0.4
  },
  "dash_right": {
   "id": "animation.sh.player.dash_right",
-  "len": 0.36
+  "len": 0.4
  },
  "dash_back": {
   "id": "animation.sh.player.dash_back",
-  "len": 0.36
+  "len": 0.4
  },
  "guard": {
   "id": "animation.sh.player.guard",
@@ -70,6 +70,18 @@ export const PANIM = {
  },
  "sprint": {
   "id": "animation.sh.player.sprint",
+  "len": 0
+ },
+ "idle": {
+  "id": "animation.sh.player.idle",
+  "len": 0
+ },
+ "idle_combat": {
+  "id": "animation.sh.player.idle_combat",
+  "len": 0
+ },
+ "walk": {
+  "id": "animation.sh.player.walk",
   "len": 0
  }
 };
