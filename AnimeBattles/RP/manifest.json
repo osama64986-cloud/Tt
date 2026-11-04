@@ -1,0 +1,16 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Anime Battles RP",
+    "description": "Models, textures, animations and ability effects for Anime Battles.",
+    "uuid": "8660b29f-ee5b-4672-898d-8cc1353f5e83",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 60]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "dbe31763-a9a4-422d-a667-fadd2686160f", "version": [1, 0, 0] }
+  ],
+  "dependencies": [
+    { "uuid": "da8fb047-b286-4180-94cf-afa1715ad272", "version": [1, 0, 0] }
+  ]
+}

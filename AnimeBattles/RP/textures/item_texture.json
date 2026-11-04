@@ -1,0 +1,8 @@
+{
+  "resource_pack_name": "anime_battles",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "ab_kill_stick": { "textures": "textures/items/kill_stick" },
+    "ab_team_stick": { "textures": "textures/items/team_stick" }
+  }
+}

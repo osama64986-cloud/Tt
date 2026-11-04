@@ -1,0 +1,1788 @@
+// Anime Battles — Goku, Vegeta, Gojo
+// Team Stick: hit = red, next hit = blue (alternates). Use = switch next team. Sneak + use = reset all teams.
+// Kill Stick: hit = instant permanent kill (any mob, even the Warden). Use = toggle block damage. Sneak + use = effects quality.
+import { world, system, MolangVariableMap, EntityDamageCause, EquipmentSlot, ItemStack } from "@minecraft/server";
+
+// ------------------------------------------------------------------ settings
+const RED = "ab_red";
+const BLUE = "ab_blue";
+const FIGHTER_FAMILY = "anime_fighter";
+const DIMENSIONS = ["overworld", "nether", "the_end"];
+const UNBREAKABLE = new Set([
+  "minecraft:bedrock", "minecraft:barrier", "minecraft:command_block", "minecraft:chain_command_block",
+  "minecraft:repeating_command_block", "minecraft:structure_block", "minecraft:jigsaw", "minecraft:end_portal_frame",
+  "minecraft:end_portal", "minecraft:portal", "minecraft:light_block", "minecraft:allow", "minecraft:deny", "minecraft:border_block",
+]);
+const IGNORE_TYPES = new Set(["ab:vfx", "minecraft:item", "minecraft:xp_orb", "minecraft:arrow", "minecraft:armor_stand", "minecraft:painting",
+  "minecraft:leash_knot", "minecraft:fishing_hook", "minecraft:falling_block", "minecraft:tnt", "minecraft:boat", "minecraft:minecart"]);
+
+function setting(key, fallback) {
+  const v = world.getDynamicProperty(key);
+  return v === undefined ? fallback : v;
+}
+const griefing = () => setting("ab:griefing", true);
+const fxLevel = () => setting("ab:fx", 1); // 1 = full, 0.5 = low (for weaker phones)
+
+// ------------------------------------------------------------------ math
+const V = {
+  add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }),
+  sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+  mul: (a, s) => ({ x: a.x * s, y: a.y * s, z: a.z * s }),
+  len: (a) => Math.hypot(a.x, a.y, a.z),
+  dist: (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z),
+  norm(a) { const l = Math.hypot(a.x, a.y, a.z) || 1; return { x: a.x / l, y: a.y / l, z: a.z / l }; },
+  up: (a, y) => ({ x: a.x, y: a.y + y, z: a.z }),
+  randSphere() {
+    const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+    return { x: s * Math.cos(t), y: u, z: s * Math.sin(t) };
+  },
+};
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const now = () => system.currentTick;
+
+const warned = new Set();
+function warn(tag, e) {
+  if (warned.has(tag)) return;
+  warned.add(tag);
+  console.warn(`[AnimeBattles] ${tag}: ${e}`);
+}
+function later(ticks, fn) {
+  system.runTimeout(() => { try { fn(); } catch (e) { warn("later", e); } }, Math.max(1, Math.round(ticks)));
+}
+function every(ticks, count, fn) {
+  let i = 0;
+  const id = system.runInterval(() => {
+    try {
+      if (fn(i) === false || ++i >= count) system.clearRun(id);
+    } catch (e) { warn("every", e); system.clearRun(id); }
+  }, ticks);
+}
+
+// ------------------------------------------------------------------ colours
+const C = {
+  white: { red: 1, green: 1, blue: 1 },
+  kiYellow: { red: 1, green: 0.93, blue: 0.55 },
+  kameBlue: { red: 0.35, green: 0.75, blue: 1 },
+  gold: { red: 1, green: 0.85, blue: 0.2 },
+  ssbBlue: { red: 0.2, green: 0.7, blue: 1 },
+  silver: { red: 0.85, green: 0.88, blue: 1 },
+  kaioken: { red: 1, green: 0.15, blue: 0.1 },
+  galick: { red: 0.75, green: 0.3, blue: 1 },
+  bigBang: { red: 0.6, green: 0.85, blue: 1 },
+  flash: { red: 1, green: 0.95, blue: 0.4 },
+  ego: { red: 0.75, green: 0.2, blue: 0.95 },
+  hakai: { red: 0.45, green: 0.05, blue: 0.6 },
+  blue: { red: 0.15, green: 0.45, blue: 1 },
+  red: { red: 1, green: 0.12, blue: 0.12 },
+  purple: { red: 0.7, green: 0.2, blue: 1 },
+  void: { red: 0.04, green: 0.04, blue: 0.1 },
+  black: { red: 0.02, green: 0.02, blue: 0.02 },
+  heal: { red: 0.6, green: 1, blue: 0.8 },
+  team: { [RED]: { red: 1, green: 0.2, blue: 0.2 }, [BLUE]: { red: 0.2, green: 0.45, blue: 1 } },
+  fire: { red: 1, green: 0.45, blue: 0.08 },
+  blood: { red: 0.75, green: 0.02, blue: 0.08 },
+  haki: { red: 0.55, green: 0.05, blue: 0.1 },
+  nika: { red: 1, green: 0.97, blue: 0.85 },
+  steam: { red: 1, green: 0.78, blue: 0.8 },
+  ce: { red: 0.35, green: 0.55, blue: 1 },
+};
+
+// ------------------------------------------------------------------ 3D energy entities (beams + balls)
+const SLOT = new Map([[C.kameBlue, 0], [C.ssbBlue, 0], [C.galick, 1], [C.ego, 1], [C.flash, 2], [C.bigBang, 3], [C.red, 4], [C.kaioken, 4],
+  [C.blue, 5], [C.purple, 6], [C.hakai, 7], [C.kiYellow, 9], [C.gold, 9], [C.silver, 10], [C.white, 10],
+  [C.fire, 11], [C.blood, 12], [C.haki, 13], [C.black, 13], [C.nika, 14], [C.ce, 5]]);
+const slotOf = (c) => SLOT.get(c) ?? 10;
+const vfxAlive = new Map();
+function spawnVfx(dim, kind, loc, o) {
+  try {
+    const v = dim.spawnEntity("ab:vfx", loc);
+    v.setProperty("ab:kind", kind);
+    v.setProperty("ab:color", o.slot ?? 10);
+    v.setProperty("ab:size", clamp(o.size ?? 1, 0, 40));
+    v.setProperty("ab:len", 0);
+    if (o.dir) orientVfx(v, loc, o.dir);
+    vfxAlive.set(v.id, now() + (o.life ?? 200));
+    return v;
+  } catch (e) { warn("vfx", e); return undefined; }
+}
+function orientVfx(v, loc, dir) {
+  const yaw = (Math.atan2(-dir.x, dir.z) * 180) / Math.PI;
+  const pitch = (-Math.asin(clamp(dir.y, -1, 1)) * 180) / Math.PI;
+  try { v.teleport(loc, { rotation: { x: 0, y: yaw } }); v.setProperty("ab:pitch", clamp(pitch, -90, 90)); } catch (e) { /* ignore */ }
+}
+function vset(v, k, val) { try { if (v && v.isValid) v.setProperty(k, val); } catch (e) { /* ignore */ } }
+function killVfx(v) { try { if (v && v.isValid) { vfxAlive.delete(v.id); v.remove(); } } catch (e) { /* ignore */ } }
+function fadeVfx(v, from, ticks = 5) {
+  every(1, ticks, (i) => { vset(v, "ab:size", from * (1 - (i + 1) / ticks)); if (i === ticks - 1) killVfx(v); });
+}
+function shake(dim, loc, power = 0.25, secs = 0.3) {
+  try { dim.runCommand(`camerashake add @a[x=${Math.floor(loc.x)},y=${Math.floor(loc.y)},z=${Math.floor(loc.z)},r=14] ${power} ${secs} positional`); } catch (e) { /* ignore */ }
+}
+
+// ------------------------------------------------------------------ effects
+function fx(dim, kind, loc, color, size, life, extra) {
+  try {
+    const m = new MolangVariableMap();
+    m.setColorRGB("variable.color", color);
+    m.setFloat("variable.size", size);
+    m.setFloat("variable.life", life);
+    m.setFloat("variable.count", extra?.count ?? 1);
+    m.setFloat("variable.speed", extra?.speed ?? 0);
+    m.setFloat("variable.radius", extra?.radius ?? 0);
+    dim.spawnParticle(`ab:${kind}`, loc, m);
+  } catch (e) { /* chunk not loaded or particle missing */ }
+}
+function sound(dim, id, loc, volume = 1, pitch = 1) {
+  try { dim.playSound(id, loc, { volume, pitch }); } catch (e) { /* ignore */ }
+}
+function burst(dim, loc, color, count, speed, size = 0.35, life = 0.6) {
+  fx(dim, "burst", loc, color, size, life, { count: Math.ceil(count * fxLevel()), speed, radius: 0.2 });
+}
+function implode(dim, loc, color, radius, count) {
+  fx(dim, "burst", loc, color, 0.3, 0.5, { count: Math.ceil(count * fxLevel()), speed: -radius * 2, radius });
+}
+function ring(dim, center, radius, color, points = 16, size = 0.3) {
+  const n = Math.ceil(points * fxLevel());
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    fx(dim, "orb", { x: center.x + Math.cos(a) * radius, y: center.y, z: center.z + Math.sin(a) * radius }, color, size, 0.5);
+  }
+}
+function sphereFx(dim, center, radius, color, points, size, kind = "orb", life = 0.4) {
+  const n = Math.ceil(points * fxLevel());
+  for (let i = 0; i < n; i++) fx(dim, kind, V.add(center, V.mul(V.randSphere(), radius)), color, size, life);
+}
+
+// ------------------------------------------------------------------ entity helpers
+function alive(e) {
+  try {
+    if (!e || !e.isValid) return false;
+    const h = e.getComponent("minecraft:health");
+    return !h || h.currentValue > 0;
+  } catch (e2) { return false; }
+}
+function health(e) {
+  try { return e.getComponent("minecraft:health"); } catch (e2) { return undefined; }
+}
+function hpPct(e) {
+  const h = health(e);
+  return h ? h.currentValue / h.effectiveMax : 1;
+}
+function teamOf(e) {
+  try {
+    if (e.hasTag(RED)) return RED;
+    if (e.hasTag(BLUE)) return BLUE;
+  } catch (e2) { /* invalid */ }
+  return undefined;
+}
+const enemyOf = (team) => (team === RED ? BLUE : RED);
+const isFighter = (e) => !!FIGHTERS[e.typeId];
+function aim(e) { return V.up(e.location, 1.0); }
+function face(e, loc) {
+  try { e.teleport(e.location, { facingLocation: loc }); } catch (e2) { /* ignore */ }
+}
+function setPose(e, pose) {
+  try { e.setProperty("ab:pose", pose); } catch (e2) { /* ignore */ }
+}
+function formOf(e) {
+  try { return e.getProperty("ab:form") ?? 0; } catch (e2) { return 0; }
+}
+function handPos(e, target) {
+  const head = e.getHeadLocation();
+  const dir = V.norm(V.sub(aim(target), head));
+  return { pos: V.add(V.add(head, V.mul(dir, 0.9)), { x: 0, y: -0.45, z: 0 }), dir };
+}
+function sideOf(dir) { return V.norm({ x: -dir.z, y: 0, z: dir.x }); }
+function slow(e, ticks, amp = 4) {
+  try { e.addEffect("slowness", Math.max(1, ticks), { amplifier: amp, showParticles: false }); } catch (e2) { /* ignore */ }
+}
+function nearbyPlayers(dim, loc, r = 64) {
+  try { return dim.getPlayers({ location: loc, maxDistance: r }); } catch (e) { return []; }
+}
+function announce(e, text) {
+  for (const p of nearbyPlayers(e.dimension, e.location)) {
+    try { p.onScreenDisplay.setActionBar(text); } catch (e2) { /* ignore */ }
+  }
+}
+function prettyType(id) {
+  return id.replace(/^.*:/, "").split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+}
+
+function nearestEnemy(e, team, range) {
+  let best, bestD = range;
+  let list = [];
+  try { list = e.dimension.getEntities({ location: e.location, maxDistance: range, tags: [enemyOf(team)] }); } catch (err) { return undefined; }
+  for (const o of list) {
+    if (o.id === e.id || !alive(o)) continue;
+    const d = V.dist(o.location, e.location);
+    if (d < bestD) { bestD = d; best = o; }
+  }
+  return best;
+}
+
+// Who can be hit by an ability from `src`: enemies, and un-teamed mobs caught in the blast.
+// Players are only hit when they joined a team. Allies are never hit.
+function canHit(src, srcTeam, o) {
+  if (!o.isValid || o.id === src.id || IGNORE_TYPES.has(o.typeId)) return false;
+  const t = teamOf(o);
+  if (t && t === srcTeam) return false;
+  if (o.typeId === "minecraft:player" && !t) return false;
+  return alive(o);
+}
+
+// ------------------------------------------------------------------ fighter state
+const states = new Map();
+function state(e) {
+  let s = states.get(e.id);
+  if (!s) {
+    const def = FIGHTERS[e.typeId];
+    s = {
+      energy: def ? def.energy : 0, cd: {}, busyUntil: 0, stunUntil: 0, burnoutUntil: 0,
+      infinityBrokenUntil: 0, kaiokenUntil: 0, ego: 0, nextTransform: 0, combatSince: 0, lastCombat: 0, meleeCd: 0,
+    };
+    states.set(e.id, s);
+  }
+  return s;
+}
+
+function powerOf(e) {
+  const def = FIGHTERS[e.typeId];
+  if (def) {
+    const s = state(e);
+    const f = def.forms[clamp(formOf(e), 0, def.forms.length - 1)];
+    let p = f.power;
+    if (s.kaiokenUntil > now()) p *= 1.5;
+    p *= 1 + s.ego;
+    return p;
+  }
+  const h = health(e);
+  return h ? Math.max(5, Math.sqrt(h.effectiveMax) * 3) : 5;
+}
+
+// ------------------------------------------------------------------ damage
+// cause "override" is used for sure-hit damage (Domain Expansion) that Infinity and dodging cannot stop.
+function deal(src, v, amount, sureHit = false) {
+  if (!alive(v) || amount <= 0) return;
+  try {
+    const opts = { cause: sureHit ? EntityDamageCause.override : EntityDamageCause.magic };
+    if (src && src.isValid) opts.damagingEntity = src;
+    v.applyDamage(amount, opts);
+  } catch (e) { warn("deal", e); }
+}
+function hitArea(src, center, radius, dmg, hitSet, opt = {}) {
+  const team = teamOf(src);
+  let list = [];
+  try { list = src.dimension.getEntities({ location: center, maxDistance: radius }); } catch (e) { return 0; }
+  let n = 0;
+  for (const o of list) {
+    if (hitSet && hitSet.has(o.id)) continue;
+    if (!canHit(src, team, o)) continue;
+    hitSet?.add(o.id);
+    deal(src, o, dmg, opt.sureHit);
+    if (opt.knock) {
+      const d = V.norm(V.sub(o.location, center));
+      try { o.applyKnockback({ x: d.x * opt.knock, z: d.z * opt.knock }, opt.lift ?? 0.4); } catch (e) { /* ignore */ }
+    }
+    n++;
+  }
+  return n;
+}
+function carve(dim, center, r, budget = 160) {
+  if (!griefing() || r <= 0) return;
+  const R = Math.ceil(r), r2 = r * r;
+  let n = 0;
+  for (let x = -R; x <= R; x++) for (let y = -R; y <= R; y++) for (let z = -R; z <= R; z++) {
+    if (x * x + y * y + z * z > r2) continue;
+    try {
+      const b = dim.getBlock({ x: Math.floor(center.x + x), y: Math.floor(center.y + y), z: Math.floor(center.z + z) });
+      if (!b || b.isAir || b.isLiquid || UNBREAKABLE.has(b.typeId)) continue;
+      b.setType("minecraft:air");
+      if (++n >= budget) return;
+    } catch (e) { /* unloaded */ }
+  }
+}
+function solidAt(dim, p) {
+  try {
+    const b = dim.getBlock({ x: Math.floor(p.x), y: Math.floor(p.y), z: Math.floor(p.z) });
+    return !!b && !b.isAir && !b.isLiquid;
+  } catch (e) { return false; }
+}
+function explosion(src, pos, o) {
+  const dim = src.dimension;
+  const ball = spawnVfx(dim, 1, pos, { slot: o.slot ?? slotOf(o.color), size: 0.3, life: 40 });
+  every(1, 5, (i) => vset(ball, "ab:size", (0.3 + o.radius * 0.28 * (i + 1))));
+  later(7, () => fadeVfx(ball, 0.3 + o.radius * 1.4, 5));
+  fx(dim, "shock", V.up(pos, -o.radius * 0.4), o.color, o.radius * 3.2, 0.6);
+  fx(dim, "flash", pos, C.white, o.radius * 1.8, 0.25);
+  fx(dim, "streak", pos, o.color, 1.6 + o.radius * 0.2, 0.5, { count: Math.ceil((14 + o.radius * 4) * fxLevel()), speed: 8 + o.radius * 2 });
+  if (o.radius >= 3) shake(dim, pos, Math.min(0.6, 0.12 * o.radius), 0.4);
+  burst(dim, pos, o.color, 26 + o.radius * 6, o.radius * 3, 0.5 + o.radius * 0.08, 0.8);
+  burst(dim, pos, C.white, 10 + o.radius * 2, o.radius * 1.5, 0.4, 0.5);
+  sphereFx(dim, pos, o.radius * 0.6, o.color, 10 + o.radius * 3, 0.9, "orb", 0.5);
+  sound(dim, "random.explode", pos, 1 + o.radius * 0.3, o.radius > 4 ? 0.6 : 0.9);
+  fx(dim, "orb", pos, C.white, o.radius * 1.1, 0.15);
+  every(2, 5, (i) => ring(dim, V.up(pos, -o.radius * 0.3), o.radius * (0.4 + i * 0.35), o.color, 14 + o.radius * 2, 0.45));
+  fx(dim, "aura", V.up(pos, -1), { red: 0.35, green: 0.33, blue: 0.3 }, 1.2, 1.2, { count: (10 + o.radius * 3) * fxLevel(), speed: 1 });
+  hitArea(src, pos, o.radius, o.dmg, new Set(), { knock: o.knock ?? 1.2, lift: 0.45 });
+  carve(dim, pos, o.carve ?? 0);
+}
+
+// A beam that grows from the caster toward the target, hitting everything along it once.
+function beam(src, target, o) {
+  const dim = src.dimension;
+  const { pos: start, dir } = handPos(src, target);
+  const hit = new Set();
+  const len = o.length ?? 45, steps = o.ticks ?? 8, grow = len / steps;
+  let reach = 0, ended = false, carved = 0;
+  sound(dim, o.sound ?? "mob.wither.shoot", start, 2, o.pitch ?? 0.8);
+  const spacing = 0.5 / fxLevel();
+  const side = sideOf(dir);
+  const up2 = V.norm({ x: dir.y * side.z - dir.z * side.y, y: dir.z * side.x - dir.x * side.z, z: dir.x * side.y - dir.y * side.x });
+  const bsize = o.width * 0.85;
+  const shaft = spawnVfx(dim, 0, start, { slot: o.slot ?? slotOf(o.color), size: bsize, dir, life: 120 });
+  fx(dim, "shock_v", start, o.color, o.width * 3, 0.4);
+  const id = system.runInterval(() => {
+    try {
+      if (!src.isValid || ended) { system.clearRun(id); killVfx(shaft); return; }
+      const prev = reach;
+      reach = Math.min(len, reach + grow);
+      vset(shaft, "ab:len", reach);
+      for (let s = prev; s <= reach; s += spacing) {
+        const p = V.add(start, V.mul(dir, s));
+        if (!griefing() && solidAt(dim, p)) { reach = s; ended = true; vset(shaft, "ab:len", reach); break; }
+        if (Math.floor(s * 2) % 3 === 0) fx(dim, "orb", p, o.color, o.width * 1.3, 0.35);
+        const a = s * 1.3;
+        const off = V.add(V.mul(side, Math.cos(a) * o.width), V.mul(up2, Math.sin(a) * o.width));
+        fx(dim, "orb", V.add(p, off), o.color, o.width * 0.45, 0.45);
+        fx(dim, "orb", V.sub(p, off), C.white, o.width * 0.3, 0.4);
+      }
+      fx(dim, "orb", start, o.color, o.width * 2.4, 0.2);
+      fx(dim, "orb", start, C.white, o.width * 1.2, 0.15);
+      fx(dim, "orb", V.add(start, V.mul(dir, reach)), o.color, o.width * 2.2, 0.2);
+      fx(dim, "streak", V.add(start, V.mul(dir, reach)), o.color, 1.2 + o.width * 0.4, 0.3, { count: 4 * fxLevel(), speed: 6 });
+      for (let s = prev; s <= reach; s += 1) {
+        const p = V.add(start, V.mul(dir, s));
+        hitArea(src, p, o.width * 0.8 + 0.7, o.dmg, hit, { knock: 0.8, lift: 0.2 });
+        if (o.carve && carved < 600 && Math.floor(s) % 2 === 0) { carve(dim, p, o.carve, 40); carved += 20; }
+      }
+      if (reach >= len || ended) {
+        ended = true;
+        system.clearRun(id);
+        const tip = V.add(start, V.mul(dir, reach));
+        later(8, () => fadeVfx(shaft, bsize, 6));
+        explosion(src, tip, { radius: o.blast ?? 2.5, dmg: o.dmg * 0.35, color: o.color, carve: o.carve ? o.carve + 1 : 0 });
+      }
+    } catch (e) { warn("beam", e); system.clearRun(id); }
+  }, 1);
+}
+
+// A moving energy ball. Pierce = keeps going through everything (Hollow Purple).
+function projectile(src, start, dir, o) {
+  const dim = src.dimension;
+  let pos = start, travelled = 0, done = false;
+  const hit = new Set();
+  const team = teamOf(src);
+  const sub = Math.max(1, Math.ceil(o.speed));
+  const ball = o.size >= 0.7 ? spawnVfx(dim, 1, start, { slot: o.slot ?? slotOf(o.color), size: o.size * 0.62, life: 400 }) : undefined;
+  const id = system.runInterval(() => {
+    try {
+      if (done || !src.isValid) { system.clearRun(id); killVfx(ball); return; }
+      if (o.homing && alive(o.homing)) dir = V.norm(V.add(dir, V.mul(V.norm(V.sub(aim(o.homing), pos)), o.homingStrength ?? 0.08)));
+      for (let i = 0; i < sub && !done; i++) {
+        pos = V.add(pos, V.mul(dir, o.speed / sub));
+        travelled += o.speed / sub;
+        fx(dim, o.solid ? "orb_solid" : "orb", pos, o.color, o.size, 0.25);
+        if (o.core) fx(dim, "orb", pos, o.core, o.size * 0.55, 0.2);
+        if (o.trail && i === 0) fx(dim, "orb", pos, o.color, o.size * 0.6, 0.6);
+        if (o.pierce) {
+          hitArea(src, pos, o.radius, o.dmg, hit, { knock: 0.6 });
+          if (o.carve) carve(dim, pos, o.carve, 90);
+        } else {
+          let list = [];
+          try { list = dim.getEntities({ location: pos, maxDistance: o.radius }); } catch (e) { /* ignore */ }
+          const struck = list.some((x) => canHit(src, team, x));
+          if (struck || solidAt(dim, pos)) done = true;
+        }
+        if (travelled >= o.maxDist) done = true;
+      }
+      try { if (ball && ball.isValid) ball.teleport(pos); } catch (e) { /* ignore */ }
+      if (done) {
+        system.clearRun(id);
+        killVfx(ball);
+        if (o.explode) explosion(src, pos, o.explode);
+        o.onEnd?.(pos);
+      }
+    } catch (e) { warn("projectile", e); system.clearRun(id); }
+  }, 1);
+}
+
+function chargeOrb(src, target, ticks, color, fromSize, toSize, pose) {
+  setPose(src, pose);
+  slow(src, ticks + 4, 6);
+  const ball = spawnVfx(src.dimension, 1, handPos(src, alive(target) ? target : src).pos, { slot: slotOf(color), size: fromSize * 0.5, life: ticks + 20 });
+  every(1, ticks, (i) => {
+    if (!src.isValid) { killVfx(ball); return false; }
+    const { pos } = handPos(src, alive(target) ? target : src);
+    try { if (ball && ball.isValid) ball.teleport(pos); } catch (e) { /* ignore */ }
+    vset(ball, "ab:size", (fromSize + (toSize - fromSize) * (i / ticks)) * 0.55);
+    if (i === ticks - 1) killVfx(ball);
+  });
+  every(2, Math.ceil(ticks / 2), (i) => {
+    if (!src.isValid) return false;
+    const t = alive(target) ? target : src;
+    const { pos } = handPos(src, t);
+    const k = (i * 2) / ticks;
+    fx(src.dimension, "orb", pos, C.white, (fromSize + (toSize - fromSize) * k) * 0.6, 0.15);
+    fx(src.dimension, "orb", pos, color, fromSize + (toSize - fromSize) * k, 0.15);
+    if (i % 3 === 0) implode(src.dimension, pos, color, 2.5, 6);
+  });
+}
+function busy(s, ticks) { s.busyUntil = now() + ticks; }
+
+function teleportNear(src, target, behind = true, dist = 1.6) {
+  try {
+    let dir;
+    try { dir = target.getViewDirection(); } catch (e) { dir = V.norm(V.sub(target.location, src.location)); }
+    const flat = V.norm({ x: dir.x, y: 0, z: dir.z });
+    const spot = V.add(target.location, V.mul(flat, behind ? -dist : dist));
+    burst(src.dimension, V.up(src.location, 1), C.white, 10, 2, 0.3, 0.3);
+    if (!src.tryTeleport(spot, { checkForBlocks: true, facingLocation: aim(target) })) {
+      src.teleport(V.up(target.location, 0.2), { facingLocation: aim(target) });
+    }
+    sound(src.dimension, "mob.endermen.portal", spot, 1, 1.6);
+    burst(src.dimension, V.up(spot, 1), C.white, 10, 2, 0.3, 0.3);
+    return true;
+  } catch (e) { return false; }
+}
+function punches(src, target, count, dmg, color) {
+  every(3, count, () => {
+    if (!alive(target) || !src.isValid) return false;
+    face(src, aim(target));
+    deal(src, target, dmg);
+    burst(src.dimension, aim(target), color, 8, 3, 0.3, 0.3);
+    sound(src.dimension, "random.anvil_land", target.location, 0.4, 1.8);
+  });
+}
+
+// ------------------------------------------------------------------ transformations
+function transform(e, s, to, label, color, extraSound) {
+  const dim = e.dimension;
+  const def = FIGHTERS[e.typeId];
+  busy(s, 32);
+  s.nextTransform = now() + (def.transformCd ?? 160);
+  setPose(e, 3);
+  slow(e, 30, 8);
+  sound(dim, "ambient.weather.thunder", e.location, 1.5, 1.2);
+  every(4, 7, (i) => {
+    if (!e.isValid) return false;
+    fx(dim, "aura", e.location, color, 1.2, 0.8, { count: 18 * fxLevel(), speed: 2 });
+    implode(dim, V.up(e.location, 1), color, 4, 10);
+    if (i === 6) {
+      try { e.triggerEvent(`ab:form_${to}`); } catch (err) { warn("transform", err); }
+      setPose(e, 0);
+      burst(dim, V.up(e.location, 1), color, 60, 6, 0.6, 0.9);
+      burst(dim, V.up(e.location, 1), C.white, 30, 4, 0.4, 0.6);
+      ring(dim, V.up(e.location, 0.1), 3, color, 24, 0.6);
+      sound(dim, extraSound ?? "random.explode", e.location, 1.5, 0.7);
+      hitArea(e, e.location, 4, 0, null, { knock: 1.5, lift: 0.3 });
+      announce(e, `§l${def.color}${def.name} §r§f→ §l${label}`);
+    }
+  });
+}
+
+function aura(e, s, def) {
+  const form = formOf(e);
+  const c = def.forms[form]?.aura;
+  if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
+  if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  if (e.typeId === "ab:gojo" && e.hasTag("ab_infinity") && Math.random() < 0.25) {
+    fx(e.dimension, "orb", V.add(V.up(e.location, 1), V.mul(V.randSphere(), 0.9)), C.blue, 0.15, 0.4);
+  }
+}
+
+// ------------------------------------------------------------------ characters
+const GOKU = {
+  name: "Goku", color: "§6", energy: 1000, regen: 15, energyName: "§bKI",
+  dodge: (e, s) => (formOf(e) === 4 ? 0.6 : 0.1),
+  forms: [
+    { label: "Base", power: 150 },
+    { label: "Super Saiyan", power: 200, aura: C.gold },
+    { label: "Super Saiyan 3", power: 260, aura: C.gold },
+    { label: "Super Saiyan Blue", power: 330, aura: C.ssbBlue },
+    { label: "Ultra Instinct", power: 400, aura: C.silver },
+  ],
+  thresholds: [0.9, 0.7, 0.5, 0.3],
+  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
+  abilities: [
+    {
+      id: "ki", label: "Ki Blast", cd: 60, cost: 40, min: 3, max: 32, weight: 3,
+      run(e, s, t) {
+        busy(s, 12); setPose(e, 4);
+        every(2, 5, () => {
+          if (!alive(t) || !e.isValid) return false;
+          face(e, aim(t));
+          const { pos, dir } = handPos(e, t);
+          projectile(e, pos, dir, { speed: 1.5, maxDist: 34, radius: 0.9, size: 0.5, color: C.kiYellow, core: C.white,
+            explode: { radius: 1.3, dmg: 7 * powerOf(e) / 100, color: C.kiYellow, knock: 0.5 } });
+          sound(e.dimension, "mob.blaze.shoot", pos, 0.6, 1.6);
+        });
+        later(12, () => setPose(e, 0));
+      },
+    },
+    {
+      id: "kame", label: "Kamehameha", cd: 240, cost: 220, min: 5, max: 45, weight: 4,
+      run(e, s, t) {
+        busy(s, 52); face(e, aim(t));
+        sound(e.dimension, "beacon.activate", e.location, 1.5, 1.4);
+        announce(e, "§bKa... me... ha... me...");
+        chargeOrb(e, t, 30, C.kameBlue, 0.3, 1.4, 2);
+        later(30, () => {
+          if (!e.isValid) return;
+          if (alive(t)) face(e, aim(t));
+          setPose(e, 1);
+          announce(e, "§b§lHAAAAA!");
+          const f = formOf(e);
+          beam(e, alive(t) ? t : e, { color: C.kameBlue, width: 1.1 + 0.25 * f, dmg: 65 * powerOf(e) / 100, carve: f >= 3 ? 2 : 1, blast: 3 + f * 0.5 });
+          later(20, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "it", label: "Instant Transmission", cd: 140, cost: 70, min: 8, max: 48, weight: 3,
+      run(e, s, t) {
+        busy(s, 14);
+        if (teleportNear(e, t, true)) punches(e, t, 3, 10 * powerOf(e) / 100, C.kiYellow);
+      },
+    },
+    {
+      id: "kaioken", label: "Kaioken", cd: 900, cost: 120, min: 0, max: 48, weight: 2,
+      cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 3) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
+      run(e, s) {
+        busy(s, 10); s.kaiokenUntil = now() + 240;
+        burst(e.dimension, V.up(e.location, 1), C.kaioken, 40, 5, 0.5, 0.7);
+        sound(e.dimension, "mob.enderdragon.growl", e.location, 1, 1.4);
+        announce(e, formOf(e) === 3 ? "§9Super Saiyan Blue §c§lKaioken!" : "§c§lKaioken!");
+      },
+    },
+    {
+      id: "dragonfist", label: "Dragon Fist", cd: 500, cost: 320, min: 2, max: 14, weight: 3,
+      cond: (e) => formOf(e) >= 2,
+      run(e, s, t) {
+        busy(s, 22); setPose(e, 4);
+        announce(e, "§6§lDragon Fist!");
+        sound(e.dimension, "mob.enderdragon.growl", e.location, 2, 0.8);
+        every(1, 6, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          const d = V.sub(t.location, e.location);
+          const step = V.add(e.location, V.mul(d, 0.35));
+          try { e.teleport(step, { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+          const c = V.up(e.location, 1);
+          for (let k = 0; k < 6; k++) {
+            const a = i * 1.2 + k;
+            fx(e.dimension, "orb", V.add(c, { x: Math.cos(a) * 1.2, y: Math.sin(a) * 1.2, z: 0 }), C.gold, 0.7, 0.6);
+          }
+          if (i === 5) {
+            deal(e, t, 130 * powerOf(e) / 100);
+            explosion(e, aim(t), { radius: 3, dmg: 30 * powerOf(e) / 100, color: C.gold, carve: 2, knock: 2.5 });
+            setPose(e, 0);
+          }
+        });
+      },
+    },
+    {
+      id: "spiritbomb", label: "Spirit Bomb", cd: 1800, cost: 0, min: 6, max: 40, weight: 3,
+      cond: (e, s, c) => c.hp < 0.5 && now() - s.combatSince > 200,
+      run(e, s, t) {
+        busy(s, 100); setPose(e, 3); slow(e, 92, 8);
+        announce(e, "§b§lEveryone, lend me your energy!  §f(Spirit Bomb)");
+        sound(e.dimension, "beacon.power", e.location, 2, 0.6);
+        const ticks = 90;
+        const sb = spawnVfx(e.dimension, 1, V.up(e.location, 4.6), { slot: 8, size: 0.6, life: ticks + 10 });
+        every(1, ticks, (i) => {
+          if (!e.isValid) { killVfx(sb); return false; }
+          const r = 0.6 + (2.9 * i) / ticks;
+          try { if (sb && sb.isValid) sb.teleport(V.up(e.location, 4 + r)); } catch (err) { /* ignore */ }
+          vset(sb, "ab:size", r * 1.25);
+          if (i === ticks - 1) killVfx(sb);
+        });
+        every(3, ticks / 3, (i) => {
+          if (!e.isValid) return false;
+          const r = 0.6 + (2.9 * i * 3) / ticks;
+          const c = V.up(e.location, 4 + r);
+          sphereFx(e.dimension, c, r, C.kameBlue, 10 + r * 6, 0.8, "orb", 0.3);
+          fx(e.dimension, "orb", c, C.white, r * 1.6, 0.2);
+          implode(e.dimension, c, C.kameBlue, 10, 8);
+        });
+        later(ticks, () => {
+          if (!e.isValid) return;
+          setPose(e, 1);
+          const c = V.up(e.location, 7.4);
+          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
+          projectile(e, c, V.norm(V.sub(tgt, c)), { speed: 0.55, maxDist: 60, radius: 2.5, size: 6, color: C.kameBlue, core: C.white,
+            homing: t, homingStrength: 0.05,
+            explode: { radius: 7, dmg: 280, color: C.kameBlue, carve: 4, knock: 3 } });
+          later(15, () => setPose(e, 0));
+        });
+      },
+    },
+  ],
+};
+
+const VEGETA = {
+  name: "Vegeta", color: "§9", energy: 1000, regen: 14, energyName: "§bKI",
+  dodge: () => 0.08,
+  ego: 3,
+  forms: [
+    { label: "Base", power: 140 },
+    { label: "Super Saiyan", power: 190, aura: C.gold },
+    { label: "Super Saiyan Blue", power: 310, aura: C.ssbBlue },
+    { label: "Ultra Ego", power: 360, aura: C.ego },
+  ],
+  thresholds: [0.85, 0.6, 0.35],
+  formSound: [null, "mob.enderdragon.growl", "beacon.power", "mob.wither.spawn"],
+  abilities: [
+    {
+      id: "barrage", label: "Ki Barrage", cd: 80, cost: 60, min: 3, max: 32, weight: 3,
+      run(e, s, t) {
+        busy(s, 18); setPose(e, 1);
+        every(2, 8, () => {
+          if (!alive(t) || !e.isValid) return false;
+          face(e, aim(t));
+          const { pos, dir } = handPos(e, t);
+          const jit = { x: (Math.random() - 0.5) * 0.15, y: (Math.random() - 0.5) * 0.1, z: (Math.random() - 0.5) * 0.15 };
+          projectile(e, pos, V.norm(V.add(dir, jit)), { speed: 1.6, maxDist: 34, radius: 0.9, size: 0.5, color: C.kiYellow, core: C.white,
+            explode: { radius: 1.3, dmg: 6 * powerOf(e) / 100, color: C.kiYellow, knock: 0.4 } });
+          sound(e.dimension, "mob.blaze.shoot", pos, 0.5, 1.7);
+        });
+        later(18, () => setPose(e, 0));
+      },
+    },
+    {
+      id: "galick", label: "Galick Gun", cd: 220, cost: 210, min: 5, max: 45, weight: 4,
+      run(e, s, t) {
+        busy(s, 44); face(e, aim(t));
+        announce(e, "§d§lGalick Gun!");
+        chargeOrb(e, t, 22, C.galick, 0.3, 1.2, 2);
+        later(22, () => {
+          if (!e.isValid) return;
+          if (alive(t)) face(e, aim(t));
+          setPose(e, 1);
+          beam(e, alive(t) ? t : e, { color: C.galick, width: 1.1 + 0.2 * formOf(e), dmg: 62 * powerOf(e) / 100, carve: 1, blast: 3 });
+          later(18, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "bigbang", label: "Big Bang Attack", cd: 260, cost: 240, min: 4, max: 40, weight: 3,
+      run(e, s, t) {
+        busy(s, 20); face(e, aim(t)); setPose(e, 4);
+        announce(e, "§b§lBig Bang Attack!");
+        chargeOrb(e, t, 10, C.bigBang, 0.4, 1.2, 4);
+        later(10, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          sound(e.dimension, "mob.wither.shoot", pos, 1.5, 1);
+          projectile(e, pos, dir, { speed: 1.1, maxDist: 42, radius: 1.3, size: 1.4, color: C.bigBang, core: C.white, trail: true,
+            explode: { radius: 4.5, dmg: 85 * powerOf(e) / 100, color: C.bigBang, carve: 2, knock: 2 } });
+          later(8, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "finalflash", label: "Final Flash", cd: 600, cost: 420, min: 6, max: 48, weight: 4,
+      cond: (e) => formOf(e) >= 1,
+      run(e, s, t) {
+        busy(s, 72); face(e, aim(t));
+        announce(e, "§e§lFinal...");
+        sound(e.dimension, "beacon.activate", e.location, 2, 0.8);
+        chargeOrb(e, t, 45, C.flash, 0.4, 2.0, 1);
+        later(45, () => {
+          if (!e.isValid) return;
+          if (alive(t)) face(e, aim(t));
+          announce(e, "§e§lFLASH!!");
+          const f = formOf(e);
+          beam(e, alive(t) ? t : e, { color: C.flash, width: 2.0 + 0.3 * f, length: 48, dmg: 150 * powerOf(e) / 100, carve: 2, blast: 5, ticks: 10, pitch: 0.6 });
+          later(24, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "hakai", label: "Hakai", cd: 700, cost: 450, min: 2, max: 12, weight: 4,
+      cond: (e) => formOf(e) === 3,
+      run(e, s, t) {
+        busy(s, 24); face(e, aim(t)); setPose(e, 4);
+        announce(e, "§5§lHakai!");
+        sound(e.dimension, "mob.wither.ambient", e.location, 1.5, 0.6);
+        later(8, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          projectile(e, pos, dir, { speed: 0.9, maxDist: 16, radius: 1.2, size: 1.0, color: C.hakai, core: C.ego, solid: true, homing: t,
+            onEnd(p) {
+              if (alive(t) && V.dist(aim(t), p) < 3) deal(e, t, 210 * powerOf(e) / 100);
+              for (let k = 0; k < 3; k++) sphereFx(e.dimension, p, 1 + k * 0.6, k % 2 ? C.ego : C.hakai, 14, 0.5, "orb_solid", 0.9);
+              sound(e.dimension, "mob.wither.death", p, 0.8, 1.6);
+            } });
+          later(8, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "dash", label: "Dash", cd: 120, cost: 50, min: 10, max: 48, weight: 3,
+      run(e, s, t) {
+        busy(s, 12);
+        if (teleportNear(e, t, false, 1.4)) punches(e, t, 2, 12 * powerOf(e) / 100, C.ssbBlue);
+      },
+    },
+  ],
+};
+
+function domain(e, s) {
+  const dim = e.dimension;
+  const center = V.up(e.location, 1);
+  const R = 14;
+  busy(s, 24); setPose(e, 3); slow(e, 20, 8);
+  if (formOf(e) === 0) { try { e.triggerEvent("ab:form_1"); } catch (err) { /* ignore */ } }
+  announce(e, "§b§lDomain Expansion: §f§lUnlimited Void");
+  sound(dim, "mob.warden.sonic_boom", center, 2, 0.5);
+  sound(dim, "ambient.weather.thunder", center, 1, 0.5);
+  later(20, () => setPose(e, 0));
+  const gojoPower = powerOf(e);
+  const team = teamOf(e);
+  every(4, 30, (i) => {
+    if (!e.isValid) return false;
+    sphereFx(dim, center, R, C.void, 40, 1.6, "orb_solid", 0.5);
+    sphereFx(dim, center, R * 0.85, C.white, 12, 0.2, "orb", 0.6);
+    if (i % 5 === 0) {
+      let list = [];
+      try { list = dim.getEntities({ location: center, maxDistance: R }); } catch (err) { /* ignore */ }
+      for (const o of list) {
+        if (!canHit(e, team, o)) continue;
+        const ratio = clamp(gojoPower / powerOf(o), 0.25, 1);
+        const ticks = Math.round(24 * ratio);
+        if (isFighter(o)) { const os = state(o); os.stunUntil = Math.max(os.stunUntil, now() + ticks); setPose(o, 0); }
+        slow(o, ticks, 255);
+        try { o.addEffect("weakness", ticks, { amplifier: 255, showParticles: false }); } catch (err) { /* ignore */ }
+        try { if (o.typeId === "minecraft:player") o.addEffect("darkness", 40, { amplifier: 0, showParticles: false }); } catch (err) { /* ignore */ }
+        deal(e, o, 8 * gojoPower / 100, true);
+        fx(dim, "orb", aim(o), C.white, 0.6, 0.6);
+      }
+    }
+    if (i === 29) {
+      s.burnoutUntil = now() + 160;
+      announce(e, "§7Gojo: domain ended — §cburnout§7 (no techniques for 8s)");
+    }
+  });
+}
+
+const GOJO = {
+  name: "Gojo", color: "§b", energy: 1500, regen: 25, energyName: "§dCE",
+  infinity: true,
+  dodge: () => 0,
+  forms: [
+    { label: "Blindfold", power: 100 },
+    { label: "Six Eyes", power: 120, aura: null },
+  ],
+  thresholds: [0.75],
+  formSound: [null, "beacon.activate"],
+  abilities: [
+    {
+      id: "blue", label: "Blue", cd: 160, cost: 140, min: 3, max: 30, weight: 4, technique: true,
+      run(e, s, t) {
+        busy(s, 14); face(e, aim(t)); setPose(e, 4);
+        announce(e, "§9§lCursed Technique Lapse: Blue");
+        const dim = e.dimension;
+        const center = V.up(t.location, 1.2);
+        const team = teamOf(e);
+        sound(dim, "mob.endermen.portal", center, 2, 0.5);
+        carve(dim, center, 2);
+        later(10, () => setPose(e, 0));
+        const vb = spawnVfx(dim, 1, center, { slot: 5, size: 0.4, life: 60 });
+        every(1, 8, (i) => vset(vb, "ab:size", 0.4 + i * 0.18));
+        later(38, () => fadeVfx(vb, 1.8, 4));
+        every(2, 20, (i) => {
+          if (!e.isValid) return false;
+          fx(dim, "orb", center, C.blue, 1.4, 0.2);
+          fx(dim, "orb", center, C.white, 0.6, 0.2);
+          for (let k = 0; k < 4; k++) {
+            const a = i * 0.7 + k * (Math.PI / 2);
+            fx(dim, "orb", V.add(center, { x: Math.cos(a) * 2, y: Math.sin(a * 0.5) * 0.6, z: Math.sin(a) * 2 }), C.blue, 0.35, 0.3);
+          }
+          implode(dim, center, C.blue, 5, 6);
+          let list = [];
+          try { list = dim.getEntities({ location: center, maxDistance: 7 }); } catch (err) { /* ignore */ }
+          for (const o of list) {
+            if (!canHit(e, team, o)) continue;
+            const d = V.sub(center, o.location);
+            const n = V.norm(d);
+            try { o.applyKnockback({ x: n.x * 0.6, z: n.z * 0.6 }, clamp(n.y * 0.4, 0, 0.3)); } catch (err) { /* ignore */ }
+            if (i % 2 === 0) deal(e, o, 5 * powerOf(e) / 100);
+          }
+          if (i === 19) burst(dim, center, C.blue, 30, -3, 0.4, 0.5);
+        });
+      },
+    },
+    {
+      id: "red", label: "Red", cd: 200, cost: 180, min: 3, max: 28, weight: 4, technique: true,
+      run(e, s, t) {
+        busy(s, 18); face(e, aim(t)); setPose(e, 4);
+        announce(e, "§c§lReversed Cursed Technique: Red");
+        chargeOrb(e, t, 10, C.red, 0.2, 0.7, 4);
+        later(10, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          sound(e.dimension, "mob.wither.shoot", pos, 1.5, 1.5);
+          projectile(e, pos, dir, { speed: 1.8, maxDist: 32, radius: 1.1, size: 0.8, color: C.red, core: C.white, trail: true,
+            explode: { radius: 3.5, dmg: 75 * powerOf(e) / 100, color: C.red, carve: 2, knock: 3.5 } });
+          later(6, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "purple", label: "Hollow Purple", cd: 700, cost: 600, min: 5, max: 60, weight: 5, technique: true,
+      cond: (e, s, c) => c.hp < 0.85 || c.tPower > c.power,
+      run(e, s, t) {
+        const dim = e.dimension;
+        busy(s, 50); face(e, aim(t)); setPose(e, 1); slow(e, 38, 8);
+        announce(e, "§5§lHollow Technique: Purple");
+        sound(dim, "beacon.activate", e.location, 2, 0.5);
+        const bb = spawnVfx(dim, 1, e.location, { slot: 5, size: 0.7, life: 50 });
+        const rb = spawnVfx(dim, 1, e.location, { slot: 4, size: 0.7, life: 50 });
+        every(2, 17, (i) => {
+          if (!e.isValid) { killVfx(bb); killVfx(rb); return false; }
+          const tt0 = alive(t) ? t : e;
+          const hp0 = handPos(e, tt0), sd0 = sideOf(hp0.dir), k0 = 1 - i / 16;
+          try { bb.teleport(V.add(hp0.pos, V.mul(sd0, 1.6 * k0))); rb.teleport(V.add(hp0.pos, V.mul(sd0, -1.6 * k0))); } catch (err) { /* ignore */ }
+          if (i === 16) { killVfx(bb); killVfx(rb); }
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          const side = sideOf(dir);
+          const k = 1 - i / 16;
+          fx(dim, "orb", V.add(pos, V.mul(side, 1.6 * k)), C.blue, 0.9, 0.15);
+          fx(dim, "orb", V.add(pos, V.mul(side, -1.6 * k)), C.red, 0.9, 0.15);
+          if (i === 16) { fx(dim, "orb", pos, C.purple, 2.5, 0.4); burst(dim, pos, C.purple, 30, 3, 0.5, 0.5); }
+        });
+        later(36, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          const f = formOf(e);
+          sound(dim, "mob.warden.sonic_boom", pos, 2, 0.7);
+          projectile(e, pos, dir, { speed: 0.9, maxDist: 60, radius: 2.2 + f, size: 4 + f * 1.5, color: C.purple, core: C.white, slot: 6,
+            pierce: true, carve: 2.5 + f, dmg: 220 * powerOf(e) / 100 });
+          later(10, () => setPose(e, 0));
+        });
+      },
+    },
+    {
+      id: "domain", label: "Domain Expansion", cd: 1800, cost: 800, min: 0, max: 13, weight: 6, technique: true,
+      cond: (e, s, c) => c.hp < 0.6 || c.tPower > c.power * 1.2,
+      run: (e, s) => domain(e, s),
+    },
+    {
+      id: "rct", label: "Reverse Cursed Technique", cd: 400, cost: 300, min: 0, max: 64, weight: 5,
+      cond: (e, s, c) => c.hp < 0.5,
+      run(e, s) {
+        busy(s, 10);
+        const h = health(e);
+        if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 140));
+        fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 25 * fxLevel(), speed: 2 });
+        sound(e.dimension, "random.levelup", e.location, 1, 1.4);
+        announce(e, "§aGojo: Reverse Cursed Technique");
+      },
+    },
+    {
+      id: "tp", label: "Teleport", cd: 100, cost: 40, min: 12, max: 48, weight: 3, technique: true,
+      run(e, s, t) { busy(s, 6); teleportNear(e, t, Math.random() < 0.5, 2); },
+    },
+  ],
+};
+
+
+// ------------------------------------------------------------------ shared helpers for the new characters
+function lineHit(src, from, dir, reach, radius, dmg, opt = {}) {
+  const hit = new Set();
+  for (let s = 0.5; s <= reach; s += 0.6) hitArea(src, V.add(from, V.mul(dir, s)), radius, dmg, hit, opt);
+  return hit.size;
+}
+// Rubber stretch attack: the arm/leg bone is scaled by the animation; the script hits along the line.
+function stretch(e, s, t, o) {
+  busy(s, o.ticks + 4); face(e, aim(t)); setPose(e, o.pose);
+  if (o.say) announce(e, o.say);
+  const hits = o.hits ?? 1;
+  every(o.every ?? 2, hits, (i) => {
+    if (!alive(t) || !e.isValid) return false;
+    face(e, aim(t));
+    const { pos, dir } = handPos(e, t);
+    lineHit(e, pos, dir, o.reach, o.radius ?? 0.9, o.dmg * powerOf(e) / 100, { knock: o.knock ?? 0.6, lift: o.lift ?? 0.15 });
+    const style = e.typeId === "ab:luffy" ? [null, "steam", null, "haki", "haki", "haki", "nika"][formOf(e)] : null;
+    for (let k = 1; k <= o.reach; k += 1.5) {
+      const q = V.add(pos, V.mul(dir, k));
+      fx(e.dimension, "orb", q, o.trail ?? C.white, 0.25, 0.15);
+      if (style === "steam") fx(e.dimension, "aura", V.up(q, -0.9), C.steam, 0.6, 0.5, { count: 2, speed: 1 });
+      if (style === "haki") { fx(e.dimension, "orb", q, C.fire, 0.45, 0.25); fx(e.dimension, "orb_solid", q, C.black, 0.3, 0.2); }
+    }
+    if (style === "nika") { fx(e.dimension, "shock_v", aim(t), C.nika, 3.5, 0.4); for (let k = 0; k < 3; k++) fx(e.dimension, "flash", V.up(aim(t), 0.8 + k * 0.4), C.nika, 0.7, 0.4); }
+    if (style === "haki") fx(e.dimension, "streak", aim(t), C.fire, 1.4, 0.35, { count: 10, speed: 9 });
+    impact(e, t, o.strong || i === hits - 1, o.color ?? C.white, o.ground ? { ground: true } : undefined);
+  });
+  later(o.ticks, () => { if (e.isValid) setPose(e, 0); });
+}
+function slashVfx(dim, pos, dir, color, size, roll) {
+  const v = spawnVfx(dim, 2, pos, { slot: slotOf(color), size, dir, life: 30 });
+  vset(v, "ab:len", ((roll ?? Math.random() * 360) / 4.5) % 80);
+  return v;
+}
+// Flying Dismantle slash: a thin glowing blade that cuts everything it passes.
+function flyingSlash(src, t, o) {
+  const dim = src.dimension;
+  const { pos, dir } = handPos(src, t);
+  const v = slashVfx(dim, pos, dir, o.color, o.size ?? 1.2, o.roll);
+  let p = pos, d = 0;
+  const hit = new Set();
+  every(1, Math.ceil((o.range ?? 20) / 1.6), () => {
+    p = V.add(p, V.mul(dir, 1.6)); d += 1.6;
+    try { if (v && v.isValid) v.teleport(p); } catch (e) { /* ignore */ }
+    fx(dim, "streak", p, o.color, 0.8, 0.2, { count: 2, speed: 3 });
+    hitArea(src, p, 1.3, o.dmg, hit, { knock: 0.3 });
+    if (o.carve) carve(dim, p, 1, 12);
+    if (d >= (o.range ?? 20)) { killVfx(v); return false; }
+  });
+  later(Math.ceil((o.range ?? 20) / 1.6) + 2, () => killVfx(v));
+}
+// Cleave / slash marks appearing ON the target.
+function slashMarks(e, t, color, n, dmg) {
+  every(2, n, (i) => {
+    if (!alive(t)) return false;
+    const c = aim(t);
+    const v = slashVfx(t.dimension, c, V.norm({ x: Math.random() - 0.5, y: Math.random() - 0.5, z: Math.random() - 0.5 }), color, 0.9 + Math.random() * 0.5, i * 47);
+    later(4, () => killVfx(v));
+    deal(e, t, dmg);
+    fx(t.dimension, "flash", c, color, 1.2, 0.15);
+    fx(t.dimension, "streak", c, C.white, 1, 0.25, { count: 6, speed: 7 });
+  });
+}
+function conqueror(e, s) {
+  busy(s, 16); setPose(e, 3);
+  const dim = e.dimension, c = V.up(e.location, 1);
+  announce(e, "§4§lConqueror's Haki!");
+  fx(dim, "shock", e.location, C.haki, 18, 0.8);
+  fx(dim, "shock_v", c, C.haki, 10, 0.5);
+  for (let k = 0; k < 14; k++) {
+    const d = V.randSphere(); const p = V.add(c, V.mul({ x: d.x, y: Math.abs(d.y) * 0.4, z: d.z }, 2 + Math.random() * 6));
+    fx(dim, "streak", p, k % 2 ? C.haki : C.black, 2.2, 0.35, { count: 4, speed: 10 });
+  }
+  shake(dim, c, 0.35, 0.5);
+  const mine = powerOf(e);
+  let list = [];
+  try { list = dim.getEntities({ location: c, maxDistance: 14 }); } catch (err) { /* ignore */ }
+  for (const o of list) {
+    if (!canHit(e, teamOf(e), o)) continue;
+    const ratio = powerOf(o) / mine;
+    if (ratio < 0.35 && !isFighter(o)) { deal(e, o, 999, true); continue; }  // weak-willed creatures faint
+    if (ratio < 0.8) { if (isFighter(o)) state(o).stunUntil = now() + 30; slow(o, 30, 255); deal(e, o, 20 * mine / 100); }
+  }
+  later(14, () => setPose(e, 0));
+}
+
+// ------------------------------------------------------------------ Itadori Yuji (three versions)
+const yujiCommon = (bf) => ({
+  id: "blackflash", label: "Black Flash", cd: 260, cost: 120, min: 0, max: 8, weight: 4,
+  run(e, s, t) {
+    busy(s, 12); setPose(e, 5);
+    if (V.dist(e.location, t.location) > 2.2) teleportNear(e, t, false, 1.3);
+    later(3, () => {
+      if (!alive(t)) return;
+      const hitBF = Math.random() < bf;
+      deal(e, t, (hitBF ? 2.5 : 1) * 22 * powerOf(e) / 100);
+      const c = aim(t);
+      fx(e.dimension, "orb_solid", c, C.black, hitBF ? 2.2 : 1, 0.35);
+      fx(e.dimension, "streak", c, hitBF ? C.red : C.ce, 1.8, 0.4, { count: hitBF ? 22 : 10, speed: 12 });
+      fx(e.dimension, "streak", c, C.black, 1.6, 0.4, { count: hitBF ? 16 : 6, speed: 9 });
+      if (hitBF) { fx(e.dimension, "shock_v", c, C.red, 5, 0.35); shake(e.dimension, c, 0.3, 0.3); announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX"); }
+      try { const n = V.norm(V.sub(t.location, e.location)); t.applyKnockback({ x: n.x * 2.2, z: n.z * 2.2 }, 0.35); } catch (err) { /* ignore */ }
+      setPose(e, 0);
+    });
+  },
+});
+const divergent = {
+  id: "divergent", label: "Divergent Fist", cd: 120, cost: 50, min: 0, max: 5, weight: 4,
+  run(e, s, t) {
+    busy(s, 14); setPose(e, 5);
+    if (V.dist(e.location, t.location) > 2.2) { afterimage(e); teleportNear(e, t, false, 1.4); }
+    later(2, () => { if (!alive(t)) return; deal(e, t, 10 * powerOf(e) / 100); impact(e, t, false, C.ce); });
+    later(8, () => {  // the delayed cursed-energy impact
+      if (!alive(t)) return;
+      deal(e, t, 14 * powerOf(e) / 100);
+      fx(t.dimension, "shock_v", aim(t), C.ce, 3.5, 0.3);
+      fx(t.dimension, "streak", aim(t), C.ce, 1.4, 0.35, { count: 12, speed: 9 });
+      setPose(e, 0);
+    });
+  },
+};
+const YUJI = {
+  name: "Itadori", color: "§d", energy: 600, regen: 10, energyName: "§dCE",
+  dodge: () => 0.05,
+  forms: [{ label: "Vessel", power: 35 }],
+  thresholds: [], formSound: [null],
+  abilities: [divergent, yujiCommon(0.2), {
+    id: "manji", label: "Manji Kick", cd: 140, cost: 40, min: 0, max: 4, weight: 3,
+    run(e, s, t) { stretch(e, s, t, { pose: 7, ticks: 8, reach: 2.6, dmg: 16, color: C.ce, knock: 1.6, strong: true }); },
+  }],
+};
+const YUJI_FINAL = {
+  name: "Itadori", color: "§c", energy: 1200, regen: 22, energyName: "§dCE",
+  dodge: () => 0.12,
+  forms: [{ label: "Shinjuku (final)", power: 105, aura: C.blood }],
+  thresholds: [], formSound: [null],
+  abilities: [divergent, yujiCommon(0.5), {
+    id: "dismantle", label: "Dismantle", cd: 120, cost: 120, min: 3, max: 24, weight: 4, technique: true,
+    run(e, s, t) {
+      busy(s, 14); setPose(e, 19); announce(e, "§c§lDismantle");
+      every(3, 3, (i) => { if (!alive(t) || !e.isValid) return false; face(e, aim(t)); flyingSlash(e, t, { color: C.white, dmg: 16 * powerOf(e) / 100, range: 22, roll: 20 + i * 70, carve: true }); });
+      later(12, () => setPose(e, 0));
+    },
+  }, {
+    id: "cleave", label: "Cleave", cd: 220, cost: 160, min: 0, max: 4, weight: 4, technique: true,
+    run(e, s, t) {
+      busy(s, 16); setPose(e, 19); announce(e, "§c§lCleave");
+      const h = health(t); const extra = h ? Math.min(8, h.effectiveMax * 0.01) : 0;  // Cleave adjusts to the target's toughness (capped)
+      slashMarks(e, t, C.white, 5, (6 * powerOf(e) / 100) + extra);
+      later(12, () => setPose(e, 0));
+    },
+  }, {
+    id: "piercing", label: "Piercing Blood", cd: 200, cost: 140, min: 4, max: 40, weight: 3,
+    run(e, s, t) {
+      busy(s, 22); face(e, aim(t)); announce(e, "§4§lPiercing Blood");
+      chargeOrb(e, t, 10, C.blood, 0.2, 0.6, 2);
+      later(10, () => { if (!e.isValid) return; setPose(e, 1); beam(e, alive(t) ? t : e, { color: C.blood, width: 0.35, length: 40, dmg: 55 * powerOf(e) / 100, ticks: 3, blast: 1.2, pitch: 1.6 }); later(8, () => setPose(e, 0)); });
+    },
+  }, {
+    id: "supernova", label: "Supernova", cd: 300, cost: 180, min: 3, max: 18, weight: 3,
+    run(e, s, t) {
+      busy(s, 20); setPose(e, 3); announce(e, "§4§lSupernova");
+      const dim = e.dimension;
+      const orbs = [0, 1, 2, 3, 4].map((k) => spawnVfx(dim, 1, V.up(e.location, 2.5), { slot: 12, size: 0.35, life: 40 }));
+      every(1, 12, (i) => orbs.forEach((o, k) => {
+        const a = k * 1.256 + i * 0.4;
+        try { if (o && o.isValid) o.teleport(V.add(V.up(e.location, 2.2), { x: Math.cos(a) * 1.4, y: Math.sin(a * 2) * 0.3, z: Math.sin(a) * 1.4 })); } catch (err) { /* ignore */ }
+      }));
+      later(12, () => {
+        orbs.forEach(killVfx); setPose(e, 4);
+        for (let k = 0; k < 5; k++) later(k * 2, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e; const { pos, dir } = handPos(e, tt);
+          projectile(e, V.add(pos, { x: (Math.random() - 0.5), y: Math.random() * 0.6, z: (Math.random() - 0.5) }), dir,
+            { speed: 1.4, maxDist: 24, radius: 0.9, size: 0.7, color: C.blood, slot: 12, explode: { radius: 2, dmg: 14 * powerOf(e) / 100, color: C.blood, knock: 0.8 } });
+        });
+        later(12, () => setPose(e, 0));
+      });
+    },
+  }, {
+    id: "rct", label: "Reverse Cursed Technique", cd: 500, cost: 300, min: 0, max: 64, weight: 5,
+    cond: (e, s, c) => c.hp < 0.45,
+    run(e, s) { busy(s, 10); const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 110)); fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 22, speed: 2 }); announce(e, "§aItadori: Reverse Cursed Technique"); },
+  }, {
+    id: "domain", label: "Domain Expansion", cd: 1800, cost: 700, min: 0, max: 12, weight: 6, technique: true,
+    cond: (e, s, c) => c.hp < 0.55,
+    run(e, s, t) {
+      busy(s, 20); setPose(e, 21); announce(e, "§f§lItadori: Domain Expansion");
+      const dim = e.dimension, center = V.up(e.location, 1);
+      fx(dim, "shock", e.location, C.white, 26, 1.2);
+      every(4, 25, (i) => {
+        if (!e.isValid) return false;
+        sphereFx(dim, center, 12, { red: 0.95, green: 0.9, blue: 0.75 }, 30, 1.2, "orb", 0.5);
+        if (i % 5 === 0) {
+          let list = []; try { list = dim.getEntities({ location: center, maxDistance: 12 }); } catch (err) { /* ignore */ }
+          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 9 * powerOf(e) / 100, true); fx(dim, "flash", aim(o), C.white, 1.4, 0.2); }
+        }
+        if (i === 24) s.burnoutUntil = now() + 140;
+      });
+      later(18, () => setPose(e, 0));
+    },
+  }],
+};
+function mahoragaWheel(e) {
+  if (!e.isValid) return;
+  const c = V.up(e.location, 2.9);
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + now() * 0.05;
+    for (let r = 0.2; r <= 0.8; r += 0.3) fx(e.dimension, "orb", { x: c.x + Math.cos(a) * r, y: c.y, z: c.z + Math.sin(a) * r }, C.gold, 0.18, 0.5);
+  }
+  fx(e.dimension, "shock", c, C.gold, 2.2, 0.5);
+  sound(e.dimension, "block.bell.hit", c, 0.8, 0.6);
+}
+function worldSlash(e, s, t) {
+  busy(s, 34); setPose(e, 21); slow(e, 30, 8);
+  announce(e, "§f§lSukuna: §c§lWorld-Cutting Slash");
+  const dim = e.dimension;
+  later(18, () => {
+    if (!e.isValid || !alive(t)) return;
+    setPose(e, 19);
+    const c = aim(t);
+    const dir = V.norm(V.sub(c, aim(e)));
+    for (let k = -3; k <= 3; k++) {
+      const v = slashVfx(dim, V.add(c, V.mul(dir, k * 1.6)), dir, C.white, 3.2, 10);
+      later(10, () => killVfx(v));
+    }
+    fx(dim, "flash", c, C.white, 6, 0.3);
+    fx(dim, "streak", c, C.white, 3, 0.5, { count: 30, speed: 14 });
+    shake(dim, c, 0.7, 0.6);
+    deal(e, t, 160 * powerOf(e) / 100, true);  // cuts space itself: Infinity cannot stop it
+    for (let k = 0; k < 10; k++) carve(dim, V.add(c, V.mul(dir, k - 5)), 1.3, 20);
+    later(10, () => setPose(e, 0));
+  });
+}
+const SUKUNA = {
+  name: "Sukuna", color: "§4", energy: 1600, regen: 26, energyName: "§dCE",
+  dodge: () => 0.1,
+  forms: [
+    { label: "In Yuji's body", power: 90, aura: C.haki },
+    { label: "In Megumi's body (Ten Shadows)", power: 120, aura: C.haki },
+    { label: "True Form (Heian)", power: 125, aura: C.blood },
+  ],
+  thresholds: [0.7, 0.4], transformCd: 120,
+  formSound: [null, "mob.wither.spawn", "mob.enderdragon.growl"],
+  abilities: [yujiCommon(0.2), {
+    id: "dismantle", label: "Dismantle", cd: 90, cost: 100, min: 3, max: 26, weight: 5, technique: true,
+    run(e, s, t) {
+      busy(s, 16); setPose(e, 19); announce(e, formOf(e) === 2 ? "§4§lDismantle §7(four arms)" : "§4§lDismantle");
+      every(2, 5 + formOf(e) * 3, (i) => { if (!alive(t) || !e.isValid) return false; face(e, aim(t)); flyingSlash(e, t, { color: C.white, dmg: 15 * powerOf(e) / 100, range: 24, roll: i * 37, carve: true }); });
+      later(12, () => setPose(e, 0));
+    },
+  }, {
+    id: "cleave", label: "Cleave", cd: 180, cost: 140, min: 0, max: 4, weight: 4, technique: true,
+    run(e, s, t) { busy(s, 16); setPose(e, 19); announce(e, "§4§lCleave"); const h = health(t); slashMarks(e, t, C.red, 6, 6 * powerOf(e) / 100 + (h ? Math.min(9, h.effectiveMax * 0.012) : 0)); later(12, () => setPose(e, 0)); },
+  }, {
+    id: "fuga", label: "Fuga", cd: 700, cost: 500, min: 5, max: 40, weight: 4, technique: true,
+    cond: (e, s, c) => c.hp < 0.7 || c.tPower > c.power,
+    run(e, s, t) {
+      busy(s, 44); face(e, aim(t)); announce(e, "§6§l■ Open — Fuga");
+      setPose(e, 20); slow(e, 30, 8);
+      chargeOrb(e, t, 26, C.fire, 0.3, 1.4, 20);
+      later(26, () => {
+        if (!e.isValid) return;
+        const tt = alive(t) ? t : e;
+        beam(e, tt, { color: C.fire, width: 0.9 + formOf(e) * 0.4, length: 40, dmg: 120 * powerOf(e) / 100, ticks: 5, blast: 5 + formOf(e), carve: 2, pitch: 0.5 });
+        later(6, () => { if (alive(tt)) { try { tt.setOnFire(8, true); } catch (err) { /* ignore */ } } });
+        later(10, () => setPose(e, 0));
+      });
+    },
+  }, {
+    id: "rct", label: "Reverse Cursed Technique", cd: 400, cost: 250, min: 0, max: 64, weight: 5,
+    cond: (e, s, c) => c.hp < 0.5,
+    run(e, s) { busy(s, 10); const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 150)); fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 22, speed: 2 }); },
+  }, {
+    id: "worldslash", label: "World-Cutting Slash", cd: 900, cost: 600, min: 0, max: 30, weight: 6, technique: true,
+    cond: (e, s, c) => formOf(e) >= 1 && (c.adaptTotal >= 6 || c.targetType === "ab:gojo"),
+    run: (e, s, t) => worldSlash(e, s, t),
+  }, {
+    id: "shrine", label: "Malevolent Shrine", cd: 1800, cost: 800, min: 0, max: 14, weight: 7, technique: true,
+    cond: (e, s, c) => c.hp < 0.6 || c.tPower > c.power,
+    run(e, s) {
+      busy(s, 24); setPose(e, 21);
+      announce(e, "§4§lDomain Expansion: §c§lMalevolent Shrine");
+      const dim = e.dimension, center = V.up(e.location, 1), R = 13;
+      sound(dim, "mob.warden.sonic_boom", center, 2, 0.4);
+      fx(dim, "shock", e.location, C.blood, R * 2.4, 1.4);
+      shake(dim, center, 0.5, 1);
+      every(3, 40, (i) => {
+        if (!e.isValid) return false;
+        sphereFx(dim, center, R, C.blood, 16, 1.6, "orb_solid", 0.5);
+        for (let k = 0; k < 2; k++) {
+          const p = V.add(center, { x: (Math.random() - 0.5) * R * 1.6, y: Math.random() * 3 - 0.5, z: (Math.random() - 0.5) * R * 1.6 });
+          const v = slashVfx(dim, p, V.norm({ x: Math.random() - 0.5, y: (Math.random() - 0.5) * 0.4, z: Math.random() - 0.5 }), C.white, 1.4);
+          later(4, () => killVfx(v));
+          if (Math.random() < 0.3) carve(dim, p, 1.2, 10);
+        }
+        if (i % 2 === 0) {
+          let list = []; try { list = dim.getEntities({ location: center, maxDistance: R }); } catch (err) { /* ignore */ }
+          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 5 * powerOf(e) / 100, true); fx(dim, "flash", aim(o), C.white, 1, 0.12); }
+        }
+        if (i === 39) s.burnoutUntil = now() + 140;
+      });
+      later(20, () => setPose(e, 0));
+    },
+  }],
+};
+
+// ------------------------------------------------------------------ Monkey D. Luffy (all gears)
+// forms: 0 base, 1 Gear 2, 2 Gear 3, 3 Gear 4 Boundman, 4 Gear 4 Snakeman, 5 Gear 4 Tankman, 6 Gear 5
+const G = (...f) => (e) => f.includes(formOf(e));
+const LUFFY = {
+  name: "Luffy", color: "§c", energy: 1100, regen: 20, energyName: "§6HAKI",
+  dodge: (e) => (formOf(e) === 6 ? 0.15 : formOf(e) === 4 ? 0.2 : 0.08),
+  forms: [
+    { label: "Base", power: 55 },
+    { label: "Gear 2", power: 70, aura: C.steam },
+    { label: "Gear 3", power: 76 },
+    { label: "Gear 4: Boundman", power: 110, aura: C.steam },
+    { label: "Gear 4: Snakeman", power: 115, aura: C.steam },
+    { label: "Gear 4: Tankman", power: 100, aura: C.steam },
+    { label: "Gear 5", power: 140, aura: C.nika },
+  ],
+  thresholds: [0.92, 0.82, 0.7, 0.5, 0.5, 0.5],
+  transformCd: 70,
+  nextForm: (f) => (f === 2 ? 3 + Math.floor(Math.random() * 3) : f >= 3 && f <= 5 ? 6 : f + 1),
+  formSound: [null, "random.fizz", "random.fizz", "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.enderdragon.growl", "ambient.weather.thunder"],
+  abilities: [
+    { id: "pistol", label: "Gum-Gum Pistol", cd: 70, cost: 30, min: 2, max: 7, weight: 4, cond: G(0, 1),
+      run(e, s, t) { const jet = formOf(e) === 1; stretch(e, s, t, { pose: 13, ticks: 8, reach: 6.5, dmg: jet ? 22 : 14, color: jet ? C.steam : C.white, knock: 1.4, strong: jet, say: jet ? "§c§lJet Pistol!" : "§c§lGum-Gum Pistol!" }); } },
+    { id: "gatling", label: "Gum-Gum Gatling", cd: 130, cost: 60, min: 1, max: 6, weight: 4, cond: G(0, 1, 2),
+      run(e, s, t) { const jet = formOf(e) === 1; stretch(e, s, t, { pose: 14, ticks: 22, hits: 10, every: 2, reach: 5, dmg: jet ? 5 : 3.5, color: jet ? C.steam : C.white, knock: 0.15, say: jet ? "§c§lJet Gatling!" : "§c§lGum-Gum Gatling!" }); } },
+    { id: "bazooka", label: "Gum-Gum Bazooka", cd: 160, cost: 60, min: 1, max: 5, weight: 3, cond: G(0, 1, 2),
+      run(e, s, t) { stretch(e, s, t, { pose: 15, ticks: 10, reach: 4.5, dmg: 20, color: C.white, knock: 3.2, lift: 0.5, strong: true, say: "§c§lGum-Gum Bazooka!" }); } },
+    { id: "whip", label: "Gum-Gum Whip", cd: 110, cost: 30, min: 0, max: 5, weight: 3, cond: G(0, 1, 2, 6),
+      run(e, s, t) { stretch(e, s, t, { pose: 17, ticks: 8, reach: 4.5, radius: 1.6, dmg: formOf(e) === 6 ? 30 : 13, color: C.white, knock: 2, strong: true, say: formOf(e) === 6 ? "§f§lGum-Gum Dawn Whip!" : "§c§lGum-Gum Whip!" }); } },
+    { id: "elephant", label: "Elephant Gun", cd: 220, cost: 150, min: 1, max: 6, weight: 5, cond: G(2),
+      run(e, s, t) { stretch(e, s, t, { pose: 16, ticks: 14, reach: 5.5, radius: 2.2, dmg: 48, color: C.haki, knock: 3, lift: 0.4, strong: true, ground: true, say: "§8§lGum-Gum Elephant Gun!" }); } },
+    { id: "kong", label: "Kong Gun", cd: 240, cost: 200, min: 1, max: 9, weight: 5, cond: G(3),
+      run(e, s, t) {
+        stretch(e, s, t, { pose: 16, ticks: 14, reach: 8, radius: 2.4, dmg: 70, color: C.haki, knock: 4, lift: 0.5, strong: true, say: "§4§lGum-Gum Kong Gun!" });
+        later(4, () => { if (alive(t)) explosion(e, aim(t), { radius: 3, dmg: 20 * powerOf(e) / 100, color: C.haki, slot: 13, carve: 1, knock: 2 }); });
+      } },
+    { id: "leo", label: "Leo Bazooka", cd: 200, cost: 150, min: 0, max: 5, weight: 4, cond: G(3),
+      run(e, s, t) { stretch(e, s, t, { pose: 15, ticks: 12, reach: 4.5, radius: 1.8, dmg: 45, color: C.haki, knock: 4.5, lift: 0.5, strong: true, say: "§4§lGum-Gum Leo Bazooka!" }); } },
+    { id: "bound", label: "Bound", cd: 120, cost: 60, min: 3, max: 18, weight: 3, cond: G(3),
+      run(e, s, t) {  // bouncing leap and slam
+        busy(s, 16); afterimage(e);
+        try { e.applyKnockback({ x: 0, z: 0 }, 1.2); } catch (err) { /* ignore */ }
+        later(10, () => { if (!alive(t) || !e.isValid) return; teleportNear(e, t, false, 1.5); explosion(e, t.location, { radius: 3, dmg: 30 * powerOf(e) / 100, color: C.haki, slot: 13, knock: 2.2 }); });
+      } },
+    { id: "cobra", label: "King Cobra", cd: 220, cost: 180, min: 2, max: 14, weight: 5, cond: G(4),
+      run(e, s, t) {
+        stretch(e, s, t, { pose: 13, ticks: 10, reach: 12, radius: 1.2, dmg: 60, color: C.haki, knock: 3, strong: true, say: "§4§lGum-Gum King Cobra!" });
+        const { pos } = handPos(e, t);
+        for (let k = 0; k < 10; k++) fx(e.dimension, "orb", V.add(pos, { x: Math.sin(k * 0.8) * 1.2, y: Math.cos(k * 0.5) * 0.4, z: 0 }), C.haki, 0.6, 0.4);
+      } },
+    { id: "python", label: "Python", cd: 160, cost: 120, min: 1, max: 10, weight: 4, cond: G(4),
+      run(e, s, t) { stretch(e, s, t, { pose: 14, ticks: 18, hits: 6, every: 3, reach: 9, radius: 1.2, dmg: 12, color: C.haki, knock: 0.6, say: "§4§lGum-Gum Black Mamba!" }); } },
+    { id: "cannon", label: "Cannonball", cd: 160, cost: 120, min: 2, max: 14, weight: 4, cond: G(5),
+      run(e, s, t) { busy(s, 14); afterimage(e); teleportNear(e, t, false, 1.2); later(2, () => { if (alive(t)) explosion(e, t.location, { radius: 3.5, dmg: 45 * powerOf(e) / 100, color: C.haki, slot: 13, knock: 4 }); }); announce(e, "§4§lGum-Gum Cannonball!"); } },
+    { id: "conqueror", label: "Conqueror's Haki", cd: 900, cost: 200, min: 0, max: 14, weight: 3, cond: (e) => formOf(e) >= 2,
+      run(e, s) { conqueror(e, s); } },
+    { id: "bajrang", label: "Bajrang Gun", cd: 500, cost: 400, min: 2, max: 14, weight: 6, cond: G(6),
+      run(e, s, t) {
+        busy(s, 30); face(e, aim(t)); setPose(e, 18); slow(e, 26, 8);
+        announce(e, "§f§lGum-Gum Bajrang Gun!");
+        fx(e.dimension, "aura", e.location, C.nika, 1.4, 0.8, { count: 30, speed: 3 });
+        later(18, () => {
+          if (!alive(t) || !e.isValid) return;
+          setPose(e, 16);
+          explosion(e, t.location, { radius: 6, dmg: 150 * powerOf(e) / 100, color: C.nika, slot: 14, carve: 3, knock: 4 });
+          fx(e.dimension, "shock", t.location, C.nika, 22, 1);
+          later(8, () => setPose(e, 0));
+        });
+      } },
+    { id: "lightning", label: "Grab Lightning", cd: 380, cost: 250, min: 5, max: 40, weight: 4, cond: G(6),
+      run(e, s, t) {
+        busy(s, 24); setPose(e, 3); announce(e, "§e§lLuffy grabs the lightning!");
+        sound(e.dimension, "ambient.weather.thunder", e.location, 2, 1.4);
+        chargeOrb(e, t, 12, C.flash, 0.4, 1.0, 3);
+        later(12, () => { if (!e.isValid) return; setPose(e, 1); beam(e, alive(t) ? t : e, { color: C.flash, width: 0.8, length: 40, dmg: 90 * powerOf(e) / 100, ticks: 3, blast: 3.5, pitch: 1.8 }); later(8, () => setPose(e, 0)); });
+      } },
+    { id: "rubber", label: "Rubber Ground", cd: 360, cost: 200, min: 0, max: 12, weight: 4, cond: G(6),
+      run(e, s) {
+        busy(s, 14); setPose(e, 10); announce(e, "§f§lThe ground turns to rubber!");
+        const dim = e.dimension;
+        fx(dim, "shock", e.location, C.nika, 24, 1.1);
+        let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 12 }); } catch (err) { /* ignore */ }
+        for (const o of list) if (canHit(e, teamOf(e), o)) {
+          try { o.applyKnockback({ x: 0, z: 0 }, 1.6); } catch (err) { /* ignore */ }
+          deal(e, o, 25 * powerOf(e) / 100);
+          for (let k = 0; k < 4; k++) fx(dim, "flash", V.up(o.location, 2.4 + k * 0.4), C.nika, 0.8, 0.5);
+        }
+        later(12, () => setPose(e, 0));
+      } },
+    { id: "gigant", label: "Gigant", cd: 1400, cost: 300, min: 0, max: 24, weight: 4, cond: G(6),
+      run(e, s) {
+        busy(s, 10); announce(e, "§f§lLuffy grows giant!");
+        try { e.triggerEvent("ab:gigant_on"); } catch (err) { /* ignore */ }
+        fx(e.dimension, "shock", e.location, C.nika, 14, 0.8);
+        s.gigantUntil = now() + 200;
+        later(200, () => { try { if (e.isValid) e.triggerEvent("ab:gigant_off"); } catch (err) { /* ignore */ } });
+      } },
+  ],
+};
+
+const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY };
+
+// ------------------------------------------------------------------ melee combos
+// Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
+const MOVES = {
+  jab_r: { pose: 5, t: 3, dmg: 8, kb: 0.3, arc: "punch" },
+  jab_l: { pose: 6, t: 3, dmg: 8, kb: 0.3, arc: "punch" },
+  kick: { pose: 7, t: 5, dmg: 13, kb: 1.1, lift: 0.25, arc: "front" },
+  kick_r: { pose: 8, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "right" },
+  upper: { pose: 9, t: 5, dmg: 15, kb: 0.4, lift: 0.9, strong: true, arc: "up" },
+  axe: { pose: 10, t: 7, dmg: 20, kb: 0.4, lift: -0.6, strong: true, arc: "down", ground: true },
+  rush: { pose: 11, t: 16, dmg: 3.5, hits: 8, kb: 0.1, arc: "punch" },
+  kick_l: { pose: 12, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },
+  kiburst: { pose: 4, t: 7, ki: true, dmg: 24, kb: 2.6, strong: true },
+  blink: { tp: "behind", t: 3 },
+  blinkfront: { tp: "front", t: 3 },
+};
+const COMBOS = {
+  "ab:goku": [["jab_r", "jab_l", "jab_r", "rush", "kick_r", "axe"], ["rush", "kick_l", "kick_r", "upper", "axe"], ["jab_l", "jab_r", "rush", "rush", "kick_l"]],
+  "ab:vegeta": [["jab_l", "jab_r", "rush", "kick_l", "kiburst"], ["jab_r", "jab_l", "jab_r", "kick_r", "axe", "kiburst"], ["rush", "axe", "kick_r"]],
+  "ab:gojo": [["jab_r", "jab_l", "blink", "kick_l", "blinkfront", "rush", "axe"], ["rush", "blink", "kick_r", "blink", "axe"], ["jab_l", "jab_r", "jab_l", "blink", "kick_l"]],
+  "ab:yuji": [["jab_r", "jab_l", "kick", "jab_r"], ["jab_l", "jab_r", "kick_r"], ["rush", "kick_l"]],
+  "ab:yuji_final": [["jab_r", "jab_l", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "jab_l", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
+  "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
+  "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
+};
+MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
+MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };
+MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "right" };
+const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
+const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white };
+
+function combo(e, s, t) {
+  const list = COMBOS[e.typeId];
+  const seq = list[Math.floor(Math.random() * list.length)];
+  let delay = 0;
+  seq.forEach((k, i) => {
+    const mv = MOVES[k];
+    const last = i === seq.length - 1;
+    later(delay + 1, () => comboStep(e, t, mv, last));
+    delay += mv.t;
+  });
+  busy(s, delay + 4);
+  later(delay + 2, () => { if (e.isValid) setPose(e, 0); });
+}
+
+function afterimage(e) {
+  fx(e.dimension, "aura", e.location, C.white, 0.9, 0.35, { count: 10 * fxLevel(), speed: 0 });
+}
+
+// Visual impact: star flash, speed-line streaks, sparks; strong hits add a shockwave ring and camera shake.
+function impact(e, t, strong, color, mv) {
+  const dim = t.dimension;
+  const c = V.add(aim(t), V.mul(V.norm(V.sub(aim(e), aim(t))), 0.45));
+  fx(dim, "flash", c, C.white, strong ? 2.6 : 1.3, strong ? 0.22 : 0.14);
+  fx(dim, "flash", c, color, strong ? 1.8 : 0.9, 0.18);
+  fx(dim, "streak", c, color, strong ? 1.5 : 0.9, 0.35, { count: Math.ceil((strong ? 16 : 7) * fxLevel()), speed: strong ? 11 : 7 });
+  burst(dim, c, color, strong ? 14 : 6, strong ? 5 : 3, 0.22, 0.3);
+  if (strong) {
+    fx(dim, "shock_v", c, color, 3.2, 0.35);
+    shake(dim, c, 0.18, 0.2);
+  }
+  if (mv?.ground) {
+    fx(dim, "shock", V.up(t.location, 0.1), color, 6, 0.5);
+    fx(dim, "aura", t.location, { red: 0.4, green: 0.37, blue: 0.33 }, 1.2, 1.0, { count: 14 * fxLevel(), speed: 1 });
+  }
+  sound(dim, "random.anvil_land", c, 0.18, 2);
+}
+
+// Swing trails: an arc of light where the fist / leg travels.
+function swingArc(e, t, kind, color) {
+  if (!kind || kind === "punch") {
+    const { pos, dir } = handPos(e, t);
+    for (let k = 0; k < 4; k++) fx(e.dimension, "orb", V.add(pos, V.mul(dir, k * 0.35)), color, 0.35 - k * 0.05, 0.18);
+    return;
+  }
+  const base = V.up(e.location, kind === "up" ? 1.2 : kind === "down" ? 1.6 : 0.9);
+  const fwd = V.norm({ x: t.location.x - e.location.x, y: 0, z: t.location.z - e.location.z });
+  const side = sideOf(fwd);
+  for (let k = 0; k <= 10; k++) {
+    const a = (k / 10) * Math.PI;
+    let p;
+    if (kind === "left" || kind === "right") {
+      const sgn = kind === "left" ? 1 : -1;
+      p = V.add(base, V.add(V.mul(side, Math.cos(a) * 1.3 * sgn), V.mul(fwd, Math.sin(a) * 1.3)));
+    } else if (kind === "down") {
+      p = V.add(base, V.add(V.mul(fwd, Math.sin(a) * 1.3), { x: 0, y: Math.cos(a) * 1.4, z: 0 }));
+    } else {
+      p = V.add(base, V.add(V.mul(fwd, Math.sin(a) * 1.2), { x: 0, y: -Math.cos(a) * 1.1, z: 0 }));
+    }
+    fx(e.dimension, "orb", p, color, 0.45, 0.25);
+    if (k % 3 === 0) fx(e.dimension, "orb", p, C.white, 0.22, 0.2);
+  }
+}
+
+function comboStep(e, t, mv, last) {
+  if (!e.isValid || !alive(t)) { if (e.isValid) setPose(e, 0); return; }
+  if (mv.tp) {
+    afterimage(e);
+    teleportNear(e, t, mv.tp === "behind", 1.3);
+    return;
+  }
+  const d = V.dist(e.location, t.location);
+  if (d > 2.3) {  // dash in (a fast step, not a teleport)
+    afterimage(e);
+    const n = V.norm(V.sub(t.location, e.location));
+    try { e.tryTeleport(V.sub(t.location, V.mul({ x: n.x, y: 0, z: n.z }, 1.6)), { checkForBlocks: true, facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+  }
+  face(e, aim(t));
+  setPose(e, mv.pose);
+  const pw = powerOf(e) / 100;
+  const color = HIT_COLOR[e.typeId] ?? C.white;
+  const hits = mv.hits ?? 1;
+  for (let h = 0; h < hits; h++) {
+    later(h * 2 + 1, () => {
+      if (!alive(t) || !e.isValid) return;
+      if (mv.ki) {
+        fx(e.dimension, "orb", aim(t), C.bigBang, 2.2, 0.3);
+        burst(e.dimension, aim(t), C.bigBang, 30, 6, 0.5, 0.6);
+        sound(e.dimension, "mob.wither.shoot", t.location, 1, 1.4);
+      }
+      deal(e, t, mv.dmg * pw * (last ? 1.3 : 1));
+      swingArc(e, t, mv.arc, color);
+      impact(e, t, mv.strong || last, color, mv);
+      const n = V.norm(V.sub(t.location, e.location));
+      const kb = mv.kb * (last ? 1.8 : 1);
+      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, Math.max(0, mv.lift ?? 0.08)); } catch (err) { /* ignore */ }
+      if (isFighter(t) && !last) { const ts = state(t); ts.stunUntil = Math.max(ts.stunUntil, now() + 6); }
+      if (last && Math.random() < (BLACK_FLASH[e.typeId] ?? 0)) {
+        deal(e, t, 35 * pw);
+        fx(e.dimension, "orb_solid", aim(t), C.black, 1.6, 0.4);
+        burst(e.dimension, aim(t), C.red, 24, 5, 0.35, 0.45);
+        burst(e.dimension, aim(t), C.black, 16, 4, 0.4, 0.45);
+        announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX");
+      }
+    });
+  }
+}
+
+
+
+// ------------------------------------------------------------------ fighter brain
+function updateFighter(e, tick) {
+  const def = FIGHTERS[e.typeId];
+  const s = state(e);
+  s.energy = Math.min(def.energy, s.energy + def.regen / 4);
+  const team = teamOf(e);
+
+  if (def.infinity) {
+    const on = s.energy > 60 && tick >= s.burnoutUntil && tick >= s.infinityBrokenUntil;
+    if (on && !e.hasTag("ab_infinity")) e.addTag("ab_infinity");
+    if (!on && e.hasTag("ab_infinity")) e.removeTag("ab_infinity");
+    if (on && team) s.energy -= 1.5;
+  }
+  if (s.kaiokenUntil > tick && tick % 20 === 0) deal(undefined, e, 2);
+  aura(e, s, def);
+
+  if (!team) return;
+  if (tick < s.stunUntil) {
+    if (tick % 10 === 0) ring(e.dimension, V.up(e.location, 2.2), 0.5, C.white, 6, 0.15);
+    return;
+  }
+  const target = nearestEnemy(e, team, 48);
+  if (!target) return;
+  if (tick - s.lastCombat > 100) s.combatSince = tick;
+  s.lastCombat = tick;
+  if (tick < s.busyUntil) return;
+
+  const ctx = { dist: V.dist(e.location, target.location), power: powerOf(e), tPower: powerOf(target), hp: hpPct(e),
+    targetType: target.typeId, adaptTotal: Object.values(s.adapt ?? {}).reduce((a, b) => a + b, 0) };
+  const form = formOf(e);
+  if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick - s.combatSince > 40 &&
+      (ctx.hp < def.thresholds[form] || ctx.tPower > ctx.power * 0.95)) {
+    const next = def.nextForm ? def.nextForm(form) : form + 1;
+    const nf = def.forms[next];
+    transform(e, s, next, nf.label, nf.aura ?? C.white, def.formSound[next]);
+    return;
+  }
+  if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < 0.6) {
+    s.cd.combo = tick + 45 + Math.floor(Math.random() * 40);
+    combo(e, s, target);
+    return;
+  }
+  if (Math.random() > 0.45) return;
+  const burnt = tick < s.burnoutUntil;
+  const ok = def.abilities.filter((a) => (s.cd[a.id] ?? 0) <= tick && s.energy >= a.cost && ctx.dist >= a.min && ctx.dist <= a.max &&
+    !(burnt && a.technique) && (!a.cond || a.cond(e, s, ctx)));
+  if (!ok.length) return;
+  let r = Math.random() * ok.reduce((n, a) => n + a.weight, 0);
+  const pick = ok.find((a) => (r -= a.weight) <= 0) ?? ok[0];
+  s.energy -= pick.cost;
+  s.cd[pick.id] = tick + pick.cd;
+  pick.run(e, s, target, ctx);
+}
+
+// Vanilla mobs put on a team get a simple fighting brain: walk at the nearest enemy and hit it.
+const VANILLA_DMG = { "minecraft:warden": 30, "minecraft:iron_golem": 15, "minecraft:ravager": 12, "minecraft:wither": 12,
+  "minecraft:ender_dragon": 15, "minecraft:vindicator": 9, "minecraft:piglin_brute": 10, "minecraft:hoglin": 6, "minecraft:zoglin": 6 };
+function updateVanilla(e, tick) {
+  if (e.typeId === "minecraft:player" || isFighter(e)) return;
+  const team = teamOf(e);
+  const target = nearestEnemy(e, team, 24);
+  if (!target) return;
+  const s = state(e);
+  const d = V.dist(e.location, target.location);
+  if (d > 2.6) {
+    const n = V.norm(V.sub(target.location, e.location));
+    try { e.applyImpulse({ x: n.x * 0.2, y: 0, z: n.z * 0.2 }); } catch (err) { /* ignore */ }
+  } else if (tick >= s.meleeCd) {
+    s.meleeCd = tick + 20;
+    face(e, aim(target));
+    deal(e, target, VANILLA_DMG[e.typeId] ?? 4);
+  }
+}
+
+// ------------------------------------------------------------------ name tags with health bars
+function bar(pct) {
+  const n = 20, full = Math.round(clamp(pct, 0, 1) * n);
+  const col = pct > 0.6 ? "§a" : pct > 0.3 ? "§e" : "§c";
+  return `${col}${"|".repeat(full)}§8${"|".repeat(n - full)}`;
+}
+function teamLabel(team) {
+  return team === RED ? "§c[RED] " : team === BLUE ? "§9[BLUE] " : "";
+}
+function updateTag(e) {
+  const h = health(e);
+  if (!h) return;
+  const team = teamOf(e);
+  const def = FIGHTERS[e.typeId];
+  const hp = Math.max(0, Math.ceil(h.currentValue));
+  const max = Math.round(h.effectiveMax);
+  const pct = h.currentValue / h.effectiveMax;
+  let text;
+  if (def) {
+    const s = state(e);
+    const form = def.forms[clamp(formOf(e), 0, def.forms.length - 1)].label;
+    let extra = "";
+    if (s.kaiokenUntil > now()) extra += " §c[Kaioken]";
+    if (s.ego > 0.01) extra += ` §5[Ego +${Math.round(s.ego * 100)}%]`;
+    if (e.hasTag("ab_infinity")) extra += " §b[Infinity]";
+    if (s.burnoutUntil > now()) extra += " §7[Burnout]";
+    if (s.stunUntil > now()) extra += " §f[Stunned]";
+    text = `${teamLabel(team)}${def.color}§l${def.name}§r §7(${form})${extra}\n${bar(pct)} §f${hp}§7/${max}\n${def.energyName} §f${Math.max(0, Math.floor(s.energy))}`;
+  } else if (team) {
+    text = `${teamLabel(team)}§f${prettyType(e.typeId)}\n${bar(pct)} §f${hp}§7/${max}`;
+  } else return;
+  if (e.nameTag !== text) e.nameTag = text;
+}
+
+// ------------------------------------------------------------------ main loop
+system.runInterval(() => {
+  const tick = now();
+  for (const id of DIMENSIONS) {
+    let dim;
+    try { dim = world.getDimension(id); } catch (e) { continue; }
+    let fighters = [];
+    try { fighters = dim.getEntities({ families: [FIGHTER_FAMILY] }); } catch (e) { continue; }
+    for (const f of fighters) {
+      try {
+        if (!alive(f)) continue;
+        updateFighter(f, tick);
+        if (tick % 10 === 0) updateTag(f);
+      } catch (e) { warn("fighter", e); }
+    }
+    if (tick % 20 === 0) {
+      let vs = [];
+      try { vs = dim.getEntities({ type: "ab:vfx" }); } catch (e) { /* ignore */ }
+      for (const v of vs) { const exp = vfxAlive.get(v.id); if (exp === undefined || exp < tick) { vfxAlive.delete(v.id); try { v.remove(); } catch (e) { /* ignore */ } } }
+    }
+    if (tick % 10 === 0) {
+      for (const tag of [RED, BLUE]) {
+        let list = [];
+        try { list = dim.getEntities({ tags: [tag], excludeFamilies: [FIGHTER_FAMILY] }); } catch (e) { continue; }
+        for (const v of list) {
+          try {
+            if (!alive(v)) continue;
+            updateVanilla(v, tick);
+            if (v.typeId !== "minecraft:player") updateTag(v);
+          } catch (e) { warn("vanilla", e); }
+        }
+      }
+    }
+  }
+}, 5);
+
+// ------------------------------------------------------------------ damage rules (Infinity, dodges, Ultra Ego, sticks)
+function heldItem(p) {
+  try { return p.getComponent("minecraft:equippable")?.getEquipment(EquipmentSlot.Mainhand)?.typeId; } catch (e) { return undefined; }
+}
+const killing = new Set(); // Kill Stick targets: nothing may save them
+world.beforeEvents.entityHurt.subscribe((ev) => {
+  try {
+    const v = ev.hurtEntity;
+    if (killing.has(v.id)) return;
+    const src = ev.damageSource.damagingEntity;
+    const cause = ev.damageSource.cause;
+    if (src && src.typeId === "minecraft:player") {
+      const item = heldItem(src);
+      if (item === "ab:team_stick" || item === "ab:kill_stick") { ev.cancel = true; return; }
+    }
+    const def = FIGHTERS[v.typeId];
+    if (!def || cause === EntityDamageCause.override || cause === EntityDamageCause.fall) return;
+    const s = state(v);
+    if (def.infinity && v.hasTag("ab_infinity")) {
+      // Infinity stops everything, but holding back stronger attacks costs more cursed energy.
+      const attackerPower = src && src.isValid ? powerOf(src) : 50;
+      const cost = ev.damage * 1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5));
+      s.energy -= cost;
+      if (s.energy >= 0) {
+        ev.cancel = true;
+        system.run(() => { if (v.isValid) ring(v.dimension, V.up(v.location, 1), 1.1, C.blue, 12, 0.2); });
+        return;
+      }
+      const over = -s.energy / (1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5)));
+      s.energy = 0;
+      s.infinityBrokenUntil = now() + 120;
+      ev.damage = over;
+      system.run(() => { if (v.isValid) { burst(v.dimension, V.up(v.location, 1), C.blue, 30, 4); announce(v, "§cGojo's Infinity was overwhelmed!"); } });
+    }
+    if (now() >= s.busyUntil || formOf(v) === 4) {
+      const chance = def.dodge(v, s);
+      if (chance > 0 && Math.random() < chance) {
+        ev.cancel = true;
+        system.run(() => dodgeFx(v, src));
+        return;
+      }
+    }
+    if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.6, s.ego + ev.damage / 500);
+    if (v.typeId === "ab:luffy" && formOf(v) === 5) ev.damage *= 0.5;  // Tankman: rubber fat absorbs blows
+    if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid) {  // Mahoraga's wheel adapts to each attacker
+      s.adapt = s.adapt ?? {};
+      const n = (s.adapt[src.id] ?? 0) + 1;
+      s.adapt[src.id] = n;
+      ev.damage *= 1 - Math.min(0.6, n * 0.03);
+      if (n % 6 === 0) system.run(() => { mahoragaWheel(v); announce(v, "§6The wheel turns — Sukuna adapts"); });
+    }
+  } catch (e) { warn("hurt", e); }
+});
+function dodgeFx(v, src) {
+  if (!v.isValid) return;
+  const ui = v.typeId === "ab:goku" && formOf(v) === 4;
+  const color = ui ? C.silver : C.white;
+  fx(v.dimension, "aura", v.location, color, 1, 0.4, { count: 12 * fxLevel(), speed: 0 });
+  const from = src && src.isValid ? src.location : V.add(v.location, { x: 1, y: 0, z: 0 });
+  const side = V.mul(sideOf(V.norm(V.sub(v.location, from))), Math.random() < 0.5 ? 1.6 : -1.6);
+  try { v.tryTeleport(V.add(v.location, side), { checkForBlocks: true }); } catch (e) { /* ignore */ }
+  sound(v.dimension, "mob.endermen.portal", v.location, 0.6, 2);
+}
+
+// Gojo's Black Flash: a rare melee hit with distorted cursed energy.
+world.afterEvents.entityHitEntity.subscribe((ev) => {
+  try {
+    const a = ev.damagingEntity, t = ev.hitEntity;
+    if (a.typeId === "minecraft:player") { onStickHit(a, t); return; }
+    if (a.typeId === "ab:gojo" && alive(t) && Math.random() < 0.1) {
+      deal(a, t, 35 * powerOf(a) / 100);
+      fx(a.dimension, "orb_solid", aim(t), C.black, 1.4, 0.4);
+      burst(a.dimension, aim(t), C.red, 20, 4, 0.3, 0.4);
+      burst(a.dimension, aim(t), C.black, 14, 3, 0.4, 0.4);
+      sound(a.dimension, "random.explode", t.location, 0.6, 1.6);
+      announce(a, "§0§l§kX§r §4§lBlack Flash §0§l§kX");
+    }
+  } catch (e) { warn("hit", e); }
+});
+
+// ------------------------------------------------------------------ sticks
+const nextTeam = new Map();
+function setTeam(e, team) {
+  e.removeTag(RED);
+  e.removeTag(BLUE);
+  e.addTag(team);
+  if (isFighter(e)) {
+    try { e.triggerEvent("ab:enter_combat"); } catch (err) { /* ignore */ }
+  }
+  const c = C.team[team];
+  ring(e.dimension, V.up(e.location, 0.1), 1.2, c, 20, 0.35);
+  fx(e.dimension, "aura", e.location, c, 0.8, 0.6, { count: 14, speed: 1.5 });
+  updateTag(e);
+}
+function onStickHit(p, t) {
+  const item = heldItem(p);
+  if (item === "ab:team_stick") {
+    if (!t.isValid) return;
+    const team = nextTeam.get(p.id) ?? RED;
+    setTeam(t, team);
+    nextTeam.set(p.id, enemyOf(team));
+    const name = FIGHTERS[t.typeId]?.name ?? (t.typeId === "minecraft:player" ? t.name : prettyType(t.typeId));
+    sound(p.dimension, "random.orb", p.location, 1, team === RED ? 0.8 : 1.3);
+    p.onScreenDisplay.setActionBar(`${teamLabel(team)}§f${name}   §7next: ${teamLabel(enemyOf(team))}`);
+  } else if (item === "ab:kill_stick") {
+    if (!t.isValid || t.typeId === "minecraft:player") return;
+    const dim = t.dimension, loc = aim(t);
+    fx(dim, "orb_solid", loc, C.black, 2, 0.5);
+    burst(dim, loc, C.red, 30, 4, 0.4, 0.6);
+    sound(dim, "mob.warden.sonic_boom", loc, 1, 1.4);
+    states.delete(t.id);
+    killing.add(t.id);
+    later(4, () => killing.delete(t.id));
+    try { t.kill(); } catch (e) { /* ignore */ }
+    later(2, () => { if (t.isValid) { try { t.remove(); } catch (e) { /* ignore */ } } });
+  }
+}
+function resetTeams(p) {
+  let n = 0;
+  for (const id of DIMENSIONS) {
+    let dim;
+    try { dim = world.getDimension(id); } catch (e) { continue; }
+    for (const tag of [RED, BLUE]) {
+      let list = [];
+      try { list = dim.getEntities({ tags: [tag] }); } catch (e) { continue; }
+      for (const e of list) {
+        try {
+          e.removeTag(RED); e.removeTag(BLUE);
+          if (isFighter(e)) {
+            e.triggerEvent("ab:leave_combat");
+            e.triggerEvent("ab:form_0");
+            if (e.typeId === "ab:luffy") e.triggerEvent("ab:gigant_off");
+            setPose(e, 0);
+            states.delete(e.id);
+            updateTag(e);
+          } else if (e.typeId !== "minecraft:player") e.nameTag = "";
+          n++;
+        } catch (err) { /* ignore */ }
+      }
+    }
+  }
+  nextTeam.set(p.id, RED);
+  p.onScreenDisplay.setActionBar(`§aTeams cleared (${n}). §7Next hit: §c[RED]`);
+}
+world.afterEvents.itemUse.subscribe((ev) => {
+  try {
+    const p = ev.source, id = ev.itemStack?.typeId;
+    if (id === "ab:team_stick") {
+      if (p.isSneaking) { resetTeams(p); return; }
+      const team = enemyOf(nextTeam.get(p.id) ?? RED);
+      nextTeam.set(p.id, team);
+      p.onScreenDisplay.setActionBar(`§fNext hit joins ${teamLabel(team)}§r §7(sneak + use = reset)`);
+    } else if (id === "ab:kill_stick") {
+      if (p.isSneaking) {
+        const v = fxLevel() === 1 ? 0.5 : 1;
+        world.setDynamicProperty("ab:fx", v);
+        p.onScreenDisplay.setActionBar(`§fEffects: ${v === 1 ? "§aFULL" : "§eLOW (for weak phones)"}`);
+      } else {
+        const g = !griefing();
+        world.setDynamicProperty("ab:griefing", g);
+        p.onScreenDisplay.setActionBar(`§fAbilities break blocks: ${g ? "§aON" : "§cOFF"}`);
+      }
+    }
+  } catch (e) { warn("use", e); }
+});
+
+// ------------------------------------------------------------------ misc
+world.afterEvents.entityDie.subscribe((ev) => {
+  try {
+    const e = ev.deadEntity;
+    const def = FIGHTERS[e.typeId];
+    states.delete(e.id);
+    if (def && teamOf(e)) announce(e, `${teamLabel(teamOf(e))}${def.color}§l${def.name} §r§fhas been defeated!`);
+  } catch (err) { /* ignore */ }
+});
+world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
+
+world.afterEvents.playerSpawn.subscribe((ev) => {
+  try {
+    const p = ev.player;
+    if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
+    p.setDynamicProperty("ab:kit", true);
+    const inv = p.getComponent("minecraft:inventory")?.container;
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg"]) {
+      try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
+    }
+    p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");
+  } catch (e) { warn("kit", e); }
+});
+
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+  if (ev.id === "ab:griefing") world.setDynamicProperty("ab:griefing", ev.message.trim() !== "off");
+  if (ev.id === "ab:fx") world.setDynamicProperty("ab:fx", ev.message.trim() === "low" ? 0.5 : 1);
+});
