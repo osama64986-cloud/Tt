@@ -81,10 +81,10 @@
    },
    "ab:form_0": {
     "minecraft:attack": {
-     "damage": 16
+     "damage": 20
     },
     "minecraft:movement": {
-     "value": 0.38
+     "value": 0.39
     }
    }
   },
@@ -97,8 +97,8 @@
     ]
    },
    "minecraft:health": {
-    "value": 550,
-    "max": 550
+    "value": 650,
+    "max": 650
    },
    "minecraft:scale": {
     "value": 1.0

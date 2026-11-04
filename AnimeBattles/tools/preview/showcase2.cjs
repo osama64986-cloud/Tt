@@ -20,21 +20,21 @@ const pose = (name) => {
 };
 const need = {};
 const scenes = [
-  { title: "Itadori — Divergent Fist", caster: ["yuji", "base", "jab_r"], target: ["luffy", "base"], fx: "divergent", near: 1 },
-  { title: "Itadori — Black Flash", caster: ["yuji", "base", "jab_r"], target: ["yuji_sukuna", "base"], fx: "bflash", near: 1 },
-  { title: "Itadori (Shinjuku) — Dismantle", caster: ["yuji_final", "base", "slash"], target: ["yuji_sukuna", "base"], fx: "dismantle" },
-  { title: "Itadori (Shinjuku) — Piercing Blood", caster: ["yuji_final", "base", "pose_beam"], target: ["yuji_sukuna", "base"], fx: "piercing" },
-  { title: "Itadori (Shinjuku) — Supernova", caster: ["yuji_final", "base", "pose_raise"], target: null, fx: "supernova" },
-  { title: "Sukuna — Cleave", caster: ["yuji_sukuna", "base", "slash"], target: ["yuji_final", "base"], fx: "cleave", near: 1 },
-  { title: "Sukuna — Fuga (Open)", caster: ["yuji_sukuna", "base", "fuga"], target: ["gojo", "eyes"], fx: "fuga" },
-  { title: "Sukuna — Malevolent Shrine", caster: ["yuji_sukuna", "base", "handsign"], target: ["yuji_final", "base"], fx: "shrine" },
+  { title: "Itadori — Black Flash", caster: ["yuji", "base", "jab_r"], target: ["luffy", "base"], fx: "bflash", near: 1 },
+  { title: "Itadori (final) — Dismantle", caster: ["yuji_final", "base", "slash"], target: ["sukuna", "megumi"], fx: "dismantle" },
+  { title: "Itadori (final) — Piercing Blood", caster: ["yuji_final", "base", "pose_beam"], target: ["sukuna", "heian"], fx: "piercing" },
+  { title: "Sukuna (Yuji's body) — Cleave", caster: ["sukuna", "yuji", "slash"], target: ["yuji_final", "base"], fx: "cleave", near: 1 },
+  { title: "Sukuna (Megumi) — Mahoraga's wheel", caster: ["sukuna", "megumi", null], target: ["gojo", "eyes"], fx: "wheel", near: 1 },
+  { title: "Sukuna (Megumi) — World-Cutting Slash", caster: ["sukuna", "megumi", "handsign"], target: ["gojo", "eyes"], fx: "world" },
+  { title: "Sukuna (Heian) — Fuga", caster: ["sukuna", "heian", "fuga"], target: ["yuji_final", "base"], fx: "fuga" },
+  { title: "Sukuna (Heian) — Malevolent Shrine", caster: ["sukuna", "heian", "handsign"], target: ["yuji_final", "base"], fx: "shrine" },
   { title: "Luffy — Gum-Gum Pistol", caster: ["luffy", "base", "pistol"], target: ["yuji", "base"], fx: "pistol" },
   { title: "Luffy Gear 2 — Jet Gatling", caster: ["luffy", "g2", "gatling"], target: ["yuji", "base"], fx: "gatling" },
   { title: "Luffy Gear 3 — Elephant Gun", caster: ["luffy", "g3", "giant_fist"], target: ["yuji_final", "base"], fx: "elephant" },
-  { title: "Luffy Gear 4 — Kong Gun", caster: ["luffy", "g4b", "giant_fist"], target: ["yuji_sukuna", "base"], fx: "kong" },
-  { title: "Luffy Snakeman — King Cobra", caster: ["luffy", "g4s", "pistol"], target: ["yuji_sukuna", "base"], fx: "cobra" },
+  { title: "Luffy Boundman — Kong Gun", caster: ["luffy", "g4b", "giant_fist"], target: ["sukuna", "yuji"], fx: "kong" },
+  { title: "Luffy Snakeman — King Cobra", caster: ["luffy", "g4s", "pistol"], target: ["sukuna", "yuji"], fx: "cobra" },
+  { title: "Luffy Tankman — Conqueror's Haki", caster: ["luffy", "g4t", "pose_raise"], target: ["yuji", "base"], fx: "conq" },
   { title: "Luffy Gear 5 — Bajrang Gun", caster: ["luffy", "g5", "giant_up"], target: ["gojo", "eyes"], fx: "bajrang" },
-  { title: "Luffy — Conqueror's Haki", caster: ["luffy", "g4t", "pose_raise"], target: ["yuji", "base"], fx: "conq" },
 ];
 for (const s of scenes) { need[s.caster[0] + ":" + s.caster[1]] = 1; if (s.target) need[s.target[0] + ":" + s.target[1]] = 1; }
 const models = {};
@@ -136,6 +136,9 @@ function burst(sc, c, color, r, n) { for (let i = 0; i < n; i++) { const v = sph
 function sphere(sc, c, r, color, n, size, solid = false) { for (let i = 0; i < n; i++) P(sc, add(c, sph(), r), color, size, solid); }
 function aura(sc, color, n = 90) { for (let i = 0; i < n; i++) { const a = rnd() * 6.283, rr = 7 + rnd() * 6; P(sc, [Math.cos(a) * rr, 2 + rnd() * 36, Math.sin(a) * rr], color, 4 + rnd() * 3, false, 3.2); } }
 const FX = {
+  wheel(sc) { const c = [0, 46, 0]; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; for (let r = 3; r <= 12; r += 3) P(sc, [c[0] + Math.cos(a) * r, c[1], c[2] + Math.sin(a) * r], C.gold, 3.5); }
+    for (let i = 0; i < 40; i++) { const a = i / 40 * 6.283; P(sc, [Math.cos(a) * 12, 46, Math.sin(a) * 12], C.gold, 3); } },
+  world(sc) { for (let k = -3; k <= 3; k++) vSlash(sc, [0, 20, -100 + k * 10], 10, 3, 0.35, 1.57); P(sc, [0, 20, -100], C.white, 50); },
   divergent(sc) { P(sc, [0, 22, -20], C.white, 16); vOrb(sc, [0, 22, -24], 5, 0.7); for (let i = 0; i < 26; i++) { const a = i / 26 * 6.283; P(sc, [Math.cos(a) * 14, 22 + Math.sin(a) * 14, -24], C.blue, 3); } },
   bflash(sc) { const c = [0, 22, -20]; vOrb(sc, c, 13, 1.1); for (let i = 0; i < 18; i++) { const v = sph(); for (let k = 1; k < 6; k++) P(sc, add(c, v, k * 3.4), i % 2 ? C.red : C.black, 3, i % 2 === 0); } },
   dismantle(sc) { for (let k = 0; k < 3; k++) vSlash(sc, [0, 20 + k * 3, -30 - k * 22], 10, 1.1, 0.3 + k * 0.6, 0); },

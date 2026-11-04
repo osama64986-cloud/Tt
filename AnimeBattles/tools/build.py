@@ -147,8 +147,9 @@ FIGHTERS = {
 
 FIGHTERS.update({
     "yuji": {"hp": 300, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
-    "yuji_final": {"hp": 550, "forms": [(16, 0.38)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
-    "yuji_sukuna": {"hp": 600, "forms": [(18, 0.37)], "tex": ["base"], "geo": ["base"], "egg": ("#10080c", "#e28c96")},
+    "yuji_final": {"hp": 650, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
+    "sukuna": {"hp": 650, "forms": [(18, 0.37), (24, 0.39), (30, 0.4)], "tex": ["yuji", "megumi", "heian"], "geo": ["yuji", "megumi", "heian"],
+               "egg": ("#10080c", "#e28c96")},
     "luffy": {"hp": 950, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
               "tex": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"], "geo": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
               "egg": ("#ce2226", "#eece68"), "gigant": True},
@@ -261,12 +262,32 @@ def extra_animations():
         "fuga": {"leftArm": {"rotation": [-90, 0, 0]}, "rightArm": {"rotation": [-90, -55, 0]}, "body": {"rotation": [0, 30, 0]}},
         "handsign": {"rightArm": {"rotation": [-75, 35, 0]}, "leftArm": {"rotation": [-75, -35, 0]}},
     }
-    return {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
+    out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
+    out["animation.ab.bounce"] = {"loop": True, "bones": {"root": {"position": [0, "math.abs(math.sin(query.life_time * 240.0)) * 3.0", 0]}}}
+    out["animation.ab.arms2"] = {"loop": True, "bones": {
+        "rightArm2": {"rotation": ["math.sin(query.life_time * 120.0) * 12.0 - 10.0", 0, 0]},
+        "leftArm2": {"rotation": ["-math.sin(query.life_time * 120.0) * 12.0 - 10.0", 0, 0]}}}
+    return out
+
+
+CHAR_ANIMS = {
+    "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3")],
+    "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2")],
+}
 
 
 def client_entity(name, cfg):
     textures = {t: f"textures/entity/{name}/{t}" for t in dict.fromkeys(cfg["tex"])}
     geometry = {g: f"geometry.ab.{name}_{g}" for g in dict.fromkeys(cfg["geo"])}
+    out = _client_entity(name, cfg, textures, geometry)
+    for key, anim, cond in CHAR_ANIMS.get(name, []):
+        d = out["minecraft:client_entity"]["description"]
+        d["animations"][key] = anim
+        d["scripts"]["animate"].append({key: cond})
+    return out
+
+
+def _client_entity(name, cfg, textures, geometry):
     return {
         "format_version": "1.10.0",
         "minecraft:client_entity": {

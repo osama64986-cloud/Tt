@@ -2,7 +2,7 @@
  "format_version": "1.21.60",
  "minecraft:entity": {
   "description": {
-   "identifier": "ab:yuji_sukuna",
+   "identifier": "ab:sukuna",
    "is_spawnable": true,
    "is_summonable": true,
    "properties": {
@@ -10,7 +10,7 @@
      "type": "int",
      "range": [
       0,
-      0
+      2
      ],
      "default": 0,
      "client_sync": true
@@ -86,19 +86,35 @@
     "minecraft:movement": {
      "value": 0.37
     }
+   },
+   "ab:form_1": {
+    "minecraft:attack": {
+     "damage": 24
+    },
+    "minecraft:movement": {
+     "value": 0.39
+    }
+   },
+   "ab:form_2": {
+    "minecraft:attack": {
+     "damage": 30
+    },
+    "minecraft:movement": {
+     "value": 0.4
+    }
    }
   },
   "components": {
    "minecraft:type_family": {
     "family": [
      "anime_fighter",
-     "ab_yuji_sukuna",
+     "ab_sukuna",
      "mob"
     ]
    },
    "minecraft:health": {
-    "value": 600,
-    "max": 600
+    "value": 650,
+    "max": 650
    },
    "minecraft:scale": {
     "value": 1.0
@@ -186,7 +202,9 @@
      {
       "remove": {
        "component_groups": [
-        "ab:form_0"
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2"
        ]
       }
      },
@@ -200,6 +218,56 @@
      {
       "set_property": {
        "ab:form": 0
+      }
+     }
+    ]
+   },
+   "ab:form_1": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_1"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 1
+      }
+     }
+    ]
+   },
+   "ab:form_2": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_2"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 2
       }
      }
     ]

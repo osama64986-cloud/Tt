@@ -10,7 +10,7 @@ let forms = [
   ["goku", "base", "base"], ["goku", "ssj", "ssj"], ["goku", "ssj3", "ssj3"], ["goku", "ssb", "ssb"], ["goku", "ui", "ui"],
   ["vegeta", "base", "base"], ["vegeta", "ssj", "ssj"], ["vegeta", "ssb", "ssb"], ["vegeta", "ue", "ue"],
   ["gojo", "blindfold", "blindfold"], ["gojo", "eyes", "eyes"],
-  ["yuji", "base", "base"], ["yuji_final", "base", "base"], ["yuji_sukuna", "base", "base"],
+  ["yuji", "base", "base"], ["yuji_final", "base", "base"], ["sukuna", "yuji", "yuji"], ["sukuna", "megumi", "megumi"], ["sukuna", "heian", "heian"],
   ["luffy", "base", "base"], ["luffy", "g2", "g2"], ["luffy", "g3", "g3"], ["luffy", "g4b", "g4b"], ["luffy", "g4s", "g4s"], ["luffy", "g4t", "g4t"], ["luffy", "g5", "g5"],
 ];
 if (only) forms = forms.filter((f) => only.includes(f[0]) || only.includes(f[0] + ":" + f[2]));

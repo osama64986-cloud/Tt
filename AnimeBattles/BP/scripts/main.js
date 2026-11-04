@@ -917,7 +917,15 @@ function stretch(e, s, t, o) {
     face(e, aim(t));
     const { pos, dir } = handPos(e, t);
     lineHit(e, pos, dir, o.reach, o.radius ?? 0.9, o.dmg * powerOf(e) / 100, { knock: o.knock ?? 0.6, lift: o.lift ?? 0.15 });
-    for (let k = 1; k <= o.reach; k += 1.5) fx(e.dimension, "orb", V.add(pos, V.mul(dir, k)), o.trail ?? C.white, 0.25, 0.15);
+    const style = e.typeId === "ab:luffy" ? [null, "steam", null, "haki", "haki", "haki", "nika"][formOf(e)] : null;
+    for (let k = 1; k <= o.reach; k += 1.5) {
+      const q = V.add(pos, V.mul(dir, k));
+      fx(e.dimension, "orb", q, o.trail ?? C.white, 0.25, 0.15);
+      if (style === "steam") fx(e.dimension, "aura", V.up(q, -0.9), C.steam, 0.6, 0.5, { count: 2, speed: 1 });
+      if (style === "haki") { fx(e.dimension, "orb", q, C.fire, 0.45, 0.25); fx(e.dimension, "orb_solid", q, C.black, 0.3, 0.2); }
+    }
+    if (style === "nika") { fx(e.dimension, "shock_v", aim(t), C.nika, 3.5, 0.4); for (let k = 0; k < 3; k++) fx(e.dimension, "flash", V.up(aim(t), 0.8 + k * 0.4), C.nika, 0.7, 0.4); }
+    if (style === "haki") fx(e.dimension, "streak", aim(t), C.fire, 1.4, 0.35, { count: 10, speed: 9 });
     impact(e, t, o.strong || i === hits - 1, o.color ?? C.white, o.ground ? { ground: true } : undefined);
   });
   later(o.ticks, () => { if (e.isValid) setPose(e, 0); });
@@ -1027,7 +1035,7 @@ const YUJI = {
 const YUJI_FINAL = {
   name: "Itadori", color: "§c", energy: 1200, regen: 22, energyName: "§dCE",
   dodge: () => 0.12,
-  forms: [{ label: "Shinjuku", power: 85, aura: C.blood }],
+  forms: [{ label: "Shinjuku (final)", power: 105, aura: C.blood }],
   thresholds: [], formSound: [null],
   abilities: [divergent, yujiCommon(0.5), {
     id: "dismantle", label: "Dismantle", cd: 120, cost: 120, min: 3, max: 24, weight: 4, technique: true,
@@ -1096,16 +1104,52 @@ const YUJI_FINAL = {
     },
   }],
 };
+function mahoragaWheel(e) {
+  if (!e.isValid) return;
+  const c = V.up(e.location, 2.9);
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2 + now() * 0.05;
+    for (let r = 0.2; r <= 0.8; r += 0.3) fx(e.dimension, "orb", { x: c.x + Math.cos(a) * r, y: c.y, z: c.z + Math.sin(a) * r }, C.gold, 0.18, 0.5);
+  }
+  fx(e.dimension, "shock", c, C.gold, 2.2, 0.5);
+  sound(e.dimension, "block.bell.hit", c, 0.8, 0.6);
+}
+function worldSlash(e, s, t) {
+  busy(s, 34); setPose(e, 21); slow(e, 30, 8);
+  announce(e, "§f§lSukuna: §c§lWorld-Cutting Slash");
+  const dim = e.dimension;
+  later(18, () => {
+    if (!e.isValid || !alive(t)) return;
+    setPose(e, 19);
+    const c = aim(t);
+    const dir = V.norm(V.sub(c, aim(e)));
+    for (let k = -3; k <= 3; k++) {
+      const v = slashVfx(dim, V.add(c, V.mul(dir, k * 1.6)), dir, C.white, 3.2, 10);
+      later(10, () => killVfx(v));
+    }
+    fx(dim, "flash", c, C.white, 6, 0.3);
+    fx(dim, "streak", c, C.white, 3, 0.5, { count: 30, speed: 14 });
+    shake(dim, c, 0.7, 0.6);
+    deal(e, t, 160 * powerOf(e) / 100, true);  // cuts space itself: Infinity cannot stop it
+    for (let k = 0; k < 10; k++) carve(dim, V.add(c, V.mul(dir, k - 5)), 1.3, 20);
+    later(10, () => setPose(e, 0));
+  });
+}
 const SUKUNA = {
-  name: "Sukuna", color: "§4", energy: 1400, regen: 24, energyName: "§dCE",
+  name: "Sukuna", color: "§4", energy: 1600, regen: 26, energyName: "§dCE",
   dodge: () => 0.1,
-  forms: [{ label: "Yuji's body", power: 90, aura: C.haki }],
-  thresholds: [], formSound: [null],
+  forms: [
+    { label: "In Yuji's body", power: 90, aura: C.haki },
+    { label: "In Megumi's body (Ten Shadows)", power: 120, aura: C.haki },
+    { label: "True Form (Heian)", power: 125, aura: C.blood },
+  ],
+  thresholds: [0.7, 0.4], transformCd: 120,
+  formSound: [null, "mob.wither.spawn", "mob.enderdragon.growl"],
   abilities: [yujiCommon(0.2), {
     id: "dismantle", label: "Dismantle", cd: 90, cost: 100, min: 3, max: 26, weight: 5, technique: true,
     run(e, s, t) {
-      busy(s, 16); setPose(e, 19); announce(e, "§4§lDismantle");
-      every(2, 5, (i) => { if (!alive(t) || !e.isValid) return false; face(e, aim(t)); flyingSlash(e, t, { color: C.white, dmg: 15 * powerOf(e) / 100, range: 24, roll: i * 37, carve: true }); });
+      busy(s, 16); setPose(e, 19); announce(e, formOf(e) === 2 ? "§4§lDismantle §7(four arms)" : "§4§lDismantle");
+      every(2, 5 + formOf(e) * 3, (i) => { if (!alive(t) || !e.isValid) return false; face(e, aim(t)); flyingSlash(e, t, { color: C.white, dmg: 15 * powerOf(e) / 100, range: 24, roll: i * 37, carve: true }); });
       later(12, () => setPose(e, 0));
     },
   }, {
@@ -1121,7 +1165,7 @@ const SUKUNA = {
       later(26, () => {
         if (!e.isValid) return;
         const tt = alive(t) ? t : e;
-        beam(e, tt, { color: C.fire, width: 0.9, length: 40, dmg: 120 * powerOf(e) / 100, ticks: 5, blast: 5, carve: 2, pitch: 0.5 });
+        beam(e, tt, { color: C.fire, width: 0.9 + formOf(e) * 0.4, length: 40, dmg: 120 * powerOf(e) / 100, ticks: 5, blast: 5 + formOf(e), carve: 2, pitch: 0.5 });
         later(6, () => { if (alive(tt)) { try { tt.setOnFire(8, true); } catch (err) { /* ignore */ } } });
         later(10, () => setPose(e, 0));
       });
@@ -1130,6 +1174,10 @@ const SUKUNA = {
     id: "rct", label: "Reverse Cursed Technique", cd: 400, cost: 250, min: 0, max: 64, weight: 5,
     cond: (e, s, c) => c.hp < 0.5,
     run(e, s) { busy(s, 10); const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 150)); fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 22, speed: 2 }); },
+  }, {
+    id: "worldslash", label: "World-Cutting Slash", cd: 900, cost: 600, min: 0, max: 30, weight: 6, technique: true,
+    cond: (e, s, c) => formOf(e) >= 1 && (c.adaptTotal >= 6 || c.targetType === "ab:gojo"),
+    run: (e, s, t) => worldSlash(e, s, t),
   }, {
     id: "shrine", label: "Malevolent Shrine", cd: 1800, cost: 800, min: 0, max: 14, weight: 7, technique: true,
     cond: (e, s, c) => c.hp < 0.6 || c.tPower > c.power,
@@ -1259,7 +1307,7 @@ const LUFFY = {
   ],
 };
 
-const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:yuji_sukuna": SUKUNA, "ab:luffy": LUFFY };
+const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -1282,14 +1330,14 @@ const COMBOS = {
   "ab:gojo": [["jab_r", "jab_l", "blink", "kick_l", "blinkfront", "rush", "axe"], ["rush", "blink", "kick_r", "blink", "axe"], ["jab_l", "jab_r", "jab_l", "blink", "kick_l"]],
   "ab:yuji": [["jab_r", "jab_l", "kick", "jab_r"], ["jab_l", "jab_r", "kick_r"], ["rush", "kick_l"]],
   "ab:yuji_final": [["jab_r", "jab_l", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "jab_l", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
-  "ab:yuji_sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
+  "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
 MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };
 MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "right" };
-const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:yuji_sukuna": 0.2 };
-const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:yuji_sukuna": C.red, "ab:luffy": C.white };
+const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
+const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -1427,7 +1475,8 @@ function updateFighter(e, tick) {
   s.lastCombat = tick;
   if (tick < s.busyUntil) return;
 
-  const ctx = { dist: V.dist(e.location, target.location), power: powerOf(e), tPower: powerOf(target), hp: hpPct(e) };
+  const ctx = { dist: V.dist(e.location, target.location), power: powerOf(e), tPower: powerOf(target), hp: hpPct(e),
+    targetType: target.typeId, adaptTotal: Object.values(s.adapt ?? {}).reduce((a, b) => a + b, 0) };
   const form = formOf(e);
   if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick - s.combatSince > 40 &&
       (ctx.hp < def.thresholds[form] || ctx.tPower > ctx.power * 0.95)) {
@@ -1587,6 +1636,13 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     }
     if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.6, s.ego + ev.damage / 500);
     if (v.typeId === "ab:luffy" && formOf(v) === 5) ev.damage *= 0.5;  // Tankman: rubber fat absorbs blows
+    if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid) {  // Mahoraga's wheel adapts to each attacker
+      s.adapt = s.adapt ?? {};
+      const n = (s.adapt[src.id] ?? 0) + 1;
+      s.adapt[src.id] = n;
+      ev.damage *= 1 - Math.min(0.6, n * 0.03);
+      if (n % 6 === 0) system.run(() => { mahoragaWheel(v); announce(v, "§6The wheel turns — Sukuna adapts"); });
+    }
   } catch (e) { warn("hurt", e); }
 });
 function dodgeFx(v, src) {
@@ -1719,7 +1775,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:yuji_sukuna_spawn_egg", "ab:luffy_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");

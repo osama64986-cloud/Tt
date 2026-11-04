@@ -2,15 +2,19 @@
  "format_version": "1.10.0",
  "minecraft:client_entity": {
   "description": {
-   "identifier": "ab:yuji_sukuna",
+   "identifier": "ab:sukuna",
    "materials": {
     "default": "entity_alphatest"
    },
    "textures": {
-    "base": "textures/entity/yuji_sukuna/base"
+    "yuji": "textures/entity/sukuna/yuji",
+    "megumi": "textures/entity/sukuna/megumi",
+    "heian": "textures/entity/sukuna/heian"
    },
    "geometry": {
-    "base": "geometry.ab.yuji_sukuna_base"
+    "yuji": "geometry.ab.sukuna_yuji",
+    "megumi": "geometry.ab.sukuna_megumi",
+    "heian": "geometry.ab.sukuna_heian"
    },
    "animations": {
     "look": "animation.ab.look_at_target",
@@ -37,7 +41,8 @@
     "giant_up": "animation.ab.giant_up",
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
-    "handsign": "animation.ab.handsign"
+    "handsign": "animation.ab.handsign",
+    "arms2": "animation.ab.arms2"
    },
    "scripts": {
     "animate": [
@@ -109,11 +114,14 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "arms2": "query.property('ab:form') == 2"
      }
     ]
    },
    "render_controllers": [
-    "controller.render.ab.yuji_sukuna"
+    "controller.render.ab.sukuna"
    ],
    "spawn_egg": {
     "base_color": "#10080c",

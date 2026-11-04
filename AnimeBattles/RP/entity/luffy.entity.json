@@ -49,7 +49,8 @@
     "giant_up": "animation.ab.giant_up",
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
-    "handsign": "animation.ab.handsign"
+    "handsign": "animation.ab.handsign",
+    "bounce": "animation.ab.bounce"
    },
    "scripts": {
     "animate": [
@@ -121,6 +122,9 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "bounce": "query.property('ab:form') == 3"
      }
     ]
    },

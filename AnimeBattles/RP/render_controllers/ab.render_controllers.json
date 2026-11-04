@@ -132,16 +132,20 @@
     "Array.skins[query.property('ab:form')]"
    ]
   },
-  "controller.render.ab.yuji_sukuna": {
+  "controller.render.ab.sukuna": {
    "arrays": {
     "textures": {
      "Array.skins": [
-      "Texture.base"
+      "Texture.yuji",
+      "Texture.megumi",
+      "Texture.heian"
      ]
     },
     "geometries": {
      "Array.geos": [
-      "Geometry.base"
+      "Geometry.yuji",
+      "Geometry.megumi",
+      "Geometry.heian"
      ]
     }
    },
