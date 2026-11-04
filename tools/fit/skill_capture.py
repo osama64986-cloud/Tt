@@ -13,7 +13,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 SHAPES_JS = open(os.path.join(ROOT, "AnimePowers", "BP", "scripts", "shapes.js"), encoding="utf-8").read()
 SHAPE_BY_ID = {int(v): k for k, v in re.findall(r'"([a-z0-9_]+)":\s*(\d+)', SHAPES_JS)}
 CTRL = json.load(open(os.path.join(ROOT, "AnimePowers", "RP", "animation_controllers", "sh_grim.ac.json"), encoding="utf-8"))["animation_controllers"]
-MODEL = {"sh:magmamoth": "magmamoth", "sh:veilfox": "veilfox", "sh:gloomhorn": "gloomhorn", "sh:hollow_seer": "hollow_seer", "sh:grey_bear": "grey_bear", "sh:bear_cub": "bear_cub", "sh:prayer_mantis": "prayer_mantis"}
+MODEL = {"sh:magmamoth": "magmamoth", "sh:veilfox": "veilfox", "sh:gloomhorn": "gloomhorn", "sh:hollow_seer": "hollow_seer", "sh:grey_bear": "grey_bear", "sh:bear_cub": "bear_cub", "sh:prayer_mantis": "prayer_mantis", "sh:hollow_harvester": "hollow_harvester"}
 SCALE = {}
 ANIM_OF = {"sh:bear_cub": "grey_bear"}
 _models = {}

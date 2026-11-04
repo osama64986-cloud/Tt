@@ -144,9 +144,13 @@ class Model:
             name = b.get("parent")
         return out  # من الطفل للأب
 
-    def world_cubes(self, pose):
-        """يرجع قائمة وجوه: (corners3d[4], uvrect, normal)"""
+    def world_cubes(self, pose, game=False):
+        """يرجع قائمة وجوه: (corners3d[4], uvrect, normal)
+        game=True: نفس اللعبة (مثل Blockbench وtools/fit/hand_sim.py): x مقلوب (x_int = -x) للمكعبات والمحاور والإزاحة،
+        الدوران نفسه Euler(-rx, -ry, rz)، والإزاحة (-tx, ty, tz). وجه east يصير بـ +x الداخلي (يمين الكيان).
+        بدونها (القديم) الموديل يطلع معكوس يمين/يسار ودوران Y وZ يطلع بالاتجاه المعاكس."""
         faces = []
+        sx = -1.0 if game else 1.0
         for name, b in self.bones.items():
             for c in b.get("cubes", []):
                 ox, oy, oz = c["origin"]
@@ -154,6 +158,8 @@ class Model:
                 inf = c.get("inflate", 0)
                 x0, y0, z0 = ox - inf, oy - inf, oz - inf
                 x1, y1, z1 = ox + w + inf, oy + h + inf, oz + d + inf
+                if game:
+                    x0, x1 = -x1, -x0
                 fc = face_corners(x0, y0, z0, x1, y1, z1)
                 if isinstance(c["uv"], dict):  # UV لكل وجه (مكعبات الإضافات)
                     rects = {f: (c["uv"][f]["uv"][0], c["uv"][f]["uv"][1], c["uv"][f]["uv_size"][0], c["uv"][f]["uv_size"][1]) for f in c["uv"]}
@@ -165,25 +171,28 @@ class Model:
                     pts = np.array(fc[fname], dtype=float)
                     # دوران المكعب نفسه
                     if "rotation" in c:
-                        pv = np.array(c.get("pivot", [0, 0, 0]), dtype=float)
+                        pv = np.array(c.get("pivot", [0, 0, 0]), dtype=float) * np.array([sx, 1, 1])
                         R = rot_matrix(*c["rotation"])
                         pts = (pts - pv) @ R.T + pv
                     # سلسلة العظام: الطفل ثم الأب
                     for bb in self.chain(name):
                         p = pose.get(bb["name"], {"rot": [0, 0, 0], "pos": [0, 0, 0]})
                         rot = [a + b2 for a, b2 in zip(bb.get("rotation", [0, 0, 0]), p["rot"])]
-                        pv = np.array(bb.get("pivot", [0, 0, 0]), dtype=float)
+                        pv = np.array(bb.get("pivot", [0, 0, 0]), dtype=float) * np.array([sx, 1, 1])
                         R = rot_matrix(*rot)
                         if "scale" in p:                                   # تحجيم العظمة حول محورها (مثل اللعبة: قبل الدوران)
                             pts = (pts - pv) * np.array(p["scale"], dtype=float) + pv
                         pts = (pts - pv) @ R.T + pv
-                        pts = pts + np.array(p["pos"], dtype=float) * np.array([1, 1, -1]) * 0 + np.array([p["pos"][0], p["pos"][1], -p["pos"][2]])
+                        if game:
+                            pts = pts + np.array([-p["pos"][0], p["pos"][1], p["pos"][2]], dtype=float)
+                        else:
+                            pts = pts + np.array([p["pos"][0], p["pos"][1], -p["pos"][2]])
                     faces.append((pts, rects[fname], c.get("mirror", False)))
         return faces
 
 
-def render(model, pose, yaw=0, pitch=12, size=420, center=None, dist=None, bg=(46, 48, 56), scale=None):
-    faces = model.world_cubes(pose)
+def render(model, pose, yaw=0, pitch=12, size=420, center=None, dist=None, bg=(46, 48, 56), scale=None, game=False):
+    faces = model.world_cubes(pose, game=game)
     allp = np.concatenate([f[0] for f in faces]) / 16.0
     if center is None:
         center = (allp.min(0) + allp.max(0)) / 2
@@ -255,20 +264,20 @@ def render(model, pose, yaw=0, pitch=12, size=420, center=None, dist=None, bg=(4
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
 
 
-def contact_sheet(model, poses, views=((0, 12), (45, 12), (90, 12), (180, 12)), size=300, label=None):
+def contact_sheet(model, poses, views=((0, 12), (45, 12), (90, 12), (180, 12)), size=300, label=None, game=False):
     rows = len(poses)
     W = size * len(views)
     H = size * rows
     sheet = Image.new("RGB", (W, H), (46, 48, 56))
     d = ImageDraw.Draw(sheet)
     # نفس الإطار لكل الصور حتى تقارن الحركة
-    base = model.world_cubes({})
+    base = model.world_cubes({}, game=game)
     allp = np.concatenate([f[0] for f in base]) / 16.0
     center = (allp.min(0) + allp.max(0)) / 2
     ext = (allp.max(0) - allp.min(0)).max()
     for r, (name, pose) in enumerate(poses):
         for c, (yaw, pit) in enumerate(views):
-            im = render(model, pose, yaw, pit, size, center=center, dist=ext * 2.9 + 1.0)
+            im = render(model, pose, yaw, pit, size, center=center, dist=ext * 2.9 + 1.0, game=game)
             sheet.paste(im, (c * size, r * size))
         d.text((6, r * size + 4), name, fill=(255, 255, 255))
     return sheet

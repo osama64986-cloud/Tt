@@ -30,7 +30,7 @@ W.advance(100);
 
 const main = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/main.js"), "utf8");
 const skills = [...main.matchAll(/mk\("([a-z]+)", "([a-z]+)", "[^"]+", "(sh:skill_[a-z]+)"/g)].map((m) => ({ id: m[1], power: m[2], item: m[3] }));
-const WEAPONS = ["sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath", "sh:dark_katana"];
+const WEAPONS = ["sh:dawn_dagger", "sh:ember_cleaver", "sh:shadow_blade", "sh:shadow_claws", "sh:stone_maul", "sh:sunset_spear", "sh:silver_oath", "sh:dark_katana", "sh:harvest_scythe"];
 const filt = filterArg ? new Set(filterArg.split(",")) : null;
 
 const { player, entities, rec } = W;

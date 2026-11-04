@@ -11,6 +11,9 @@ import render as R
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "AnimePowers", "RP")
 GEO, TEX = os.path.join(ROOT, "models", "entity"), os.path.join(ROOT, "textures", "entity")
+# V1.1: الموديلات والأشكال تنرسم مثل اللعبة (x مقلوب مثل Blockbench وhand_sim.py)، حتى مكانات السكربت (left/f) تطابقها.
+# القديم (False) كان يرسم الموديل معكوس ويقلب الصورة كلها بالآخر: الموديل يطلع صح بس الجزيئات والأشكال تنقلب، ودوران Y وZ معكوس.
+GAME = True
 ANIM = json.load(open(os.path.join(ROOT, "animations", "sh_grim.animation.json"), encoding="utf-8"))["animations"]
 FXA = json.load(open(os.path.join(ROOT, "animations", "sh_fx.animation.json"), encoding="utf-8"))["animations"]
 
@@ -49,7 +52,7 @@ class Scene:
 
     def model(self, m, pose, pos, d=(0, 1), scale=1.0):
         Rm = roty(yaw_for(d))
-        for pts, rect, _ in m.world_cubes(pose):
+        for pts, rect, _ in m.world_cubes(pose, game=GAME):                  # GAME: يمين/يسار ودوران مثل اللعبة بالضبط
             p = (pts / 16.0 * scale) @ Rm.T + np.array(pos)
             self.faces.append((p, "tex", (m, rect)))
 
@@ -58,9 +61,9 @@ class Scene:
         والشعاع النجمي يتمدد بطوله sh:l"""
         lt = life or 0.0
         pose = {"spin": {"rot": [0, lt * s, 0], "pos": [0, 0, 0]}, "tilt": {"rot": [p, 0, 0], "pos": [0, 0, 0]}, "roll": {"rot": [0, 0, a + lt * w], "pos": [0, 0, 0]}}
-        if name == "star_beam":
+        if name in ("star_beam", "soul_chain", "seer_beam", "magma_fissure", "puppet_string"):     # نفس مجموعة "beam" بـ gen_fx_shapes.py
             pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, 1, max(0.05, l)]}
-        if name in ("wind_ring", "nova_ring"):
+        if name in ("wind_ring", "nova_ring", "soul_wave", "howl_ring"):                              # مجموعة "flat_ring"
             pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, min(1.0, 2.5 / max(0.1, r)), 1]}
         if name in ("sound_wave", "echo_pulse"):
             pose["body"] = {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": [1, min(1.0, 3.0 / max(0.1, r)), 1]}
@@ -166,7 +169,9 @@ class Scene:
             t = tile[ys0 - y0:ys1 - y0, xs0 - x0:xs1 - x0]
             a = (t[..., 3:4] / 255.0) * (zb[ys0:ys1, xs0:xs1] > dep - 0.03)[..., None]
             img[ys0:ys1, xs0:xs1] = img[ys0:ys1, xs0:xs1] * (1 - a) + t[..., :3] * a
-        return ImageOps.mirror(Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)))
+        out = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
+        # القديم كان يقلب الصورة حتى الموديل (المعكوس) يطلع صح، بس هذا يقلب الجزيئات والأشكال؛ مع GAME كلشي بمكانه الحقيقي بدون قلب
+        return out if GAME else ImageOps.mirror(out)
 
 
 def mon(name):

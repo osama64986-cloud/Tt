@@ -693,10 +693,13 @@ export const HARVEST = {
     if (Math.random() < 0.3) P(dim, up(L, 2.3), PT.campfire, { eye: 1.6 });
     if (Math.random() < 0.25) P(dim, { x: L.x + rnd(-0.3, 0.3), y: L.y + rnd(0.6, 2.0), z: L.z + rnd(-0.3, 0.3) }, PT.lava, { eye: 1.0 });
   },
-  // جو: قشة تطيح ببطء + لمعة بالعين أحياناً
-  ambient(dim, L) {
+  // جو: قشة تطيح ببطء + لمعة بإحدى العينين أحياناً (V1.1: على العين نفسها قدام الوجه، مو داخل الراس)
+  ambient(dim, L, fr) {
     if (Math.random() < 0.18) P(dim, { x: L.x + rnd(-0.4, 0.4), y: L.y + rnd(1.0, 2.2), z: L.z + rnd(-0.4, 0.4) }, PT.wax, { c: STRAW_C, d: { x: 0, y: -0.3, z: 0 }, eye: 1.0 });
-    if (Math.random() < 0.06) P(dim, up(L, 2.39), PT.glow, { c: HOLLOW_C, eye: 1.0 });
+    if (Math.random() < 0.06) {
+      const s = Math.random() < 0.5 ? 0.13 : -0.13, f = fr ? fr.f : { x: 0, z: 0 }, l = fr ? fr.left : { x: 0, z: 0 };
+      P(dim, { x: L.x + f.x * 0.46 + l.x * s, y: L.y + 2.36, z: L.z + f.z * 0.46 + l.z * s }, PT.glow, { c: HOLLOW_C, eye: 1.0 });
+    }
   },
   // الموت: قش يتطاير + نفخة موت + روح بنفسجية تطلع من الكيس
   death(dim, L) {

@@ -3885,6 +3885,7 @@ const WEAPON_SKILLS = {
         HARVEST.reapHit(dim, center3(e), o);
       }
       HARVEST.reapSweep(dim, o, { x: d.x, y: 0, z: d.z }, 3.4);
+      popShape(dim, "reap_arc", { x: o.x, y: o.y + 1.0, z: o.z }, 1.5, 2.9, 7, { yaw: dirYaw({ x: d.x, y: 0, z: d.z }), ease: "out" });   // V1.1: نفس هلال حصدة الحاصد 3D
       cue(dim, "scythe_reap", o);
       return true;
     } },
@@ -3894,12 +3895,19 @@ const WEAPON_SKILLS = {
       if (!list.length) { notify(p, "§7No enemy in front of you for the strings", 25); return false; }
       cue(dim, "scythe_strings", p.location);
       const hand = () => ({ x: p.location.x + d.x * 0.5, y: p.location.y + 1.3, z: p.location.z + d.z * 0.5 });
+      const strs = new Map();                                                    // V1.1: خيط دمية 3D لكل عدو (نفس خيوط الحاصد)، يتبعه لحد السحبة
+      const dropStrs = () => { for (const s of strs.values()) removeFx(s); strs.clear(); };
       let t = 0;
       const h = system.runInterval(() => {
         try {
           t += 2;
-          if (!valid(p)) { system.clearRun(h); return; }
-          for (const e of list) if (valid(e)) HARVEST.string(dim, hand(), center3(e), t);
+          if (!valid(p)) { system.clearRun(h); dropStrs(); return; }
+          for (const e of list) {
+            if (!valid(e)) { if (strs.has(e.id)) { removeFx(strs.get(e.id)); strs.delete(e.id); } continue; }
+            HARVEST.string(dim, hand(), center3(e), t);
+            if (!strs.has(e.id)) strs.set(e.id, beamShape(dim, hand(), center3(e), 30, 1.5, "puppet_string"));
+            else aimBeam(strs.get(e.id), hand(), center3(e), 1.5);
+          }
           if (t === 4) for (const e of list) if (valid(e)) HARVEST.stringAttach(dim, center3(e));
           if (t < 12) return;
           system.clearRun(h);
@@ -3913,7 +3921,8 @@ const WEAPON_SKILLS = {
             HARVEST.yank(dim, hand(), center3(e));
           }
           cue(dim, "scythe_yank", c);
-        } catch (err) { system.clearRun(h); }
+          later(4, dropStrs);                                                     // الخيوط ترتخي وتختفي بعد السحبة
+        } catch (err) { system.clearRun(h); dropStrs(); }
       }, 2);
       return true;
     } },
@@ -7124,7 +7133,8 @@ function harvFrame(e) {
 }
 function harvEnd(e, st, cd) { st.victim = undefined; st.anchor = undefined; grimEnd(e, st, cd); }
 // إيد الفزاعة اليسرى (اللي ترمي خيط الدمية) بعد تكبير V1 (×1.075)
-function harvHand(L, f, left) { return { x: L.x + f.x * 0.97 + left.x * 0.39, y: L.y + 1.99, z: L.z + f.z * 0.97 + left.z * 0.39 }; }
+// V1.1: الكف اليسار بوضعية خيوط الدمية، محسوب من الموديل والأنيميشن بإحداثيات اللعبة (1.24 لقدام، 0.31 لليسار، 1.86 فوق)
+function harvHand(L, f, left) { return { x: L.x + f.x * 1.24 + left.x * 0.31, y: L.y + 1.86, z: L.z + f.z * 1.24 + left.z * 0.31 }; }
 function harvesterTick(e, st) {
   const dim = e.dimension, L = e.location;
   const face = (loc) => { try { e.teleport(e.location, { facingLocation: { x: loc.x, y: e.location.y + 1, z: loc.z } }); } catch (err) { /* */ } };
@@ -7146,7 +7156,7 @@ function harvesterTick(e, st) {
     later(60, () => { if (valid(e) && !isBurning(e)) setHot(e, 0); });                 // يبقى متفحم شوية بعد ما تنطفي
   }
   if (st.phase === 0) {
-    if (system.currentTick % 10 === 0) HARVEST.ambient(dim, L);
+    if (system.currentTick % 10 === 0) HARVEST.ambient(dim, L, harvFrame(e));
     st.cd -= 2;
     if (st.cd > 0) return;
     const np = nearestPlayer(e, 20);
@@ -7209,11 +7219,12 @@ function harvesterTick(e, st) {
   if (st.skill === "stare") {
     if (tp) face(tp.location);
     try { e.addEffect("slowness", 6, { amplifier: 4, showParticles: false }); } catch (err) { /* */ }
-    const eyeY = L.y + 2.39, ex = { x: L.x + f.x * 0.32, z: L.z + f.z * 0.32 };
-    const eyeA = { x: ex.x + left.x * 0.13, y: eyeY, z: ex.z + left.z * 0.13 }, eyeB = { x: ex.x - left.x * 0.13, y: eyeY - 0.02, z: ex.z - left.z * 0.13 };
+    // V1.1: مكان العيون بوضعية النظرة (الراس مايل ~30 درجة لكتفه اليسار ووجهه عليك)، محسوب من الموديل والأنيميشن
+    // بإحداثيات اللعبة: (لقدام، لليسار، لفوق) بالبلوكات. الشكل المضوي يميل ويا الراس (a = 30، p = 5) حتى يبقى فوق عيونه بالضبط
+    const at = (fw, side, upY) => ({ x: L.x + f.x * fw + left.x * side, y: L.y + upY, z: L.z + f.z * fw + left.z * side });
+    const eyeA = at(0.44, 0.29, 2.29), eyeB = at(0.45, 0.05, 2.39), eyeAt = at(0.45, 0.17, 2.34);
     if (st.t % 4 === 0) HARVEST.stareEyes(dim, eyeA, eyeB);
-    const eyeAt = { x: L.x + f.x * 0.36, y: eyeY, z: L.z + f.z * 0.36 };
-    if (st.t === 2) { cue(dim, "harv_stare", L); st.eyes = growShape(dim, "hollow_eyes", eyeAt, 0.32, 6, 32, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }) }); }   // V1: عيون بنفسجية كبار تضوي قدام وجهه
+    if (st.t === 2) { cue(dim, "harv_stare", L); st.eyes = growShape(dim, "hollow_eyes", eyeAt, 0.32, 6, 32, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }), p: 5, a: 30 }); }   // V1: عيون بنفسجية تضوي فوق عيونه
     else if (st.eyes) moveShape(st.eyes, eyeAt, dirYaw({ x: f.x, y: 0, z: f.z }));
     if (st.t === 12) {
       for (const pl of dim.getPlayers({ location: L, maxDistance: 13 })) {
@@ -7221,7 +7232,7 @@ function harvesterTick(e, st) {
         const v = viewDir(pl);
         if ((v.x * vx + v.y * vy + v.z * vz) / l < 0.55) { notify(pl, "§7You looked away from the Hollow Stare", 25); continue; }
         try { pl.addEffect("slowness", 100, { amplifier: 0, showParticles: false }); } catch (err) { /* */ }
-        HARVEST.stareHit(dim, { x: ex.x, y: eyeY, z: ex.z }, pl.location);
+        HARVEST.stareHit(dim, eyeAt, pl.location);
         notify(pl, "§5The HOLLOW STARE slows you §7(look away next time)", 35);
       }
     }
@@ -7233,7 +7244,9 @@ function harvesterTick(e, st) {
     if (tp && st.t <= 10) face(tp.location);
     try { e.addEffect("slowness", 6, { amplifier: 3, showParticles: false }); } catch (err) { /* */ }
     if (st.t === 2) cue(dim, "harv_reap_raise", L);
-    if (st.t === 6 || st.t === 8) HARVEST.reapCharge(dim, { x: L.x - f.x * 0.2, y: L.y + 3.87, z: L.z - f.z * 0.2 });
+    // V1.1: الطاقة تتجمع على راس المنجل وهو يرتفع فوق راسه (مكانه الحقيقي بالأنيميشن: 0.3 ثم 0.4 ثانية)
+    if (st.t === 6) HARVEST.reapCharge(dim, { x: L.x + f.x * 0.27 - left.x * 0.45, y: L.y + 4.5, z: L.z + f.z * 0.27 - left.z * 0.45 });
+    if (st.t === 8) HARVEST.reapCharge(dim, { x: L.x - f.x * 0.52 - left.x * 0.19, y: L.y + 4.78, z: L.z - f.z * 0.52 - left.z * 0.19 });
     if (st.t === 12) {
       HARVEST.reapSweep(dim, L, { x: f.x, y: 0, z: f.z }, 3.2);
       popShape(dim, "reap_arc", { x: L.x, y: L.y + 1.1, z: L.z }, 1.5, 2.7, 7, { yaw: dirYaw({ x: f.x, y: 0, z: f.z }), ease: "out" });   // V1: هلال الحصدة 3D قدامه

@@ -1104,12 +1104,13 @@ export const __sim = {
       const scythes = stats.items.filter((x) => x === "sh:harvest_scythe").length, scyRate = scythes / NK;
       // 7) سلاح المنجل: الحصدة العريضة، وخيوط الدمية (Lv2) تسحب الأعداء، والحصاد (+50%) على عدو صحته واطية
       clear(); spawnZombies(4, true); player._hp = 2000; stats.soundIds.clear(); hold("sh:harvest_scythe"); const d2 = stats.damage || 0;
+      stats.shapeV = {};
       fire("itemUse", { source: player, itemStack: new ItemStack("sh:harvest_scythe") }); advance(6);
-      const arcDmg = Math.round((stats.damage || 0) - d2), arcSnd = heard("sh.scythe_swing");
+      const arcDmg = Math.round((stats.damage || 0) - d2), arcSnd = heard("sh.scythe_swing"), arcShape = (stats.shapeV[SHH.reap_arc] || 0) > 0;   // V1.1: هلال 3D
       player.setDynamicProperty("sh_wlv", JSON.stringify({ "sh:harvest_scythe": { lv: 2, xp: 0 } }));
       player.isSneaking = true; const k1 = stats.knock || 0, d3 = stats.damage || 0;
       fire("itemUse", { source: player, itemStack: new ItemStack("sh:harvest_scythe") }); advance(20); player.isSneaking = false;
-      const strPulled = (stats.knock || 0) - k1 >= 1 && (stats.damage || 0) > d3;
+      const strPulled = (stats.knock || 0) - k1 >= 1 && (stats.damage || 0) > d3, strShapes = stats.shapeV[SHH.puppet_string] || 0;   // V1.1: خيط 3D لكل عدو
       const low = mkEntity("minecraft:zombie", { x: 0, y: 64, z: 2 }, dims.overworld, 40); low._hp = 6; entities.push(low); stats.actionBars = []; stats.titles = [];
       fire("entityHitEntity", { damagingEntity: player, hitEntity: low }); advance(10);
       const reaped = stats.actionBars.concat(stats.titles || []).some((t) => /Reaped!/.test(t));
@@ -1118,7 +1119,7 @@ export const __sim = {
       console.log(`  نظرة ${stare ? "✔" : "✖"} بطء I بدون ظلام ${stareOk ? "✔" : "✖"} | لف وجهك ينجيك ${stare2 && dodged ? "✔" : "✖"}`);
       console.log(`  المنجل الخاتم ${reap ? "✔" : "✖"} ضرر ${reapDmg} | الساطور مختوم ${blocked ? "✔" : "✖"} | المطرقة حرة ${otherFree ? "✔" : "✖"} | بعد 8 ثواني ينفك ${freed ? "✔" : "✖"}`);
       console.log(`  النار: يتخبط ${burnState ? "✔" : "✖"} يتفحم ${hot ? "✔" : "✖"} بدون مهارات ${!skillWhileBurning ? "✔" : "✖"} يرجع ${recovered ? "✔" : "✖"} ينطفي التفحم ${cooled ? "✔" : "✖"} | المنجل نادر ${(scyRate * 100).toFixed(1)}% (${scythes}/${NK}) ${scyRate > 0.015 && scyRate < 0.1 ? "✔" : "✖"}`);
-      console.log(`  سلاح المنجل: حصدة ضرر ${arcDmg} صوت ${arcSnd ? "✔" : "✖"} | خيوط تسحب ${strPulled ? "✔" : "✖"} | حصاد الضعيف ${reaped ? "✔" : "✖"}`);
+      console.log(`  سلاح المنجل: حصدة ضرر ${arcDmg} صوت ${arcSnd ? "✔" : "✖"} هلال 3D ${arcShape ? "✔" : "✖"} | خيوط تسحب ${strPulled ? "✔" : "✖"} خيوط 3D ×${strShapes} | حصاد الضعيف ${reaped ? "✔" : "✖"}`);
       console.log(`  أشكال المهارات: ${harvShapes.map(([n, c]) => `${n}×${c}`).join(" ")}`);
       for (const [n, c] of harvShapes) if (!c) failures.push(`الحاصد: الشكل ${n} ما انرسم`);
       if (!strings || !yanked || !pulled || !strSnd) failures.push("الحاصد: خيوط الدمية ما سحبت");
@@ -1129,6 +1130,7 @@ export const __sim = {
       if (!burnState || !hot || skillWhileBurning || !recovered || !cooled) failures.push("الحاصد: ضعف النار ما اشتغل");
       if (!(scyRate > 0.015 && scyRate < 0.1)) failures.push("الحاصد: المنجل لازم يسقط بنسبة نادرة (~5%)");
       if (arcDmg <= 0 || !arcSnd || !strPulled || !reaped) failures.push("منجل الحاصد: مهاراته أو الحصاد ما اشتغلت");
+      if (!arcShape || strShapes < 1) failures.push("منجل الحاصد: لازم الحصدة تطلع هلال 3D والخيوط تطلع خيط 3D لكل عدو");
       clear(); player._hp = 20; player._max = 20;
     }
     // v1.39 لعنة القرويين: أمر التجربة يلعن أقرب قروي (سريع ×20)، البقع تكبر 1→2→3، يتشنج ويتحول لوحش برتبة، وقتله قبل التحول ينهي اللعنة
