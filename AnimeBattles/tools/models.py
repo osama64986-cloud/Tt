@@ -934,7 +934,7 @@ def head_paint(hair, iris, brows=True, style="goku", blindfold=False):
         hair_rows = h * 7 // 8 if face == "south" else h * 6 // 16
         for y in range(hair_rows):
             for x in range(w):
-                px[x, y] = hr[2 if (x + y) % 4 else 1] + (255,)
+                px[x, y] = hr[2] + (255,)
         if face in ("east", "west"):
             front = w - 1 if face == "east" else 0
             for y in range(hair_rows, h * 10 // 16):  # sideburn
@@ -1023,7 +1023,7 @@ def band(faces, y0, y1, colour):
             a, b = 0, h
         for y in range(a, b):
             for x in range(w):
-                _put(px, w, h, x, y, rp[3] if y == a else rp[2 if (x + y) % 4 else 1])
+                _put(px, w, h, x, y, rp[3] if y == a else rp[2])
     return f
 
 
@@ -1868,12 +1868,10 @@ def face32(px, W, H, spec, hair, iris, skin):
                 c = sr[1]
             if y >= 30 and 5 < x < 26:
                 c = sr[1]
-            if _hash(x, y, 9) > 0.86:
-                c = sr[3]
             put(x, y, c)
     for y in range(0, 12):
         for x in range(32):
-            put(x, y, hr[2] if (x + y) % 5 else hr[1])
+            put(x, y, hr[2])
     for x in range(32):
         put(x, 12, sr[1])
         if x % 4 in (1, 2):
@@ -2071,7 +2069,7 @@ def head_paint(hair, iris, brows=True, style="goku", blindfold=False):  # noqa: 
         hair_rows = h * 7 // 8 if face == "south" else h * 6 // 16
         for y in range(hair_rows):
             for x in range(w):
-                px[x, y] = hr[2 if (x + y) % 4 else 1] + (255,)
+                px[x, y] = hr[2] + (255,)
         if face in ("east", "west"):
             front = w - 1 if face == "east" else 0
             for y in range(hair_rows, h * 10 // 16):
@@ -2401,3 +2399,248 @@ def luffy_body(m, form):  # noqa: F811
         for cube in m.cubes:
             if cube["bone"] == "body" and cube["size"][1] >= 12 and cube["frm"][1] <= 12:
                 cube["paint"] = layered((236, 128, 118), [x_scar, torso_flames])
+
+
+# ==================================================================================
+# CLEAN CEL PIXEL ART (final art style)
+# No random noise. One fixed key light (front-top-left), 5 hand-picked tones per
+# material, deliberate ambient occlusion at the bottom of each part, rim light on top,
+# anime shine bands on hair and crisp dark separations between hair tufts.
+# ==================================================================================
+def tones(base):
+    return [
+        mix(dark(base, 0.48), (22, 18, 60), 0.18),   # 0 deep
+        mix(dark(base, 0.74), (34, 28, 86), 0.08),   # 1 shadow
+        tuple(base),                                  # 2 base
+        mix(light(base, 0.2), (255, 244, 220), 0.06),  # 3 light
+        mix(light(base, 0.46), (255, 248, 230), 0.1),  # 4 shine
+    ]
+
+
+FACE_TONE = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}
+
+
+def pixel_mat(img, base, face, noise=0.0, vgrad=1.0, ao=True, seed=0):  # noqa: F811
+    w, h = img.size
+    px = img.load()
+    t = tones(base)
+    main = FACE_TONE[face]
+    for y in range(h):
+        for x in range(w):
+            k = main
+            if face not in ("up", "down") and h >= 6:
+                if y >= h - max(1, h // 9):
+                    k = max(0, main - 1)          # contact shadow at the bottom of the part
+                elif y == 0 and face in ("north", "west"):
+                    k = min(4, main + 1)          # rim light
+            px[x, y] = t[k] + (255,)
+
+
+def hair_paint(base):  # noqa: F811
+    t = tones(base)
+    dark_hair = sum(base) < 200
+    if dark_hair:  # black hair needs blue-grey lights to read in game
+        t = [(8, 8, 14), (20, 20, 30), tuple(base), (58, 62, 86), (104, 112, 146)]
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        main = {"up": 3, "north": 2, "west": 3, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            v = 1 - y / max(1, h - 1)  # 1 at the tip
+            for x in range(w):
+                k = main
+                if face not in ("up", "down"):
+                    if v > 0.78:
+                        k += 1                      # tips catch the light
+                    elif v < 0.22:
+                        k -= 1                      # roots sit in shadow
+                    if w >= 6 and x % 4 == 0 and 0.15 < v < 0.7:
+                        k -= 1                      # strand separation
+                    if face in ("north", "west") and 0.5 < v < 0.62 and x % 4 in (1, 2):
+                        k = 4                       # anime shine band
+                    if (x == 0 or x == w - 1) and face in ("east", "south"):
+                        k = 0                       # crisp edge between tufts
+                px[x, y] = t[max(0, min(4, k))] + (255,)
+    return p
+
+
+_shell_paint_masked = shell_paint
+
+
+def shell_paint(base, **kw):  # noqa: F811
+    inner = _shell_paint_masked(base, **kw)
+    t = tones(base)
+    if sum(base) < 200:
+        t = [(8, 8, 14), (20, 20, 30), tuple(base), (58, 62, 86), (104, 112, 146)]
+
+    def p(face, img):
+        inner(face, img)
+        px = img.load()
+        w, h = img.size
+        main = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            for x in range(w):
+                if px[x, y][3] == 0:
+                    continue
+                k = main
+                if face == "up" and (x + y) % 9 == 0:
+                    k = 4
+                below_empty = y + 1 >= h or px[x, y + 1][3] == 0
+                if face != "up" and below_empty:
+                    k = 0                           # dark line along the hairline / lock tips
+                elif face != "up" and w >= 8 and x % 5 == 0:
+                    k = max(0, main - 1)
+                px[x, y] = t[k] + (255,)
+    return p
+
+
+# ---------------------------------------------------------------- clean art, pass 2
+DARK_HAIR = [(10, 10, 14), (24, 24, 32), (40, 40, 52), (70, 72, 92), (112, 116, 142)]
+
+
+def hair_tones(base):
+    return DARK_HAIR if sum(base) < 200 else tones(base)
+
+
+def pixel_mat(img, base, face, noise=0.0, vgrad=1.0, ao=True, seed=0):  # noqa: F811
+    """Clean tones + bevel: darker outer columns give each part a rounded, sculpted read."""
+    w, h = img.size
+    px = img.load()
+    t = tones(base)
+    main = FACE_TONE[face]
+    for y in range(h):
+        for x in range(w):
+            k = main
+            if face not in ("up", "down"):
+                if h >= 6 and y >= h - max(1, h // 9):
+                    k -= 1
+                elif y == 0 and face in ("north", "west") and h >= 6:
+                    k += 1
+                if w >= 8 and (x == 0 or x == w - 1):
+                    k -= 1
+                elif w >= 12 and face in ("north", "west") and x in (2, 3) and y < h * 0.6:
+                    k += 1                          # soft highlight down the lit side
+            px[x, y] = t[max(0, min(4, k))] + (255,)
+
+
+def hair_paint(base):  # noqa: F811
+    t = hair_tones(base)
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        main = {"up": 3, "north": 2, "west": 3, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            v = 1 - y / max(1, h - 1)
+            for x in range(w):
+                k = main
+                if face not in ("up", "down"):
+                    if v > 0.8:
+                        k += 1
+                    elif v < 0.25:
+                        k -= 1
+                    if face in ("north", "west") and w >= 4 and 0.52 < v < 0.64 and 0 < x < w - 1:
+                        k = 4
+                    if face == "north" and x == w - 1:
+                        k = min(k, 1)
+                px[x, y] = t[max(0, min(4, k))] + (255,)
+    return p
+
+
+_shell_paint_masked2 = _shell_paint_masked
+
+
+def shell_paint(base, **kw):  # noqa: F811
+    inner = _shell_paint_masked2(base, **kw)
+    t = hair_tones(base)
+
+    def p(face, img):
+        inner(face, img)
+        px = img.load()
+        w, h = img.size
+        main = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            for x in range(w):
+                if px[x, y][3] == 0:
+                    continue
+                k = main
+                below_empty = y + 1 >= h or px[x, y + 1][3] == 0
+                if face != "up" and below_empty:
+                    k = 0
+                elif face == "up" and 0.35 < y / h < 0.45:
+                    k = 4
+                px[x, y] = t[k] + (255,)
+    return p
+
+
+# flatter, sharper anime hair blades
+def _strand_blade(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, bone="hair", thick=None):
+    if bone == "hair":
+        width *= 1.15
+        thick = thick or 0.62
+    return _strand_orig(self, base, d, length, width, paint, bend, segs, bone, thick)
+
+
+Model.strand = _strand_blade
+
+
+# ---------------------------------------------------------------- smooth tapered hair blades
+def _strand_smooth(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, bone="hair", thick=None):
+    if bone != "hair":
+        return _strand_orig(self, base, d, length, width, paint, bend, segs, bone, thick)
+    n = 6 if length >= 5 else 4 if length >= 3 else 3
+    width *= 1.15
+    thick = thick or 0.62
+    p = list(base)
+    d = norm(d)
+    step = length / n
+    seg_len = step * 1.7
+    bscale = 3.0 / n
+    for i in range(n):
+        f = i / (n - 1)
+        w = max(0.5, round(width * (1 - 0.8 * f) * 4) / 4)
+        tk = max(0.5, round(thick * w * 4) / 4)
+        L = max(0.75, round(seg_len * 4) / 4)
+        ax, az = math.degrees(math.asin(clampf(d[2]))), math.degrees(math.atan2(-d[0], d[1]))
+        self.box(bone, [p[0] - w / 2, p[1], p[2] - tk / 2], [w, L, tk], paint,
+                 rot=[round(ax, 2), 0, round(az, 2)], pivot=[round(p[0], 3), round(p[1], 3), round(p[2], 3)])
+        p = [p[k] + d[k] * step for k in range(3)]
+        d = norm([d[k] + bend[k] * bscale for k in range(3)])
+
+
+Model.strand = _strand_smooth
+
+
+def hair_paint(base):  # noqa: F811
+    t = hair_tones(base)
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        main = {"up": 3, "north": 2, "west": 3, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            for x in range(w):
+                k = main
+                if face == "north" and x == w - 1 and w >= 3:
+                    k = min(k, 1)
+                if face == "west" and x == 0 and w >= 3:
+                    k = 4
+                px[x, y] = t[max(0, min(4, k))] + (255,)
+    return p
+
+
+def yuji_hair(m, c, style):  # noqa: F811
+    hp = hair_paint(c)
+    if style == "sukuna":  # swept up and back, spikier
+        for x, z in ((-2.4, -2.2), (0, -2.6), (2.4, -2.2), (-3.4, 0.4), (3.4, 0.4), (-1.6, 2), (1.6, 2)):
+            m.strand([x, 31.8, z], [x * 0.14, 1, 0.75], 5.2, 3.8, hp, bend=(0, -0.12, 0.08))
+        return
+    # Itadori: short spiky hair standing up, parted spikes over the forehead
+    for x, z, dx, dz in ((-2.4, -2.4, -0.35, -0.35), (0, -2.7, 0.0, -0.4), (2.4, -2.4, 0.35, -0.35),
+                         (-3.4, 0, -0.55, 0.05), (3.4, 0, 0.55, 0.05), (-1.8, 1.4, -0.25, 0.4), (1.8, 1.4, 0.25, 0.4), (0, 2.8, 0, 0.6)):
+        m.strand([x, 31.8, z], [dx, 1, dz], 4.6, 3.6, hp, bend=(dx * 0.1, -0.05, dz * 0.1))
+    for x in (-1.8, 1.8):
+        m.strand([x, 31.9, -4.0], [x * 0.12, -1, -0.9], 2.4, 2.8, hp)
+    if style == "yuji_final":
+        m.mirror_strand([3.9, 30.6, -1.2], [0.7, 0.35, -0.1], 3.4, 2.8, hp)
