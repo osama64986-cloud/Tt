@@ -610,6 +610,273 @@
      ]
     }
    }
+  },
+  "animation.ab.pistol": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -90,
+      0,
+      0
+     ],
+     "scale": [
+      1,
+      7,
+      1
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -30,
+      0,
+      20
+     ]
+    },
+    "body": {
+     "rotation": [
+      0,
+      -20,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.gatling": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      "-90 + math.sin(query.life_time * 2400.0) * 12",
+      "math.sin(query.life_time * 2400.0) * 25",
+      0
+     ],
+     "scale": [
+      1,
+      "4.5 + math.sin(query.life_time * 2400.0) * 1.5",
+      1
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      "-90 - math.sin(query.life_time * 2400.0) * 12",
+      "-math.sin(query.life_time * 2400.0) * 25",
+      0
+     ],
+     "scale": [
+      1,
+      "4.5 - math.sin(query.life_time * 2400.0) * 1.5",
+      1
+     ]
+    }
+   }
+  },
+  "animation.ab.bazooka": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -90,
+      -12,
+      0
+     ],
+     "scale": [
+      1,
+      5,
+      1
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -90,
+      12,
+      0
+     ],
+     "scale": [
+      1,
+      5,
+      1
+     ]
+    }
+   }
+  },
+  "animation.ab.giant_fist": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -90,
+      0,
+      0
+     ],
+     "scale": [
+      4.2,
+      4.2,
+      4.2
+     ]
+    },
+    "body": {
+     "rotation": [
+      0,
+      -25,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.whip": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightLeg": {
+     "rotation": [
+      -80,
+      0,
+      70
+     ],
+     "scale": [
+      1,
+      6,
+      1
+     ]
+    },
+    "body": {
+     "rotation": [
+      0,
+      -30,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.giant_up": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -175,
+      0,
+      0
+     ],
+     "scale": [
+      6,
+      6,
+      6
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -40,
+      0,
+      25
+     ]
+    }
+   }
+  },
+  "animation.ab.slash": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -85,
+      65,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -20,
+      0,
+      25
+     ]
+    },
+    "body": {
+     "rotation": [
+      0,
+      -35,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.fuga": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "leftArm": {
+     "rotation": [
+      -90,
+      0,
+      0
+     ]
+    },
+    "rightArm": {
+     "rotation": [
+      -90,
+      -55,
+      0
+     ]
+    },
+    "body": {
+     "rotation": [
+      0,
+      30,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.handsign": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -75,
+      35,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -75,
+      -35,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.vfx_slash": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "rotation": [
+      "query.property('ab:pitch')",
+      0,
+      "query.property('ab:len') * 4.5"
+     ]
+    },
+    "blade": {
+     "scale": [
+      "query.property('ab:size')",
+      "query.property('ab:size')",
+      "query.property('ab:size')"
+     ]
+    },
+    "outer_glow": {
+     "scale": [
+      "query.property('ab:size') * (1.0 + math.sin(query.life_time * 2000.0) * 0.1)",
+      "query.property('ab:size')",
+      "query.property('ab:size')"
+     ]
+    }
+   }
   }
  }
 }

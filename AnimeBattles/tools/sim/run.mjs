@@ -5,7 +5,7 @@ const origWarn = console.warn;
 console.warn = (...a) => { stats.errors.push(a.join(" ")); origWarn(...a); };
 await import("./main.mjs");
 
-const HP = { "ab:goku": 1000, "ab:vegeta": 950, "ab:gojo": 600 };
+const HP = { "ab:goku": 1000, "ab:vegeta": 950, "ab:gojo": 600, "ab:yuji": 300, "ab:yuji_final": 550, "ab:yuji_sukuna": 600, "ab:luffy": 950 };
 const fighter = (id, x) => new Entity(id, { x, y: 0, z: 0 }, { families: ["anime_fighter", "mob"], hp: HP[id] });
 
 const player = new Entity("minecraft:player", { x: 0, y: 0, z: -10 }, { name: "Osama" });
@@ -27,7 +27,7 @@ function battle(a, b, ticks = 6000) {
       const dx = other.location.x - me.location.x;
       if (Math.abs(dx) > 2) me.location.x += Math.sign(dx) * 0.15;
       else if (t % 20 === 0) {
-        const dmg = { "ab:goku": [14, 20, 27, 40, 55], "ab:vegeta": [13, 19, 37, 50], "ab:gojo": [10, 13] }[me.typeId][me.props["ab:form"]];
+        const dmg = { "ab:goku": [14, 20, 27, 40, 55], "ab:vegeta": [13, 19, 37, 50], "ab:gojo": [10, 13], "ab:yuji": [8], "ab:yuji_final": [16], "ab:yuji_sukuna": [18], "ab:luffy": [10, 16, 22, 42, 40, 36, 58] }[me.typeId][me.props["ab:form"]];
         const ev = { hurtEntity: other, damage: dmg, cancel: false, damageSource: { cause: "entityAttack", damagingEntity: me } };
         fire("beforeHurt", ev);
         if (!ev.cancel) { other.hp -= ev.damage; if (other.hp <= 0) other.die(); }
@@ -41,9 +41,9 @@ function battle(a, b, ticks = 6000) {
 }
 
 const results = {};
-for (const [a, b] of [["ab:goku", "ab:gojo"], ["ab:vegeta", "ab:gojo"], ["ab:goku", "ab:vegeta"]]) {
+for (const [a, b] of [["ab:goku", "ab:gojo"], ["ab:vegeta", "ab:gojo"], ["ab:goku", "ab:vegeta"], ["ab:gojo", "ab:yuji_sukuna"], ["ab:yuji_sukuna", "ab:yuji_final"], ["ab:yuji_final", "ab:yuji"], ["ab:luffy", "ab:gojo"], ["ab:goku", "ab:luffy"], ["ab:luffy", "ab:yuji_sukuna"]]) {
   const wins = {};
-  for (let i = 0; i < 10; i++) { const r = battle(a, b); wins[r.winner] = (wins[r.winner] ?? 0) + 1; if (i === 0) console.log(`${a} vs ${b}:`, r); }
+  for (let i = 0; i < (process.env.ONLY && !(a + b).includes(process.env.ONLY) ? 0 : 10); i++) { const r = battle(a, b); wins[r.winner] = (wins[r.winner] ?? 0) + 1; if (i === 0) console.log(`${a} vs ${b}:`, r); }
   results[`${a} vs ${b}`] = wins;
 }
 console.log("wins over 10 fights each:", results);

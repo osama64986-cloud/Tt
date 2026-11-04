@@ -145,6 +145,15 @@ FIGHTERS = {
     },
 }
 
+FIGHTERS.update({
+    "yuji": {"hp": 300, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
+    "yuji_final": {"hp": 550, "forms": [(16, 0.38)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
+    "yuji_sukuna": {"hp": 600, "forms": [(18, 0.37)], "tex": ["base"], "geo": ["base"], "egg": ("#10080c", "#e28c96")},
+    "luffy": {"hp": 950, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
+              "tex": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"], "geo": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
+              "egg": ("#ce2226", "#eece68"), "gigant": True},
+})
+
 TEAM_FILTER = {
     "any_of": [
         {"all_of": [{"test": "has_tag", "subject": "self", "value": "ab_red"},
@@ -185,6 +194,14 @@ def behavior_entity(name, cfg):
             {"add": {"component_groups": [f"ab:form_{i}"]}},
             {"set_property": {"ab:form": i}},
         ]}
+    comps_scale = {"minecraft:scale": {"value": cfg.get("scale", 1.0)}}
+    if cfg.get("gigant"):
+        groups["ab:normal_size"] = {"minecraft:scale": {"value": 1.0}}
+        groups["ab:gigant"] = {"minecraft:scale": {"value": 2.4}}
+        events["minecraft:entity_spawned"] = {"add": {"component_groups": ["ab:form_0", "ab:normal_size"]}}
+        events["ab:gigant_on"] = {"sequence": [{"remove": {"component_groups": ["ab:normal_size"]}}, {"add": {"component_groups": ["ab:gigant"]}}]}
+        events["ab:gigant_off"] = {"sequence": [{"remove": {"component_groups": ["ab:gigant"]}}, {"add": {"component_groups": ["ab:normal_size"]}}]}
+        comps_scale = {}
     return {
         "format_version": "1.21.60",
         "minecraft:entity": {
@@ -194,14 +211,14 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 12], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 24], "default": 0, "client_sync": True},
                 },
             },
             "component_groups": groups,
             "components": {
                 "minecraft:type_family": {"family": ["anime_fighter", f"ab_{name}", "mob"]},
                 "minecraft:health": {"value": cfg["hp"], "max": cfg["hp"]},
-                "minecraft:scale": {"value": cfg.get("scale", 1.0)},
+                **comps_scale,
                 "minecraft:collision_box": {"width": 0.6, "height": 1.9},
                 "minecraft:physics": {},
                 "minecraft:pushable": {"is_pushable": True, "is_pushable_by_piston": True},
@@ -227,6 +244,26 @@ def behavior_entity(name, cfg):
     }
 
 
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign"]  # poses 13..21
+
+
+def extra_animations():
+    st = "math.sin(query.life_time * 2400.0)"
+    A = {
+        "pistol": {"rightArm": {"rotation": [-90, 0, 0], "scale": [1, 7, 1]}, "leftArm": {"rotation": [-30, 0, 20]}, "body": {"rotation": [0, -20, 0]}},
+        "gatling": {"rightArm": {"rotation": [f"-90 + {st} * 12", f"{st} * 25", 0], "scale": [1, f"4.5 + {st} * 1.5", 1]},
+                    "leftArm": {"rotation": [f"-90 - {st} * 12", f"-{st} * 25", 0], "scale": [1, f"4.5 - {st} * 1.5", 1]}},
+        "bazooka": {"rightArm": {"rotation": [-90, -12, 0], "scale": [1, 5, 1]}, "leftArm": {"rotation": [-90, 12, 0], "scale": [1, 5, 1]}},
+        "giant_fist": {"rightArm": {"rotation": [-90, 0, 0], "scale": [4.2, 4.2, 4.2]}, "body": {"rotation": [0, -25, 0]}},
+        "whip": {"rightLeg": {"rotation": [-80, 0, 70], "scale": [1, 6, 1]}, "body": {"rotation": [0, -30, 0]}},
+        "giant_up": {"rightArm": {"rotation": [-175, 0, 0], "scale": [6, 6, 6]}, "leftArm": {"rotation": [-40, 0, 25]}},
+        "slash": {"rightArm": {"rotation": [-85, 65, 0]}, "leftArm": {"rotation": [-20, 0, 25]}, "body": {"rotation": [0, -35, 0]}},
+        "fuga": {"leftArm": {"rotation": [-90, 0, 0]}, "rightArm": {"rotation": [-90, -55, 0]}, "body": {"rotation": [0, 30, 0]}},
+        "handsign": {"rightArm": {"rotation": [-75, 35, 0]}, "leftArm": {"rotation": [-75, -35, 0]}},
+    }
+    return {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
+
+
 def client_entity(name, cfg):
     textures = {t: f"textures/entity/{name}/{t}" for t in dict.fromkeys(cfg["tex"])}
     geometry = {g: f"geometry.ab.{name}_{g}" for g in dict.fromkeys(cfg["geo"])}
@@ -250,6 +287,7 @@ def client_entity(name, cfg):
                     "jab_r": "animation.ab.jab_r", "jab_l": "animation.ab.jab_l", "kick": "animation.ab.kick",
                     "round": "animation.ab.round", "upper": "animation.ab.upper", "knee": "animation.ab.knee",
                     "rush": "animation.ab.rush", "elbow": "animation.ab.elbow",
+                    **{k: f"animation.ab.{k}" for k in EXTRA_POSES},
                 },
                 "scripts": {"animate": [
                     "look", "move", "idle",
@@ -259,7 +297,7 @@ def client_entity(name, cfg):
                     {"pose_raise": "query.property('ab:pose') == 3"},
                     {"pose_point": "query.property('ab:pose') == 4"},
                 ] + [{k: f"query.property('ab:pose') == {i}"} for i, k in
-                     enumerate(["jab_r", "jab_l", "kick", "round", "upper", "knee", "rush", "elbow"], start=5)]},
+                     enumerate(["jab_r", "jab_l", "kick", "round", "upper", "knee", "rush", "elbow"] + EXTRA_POSES, start=5)]},
                 "render_controllers": [f"controller.render.ab.{name}"],
                 "spawn_egg": {"base_color": cfg["egg"][0], "overlay_color": cfg["egg"][1]},
             }
@@ -283,6 +321,10 @@ def render_controllers():
 
 
 def build_entities():
+    an_path = os.path.join(RP, "animations", "ab.animation.json")
+    an = json.load(open(an_path))
+    an["animations"].update(extra_animations())
+    json.dump(an, open(an_path, "w"), indent=1)
     for name, cfg in FIGHTERS.items():
         with open(os.path.join(BP, "entities", f"{name}.json"), "w") as f:
             json.dump(behavior_entity(name, cfg), f, indent=1)
@@ -305,6 +347,10 @@ VFX_COLORS = [  # (core, edge) per colour slot used by the script
     ((255, 255, 255), (110, 200, 255)),  # 8 Spirit Bomb
     ((255, 255, 240), (255, 200, 40)),   # 9 gold
     ((255, 255, 255), (220, 230, 255)),  # 10 white/silver
+    ((255, 240, 200), (255, 110, 20)),   # 11 fire (Fuga)
+    ((255, 200, 200), (170, 0, 20)),     # 12 blood
+    ((255, 120, 120), (30, 0, 6)),       # 13 black-red (haki / black flash / cleave)
+    ((255, 255, 255), (255, 240, 200)),  # 14 Nika white
 ]
 
 
@@ -393,7 +439,22 @@ def vfx_geometry():
             ]},
         ],
     }
-    return {"format_version": "1.12.0", "minecraft:geometry": [beam, orb]}
+    slash = {
+        "description": {"identifier": "geometry.ab.vfx_slash", "texture_width": 32, "texture_height": 32,
+                        "visible_bounds_width": 64, "visible_bounds_height": 64, "visible_bounds_offset": [0, 0, 0]},
+        "bones": [
+            {"name": "root", "pivot": [0, 0, 0]},
+            {"name": "blade", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-10, -0.3, -1.5], "size": [20, 0.6, 3], "uv": uv},
+                {"origin": [-16, -0.25, -1], "size": [8, 0.5, 2], "uv": uv, "rotation": [0, -18, 0], "pivot": [-9, 0, 0]},
+                {"origin": [8, -0.25, -1], "size": [8, 0.5, 2], "uv": uv, "rotation": [0, 18, 0], "pivot": [9, 0, 0]},
+            ]},
+            {"name": "outer_glow", "parent": "root", "pivot": [0, 0, 0], "cubes": [
+                {"origin": [-12, -0.6, -2.5], "size": [24, 1.2, 5], "uv": uv},
+            ]},
+        ],
+    }
+    return {"format_version": "1.12.0", "minecraft:geometry": [beam, orb, slash]}
 
 
 def build_vfx():
@@ -406,7 +467,7 @@ def build_vfx():
             "description": {
                 "identifier": "ab:vfx", "is_spawnable": False, "is_summonable": True,
                 "properties": {
-                    "ab:kind": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
+                    "ab:kind": {"type": "int", "range": [0, 2], "default": 0, "client_sync": True},
                     "ab:color": {"type": "int", "range": [0, len(VFX_COLORS) - 1], "default": 0, "client_sync": True},
                     "ab:len": {"type": "float", "range": [0, 80], "default": 0, "client_sync": True},
                     "ab:size": {"type": "float", "range": [0, 40], "default": 1, "client_sync": True},
@@ -434,9 +495,10 @@ def build_vfx():
                 "identifier": "ab:vfx",
                 "materials": {"glow": "entity_alphablend", "blend": "entity_alphablend"},
                 "textures": {f"c{i}": f"textures/entity/vfx/vfx_{i}" for i in range(len(VFX_COLORS))},
-                "geometry": {"beam": "geometry.ab.vfx_beam", "orb": "geometry.ab.vfx_orb"},
-                "animations": {"beam": "animation.ab.vfx_beam", "orb": "animation.ab.vfx_orb"},
-                "scripts": {"animate": [{"beam": "query.property('ab:kind') == 0"}, {"orb": "query.property('ab:kind') == 1"}]},
+                "geometry": {"beam": "geometry.ab.vfx_beam", "orb": "geometry.ab.vfx_orb", "slash": "geometry.ab.vfx_slash"},
+                "animations": {"beam": "animation.ab.vfx_beam", "orb": "animation.ab.vfx_orb", "slash": "animation.ab.vfx_slash"},
+                "scripts": {"animate": [{"beam": "query.property('ab:kind') == 0"}, {"orb": "query.property('ab:kind') == 1"},
+                                        {"slash": "query.property('ab:kind') == 2"}]},
                 "render_controllers": ["controller.render.ab.vfx"],
             }
         },
@@ -448,7 +510,7 @@ def build_vfx():
     rc["render_controllers"]["controller.render.ab.vfx"] = {
         "arrays": {
             "textures": {"Array.c": [f"Texture.c{i}" for i in range(len(VFX_COLORS))]},
-            "geometries": {"Array.g": ["Geometry.beam", "Geometry.orb"]},
+            "geometries": {"Array.g": ["Geometry.beam", "Geometry.orb", "Geometry.slash"]},
         },
         "geometry": "Array.g[query.property('ab:kind')]",
         "materials": [{"*": "Material.glow"}, {"outer*": "Material.blend"}],
@@ -466,6 +528,11 @@ def build_vfx():
         "spiral": {"scale": [W, W, L], "rotation": [0, 0, "-query.life_time * 900.0"]},
         "muzzle": {"scale": [f"{W} * (1.0 + math.sin(query.life_time * 1800.0) * 0.12)"] * 3,
                    "rotation": [0, "query.life_time * 500.0", 0]},
+    }}
+    an["animations"]["animation.ab.vfx_slash"] = {"loop": True, "bones": {
+        "root": {"rotation": ["query.property('ab:pitch')", 0, "query.property('ab:len') * 4.5"]},
+        "blade": {"scale": [W, W, W]},
+        "outer_glow": {"scale": [f"{W} * (1.0 + math.sin(query.life_time * 2000.0) * 0.1)", W, W]},
     }}
     an["animations"]["animation.ab.vfx_orb"] = {"loop": True, "bones": {
         "core": {"scale": [f"{W} * 0.9"] * 3, "rotation": ["query.life_time * 300.0", "query.life_time * 420.0", 0]},

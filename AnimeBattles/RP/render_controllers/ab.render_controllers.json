@@ -86,6 +86,110 @@
     "Array.skins[query.property('ab:form')]"
    ]
   },
+  "controller.render.ab.yuji": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.yuji_final": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.yuji_sukuna": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.luffy": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.g2",
+      "Texture.g3",
+      "Texture.g4b",
+      "Texture.g4s",
+      "Texture.g4t",
+      "Texture.g5"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.g2",
+      "Geometry.g3",
+      "Geometry.g4b",
+      "Geometry.g4s",
+      "Geometry.g4t",
+      "Geometry.g5"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
   "controller.render.ab.vfx": {
    "arrays": {
     "textures": {
@@ -100,13 +204,18 @@
       "Texture.c7",
       "Texture.c8",
       "Texture.c9",
-      "Texture.c10"
+      "Texture.c10",
+      "Texture.c11",
+      "Texture.c12",
+      "Texture.c13",
+      "Texture.c14"
      ]
     },
     "geometries": {
      "Array.g": [
       "Geometry.beam",
-      "Geometry.orb"
+      "Geometry.orb",
+      "Geometry.slash"
      ]
     }
    },

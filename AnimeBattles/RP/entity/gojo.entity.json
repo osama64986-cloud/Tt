@@ -30,7 +30,16 @@
     "upper": "animation.ab.upper",
     "knee": "animation.ab.knee",
     "rush": "animation.ab.rush",
-    "elbow": "animation.ab.elbow"
+    "elbow": "animation.ab.elbow",
+    "pistol": "animation.ab.pistol",
+    "gatling": "animation.ab.gatling",
+    "bazooka": "animation.ab.bazooka",
+    "giant_fist": "animation.ab.giant_fist",
+    "whip": "animation.ab.whip",
+    "giant_up": "animation.ab.giant_up",
+    "slash": "animation.ab.slash",
+    "fuga": "animation.ab.fuga",
+    "handsign": "animation.ab.handsign"
    },
    "scripts": {
     "animate": [
@@ -75,6 +84,33 @@
      },
      {
       "elbow": "query.property('ab:pose') == 12"
+     },
+     {
+      "pistol": "query.property('ab:pose') == 13"
+     },
+     {
+      "gatling": "query.property('ab:pose') == 14"
+     },
+     {
+      "bazooka": "query.property('ab:pose') == 15"
+     },
+     {
+      "giant_fist": "query.property('ab:pose') == 16"
+     },
+     {
+      "whip": "query.property('ab:pose') == 17"
+     },
+     {
+      "giant_up": "query.property('ab:pose') == 18"
+     },
+     {
+      "slash": "query.property('ab:pose') == 19"
+     },
+     {
+      "fuga": "query.property('ab:pose') == 20"
+     },
+     {
+      "handsign": "query.property('ab:pose') == 21"
      }
     ]
    },

@@ -110,7 +110,7 @@ export class Entity {
   getProperty(k) { this.#check(); return this.props[k]; }
   setProperty(k, v) {
     this.#check();
-    const R = { "ab:pose": [0, 12], "ab:kind": [0, 1], "ab:color": [0, 10], "ab:len": [0, 80], "ab:size": [0, 40], "ab:pitch": [-90, 90] }[k];
+    const R = { "ab:pose": [0, 24], "ab:kind": [0, 2], "ab:color": [0, 14], "ab:len": [0, 80], "ab:size": [0, 40], "ab:pitch": [-90, 90] }[k];
     if (R && (typeof v !== "number" || Number.isNaN(v) || v < R[0] || v > R[1])) throw new Error(`property ${k} out of range: ${v}`);
     this.props[k] = v;
   }

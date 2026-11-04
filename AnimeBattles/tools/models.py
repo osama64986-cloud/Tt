@@ -1511,7 +1511,7 @@ goku_hair_base = _hair3d(goku_hair_base_3d, hairline=29.2)
 goku_hair_ssj = _hair3d(goku_hair_ssj_3d, hairline=29.3)
 goku_hair_ssj3 = _hair3d(goku_hair_ssj3_3d, hairline=29.2, back_to=24.2)
 vegeta_hair = _hair3d(vegeta_hair_3d, hairline=30.0, peak=True, teeth=0.4)
-gojo_hair_up = _hair3d(gojo_hair_up_3d, hairline=29.6, sideburn=False)
+gojo_hair_up = _hair3d(gojo_hair_up_3d, hairline=28.9, sideburn=False)
 gojo_hair_down = _hair3d(gojo_hair_down_3d, hairline=28.8)
 
 # Vegeta: natural face, only one mouth corner turned down (proud, not angry)
@@ -1545,3 +1545,272 @@ def goku_hair_ssj3_v2(m, c):
 
 
 goku_hair_ssj3 = _hair3d(goku_hair_ssj3_v2, hairline=29.2, back_to=24.0)
+
+
+# ==================================================================================
+# NEW CHARACTERS: Itadori Yuji (3 versions) and Monkey D. Luffy (all gears)
+# ==================================================================================
+EXTRA_PAL = {"t": (16, 12, 16), "r": (200, 30, 40), "s": (196, 120, 108), "R": (230, 40, 40), "y": (250, 210, 60)}
+
+
+def head_paint2(hair, iris, style, brows=True, blindfold=False):
+    """head_paint + extra palette keys (tattoos t, extra eyes r, scars s, red eyes R)."""
+    base = head_paint(hair, iris, brows, "goku", blindfold)
+    grid = FACES[style]
+    hr = ramp(hair)
+    sr = ramp(SKIN_NOW())
+    pal = {
+        ".": sr[2], ",": sr[1], "h": hr[2], "H": hr[0], "b": dark(hair if sum(hair) > 360 else (24, 20, 26), 0.85), "k": (18, 12, 14),
+        "w": (250, 250, 250), "i": iris or (60, 60, 60), "I": dark(iris or (60, 60, 60), 0.55), "p": (12, 10, 14),
+        "g": (190, 190, 205), "W": (246, 246, 252), "n": sr[1], "m": (140, 70, 62), "x": (18, 18, 24), "X": (44, 44, 58),
+        **EXTRA_PAL,
+    }
+
+    def p(face, img):
+        if face != "north":
+            base(face, img)
+            return
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            row = grid[y * 16 // h]
+            for x in range(w):
+                ch = row[x * 16 // w]
+                c = pal[ch]
+                if ch == "." and _hash(x, y, 3) > 0.82:
+                    c = sr[3]
+                px[x, y] = c + (255,)
+    return p
+
+
+def SKIN_NOW():
+    return SKIN
+
+
+FACES.update({
+    "yuji": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhh..hhhhhhh", ",,,,,,,..,,,,,,,",
+        ".bbb........bbb.", "................",
+        ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
+        "..ss........ss..", ".......n........", "......mmmm......", "................", ",,............,,",
+    ],
+    "yuji_final": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhh..hhhhhhh", ",,,,,,,..,,,,,,,",
+        ".bb..........bb.", "..bbbb....bbbb..",
+        ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
+        "..ss.......s.ss.", ".ss....n...s....", "......mmmm......", "................", ",,............,,",
+    ],
+    "sukuna": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhhhhhhhhhhh", ",,,,,tt..tt,,,,,",
+        ".bbb..t..t..bbb.", "..bbb......bbb..",
+        ".kkkkk....kkkkk.", ".wwRRp....pRRww.", "..kkkk....kkkk..",
+        "..rr........rr..", ".tt....n.....tt.", "......mmmmm.....", ".tt...m...m...t.", ",,t..........t,,",
+    ],
+    "luffy": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hHhhhHhhhhHhhhHh", ",H,,,,H,,H,,,,H,",
+        "..bbb......bbb..", "................",
+        "..kkkk....kkkk..", "..wpIw....wIpw..", "..wwww....wwww..",
+        "...........ss...", ".......n...s.s..", ".....kmmmmmk....", "......kkkkk.....", ",,............,,",
+    ],
+    "luffy_g5": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhhhhhhhhhhh", ",h,,h,,hh,,h,,h,",
+        "..bbb......bbb..", "................",
+        "..kkkk....kkkk..", "..wRRw....wRRw..", "..wwww....wwww..",
+        "...........ss...", ".......n...s.s..", "....kmmmmmmmk...", ".....kwwwwwk....", "......kkkkk.....",
+    ],
+})
+
+# ---------------------------------------------------------------- Itadori
+JJ_UNI = (30, 34, 56)
+HOOD_RED = (196, 36, 40)
+PINK = (238, 150, 150)
+UNDERCUT = (92, 56, 46)
+
+
+def yuji_body(m, style, iris=(120, 70, 40)):
+    hand = layered(JJ_UNI, [band(SIDES + ("down",), 0.9, 1.0, "skin")])
+    base_body(m, solid(JJ_UNI), hand, layered(JJ_UNI, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), (52, 58, 90))]),
+              head_paint2(PINK if style != "sukuna" else (226, 140, 150), iris if style != "sukuna" else (200, 30, 40), style))
+    jacket = layered(JJ_UNI, [lines((("north",), [[(0.5, 0), (0.5, 1)]]), (10, 10, 18)),
+                              lines((("north",), [[(0.55, 0.05), (0.55, 1)]]), (60, 66, 100))])
+    m.box("body", [-4.3, 10, -2.3], [8.6, 14, 4.6], jacket)
+    # the red hood folded around the neck and down the back
+    m.box("body", [-3.75, 22.5, -2.75], [7.5, 2.25, 5.5], layered(HOOD_RED, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(HOOD_RED, 0.6))]))
+    m.box("body", [-3.25, 18.5, 2.2], [6.5, 5, 1.25], solid(HOOD_RED))
+    both_arms(m, [3.8, 15, -2.2], [4.4, 9, 4.4], layered(JJ_UNI, [lines((SIDES, [[(0.3, 0.2), (0.35, 0.9)]]), (52, 58, 90))]))
+    both_arms(m, [3.7, 13.5, -2.3], [4.6, 1.5, 4.6], solid((44, 50, 78)))
+    both_legs(m, [-0.35, 0, -2.6], [4.5, 1.75, 5], layered((236, 236, 232), [band(SIDES, 0.0, 0.3, "gold")]))  # sneakers
+    if style == "sukuna":  # wrist tattoo bands
+        both_arms(m, [3.85, 12.5, -2.15], [4.3, 0.75, 4.3], solid((16, 12, 16)))
+    if style == "yuji_final":  # torn sleeve + bandaged forearm on the right arm
+        m.box("rightArm", [3.75, 12, -2.25], [4.5, 3, 4.5], layered((230, 226, 214), [lines((SIDES, [[(0, 0.3), (1, 0.4)], [(0, 0.7), (1, 0.8)]]), (190, 180, 160))]))
+
+
+def yuji_hair(m, c, style):
+    hp = hair_paint(c)
+    if style == "sukuna":  # swept up and back
+        m.strand([0, 32, -2], [0, 1, 0.6], 4.5, 4.5, hp)
+        m.mirror_strand([2.4, 31.8, -2], [0.35, 1, 0.65], 4.2, 4, hp)
+        m.mirror_strand([3.6, 31, 0.5], [0.6, 0.7, 0.8], 3.8, 3.5, hp)
+        m.strand([0, 31.5, 1.5], [0, 0.6, 1], 4, 4.5, hp)
+        return
+    m.strand([-1.2, 32, -1.6], [-0.35, 1, -0.2], 3.8, 4.2, hp)
+    m.strand([1.2, 32, -1.6], [0.35, 1, -0.2], 3.8, 4.2, hp)
+    m.mirror_strand([2.9, 31.8, 0], [0.5, 1, 0.1], 3.4, 3.8, hp)
+    m.strand([0, 32, 1.5], [0, 1, 0.45], 3.6, 4.2, hp)
+    m.mirror_strand([1.9, 31.5, 2.8], [0.3, 0.6, 0.8], 3.2, 3.5, hp)
+    m.strand([-1.6, 32, -4.0], [-0.2, -1, -0.8], 2.2, 2.8, hp)
+    m.strand([1.6, 32, -4.0], [0.2, -1, -0.8], 2.2, 2.8, hp)
+    if style == "yuji_final":
+        m.mirror_strand([3.8, 30.5, -1], [0.5, 0.2, -0.1], 3, 2.8, hp)
+
+
+def yuji_shell(m, c):
+    """Pink top with a darker undercut on the sides and back."""
+    def p(face, img):
+        shell_paint(c, hairline=29.6, sideburn=False)(face, img)
+        if face in ("east", "west", "south"):
+            px = img.load()
+            W, H = img.size
+            ur = ramp(UNDERCUT)
+            for y in range(H):
+                yy = 32 - (y + 0.5) * 8 / H
+                if 26.5 < yy < 29.6:
+                    for x in range(W):
+                        if px[x, y][3] > 0:
+                            px[x, y] = ur[2 if (x + y) % 3 else 1] + (255,)
+    m.box("hair", [-4, 24, -4], [8, 8, 8], p, inflate=0.45)
+
+
+# ---------------------------------------------------------------- Luffy
+VEST = (206, 34, 38)
+SHORTS = (46, 86, 170)
+SASH = (236, 196, 60)
+STRAW = (238, 206, 104)
+G4_HAKI = (24, 20, 26)
+
+
+def x_scar(face, px, w, h, base):
+    if face != "north":
+        return
+    cx, cy = w // 2, h // 4
+    for d in range(-3, 4):
+        _put(px, w, h, cx + d, cy + d, (190, 110, 96))
+        _put(px, w, h, cx + d, cy - d, (190, 110, 96))
+
+
+def vest_front(face, px, w, h, base):
+    """Open red shirt: skin shows down the middle (with the X scar), yellow buttons on the edge."""
+    if face != "north":
+        return
+    sr = ramp(SKIN)
+    for y in range(h):
+        for x in range(w // 2 - 3, w // 2 + 3):
+            _put(px, w, h, x, y, sr[2] if (x + y) % 5 else sr[1])
+    for y in range(3, h, 6):
+        _put(px, w, h, w // 2 - 4, y, SASH)
+    cx, cy = w // 2, h // 4
+    for d in range(-2, 3):
+        _put(px, w, h, cx + d, cy + d, (190, 110, 96))
+        _put(px, w, h, cx + d, cy - d, (190, 110, 96))
+
+
+def hat(m, straw=STRAW):
+    weave = layered(straw, [lines((SIDES + ("up",), [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), dark(straw, 0.75))])
+    m.box("hat", [-3.9, 31.4, -3.9], [7.8, 3, 7.8], weave)
+    m.box("hat", [-4.0, 31.4, -4.0], [8.0, 1.1, 8.0], solid((200, 30, 34)))
+    m.box("hat", [-7.5, 31.2, -7.5], [15, 0.5, 15], weave)
+    m.box("hat", [-7.5, 31.2, -7.5], [15, 0.5, 15], weave, rot=[0, 45, 0], pivot=[0, 31.2, 0])
+
+
+def luffy_hair(m, c, g5=False):
+    hp = hair_paint(c)
+    if g5:  # Nika: white hair rising like flames / clouds
+        for x, z, L in ((-2.4, -2, 6.5), (0, -2.4, 7.5), (2.4, -2, 6.5), (-3.3, 0.8, 6), (3.3, 0.8, 6), (-1.5, 2.6, 6.5), (1.5, 2.6, 6.5)):
+            m.strand([x, 31.8, z], [x * 0.15, 1, z * 0.1 + 0.15], L, 4.2, hp, bend=(x * 0.03, 0, 0.12))
+        m.mirror_strand([4.2, 30, -1], [0.6, 0.6, 0], 4.5, 3.2, hp)
+        return
+    m.strand([-2.2, 31.4, -4.1], [-0.3, -1, -0.6], 2.8, 2.8, hp)
+    m.strand([0.2, 31.5, -4.2], [0.1, -1, -0.7], 2.6, 2.6, hp)
+    m.strand([2.4, 31.4, -4.1], [0.35, -1, -0.6], 2.8, 2.8, hp)
+    m.mirror_strand([4.2, 30.5, -1.8], [0.3, -1, -0.15], 3, 2.4, hp)
+    m.mirror_strand([4.2, 30.5, 1.2], [0.35, -1, 0.2], 3.2, 2.6, hp)
+    for x in (-2.5, 0, 2.5):
+        m.strand([x, 30.5, 4.2], [x * 0.08, -1, 0.35], 3.4, 3, hp)
+
+
+def luffy_body(m, form):
+    g5 = form == "g5"
+    skin_tone = (236, 120, 120) if form == "g2" else SKIN
+    vest = (240, 240, 236) if g5 else VEST
+    shorts = (236, 236, 232) if g5 else SHORTS
+    sash = (200, 40, 60) if g5 else SASH
+    face = "luffy_g5" if g5 else "luffy"
+    hair = (246, 246, 250) if g5 else (22, 20, 26)
+    iris = (220, 40, 40) if g5 else (40, 30, 30)
+    haki = form in ("g4b", "g4s", "g4t")
+    arm_col = G4_HAKI if haki else skin_tone
+    skin_arm_p = layered(arm_col, [lines((SIDES, [[(0.2, 0.2), (0.5, 0.5), (0.3, 0.9)]]), (170, 30, 30))]) if haki else solid(skin_tone)
+    base_body(m, layered(skin_tone, [x_scar]), skin_arm_p, solid(shorts), head_paint2(hair, iris, face))
+    if form == "g4b":  # Boundman: huge muscular upper body, haki-black limbs, steam scarf
+        m.box("body", [-5.5, 12, -3.5], [11, 12, 7], layered((236, 120, 110), [x_scar]))
+        m.box("body", [-6, 20, -3.8], [12, 4.5, 7.6], layered(vest, [band(SIDES, 0.8, 1.0, "gold")]))
+        both_arms(m, [4, 9.5, -3.2], [6.5, 14.5, 6.5], skin_arm_p)
+        both_legs(m, [-0.6, 0, -2.6], [5.2, 12, 5.2], layered(G4_HAKI, [lines((SIDES, [[(0.2, 0.1), (0.6, 0.5), (0.3, 0.95)]]), (170, 30, 30))]))
+        m.box("body", [-5, 23.5, -4], [10, 2.5, 8], solid((245, 245, 245)))  # steam scarf
+    elif form == "g4s":  # Snakeman: lean, black arms, long steam mantle
+        m.box("body", [-4.3, 12, -2.3], [8.6, 12, 4.6], layered(vest, [vest_front]))
+        both_arms(m, [3.8, 11, -2.3], [4.6, 13, 4.6], skin_arm_p)
+        m.box("body", [-4.6, 21.5, -2.9], [9.2, 3, 5.8], solid((245, 245, 245)))
+        m.strand([0, 23, 2.8], [0, -1, 0.25], 16, 7, solid((240, 240, 240)), bone="body", thick=0.3, segs=3)
+    elif form == "g4t":  # Tankman: enormous round belly
+        m.box("body", [-7, 9, -6], [14, 15, 12], layered((236, 120, 110), [x_scar]))
+        m.box("body", [-6, 6, -5], [12, 4, 10], solid(shorts))
+        both_arms(m, [5, 11, -3], [6, 13, 6], skin_arm_p)
+        m.box("body", [-5, 23, -4], [10, 2.5, 8], solid((245, 245, 245)))
+    else:
+        m.box("body", [-4.3, 12, -2.3], [8.6, 12, 4.6], layered(vest, [vest_front]))
+        both_arms(m, [3.8, 19, -2.3], [4.6, 5, 4.6], solid(vest))  # short sleeves
+    m.box("body", [-4.5, 11, -2.6], [9, 1.75, 5.2], solid(sash))
+    if form not in ("g4b", "g4t"):
+        both_legs(m, [-0.4, 4.5, -2.4], [4.6, 7.5, 4.8], layered(shorts, [band(SIDES, 0.0, 0.18, "skin")]))
+    both_legs(m, [-0.3, 0, -2.6], [4.4, 0.75, 5], solid((150, 96, 52)))  # sandals
+    if g5:  # Nika cloud around the neck
+        for k in range(8):
+            a = k * math.pi / 4
+            m.box("body", [math.cos(a) * 4.4 - 1.6, 21.6, math.sin(a) * 3.4 - 1.6], [3.2, 2.6, 3.2], solid((250, 250, 255)))
+    if form != "g5" and form not in ("g4b", "g4s", "g4t"):
+        hat(m)
+
+
+_build_orig = build
+
+
+def build(char, form):  # noqa: F811
+    if char in ("yuji", "yuji_final", "yuji_sukuna"):
+        style = {"yuji": "yuji", "yuji_final": "yuji_final", "yuji_sukuna": "sukuna"}[char]
+        m = Model()
+        yuji_body(m, style)
+        yuji_shell(m, PINK if style != "sukuna" else (226, 140, 150))
+        yuji_hair(m, PINK if style != "sukuna" else (226, 140, 150), style)
+        return m
+    if char == "luffy":
+        m = Model()
+        luffy_body(m, form)
+        hair = (246, 246, 250) if form == "g5" else (22, 20, 26)
+        shell(m, hair, hairline=29.4)
+        luffy_hair(m, hair, form == "g5")
+        return m
+    return _build_orig(char, form)
+
+
+FORMS.update({
+    "yuji": ["base"], "yuji_final": ["base"], "yuji_sukuna": ["base"],
+    "luffy": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
+})
+BONES.append({"name": "hat", "parent": "head", "pivot": [0, 24, 0]})
