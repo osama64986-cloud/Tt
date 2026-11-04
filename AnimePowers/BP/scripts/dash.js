@@ -11,6 +11,9 @@
 //  • شحنتين من رتبة Legend: داشين ورا بعض، وكل شحنة ترجع بعد الكول داون.
 //  • مؤشر باللوحة فوق يسار (dashInfo): رمز لكل شحنة، فاتح = جاهز، غامق = يشحن. وبدون أي جزيئات (مثل ما طلب اللاعب).
 import { world, system } from "@minecraft/server";
+// V1: رسالة فتح الاندفاع تمر على main.js (الترجمة حسب لغة اللاعب)
+let dashSay = (p, t) => p.sendMessage(t);
+export function setDashSay(fn) { if (typeof fn === "function") dashSay = fn; }
 
 export const DASH = {
   cooldown: [40, 40, 36, 31, 27, 22, 18],   // الكول داون حسب الرتبة (تك، 20 = ثانية): Trainee ثانيتين ويقصر كل رتبة لحد 0.9 ثانية عند Master
@@ -40,7 +43,7 @@ function checkUnlock(p) {
     const rank = rankOf(p);
     if (rank < DASH_FROM_RANK) return false;
     p.setDynamicProperty("sh_dash", 1);
-    try { p.sendMessage("§6[Dash] §fDash unlocked! §7Double-tap §eleft§7, §eright§7 or §eback§7 to dash that way; you cannot be hurt during the dash. It stays with you forever. Cooldown: 2 s, shorter with every rank (0.9 s at Master), and from §eLegend§7 you get two dashes in a row. The arrows in your panel show when it is ready."); } catch (e) { /* */ }
+    try { dashSay(p, "§6[Dash] §fDash unlocked! §7Double-tap §eleft§7, §eright§7 or §eback§7 to dash that way; you cannot be hurt during the dash. It stays with you forever. Cooldown: 2 s, shorter with every rank (0.9 s at Master), and from §eLegend§7 you get two dashes in a row. The arrows in your panel show when it is ready."); } catch (e) { /* */ }
     try { p.playSound("sh.ready", { volume: 0.9, pitch: 1.2 }); } catch (e) { /* */ }
     return true;
   } catch (e) { return false; }

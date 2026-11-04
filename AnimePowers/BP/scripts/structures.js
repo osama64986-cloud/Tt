@@ -2,6 +2,9 @@
 import { world, system, BlockPermutation, BlockVolume, ItemStack } from "@minecraft/server";
 import { buildSakuraVillage, SAKURA_HALF } from "./sakura.js";
 import { buildLightShrine, buildDarkShrine, SHRINE_HALF } from "./shrines.js";
+// V1: رسائل البنايات تمر على main.js (الترجمة العربية وتقطيع الأسطر حسب لغة كل لاعب)
+let sayHook = (p, t) => p.sendMessage(t);
+export function setSayHook(fn) { if (typeof fn === "function") sayHook = fn; }
 
 // ───────────────────────── مساعدات الأوامر ─────────────────────────
 // op: ["box",x1,y1,z1,x2,y2,z2,id] | ["set",x,y,z,id] | ["stair",x,y,z,id,dir,upside] | ["perm",x,y,z,id,states]
@@ -972,7 +975,7 @@ export function onShrineBossDeath(typeId, loc, dim, tagged = true) {
     if (s.kt.length >= spec.bosses.length) { s.c = 1; saveReg(reg); openSeal(dim, s); }
     else {
       saveReg(reg);
-      for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 70 })) { try { p.sendMessage("§6[Shrine] §fOne guardian has fallen. §7The seal still holds: defeat the other one."); } catch (e) { /* */ } }
+      for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 70 })) { try { sayHook(p, "§6[Shrine] §fOne guardian has fallen. §7The seal still holds: defeat the other one."); } catch (e) { /* */ } }
     }
     return;
   }
@@ -995,7 +998,7 @@ function openSeal(dim, s) {
   } catch (e) { /* */ }
   const sword = s.type === "lightshrine" ? "Oath of Light" : "Abyss Katana";
   for (const p of dim.getPlayers({ location: { x: s.x, y: s.y, z: s.z }, maxDistance: 80 })) {
-    try { p.sendMessage(`§6[Shrine] §fBoth guardians are defeated. §eThe seal breaks!\n§7A chest appeared before the beam: it holds the §f${sword}§7.`); } catch (e) { /* */ }
+    try { sayHook(p, `§6[Shrine] §fBoth guardians are defeated. §eThe seal breaks!\n§7A chest appeared before the beam: it holds the §f${sword}§7.`); } catch (e) { /* */ }
   }
 }
 
@@ -1073,7 +1076,7 @@ function towerFloorCleared(dim, s, k) {
       dim.playSound("random.levelup", fl, { volume: 0.9, pitch: 1.1 });
       dim.playSound("random.glass", fl, { volume: 0.8, pitch: 0.7 });
     } catch (e) { /* */ }
-    for (const p of dim.getPlayers({ location: fl, maxDistance: 30 })) { try { p.sendMessage(`§5[Abyss Tower] §aFloor ${k + 1} cleared! §7The seal on the stairs breaks.`); } catch (e) { /* */ } }
+    for (const p of dim.getPlayers({ location: fl, maxDistance: 30 })) { try { sayHook(p, `§5[Abyss Tower] §aFloor ${k + 1} cleared! §7The seal on the stairs breaks.`); } catch (e) { /* */ } }
   }
 }
 // مكان الخيميائي بخطة القرية (مسار حصى مفتوح للسما، فحص check_village)
@@ -1103,7 +1106,7 @@ function towerTick() {
           towerSpawn(dim, s, plan, k, types, p, top);
           if (!top) towerSeal(dim, s, k, true);
           try {
-            p.sendMessage(top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters. §8The stairs stay sealed until the floor is cleared.`);
+            sayHook(p, top ? `§5[Abyss Tower] §dFloor 7: the master of the tower awakens! §7(${types.length === 2 ? "two of them" : "one of them"}; defeat it to claim the treasure)` : `§5[Abyss Tower] §fFloor ${k + 1} §7— ${types.length} monsters. §8The stairs stay sealed until the floor is cleared.`);
             p.playSound(top ? "mob.wither.spawn" : "mob.evocation_illager.prepare_attack", { volume: top ? 0.35 : 0.6, pitch: top ? 1.2 : 0.8 });
           } catch (e4) { /* */ }
         } else if (s.ft[k] && s.ft[k].length && !(s.cl & (1 << k))) {
@@ -1139,7 +1142,7 @@ function towerChest(dim, s) {
     dim.playSound("random.levelup", c, { volume: 0.9, pitch: 0.8 });
     dim.playSound("random.totem", c, { volume: 0.5, pitch: 1.1 });
   } catch (e3) { /* */ }
-  for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { p.sendMessage("§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
+  for (const p of dim.getPlayers({ location: c, maxDistance: 60 })) { try { sayHook(p, "§5[Abyss Tower] §dThe tower is conquered! §7A treasure chest appeared in the middle of the top floor."); } catch (e4) { /* */ } }
 }
 // يستدعيه main.js لما يموت وحش بالبرج: نشيله من قائمة طابقه، ولما يخلص الطابق ينكسر الختم (أو يطلع صندوق القمة)
 export function onTowerMobDeath(e) {
@@ -1159,7 +1162,7 @@ export function onTowerMobDeath(e) {
       if (i >= 0) s.ft[k].splice(i, 1);
       if (s.ft[k].length) {
         saveReg(reg);
-        if (top) for (const p of dim.getPlayers({ location: loc, maxDistance: 40 })) { try { p.sendMessage("§5[Abyss Tower] §fOne master has fallen. §7Another still stands."); } catch (e2) { /* */ } }
+        if (top) for (const p of dim.getPlayers({ location: loc, maxDistance: 40 })) { try { sayHook(p, "§5[Abyss Tower] §fOne master has fallen. §7Another still stands."); } catch (e2) { /* */ } }
         return;
       }
       if (s.cl & (1 << k)) return;
@@ -1237,7 +1240,7 @@ export function setupStructures(onGuardSpawn) {
           const dx = site.x - p.location.x, dz = site.z - p.location.z;
           const dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
           const dir = dirs[((Math.round((Math.atan2(dz, dx) * 180) / Math.PI / 45) % 8) + 8) % 8];
-          p.sendMessage(`§6[Explore] §fA structure appeared nearby: §e${spec.name}§f, ${Math.round(Math.hypot(dx, dz))} blocks to the ${dir}. §7Use the Explorer's Compass.`);
+          sayHook(p, `§6[Explore] §fA structure appeared nearby: §e${spec.name}§f, ${Math.round(Math.hypot(dx, dz))} blocks to the ${dir}. §7Use the Explorer's Compass.`);
           if (!p.getDynamicProperty("sh_ctarget")) p.setDynamicProperty("sh_ctarget", type);
         } catch (e6) { /* */ }
         runBuild(p.dimension, rec);
@@ -1272,7 +1275,7 @@ export function setupStructures(onGuardSpawn) {
         const key = `${p.id}:${i}`;
         if (d < 30 && !announced.has(key)) {
           announced.add(key);
-          try { p.sendMessage(`§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
+          try { sayHook(p, `§6[Explore] §fYou reached ${STRUCTURES[s.type].name}\n§7${STRUCTURES[s.type].lore}`); } catch (e) { /* */ }
         }
         if (s.type === "village" && s.ok && d < 60) {                        // الخيميائي: شيخ واحد بكل قرية ساكورا (على المسار)
           try {

@@ -4,8 +4,8 @@ import { ActionFormData as RawActionForm } from "@minecraft/server-ui";
 import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
-import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo, structList } from "./structures.js";
-import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH } from "./dash.js";
+import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo, structList, setSayHook } from "./structures.js";
+import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH, setDashSay } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
 import { ORES } from "./ores.js";
@@ -339,6 +339,7 @@ function setBottomText(p, text, sub = "") {
 function say(p, text) {
   try { p.sendMessage(T(p, text, "chat")); } catch (e) { /* */ }
 }
+setSayHook(say); setDashSay(say);
 
 // ───────────────────────── واجهة اللاعب (HUD) ─────────────────────────
 // قسمين (RP/ui/hud_screen.json):
@@ -543,7 +544,8 @@ function renderHud(p) {
         if (m && m.until > now) low.push(i18nShow(lang, m.text, "title"));
         else low.push(i18nShow(lang, h.tip, "seg"), i18nShow(lang, h.line, "seg"));
       }
-      setBottomText(p, low.filter(Boolean).join("\n"), storyTracker(p, lang, now));
+      const bottom = low.filter(Boolean).join("\n");
+      setBottomText(p, lang === "ar" && bottom ? AR_MARK + bottom : bottom, storyTracker(p, lang, now));   // العربي: علامة الخط الأكبر
     } catch (e) { /* */ }
 }
 system.runInterval(() => { for (const p of world.getAllPlayers()) renderHud(p); }, 5);
@@ -1087,7 +1089,7 @@ function introStory(player) {
 }
 // نص جاهز بلغة اللاعب (مثل نصوص story.js) يطلع بالدردشة: العربي يتشكل وينقلب ويتقطع بدون ما يمر على القاموس
 function sayRaw(p, lang, prefix, text) {
-  try { p.sendMessage(lang === "ar" ? arVisual(trText(prefix) + text, 175) : prefix + text); } catch (e) { /* */ }
+  try { p.sendMessage(lang === "ar" ? arVisual(trText(prefix) + text, 220) : prefix + text); } catch (e) { /* */ }
 }
 
 // ───────────────────────── V1: طور القصة ─────────────────────────
@@ -1152,14 +1154,14 @@ function storyTracker(p, lang, now) {
   if (fx && now < fx.flashUntil) {
     const step = STORY_STEPS[fx.done];
     const txt = `§d${step ? pickLang(lang, STORY[step.ch].t) : ""}\n§a✔ ${lang === "ar" ? "اكتملت المهمة" : "Mission complete"}`;
-    return lang === "ar" ? AR_MARK + arVisual(txt, 165) : txt;
+    return lang === "ar" ? AR_MARK + arVisual(txt, 200) : txt;
   }
   if (fx && now < fx.showAt) return "";
   const pr = storyProgress(p, s);
   if (!pr) return "";
   const prog = pr.step.need > 1 ? ` §e${pr.cur}/${pr.step.need}` : "";
   const txt = `§d${pickLang(lang, STORY[pr.step.ch].t)}\n§f${pickLang(lang, pr.step.o)}${prog}`;
-  return lang === "ar" ? AR_MARK + arVisual(txt, 165) : txt;
+  return lang === "ar" ? AR_MARK + arVisual(txt, 200) : txt;
 }
 async function openStory(player) {
   const s = storyState(player), lang = langOf(player), pr = storyProgress(player, s);
@@ -1384,7 +1386,7 @@ function ensureTrainerNear(player, force) {
   if (found.length > 0) return force ? found[0] : undefined;
   if (!force && Math.random() > 0.5) return undefined;
   const t = spawnOnSurface(dim, "sh:trainer", player.location.x, player.location.z);
-  if (t) t.nameTag = "§6Trainer";
+  if (t) t.nameTag = `§6Trainer §8/ §6${arVisual("المدرّب")}`;
   return t;
 }
 
@@ -1892,7 +1894,7 @@ system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     try {
       const ti = towerHudInfo(p);
-      if (ti) setHudBar(ti.key, p.dimension, ti.loc, ti.name, ti.frac, true);
+      if (ti) setHudBar(`${ti.key}:${langOf(p)}`, p.dimension, ti.loc, T(p, ti.name, "seg"), ti.frac, true);   // V1: اسم الشريط بلغة اللاعب
       // أول ما توصل طابق بيه وحوش: سطر قصير فوق الهوت بار (الطابق وعدد الوحوش)
       const was = towerSeen.get(p.id), now = ti ? `${ti.key}:${ti.floor}` : "";
       if (ti && now !== was && !ti.done) notify(p, `§5Abyss Tower §7· §dFloor ${ti.floor}/7 §7· monsters left: ${ti.left}`, 60);
@@ -2353,7 +2355,7 @@ function closeRift(victory, killer) {
   const r = rift, t = RIFT_TIERS[r.tier], dim = world.getDimension(r.dim);
   rift = null;
   riftSave();
-  removeFx(r.ent); removeFx(r.circle); dropHudBar("rift");
+  removeFx(r.ent); removeFx(r.circle); dropHudBar("rift:en"); dropHudBar("rift:ar");
   const c = riftShapeAt(r);
   const imp = shapeFx(dim, `rift_${t.key}`, c, { r: riftRadius(r), s: 600, life: 16 });
   tween(12, 1, (k) => setShape(imp, "sh:r", riftRadius(r) * (1 - k)), () => { SYS.riftClose(dim, c); sfx(dim, "sh.blackhole_end", c, 1.5, 1); });
@@ -2471,9 +2473,14 @@ function riftProgress() {
 function riftBar() {
   if (!rift) return;
   const t = riftTier(), dim = world.getDimension(rift.dim), loc = { x: rift.x, y: rift.y - 2.5, z: rift.z };
-  if (rift.phase !== "battle" || !rift.wave) { setHudBar("rift", dim, loc, `${t.col}${t.name} §7· Grade ${t.grade} (${t.diff})`, rift.r / RIFT_MAX_R); return; }
+  // V1: الشريط واحد للكل: يطلع بلغة أقرب لاعب للصدع
+  let lang = "en", bd = 1e9;
+  for (const q of world.getAllPlayers()) { if (q.dimension.id !== dim.id) continue; const d = Math.hypot(q.location.x - rift.x, q.location.z - rift.z); if (d < bd) { bd = d; lang = langOf(q); } }
+  const key = `rift:${lang}`, tr = (s) => i18nShow(lang, s, "seg");
+  if (lang !== "ar") dropHudBar("rift:ar"); else dropHudBar("rift:en");
+  if (rift.phase !== "battle" || !rift.wave) { setHudBar(key, dim, loc, tr(`${t.col}${t.name} §7· Grade ${t.grade} (${t.diff})`), rift.r / RIFT_MAX_R); return; }
   const pr = riftProgress(), left = Math.max(0, pr.total - pr.done);
-  setHudBar("rift", dim, loc, left ? `${t.col}Wave ${rift.wave}/3 §7· §f${left} left` : `${t.col}Wave ${rift.wave}/3 §7· §aCleared ✔`, pr.total ? left / pr.total : 0);
+  setHudBar(key, dim, loc, tr(left ? `${t.col}Wave ${rift.wave}/3 §7· §f${left} left` : `${t.col}Wave ${rift.wave}/3 §7· §aCleared ✔`), pr.total ? left / pr.total : 0);
 }
 function riftStatusText(p) {
   const st = getState(p);
@@ -7420,7 +7427,8 @@ system.runInterval(() => {
             if (diff >= 2 && st.rank < HARD_RANK_FROM) tag += " ⚡";
           }
           const h = e.getComponent("minecraft:health");
-          e.nameTag = `${col}[${tag}] ${MON_NAMES[type] || ""} §7♥${Math.ceil(h.currentValue)}`;
+          const nt = `${col}[${tag}] ${MON_NAMES[type] || ""} §7♥${Math.ceil(h.currentValue)}`;
+          e.nameTag = i18nShow(langOf(near), nt, "seg");                    // V1: الاسم فوق الوحش بلغة أقرب لاعب
         } catch (err) { /* */ }
       }
     }

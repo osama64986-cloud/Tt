@@ -271,7 +271,8 @@ export function covered(s) { const r = trText(s); return r !== s || !/[A-Za-z]{3
 
 // ───────── 5) العرض حسب المكان ─────────
 // عرض كل مكان بالبكسل (بحجم خط 1). الفورم بخط عربي أكبر (×1.15) فعرضه أقل.
-export const WIDTH = { form: 150, button: 0, chat: 175, title: 240, tracker: 165, hud: 0 };
+// (معايرة بخط Unifont: الحرف العربي فعلياً ~4.5 بكسل وتقديرنا 6.5، فالأرقام هنا تطلع أسطر بحدود ~70% من العرض المتاح: آمنة)
+export const WIDTH = { form: 185, button: 0, chat: 220, title: 300, tracker: 200, hud: 0 };
 export const AR_MARK = "§r§r§r";                                                     // علامة بأول الفورم: ملف server_form.json يكبّر الخط العربي
 // النص للاعب: en = يرجع مثل ما هو؛ ar = يترجم + يقطع + يشكّل ويقلب
 export function show(lang, s, where = "chat") {

@@ -90,7 +90,19 @@
     ],
     "shadow": true,
     "enable_profanity_filter": false,
-    "font_scale_factor": 0.85
+    "font_scale_factor": 0.85,
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string",
+        "binding_name_override": "#text",
+        "binding_type": "global"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "((#text - '§r§r§r') = #text)",
+        "target_property_name": "#visible"
+      }
+    ]
   },
   "hud_title_text/subtitle_frame": {
     "ignored": true
@@ -188,6 +200,48 @@
             }
           ]
         }
+      }
+    ]
+  },
+  "hud_title_text/title_frame": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_back",
+        "value": [
+          {
+            "sh_title_ar": {
+              "type": "label",
+              "anchor_from": "top_middle",
+              "anchor_to": "top_middle",
+              "color": "$title_command_text_color",
+              "text": "#text",
+              "layer": 31,
+              "localize": false,
+              "shadow": true,
+              "enable_profanity_filter": false,
+              "text_alignment": "center",
+              "font_size": "normal",
+              "font_scale_factor": 1.05,
+              "offset": [
+                0,
+                0
+              ],
+              "bindings": [
+                {
+                  "binding_name": "#hud_title_text_string",
+                  "binding_name_override": "#text",
+                  "binding_type": "global"
+                },
+                {
+                  "binding_type": "view",
+                  "source_property_name": "(not ((#text - '§r§r§r') = #text))",
+                  "target_property_name": "#visible"
+                }
+              ]
+            }
+          }
+        ]
       }
     ]
   }

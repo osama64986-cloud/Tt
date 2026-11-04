@@ -223,7 +223,7 @@ try:
         err("hud_screen.json: خط اللوحة لازم يكون مصغر (font_scale_factor 0.75)")
     if ui.get("hud_title_text/title_frame/title", {}).get("font_scale_factor") != 0.85:
         err("hud_screen.json: الكتابة فوق الهوت بار لازم تكون مصغرة (font_scale_factor 0.85)")
-    vanilla_paths = {"hud_actionbar_text", "hud_actionbar_text/actionbar_message", "hud_title_text", "hud_title_text/title_frame/title_background",
+    vanilla_paths = {"hud_actionbar_text", "hud_actionbar_text/actionbar_message", "hud_title_text", "hud_title_text/title_frame", "hud_title_text/title_frame/title_background",
                      "hud_title_text/title_frame/title", "hud_title_text/subtitle_frame", "root_panel", "root_panel/boss_health_panel/boss_hud_panel/boss_health_grid"}
     for k in ui:
         if k in ("namespace", "sh_player_doll") or k.startswith("sh_"):
@@ -352,7 +352,8 @@ for f in glob.glob(os.path.join(BP, "**", "*.js"), recursive=True) + glob.glob(o
 try:
     sf = load(os.path.join(RP, "ui", "server_form.json"))
     for k in sf:
-        if k not in ("namespace", "long_form", "main_screen_content") and not k.startswith("sh_"):
+        # V1: نص الفورم العربي (خط أكبر ومحاذاة يمين) يحتاج تعديل لوحة النص بـ long_form_scrolling_content
+        if k not in ("namespace", "long_form", "main_screen_content", "long_form_scrolling_content", "long_form_scrolling_content/label_offset_panel") and not k.startswith("sh_"):
             err(f"server_form.json: عنصر {k} مو من المسموحة")
     mk = re.search(r'const ALC_MARK = "([^"]+)"', open(os.path.join(BP, "scripts", "main.js"), encoding="utf-8").read())
     raw = json.dumps(sf, ensure_ascii=False)
