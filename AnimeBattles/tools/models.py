@@ -1398,3 +1398,127 @@ goku_hair_ssj = _fix_bangs(goku_hair_ssj)
 goku_hair_ssj3 = _fix_bangs(goku_hair_ssj3)
 vegeta_hair = _fix_bangs(vegeta_hair)
 gojo_hair_down = _fix_bangs(gojo_hair_down)
+
+
+# ==================================================================================
+# 3D HAIR (final): volumetric tapered tufts (rotated, overlapping cubes) on top of the
+# head-hugging shell, painted with the pixel-art strand shading. Replaces the flat planes.
+# ==================================================================================
+_strand_orig = Model.strand
+
+
+def _strand_chunky(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, bone="hair", thick=None):
+    if bone == "hair":
+        width *= 1.12
+        thick = thick or 0.92
+    return _strand_orig(self, base, d, length, width, paint, bend, segs, bone, thick)
+
+
+Model.strand = _strand_chunky
+
+def goku_hair_base_3d(m, c):
+    hp = hair_paint(c)
+    # bangs over the forehead
+    m.strand([-2.3, 31.5, -4.1], [-0.3, -1, -0.4], 4.25, 3.25, hp)
+    m.strand([0.4, 31.75, -4.2], [0.05, -1, -0.45], 3.75, 3, hp)
+    m.strand([2.6, 31.5, -4.1], [0.4, -1, -0.35], 3.5, 2.75, hp)
+    # big tufts
+    m.strand([0.3, 32.25, -1.2], [0.1, 1, 0.3], 7, 5, hp, bend=(0, 0, 0.2))
+    m.mirror_strand([2.8, 32, -0.4], [0.85, 1, 0.05], 7, 4.75, hp, bend=(0.15, -0.25, 0))
+    m.mirror_strand([4.1, 30, 0.8], [1, 0.25, 0.2], 6, 4.25, hp, bend=(0, -0.25, 0))
+    m.mirror_strand([3.7, 28.5, 2.6], [0.9, -0.35, 0.6], 5, 3.5, hp)
+    m.strand([0, 31.5, 3], [0, 0.5, 1], 6.5, 4.75, hp, bend=(0, -0.15, 0))
+    m.mirror_strand([2.4, 30, 3.6], [0.5, 0, 1], 5.5, 3.75, hp)
+    m.strand([0, 27.75, 4.1], [0, -0.6, 1], 4.5, 3.75, hp)
+    m.mirror_strand([4.2, 28.75, -2.3], [0.05, -1, -0.1], 2.75, 1.75, hp, segs=2)
+
+
+def goku_hair_ssj_3d(m, c):
+    hp = hair_paint(c)
+    m.strand([-1, 31.75, -4.3], [-0.15, -1, -0.3], 5, 2, hp)  # the single bang
+    m.mirror_strand([2.2, 32, -3.3], [0.3, 1, -0.35], 6, 3.75, hp)
+    m.strand([0, 32.25, -0.5], [0, 1, 0.12], 9, 5.25, hp)
+    m.mirror_strand([2.6, 32, -0.25], [0.45, 1, 0.05], 8.5, 4.75, hp)
+    m.mirror_strand([4, 30.75, 1], [0.95, 0.9, 0.15], 7, 4.25, hp)
+    m.mirror_strand([3.9, 29, 2.6], [1, 0.4, 0.5], 5.5, 3.5, hp)
+    m.strand([0, 31.5, 3], [0, 0.85, 0.65], 8, 4.75, hp)
+    m.mirror_strand([2.4, 30.75, 3.4], [0.45, 0.75, 0.65], 6.5, 3.75, hp)
+    m.strand([0, 28.25, 4.1], [0, 0.1, 1], 4.75, 3.75, hp)
+    m.mirror_strand([4.2, 28.75, -2.3], [0.05, -1, -0.1], 2.75, 1.75, hp, segs=2)
+
+
+def goku_hair_ssj3_3d(m, c):
+    hp = hair_paint(c)
+    m.strand([0, 29, 4.2], [0, -1, 0.12], 22, 8.5, hp, thick=0.5)
+    m.mirror_strand([3.2, 29, 3.2], [0.22, -1, 0.15], 19, 5, hp, thick=0.6)
+    m.mirror_strand([4.4, 29.5, 0.2], [0.28, -1, 0.05], 11, 3.5, hp)
+    m.strand([0, 32.25, -0.5], [0, 1, 0.35], 6.5, 5, hp)
+    m.mirror_strand([2.6, 32, -0.5], [0.6, 1, 0.15], 6, 4.25, hp)
+    m.strand([-2.3, 31.5, -4.1], [-0.3, -1, -0.4], 5, 3.25, hp)
+    m.strand([0.4, 31.75, -4.2], [0.05, -1, -0.45], 5.5, 3, hp)
+    m.strand([2.6, 31.5, -4.1], [0.4, -1, -0.35], 4.5, 2.75, hp)
+
+
+def vegeta_hair_3d(m, c):
+    hp = hair_paint(c)
+    m.box("hair", [-3.75, 31.5, -3.25], [7.5, 5, 6.75], hp)  # flame body
+    m.box("hair", [-2.75, 35.5, -2.25], [5.5, 3.5, 5], hp)
+    m.strand([0, 37.5, 0], [0, 1, 0.12], 7.5, 4.5, hp)
+    m.mirror_strand([2.2, 34, -1.6], [0.18, 1, -0.05], 7.5, 4, hp)
+    m.mirror_strand([3.2, 32.5, 1], [0.32, 1, 0.2], 7.5, 4, hp)
+    m.strand([0, 34, 2.4], [0, 1, 0.35], 8, 4.5, hp)
+    m.strand([0, 34, -2.4], [0, 1, -0.06], 6.5, 4, hp)
+    m.mirror_strand([3.9, 30.5, -1.5], [0.4, 1, 0], 5, 3, hp)
+
+
+def gojo_hair_up_3d(m, c):
+    hp = hair_paint(c)
+    m.strand([0, 32, 0], [0, 1, 0.05], 6.5, 4.25, hp)
+    for k in range(8):
+        a = k * math.pi / 4 + math.pi / 8
+        x, z = math.sin(a) * 3.1, -math.cos(a) * 3.1
+        m.strand([x, 31.5, z], [math.sin(a) * 0.75, 1, -math.cos(a) * 0.75], 5.5, 3.5, hp, bend=(0, -0.1, 0))
+    for k in range(8):
+        a = k * math.pi / 4
+        x, z = math.sin(a) * 4, -math.cos(a) * 4
+        if z < -3:
+            continue  # keep the blindfold visible
+        m.strand([x, 29.25, z], [math.sin(a), 0.55, -math.cos(a)], 4, 3, hp)
+
+
+def gojo_hair_down_3d(m, c):
+    hp = hair_paint(c)
+    for x, l in ((-3.1, 3.5), (-1.6, 3.75), (0, 4.75), (1.6, 3.75), (3.1, 3.5)):
+        m.strand([x, 31.5, -4.2], [x * 0.06, -1, -0.45], l, 2, hp)
+    m.mirror_strand([4.2, 30.5, -1.5], [0.15, -1, -0.05], 4.75, 2.5, hp)
+    m.mirror_strand([4.2, 30.5, 1.5], [0.2, -1, 0.15], 5.25, 2.5, hp)
+    for x in (-2.6, 0, 2.6):
+        m.strand([x, 31.5, 4.1], [x * 0.05, -1, 0.3], 6, 3, hp)
+    m.strand([0, 32.5, 0], [0, 1, 0.5], 2.75, 3, hp)
+    m.mirror_strand([2, 32.25, 1], [0.6, 1, 0.3], 2.5, 2.25, hp)
+
+
+
+
+def _hair3d(fn, **kw):
+    def wrapped(m, c):
+        shell(m, c, **kw)
+        fn(m, c)
+    return wrapped
+
+
+goku_hair_base = _hair3d(goku_hair_base_3d, hairline=29.2)
+goku_hair_ssj = _hair3d(goku_hair_ssj_3d, hairline=29.3)
+goku_hair_ssj3 = _hair3d(goku_hair_ssj3_3d, hairline=29.2, back_to=24.2)
+vegeta_hair = _hair3d(vegeta_hair_3d, hairline=30.0, peak=True, teeth=0.4)
+gojo_hair_up = _hair3d(gojo_hair_up_3d, hairline=29.6, sideburn=False)
+gojo_hair_down = _hair3d(gojo_hair_down_3d, hairline=28.8)
+
+# Vegeta: natural face, only one mouth corner turned down (proud, not angry)
+FACES["vegeta"] = [
+    "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+    "hhHhhhhhhhhhhHhh", ",,,,,,hhhh,,,,,,",
+    ".bb....hh....bb.", "..bbbb....bbbb..",
+    ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
+    ".......n........", "......,n,.......", "......mmmmm.....", "...........m....", ",,............,,",
+]
