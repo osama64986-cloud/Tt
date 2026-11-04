@@ -16,7 +16,9 @@
    "geometry": {
     "base": "geometry.ab.goku_base",
     "ssj": "geometry.ab.goku_ssj",
-    "ssj3": "geometry.ab.goku_ssj3"
+    "ssj3": "geometry.ab.goku_ssj3",
+    "ssb": "geometry.ab.goku_ssb",
+    "ui": "geometry.ab.goku_ui"
    },
    "animations": {
     "look": "animation.ab.look_at_target",

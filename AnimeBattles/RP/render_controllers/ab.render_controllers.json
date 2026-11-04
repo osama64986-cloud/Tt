@@ -17,8 +17,8 @@
       "Geometry.base",
       "Geometry.ssj",
       "Geometry.ssj3",
-      "Geometry.ssj",
-      "Geometry.base"
+      "Geometry.ssb",
+      "Geometry.ui"
      ]
     }
    },
@@ -45,9 +45,9 @@
     "geometries": {
      "Array.geos": [
       "Geometry.base",
-      "Geometry.base",
-      "Geometry.base",
-      "Geometry.base"
+      "Geometry.ssj",
+      "Geometry.ssb",
+      "Geometry.ue"
      ]
     }
    },

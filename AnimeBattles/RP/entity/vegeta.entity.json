@@ -13,7 +13,10 @@
     "ue": "textures/entity/vegeta/ue"
    },
    "geometry": {
-    "base": "geometry.ab.vegeta_base"
+    "base": "geometry.ab.vegeta_base",
+    "ssj": "geometry.ab.vegeta_ssj",
+    "ssb": "geometry.ab.vegeta_ssb",
+    "ue": "geometry.ab.vegeta_ue"
    },
    "animations": {
     "look": "animation.ab.look_at_target",
