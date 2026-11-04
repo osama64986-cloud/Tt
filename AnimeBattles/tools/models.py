@@ -402,8 +402,8 @@ def goku_body(m, hair, iris, brows=True, style="goku"):
     m.strand([-0.6, 12, 3], [-0.35, -1, 0.25], 4.5, 1.25, solid(GI_BLUE), bone="body", segs=2)
     m.strand([0.6, 12, 3], [0.35, -1, 0.3], 4, 1.25, solid(GI_BLUE), bone="body", segs=2)
     both_arms(m, [3.75, 19.25, -2.25], [4.5, 5, 4.5], layered(GI_BLUE, [lines((SIDES, [[(0, 0.85), (1, 0.85)]]), dark(GI_BLUE, 0.6))]))
-    band = layered(GI_BLUE, [lines((SIDES, [[(0, 0.18), (1, 0.18)], [(0, 0.82), (1, 0.82)]]), light(GI_BLUE, 0.3))])
-    both_arms(m, [3.6, 12, -2.4], [4.8, 3.25, 4.8], band)
+    wb = layered(GI_BLUE, [lines((SIDES, [[(0, 0.18), (1, 0.18)], [(0, 0.82), (1, 0.82)]]), light(GI_BLUE, 0.3))])
+    both_arms(m, [3.6, 12, -2.4], [4.8, 3.25, 4.8], wb)
     pants = layered(GI, [lines((SIDES, [[(0.5, 0.05), (0.55, 0.6), (0.4, 1)], [(0.15, 0.3), (0.3, 0.9)]]), dark(GI, 0.68))], grain=0.03)
     both_legs(m, [-0.4, 5, -2.4], [4.6, 7, 4.8], pants)
     both_legs(m, [-0.3, 0, -2.3], [4.4, 5.25, 4.6], layered(BOOT_BLUE, [laces]))
@@ -461,7 +461,7 @@ def vegeta_body(m, hair, iris):
     both_arms(m, [3.6, 21.5, -2.6], [4.8, 2.5, 5.2], pad)
     glove = layered(ARMOR, [lines((SIDES, [[(0, 0.25), (1, 0.25)], [(0.3, 0.6), (0.3, 1)], [(0.6, 0.6), (0.6, 1)]]), ARMOR_SH)])
     both_arms(m, [3.6, 12, -2.4], [4.8, 4.75, 4.8], glove)
-    boot = layered(ARMOR, [lambda f, d, w, h, k: d.rectangle([0, 0, w, 3 * k], fill=ARMOR_GOLD + (255,)) if f in SIDES else None,
+    boot = layered(ARMOR, [band(SIDES, 0, 0.2, "gold"),
                            lines((SIDES, [[(0.2, 0.4), (0.5, 0.55), (0.8, 0.4)]]), ARMOR_SH)])
     both_legs(m, [-0.35, 0, -2.35], [4.5, 6.5, 4.7], boot)
     both_legs(m, [0.1, 0, -3.45], [3.6, 2, 1.25], layered(ARMOR_GOLD, [lines((("north", "up"), [[(0.1, 0.25), (0.9, 0.25)]]), light(ARMOR_GOLD, 0.6))]))
@@ -494,7 +494,7 @@ def collar(face, dr, w, h, k):
 
 
 def gojo_body(m, hair, iris, blindfold):
-    hand = layered(UNI, [lambda f, d, w, h, k: d.rectangle([0, h - 5 * k, w, h], fill=SKIN + (255,)),
+    hand = layered(UNI, [band(SIDES + ("down",), 0.9, 1.0, "skin"),
                          lines((SIDES, [[(0, 0.1), (1, 0.1)]]), UNI_HI)])
     base_body(m, solid(UNI), hand, layered(UNI, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), UNI_HI)]),
               head_paint(hair, iris, not blindfold, "gojo", blindfold))
@@ -505,8 +505,8 @@ def gojo_body(m, hair, iris, blindfold):
     shoe = layered((12, 12, 16), [lines((("north", "up"), [[(0.2, 0.3), (0.8, 0.3)]]), (90, 90, 110))])
     both_legs(m, [-0.3, 0, -2.6], [4.4, 1.5, 5], shoe)
     if blindfold:
-        band = layered((16, 16, 22), [lines((SIDES, [[(0, 0.2), (1, 0.3)], [(0, 0.7), (1, 0.6)]]), (46, 46, 60))])
-        m.box("head", [-4.3, 26.25, -4.3], [8.6, 2.5, 8.6], band)
+        bf = layered((16, 16, 22), [lines((SIDES, [[(0, 0.2), (1, 0.3)], [(0, 0.7), (1, 0.6)]]), (46, 46, 60))])
+        m.box("head", [-4.3, 26.25, -4.3], [8.6, 2.5, 8.6], bf)
         m.box("head", [-0.75, 26.25, 4.2], [1.5, 2.25, 0.75], solid((16, 16, 22)))
         m.strand([-0.4, 26.5, 4.6], [-0.3, -1, 0.35], 3.5, 1, solid((16, 16, 22)), bone="head", segs=2)
         m.strand([0.4, 26.5, 4.6], [0.3, -1, 0.4], 3, 1, solid((16, 16, 22)), bone="head", segs=2)
@@ -735,3 +735,369 @@ def export(m, identifier):
     }
     head = face_rects(*uvs[0], m.cubes[0]["size"])["north"]
     return geo, img, head
+
+
+# ==================================================================================
+# PIXEL-ART PASS (overrides the HD painters above).
+# Research on the most downloaded Bedrock Dragon Ball add-ons showed that the
+# "premium Minecraft" look comes from native-resolution pixel art: hand-picked
+# 5-tone shade ramps, per-pixel noise/dithering, edge occlusion, and faces drawn
+# pixel by pixel. Smooth HD shading reads as soft/plastic, so we paint like that.
+# ==================================================================================
+S = 2  # 16 x 16 faces, crisp pixel art
+
+BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
+FACE_LIGHT = {"north": 0.0, "east": -0.35, "west": -0.7, "south": -0.9, "up": 0.5, "down": -1.6}
+
+
+def ramp(base):
+    """5-tone ramp: deep shadow (hue-shifted cool), shadow, base, light, highlight (warm)."""
+    return [
+        mix(dark(base, 0.52), (30, 20, 70), 0.18),
+        mix(dark(base, 0.74), (40, 30, 80), 0.08),
+        base,
+        mix(light(base, 0.18), (255, 240, 200), 0.05),
+        mix(light(base, 0.4), (255, 245, 210), 0.1),
+    ]
+
+
+def _hash(x, y, s):
+    v = (x * 374761393 + y * 668265263 + s * 2147483647) & 0xFFFFFFFF
+    v = (v ^ (v >> 13)) * 1274126177 & 0xFFFFFFFF
+    return (v & 0xFFFF) / 65535.0
+
+
+def pixel_mat(img, base, face, noise=0.35, vgrad=1.0, ao=True, seed=0):
+    """Paint a material with ramp shading, ordered dithering and occluded edges."""
+    w, h = img.size
+    px = img.load()
+    rp = ramp(base)
+    for y in range(h):
+        for x in range(w):
+            t = 2.0 + FACE_LIGHT[face]
+            if face not in ("up", "down"):
+                t += 0.45 - vgrad * (y / max(1, h - 1)) * 0.9
+            if ao:
+                if y == h - 1 or (x in (0, w - 1) and face not in ("up", "down")):
+                    t -= 0.8
+                if y == 0 and face not in ("down",):
+                    t += 0.6
+            t += (_hash(x, y, seed + w * 7 + h) - 0.5) * noise
+            t += (BAYER[y % 4][x % 4] / 16.0 - 0.5) * (0.3 if sum(base) > 200 else 0.12)
+            if sum(base) < 200:
+                t = min(t, 3.2)
+            px[x, y] = rp[max(0, min(4, int(round(t))))] + (255,)
+
+
+def solid(base, outline=True, grain=0.0, shadow=0.26):
+    def p(face, img):
+        pixel_mat(img, base, face, seed=sum(base))
+    return p
+
+
+def layered(base, details, grain=0.0, shadow=0.26):
+    def p(face, img):
+        pixel_mat(img, base, face, seed=sum(base))
+        px = img.load()
+        for f in details:
+            f(face, px, img.size[0], img.size[1], base)
+    return p
+
+
+def hair_paint(base):
+    """Pixel hair: strand streaks along the spike, dark root, bright tip, ink edges."""
+    rp = ramp(base)
+    ink = dark(base, 0.38) if sum(base) > 360 else (10, 10, 16)
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            for x in range(w):
+                t = 1 - y / max(1, h - 1)
+                v = 1.0 + 2.4 * t + FACE_LIGHT[face] * 0.8
+                v += 0.8 if x % 3 == 1 and t > 0.3 else 0.0  # strand highlight lines
+                v -= 0.7 if x % 3 == 0 and t < 0.6 else 0.0  # strand separations
+                c = rp[max(0, min(4, int(v)))]
+                if face in ("north", "south", "east", "west") and (x == 0 or x == w - 1) and w > 2:
+                    c = ink if t < 0.85 else rp[1]
+                if face == "down":
+                    c = rp[0]
+                px[x, y] = c + (255,)
+    return p
+
+
+def skin_arm():
+    def p(face, img):
+        pixel_mat(img, SKIN, face, noise=0.45, seed=5)
+        px = img.load()
+        w, h = img.size
+        rp = ramp(SKIN)
+        if face in ("north", "south", "east", "west") and h >= 20:
+            # bicep bulge (upper), elbow crease, forearm muscle line
+            for x in range(1, w - 1):
+                px[x, int(h * 0.42)] = rp[1] + (255,)
+            for y in range(2, int(h * 0.38)):
+                px[w // 2 - 1 if face in ("north", "east") else w // 2, y] = rp[3] + (255,)
+            for y in range(int(h * 0.5), int(h * 0.8)):
+                px[1 if face != "south" else w - 2, y] = rp[1] + (255,)
+    return p
+
+
+# ---------------------------------------------------------------- pixel faces (16 x 16)
+# Rows 0-5 sit under the hair cap. Legend:
+#  . skin   , skin shadow   h hair   H hair dark   b brow   k lash/ink   w eye white
+#  i iris   I iris dark   p pupil   g grey lash   n nose   m mouth   x band   X band light
+FACES = {
+    "goku": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hHhhhHhhhhHhhhHh", ",H,,,,H,,H,,,,H,",
+        ".bb..........bb.", "..bbb......bbb..",
+        ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
+        ".......n........", "......,n,.......", "......mmmm......", ",..............,", ",,............,,",
+    ],
+    "calm": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hHhhhHhhhhHhhhHh", ",H,,,,H,,H,,,,H,",
+        "................", ".bbbb......bbbb.",
+        ".kkkkk....kkkkk.", ".wwiIi....iIiww.", "..wII,....,IIw..",
+        ".......n........", "......,n,.......", "......mmmm......", ",..............,", ",,............,,",
+    ],
+    "ssj3": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hHhhhHhhhhHhhhHh", ",H,,,,H,,H,,,,H,",
+        ",,,,,,....,,,,,,", "..,,,,....,,,,..",
+        ".kkkkk....kkkkk.", ".wwiIp....pIiww.", "..wII,....,IIw..",
+        ".......n........", "......,n,.......", "......mmmm......", ",..............,", ",,............,,",
+    ],
+    "vegeta": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhHhhhhhhhhhhHhh", ",,,,,,hhhh,,,,,,",
+        ".bb....hh....bb.", "..bbb.,..,.bbb..",
+        "...kkkk..kkkk...", "..wwiI....Iiww..", "...,,......,,...",
+        ".......n........", "......,n,.......", "......mmmm......", ".....m....m.....", ",,............,,",
+    ],
+    "gojo": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhhhhhhhhhhh", ",h,,h,,hh,,h,,h,",
+        "..ggg......ggg..", ".WWWWW....WWWWW.",
+        ".wiiIw....wIiiw.", ".wiPIw....wIPiw.", "..wIw......wIw..",
+        ".......n........", "......,n,.......", "......mmm.m.....", ",..............,", ",,............,,",
+    ],
+    "gojo_band": [
+        "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh", "hhhhhhhhhhhhhhhh",
+        "hhhhhhhhhhhhhhhh", ",h,,h,,hh,,h,,h,",
+        "................", "XXXXXXXXXXXXXXXX",
+        "xxxxxxxxxxxxxxxx", "xxXxxxxxxxxxXxxx", "xxxxxxxxxxxxxxxx",
+        ".......n........", "......,n,.......", "......mmm.m.....", ",..............,", ",,............,,",
+    ],
+}
+
+
+def head_paint(hair, iris, brows=True, style="goku", blindfold=False):
+    if style == "goku" and not brows:
+        style = "ssj3"
+    key = "gojo_band" if blindfold else style
+    grid = FACES[key]
+    hr = ramp(hair)
+    sr = ramp(SKIN)
+    iris = iris or (60, 60, 60)
+    brow = hair if sum(hair) > 360 else (24, 20, 26)
+    pal = {
+        ".": sr[2], ",": sr[1], "h": hr[2], "H": hr[0], "b": dark(brow, 0.85), "k": (18, 12, 14),
+        "w": (250, 250, 250), "i": iris, "I": dark(iris, 0.55), "p": (12, 10, 14), "P": (18, 40, 96),
+        "g": (190, 190, 205), "W": (246, 246, 252), "n": sr[1], "m": (140, 70, 62),
+        "x": (18, 18, 24), "X": (44, 44, 58),
+    }
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        if face == "north":
+            for y in range(h):
+                row = grid[y * 16 // h]
+                for x in range(w):
+                    ch = row[x * 16 // w]
+                    c = pal[ch]
+                    if ch == "." and _hash(x, y, 3) > 0.82:
+                        c = sr[3]
+                    px[x, y] = c + (255,)
+            return
+        if face == "up":
+            pixel_mat(img, hair, face, seed=11)
+            return
+        if face == "down":
+            pixel_mat(img, SKIN_SH, face, seed=12)
+            return
+        pixel_mat(img, SKIN, face, noise=0.4, seed=13)
+        hair_rows = h * 7 // 8 if face == "south" else h * 6 // 16
+        for y in range(hair_rows):
+            for x in range(w):
+                px[x, y] = hr[2 if (x + y) % 4 else 1] + (255,)
+        if face in ("east", "west"):
+            front = w - 1 if face == "east" else 0
+            for y in range(hair_rows, h * 10 // 16):  # sideburn
+                for dx in range(2):
+                    xx = front - dx if face == "east" else front + dx
+                    px[xx, y] = hr[1] + (255,)
+            if blindfold:
+                for y in range(h * 7 // 16, h * 11 // 16):
+                    for x in range(w):
+                        px[x, y] = pal["x"] + (255,)
+    return p
+
+
+# ---------------------------------------------------------------- pixel details (f(face, px, w, h, base))
+
+def _put(px, w, h, x, y, c):
+    if 0 <= x < w and 0 <= y < h:
+        px[x, y] = c + (255,)
+
+
+def gi_front(face, px, w, h, base):
+    if face != "north":
+        return
+    blue = ramp(GI_BLUE)
+    rp = ramp(GI)
+    cx = w // 2
+    for y in range(0, h // 3 + 1):  # V-neck
+        half = max(0, (h // 3 - y) * 3 // 4)
+        for x in range(cx - half, cx + half):
+            _put(px, w, h, x, y, blue[2 if (x + y) % 3 else 1])
+        _put(px, w, h, cx - half - 1, y, rp[0])
+        _put(px, w, h, cx + half, y, rp[0])
+    # symbol: 4x4 white disc with black glyph, on the character's left chest
+    sx, sy = w - 6, 3
+    disc = ["." "ww" ".", "wkww", "wkkw", ".ww."]
+    for j, row in enumerate(disc):
+        for i, ch in enumerate(row):
+            if ch == "w":
+                _put(px, w, h, sx + i, sy + j, (248, 246, 238))
+            elif ch == "k":
+                _put(px, w, h, sx + i, sy + j, (16, 16, 16))
+    for x, y in ((3, h - 7), (4, h - 6), (4, h - 5), (5, h - 4), (w - 4, h - 7), (w - 5, h - 6), (w - 5, h - 5), (w - 6, h - 4)):
+        _put(px, w, h, x, y, rp[1])
+
+
+def gi_back(face, px, w, h, base):
+    if face != "south":
+        return
+    cx, cy = w // 2, h // 3
+    disc = [
+        "..wwww..",
+        ".wwwwww.",
+        "wwkkkkww",
+        "wwwkwwww",
+        "wwkkkkww",
+        "wwwkwkww",
+        ".wwkkkw.",
+        "..wwww..",
+    ]
+    for j, row in enumerate(disc):
+        for i, ch in enumerate(row):
+            if ch == "w":
+                _put(px, w, h, cx - 4 + i, cy - 4 + j, (248, 246, 238))
+            elif ch == "k":
+                _put(px, w, h, cx - 4 + i, cy - 4 + j, (16, 16, 16))
+
+
+def laces(face, px, w, h, base):
+    if face != "north":
+        return
+    for y in range(1, h - 2, 2):
+        for x in range(1, w - 1):
+            if (x + y) % 3 == 0:
+                _put(px, w, h, x, y, (200, 30, 30))
+
+
+def band(faces, y0, y1, colour):
+    """Horizontal band of a material (looked up at paint time so palettes can change)."""
+    def f(face, px, w, h, base):
+        if face not in faces:
+            return
+        c = {"gold": ARMOR_GOLD, "skin": SKIN}[colour]
+        rp = ramp(c)
+        a, b = int(y0 * h), max(int(y0 * h) + 1, int(round(y1 * h)))
+        if face == "down":
+            a, b = 0, h
+        for y in range(a, b):
+            for x in range(w):
+                _put(px, w, h, x, y, rp[3] if y == a else rp[2 if (x + y) % 4 else 1])
+    return f
+
+
+def lines(spec, col, width=1):
+    faces, polys = spec
+
+    def f(face, px, w, h, base):
+        if face not in faces:
+            return
+        for poly in polys:
+            for (x0, y0), (x1, y1) in zip(poly, poly[1:]):
+                n = max(abs((x1 - x0) * w), abs((y1 - y0) * h), 1)
+                for s in range(int(n) + 1):
+                    t = s / n
+                    _put(px, w, h, int((x0 + (x1 - x0) * t) * (w - 1)), int((y0 + (y1 - y0) * t) * (h - 1)), col)
+    return f
+
+
+def armor_chest(face, px, w, h, base):
+    gr = ramp(ARMOR_GOLD)
+    ar = ramp(ARMOR)
+    top = int(h * 0.7)
+    if face in SIDES:
+        for y in range(top, h):
+            for x in range(w):
+                c = gr[3] if y == top else gr[2 if (x + y) % 5 else 1]
+                if x % 4 == 0 and face == "north":
+                    c = gr[0]
+                _put(px, w, h, x, y, c)
+    if face == "north":
+        cx = w // 2
+        for y in range(1, top - 1):
+            _put(px, w, h, cx, y, ar[1])
+        for x in range(2, cx - 1):
+            _put(px, w, h, x, top // 2 + abs(x - cx // 2) // 3, ar[1])
+            _put(px, w, h, w - 1 - x, top // 2 + abs(x - cx // 2) // 3, ar[1])
+        for x in (2, 3):
+            _put(px, w, h, x, 2, ar[4])
+
+
+def suit_muscle(face, px, w, h, base):
+    rp = ramp(SUIT)
+    if face in SIDES:
+        for y in range(2, int(h * 0.4)):
+            _put(px, w, h, w // 2, y, rp[3])
+        for x in range(1, w - 1):
+            _put(px, w, h, x, int(h * 0.45), rp[0])
+
+
+def jacket(face, px, w, h, base):
+    rp = ramp(UNI)
+    if face == "north":
+        for y in range(h):
+            _put(px, w, h, w // 2, y, (6, 6, 12))
+            _put(px, w, h, w // 2 + 1, y, rp[3])
+    if face in ("east", "west", "south"):
+        for y in range(h):
+            _put(px, w, h, w // 2, y, rp[0])
+
+
+def collar(face, px, w, h, base):
+    if face == "north":
+        cx, cy = w // 2, h // 2
+        for dx, dy in ((0, 0), (-1, 0), (0, -1), (-1, -1)):
+            _put(px, w, h, cx + dx, cy + dy, (220, 180, 70))
+        _put(px, w, h, cx, cy, (120, 86, 26))
+
+
+# Stronger, more saturated anime palette at pixel scale
+SKIN = (246, 202, 164)
+SKIN_SH = (214, 150, 118)
+GI = (240, 110, 20)
+GI_BLUE = (30, 52, 168)
+BOOT_BLUE = (28, 44, 136)
+SUIT = (26, 40, 128)
+ARMOR = (236, 236, 228)
+ARMOR_GOLD = (222, 168, 36)
+UNI = (22, 25, 40)
