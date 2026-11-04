@@ -2,15 +2,14 @@
 
 Models are authored in Blockbench space (front = -Z, the character's right = +X,
 rotations in degrees, Euler order ZYX) and converted to Bedrock geometry on export
-the same way Blockbench does it. Textures are painted at S pixels per model unit.
+the same way Blockbench does it. Textures are painted at S pixels per model unit
+(S = 8 gives 64 x 64 faces) with anime cel shading.
 """
 import math
 
 from PIL import Image, ImageDraw
 
-S = 4  # texture pixels per model unit (4 = HD, like 32px faces)
-
-# ------------------------------------------------------------------ colour helpers
+S = 8
 
 
 def mix(a, b, t):
@@ -23,12 +22,6 @@ def dark(c, f=0.75):
 
 def light(c, f=0.35):
     return mix(c, (255, 255, 255), f)
-
-
-SKIN = (246, 205, 170)
-SKIN_SH = (222, 168, 135)
-
-# ------------------------------------------------------------------ model building
 
 
 class Model:
@@ -71,161 +64,250 @@ def clampf(x):
 
 
 # ------------------------------------------------------------------ painters
-# A painter is f(face, img) where img is the face's own RGBA image (w*S x h*S).
-# face is one of north (front), south (back), east (character's right), west, up, down.
+# A painter is f(face, img); img is the face's own RGBA image (w*S x h*S).
+# face: north (front), south (back), east (character's right), west, up, down.
+
+LIGHT = {"north": 1.0, "east": 0.9, "west": 0.8, "south": 0.74, "up": 1.06, "down": 0.55}
+OUTLINE_K = 0.5
 
 
-def shade_face(img, base, face, outline=True, grad=0.18):
+def _rng(seed):
+    import random
+    return random.Random(seed)
+
+
+def cel(img, base, face, shadow=0.26, outline=True, grain=0.0, rim=True, seed=1):
+    """Anime cel shading: flat lit tone, hard shadow band, rim light, dark outline, optional fabric grain."""
     w, h = img.size
-    dr = ImageDraw.Draw(img)
-    top = light(base, 0.12) if face != "down" else dark(base, 0.8)
+    px = img.load()
+    lit = mix(base, (255, 255, 255), 0.06) if face in ("north", "up") else base
+    lit = tuple(min(255, int(v * LIGHT[face])) for v in lit)
+    sh = mix(dark(lit, 0.74), (40, 30, 90), 0.08)
+    r = _rng(seed + w * 31 + h)
+    cut = h * (1 - shadow) if face not in ("up", "down") else h + 1
     for y in range(h):
-        t = y / max(1, h - 1)
-        c = mix(top, dark(base, 1 - grad), t) if face not in ("up", "down") else base
-        dr.line([(0, y), (w - 1, y)], fill=c + (255,))
-    if outline and w > 2 and h > 2:
-        dr.rectangle([0, 0, w - 1, h - 1], outline=dark(base, 0.62) + (255,))
+        for x in range(w):
+            c = sh if y >= cut else lit
+            if grain:
+                n = r.uniform(-grain, grain)
+                c = tuple(max(0, min(255, int(v * (1 + n)))) for v in c)
+            px[x, y] = c + (255,)
+    if rim and face not in ("down",) and h > 6:
+        for x in range(w):
+            for y in range(max(1, S // 4)):
+                px[x, y] = light(lit, 0.22) + (255,)
+    if outline and w > 3 and h > 3:
+        oc = dark(base, OUTLINE_K) + (255,)
+        for x in range(w):
+            px[x, 0] = oc if not rim else px[x, 0]
+            px[x, h - 1] = oc
+        for y in range(h):
+            px[0, y] = oc
+            px[w - 1, y] = oc
 
 
-def solid(base, outline=True, grad=0.18):
+def solid(base, outline=True, grain=0.0, shadow=0.26):
     def p(face, img):
-        shade_face(img, base, face, outline, grad)
+        cel(img, base, face, shadow=shadow, outline=outline, grain=grain)
+    return p
+
+
+def layered(base, details, grain=0.0, shadow=0.26):
+    """Cel base + detail drawers f(face, draw, w, h, k) where k = S / 4 (pixel scale)."""
+    def p(face, img):
+        cel(img, base, face, shadow=shadow, grain=grain)
+        dr = ImageDraw.Draw(img)
+        for f in details:
+            f(face, dr, img.size[0], img.size[1], S / 4)
     return p
 
 
 def hair_paint(base):
-    """Cel-shaded hair strand: dark root, bright tip, highlight streak, crisp outline."""
+    """Anime hair: dark root, bright tip, hard shadow side, glossy highlight streak, ink outline."""
+    bright = sum(base) > 360
+
     def p(face, img):
         w, h = img.size
         px = img.load()
-        hi = light(base, 0.45)
+        tip = mix(base, (255, 255, 255), 0.28 if bright else 0.18)
+        root = dark(base, 0.55 if bright else 0.5)
+        shadow = mix(dark(base, 0.72), (60, 40, 120), 0.12)
+        gloss = mix(base, (255, 255, 255), 0.7 if bright else 0.42)
+        ink = dark(base, 0.35) if bright else (8, 8, 14)
         for y in range(h):
-            t = 1 - y / max(1, h - 1)  # 1 at top (tip), 0 at root
-            row = mix(dark(base, 0.62), light(base, 0.12), t)
+            t = 1 - y / max(1, h - 1)  # 1 at the tip
+            row = mix(root, tip, t ** 0.8)
             for x in range(w):
                 c = row
-                if face in ("north", "south", "east", "west") and w > 3:
-                    edge = min(x, w - 1 - x)
-                    if edge == 0:
-                        c = dark(base, 0.62)
-                    elif x == w // 3 and t > 0.25:
-                        c = mix(row, hi, 0.55)
-                if face in ("up", "down"):
-                    c = mix(dark(base, 0.8), base, 0.5)
+                if face in ("north", "south", "east", "west"):
+                    u = x / max(1, w - 1)
+                    if face in ("west", "south"):
+                        c = mix(row, shadow, 0.55)
+                    elif u < 0.3:
+                        c = mix(row, shadow, 0.7)
+                    if face in ("north", "east") and x == w - 2 and t > 0.35:
+                        c = mix(c, gloss, 0.35)
+                    if x == 0 or x == w - 1:
+                        c = ink
+                else:
+                    c = mix(base, shadow, 0.35) if face == "up" else dark(base, 0.5)
                 px[x, y] = c + (255,)
     return p
 
 
-def layered(base, details):
-    """Solid base + list of detail drawers f(face, draw, w, h)."""
-    def p(face, img):
-        shade_face(img, base, face)
-        dr = ImageDraw.Draw(img)
-        for f in details:
-            f(face, dr, img.size[0], img.size[1])
-    return p
+# ------------------------------------------------------------------ skin & muscles
+
+SKIN = (250, 214, 182)
+SKIN_SH = (222, 162, 132)
+SKIN_INK = (120, 62, 48)
 
 
-# ------------------------------------------------------------------ faces
+def muscle_arm(face, dr, w, h, k):
+    """Bicep / forearm definition on a bare arm."""
+    sh = SKIN_SH + (255,)
+    hl = light(SKIN, 0.35) + (255,)
+    if face in ("north", "south", "east", "west"):
+        dr.arc([w * 0.12, h * 0.02, w * 0.88, h * 0.44], 20, 160, fill=sh, width=max(1, int(k)))
+        dr.line([(w * 0.3, h * 0.12), (w * 0.4, h * 0.3)], fill=hl, width=max(1, int(k)))
+        dr.line([(w * 0.2, h * 0.47), (w * 0.8, h * 0.5)], fill=sh, width=max(1, int(k)))
+        dr.line([(w * 0.6, h * 0.55), (w * 0.7, h * 0.85)], fill=sh, width=1)
 
 
-def head_paint(hair, eyes, brows=True, style="goku", blindfold=False):
-    """Head cube: hair on top/back/sides, an anime face on the front (32x32)."""
-    def p(face, img):
-        w, h = img.size
-        dr = ImageDraw.Draw(img)
-        if face == "up":
-            shade_face(img, hair, face, outline=False)
-            return
-        if face == "down":
-            shade_face(img, SKIN_SH, face, outline=False)
-            return
-        shade_face(img, SKIN, face, outline=False, grad=0.08)
-        if face == "south":
-            dr.rectangle([0, 0, w, int(h * 0.85)], fill=hair + (255,))
-            return
-        if face in ("east", "west"):
-            dr.rectangle([0, 0, w, int(h * 0.34)], fill=hair + (255,))
-            front = w - 1 if face == "east" else 0
-            sb = [front - 5, int(h * 0.34), front + 5, int(h * 0.58)]
-            dr.rectangle(sb, fill=hair + (255,))
-            if blindfold:
-                dr.rectangle([0, 9, w, 18], fill=(14, 14, 20, 255))
-            return
-        # ---- front face (32x32)
-        dr.rectangle([0, 0, w, 7], fill=hair + (255,))
-        dr.rectangle([0, 8, w, 10], fill=SKIN_SH + (255,))  # hair shadow on forehead
-        if style == "vegeta":
-            dr.polygon([(9, 7), (16, 15), (23, 7)], fill=hair + (255,))  # widow's peak
-        if blindfold:
-            dr.rectangle([0, 9, w, 18], fill=(14, 14, 20, 255))
-            dr.line([(0, 10), (w, 10)], fill=(40, 40, 52, 255))
-            dr.line([(3, 14), (12, 13)], fill=(34, 34, 44, 255))
-            dr.line([(20, 13), (29, 14)], fill=(34, 34, 44, 255))
-        else:
-            draw_eyes(dr, eyes, style, brows, hair)
-        # nose + mouth + cheeks
-        dr.line([(16, 21), (16, 22)], fill=SKIN_SH + (255,))
-        dr.point((15, 23), fill=SKIN_SH + (255,))
-        if style == "gojo":
-            dr.line([(13, 26), (18, 26)], fill=(170, 90, 90, 255))
-            dr.point((19, 25), fill=(170, 90, 90, 255))  # smirk
-        elif style == "vegeta":
-            dr.line([(13, 26), (19, 26)], fill=(150, 80, 70, 255))
-            dr.point((12, 25), fill=(150, 80, 70, 255))
-        else:
-            dr.line([(13, 26), (19, 26)], fill=(160, 85, 75, 255))
-            dr.line([(14, 27), (18, 27)], fill=SKIN_SH + (255,))
-        dr.line([(5, 31), (26, 31)], fill=SKIN_SH + (255,))  # jaw shade
-    return p
+def skin_arm():
+    return layered(SKIN, [muscle_arm], shadow=0.22)
 
 
-def draw_eyes(dr, iris, style, brows, hair):
-    lash = (20, 16, 18, 255)
+def ears(m):
+    for sx in (1, -1):
+        x = 4 if sx == 1 else -4.75
+        m.box("head", [x, 26.25, -0.75], [0.75, 2.25, 1.5], solid(SKIN, shadow=0.3))
+
+
+# ------------------------------------------------------------------ faces (drawn on a 64 x 64 grid)
+
+def _pt(pts, k, side):
+    out = []
+    for x, y in pts:
+        xx = x if side == 0 else 63 - x
+        out.append((xx * k, y * k))
+    return out
+
+
+def face_front(dr, w, style, hair, iris, brows, blindfold):
+    k = w / 64.0
+    ink = (24, 14, 14, 255)
     white = (255, 255, 255, 255)
+    skin_sh = SKIN_SH + (255,)
+    # hair shadow on the forehead (jagged like bangs)
+    jag = [(0, 18)] + [(x, 28 if (x // 8) % 2 else 23) for x in range(0, 65, 4)] + [(64, 18)]
+    dr.polygon([(x * k, y * k) for x, y in jag], fill=skin_sh)
+    dr.rectangle([0, 0, w, 19 * k], fill=hair + (255,))
+    if style == "vegeta":
+        dr.polygon([(16 * k, 18 * k), (32 * k, 34 * k), (48 * k, 18 * k)], fill=hair + (255,))  # widow's peak
+    # side shading (angular jaw)
     for side in (0, 1):
-        # side 0 = viewer's left; eyes mirror around x = 15.5
-        def X(x):
-            return x if side == 0 else 31 - x
+        dr.polygon(_pt([(0, 32), (3, 32), (5, 50), (11, 62), (11, 64), (0, 64)], k, side), fill=skin_sh)
+    # nose + mouth
+    dr.polygon([(33 * k, 40 * k), (35 * k, 46 * k), (31 * k, 46 * k)], fill=skin_sh)
+    dr.line([(31 * k, 46 * k), (34 * k, 46 * k)], fill=SKIN_INK + (255,), width=max(1, int(k)))
+    if style == "vegeta":
+        dr.line([(25 * k, 53 * k), (27 * k, 51 * k), (37 * k, 51 * k), (39 * k, 53 * k)], fill=SKIN_INK + (255,), width=max(1, int(k)))
+        dr.line([(18 * k, 42 * k), (21 * k, 45 * k)], fill=skin_sh, width=max(1, int(k)))
+        dr.line([(46 * k, 42 * k), (43 * k, 45 * k)], fill=skin_sh, width=max(1, int(k)))
+    elif style == "gojo":
+        dr.line([(27 * k, 52 * k), (37 * k, 52 * k), (40 * k, 50 * k)], fill=SKIN_INK + (255,), width=max(1, int(k)))
+    else:
+        dr.line([(26 * k, 52 * k), (38 * k, 52 * k)], fill=SKIN_INK + (255,), width=max(1, int(k)))
+        dr.line([(29 * k, 55 * k), (35 * k, 55 * k)], fill=skin_sh, width=max(1, int(k)))
+    dr.line([(18 * k, 63 * k), (46 * k, 63 * k)], fill=skin_sh, width=max(1, int(k)))  # chin line
+
+    if blindfold:
+        band = (16, 16, 22, 255)
+        dr.rectangle([0, 22 * k, w, 41 * k], fill=band)
+        dr.line([(0, 23 * k), (w, 23 * k)], fill=(52, 52, 66, 255), width=max(1, int(k)))
+        for x0, y0, x1, y1 in ((6, 30, 22, 27), (40, 27, 58, 31), (24, 36, 40, 35)):
+            dr.line([(x0 * k, y0 * k), (x1 * k, y1 * k)], fill=(40, 40, 54, 255), width=max(1, int(k)))
+        dr.line([(0, 40 * k), (w, 40 * k)], fill=(6, 6, 10, 255), width=max(1, int(k)))
+        return
+
+    for side in (0, 1):
+        P = lambda pts: _pt(pts, k, side)  # noqa: E731
         if style == "gojo":
-            top, bot = 15, 21
-            dr.polygon([(X(6), top + 1), (X(13), top), (X(14), top + 2), (X(13), bot), (X(7), bot)], fill=white)
-            dr.rectangle(sorted_box(X(9), top + 1, X(13), bot), fill=iris + (255,))
-            dr.rectangle(sorted_box(X(10), top + 1, X(12), top + 3), fill=light(iris, 0.6) + (255,))
-            dr.rectangle(sorted_box(X(10), top + 4, X(12), bot - 1), fill=dark(iris, 0.6) + (255,))
-            dr.point((X(10), top + 2), fill=white)
-            dr.line([(X(5), top), (X(14), top - 1)], fill=(235, 235, 245, 255), width=2)  # white lashes
+            dr.polygon(P([(10, 33), (15, 28), (27, 28), (29, 31), (27, 41), (14, 41)]), fill=white)
+            dr.ellipse(sorted_pts(P([(17, 28), (27, 41)])), fill=mix(iris, (255, 255, 255), 0.25) + (255,))
+            dr.ellipse(sorted_pts(P([(18, 32), (26, 41)])), fill=iris + (255,))
+            dr.ellipse(sorted_pts(P([(19, 36), (25, 41)])), fill=dark(iris, 0.55) + (255,))
+            dr.ellipse(sorted_pts(P([(20, 33), (24, 38)])), fill=(18, 40, 90, 255))
+            dr.rectangle(sorted_pts(P([(19, 30), (21, 33)])), fill=white)
+            dr.point(P([(24, 38)])[0], fill=white)
+            dr.line(P([(8, 34), (14, 28), (28, 27), (31, 30)]), fill=(245, 245, 252, 255), width=max(2, int(2 * k)))
+            dr.line(P([(8, 34), (14, 28), (28, 27), (31, 30)]), fill=(150, 150, 170, 255), width=1)
+            dr.line(P([(9, 30), (6, 28)]), fill=(245, 245, 252, 255), width=max(1, int(k)))
             if brows:
-                dr.line([(X(6), top - 4), (X(13), top - 5)], fill=(240, 240, 248, 255), width=1)
+                dr.line(P([(9, 22), (20, 20), (29, 22)]), fill=(240, 240, 248, 255), width=max(1, int(1.5 * k)))
             continue
-        top, bot = 16, 20
-        sharp = style in ("goku", "vegeta")
-        dr.polygon([(X(6), top + 1), (X(13), top), (X(14), top + 2), (X(13), bot), (X(7), bot - 1)], fill=white)
-        dr.rectangle(sorted_box(X(10), top + 1, X(13), bot), fill=iris + (255,))
-        dr.rectangle(sorted_box(X(11), top + 2, X(12), bot - 1), fill=dark(iris, 0.35) + (255,))
-        dr.point((X(11), top + 1), fill=white)
-        dr.line([(X(5), top + 1), (X(9), top), (X(14), top - (1 if sharp else 0))], fill=lash, width=2)
-        if brows:
-            bc = dark(hair, 0.7) + (255,) if sum(hair) < 200 else hair + (255,)
-            if style == "vegeta":
-                dr.line([(X(5), top - 5), (X(14), top - 2)], fill=bc, width=2)
-            else:
-                dr.line([(X(5), top - 4), (X(14), top - 2)], fill=bc, width=2)
+        angry = style == "vegeta"
+        top = 33 if angry else 31
+        bot = 38 if angry else 39
+        dr.polygon(P([(12, top + 3), (16, top), (26, top), (28, top + 2), (26, bot), (15, bot)]), fill=white)
+        dr.ellipse(sorted_pts(P([(19, top - 1), (26, bot + 1)])), fill=iris + (255,))
+        dr.ellipse(sorted_pts(P([(21, top + 2), (25, bot)])), fill=dark(iris, 0.3) + (255,))
+        dr.rectangle(sorted_pts(P([(20, top + 1), (21, top + 3)])), fill=white)
+        lash_w = max(2, int((4 if angry else 3) * k))
+        if angry:
+            dr.line(P([(10, top + 1), (16, top - 1), (27, top + 1), (29, top + 3)]), fill=ink, width=lash_w)
         else:
-            dr.line([(X(6), top - 3), (X(13), top - 2)], fill=SKIN_SH + (255,), width=1)  # SSJ3 brow ridge
+            dr.line(P([(11, top + 4), (15, top), (26, top), (28, top + 2)]), fill=ink, width=lash_w)
+        dr.line(P([(16, bot), (25, bot)]), fill=SKIN_INK + (255,), width=max(1, int(k)))
+        brow_col = (dark(hair, 0.75) if sum(hair) > 360 else (22, 18, 22)) + (255,)
+        if brows:
+            if angry:
+                dr.polygon(P([(9, 24), (29, 30), (29, 33), (9, 27)]), fill=brow_col)
+                dr.line(P([(30, 26), (31, 31)]), fill=skin_sh, width=max(1, int(k)))  # frown crease
+            elif style == "calm":
+                dr.polygon(P([(10, 25), (28, 26), (28, 28), (10, 27)]), fill=brow_col)
+            else:
+                dr.polygon(P([(9, 24), (28, 27), (28, 30), (9, 27)]), fill=brow_col)
+                dr.line(P([(30, 27), (31, 30)]), fill=skin_sh, width=max(1, int(k)))
+        else:
+            dr.line(P([(10, 27), (29, 29)]), fill=skin_sh, width=max(2, int(2 * k)))  # SSJ3 brow ridge
+            dr.line(P([(14, 24), (28, 26)]), fill=skin_sh, width=max(1, int(k)))
+
+
+def sorted_pts(p):
+    (x0, y0), (x1, y1) = p
+    return [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
 
 
 def sorted_box(x0, y0, x1, y1):
     return [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
 
 
-# ------------------------------------------------------------------ shared parts
-
-
-def ears(m):
-    for sx in (1, -1):
-        x = 4 if sx == 1 else -4.75
-        m.box("head", [x, 26.5, -0.75], [0.75, 2.25, 1.5], solid(SKIN, grad=0.1))
+def head_paint(hair, iris, brows=True, style="goku", blindfold=False):
+    def p(face, img):
+        w, h = img.size
+        if face == "up":
+            cel(img, hair, face, outline=False)
+            return
+        if face == "down":
+            cel(img, SKIN_SH, face, outline=False)
+            return
+        cel(img, SKIN, face, shadow=0.0 if face == "north" else 0.18, outline=False, rim=False)
+        dr = ImageDraw.Draw(img)
+        k = w / 64.0
+        if face == "south":
+            dr.rectangle([0, 0, w, h * 0.85], fill=hair + (255,))
+            return
+        if face in ("east", "west"):
+            dr.rectangle([0, 0, w, h * 0.38], fill=hair + (255,))
+            front = w if face == "east" else 0
+            dr.rectangle(sorted_box(front - 10 * k, h * 0.38, front + 10 * k, h * 0.62), fill=hair + (255,))
+            dr.rectangle([0, h * 0.78, w, h], fill=SKIN_SH + (255,))
+            if blindfold:
+                dr.rectangle([0, 22 * k, w, 41 * k], fill=(16, 16, 22, 255))
+            return
+        face_front(dr, w, style, hair, iris, brows, blindfold)
+    return p
 
 
 def base_body(m, torso, arm, leg, head):
@@ -249,83 +331,195 @@ def both_legs(m, frm, size, paint, **kw):
     m.box("leftLeg", [-(frm[0] + size[0]), frm[1], frm[2]], size, paint, **kw)
 
 
+def lines(spec, col, width=1):
+    """Detail drawer: list of polylines in 0..1 face coordinates, for the given faces."""
+    faces, polys = spec
+
+    def f(face, dr, w, h, k):
+        if face not in faces:
+            return
+        for poly in polys:
+            dr.line([(x * (w - 1), y * (h - 1)) for x, y in poly], fill=col + (255,), width=max(1, int(width * k)))
+    return f
+
+
 # ------------------------------------------------------------------ Goku
 
-GI = (247, 128, 28)
-GI_BLUE = (36, 62, 176)
-BOOT_BLUE = (32, 50, 140)
+GI = (238, 112, 18)
+GI_BLUE = (28, 50, 160)
+BOOT_BLUE = (26, 42, 128)
+SIDES = ("north", "south", "east", "west")
 
 
-def kanji_front(face, dr, w, h):
+def gi_front(face, dr, w, h, k):
     if face != "north":
         return
-    # chest symbol on the character's left (viewer's right)
-    cx, cy = w - 9, 9
-    dr.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(252, 250, 242, 255), outline=(30, 30, 30, 255))
-    dr.line([(cx - 2, cy - 2), (cx + 2, cy - 2)], fill=(20, 20, 20, 255))
-    dr.line([(cx, cy - 3), (cx, cy + 3)], fill=(20, 20, 20, 255))
-    dr.line([(cx - 2, cy + 1), (cx + 2, cy + 1)], fill=(20, 20, 20, 255))
-    # V-neck showing the blue undershirt
-    dr.polygon([(w // 2 - 7, 0), (w // 2 + 7, 0), (w // 2, 12)], fill=GI_BLUE + (255,))
-    dr.line([(w // 2 - 7, 0), (w // 2, 12), (w // 2 + 7, 0)], fill=dark(GI, 0.7) + (255,), width=1)
-    # fabric folds
-    for x in (8, 22):
-        dr.line([(x, 20), (x + 2, h - 2)], fill=dark(GI, 0.86) + (255,))
+    # V-neck with the blue undershirt
+    dr.polygon([(w * 0.28, 0), (w * 0.72, 0), (w * 0.5, h * 0.36)], fill=GI_BLUE + (255,))
+    dr.line([(w * 0.26, 0), (w * 0.5, h * 0.38), (w * 0.74, 0)], fill=dark(GI, 0.55) + (255,), width=max(2, int(k * 1.5)))
+    # chest symbol (character's left = viewer's right)
+    cx, cy, r = w * 0.76, h * 0.2, w * 0.11
+    dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(252, 250, 244, 255), outline=(20, 20, 20, 255), width=max(1, int(k)))
+    kanji(dr, cx, cy, r * 0.7, k)
+    # folds
+    for a, b in (((0.08, 0.38), (0.34, 0.95)), ((0.92, 0.38), (0.66, 0.95)), ((0.2, 0.6), (0.38, 0.98))):
+        dr.line([(a[0] * w, a[1] * h), (b[0] * w, b[1] * h)], fill=dark(GI, 0.7) + (255,), width=max(1, int(k)))
+        dr.line([(a[0] * w + 2 * k, a[1] * h), (b[0] * w + 2 * k, b[1] * h)], fill=light(GI, 0.25) + (255,), width=1)
 
 
-def kanji_back(face, dr, w, h):
+def gi_back(face, dr, w, h, k):
     if face != "south":
         return
-    cx, cy = w // 2, 14
-    dr.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], fill=(252, 250, 242, 255), outline=(30, 30, 30, 255), width=2)
-    k = (20, 20, 20, 255)
-    dr.line([(cx - 5, cy - 4), (cx + 5, cy - 4)], fill=k, width=2)
-    dr.line([(cx, cy - 7), (cx, cy + 6)], fill=k, width=2)
-    dr.line([(cx - 5, cy + 1), (cx + 5, cy + 1)], fill=k, width=2)
-    dr.line([(cx - 4, cy + 5), (cx + 4, cy + 5)], fill=k, width=2)
+    cx, cy, r = w * 0.5, h * 0.3, w * 0.24
+    dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(252, 250, 244, 255), outline=(20, 20, 20, 255), width=max(2, int(2 * k)))
+    kanji(dr, cx, cy, r * 0.72, k * 2)
+    for x in (0.2, 0.8):
+        dr.line([(x * w, h * 0.62), (x * w + 3 * k, h)], fill=dark(GI, 0.7) + (255,), width=max(1, int(k)))
 
 
-def laces(face, dr, w, h):
-    if face != "north":
-        return
-    for y in range(3, h - 6, 4):
-        dr.line([(3, y), (w - 4, y + 2)], fill=(210, 40, 40, 255), width=1)
-        dr.line([(w - 4, y), (3, y + 2)], fill=(210, 40, 40, 255), width=1)
+def kanji(dr, cx, cy, r, k):
+    """A bold brush-style kanji (悟-like) built from strokes."""
+    c = (18, 18, 18, 255)
+    wd = max(1, int(1.3 * k))
+    dr.line([(cx - r * 0.75, cy - r * 0.55), (cx - r * 0.75, cy + r * 0.8)], fill=c, width=wd)
+    dr.line([(cx - r * 1.0, cy - r * 0.15), (cx - r * 0.5, cy - r * 0.35)], fill=c, width=wd)
+    dr.line([(cx - r * 0.2, cy - r * 0.75), (cx + r * 0.9, cy - r * 0.75)], fill=c, width=wd)
+    dr.line([(cx + r * 0.3, cy - r * 0.75), (cx + r * 0.2, cy - r * 0.05)], fill=c, width=wd)
+    dr.line([(cx - r * 0.2, cy - r * 0.05), (cx + r * 0.9, cy - r * 0.05)], fill=c, width=wd)
+    dr.rectangle([cx - r * 0.1, cy + r * 0.25, cx + r * 0.8, cy + r * 0.85], outline=c, width=wd)
 
 
-def goku_body(m, hair, iris, brows=True):
-    base_body(m, solid(GI_BLUE), solid(SKIN, grad=0.12), solid(GI),
-              head_paint(hair, iris, brows, "goku"))
-    # gi vest + skirt
-    m.box("body", [-4.25, 12.5, -2.3], [8.5, 11.75, 4.6], layered(GI, [kanji_front, kanji_back]))
-    m.box("body", [-4.4, 9.5, -2.45], [8.8, 3.25, 4.9], solid(GI))
-    # lapels
-    m.box("body", [-0.5, 18, -2.6], [1, 6.5, 0.5], solid(dark(GI, 0.9)), rot=[0, 0, -26], pivot=[0, 18, -2.6])
-    m.box("body", [-0.5, 18, -2.6], [1, 6.5, 0.5], solid(dark(GI, 0.9)), rot=[0, 0, 26], pivot=[0, 18, -2.6])
-    # obi belt + knot with tails at the back
-    m.box("body", [-4.6, 12, -2.6], [9.2, 1.75, 5.2], solid(GI_BLUE))
+def goku_body(m, hair, iris, brows=True, style="goku"):
+    base_body(m, solid(GI_BLUE), skin_arm(), solid(GI), head_paint(hair, iris, brows, style))
+    m.box("body", [-4.25, 12.5, -2.3], [8.5, 11.75, 4.6], layered(GI, [gi_front, gi_back], grain=0.03))
+    m.box("body", [-4.4, 9.5, -2.45], [8.8, 3.25, 4.9],
+          layered(GI, [lines((SIDES, [[(0.2, 0), (0.15, 1)], [(0.75, 0), (0.85, 1)]]), dark(GI, 0.7))], grain=0.03))
+    m.box("body", [-0.5, 18, -2.6], [1, 6.5, 0.5], solid(dark(GI, 0.85)), rot=[0, 0, -26], pivot=[0, 18, -2.6])
+    m.box("body", [-0.5, 18, -2.6], [1, 6.5, 0.5], solid(dark(GI, 0.85)), rot=[0, 0, 26], pivot=[0, 18, -2.6])
+    belt = layered(GI_BLUE, [lines((SIDES, [[(0, 0.5), (1, 0.45)]]), light(GI_BLUE, 0.25))])
+    m.box("body", [-4.6, 12, -2.6], [9.2, 1.75, 5.2], belt)
     m.box("body", [-1.25, 11.5, 2.4], [2.5, 2.25, 1], solid(dark(GI_BLUE, 0.9)))
     m.strand([-0.6, 12, 3], [-0.35, -1, 0.25], 4.5, 1.25, solid(GI_BLUE), bone="body", segs=2)
     m.strand([0.6, 12, 3], [0.35, -1, 0.3], 4, 1.25, solid(GI_BLUE), bone="body", segs=2)
-    # undershirt sleeves, shoulders, wristbands
-    both_arms(m, [3.75, 19.25, -2.25], [4.5, 5, 4.5], solid(GI_BLUE))
-    both_arms(m, [3.6, 12, -2.4], [4.8, 3.25, 4.8], solid(GI_BLUE))
-    # baggy pants + boots
-    both_legs(m, [-0.4, 5, -2.4], [4.6, 7, 4.8], layered(GI, [lambda f, d, w, h: d.line([(w // 2, 2), (w // 2 + 1, h - 3)], fill=dark(GI, 0.85) + (255,)) if f == "north" else None]))
+    both_arms(m, [3.75, 19.25, -2.25], [4.5, 5, 4.5], layered(GI_BLUE, [lines((SIDES, [[(0, 0.85), (1, 0.85)]]), dark(GI_BLUE, 0.6))]))
+    band = layered(GI_BLUE, [lines((SIDES, [[(0, 0.18), (1, 0.18)], [(0, 0.82), (1, 0.82)]]), light(GI_BLUE, 0.3))])
+    both_arms(m, [3.6, 12, -2.4], [4.8, 3.25, 4.8], band)
+    pants = layered(GI, [lines((SIDES, [[(0.5, 0.05), (0.55, 0.6), (0.4, 1)], [(0.15, 0.3), (0.3, 0.9)]]), dark(GI, 0.68))], grain=0.03)
+    both_legs(m, [-0.4, 5, -2.4], [4.6, 7, 4.8], pants)
     both_legs(m, [-0.3, 0, -2.3], [4.4, 5.25, 4.6], layered(BOOT_BLUE, [laces]))
-    both_legs(m, [-0.5, 4.5, -2.5], [4.8, 1.25, 5], solid(dark(BOOT_BLUE, 0.85)))
+    both_legs(m, [-0.5, 4.5, -2.5], [4.8, 1.25, 5], solid(dark(BOOT_BLUE, 0.8)))
     both_legs(m, [0.1, 0, -3.3], [3.6, 1.75, 1.25], solid(BOOT_BLUE))
-    both_legs(m, [-0.35, 0, -2.4], [4.5, 0.5, 4.8], solid((235, 220, 190)))  # soles
+    both_legs(m, [-0.35, 0, -2.4], [4.5, 0.5, 4.8], solid((228, 214, 186)))
+
+
+def laces(face, dr, w, h, k):
+    if face != "north":
+        return
+    red = (214, 34, 34, 255)
+    step = int(6 * k)
+    for y in range(int(3 * k), h - int(4 * k), step):
+        dr.line([(w * 0.2, y), (w * 0.8, y + step * 0.6)], fill=red, width=max(1, int(k)))
+        dr.line([(w * 0.8, y), (w * 0.2, y + step * 0.6)], fill=red, width=max(1, int(k)))
+
+
+# ------------------------------------------------------------------ Vegeta
+
+SUIT = (24, 38, 120)
+ARMOR = (238, 238, 230)
+ARMOR_SH = (176, 178, 186)
+ARMOR_GOLD = (214, 164, 40)
+
+
+def armor_chest(face, dr, w, h, k):
+    gold_top = h * 0.7
+    if face in SIDES:
+        dr.rectangle([0, gold_top, w, h], fill=ARMOR_GOLD + (255,))
+        dr.line([(0, gold_top), (w, gold_top)], fill=dark(ARMOR_GOLD, 0.55) + (255,), width=max(1, int(k)))
+        dr.line([(0, gold_top + 3 * k), (w, gold_top + 3 * k)], fill=light(ARMOR_GOLD, 0.5) + (255,), width=1)
+        for x in (0.25, 0.5, 0.75):
+            dr.line([(x * w, gold_top), (x * w, h)], fill=dark(ARMOR_GOLD, 0.6) + (255,), width=max(1, int(k)))
+    if face == "north":
+        sh = ARMOR_SH + (255,)
+        dr.arc([w * 0.06, h * 0.05, w * 0.5, h * 0.55], 15, 165, fill=sh, width=max(2, int(1.5 * k)))
+        dr.arc([w * 0.5, h * 0.05, w * 0.94, h * 0.55], 15, 165, fill=sh, width=max(2, int(1.5 * k)))
+        dr.line([(w * 0.5, h * 0.05), (w * 0.5, gold_top)], fill=sh, width=max(1, int(k)))
+        dr.line([(w * 0.2, h * 0.12), (w * 0.35, h * 0.1)], fill=(255, 255, 255, 255), width=max(1, int(k)))
+
+
+def suit_muscle(face, dr, w, h, k):
+    if face in SIDES:
+        hl = light(SUIT, 0.25) + (255,)
+        dr.arc([w * 0.15, h * 0.05, w * 0.85, h * 0.6], 200, 340, fill=hl, width=max(1, int(k)))
+        dr.line([(w * 0.25, h * 0.7), (w * 0.75, h * 0.72)], fill=dark(SUIT, 0.6) + (255,), width=max(1, int(k)))
+
+
+def vegeta_body(m, hair, iris):
+    base_body(m, solid(SUIT), layered(SUIT, [suit_muscle]), layered(SUIT, [lines((SIDES, [[(0.5, 0.1), (0.45, 0.9)]]), dark(SUIT, 0.65))]), head_paint(hair, iris, True, "vegeta"))
+    m.box("body", [-4.5, 14.5, -2.75], [9, 9.25, 5.5], layered(ARMOR, [armor_chest], shadow=0.0))
+    m.box("body", [-3, 23.5, -2.25], [6, 1, 4.5], solid(SUIT))
+    pad = layered(ARMOR_GOLD, [lines((SIDES + ("up",), [[(0.1, 0.3), (0.9, 0.3)]]), light(ARMOR_GOLD, 0.6))])
+    both_arms(m, [3.6, 21.5, -2.6], [4.8, 2.5, 5.2], pad)
+    glove = layered(ARMOR, [lines((SIDES, [[(0, 0.25), (1, 0.25)], [(0.3, 0.6), (0.3, 1)], [(0.6, 0.6), (0.6, 1)]]), ARMOR_SH)])
+    both_arms(m, [3.6, 12, -2.4], [4.8, 4.75, 4.8], glove)
+    boot = layered(ARMOR, [lambda f, d, w, h, k: d.rectangle([0, 0, w, 3 * k], fill=ARMOR_GOLD + (255,)) if f in SIDES else None,
+                           lines((SIDES, [[(0.2, 0.4), (0.5, 0.55), (0.8, 0.4)]]), ARMOR_SH)])
+    both_legs(m, [-0.35, 0, -2.35], [4.5, 6.5, 4.7], boot)
+    both_legs(m, [0.1, 0, -3.45], [3.6, 2, 1.25], layered(ARMOR_GOLD, [lines((("north", "up"), [[(0.1, 0.25), (0.9, 0.25)]]), light(ARMOR_GOLD, 0.6))]))
+
+
+# ------------------------------------------------------------------ Gojo
+
+UNI = (20, 23, 38)
+UNI_HI = (52, 60, 92)
+
+
+def jacket(face, dr, w, h, k):
+    if face == "north":
+        dr.line([(w * 0.5, 0), (w * 0.5, h)], fill=(6, 6, 12, 255), width=max(1, int(k)))
+        dr.line([(w * 0.5 + k * 1.5, 0), (w * 0.5 + k * 1.5, h)], fill=UNI_HI + (255,), width=1)
+        for x in (0.15, 0.85):
+            dr.line([(w * x, h * 0.1), (w * x, h)], fill=UNI_HI + (255,), width=1)
+    if face in ("east", "west", "south"):
+        dr.line([(w * 0.5, h * 0.05), (w * 0.5, h)], fill=(8, 8, 14, 255), width=max(1, int(k)))
+        dr.line([(w * 0.2, 0), (w * 0.2, h)], fill=UNI_HI + (255,), width=1)
+
+
+def collar(face, dr, w, h, k):
+    if face == "north":
+        cx, cy, r = w / 2, h / 2, min(w, h) * 0.32
+        dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(216, 176, 70, 255), outline=(110, 80, 24, 255), width=max(1, int(k)))
+        dr.arc([cx - r * 0.55, cy - r * 0.55, cx + r * 0.55, cy + r * 0.55], 0, 290, fill=(110, 80, 24, 255), width=max(1, int(k)))
+    if face in SIDES:
+        dr.line([(0, 1), (w, 1)], fill=UNI_HI + (255,), width=1)
+
+
+def gojo_body(m, hair, iris, blindfold):
+    hand = layered(UNI, [lambda f, d, w, h, k: d.rectangle([0, h - 5 * k, w, h], fill=SKIN + (255,)),
+                         lines((SIDES, [[(0, 0.1), (1, 0.1)]]), UNI_HI)])
+    base_body(m, solid(UNI), hand, layered(UNI, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), UNI_HI)]),
+              head_paint(hair, iris, not blindfold, "gojo", blindfold))
+    m.box("body", [-4.3, 9, -2.3], [8.6, 15, 4.6], layered(UNI, [jacket], grain=0.04))
+    m.box("body", [-3.25, 23.5, -2.6], [6.5, 2.5, 5.2], layered(UNI_HI, [collar]))
+    both_arms(m, [3.8, 15, -2.2], [4.4, 9, 4.4], layered(UNI, [lines((SIDES, [[(0.3, 0.2), (0.35, 0.9)]]), UNI_HI)], grain=0.04))
+    both_arms(m, [3.7, 13.5, -2.3], [4.6, 1.5, 4.6], solid(UNI_HI))
+    shoe = layered((12, 12, 16), [lines((("north", "up"), [[(0.2, 0.3), (0.8, 0.3)]]), (90, 90, 110))])
+    both_legs(m, [-0.3, 0, -2.6], [4.4, 1.5, 5], shoe)
+    if blindfold:
+        band = layered((16, 16, 22), [lines((SIDES, [[(0, 0.2), (1, 0.3)], [(0, 0.7), (1, 0.6)]]), (46, 46, 60))])
+        m.box("head", [-4.3, 26.25, -4.3], [8.6, 2.5, 8.6], band)
+        m.box("head", [-0.75, 26.25, 4.2], [1.5, 2.25, 0.75], solid((16, 16, 22)))
+        m.strand([-0.4, 26.5, 4.6], [-0.3, -1, 0.35], 3.5, 1, solid((16, 16, 22)), bone="head", segs=2)
+        m.strand([0.4, 26.5, 4.6], [0.3, -1, 0.4], 3, 1, solid((16, 16, 22)), bone="head", segs=2)
 
 
 def goku_hair_base(m, c):
     hp = hair_paint(c)
-    m.box("hair", [-4.4, 27.75, -4.4], [8.8, 5, 8.8], hp)
+    m.box("hair", [-4.4, 29, -4.4], [8.8, 3.75, 8.8], hp)
     m.box("hair", [-4.5, 25, 0.25], [9, 7.5, 4.25], hp)
     # bangs over the forehead
-    m.strand([-2.3, 31.5, -4.1], [-0.3, -1, -0.4], 4.25, 3.25, hp)
-    m.strand([0.4, 31.75, -4.2], [0.05, -1, -0.45], 3.75, 3, hp)
-    m.strand([2.6, 31.5, -4.1], [0.4, -1, -0.35], 3.5, 2.75, hp)
+    m.strand([-2.3, 31.75, -4.1], [-0.3, -1, -0.45], 3.25, 3.25, hp)
+    m.strand([0.4, 32, -4.2], [0.05, -1, -0.5], 3, 3, hp)
+    m.strand([2.6, 31.75, -4.1], [0.4, -1, -0.4], 2.75, 2.75, hp)
     # big tufts
     m.strand([0.3, 32.25, -1.2], [0.1, 1, 0.3], 7, 5, hp, bend=(0, 0, 0.2))
     m.mirror_strand([2.8, 32, -0.4], [0.85, 1, 0.05], 7, 4.75, hp, bend=(0.15, -0.25, 0))
@@ -339,7 +533,7 @@ def goku_hair_base(m, c):
 
 def goku_hair_ssj(m, c):
     hp = hair_paint(c)
-    m.box("hair", [-4.4, 28, -4.4], [8.8, 4.75, 8.8], hp)
+    m.box("hair", [-4.4, 29, -4.4], [8.8, 3.75, 8.8], hp)
     m.box("hair", [-4.5, 25.5, 0.5], [9, 7, 4], hp)
     m.strand([-1, 31.75, -4.3], [-0.15, -1, -0.3], 5, 2, hp)  # the single bang
     m.mirror_strand([2.2, 32, -3.3], [0.3, 1, -0.35], 6, 3.75, hp)
@@ -355,7 +549,7 @@ def goku_hair_ssj(m, c):
 
 def goku_hair_ssj3(m, c):
     hp = hair_paint(c)
-    m.box("hair", [-4.4, 28, -4.4], [8.8, 4.75, 8.8], hp)
+    m.box("hair", [-4.4, 29, -4.4], [8.8, 3.75, 8.8], hp)
     m.box("hair", [-4.6, 22, 0.25], [9.2, 10, 4.5], hp)
     m.strand([0, 29, 4.2], [0, -1, 0.12], 22, 8.5, hp, thick=0.5)
     m.mirror_strand([3.2, 29, 3.2], [0.22, -1, 0.15], 19, 5, hp, thick=0.6)
@@ -365,36 +559,6 @@ def goku_hair_ssj3(m, c):
     m.strand([-2.3, 31.5, -4.1], [-0.3, -1, -0.4], 5, 3.25, hp)
     m.strand([0.4, 31.75, -4.2], [0.05, -1, -0.45], 5.5, 3, hp)
     m.strand([2.6, 31.5, -4.1], [0.4, -1, -0.35], 4.5, 2.75, hp)
-
-
-# ------------------------------------------------------------------ Vegeta
-
-SUIT = (34, 52, 154)
-ARMOR = (240, 240, 232)
-ARMOR_GOLD = (226, 176, 52)
-
-
-def armor_detail(face, dr, w, h):
-    if face == "north":
-        dr.rectangle([0, h - 9, w, h], fill=ARMOR_GOLD + (255,))
-        dr.line([(0, h - 9), (w, h - 9)], fill=dark(ARMOR_GOLD, 0.7) + (255,))
-        for x in (w // 3, 2 * w // 3):
-            dr.line([(x, h - 8), (x, h - 1)], fill=dark(ARMOR_GOLD, 0.7) + (255,))
-        dr.line([(w // 2, 3), (w // 2, h - 12)], fill=dark(ARMOR, 0.86) + (255,))
-        dr.arc([4, 2, w // 2 - 1, 16], 20, 160, fill=dark(ARMOR, 0.82) + (255,))
-        dr.arc([w // 2 + 1, 2, w - 4, 16], 20, 160, fill=dark(ARMOR, 0.82) + (255,))
-    if face in ("south", "east", "west"):
-        dr.rectangle([0, h - 9, w, h], fill=ARMOR_GOLD + (255,))
-
-
-def vegeta_body(m, hair, iris):
-    base_body(m, solid(SUIT), solid(SUIT), solid(SUIT), head_paint(hair, iris, True, "vegeta"))
-    m.box("body", [-4.5, 14.5, -2.75], [9, 9.25, 5.5], layered(ARMOR, [armor_detail]))
-    m.box("body", [-3, 23.5, -2.25], [6, 1, 4.5], solid(SUIT))  # suit collar
-    both_arms(m, [3.6, 21.5, -2.6], [4.8, 2.5, 5.2], solid(ARMOR_GOLD))  # shoulder straps
-    both_arms(m, [3.6, 12, -2.4], [4.8, 4.75, 4.8], layered(ARMOR, [lambda f, d, w, h: d.line([(0, 4), (w, 4)], fill=dark(ARMOR, 0.8) + (255,))]))
-    both_legs(m, [-0.35, 0, -2.35], [4.5, 6.5, 4.7], layered(ARMOR, [lambda f, d, w, h: d.rectangle([0, 0, w, 3], fill=ARMOR_GOLD + (255,))]))
-    both_legs(m, [0.1, 0, -3.45], [3.6, 2, 1.25], solid(ARMOR_GOLD))
 
 
 def vegeta_hair(m, c):
@@ -412,47 +576,9 @@ def vegeta_hair(m, c):
     m.mirror_strand([3.9, 30.5, -1.5], [0.4, 1, 0], 5, 3, hp)
 
 
-# ------------------------------------------------------------------ Gojo
-
-UNI = (24, 27, 42)
-UNI_HI = (44, 50, 74)
-
-
-def jacket_detail(face, dr, w, h):
-    if face == "north":
-        dr.line([(w // 2, 0), (w // 2, h)], fill=UNI_HI + (255,), width=1)
-        for y in range(6, h - 4, 9):
-            dr.point((w // 2 + 2, y), fill=(60, 66, 92, 255))
-    if face in ("east", "west"):
-        dr.line([(w // 2, 8), (w // 2, h)], fill=dark(UNI, 0.7) + (255,))
-
-
-def collar_detail(face, dr, w, h):
-    if face == "north":
-        cx, cy = w // 2, h // 2
-        dr.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=(206, 168, 72, 255), outline=(120, 90, 30, 255))
-        dr.arc([cx - 2, cy - 2, cx + 2, cy + 2], 0, 270, fill=(120, 90, 30, 255))
-
-
-def gojo_body(m, hair, iris, blindfold):
-    base_body(m, solid(UNI), layered(UNI, [lambda f, d, w, h: d.rectangle([0, h - 5, w, h], fill=SKIN + (255,))]),
-              solid(UNI), head_paint(hair, iris, not blindfold, "gojo", blindfold))
-    m.box("body", [-4.3, 9, -2.3], [8.6, 15, 4.6], layered(UNI, [jacket_detail]))
-    m.box("body", [-3.25, 23.5, -2.6], [6.5, 2.5, 5.2], layered(UNI_HI, [collar_detail]))
-    both_arms(m, [3.8, 15, -2.2], [4.4, 9, 4.4], solid(UNI))
-    both_arms(m, [3.7, 13.5, -2.3], [4.6, 1.5, 4.6], solid(UNI_HI))  # cuffs
-    both_legs(m, [-0.3, 0, -2.6], [4.4, 1.5, 5], solid((14, 14, 18)))  # shoes
-    if blindfold:
-        band = layered((14, 14, 20), [lambda f, d, w, h: d.line([(0, 2), (w, 3)], fill=(40, 40, 52, 255))])
-        m.box("head", [-4.3, 26.25, -4.3], [8.6, 2.5, 8.6], band)
-        m.box("head", [-0.75, 26.25, 4.2], [1.5, 2.25, 0.75], solid((14, 14, 20)))
-        m.strand([-0.4, 26.5, 4.6], [-0.3, -1, 0.35], 3.5, 1, solid((14, 14, 20)), bone="head", segs=2)
-        m.strand([0.4, 26.5, 4.6], [0.3, -1, 0.4], 3, 1, solid((14, 14, 20)), bone="head", segs=2)
-
-
 def gojo_hair_up(m, c):
     hp = hair_paint(c)
-    m.box("hair", [-4.25, 28.5, -4.25], [8.5, 4, 8.5], hp)
+    m.box("hair", [-4.25, 29, -4.25], [8.5, 3.5, 8.5], hp)
     m.box("hair", [-4.3, 25, 0.75], [8.6, 3.75, 3.6], hp)
     m.strand([0, 32, 0], [0, 1, 0.05], 6.5, 4.25, hp)
     for k in range(8):
@@ -469,7 +595,7 @@ def gojo_hair_up(m, c):
 
 def gojo_hair_down(m, c):
     hp = hair_paint(c)
-    m.box("hair", [-4.3, 28, -4.3], [8.6, 4.5, 8.6], hp)
+    m.box("hair", [-4.3, 29.25, -4.3], [8.6, 3.25, 8.6], hp)
     m.box("hair", [-4.6, 30.25, -4.6], [9.2, 2, 9.2], hp)
     for x, l in ((-3.1, 3.5), (-1.6, 3.75), (0, 4.75), (1.6, 3.75), (3.1, 3.5)):
         m.strand([x, 31.5, -4.2], [x * 0.06, -1, -0.45], l, 2, hp)
@@ -486,31 +612,31 @@ def gojo_hair_down(m, c):
 def build(char, form):
     m = Model()
     if char == "goku":
-        hair, iris, brows, hair_fn = {
-            "base": ((30, 28, 38), (34, 30, 36), True, goku_hair_base),
-            "ssj": ((255, 214, 54), (0, 176, 166), True, goku_hair_ssj),
-            "ssj3": ((255, 204, 44), (0, 176, 166), False, goku_hair_ssj3),
-            "ssb": ((54, 182, 255), (40, 136, 240), True, goku_hair_ssj),
-            "ui": ((214, 220, 236), (170, 176, 200), True, goku_hair_base),
+        hair, iris, brows, hair_fn, style = {
+            "base": ((26, 24, 34), (40, 34, 40), True, goku_hair_base, "goku"),
+            "ssj": ((255, 208, 40), (0, 172, 160), True, goku_hair_ssj, "goku"),
+            "ssj3": ((255, 198, 30), (0, 172, 160), False, goku_hair_ssj3, "goku"),
+            "ssb": ((40, 176, 255), (30, 126, 236), True, goku_hair_ssj, "goku"),
+            "ui": ((214, 222, 240), (176, 186, 214), True, goku_hair_base, "calm"),
         }[form]
-        goku_body(m, hair, iris, brows)
+        goku_body(m, hair, iris, brows, style)
         hair_fn(m, hair)
     elif char == "vegeta":
         hair, iris = {
-            "base": ((26, 26, 36), (30, 28, 34)),
-            "ssj": ((255, 214, 54), (0, 176, 166)),
-            "ssb": ((54, 182, 255), (40, 136, 240)),
-            "ue": ((172, 58, 226), (216, 70, 196)),
+            "base": ((22, 22, 32), (36, 30, 36)),
+            "ssj": ((255, 208, 40), (0, 172, 160)),
+            "ssb": ((40, 176, 255), (30, 126, 236)),
+            "ue": ((164, 48, 222), (214, 56, 186)),
         }[form]
         vegeta_body(m, hair, iris)
         vegeta_hair(m, hair)
     elif char == "gojo":
-        hair = (246, 246, 252)
+        hair = (244, 246, 252)
         if form == "blindfold":
             gojo_body(m, hair, None, True)
             gojo_hair_up(m, hair)
         else:
-            gojo_body(m, hair, (64, 196, 255), False)
+            gojo_body(m, hair, (70, 205, 255), False)
             gojo_hair_down(m, hair)
     return m
 
