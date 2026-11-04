@@ -104,7 +104,7 @@ export class Entity {
   getProperty(k) { this.#check(); return this.props[k]; }
   setProperty(k, v) {
     this.#check();
-    if (k === "ab:pose" && (v < 0 || v > 4)) throw new Error("pose out of range " + v);
+    if (k === "ab:pose" && (v < 0 || v > 12)) throw new Error("pose out of range " + v);
     this.props[k] = v;
   }
   triggerEvent(ev) {

@@ -28,7 +28,15 @@
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
     "pose_raise": "animation.ab.pose_raise",
-    "pose_point": "animation.ab.pose_point"
+    "pose_point": "animation.ab.pose_point",
+    "jab_r": "animation.ab.jab_r",
+    "jab_l": "animation.ab.jab_l",
+    "kick": "animation.ab.kick",
+    "round": "animation.ab.round",
+    "upper": "animation.ab.upper",
+    "knee": "animation.ab.knee",
+    "rush": "animation.ab.rush",
+    "elbow": "animation.ab.elbow"
    },
    "scripts": {
     "animate": [
@@ -49,6 +57,30 @@
      },
      {
       "pose_point": "query.property('ab:pose') == 4"
+     },
+     {
+      "jab_r": "query.property('ab:pose') == 5"
+     },
+     {
+      "jab_l": "query.property('ab:pose') == 6"
+     },
+     {
+      "kick": "query.property('ab:pose') == 7"
+     },
+     {
+      "round": "query.property('ab:pose') == 8"
+     },
+     {
+      "upper": "query.property('ab:pose') == 9"
+     },
+     {
+      "knee": "query.property('ab:pose') == 10"
+     },
+     {
+      "rush": "query.property('ab:pose') == 11"
+     },
+     {
+      "elbow": "query.property('ab:pose') == 12"
      }
     ]
    },

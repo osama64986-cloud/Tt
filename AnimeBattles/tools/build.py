@@ -194,7 +194,7 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 4], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 12], "default": 0, "client_sync": True},
                 },
             },
             "component_groups": groups,
@@ -247,6 +247,9 @@ def client_entity(name, cfg):
                     "pose_cup": "animation.ab.pose_cup",
                     "pose_raise": "animation.ab.pose_raise",
                     "pose_point": "animation.ab.pose_point",
+                    "jab_r": "animation.ab.jab_r", "jab_l": "animation.ab.jab_l", "kick": "animation.ab.kick",
+                    "round": "animation.ab.round", "upper": "animation.ab.upper", "knee": "animation.ab.knee",
+                    "rush": "animation.ab.rush", "elbow": "animation.ab.elbow",
                 },
                 "scripts": {"animate": [
                     "look", "move", "idle",
@@ -255,7 +258,8 @@ def client_entity(name, cfg):
                     {"pose_cup": "query.property('ab:pose') == 2"},
                     {"pose_raise": "query.property('ab:pose') == 3"},
                     {"pose_point": "query.property('ab:pose') == 4"},
-                ]},
+                ] + [{k: f"query.property('ab:pose') == {i}"} for i, k in
+                     enumerate(["jab_r", "jab_l", "kick", "round", "upper", "knee", "rush", "elbow"], start=5)]},
                 "render_controllers": [f"controller.render.ab.{name}"],
                 "spawn_egg": {"base_color": cfg["egg"][0], "overlay_color": cfg["egg"][1]},
             }

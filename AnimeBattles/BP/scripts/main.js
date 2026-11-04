@@ -275,6 +275,9 @@ function explosion(src, pos, o) {
   burst(dim, pos, C.white, 10 + o.radius * 2, o.radius * 1.5, 0.4, 0.5);
   sphereFx(dim, pos, o.radius * 0.6, o.color, 10 + o.radius * 3, 0.9, "orb", 0.5);
   sound(dim, "random.explode", pos, 1 + o.radius * 0.3, o.radius > 4 ? 0.6 : 0.9);
+  fx(dim, "orb", pos, C.white, o.radius * 1.1, 0.15);
+  every(2, 5, (i) => ring(dim, V.up(pos, -o.radius * 0.3), o.radius * (0.4 + i * 0.35), o.color, 14 + o.radius * 2, 0.45));
+  fx(dim, "aura", V.up(pos, -1), { red: 0.35, green: 0.33, blue: 0.3 }, 1.2, 1.2, { count: (10 + o.radius * 3) * fxLevel(), speed: 1 });
   hitArea(src, pos, o.radius, o.dmg, new Set(), { knock: o.knock ?? 1.2, lift: 0.45 });
   carve(dim, pos, o.carve ?? 0);
 }
@@ -288,6 +291,8 @@ function beam(src, target, o) {
   let reach = 0, ended = false, carved = 0;
   sound(dim, o.sound ?? "mob.wither.shoot", start, 2, o.pitch ?? 0.8);
   const spacing = 0.5 / fxLevel();
+  const side = sideOf(dir);
+  const up2 = V.norm({ x: dir.y * side.z - dir.z * side.y, y: dir.z * side.x - dir.x * side.z, z: dir.x * side.y - dir.y * side.x });
   const id = system.runInterval(() => {
     try {
       if (!src.isValid || ended) { system.clearRun(id); return; }
@@ -298,7 +303,14 @@ function beam(src, target, o) {
         if (!griefing() && solidAt(dim, p)) { reach = s; ended = true; break; }
         fx(dim, "orb", p, C.white, o.width * 0.7, 0.5);
         fx(dim, "orb", p, o.color, o.width * 1.6, 0.6);
+        const a = s * 1.3;
+        const off = V.add(V.mul(side, Math.cos(a) * o.width), V.mul(up2, Math.sin(a) * o.width));
+        fx(dim, "orb", V.add(p, off), o.color, o.width * 0.45, 0.45);
+        fx(dim, "orb", V.sub(p, off), C.white, o.width * 0.3, 0.4);
       }
+      fx(dim, "orb", start, o.color, o.width * 2.4, 0.2);
+      fx(dim, "orb", start, C.white, o.width * 1.2, 0.15);
+      fx(dim, "orb", V.add(start, V.mul(dir, reach)), o.color, o.width * 2.2, 0.2);
       for (let s = 0; s < prev; s += 1.6) fx(dim, "orb", V.add(start, V.mul(dir, s)), o.color, o.width * 1.5, 0.35);
       for (let s = prev; s <= reach; s += 1) {
         const p = V.add(start, V.mul(dir, s));
@@ -813,6 +825,103 @@ const GOJO = {
 
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO };
 
+// ------------------------------------------------------------------ melee combos
+// Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
+const MOVES = {
+  jab_r: { pose: 5, t: 4, dmg: 9, kb: 0.35 },
+  jab_l: { pose: 6, t: 4, dmg: 9, kb: 0.35 },
+  kick: { pose: 7, t: 6, dmg: 14, kb: 1.1, lift: 0.25 },
+  round: { pose: 8, t: 7, dmg: 18, kb: 2.0, lift: 0.3, strong: true },
+  upper: { pose: 9, t: 6, dmg: 16, kb: 0.4, lift: 0.9, strong: true },
+  knee: { pose: 10, t: 5, dmg: 13, kb: 0.5, lift: 0.45 },
+  rush: { pose: 11, t: 14, dmg: 4, hits: 6, kb: 0.12 },
+  elbow: { pose: 12, t: 5, dmg: 13, kb: 0.8 },
+  kiburst: { pose: 4, t: 7, ki: true, dmg: 24, kb: 2.6, strong: true },
+  blink: { tp: "behind", t: 3 },
+  blinkfront: { tp: "front", t: 3 },
+};
+const COMBOS = {
+  "ab:goku": [["jab_r", "jab_l", "knee", "rush", "upper", "round"], ["jab_l", "jab_r", "jab_l", "kick", "rush", "round"], ["elbow", "jab_r", "upper", "kick"]],
+  "ab:vegeta": [["jab_l", "jab_r", "elbow", "kick", "rush", "kiburst"], ["knee", "jab_r", "jab_l", "round", "kiburst"], ["jab_r", "jab_r", "upper", "rush", "round"]],
+  "ab:gojo": [["jab_r", "jab_l", "blink", "round", "blinkfront", "upper"], ["kick", "blink", "jab_r", "jab_l", "blink", "round"], ["jab_l", "jab_r", "knee", "blink", "kick"]],
+};
+const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue };
+
+function combo(e, s, t) {
+  const list = COMBOS[e.typeId];
+  const seq = list[Math.floor(Math.random() * list.length)];
+  let delay = 0;
+  seq.forEach((k, i) => {
+    const mv = MOVES[k];
+    const last = i === seq.length - 1;
+    later(delay + 1, () => comboStep(e, t, mv, last));
+    delay += mv.t;
+  });
+  busy(s, delay + 4);
+  later(delay + 2, () => { if (e.isValid) setPose(e, 0); });
+}
+
+function afterimage(e) {
+  fx(e.dimension, "aura", e.location, C.white, 0.9, 0.35, { count: 10 * fxLevel(), speed: 0 });
+}
+
+function impact(e, t, strong, color) {
+  const dim = t.dimension;
+  const c = V.add(aim(t), V.mul(V.norm(V.sub(aim(e), aim(t))), 0.45));
+  fx(dim, "orb", c, C.white, strong ? 1.7 : 0.9, 0.15);
+  burst(dim, c, color, strong ? 22 : 10, strong ? 5 : 3, 0.3, 0.35);
+  if (strong) {
+    ring(dim, c, 1.3, color, 16, 0.3);
+    sound(dim, "random.explode", c, 0.45, 1.5);
+  }
+  sound(dim, "random.anvil_land", c, 0.35, 1.9 + Math.random() * 0.2);
+}
+
+function comboStep(e, t, mv, last) {
+  if (!e.isValid || !alive(t)) { if (e.isValid) setPose(e, 0); return; }
+  if (mv.tp) {
+    afterimage(e);
+    teleportNear(e, t, mv.tp === "behind", 1.3);
+    return;
+  }
+  const d = V.dist(e.location, t.location);
+  if (d > 2.3) {  // dash in (a fast step, not a teleport)
+    afterimage(e);
+    const n = V.norm(V.sub(t.location, e.location));
+    try { e.tryTeleport(V.sub(t.location, V.mul({ x: n.x, y: 0, z: n.z }, 1.6)), { checkForBlocks: true, facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+  }
+  face(e, aim(t));
+  setPose(e, mv.pose);
+  const pw = powerOf(e) / 100;
+  const color = HIT_COLOR[e.typeId] ?? C.white;
+  const hits = mv.hits ?? 1;
+  for (let h = 0; h < hits; h++) {
+    later(h * 2 + 1, () => {
+      if (!alive(t) || !e.isValid) return;
+      if (mv.ki) {
+        fx(e.dimension, "orb", aim(t), C.bigBang, 2.2, 0.3);
+        burst(e.dimension, aim(t), C.bigBang, 30, 6, 0.5, 0.6);
+        sound(e.dimension, "mob.wither.shoot", t.location, 1, 1.4);
+      }
+      deal(e, t, mv.dmg * pw * (last ? 1.3 : 1));
+      impact(e, t, mv.strong || last, color);
+      const n = V.norm(V.sub(t.location, e.location));
+      const kb = mv.kb * (last ? 1.8 : 1);
+      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, mv.lift ?? 0.08); } catch (err) { /* ignore */ }
+      if (isFighter(t) && !last) { const ts = state(t); ts.stunUntil = Math.max(ts.stunUntil, now() + 6); }
+      if (last && e.typeId === "ab:gojo" && Math.random() < 0.25) {
+        deal(e, t, 35 * pw);
+        fx(e.dimension, "orb_solid", aim(t), C.black, 1.6, 0.4);
+        burst(e.dimension, aim(t), C.red, 24, 5, 0.35, 0.45);
+        burst(e.dimension, aim(t), C.black, 16, 4, 0.4, 0.45);
+        announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX");
+      }
+    });
+  }
+}
+
+
+
 // ------------------------------------------------------------------ fighter brain
 function updateFighter(e, tick) {
   const def = FIGHTERS[e.typeId];
@@ -846,6 +955,11 @@ function updateFighter(e, tick) {
       (ctx.hp < def.thresholds[form] || ctx.tPower > ctx.power * 0.95)) {
     const nf = def.forms[form + 1];
     transform(e, s, form + 1, nf.label, nf.aura ?? C.white, def.formSound[form + 1]);
+    return;
+  }
+  if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < 0.6) {
+    s.cd.combo = tick + 45 + Math.floor(Math.random() * 40);
+    combo(e, s, target);
     return;
   }
   if (Math.random() > 0.45) return;
