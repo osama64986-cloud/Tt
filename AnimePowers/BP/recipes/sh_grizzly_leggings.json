@@ -1,0 +1,32 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "sh:craft_grizzly_leggings"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "ABA",
+      "A A",
+      "A A"
+    ],
+    "key": {
+      "A": {
+        "item": "sh:bear_hide"
+      },
+      "B": {
+        "item": "sh:bear_claw"
+      }
+    },
+    "unlock": [
+      {
+        "item": "sh:bear_hide"
+      }
+    ],
+    "result": {
+      "item": "sh:grizzly_leggings"
+    }
+  }
+}

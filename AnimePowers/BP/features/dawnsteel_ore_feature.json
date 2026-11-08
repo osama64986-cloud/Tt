@@ -1,0 +1,27 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:ore_feature": {
+    "description": {
+      "identifier": "sh:dawnsteel_ore_feature"
+    },
+    "count": 7,
+    "replace_rules": [
+      {
+        "places_block": "sh:dawnsteel_ore",
+        "may_replace": [
+          "minecraft:stone",
+          "minecraft:granite",
+          "minecraft:diorite",
+          "minecraft:andesite"
+        ]
+      },
+      {
+        "places_block": "sh:deepslate_dawnsteel_ore",
+        "may_replace": [
+          "minecraft:deepslate",
+          "minecraft:tuff"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+{"format_version":"1.10.0","minecraft:attachable":{"description":{"identifier":"sh:skill_shards","materials":{"default":"entity_alphatest"},"textures":{"default":"textures/models/sh_empty"},"geometry":{"default":"geometry.sh_empty_hand"},"render_controllers":["controller.render.item_default"]}}}

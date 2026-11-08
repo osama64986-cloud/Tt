@@ -1,0 +1,268 @@
+{
+ "format_version": "1.8.0",
+ "render_controllers": {
+  "controller.render.sh_fx_circle": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5",
+      "Texture.c6"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_portal": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_plate": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_crystal": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.c0",
+      "Texture.c1",
+      "Texture.c2",
+      "Texture.c3",
+      "Texture.c4",
+      "Texture.c5"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:c')]"
+   ]
+  },
+  "controller.render.sh_fx_body": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.v0",
+      "Texture.v1",
+      "Texture.v0",
+      "Texture.v1"
+     ]
+    }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.t[query.property('sh:v')]"
+   ]
+  },
+  "controller.render.sh_fx_shape": {
+   "arrays": {
+    "geometries": {
+     "Array.g": [
+      "Geometry.s0",
+      "Geometry.s1",
+      "Geometry.s2",
+      "Geometry.s3",
+      "Geometry.s4",
+      "Geometry.s5",
+      "Geometry.s6",
+      "Geometry.s7",
+      "Geometry.s8",
+      "Geometry.s9",
+      "Geometry.s10",
+      "Geometry.s11",
+      "Geometry.s12",
+      "Geometry.s13",
+      "Geometry.s14",
+      "Geometry.s15",
+      "Geometry.s16",
+      "Geometry.s17",
+      "Geometry.s18",
+      "Geometry.s19",
+      "Geometry.s20",
+      "Geometry.s21",
+      "Geometry.s22",
+      "Geometry.s23",
+      "Geometry.s24",
+      "Geometry.s25",
+      "Geometry.s26",
+      "Geometry.s27",
+      "Geometry.s28",
+      "Geometry.s29",
+      "Geometry.s30",
+      "Geometry.s31",
+      "Geometry.s32",
+      "Geometry.s33",
+      "Geometry.s34",
+      "Geometry.s35",
+      "Geometry.s36",
+      "Geometry.s37",
+      "Geometry.s38",
+      "Geometry.s39",
+      "Geometry.s40",
+      "Geometry.s41",
+      "Geometry.s42",
+      "Geometry.s43",
+      "Geometry.s44",
+      "Geometry.s45",
+      "Geometry.s46",
+      "Geometry.s47",
+      "Geometry.s48",
+      "Geometry.s49",
+      "Geometry.s50",
+      "Geometry.s51",
+      "Geometry.s52",
+      "Geometry.s53",
+      "Geometry.s54",
+      "Geometry.s55",
+      "Geometry.s56",
+      "Geometry.s57",
+      "Geometry.s58",
+      "Geometry.s59",
+      "Geometry.s60",
+      "Geometry.s61",
+      "Geometry.s62",
+      "Geometry.s63",
+      "Geometry.s64",
+      "Geometry.s65",
+      "Geometry.s66",
+      "Geometry.s67",
+      "Geometry.s68",
+      "Geometry.s69",
+      "Geometry.s70",
+      "Geometry.s71",
+      "Geometry.s72",
+      "Geometry.s73",
+      "Geometry.s74",
+      "Geometry.s75",
+      "Geometry.s76",
+      "Geometry.s77",
+      "Geometry.s78",
+      "Geometry.s79",
+      "Geometry.s80",
+      "Geometry.s81",
+      "Geometry.s82",
+      "Geometry.s83",
+      "Geometry.s84",
+      "Geometry.s85",
+      "Geometry.s86",
+      "Geometry.s87",
+      "Geometry.s88",
+      "Geometry.s89",
+      "Geometry.s90",
+      "Geometry.s91",
+      "Geometry.s92",
+      "Geometry.s93",
+      "Geometry.s94",
+      "Geometry.s95",
+      "Geometry.s96",
+      "Geometry.s97",
+      "Geometry.s98",
+      "Geometry.s99",
+      "Geometry.s100",
+      "Geometry.s101",
+      "Geometry.s102",
+      "Geometry.s103",
+      "Geometry.s104",
+      "Geometry.s105",
+      "Geometry.s106",
+      "Geometry.s107",
+      "Geometry.s108",
+      "Geometry.s109",
+      "Geometry.s110",
+      "Geometry.s111",
+      "Geometry.s112",
+      "Geometry.s113",
+      "Geometry.s114",
+      "Geometry.s115",
+      "Geometry.s116",
+      "Geometry.s117",
+      "Geometry.s118",
+      "Geometry.s119",
+      "Geometry.s120",
+      "Geometry.s121",
+      "Geometry.s122",
+      "Geometry.s123",
+      "Geometry.s124",
+      "Geometry.s125",
+      "Geometry.s126",
+      "Geometry.s127",
+      "Geometry.s128",
+      "Geometry.s129",
+      "Geometry.s130"
+     ]
+    }
+   },
+   "geometry": "Array.g[query.property('sh:v')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Texture.default"
+   ],
+   "ignore_lighting": true
+  }
+ }
+}

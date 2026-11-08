@@ -1,0 +1,51 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:prayer_mantis",
+      "materials": {
+        "default": "entity_alphatest",
+        "camo": "entity_alphablend"
+      },
+      "textures": {
+        "default": "textures/entity/sh_prayer_mantis",
+        "hot": "textures/entity/sh_prayer_mantis_hot",
+        "camo": "textures/entity/sh_prayer_mantis_camo"
+      },
+      "geometry": {
+        "default": "geometry.sh_prayer_mantis"
+      },
+      "animations": {
+        "idle": "animation.sh_prayer_mantis.idle",
+        "walk": "animation.sh_prayer_mantis.walk",
+        "state": "controller.animation.sh_prayer_mantis.state",
+        "look": "animation.sh.look",
+        "stance": "animation.sh_prayer_mantis.stance",
+        "camo": "animation.sh_prayer_mantis.camo",
+        "stab": "animation.sh_prayer_mantis.stab",
+        "lock": "animation.sh_prayer_mantis.lock",
+        "molt": "animation.sh_prayer_mantis.molt",
+        "counter": "animation.sh_prayer_mantis.counter",
+        "death": "animation.sh_prayer_mantis.death",
+        "attack": "animation.sh_prayer_mantis.attack"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "attack"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_mantis"
+      ],
+      "spawn_egg": {
+        "base_color": "#4c8a32",
+        "overlay_color": "#c060ff"
+      }
+    }
+  }
+}

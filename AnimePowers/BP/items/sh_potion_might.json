@@ -1,0 +1,33 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sh:potion_might",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "sh_potion_might"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "§6Potion of Might"
+      },
+      "minecraft:max_stack_size": 8,
+      "minecraft:food": {
+        "nutrition": 0,
+        "saturation_modifier": 0,
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "drink",
+      "minecraft:use_modifiers": {
+        "use_duration": 1.2,
+        "movement_modifier": 0.35
+      },
+      "minecraft:glint": true
+    }
+  }
+}

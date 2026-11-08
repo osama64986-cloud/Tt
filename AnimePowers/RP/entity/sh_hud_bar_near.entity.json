@@ -1,0 +1,20 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "sh:hud_bar_near",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "default": "textures/entity/sh_fx_shapes"
+   },
+   "geometry": {
+    "default": "geometry.sh_empty"
+   },
+   "render_controllers": [
+    "controller.render.default"
+   ]
+  }
+ }
+}

@@ -1,0 +1,126 @@
+{
+ "format_version": "1.21.50",
+ "minecraft:entity": {
+  "description": {
+   "identifier": "sh:fx_shape",
+   "is_spawnable": false,
+   "is_summonable": true,
+   "is_experimental": false,
+   "properties": {
+    "sh:v": {
+     "type": "int",
+     "range": [
+      0,
+      255
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:r": {
+     "type": "float",
+     "range": [
+      0,
+      40
+     ],
+     "default": 1,
+     "client_sync": true
+    },
+    "sh:p": {
+     "type": "float",
+     "range": [
+      -180,
+      180
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:a": {
+     "type": "float",
+     "range": [
+      -360,
+      360
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:s": {
+     "type": "float",
+     "range": [
+      -3000,
+      3000
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:w": {
+     "type": "float",
+     "range": [
+      -3000,
+      3000
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "sh:l": {
+     "type": "float",
+     "range": [
+      0,
+      64
+     ],
+     "default": 1,
+     "client_sync": true
+    }
+   }
+  },
+  "component_groups": {
+   "sh:gone": {
+    "minecraft:instant_despawn": {}
+   }
+  },
+  "components": {
+   "minecraft:type_family": {
+    "family": [
+     "sh_fx",
+     "inanimate"
+    ]
+   },
+   "minecraft:collision_box": {
+    "width": 0.1,
+    "height": 0.1
+   },
+   "minecraft:physics": {
+    "has_gravity": false,
+    "has_collision": false
+   },
+   "minecraft:pushable": {
+    "is_pushable": false,
+    "is_pushable_by_piston": false
+   },
+   "minecraft:timer": {
+    "time": 60,
+    "looping": false,
+    "time_down_event": {
+     "event": "sh:die"
+    }
+   },
+   "minecraft:damage_sensor": {
+    "triggers": [
+     {
+      "cause": "all",
+      "deals_damage": "no"
+     }
+    ]
+   },
+   "minecraft:fire_immune": {}
+  },
+  "events": {
+   "sh:die": {
+    "add": {
+     "component_groups": [
+      "sh:gone"
+     ]
+    }
+   }
+  }
+ }
+}

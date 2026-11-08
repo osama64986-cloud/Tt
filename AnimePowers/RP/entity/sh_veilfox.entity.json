@@ -1,0 +1,43 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:veilfox",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_veilfox"
+      },
+      "geometry": {
+        "default": "geometry.sh_veilfox"
+      },
+      "animations": {
+        "idle": "animation.sh_veilfox.idle",
+        "walk": "animation.sh_veilfox.walk",
+        "state": "controller.animation.sh_veilfox.state",
+        "look": "animation.sh.look",
+        "volley": "animation.sh_veilfox.volley",
+        "pounce": "animation.sh_veilfox.pounce",
+        "storm": "animation.sh_veilfox.storm",
+        "veil": "animation.sh_veilfox.veil"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#2a2640",
+        "overlay_color": "#8c64ff"
+      }
+    }
+  }
+}

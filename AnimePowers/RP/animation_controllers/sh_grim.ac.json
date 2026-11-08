@@ -1,0 +1,1076 @@
+{
+ "format_version": "1.10.0",
+ "animation_controllers": {
+  "controller.animation.sh_gloomhorn.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "heartbeat": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "windup": {
+     "animations": [
+      "windup"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "heartbeat": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "charge": {
+     "animations": [
+      "charge"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "heartbeat": "query.property('sh:state') == 3"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "heartbeat": {
+     "animations": [
+      "heartbeat"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "lanterns": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lanterns": {
+     "animations": [
+      "lanterns"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "windup": "query.property('sh:state') == 1"
+      },
+      {
+       "charge": "query.property('sh:state') == 2"
+      },
+      {
+       "heartbeat": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  },
+  "controller.animation.sh_hollow_seer.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "beam": "query.property('sh:state') == 1"
+      },
+      {
+       "thorns": "query.property('sh:state') == 2"
+      },
+      {
+       "breath": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "beam": {
+     "animations": [
+      "beam"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "thorns": "query.property('sh:state') == 2"
+      },
+      {
+       "breath": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.14
+    },
+    "thorns": {
+     "animations": [
+      "thorns"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "beam": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.14
+    },
+    "breath": {
+     "animations": [
+      "breath"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "beam": "query.property('sh:state') == 1"
+      },
+      {
+       "thorns": "query.property('sh:state') == 2"
+      }
+     ],
+     "blend_transition": 0.14
+    }
+   }
+  },
+  "controller.animation.sh_veilfox.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "volley": {
+     "animations": [
+      "volley"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "pounce": {
+     "animations": [
+      "pounce"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "storm": {
+     "animations": [
+      "storm"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "veil": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "veil": {
+     "animations": [
+      "veil"
+     ],
+     "transitions": [
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "volley": "query.property('sh:state') == 1"
+      },
+      {
+       "pounce": "query.property('sh:state') == 2"
+      },
+      {
+       "storm": "query.property('sh:state') == 3"
+      }
+     ],
+     "blend_transition": 0.12
+    }
+   }
+  },
+  "controller.animation.sh_magmamoth.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "stomp": {
+     "animations": [
+      "stomp"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "breath": {
+     "animations": [
+      "breath"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "run": {
+     "animations": [
+      "run"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "eruption": {
+     "animations": [
+      "eruption"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "armor": {
+     "animations": [
+      "armor"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "lower": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lower": {
+     "animations": [
+      "lower"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stomp": "query.property('sh:state') == 1"
+      },
+      {
+       "breath": "query.property('sh:state') == 2"
+      },
+      {
+       "run": "query.property('sh:state') == 3"
+      },
+      {
+       "eruption": "query.property('sh:state') == 4"
+      },
+      {
+       "armor": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
+  },
+  "controller.animation.sh_grey_bear.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "hug_open": {
+     "animations": [
+      "hug_open"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "hug_hold": {
+     "animations": [
+      "hug_hold"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "throw": {
+     "animations": [
+      "throw"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "scratch": {
+     "animations": [
+      "scratch"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "roar": {
+     "animations": [
+      "roar"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "sleep": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "sleep": {
+     "animations": [
+      "sleep"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "hug_open": "query.property('sh:state') == 1"
+      },
+      {
+       "hug_hold": "query.property('sh:state') == 2"
+      },
+      {
+       "throw": "query.property('sh:state') == 3"
+      },
+      {
+       "scratch": "query.property('sh:state') == 4"
+      },
+      {
+       "roar": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
+  },
+  "controller.animation.sh_prayer_mantis.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "stance": {
+     "animations": [
+      "stance"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "camo": {
+     "animations": [
+      "camo"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "stab": {
+     "animations": [
+      "stab"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "lock": {
+     "animations": [
+      "lock"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "molt": {
+     "animations": [
+      "molt"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "counter": "query.property('sh:state') == 6"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "counter": {
+     "animations": [
+      "counter"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "stance": "query.property('sh:state') == 1"
+      },
+      {
+       "camo": "query.property('sh:state') == 2"
+      },
+      {
+       "stab": "query.property('sh:state') == 3"
+      },
+      {
+       "lock": "query.property('sh:state') == 4"
+      },
+      {
+       "molt": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
+  },
+  "controller.animation.sh_hollow_harvester.state": {
+   "initial_state": "default",
+   "states": {
+    "default": {
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.18
+    },
+    "strings": {
+     "animations": [
+      "strings"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "yank": {
+     "animations": [
+      "yank"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "stare": {
+     "animations": [
+      "stare"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "reap": {
+     "animations": [
+      "reap"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "burn": "query.property('sh:state') == 5"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "burn": {
+     "animations": [
+      "burn"
+     ],
+     "transitions": [
+      {
+       "death": "!query.is_alive"
+      },
+      {
+       "default": "query.property('sh:state') == 0"
+      },
+      {
+       "strings": "query.property('sh:state') == 1"
+      },
+      {
+       "yank": "query.property('sh:state') == 2"
+      },
+      {
+       "stare": "query.property('sh:state') == 3"
+      },
+      {
+       "reap": "query.property('sh:state') == 4"
+      }
+     ],
+     "blend_transition": 0.12
+    },
+    "death": {
+     "animations": [
+      "death"
+     ],
+     "blend_transition": 0.1
+    }
+   }
+  }
+ }
+}

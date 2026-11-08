@@ -1,0 +1,813 @@
+"""يولد موديلات الأسلحة 3D الأسطورية (Attachables) + تكستشراتها + حركات المسك.
+
+الطريقة (مطابقة لرمح الـTrident الرسمي بماينكرافت):
+  * عظمة واحدة اسمها sh_weapon، pivot=[0,24,0]، وبها binding على خانة الأيتم.
+  * السلاح مبني بطول المحور Y. منطقة القبضة y=5..16 (تغطي مكان اليد المحتمل) والحارس بعدها.
+  * حركة المسك (أول شخص / ثالث شخص) قيمها الأساسية من الـTrident الرسمي، مع scale لكل سلاح.
+  * التكستشر لوحة ألوان 16x16، وكل وجه مكعب يشير لبكسل لونه (UV لكل وجه).
+  * ملفات الـJSON تنكتب مضغوطة (سطر لكل ملف) حتى ما تتضخم الـdiff بـGitHub.
+لتعديل مكان السلاح بإيدك: غيّر جدول HOLD تحت (pos / rot / scale) وشغل السكربت.
+التشغيل من جذر المشروع:  python3 tools/gen_weapons3d.py
+"""
+import json
+import math
+import os
+
+import numpy as np
+from PIL import Image, ImageDraw
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RP = os.path.join(ROOT, "AnimePowers", "RP")
+FACES = ("north", "south", "east", "west", "up", "down")
+
+# ───────── حركة المسك: محلولة رياضياً لكل سلاح (مو منسوخة من الترايدنت) ─────────
+# قاعدة الربط الحقيقية (من Blockbench attachable_preview.js، وتأكدت بملفات موجانغ: المنظار والترايدنت والدرع):
+#   العظمة المربوطة بـ q.item_slot_to_bone_name: نقطة الموديل (0,24,0) تنحط على pivot عظمة اليد rightItem (-6,15,1)
+#   والموديل يتبع الذراع. pivot العظمة ما يحدد مكان الربط؛ هو بس محور دوران/تحجيم حركة المسك.
+#   بالمنظور الثالث الذراع مرفوعة ~18° (animation.player.holding)، وبالأول الذراع [95,-45,115] + [13.5,-10,12]
+#   وعظمة اليد مزاحة [0,0,-1] (animation.player.first_person.empty_hand)، والكاميرا تباوع +z (الراس ملفوف 180).
+# المشكلة القديمة: كل الأسلحة استعملت حركة الترايدنت كما هي. الترايدنت متناظر فما يهمه وين "الحد"، لكن:
+#   * بالثالث الحد (x+ بالموديل) كان يطلع لفوق والظهر لتحت (ساطور/كاتانا مقلوبة)،
+#   * بالأول النصل كان يبين من جنبه (رفيع) مو من وجهه، والقبضة 7 بكسل برا الكف.
+# الحل: لكل سلاح نحدد (1) مركز القبضة بالموديل، (2) اتجاه النصل المطلوب، (3) اتجاه الحد، ونحل الدوران والإزاحة
+# حتى القبضة تقع بنص الكف بالضبط والحد يواجه اتجاه الضربة. المعاينة: python3 tools/fit/hand_sim.py out.png
+FIST_TP = (6.0, 13.0, 0.0)          # نص الكف بإحداثيات الذراع الداخلية (x مقلوب): الذراع x 4..8، z -2..2، الكف y 12..14
+FIST_FP = (6.0, 13.0, 1.0)          # نفس النقطة + تعويض إزاحة عظمة اليد [0,0,-1] بالمنظور الأول
+ARM_TP_DEG = 18.0
+R_ARM_FP = (-95.0, 45.0, 115.0)     # دوران الذراع بالأول (داخلي)
+HOLD = {
+    # grip = ارتفاع مركز القبضة بالموديل، scale = حجم السلاح (نفس التصاميم)، tp/fp = (اتجاه النصل، اتجاه الحد) بالعالم الداخلي
+    #   الثالث: -z قدام، +y فوق. الأول: +z لقدام الشاشة، +y فوق، +x = يسار الشاشة (نحو النص)
+    "dark_katana": {"grip": 11.5, "scale": 0.78, "kind": "sword"},
+    "dawn_dagger": {"grip": 11.7, "scale": 0.9, "kind": "sword"},
+    "ember_cleaver": {"grip": 11.7, "scale": 0.82, "fp_scale": 0.74, "kind": "sword"},
+    "shadow_blade": {"grip": 11.95, "scale": 0.82, "kind": "sword"},
+    "stone_maul": {"grip": 10.0, "scale": 0.74, "fp_scale": 0.64, "kind": "maul"},
+    "sunset_spear": {"grip": 11.1, "scale": 0.68, "kind": "spear"},
+    "silver_oath": {"grip": 11.7, "scale": 0.8, "kind": "sword"},
+    "harvest_scythe": {"grip": 8.0, "scale": 0.64, "fp_scale": 0.5, "kind": "scythe"},
+}
+POSE = {
+    # الثالث: النصل لقدام وفوق بزاوية، والحد لقدام-تحت (مثل السيف بإيد اللاعب بماينكرافت)
+    "sword": {"tp_up": 35.0, "fp_dir": (0.42, 0.80, 0.42)},
+    "maul": {"tp_up": 55.0, "fp_dir": (0.30, 0.85, 0.45)},
+    "spear": {"tp_up": 8.0, "fp_dir": (0.25, 0.80, 0.60)},
+    # المنجل: العصا شبه واقفة جنبك والنصل فوقها لقدام (+x الموديل = اتجاه النصل)، وحده المقعّر لتحت نحوك
+    "scythe": {"tp_up": 72.0, "fp_dir": (0.34, 0.80, 0.50)},
+}
+
+
+def _rx(a):
+    a = math.radians(a); return np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)], [0, math.sin(a), math.cos(a)]])
+
+
+def _euler_zyx(rx, ry, rz):
+    a, b, c = (math.radians(v) for v in (rx, ry, rz))
+    Rx = _rx(rx)
+    Ry = np.array([[math.cos(b), 0, math.sin(b)], [0, 1, 0], [-math.sin(b), 0, math.cos(b)]])
+    Rz = np.array([[math.cos(c), -math.sin(c), 0], [math.sin(c), math.cos(c), 0], [0, 0, 1]])
+    return Rz @ Ry @ Rx
+
+
+def _to_bedrock_euler(R):
+    """مصفوفة داخلية → دوران بيدروك [rx,ry,rz] (عكس Euler(-rx,-ry,rz) بترتيب ZYX)"""
+    b = -math.asin(max(-1.0, min(1.0, R[2, 0])))
+    a = math.atan2(R[2, 1], R[2, 2])
+    c = math.atan2(R[1, 0], R[0, 0])
+    return [round(-math.degrees(a), 2), round(-math.degrees(b), 2), round(math.degrees(c), 2)]
+
+
+def _unit(v):
+    v = np.array(v, float); return v / np.linalg.norm(v)
+
+
+def solve_hold(grip_y, scale, arm_R, fist, blade_world, edge_world):
+    """يرجع (rotation, position) بيدروك لعظمة sh_weapon (pivot [0,24,0]) حتى:
+    نقطة القبضة (0,grip_y,0) تقع على fist (إحداثيات الذراع)، محور الموديل +y = blade_world، ومحور الحد +x = edge_world."""
+    d = arm_R.T @ _unit(blade_world)                      # الاتجاهات بإطار الذراع
+    e = arm_R.T @ _unit(edge_world)
+    e = _unit(e - (e @ d) * d)                            # الحد عمودي على النصل
+    ex = -e                                               # x الموديل الموجب = -x داخلي
+    R = np.column_stack([ex, d, np.cross(ex, d)])         # أعمدة: صور المحاور الداخلية x,y,z
+    rot = _to_bedrock_euler(R)
+    assert np.allclose(_euler_zyx(-rot[0], -rot[1], rot[2]), R, atol=1e-3)
+    P = np.array([0, 24.0, 0]); g = np.array([0, grip_y, 0.0])
+    T = np.array(fist) + np.array([0, 24.0, 0]) - np.array([6, 15, 1.0]) - P - R @ (scale * (g - P))
+    return rot, [round(-T[0], 3), round(T[1], 3), round(T[2], 3)]
+
+
+def hold_for(ident):
+    h = HOLD[ident]; pose = POSE[h["kind"]]
+    up = math.radians(pose["tp_up"])
+    tp_blade = (0, math.sin(up), -math.cos(up)); tp_edge = (0, -math.cos(up), -math.sin(up))
+    fp_blade = _unit(pose["fp_dir"]); n_cam = np.array([0, 0, -1.0])              # وجه النصل يواجه الكاميرا
+    fp_edge = -np.cross(fp_blade, n_cam)                                          # الحد نحو يسار الشاشة
+    rt, pt = solve_hold(h["grip"], h["scale"], _rx(ARM_TP_DEG), FIST_TP, tp_blade, tp_edge)
+    fs = h.get("fp_scale", h["scale"])
+    rf, pf = solve_hold(h["grip"], fs, _euler_zyx(*R_ARM_FP), FIST_FP, fp_blade, fp_edge)
+    return {"tp": {"pos": pt, "rot": rt, "scale": h["scale"]}, "fp": {"pos": pf, "rot": rf, "scale": fs}}
+
+
+def lerp(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def shade(c, k):
+    return tuple(max(0, min(255, int(v * k))) for v in c[:3])
+
+
+class Weapon:
+    def __init__(self, ident):
+        self.ident = ident
+        self.cubes = []
+        self.palette = []
+        self.binding = "q.item_slot_to_bone_name(c.item_slot)"
+        self.pivot = [0, 24, 0]
+        self.hold = True        # False = بدون حركة مسك (السلاح ينلبس على الذراع)
+        self.extra_bones = []   # عظام إضافية: [{"name", "binding", "pivot", "cubes"}]
+
+    def _idx(self, rgb):
+        rgba = tuple(int(round(v)) for v in rgb[:3]) + (255,)
+        if rgba not in self.palette:
+            assert len(self.palette) < 256, "اللوحة ممتلئة"
+            self.palette.append(rgba)
+        return self.palette.index(rgba)
+
+    def box(self, cx, y0, cz, w, h, d, color, top=None, side=None, rz=None, pivot=None):
+        """مكعب مركزه (cx, cz) وقاعدته y0. top/side ألوان بديلة. rz دوران حول Z (للمراوح المتماثلة فقط)."""
+        def uv(c):
+            i = self._idx(c)
+            return {"uv": [i % 16, i // 16], "uv_size": [1, 1]}
+        main = uv(color)
+        t = uv(top) if top else main
+        s = uv(side) if side else main
+        cube = {
+            "origin": [round(cx - w / 2, 3), round(y0, 3), round(cz - d / 2, 3)],
+            "size": [round(w, 3), round(h, 3), round(d, 3)],
+            "uv": {"north": main, "south": main, "east": s, "west": s, "up": t, "down": s},
+        }
+        if rz:
+            cube["pivot"] = [round(v, 3) for v in (pivot or (cx, y0, cz))]
+            cube["rotation"] = [0, 0, rz]
+        self.cubes.append(cube)
+
+    def blade(self, y, length, n, width_fn, thick_fn, off_fn, col_back, col_edge, edge_split=0.45, shine=None, tip=None):
+        """نصل من قطاعات: ظهر + حد. الدوال تأخذ t (0..1)."""
+        h = length / n
+        for k in range(n):
+            t = k / max(1, n - 1)
+            wd, th, off = width_fn(t), thick_fn(t), off_fn(t)
+            edge = wd * edge_split
+            back = wd - edge
+            cb = col_back(t)
+            ce = shine if (shine and k % 4 == 1) else col_edge(t)
+            self.box(off - wd / 2 + back / 2, y + k * h, 0, back, h, th, cb, top=cb)
+            self.box(off + wd / 2 - edge / 2, y + k * h, 0, edge, h, th * 0.78, ce, top=ce)
+        if tip:
+            self.box(off_fn(1) + 0.15, y + length, 0, tip[0], tip[1], tip[2], tip[3])
+
+    def save(self):
+        tex = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        for i, c in enumerate(self.palette):
+            tex.putpixel((i % 16, i // 16), c)
+        os.makedirs(os.path.join(RP, "textures", "models"), exist_ok=True)
+        tex.save(os.path.join(RP, "textures", "models", f"sh_w_{self.ident}.png"))
+        geo = {
+            "format_version": "1.16.0",
+            "minecraft:geometry": [{
+                "description": {"identifier": f"geometry.sh_w_{self.ident}", "texture_width": 16, "texture_height": 16,
+                                "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1, 0]},
+                "bones": [{"name": "sh_weapon", "binding": self.binding, "pivot": self.pivot, "cubes": self.cubes}] + self.extra_bones,
+            }],
+        }
+        os.makedirs(os.path.join(RP, "models", "entity"), exist_ok=True)
+        with open(os.path.join(RP, "models", "entity", f"sh_w_{self.ident}.geo.json"), "w") as f:
+            json.dump(geo, f, separators=(",", ":"))
+        att = {
+            "format_version": "1.10.0",
+            "minecraft:attachable": {"description": {
+                "identifier": f"sh:{self.ident}",
+                "materials": {"default": "entity_alphatest", "enchanted": "entity_alphatest_glint"},
+                "textures": {"default": f"textures/models/sh_w_{self.ident}", "enchanted": "textures/misc/enchanted_item_glint"},
+                "geometry": {"default": f"geometry.sh_w_{self.ident}"},
+                **({"animations": {"hold_first_person": f"animation.sh.hold_{self.ident}_fp", "hold_third_person": f"animation.sh.hold_{self.ident}_tp"},
+                    "scripts": {"animate": [{"hold_first_person": "context.is_first_person == 1.0"}, {"hold_third_person": "context.is_first_person == 0.0"}]}} if self.hold else {}),
+                "render_controllers": ["controller.render.item_default"],
+            }},
+        }
+        os.makedirs(os.path.join(RP, "attachables"), exist_ok=True)
+        with open(os.path.join(RP, "attachables", f"sh_{self.ident}.attachable.json"), "w") as f:
+            json.dump(att, f, separators=(",", ":"))
+
+
+def wrap(w, y0, n, h, width, ca, cb, depth=None):
+    """قبضة ملفوفة: قطاعات متبادلة."""
+    for k in range(n):
+        w.box(0, y0 + k * h, 0, width, h, depth or width, ca if k % 2 == 0 else cb, top=shade(ca, 1.25))
+
+
+def shards(w, pts, cols):
+    """شظايا عائمة حول السلاح (مثل صورة المهارة الفعالة)."""
+    for i, (x, y, z, s) in enumerate(pts):
+        w.box(x, y, z, s, s, s, cols[i % len(cols)])
+
+
+# ───────────────────────── كاتانا الهاوية ─────────────────────────
+def katana():
+    """كاتانا حقيقية نحيفة: نصل رفيع بانحناء خفيف (سوري) وحد واحد بخط تموج (هامون) بنفسجي،
+    رأس مائل (كيساكي)، طوق ذهبي (هاباكي)، حارس دائري (تسوبا)، قبضة طويلة بلف معيّن (إيتو) وغطاء نهاية (كاشيرا)."""
+    w = Weapon("dark_katana")
+    MUNE, STEEL, STEEL_HI = (22, 22, 40), (46, 44, 78), (78, 74, 120)
+    HAMON, HAMON_HI, EDGE_W = (150, 110, 240), (205, 180, 255), (238, 230, 255)
+    ITO, ITO_HI, SAME = (24, 22, 46), (44, 40, 82), (214, 206, 226)
+    GOLD, GOLD_HI = (220, 178, 60), (255, 232, 140)
+    TSUBA, TSUBA_HI = (30, 28, 44), (70, 66, 96)
+    # كاشيرا + قبضة طويلة بلف معيّن: قطاعات غامقة وبينها مثلثات بيضاء (جلد السمكة) على الوجهين
+    w.box(0, 5.4, 0, 1.9, 1.0, 1.5, TSUBA, top=GOLD)
+    for k in range(8):
+        y = 6.4 + k * 1.4
+        w.box(0, y, 0, 1.6, 1.4, 1.25, ITO if k % 2 == 0 else ITO_HI)
+        for sz in (-1, 1):
+            w.box(0, y + 0.35, sz * 0.665, 0.55, 0.7, 0.08, SAME)
+    for k in (2, 5):   # مينوكي ذهبي تحت اللف
+        w.box(0.0, 6.4 + k * 1.4 + 0.2, 0.685, 0.8, 0.5, 0.12, GOLD)
+        w.box(0.0, 6.4 + k * 1.4 + 0.2, -0.685, 0.8, 0.5, 0.12, GOLD)
+    w.box(0, 17.6, 0, 1.8, 0.5, 1.45, GOLD, top=GOLD_HI)          # فوتشي
+    # تسوبا دائرية رفيعة (مثمنة) بحافة ذهب
+    w.box(0, 18.1, 0, 3.0, 0.6, 3.0, TSUBA, top=TSUBA_HI)               # قلب التسوبا
+    for sx in (-1, 1):                                                    # أذرع (جنب القلب، مو داخله) = شكل مثمن
+        w.box(sx * 1.85, 18.1, 0, 0.7, 0.6, 2.0, TSUBA, top=TSUBA_HI)
+        w.box(0, 18.1, sx * 1.85, 2.0, 0.6, 0.7, TSUBA, top=TSUBA_HI)
+        w.box(sx * 2.375, 18.1, 0, 0.35, 0.6, 1.2, GOLD)                  # حافة ذهب برا الذراع
+        w.box(0, 18.1, sx * 2.375, 1.2, 0.6, 0.35, GOLD)
+    w.box(0, 18.7, 0, 1.3, 1.3, 1.0, GOLD, top=GOLD_HI)            # هاباكي
+    # النصل: رفيع (عرض 1.5 ← 1.1)، سمك 0.6، الحد (يمين +x) بخط هامون متموج، والانحناء (سوري) لجهة الظهر -x
+    # (مثل الكاتانا الحقيقية: الحد على الجهة المحدبة؛ كان ينحني لجهة الحد فيطلع معكوس لما الحد يواجه الضربة)
+    y0, L, n = 20.0, 27.0, 18
+    h = L / n
+    for k in range(n):
+        t = k / (n - 1)
+        off = -1.6 * t * t
+        wd = 1.5 - 0.4 * t
+        yy = y0 + k * h
+        mune = wd * 0.45
+        w.box(off - wd / 2 + mune / 2, yy, 0, mune, h, 0.62, lerp(MUNE, STEEL, 0.3 + 0.4 * t), top=STEEL_HI)
+        ham = 0.32 + 0.12 * math.sin(k * 1.7)
+        w.box(off + wd / 2 - (wd - mune) / 2, yy, 0, wd - mune, h, 0.5, STEEL)
+        w.box(off + wd / 2 - ham / 2 - 0.05, yy, 0, ham, h, 0.54, HAMON if k % 3 else HAMON_HI)
+        w.box(off + wd / 2 + 0.06, yy, 0, 0.12, h, 0.4, EDGE_W)          # الحد الأبيض برا النصل
+    # كيساكي: الرأس المائل (الحد يصعد لنقطة على خط الظهر)
+    tx = -1.6
+    w.box(tx + 0.15, y0 + L, 0, 1.0, 0.8, 0.55, STEEL_HI)
+    w.box(tx - 0.1, y0 + L + 0.8, 0, 0.6, 0.7, 0.45, HAMON_HI)
+    w.box(tx - 0.25, y0 + L + 1.5, 0, 0.3, 0.5, 0.35, EDGE_W)
+    # خط الشيناغي (حافة لامعة على ظهر النصل)
+    for k in range(0, n, 2):
+        t = k / (n - 1)
+        w.box(-1.6 * t * t - 0.55, y0 + k * h + 0.05, 0, 0.12, h * 2 - 0.1, 0.66, STEEL_HI)
+    w.save()
+    return w
+
+
+# ───────────────────────── خنجر الفجر (منحني مثل الأيقونة) ─────────────────────────
+def dagger():
+    """خنجر حقيقي صغير: نصل مستقيم قصير بحدين وخط وسطي، حارس صغير، قبضة قصيرة ملفوفة، ورأس قبضة ذهبي بجوهرة الفجر."""
+    w = Weapon("dawn_dagger")
+    GOLD, GOLD_HI, GOLD_LO = (226, 178, 62), (255, 232, 140), (150, 108, 30)
+    STEEL, STEEL_HI, STEEL_LO = (226, 222, 210), (255, 252, 240), (170, 166, 156)
+    SUN_A, SUN_B = (255, 98, 52), (255, 190, 100)
+    LEATHER_A, LEATHER_B = (118, 76, 44), (78, 48, 28)
+    # رأس القبضة: جوهرة شروق بإطار ذهب
+    w.box(0, 7.2, 0, 2.0, 0.6, 2.0, GOLD, top=GOLD_HI)
+    w.box(0, 7.8, 0, 1.6, 1.2, 1.6, SUN_A, top=SUN_B)
+    w.box(0, 9.0, 0, 1.9, 0.5, 1.9, GOLD)
+    wrap(w, 9.5, 4, 1.1, 1.5, LEATHER_A, LEATHER_B)                     # قبضة قصيرة
+    # حارس صغير مستقيم بأطراف منحنية للنصل
+    w.box(0, 13.9, 0, 4.6, 0.8, 1.5, GOLD, top=GOLD_HI)
+    for sx in (-1, 1):
+        w.box(sx * 2.3, 14.5, 0, 0.7, 0.9, 1.2, GOLD_LO)
+    w.box(0, 14.0, 0.8, 0.9, 0.6, 0.2, SUN_A); w.box(0, 14.0, -0.8, 0.9, 0.6, 0.2, SUN_A)
+    # النصل: 10 بكسل، حدين يضيقون لرأس حاد، وخط وسطي (fuller)
+    y0, L, n = 14.7, 10.0, 8
+    h = L / n
+    for k in range(n):
+        t = k / (n - 1)
+        wd = 2.4 - 0.5 * t - (1.2 * (t - 0.6) / 0.4 if t > 0.6 else 0)
+        wd = max(0.5, wd)
+        yy = y0 + k * h
+        off = 1.3 * t * t                                   # ميلان خفيف للطرف
+        w.box(off, yy, 0, wd, h, 0.55, STEEL, top=STEEL_HI)
+        for sx in (-1, 1):
+            w.box(off + sx * (wd / 2 + 0.1), yy, 0, 0.2, h, 0.4, STEEL_HI)   # الحدين: جنب النصل مو داخله
+        if t < 0.75:
+            w.box(off, yy, 0.31, 0.35, h, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
+            w.box(off, yy, -0.31, 0.35, h, 0.07, STEEL_LO if k % 2 else lerp(STEEL_LO, SUN_B, 0.4))
+    w.box(1.3, y0 + L, 0, 0.3, 0.6, 0.3, STEEL_HI)
+    w.save()
+    return w
+
+
+# ───────────────────────── ساطور الجمر (قاطع عريض بحد متوهج) ─────────────────────────
+def cleaver():
+    w = Weapon("ember_cleaver")
+    IRON, IRON_HI, IRON_LO = (62, 60, 68), (118, 114, 126), (30, 28, 36)
+    EMB, EMB_HI, EMB_W = (255, 104, 24), (255, 176, 56), (255, 232, 140)
+    WOOD_A, WOOD_B = (96, 60, 36), (62, 38, 22)
+    # حلقة نهاية + قبضة خشب بأطواق حديد
+    w.box(0, 4.6, 0, 3.6, 1.2, 3.0, IRON, top=IRON_HI)
+    w.box(0, 5.8, 0, 2.2, 0.6, 2.2, EMB)
+    wrap(w, 6.4, 7, 1.5, 2.3, WOOD_A, WOOD_B)
+    for yy in (8.4, 12.9):
+        w.box(0, yy, 0, 2.9, 0.6, 2.9, IRON, top=IRON_HI)
+    w.box(0, 16.9, 0, 4.0, 1.3, 3.2, IRON, top=IRON_HI)
+    # حارس جمر
+    w.box(0, 18.2, 0, 5.4, 1.2, 3.0, IRON_LO, top=IRON)
+    w.box(0, 18.4, 1.6, 1.4, 0.9, 0.4, EMB_HI)
+    w.box(0, 18.4, -1.6, 1.4, 0.9, 0.4, EMB_HI)
+    # شفرة عريضة من أعمدة (محيط منحني: بطن أمامي وقطع مائل بالأعلى)
+    cols = 9
+    x0 = -3.0
+    heights = [11.5, 13.0, 14.3, 15.2, 15.8, 15.6, 14.4, 12.6, 10.2]
+    for i in range(cols):
+        x = x0 + i * 0.78
+        t = i / (cols - 1)
+        hh = heights[i]
+        base = lerp(IRON_LO, IRON, 0.3 + 0.5 * t)
+        w.box(x, 19.4, 0, 0.78, hh, 1.5 - 0.35 * t, base, top=IRON_HI)
+        if i >= cols - 3:  # حد الجمر المتوهج (أضيق من العمود حتى ما تتطابق الوجوه)
+            w.box(x, 19.4 + 0.2, 0, 0.6, hh - 0.2, 1.2, lerp(EMB, EMB_HI, (i - (cols - 3)) / 2))
+            w.box(x, 19.4 + hh - 0.5, 0, 0.8, 0.6, 1.0, EMB_W)
+    # ظهر سميك بمسامير
+    w.box(-3.65, 19.2, 0, 1.3, 12.2, 2.6, IRON_LO, top=IRON)
+    for yy in (21.0, 25.0, 29.0):
+        w.box(-3.65, yy, 1.42, 0.7, 0.7, 0.3, IRON_HI)
+        w.box(-3.65, yy, -1.42, 0.7, 0.7, 0.3, IRON_HI)
+    # شقوق جمر زجزاج على الوجهين
+    zig = [(-1.8, 21.0), (-0.6, 22.8), (-1.9, 24.6), (-0.3, 26.4), (-1.4, 28.2), (0.2, 30.0)]
+    for sz in (-1, 1):
+        for i, (x, yy) in enumerate(zig):
+            w.box(x, yy, sz * 0.84, 0.9, 1.9, 0.26, EMB_HI if i % 2 else EMB)
+    # ثقب تعليق + أسنان عند الطرف
+    w.box(-0.4, 31.4, 0, 1.3, 1.3, 1.8, (18, 16, 22))
+    for sx in (2.2, 3.4):
+        w.box(sx, 17.0 + 3.0, 0, 0.8, 1.0, 1.0, EMB_HI)
+    # ألسنة لهب ترتفع من الحد والطرف (برتقالي ← ذهبي ← أبيض)
+    FL = [(255, 80, 20), (255, 140, 30), (255, 200, 70), (255, 240, 170)]
+    for i, (x, base, hh) in enumerate(((0.9, 33.6, 3.2), (1.7, 33.2, 4.2), (2.5, 32.2, 3.4), (3.2, 30.6, 2.6), (-0.2, 34.6, 2.4), (-1.3, 34.0, 2.0))):
+        for k in range(4):
+            ww = 1.0 - k * 0.2
+            w.box(x + math.sin(i + k) * 0.25, base + k * hh / 4, 0, ww, hh / 4 + 0.05, ww * 0.9, FL[k])
+    for i, yy in enumerate((22.0, 25.5, 29.0)):
+        for k in range(3):
+            w.box(3.7 + k * 0.45, yy + k * 0.8, 0, 0.7 - k * 0.15, 0.9, 0.6 - k * 0.12, FL[k + 1])
+    w.save()
+    return w
+
+
+# ───────────────────────── سيف الظل (حد جليدي مضيء) ─────────────────────────
+def shadow_blade():
+    """سيف طويل مستقيم بحدين: فولاذ أزرق، خط نور سماوي بالنص، حارس مجنح بجوهرة، وشرائط ريح تلتف حول النصل."""
+    w = Weapon("shadow_blade")
+    STEEL, STEEL_HI, STEEL_LO = (70, 110, 190), (150, 196, 255), (34, 52, 110)
+    CORE, CORE_W = (90, 220, 255), (225, 250, 255)
+    NAVY, NAVY_HI = (22, 30, 70), (48, 62, 120)
+    SILV, SILV_HI = (184, 196, 220), (236, 242, 255)
+    GEM, GEM_HI = (40, 140, 255), (160, 220, 255)
+    WIND, WIND_HI = (120, 210, 255), (205, 240, 255)
+    # الحلق + القبضة الملفوفة
+    w.box(0, 4.4, 0, 2.6, 1.0, 2.6, SILV, top=SILV_HI)
+    w.box(0, 5.4, 0, 1.8, 1.4, 1.8, GEM, top=GEM_HI)
+    w.box(0, 6.8, 0, 2.4, 0.6, 2.4, SILV)
+    wrap(w, 7.4, 7, 1.3, 1.8, NAVY, NAVY_HI)
+    w.box(0, 16.5, 0, 2.6, 0.7, 2.6, SILV, top=SILV_HI)
+    # الحارس: جناحان فضيان ينحنيان للأعلى، وبالنص جوهرة زرقاء على الوجهين
+    w.box(0, 17.2, 0, 4.0, 1.5, 2.6, SILV, top=SILV_HI)
+    for sx in (-1, 1):
+        w.box(sx * 3.0, 17.4, 0, 2.2, 1.1, 2.0, SILV)
+        w.box(sx * 4.6, 17.9, 0, 1.6, 1.1, 1.6, SILV_HI)
+        w.box(sx * 5.6, 18.7, 0, 1.0, 1.4, 1.2, STEEL_HI)
+        w.box(sx * 6.0, 20.0, 0, 0.6, 1.0, 0.8, CORE_W)
+    w.box(0, 17.4, 1.35, 1.6, 1.6, 0.4, GEM)
+    w.box(0, 17.4, -1.35, 1.6, 1.6, 0.4, GEM)
+    w.box(0, 17.8, 1.55, 0.7, 0.7, 0.2, GEM_HI)
+    w.box(0, 17.8, -1.55, 0.7, 0.7, 0.2, GEM_HI)
+    # النصل: حدين متناظرين يضيقون للطرف، وخط نور بالنص
+    y0, L, n = 18.7, 28.0, 16
+    h = L / n
+    for k in range(n):
+        t = k / (n - 1)
+        wd = 3.0 - 0.9 * t - (1.4 * (t - 0.82) / 0.18 if t > 0.82 else 0)
+        wd = max(0.7, wd)
+        yy = y0 + k * h
+        w.box(0, yy, 0, wd, h, 0.9, lerp(STEEL_LO, STEEL, 0.4 + 0.5 * t), top=STEEL_HI)
+        for sx in (-1, 1):
+            w.box(sx * (wd / 2 + 0.15), yy, 0, 0.3, h, 0.6, STEEL_HI if k % 3 else SILV_HI)
+        w.box(0, yy, 0, 0.5, h, 1.05, CORE if k % 4 else CORE_W)
+    w.box(0, y0 + L, 0, 0.6, 1.1, 0.6, CORE_W)
+    # شرائط الريح: لولب من شرائح رفيعة تلتف حول النصل
+    for k in range(22):
+        a = k * 0.62
+        r = 2.6 + 0.5 * math.sin(k * 0.5)
+        yy = 20.0 + k * 1.15
+        w.box(math.cos(a) * r, yy, math.sin(a) * r, 0.9 if k % 3 else 1.3, 0.35, 0.9 if k % 3 else 1.3, WIND if k % 2 else WIND_HI)
+    shards(w, [(-3.6, 30, 1.2, 0.45), (3.8, 36, -1.0, 0.45), (-2.8, 42, -0.8, 0.4), (1.2, 49, 1.0, 0.4)], [WIND_HI, CORE_W])
+    w.save()
+    return w
+
+
+# ───────────────────────── مخالب الظل (كاتار بثلاث شفرات) ─────────────────────────
+CLAW_CURL = -1      # الشفرات تنحني لقدام (-z) نحو الضربة: بالثالث مثل مخالب جاهزة، وبالأول تنحني لفوق الشاشة
+
+
+def claws():
+    """مخالب تنلبس على الإيد (واقي يلف الساعد + ثلاث شفرات تطلع من المفاصل وتنحني لقدام).
+    عظمة وحدة مربوطة بخانة اليد (q.item_slot_to_bone_name) مثل كل الأسلحة، بس الموديل مبني بإحداثيات ذراع اللاعب
+    (x -8..-4، y 12 الكف ← 24 الكتف، القدام = -z) والـpivot = pivot عظمة اليد [-6,15,1].
+    قاعدة الربط مثبتة رياضياً من ترايدنت موجانغ الرسمي: pivot العظمة المربوطة ينحط على pivot العظمة الأم،
+    فبدون تحويل بالمنظور الثالث المكعبات تطلع بمكانها على الذراع. بالمنظور الأول موجانغ تزيح عظمة اليد [0,0,-1] فنصحح بـ[0,0,-1].
+    المحاكاة بـtools/fit/claws_view_sim.py (ذراع الشخص الأول من ملف موجانغ: [13.5,-10,12] و[95,-45,115])."""
+    w = Weapon("shadow_claws")
+    LEATH, LEATH_HI = (58, 44, 52), (84, 64, 74)
+    PLATE, PLATE_HI = (40, 36, 58), (76, 70, 104)
+    STRAP, BUCKLE = (100, 60, 150), (200, 170, 255)
+    BLD, BLD_HI, EDGE_W = (62, 50, 100), (150, 120, 230), (236, 228, 255)
+    GEM = (170, 110, 255)
+
+    def gauntlet(cx, y_hand, up, fwd):
+        """يبني المخالب: cx نص الذراع، y_hand طرف الكف، up = اتجاه الساعد (+1 فوق أو -1 تحت)، fwd = اتجاه القدام بـz."""
+        s_ = up                                            # الساعد باتجاه up من الكف، والشفرات بعكسه
+        def Y(a, h):                                       # يحول (مسافة من الكف، طول) لقاعدة مكعب
+            return y_hand + a * s_ if s_ > 0 else y_hand - a - h
+        w.box(cx, Y(1.0, 6.2), 0, 5.2, 6.2, 5.2, LEATH, top=LEATH_HI)          # واقي الساعد
+        for a in (1.6, 4.0, 6.4):
+            w.box(cx, Y(a, 0.6), 0, 5.6, 0.6, 5.6, STRAP)
+        w.box(cx - 2.95, Y(3.4, 1.6), 0, 0.3, 1.6, 1.6, BUCKLE)
+        w.box(cx - 2.75, Y(2.3, 4.0), 0, 0.3, 4.0, 3.2, PLATE, top=PLATE_HI)
+        w.box(cx, Y(-0.8, 1.8), 0, 4.8, 1.8, 4.8, PLATE, top=PLATE_HI)          # صفيحة المفاصل
+        for x in (-1.3, 0.0, 1.3):
+            w.box(cx + x, Y(-0.4, 0.9), fwd * 2.55, 0.8, 0.9, 0.3, GEM)
+        for x, L in ((-1.3, 11.0), (0.0, 12.5), (1.3, 11.0)):                 # الشفرات
+            n = 10
+            h = L / n
+            for k in range(n):
+                t = k / (n - 1)
+                z = fwd * (0.2 + 2.6 * t ** 2.2)
+                wd = 0.8 - 0.4 * t
+                a = -0.8 - (k + 1) * h + 0.6 * t ** 3                       # مسافة سالبة = برا الكف
+                w.box(cx + x, Y(a, h), z, wd, h, 0.55, lerp(BLD, BLD_HI, 0.3 + 0.5 * t))
+                w.box(cx + x, Y(a, h), z + fwd * 0.425, wd * 0.8, h, 0.3, EDGE_W if k % 3 == 1 else BLD_HI)
+            w.box(cx + x, Y(-0.8 - L + 0.6 - 0.7, 0.7), fwd * 3.0, 0.35, 0.7, 0.4, EDGE_W)
+
+    # الموديل مبني بإحداثيات ذراع اللاعب (الواقي يلف الساعد x -8..-4 y 13..19، والشفرات من المفاصل تحت الكف y 12)،
+    # بعدين ينزاح كله بـ (0,24,0) - pivot اليد (-6,15,1) = (6,9,-1): لأن الربط الحقيقي يحط نقطة الموديل (0,24,0) على pivot اليد
+    # (مو pivot العظمة كما كنا نفترض، وهذا اللي كان يطلّع المخالب 9 بكسل تحت الكف و6 برا الإيد ومتدلية للأرض).
+    gauntlet(-6.0, 12.0, 1, CLAW_CURL)
+    shift = (6.0, 9.0, -1.0)
+    for c in w.cubes:
+        c["origin"] = [round(c["origin"][i] + shift[i], 3) for i in range(3)]
+        if "pivot" in c:
+            c["pivot"] = [round(c["pivot"][i] + shift[i], 3) for i in range(3)]
+    w.pivot = [0, 24, 0]
+    w.extra_bones = []
+    w.save()
+    return w
+
+# ───────────────────────── مطرقة الصخر ─────────────────────────
+def maul():
+    """مطرقة حرب على شبكة بكسل مضبوطة وبدون أي تداخل بين المكعبات (كل قطعة جنب الثانية مو داخلها):
+    عصا خشب بقطاعات، لف قماش وأطواق حديد كقطاعات مستقلة، رأس صخري طويل بالعرض،
+    حزامين حديد، وجهين ضاربين حديد، زمرد بإطار برونزي على الجنبين، طحلب وشوكة فوق."""
+    w = Weapon("stone_maul")
+    ST, ST_HI = (122, 124, 120), (156, 158, 152)
+    MOSS = (82, 126, 66)
+    WOOD_A, WOOD_B = (92, 60, 36), (64, 42, 26)
+    IRON, IRON_HI, IRON_LO = (70, 70, 80), (124, 124, 138), (44, 44, 52)
+    CLOTH_A, CLOTH_B = (150, 56, 48), (196, 78, 64)
+    EM, EM_HI, EM_W, BRONZE, BRONZE_HI = (40, 200, 90), (110, 245, 150), (220, 255, 230), (170, 120, 50), (225, 175, 90)
+    # العصا: كل قطاع بمكانه (بدون تداخل). الخشب عرضه 2، الأطواق 3، القماش 3
+    w.box(0, 0, 0, 4, 2, 4, IRON, top=IRON_HI)                       # رأس العصا السفلي
+    y = 2
+    for kind, h in (("w", 2), ("r", 1), ("w", 2), ("c", 1), ("c", 1), ("c", 1), ("c", 1), ("c", 1), ("c", 1), ("r", 1),
+                    ("w", 2), ("w", 2), ("w", 2), ("r", 1), ("w", 2), ("w", 2)):
+        if kind == "w":
+            w.box(0, y, 0, 2, h, 2, WOOD_A if (y // 2) % 2 == 0 else WOOD_B)
+        elif kind == "r":
+            w.box(0, y, 0, 3, h, 3, IRON, top=IRON_HI)
+        else:
+            w.box(0, y, 0, 3, h, 3, CLOTH_A if y % 2 == 0 else CLOTH_B)
+        y += h
+    w.box(0, y, 0, 4, 1, 4, IRON, top=IRON_HI)                       # جلبة تحت الرأس
+    hy = y + 1                                                       # بداية الرأس
+    # الرأس: قطاعات على محور X جنب بعض: وجه | حزام | صخر | حزام | وجه
+    w.box(0, hy, 0, 10, 7, 6, ST, top=ST_HI)                         # الصخر x -5..5
+    for sx in (-1, 1):
+        w.box(sx * 5.5, hy - 0.5, 0, 1, 8, 7, IRON, top=IRON_HI)     # حزام x 5..6
+        w.box(sx * 7.0, hy + 0.5, 0, 2, 6, 5, IRON_LO, top=IRON)    # الوجه الضارب x 6..8
+        w.box(sx * 8.25, hy + 1.5, 0, 0.5, 4, 3, IRON_HI)            # لمعة الوجه x 8..8.5
+    # الزمرد: طبقات فوق وجه الصخر (برا الوجه، مو داخله)
+    for sz in (-1, 1):
+        w.box(0, hy + 2, sz * 3.25, 4, 3, 0.5, BRONZE, top=BRONZE_HI)  # إطار z 3..3.5
+        w.box(0, hy + 2.5, sz * 3.75, 2, 2, 0.5, EM, top=EM_HI)       # جوهرة z 3.5..4
+        w.box(-0.5, hy + 3.5, sz * 4.125, 0.5, 0.5, 0.25, EM_W)       # لمعة z 4..4.25
+    # طحلب فوق الصخر (طبقة فوق السطح) + شوكة
+    w.box(-3, hy + 7, 1.5, 2, 0.5, 2, MOSS)
+    w.box(3, hy + 7, -1.5, 2, 0.5, 2, MOSS)
+    w.box(0, hy + 7, 0, 2, 1, 2, IRON, top=IRON_HI)
+    w.box(0, hy + 8, 0, 1, 1, 1, IRON_HI)
+    # هالة خضراء خفيفة (بعيدة عن الرأس)
+    shards(w, [(-10, hy + 5, 1, 0.5), (10, hy + 2, -1, 0.5), (0.5, hy + 11, 0.5, 0.5), (-4, hy + 10, -2.5, 0.5), (4.5, hy + 9.5, 2.5, 0.5)],
+           [EM_HI, EM, EM_W])
+    w.save()
+    return w
+
+# ───────────────────────── رمح الغروب ─────────────────────────
+def spear():
+    """رمح طويل: عصا خشب بأطواق ذهب، رأس أبيض عريض برونات حمراء، وشريطة حمراء طويلة تتموج من تحت الرأس."""
+    w = Weapon("sunset_spear")
+    WOOD_A, WOOD_B = (98, 52, 36), (66, 34, 24)
+    RED, RED_HI, RED_LO = (200, 40, 40), (255, 96, 80), (130, 22, 26)
+    GOLD, GOLD_HI = (232, 184, 66), (255, 238, 152)
+    WHITE, WHITE_HI, WHITE_LO = (236, 232, 226), (255, 255, 250), (196, 192, 188)
+    w.box(0, -5.0, 0, 2.4, 1.2, 2.4, GOLD, top=GOLD_HI)
+    w.box(0, -3.8, 0, 1.6, 1.0, 1.6, RED)
+    for k in range(25):
+        w.box(0, -2.8 + k * 1.4, 0, 1.35, 1.4, 1.35, WOOD_A if k % 2 == 0 else WOOD_B)
+    for k in range(6):
+        w.box(0, 7.5 + k * 1.2, 0, 2.0, 1.0, 2.0, RED if k % 2 == 0 else RED_LO)
+    for yy in (3.0, 16.5, 24.0):
+        w.box(0, yy, 0, 2.0, 0.5, 2.0, GOLD, top=GOLD_HI)
+    top = -2.8 + 25 * 1.4
+    w.box(0, top - 0.6, 0, 2.6, 0.7, 2.6, GOLD, top=GOLD_HI)
+    w.box(0, top, 0, 3.4, 1.4, 2.4, GOLD, top=GOLD_HI)
+    for sx in (-1, 1):
+        w.box(sx * 2.2, top + 0.3, 0, 1.2, 1.0, 1.6, GOLD_HI)
+    # الرأس الأبيض: ورقة عريضة تضيق للطرف، بحافة فاتحة
+    y = top + 1.4
+    widths = [2.0, 3.2, 4.2, 4.6, 4.4, 3.8, 3.0, 2.2, 1.4, 0.8]
+    for k, wd in enumerate(widths):
+        w.box(0, y, 0, wd, 1.5, 1.0, WHITE if k % 2 == 0 else WHITE_HI, top=WHITE_HI)
+        for sx in (-1, 1):
+            w.box(sx * (wd / 2 + 0.15), y, 0, 0.3, 1.5, 0.7, WHITE_LO)
+        y += 1.5
+    w.box(0, y, 0, 0.5, 1.0, 0.5, WHITE_HI)
+    # رونات حمراء محفورة على الوجهين (خط بالنص وعلامات جانبية)
+    ry = top + 1.4
+    for sz in (-1, 1):
+        for k in range(8):
+            w.box(0, ry + 0.3 + k * 1.5, sz * 0.55, 0.45, 1.1, 0.16, RED if k % 2 else RED_HI)
+        for (dx, yy, ww, hh) in ((-1.0, 3.4, 0.9, 0.4), (1.0, 3.4, 0.9, 0.4), (-1.2, 6.2, 0.5, 1.2), (1.2, 6.2, 0.5, 1.2), (0.0, 9.6, 1.4, 0.4)):
+            w.box(dx, ry + yy, sz * 0.54, ww, hh, 0.14, RED)
+    # الشريطة الحمراء: تطلع من تحت الرأس وتتموج لتحت وللجنب
+    for k in range(14):
+        t = k / 13
+        x = 1.6 + t * 3.4 + math.sin(t * 7) * 0.8
+        yy = top - 0.4 - k * 1.05
+        zz = math.sin(t * 5 + 1) * 0.8
+        w.box(x, yy, zz, 1.3 - 0.4 * t, 1.1, 0.25, RED if k % 3 else RED_HI)
+        if k % 4 == 1:
+            w.box(x + 0.3, yy - 0.2, zz, 0.5, 0.5, 0.3, RED_LO)
+    w.save()
+    return w
+
+
+# ───────────────────────── حركات المسك ─────────────────────────
+def save_animations():
+    anims = {}
+    for ident in HOLD:
+        hh = hold_for(ident)
+        for key in ("fp", "tp"):
+            p = hh[key]
+            anims[f"animation.sh.hold_{ident}_{key}"] = {
+                "loop": True,
+                "bones": {"sh_weapon": {"position": p["pos"], "rotation": p["rot"], "scale": p["scale"]}},
+            }
+    # المخالب: الموديل نفسه مبني بمكانه على الذراع ومزاح بحيث (0,24,0) = pivot اليد، فبالثالث ما يحتاج تحويل،
+    # وبالأول نعوض إزاحة عظمة اليد [0,0,-1] حتى تبقى ملبوسة على الساعد بالضبط
+    anims["animation.sh.hold_shadow_claws_fp"] = {"loop": True, "bones": {"sh_weapon": {"position": [0, 0, 1]}}}
+    anims["animation.sh.hold_shadow_claws_tp"] = {"loop": True, "bones": {"sh_weapon": {"position": [0, 0, 0]}}}
+    os.makedirs(os.path.join(RP, "animations"), exist_ok=True)
+    with open(os.path.join(RP, "animations", "sh_hold.animation.json"), "w") as f:
+        json.dump({"format_version": "1.10.0", "animations": anims}, f, separators=(",", ":"))
+
+
+# ───────────────────────── معاينة (إسقاط متوازي) ─────────────────────────
+def _rot_z(pts, pivot, deg):
+    a = math.radians(deg)
+    c, s = math.cos(a), math.sin(a)
+    out = []
+    for (x, y, z) in pts:
+        dx, dy = x - pivot[0], y - pivot[1]
+        out.append((pivot[0] + dx * c - dy * s, pivot[1] + dx * s + dy * c, z))
+    return out
+
+
+def preview(weapons, out, cell=360):
+    views = [(0, 0), (90, 0), (35, 16)]
+    sheet = Image.new("RGB", (cell * len(views), cell * len(weapons)), (40, 42, 52))
+    for r, w in enumerate(weapons):
+        mins = np.array([1e9] * 3); maxs = np.array([-1e9] * 3)
+        for c in w.cubes:
+            o = np.array(c["origin"]); s = np.array(c["size"])
+            mins = np.minimum(mins, o); maxs = np.maximum(maxs, o + s)
+        ext = max(maxs[1] - mins[1], 1)
+        scale = (cell * 0.92) / ext
+        cy = (maxs[1] + mins[1]) / 2
+        for ci, (yaw, pit) in enumerate(views):
+            img = Image.new("RGB", (cell, cell), (40, 42, 52))
+            d = ImageDraw.Draw(img)
+            ya, pa = math.radians(yaw), math.radians(pit)
+            quads = []
+            for c in w.cubes:
+                o = np.array(c["origin"], dtype=float); s = np.array(c["size"], dtype=float)
+                x0, y0, z0 = o; x1, y1, z1 = o + s
+                col = {f: w.palette[c["uv"][f]["uv"][0] + 16 * c["uv"][f]["uv"][1]][:3] for f in FACES}
+                P = {"n": [(x0, y1, z0), (x1, y1, z0), (x1, y0, z0), (x0, y0, z0)], "s": [(x1, y1, z1), (x0, y1, z1), (x0, y0, z1), (x1, y0, z1)],
+                     "e": [(x1, y1, z0), (x1, y1, z1), (x1, y0, z1), (x1, y0, z0)], "w": [(x0, y1, z1), (x0, y1, z0), (x0, y0, z0), (x0, y0, z1)],
+                     "u": [(x0, y1, z1), (x1, y1, z1), (x1, y1, z0), (x0, y1, z0)], "d": [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)]}
+                names = {"n": "north", "s": "south", "e": "east", "w": "west", "u": "up", "d": "down"}
+                for k, pts in P.items():
+                    if "rotation" in c:
+                        pts = _rot_z(pts, c["pivot"], c["rotation"][2])
+                    pr = []
+                    for (x, y, z) in pts:
+                        xr = x * math.cos(ya) + z * math.sin(ya)
+                        zr = -x * math.sin(ya) + z * math.cos(ya)
+                        yr = y * math.cos(pa) - zr * math.sin(pa)
+                        zr2 = y * math.sin(pa) + zr * math.cos(pa)
+                        pr.append((xr, yr, zr2))
+                    n = np.cross(np.array(pr[1]) - np.array(pr[0]), np.array(pr[3]) - np.array(pr[0]))
+                    if n[2] <= 0:
+                        continue
+                    depth = np.mean([p[2] for p in pr])
+                    sh = {"n": 0.88, "s": 0.88, "e": 0.72, "w": 0.72, "u": 1.0, "d": 0.5}[k]
+                    quads.append((depth, pr, shade(col[names[k]], sh)))
+            quads.sort(key=lambda q: -q[0])
+            for _, pr, col in quads:
+                pts = [(cell / 2 + p[0] * scale, cell / 2 - (p[1] - cy) * scale) for p in pr]
+                d.polygon(pts, fill=col)
+            sheet.paste(img, (ci * cell, r * cell))
+    sheet.save(out)
+
+
+# ───────────────────────── سيف النور (Oath of Light): سيف فضي ببريق، عكس كاتانا الهاوية ─────────────────────────
+def silver_oath():
+    """سيف طويل فضي لامع: نصل عريض مستقيم بحدين وحافة وسطية مرتفعة، حارس فضي بأطراف ذهبية شاحبة
+    وجوهرة بيضاء، قبضة جلد أبيض ملفوفة، رأس قبضة دائري، وبريق أبيض (نجيمات صغيرة) يطفو حوله."""
+    w = Weapon("silver_oath")
+    SIL, SIL_HI, SIL_LO = (196, 204, 220), (244, 248, 255), (140, 148, 168)
+    RIDGE, WHITE = (226, 232, 246), (255, 255, 255)
+    PGOLD, PGOLD_HI = (214, 196, 140), (246, 232, 180)
+    GRIP_A, GRIP_B = (232, 228, 220), (190, 184, 174)
+    GEM, GEM_HI = (220, 240, 255), (255, 255, 255)
+    LIGHT, LIGHT_HI = (255, 226, 140), (255, 246, 200)
+    # تفاصيل النور الصغيرة (كلها لاصقة على الوجوه، مو داخلها):
+    # بلورة نور تحت رأس القبضة، أشعة ذهب حول جوهرة الحارس، ريشتين بكل طرف من الحارس، نقاط ذهب على النصل، وبريق دافئ
+    w.box(0, 3.9, 0, 0.7, 0.7, 0.7, LIGHT_HI)
+    # رأس قبضة دائري (مثمن) + قبضة جلد أبيض
+    w.box(0, 4.6, 0, 1.8, 1.6, 1.8, SIL, top=SIL_HI)
+    for sx in (-1, 1):
+        w.box(sx * 1.1, 4.6, 0, 0.4, 1.6, 1.2, SIL, top=SIL_HI)
+        w.box(0, 4.6, sx * 1.1, 1.2, 1.6, 0.4, SIL, top=SIL_HI)
+    w.box(0, 6.2, 0, 1.6, 0.6, 1.6, PGOLD)
+    wrap(w, 6.8, 7, 1.4, 1.7, GRIP_A, GRIP_B)
+    w.box(0, 16.6, 0, 2.2, 0.6, 2.2, PGOLD, top=PGOLD_HI)
+    # الحارس: عارضة فضية مستقيمة بأطراف ذهبية تنحني للنصل، وجوهرة بيضاء بالنص
+    w.box(0, 17.2, 0, 9.0, 1.2, 2.0, SIL, top=SIL_HI)
+    for sx in (-1, 1):
+        w.box(sx * 5.0, 17.2, 0, 1.0, 1.2, 2.2, PGOLD, top=PGOLD_HI)
+        w.box(sx * 5.0, 18.4, 0, 1.0, 1.0, 1.6, PGOLD_HI)
+    w.box(0, 17.3, 1.1, 1.4, 1.0, 0.2, GEM)
+    w.box(0, 17.3, -1.1, 1.4, 1.0, 0.2, GEM)
+    for sz in (-1, 1):                                                 # أشعة صغيرة حول الجوهرة
+        for sx in (-1, 1):
+            w.box(sx * 1.05, 17.35, sz * 1.05, 0.3, 0.3, 0.1, LIGHT)
+            w.box(sx * 1.05, 17.95, sz * 1.05, 0.3, 0.3, 0.1, LIGHT_HI)
+    for sx in (-1, 1):                                                 # ريشتين صغار بأطراف الحارس
+        w.box(sx * 5.9, 18.6, 0, 0.8, 0.5, 1.2, LIGHT_HI)
+        w.box(sx * 6.5, 19.1, 0, 0.6, 0.5, 1.0, WHITE)
+    w.box(0, 18.4, 0, 1.6, 0.8, 1.4, SIL_LO)                          # ريكاسو
+    # النصل: عريض مستقيم، حدين لامعين جنب النصل، وحافة وسطية بيضاء (على الوجهين، برا الوجه)
+    y0, L, n = 19.2, 26.0, 13
+    h = L / n
+    for k in range(n):
+        t = k / (n - 1)
+        wd = 3.2 - 0.6 * t - (2.0 * (t - 0.8) / 0.2 if t > 0.8 else 0)
+        wd = max(0.6, wd)
+        yy = y0 + k * h
+        w.box(0, yy, 0, wd, h, 0.8, lerp(SIL_LO, SIL, 0.5 + 0.4 * t), top=SIL_HI)
+        for sx in (-1, 1):
+            w.box(sx * (wd / 2 + 0.15), yy, 0, 0.3, h, 0.5, SIL_HI if k % 3 else WHITE)
+        for sz in (-1, 1):
+            w.box(0, yy, sz * 0.45, 0.5, h, 0.1, RIDGE if k % 2 else WHITE)
+    w.box(0, y0 + L, 0, 0.5, 0.8, 0.5, WHITE)
+    for k, yy in enumerate((20.2, 22.0, 23.8)):                        # نقاط ذهب صغيرة قرب قاعدة النصل
+        for sz in (-1, 1):
+            for sx in (-1, 1):
+                w.box(sx * 0.6, yy, sz * 0.45, 0.3, 0.3, 0.1, LIGHT if k % 2 else LIGHT_HI)
+    # بريق: نجيمات صغيرة (+) تطفو حول النصل، بيض ودافئة
+    for i, (x, y, z) in enumerate(((-3.6, 25, 0.8), (3.8, 30, -0.8), (-3.0, 36, -0.6), (3.2, 41, 0.9), (0.0, 47.5, 0.0))):
+        c = WHITE if i % 2 == 0 else LIGHT_HI
+        w.box(x, y, z, 0.9, 0.3, 0.3, c)
+        w.box(x, y - 0.3, z, 0.3, 0.3, 0.36, c)
+        w.box(x, y + 0.3, z, 0.3, 0.3, 0.36, c)
+    w.save()
+    return w
+
+
+# ───────────────────────── منجل الحاصد (يوقعه الحاصد الأجوف بس) ─────────────────────────
+def scythe():
+    """منجل الحاصد الأجوف: عصا خشب قديمة رمادية بعُقد، لف خيش وحبل عند القبضة، مقبض جانبي صغير (مثل المنجل الحقيقي)،
+    جلبة حديد صدئة فوق بعين بنفسجية، ونصل طويل مقوس لقدام (+x) ينزل طرفه لتحت: ظهر غامق، جسم حديد،
+    حد فاتح من تحت وخيط بنفسجي ملعون على الحد. خيطين دمية معلقين من النصل (تلميح لمهارة خيوط الدمية)."""
+    w = Weapon("harvest_scythe")
+    WOOD_A, WOOD_B, WOOD_HI, KNOT = (86, 66, 50), (64, 48, 36), (112, 90, 68), (44, 32, 24)
+    TWINE_A, TWINE_B = (156, 128, 82), (120, 96, 58)
+    IRON, IRON_HI, IRON_LO = (74, 74, 84), (128, 128, 142), (46, 46, 54)
+    RUST, RUST_HI = (122, 64, 36), (158, 92, 50)
+    SPINE, BODY, BODY_HI, EDGE = (52, 52, 62), (96, 98, 112), (126, 128, 142), (196, 198, 212)
+    CURSE, CURSE_HI, CURSE_LO = (150, 70, 230), (214, 160, 255), (84, 30, 140)
+    STRING = (222, 214, 196)
+    # طرف العصا السفلي: غطاء حديد وشوكة صغيرة
+    w.box(0, -5.0, 0, 1.0, 1.0, 1.0, IRON_LO)
+    w.box(0, -4.0, 0, 2.0, 1.2, 2.0, IRON, top=IRON_HI)
+    # العصا: قطاعات 1.5 بلون خشب متبادل، مع عُقد غامقة على الجنب
+    y = -2.8
+    k = 0
+    while y < 30.0:
+        w.box(0, y, 0, 1.5, 1.5, 1.5, WOOD_A if k % 2 == 0 else WOOD_B, top=WOOD_HI)
+        if k in (5, 13, 18):
+            w.box(0.85, y + 0.4, 0, 0.2, 0.7, 0.7, KNOT)
+        y += 1.5; k += 1
+    top = y                                                            # نهاية العصا (~33.2)
+    # القبضة: لف خيش وحبل (y 4..12)
+    for i in range(8):
+        w.box(0, 4.0 + i, 0, 2.0, 1.0, 2.0, TWINE_A if i % 2 == 0 else TWINE_B, top=shade(TWINE_A, 1.15))
+    # المقبض الجانبي (الحقيقي بالمنجل): وتد قصير لورا (-x) ملفوف بحبل
+    for i in range(3):
+        w.box(-1.25 - i, 19.5, 0, 1.0, 1.1, 1.1, WOOD_A if i % 2 == 0 else WOOD_B, top=WOOD_HI)
+    w.box(-0.95, 19.4, 0, 0.4, 1.3, 1.3, TWINE_B)
+    # جلبة الحديد بالراس: حلقتين + صدأ + عين ملعونة
+    w.box(0, top - 2.6, 0, 2.2, 1.0, 2.2, IRON, top=IRON_HI)
+    w.box(0, top - 1.6, 0, 2.4, 2.6, 2.4, IRON_LO, top=IRON)
+    w.box(0, top + 1.0, 0, 2.0, 0.8, 2.0, IRON, top=IRON_HI)
+    w.box(-0.7, top - 1.2, 1.25, 0.8, 0.8, 0.1, RUST)
+    w.box(0.6, top - 0.2, -1.25, 0.6, 0.6, 0.1, RUST_HI)
+    for sz in (-1, 1):
+        w.box(0, top - 0.8, sz * 1.3, 1.0, 1.0, 0.2, CURSE, top=CURSE_HI)
+        w.box(-0.2, top - 0.5, sz * 1.42, 0.4, 0.4, 0.06, CURSE_HI)
+    # شوكة خلفية صغيرة (-x) مقابل النصل
+    w.box(-1.9, top - 0.6, 0, 1.4, 1.2, 1.0, IRON, top=IRON_HI)
+    w.box(-3.0, top - 0.3, 0, 0.9, 0.7, 0.7, IRON_HI)
+    # النصل: 15 قطاع على +x. الظهر يرتفع شوية ثم ينحني لتحت، والعرض يضيق للطرف
+    n, seg = 18, 1.4
+    x0 = 1.1
+
+    def spine_y(t):
+        return top + 1.8 + 1.8 * math.sin(math.pi * min(1.0, t * 1.8)) * (1 - t) - 10.0 * t ** 2.0
+
+    def width(t):
+        return 5.6 * (1 - t) ** 0.8 + 0.4
+    for i in range(n):
+        t = i / (n - 1)
+        spine = spine_y(t)
+        wd = width(t)
+        th = 1.0 - 0.45 * t
+        cx = x0 + i * seg + seg / 2
+        sp = min(0.6, wd * 0.25)
+        ed = max(0.3, wd * 0.28)
+        body = wd - sp - ed
+        w.box(cx, spine - sp, 0, seg, sp, th, SPINE, top=IRON)                           # الظهر
+        if body > 0.05:
+            w.box(cx, spine - sp - body, 0, seg, body, th * 0.92, BODY if i % 3 else BODY_HI, top=BODY_HI)
+        w.box(cx, spine - wd, 0, seg, ed, th * 0.7, EDGE)                                 # الحد الفاتح
+        if i < n - 1:
+            w.box(cx, spine - wd - 0.3, 0, seg, 0.3, th * 0.45, CURSE if i % 2 else CURSE_HI)  # خيط اللعنة على الحد
+        if i in (3, 9):
+            w.box(cx, spine - sp - body * 0.6, 0, seg * 0.7, min(0.8, body * 0.5), th + 0.12, RUST)  # بقع صدأ
+        if i in (2, 6, 11):
+            w.box(cx, spine - sp - body * 0.45, 0, seg * 0.8, 0.25, th + 0.1, CURSE_LO)        # رونة ملعونة محفورة
+    w.box(x0 + n * seg + 0.35, spine_y(1.0) - 0.8, 0, 0.7, 0.5, 0.4, EDGE)                 # الطرف
+    # خيطين دمية معلقين من حد النصل، بنهايتهم عقدة بنفسجية
+    for (i, L) in ((3, 5.0), (7, 3.6)):
+        t = i / (n - 1)
+        sx = x0 + i * seg + seg / 2
+        sy = spine_y(t) - width(t) - 0.3
+        w.box(sx, sy - L, 0.0, 0.3, L, 0.3, STRING)
+        w.box(sx, sy - L - 0.7, 0.0, 0.7, 0.7, 0.7, CURSE, top=CURSE_HI)
+    w.save()
+    return w
+
+
+ALL = [katana, dagger, cleaver, shadow_blade, claws, maul, spear, silver_oath, scythe]
+
+if __name__ == "__main__":
+    ws = [fn() for fn in ALL]
+    save_animations()
+    outdir = os.environ.get("PREVIEW_DIR", "/tmp")
+    preview(ws[:4], os.path.join(outdir, "weapons3d_a.png"))
+    preview(ws[4:8], os.path.join(outdir, "weapons3d_b.png"))
+    preview(ws[8:], os.path.join(outdir, "weapons3d_c.png"))
+    for w in ws:
+        print(f"{w.ident:14} cubes={len(w.cubes):3} colors={len(w.palette)}")
+    print("preview", outdir)

@@ -1,0 +1,49 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:grey_bear",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_grey_bear",
+        "hot": "textures/entity/sh_grey_bear_hot"
+      },
+      "geometry": {
+        "default": "geometry.sh_grey_bear"
+      },
+      "animations": {
+        "idle": "animation.sh_grey_bear.idle",
+        "walk": "animation.sh_grey_bear.walk",
+        "state": "controller.animation.sh_grey_bear.state",
+        "look": "animation.sh.look",
+        "hug_open": "animation.sh_grey_bear.hug_open",
+        "hug_hold": "animation.sh_grey_bear.hug_hold",
+        "throw": "animation.sh_grey_bear.throw",
+        "scratch": "animation.sh_grey_bear.scratch",
+        "roar": "animation.sh_grey_bear.roar",
+        "sleep": "animation.sh_grey_bear.sleep",
+        "death": "animation.sh_grey_bear.death",
+        "attack": "animation.sh_grey_bear.attack"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "state",
+          "look",
+          "attack"
+        ],
+        "scale": "1.0"
+      },
+      "render_controllers": [
+        "controller.render.sh_mammoth"
+      ],
+      "spawn_egg": {
+        "base_color": "#5e5a58",
+        "overlay_color": "#d8d6d0"
+      }
+    }
+  }
+}

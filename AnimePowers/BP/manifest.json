@@ -1,0 +1,50 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "§dEtheria §fV1 §7- BP",
+    "description": "Etheria V1: powers, ranks, story, monsters, weapons and places. Requires Minecraft 26.50+",
+    "uuid": "9faac67a-5fbd-4a0d-9297-0ee7b5538ab1",
+    "version": [
+      1,
+      41,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "bbdb8485-036f-4180-932f-6612454e3e5e",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "73bf9aef-e8cf-430e-ad3d-1b970f55ccbe",
+      "entry": "scripts/main.js",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.10.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "2.2.0"
+    }
+  ]
+}

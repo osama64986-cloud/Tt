@@ -1,0 +1,27 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:ore_feature": {
+    "description": {
+      "identifier": "sh:abyssium_ore_feature"
+    },
+    "count": 5,
+    "replace_rules": [
+      {
+        "places_block": "sh:abyssium_ore",
+        "may_replace": [
+          "minecraft:stone",
+          "minecraft:granite",
+          "minecraft:diorite",
+          "minecraft:andesite"
+        ]
+      },
+      {
+        "places_block": "sh:deepslate_abyssium_ore",
+        "may_replace": [
+          "minecraft:deepslate",
+          "minecraft:tuff"
+        ]
+      }
+    ]
+  }
+}
