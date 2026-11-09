@@ -55,6 +55,7 @@
     "void_sign": "animation.ab.void_sign",
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
+    "dodge": "animation.ab.dodge",
     "tail_sway": "animation.ab.tail_sway",
     "hover": "animation.ab.hover",
     "arms_crossed": "animation.ab.arms_crossed"
@@ -156,6 +157,9 @@
      },
      {
       "slash_l": "query.property('ab:pose') == 28"
+     },
+     {
+      "dodge": "query.property('ab:pose') == 29"
      },
      {
       "tail_sway": "1.0"

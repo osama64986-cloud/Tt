@@ -1914,6 +1914,11 @@ function dodgeFx(v, src) {
   const side = V.mul(sideOf(V.norm(V.sub(v.location, from))), Math.random() < 0.5 ? 1.6 : -1.6);
   try { v.tryTeleport(V.add(v.location, side), { checkForBlocks: true }); } catch (e) { /* ignore */ }
   sound(v.dimension, "mob.endermen.portal", v.location, 0.6, 2);
+  const s = state(v);
+  if (now() >= s.busyUntil) {  // visible sway, only when not in the middle of a technique
+    setPose(v, 29);
+    later(6, () => { if (v.isValid && now() >= state(v).busyUntil) setPose(v, 0); });
+  }
 }
 
 // Gojo's Black Flash: a rare melee hit with distorted cursed energy.

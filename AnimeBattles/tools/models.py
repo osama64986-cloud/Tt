@@ -1896,7 +1896,7 @@ def face32(px, W, H, spec, hair, iris, skin):
                 both(x, y, mix(light(iris, 0.45), dark(iris, 0.55), t))
         for y in range(18, 21):
             both(10, y, (16, 40, 96)); both(11, y, (16, 40, 96))
-        both(9, 17, white); both(12, 20, white)
+        put(9, 17, white); put(20, 17, white); put(12, 20, white); put(23, 20, white)  # one light source
         for x in range(5, 15):
             both(x, 15, (246, 246, 252))
         both(4, 16, (246, 246, 252)); both(5, 16, (200, 200, 214))

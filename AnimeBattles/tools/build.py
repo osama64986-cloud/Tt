@@ -264,7 +264,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l"]  # poses 13..28
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge"]  # poses 13..29
 
 
 def extra_animations():
@@ -366,6 +366,13 @@ def extra_animations():
         "leftArm": {"rotation": {"0.0": [-170, 15, 0], "0.05": [-115, -15, 0], "0.1": [-38, -45, 0], "0.16": [-44, -40, 0]}},
         "rightArm": {"rotation": [-20, 0, -25]},
         "body": {"rotation": {"0.0": [-6, -20, 0], "0.1": [6, 38, 0], "0.16": [4, 35, 0]}}}, 0.16)
+    # dodge (pose 29): a sharp sway away from the blow, then back
+    out["animation.ab.dodge"] = strike({
+        "body": {"rotation": {"0.0": [0, 0, 0], "0.06": [-8, 0, 24], "0.25": [-4, 0, 12]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.06": [-6, 0, 10]}},
+        "rightArm": {"rotation": {"0.0": [0, 0, 0], "0.06": [-30, 0, 30]}},
+        "leftArm": {"rotation": {"0.0": [0, 0, 0], "0.06": [-40, 0, -10]}},
+        "rightLeg": {"rotation": [0, 0, 10]}, "leftLeg": {"rotation": [0, 0, -4]}}, 0.25)
     out["animation.ab.upper"] = strike({
         "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
         "leftArm": {"rotation": [-30, 0, 20]},

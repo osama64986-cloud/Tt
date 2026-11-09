@@ -60,6 +60,7 @@
     "void_sign": "animation.ab.void_sign",
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
+    "dodge": "animation.ab.dodge",
     "arms2": "animation.ab.arms2"
    },
    "scripts": {
@@ -159,6 +160,9 @@
      },
      {
       "slash_l": "query.property('ab:pose') == 28"
+     },
+     {
+      "dodge": "query.property('ab:pose') == 29"
      },
      {
       "arms2": "query.property('ab:form') == 2"
