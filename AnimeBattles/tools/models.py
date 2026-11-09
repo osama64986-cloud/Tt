@@ -1936,7 +1936,13 @@ def face32(px, W, H, spec, hair, iris, skin):
                 both(x, y, dark(ic, 0.6) if y == top + 1 else ic)
         for y in range(top + 2, bot):
             both(10, y, dark(ic, 0.3)); both(11, y, dark(ic, 0.3)) if not narrow else None
-        both(9, top + 2, white)
+        # catchlights from one light source: same side in both eyes, a bigger upper one and a soft lower glint
+        r0 = 20 if narrow else 19
+        put(9, top + 2, white); put(r0, top + 2, white)
+        if not narrow:
+            put(10, top + 2, white); put(r0 + 1, top + 2, white)
+            put(9, top + 3, (232, 236, 244)); put(r0, top + 3, (232, 236, 244))
+            put(12, bot, light(ic, 0.45)); put(22, bot, light(ic, 0.45))
         lash = ink
         for x in range(6, 14):
             both(x, top, lash)

@@ -719,6 +719,8 @@ const VEGETA = {
         announce(e, "§e§lFinal...");
         sound(e.dimension, "beacon.activate", e.location, 2, 0.8);
         chargeOrb(e, t, 45, C.flash, 0.4, 2.0, 1);
+        setPose(e, 27);                                      // arms thrown wide while the ki gathers
+        later(32, () => { if (e.isValid) setPose(e, 1); });   // ...then the palms snap together in front
         later(45, () => {
           if (!e.isValid) return;
           if (alive(t)) face(e, aim(t));

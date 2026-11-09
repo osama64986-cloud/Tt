@@ -264,7 +264,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign"]  # poses 13..26
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide"]  # poses 13..27
 
 
 def extra_animations():
@@ -303,12 +303,17 @@ def extra_animations():
         "two_fingers": {"rightArm": {"rotation": [-150, -38, 0]}, "leftArm": {"rotation": [-8, 0, 8]}, "head": {"rotation": [6, 0, 0]}},
         # Gojo's Unlimited Void: one hand raised before the face, fingers crossed
         "void_sign": {"rightArm": {"rotation": [-120, -12, 0]}, "leftArm": {"rotation": [-8, 0, 10]}, "head": {"rotation": [6, 0, 0]}},
+        # Vegeta's Final Flash charge: both arms thrown wide before the palms come together
+        "arms_wide": {"rightArm": {"rotation": [-8, 0, 88]}, "leftArm": {"rotation": [-8, 0, -88]}, "body": {"rotation": [-6, 0, 0]},
+                      "rightLeg": {"rotation": [-6, 0, 8]}, "leftLeg": {"rotation": [-6, 0, -8]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},
+        "hover": {"root": {"position": [0, "2.2 + math.sin(query.life_time * 110.0) * 0.6", 0]},
+                   "rightLeg": {"rotation": [6, 0, 0]}, "leftLeg": {"rotation": [-4, 0, 0]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
-    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway"}  # layered on walk/look, never replacing them
+    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover"}  # layered on walk/look, never replacing them
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": k not in additive, "bones": v} for k, v in A.items()}
     # strikes with motion: chamber -> snap out (slight overshoot) -> hold, replayed every time the pose is set
     def strike(bones, length=0.14):
@@ -360,7 +365,7 @@ IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && q
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3")],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2")],
-    "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("hover", "animation.ab.hover", "query.property('ab:pose') != 24"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "gojo": [("cool_idle", "animation.ab.cool_idle", IDLE_COND)],
 }

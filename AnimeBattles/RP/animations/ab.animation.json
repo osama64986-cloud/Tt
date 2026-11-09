@@ -1425,6 +1425,74 @@
      ]
     }
    }
+  },
+  "animation.ab.arms_wide": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -8,
+      0,
+      88
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -8,
+      0,
+      -88
+     ]
+    },
+    "body": {
+     "rotation": [
+      -6,
+      0,
+      0
+     ]
+    },
+    "rightLeg": {
+     "rotation": [
+      -6,
+      0,
+      8
+     ]
+    },
+    "leftLeg": {
+     "rotation": [
+      -6,
+      0,
+      -8
+     ]
+    }
+   }
+  },
+  "animation.ab.hover": {
+   "loop": true,
+   "override_previous_animation": false,
+   "bones": {
+    "root": {
+     "position": [
+      0,
+      "2.2 + math.sin(query.life_time * 110.0) * 0.6",
+      0
+     ]
+    },
+    "rightLeg": {
+     "rotation": [
+      6,
+      0,
+      0
+     ]
+    },
+    "leftLeg": {
+     "rotation": [
+      -4,
+      0,
+      0
+     ]
+    }
+   }
   }
  }
 }
