@@ -85,22 +85,61 @@
    }
   },
   "animation.ab.pose_beam": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.16,
    "override_previous_animation": true,
    "bones": {
     "rightArm": {
-     "rotation": [
-      -90,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -55,
+       -30,
+       0
+      ],
+      "0.08": [
+       -96,
+       -8,
+       0
+      ],
+      "0.16": [
+       -90,
+       -6,
+       0
+      ]
+     }
     },
     "leftArm": {
-     "rotation": [
-      -90,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -55,
+       30,
+       0
+      ],
+      "0.08": [
+       -96,
+       8,
+       0
+      ],
+      "0.16": [
+       -90,
+       6,
+       0
+      ]
+     }
+    },
+    "body": {
+     "rotation": {
+      "0.0": [
+       0,
+       20,
+       0
+      ],
+      "0.08": [
+       4,
+       0,
+       0
+      ]
+     }
     },
     "rightLeg": {
      "rotation": [
@@ -200,29 +239,61 @@
    }
   },
   "animation.ab.jab_r": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.14,
    "override_previous_animation": true,
    "bones": {
     "rightArm": {
-     "rotation": [
-      -95,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -30,
+       0,
+       0
+      ],
+      "0.06": [
+       -102,
+       0,
+       0
+      ],
+      "0.12": [
+       -94,
+       0,
+       0
+      ]
+     }
     },
     "leftArm": {
-     "rotation": [
-      -40,
-      0,
-      15
-     ]
+     "rotation": {
+      "0.0": [
+       -70,
+       0,
+       10
+      ],
+      "0.06": [
+       -38,
+       0,
+       15
+      ]
+     }
     },
     "body": {
-     "rotation": [
-      0,
-      -22,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       0,
+       14,
+       0
+      ],
+      "0.06": [
+       0,
+       -26,
+       0
+      ],
+      "0.12": [
+       0,
+       -22,
+       0
+      ]
+     }
     },
     "rightLeg": {
      "rotation": [
@@ -241,29 +312,61 @@
    }
   },
   "animation.ab.jab_l": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.14,
    "override_previous_animation": true,
    "bones": {
     "leftArm": {
-     "rotation": [
-      -95,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -30,
+       0,
+       0
+      ],
+      "0.06": [
+       -102,
+       0,
+       0
+      ],
+      "0.12": [
+       -94,
+       0,
+       0
+      ]
+     }
     },
     "rightArm": {
-     "rotation": [
-      -40,
-      0,
-      -15
-     ]
+     "rotation": {
+      "0.0": [
+       -70,
+       0,
+       -10
+      ],
+      "0.06": [
+       -38,
+       0,
+       -15
+      ]
+     }
     },
     "body": {
-     "rotation": [
-      0,
-      22,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       0,
+       -14,
+       0
+      ],
+      "0.06": [
+       0,
+       26,
+       0
+      ],
+      "0.12": [
+       0,
+       22,
+       0
+      ]
+     }
     },
     "rightLeg": {
      "rotation": [
@@ -282,15 +385,28 @@
    }
   },
   "animation.ab.kick": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.16,
    "override_previous_animation": true,
    "bones": {
     "rightLeg": {
-     "rotation": [
-      -90,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -25,
+       0,
+       0
+      ],
+      "0.07": [
+       -102,
+       0,
+       0
+      ],
+      "0.14": [
+       -92,
+       0,
+       0
+      ]
+     }
     },
     "leftLeg": {
      "rotation": [
@@ -314,24 +430,44 @@
      ]
     },
     "body": {
-     "rotation": [
-      8,
-      0,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.07": [
+       10,
+       0,
+       0
+      ]
+     }
     }
    }
   },
   "animation.ab.round": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.18,
    "override_previous_animation": true,
    "bones": {
     "rightLeg": {
-     "rotation": [
-      -25,
-      0,
-      80
-     ]
+     "rotation": {
+      "0.0": [
+       -15,
+       0,
+       15
+      ],
+      "0.08": [
+       -25,
+       0,
+       90
+      ],
+      "0.16": [
+       -25,
+       0,
+       80
+      ]
+     }
     },
     "leftLeg": {
      "rotation": [
@@ -341,11 +477,23 @@
      ]
     },
     "body": {
-     "rotation": [
-      0,
-      -35,
-      -10
-     ]
+     "rotation": {
+      "0.0": [
+       0,
+       15,
+       0
+      ],
+      "0.08": [
+       0,
+       -42,
+       -10
+      ],
+      "0.16": [
+       0,
+       -35,
+       -10
+      ]
+     }
     },
     "rightArm": {
      "rotation": [
@@ -364,15 +512,28 @@
    }
   },
   "animation.ab.upper": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.18,
    "override_previous_animation": true,
    "bones": {
     "rightArm": {
-     "rotation": [
-      -170,
-      0,
-      -10
-     ]
+     "rotation": {
+      "0.0": [
+       -15,
+       0,
+       -10
+      ],
+      "0.08": [
+       -176,
+       0,
+       -10
+      ],
+      "0.16": [
+       -168,
+       0,
+       -10
+      ]
+     }
     },
     "leftArm": {
      "rotation": [
@@ -382,11 +543,18 @@
      ]
     },
     "body": {
-     "rotation": [
-      -12,
-      -15,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       8,
+       10,
+       0
+      ],
+      "0.08": [
+       -14,
+       -15,
+       0
+      ]
+     }
     },
     "rightLeg": {
      "rotation": [
@@ -779,15 +947,33 @@
    }
   },
   "animation.ab.slash": {
-   "loop": true,
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.16,
    "override_previous_animation": true,
    "bones": {
     "rightArm": {
-     "rotation": [
-      -85,
-      65,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -170,
+       -15,
+       0
+      ],
+      "0.05": [
+       -115,
+       15,
+       0
+      ],
+      "0.1": [
+       -38,
+       45,
+       0
+      ],
+      "0.16": [
+       -44,
+       40,
+       0
+      ]
+     }
     },
     "leftArm": {
      "rotation": [
@@ -797,11 +983,23 @@
      ]
     },
     "body": {
-     "rotation": [
-      0,
-      -35,
-      0
-     ]
+     "rotation": {
+      "0.0": [
+       -6,
+       20,
+       0
+      ],
+      "0.1": [
+       6,
+       -38,
+       0
+      ],
+      "0.16": [
+       4,
+       -35,
+       0
+      ]
+     }
     }
    }
   },
@@ -911,7 +1109,7 @@
   },
   "animation.ab.stance": {
    "loop": true,
-   "override_previous_animation": true,
+   "override_previous_animation": false,
    "bones": {
     "rightArm": {
      "rotation": [
@@ -952,7 +1150,7 @@
   },
   "animation.ab.tail_sway": {
    "loop": true,
-   "override_previous_animation": true,
+   "override_previous_animation": false,
    "bones": {
     "tail": {
      "rotation": [
@@ -965,7 +1163,7 @@
   },
   "animation.ab.flinch": {
    "loop": true,
-   "override_previous_animation": true,
+   "override_previous_animation": false,
    "bones": {
     "body": {
      "rotation": [
@@ -1013,7 +1211,7 @@
   },
   "animation.ab.arms_crossed": {
    "loop": true,
-   "override_previous_animation": true,
+   "override_previous_animation": false,
    "bones": {
     "rightArm": {
      "rotation": [
@@ -1040,7 +1238,7 @@
   },
   "animation.ab.cool_idle": {
    "loop": true,
-   "override_previous_animation": true,
+   "override_previous_animation": false,
    "bones": {
     "head": {
      "rotation": [

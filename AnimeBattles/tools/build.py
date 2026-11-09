@@ -294,7 +294,47 @@ def extra_animations():
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
-    out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
+    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway"}  # layered on walk/look, never replacing them
+    out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": k not in additive, "bones": v} for k, v in A.items()}
+    # strikes with motion: chamber -> snap out (slight overshoot) -> hold, replayed every time the pose is set
+    def strike(bones, length=0.14):
+        return {"loop": "hold_on_last_frame", "animation_length": length, "override_previous_animation": True, "bones": bones}
+    out["animation.ab.jab_r"] = strike({
+        "rightArm": {"rotation": {"0.0": [-30, 0, 0], "0.06": [-102, 0, 0], "0.12": [-94, 0, 0]}},
+        "leftArm": {"rotation": {"0.0": [-70, 0, 10], "0.06": [-38, 0, 15]}},
+        "body": {"rotation": {"0.0": [0, 14, 0], "0.06": [0, -26, 0], "0.12": [0, -22, 0]}},
+        "rightLeg": {"rotation": [-15, 0, 0]}, "leftLeg": {"rotation": [15, 0, 0]}})
+    out["animation.ab.jab_l"] = strike({
+        "leftArm": {"rotation": {"0.0": [-30, 0, 0], "0.06": [-102, 0, 0], "0.12": [-94, 0, 0]}},
+        "rightArm": {"rotation": {"0.0": [-70, 0, -10], "0.06": [-38, 0, -15]}},
+        "body": {"rotation": {"0.0": [0, -14, 0], "0.06": [0, 26, 0], "0.12": [0, 22, 0]}},
+        "rightLeg": {"rotation": [15, 0, 0]}, "leftLeg": {"rotation": [-15, 0, 0]}})
+    out["animation.ab.kick"] = strike({
+        "rightLeg": {"rotation": {"0.0": [-25, 0, 0], "0.07": [-102, 0, 0], "0.14": [-92, 0, 0]}},
+        "leftLeg": {"rotation": [10, 0, 0]},
+        "rightArm": {"rotation": [-30, 0, -25]}, "leftArm": {"rotation": [-30, 0, 25]},
+        "body": {"rotation": {"0.0": [0, 0, 0], "0.07": [10, 0, 0]}}}, 0.16)
+    out["animation.ab.round"] = strike({
+        "rightLeg": {"rotation": {"0.0": [-15, 0, 15], "0.08": [-25, 0, 90], "0.16": [-25, 0, 80]}},
+        "leftLeg": {"rotation": [5, 0, -5]},
+        "body": {"rotation": {"0.0": [0, 15, 0], "0.08": [0, -42, -10], "0.16": [0, -35, -10]}},
+        "rightArm": {"rotation": [-20, 0, 50]}, "leftArm": {"rotation": [-40, 0, -35]}}, 0.18)
+    # beam release: from the cupped charge at the hip, thrust both palms forward
+    out["animation.ab.pose_beam"] = strike({
+        "rightArm": {"rotation": {"0.0": [-55, -30, 0], "0.08": [-96, -8, 0], "0.16": [-90, -6, 0]}},
+        "leftArm": {"rotation": {"0.0": [-55, 30, 0], "0.08": [-96, 8, 0], "0.16": [-90, 6, 0]}},
+        "body": {"rotation": {"0.0": [0, 20, 0], "0.08": [4, 0, 0]}},
+        "rightLeg": {"rotation": [-12, 0, 0]}, "leftLeg": {"rotation": [12, 0, 0]}}, 0.16)
+    # sword slash: raised overhead, cut down and across
+    out["animation.ab.slash"] = strike({
+        "rightArm": {"rotation": {"0.0": [-170, -15, 0], "0.05": [-115, 15, 0], "0.1": [-38, 45, 0], "0.16": [-44, 40, 0]}},
+        "leftArm": {"rotation": [-20, 0, 25]},
+        "body": {"rotation": {"0.0": [-6, 20, 0], "0.1": [6, -38, 0], "0.16": [4, -35, 0]}}}, 0.16)
+    out["animation.ab.upper"] = strike({
+        "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
+        "leftArm": {"rotation": [-30, 0, 20]},
+        "body": {"rotation": {"0.0": [8, 10, 0], "0.08": [-14, -15, 0]}},
+        "rightLeg": {"rotation": [-20, 0, 0]}, "leftLeg": {"rotation": [20, 0, 0]}}, 0.18)
     out["animation.ab.bounce"] = {"loop": True, "bones": {"root": {"position": [0, "math.abs(math.sin(query.life_time * 240.0)) * 3.0", 0]}}}
     out["animation.ab.arms2"] = {"loop": True, "bones": {
         "rightArm2": {"rotation": ["math.sin(query.life_time * 120.0) * 12.0 - 10.0", 0, 0]},

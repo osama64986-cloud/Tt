@@ -2007,8 +2007,19 @@ world.afterEvents.entityDie.subscribe((ev) => {
   try {
     const e = ev.deadEntity;
     const def = FIGHTERS[e.typeId];
-    states.delete(e.id);
     if (def && teamOf(e)) announce(e, `${teamLabel(teamOf(e))}${def.color}§l${def.name} §r§fhas been defeated!`);
+    states.delete(e.id);
+    // victory: the fighter who landed the last blow raises a fist with a shout
+    const k = ev.damageSource && ev.damageSource.damagingEntity;
+    if (k && k.isValid && FIGHTERS[k.typeId] && k.id !== e.id) {
+      const ks = state(k);
+      if (now() >= ks.busyUntil) {
+        busy(ks, 22);
+        setPose(k, 3);
+        setExpr(k, 1, 22);
+        later(22, () => { if (k.isValid && formOf(k) >= 0) setPose(k, 0); });
+      }
+    }
   } catch (err) { /* ignore */ }
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });

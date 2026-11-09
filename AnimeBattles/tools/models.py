@@ -4039,7 +4039,7 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     expr = EXPR
     marks = spec.get("marks", [])
     eye = spec.get("eye", "")
-    own_eyes = "sukuna_face" in marks  # Sukuna's four eyes are painted by his mark layer: keep them, change the mouth
+    own_eyes = "heian_mask" in marks  # Heian Sukuna's masked eye is painted by the mask layer: keep it, change the mouth
     closed = expr in ("blink", "hurt") and eye != "band" and not own_eyes
     _face32_v6(px, W, H, dict(spec, eye="__none__") if closed else spec, hair, iris, skin)
     if "widow_peak" in marks:  # Vegeta's sharp M-shaped hairline
@@ -4054,6 +4054,10 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
             for x in (8, 9):
                 for y in (18, 19, 20):
                     put(x, y, ramp(skin)[2])
+        if closed and "sukuna_face" in marks:  # the second pair of eyes closes too
+            put = _expr_put(px, W, H)
+            for x in (9, 10, 11, 12):
+                put(x, 24, ramp(skin)[2]); put(31 - x, 24, ramp(skin)[2])
         masked = any(m in marks for m in ("mask", "heian_mask"))
         draw_expr(px, W, H, expr if (closed or expr == "shout") else ("mouth_" + expr), skin, marks, eye,
                   left_only="zoro_eye" in marks, mouth=not masked)
