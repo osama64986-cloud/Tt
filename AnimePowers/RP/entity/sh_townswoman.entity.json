@@ -1,0 +1,36 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:townswoman",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_townswoman"
+      },
+      "geometry": {
+        "default": "geometry.sh_townswoman"
+      },
+      "animations": {
+        "idle": "animation.sh_trainer.idle",
+        "walk": "animation.sh_city.walk_skirt",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#366c3e",
+        "overlay_color": "#eee4d0"
+      }
+    }
+  }
+}

@@ -17,7 +17,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "AnimePowers", "BP", "scripts")
 I18N = os.path.join(ROOT, "tools", "i18n")
-FILES = ["main.js", "structures.js", "achievements.js", "gear.js", "dash.js", "logic.js", "story.js"]
+FILES = ["main.js", "structures.js", "achievements.js", "gear.js", "dash.js", "logic.js", "story.js", "city.js"]
 
 # نصوص مو للاعب (معرّفات، مسارات، أحداث، جزيئات، أصوات...)
 SKIP_RE = re.compile(

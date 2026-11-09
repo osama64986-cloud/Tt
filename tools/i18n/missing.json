@@ -23,5 +23,7 @@
  "pick:sh:bear_hide|sh:bear_claw": "",
  "pick:sh:soul_crimson|sh:soul_azure|sh:soul_amber|sh:soul_silver|sh:soul_violet|sh:soul_verdant": "",
  "pick:sh:dawn_dagger|sh:shadow_blade|sh:shadow_claws|sh:stone_maul|sh:sunset_spear|sh:ember_cleaver": "",
- "tower:{0},{1}": ""
+ "tower:{0},{1}": "",
+ "[Aetheria] tile {0}: {1}": "",
+ "[Aetheria] {0}": ""
 }

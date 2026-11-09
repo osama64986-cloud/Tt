@@ -73,7 +73,12 @@ export class MolangVariableMap {
   setSpeedAndDirection(k, sp, d) { this.v[k + ".speed"] = sp; this.v[k + ".direction.x"] = d.x; this.v[k + ".direction.y"] = d.y; this.v[k + ".direction.z"] = d.z; }
 }
 export const EntityDamageCause = new Proxy({}, { get: (t, k) => String(k) });
-export const BlockPermutation = { resolve: () => ({}) };
+export const BlockPermutation = { resolve: (id, st) => ({ id, st, type: { id } }) };
+export const StructureSaveMode = { Memory: "Memory", World: "World" };
+export const StructureAnimationMode = { None: "None", Layers: "Layers", Blocks: "Blocks" };
+// v1.42: بلوكات انحطت بالعالم (بنايات structureManager.place أو setBlockPermutation): getBlock يرجعها حتى الفحص يشتغل مثل اللعبة
+const placed = new Map();
+const bkey = (x, y, z) => ((Math.floor(x) + 50000) * 4096 + (Math.floor(y) + 2048)) * 100000 + (Math.floor(z) + 50000);
 export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
 export const GameMode = new Proxy({}, { get: (t, k) => String(k) });
 export const HudElement = { PaperDoll: 0, Armor: 1, ToolTips: 2, TouchControls: 3, Crosshair: 4, Hotbar: 5, Health: 6, ProgressBar: 7, Hunger: 8, AirBubbles: 9, HorseHealth: 10, StatusEffects: 11, ItemText: 12 };
@@ -122,9 +127,9 @@ function mkDim(id) {
       if (id === "minecraft:colored_flame_particle" && vars && vars.v) { const r = vars.v["variable.color.r"], g = vars.v["variable.color.g"], b = vars.v["variable.color.b"]; if (r > 0.6 && b < 0.5 && r >= g * 0.9) { stats.badTint = stats.badTint || {}; const k = [r, g, b].map((x) => x.toFixed(2)).join(","); stats.badTint[k] = (stats.badTint[k] || 0) + 1; } }
       if (rec.on && loc) rec.particles.push({ t: tick, id, x: loc.x, y: loc.y, z: loc.z, v: vars && vars.v ? { ...vars.v } : {} }); stats.particles++; stats.pById = stats.pById || {}; stats.pById[id] = (stats.pById[id] || 0) + 1; },
     playSound(s) { stats.sounds++; stats.soundIds.add(s); },
-    spawnEntity(type, loc) { stats.spawned++; const e = mkEntity(type, loc, d, 10); if (FX_TIMERS[type]) e._dieAt = tick + FX_TIMERS[type]; entities.push(e); return e; },
+    spawnEntity(type, loc) { stats.spawned++; (stats.spawnedTypes = stats.spawnedTypes || {})[type] = (stats.spawnedTypes[type] || 0) + 1; const e = mkEntity(type, loc, d, 10); if (FX_TIMERS[type]) e._dieAt = tick + FX_TIMERS[type]; entities.push(e); return e; },
     spawnItem(it) { (stats.items = stats.items || []).push(it.typeId); },
-    getBlock(l) { const solid = Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: solid ? "minecraft:dirt" : "minecraft:air", isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
+    getBlock(l) { const pid = placed.get(bkey(l.x, l.y, l.z)); const solid = pid ? pid !== "minecraft:air" : Math.floor(l.y) <= 63; const b = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z), typeId: pid || (solid ? "minecraft:dirt" : "minecraft:air"), isAir: !solid, isLiquid: false, location: l, dimension: d, getComponent: (n) => n === 'minecraft:inventory' ? { container: { size: 27, setItem(i, it) { (stats.chestItems = stats.chestItems || []).push(it && it.typeId); }, getItem() {} } } : undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
     isChunkLoaded() { return !globalThis.__unloaded; },
     getEntities(q = {}) {
       return entities.filter((e) => e._valid && (!e.dimension || e.dimension === d) && (!q.type || e.typeId === q.type) && (!q.tags || q.tags.every((t) => e._tags.has(t))) && (!q.families || q.families.every((f) => ({ sh_rank0: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion'], sh_rank1: ['sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth'], sh_rank2: ['sh:magmamoth','sh:grey_bear'], sh_rank3: ['sh:prayer_mantis'], sh_rank4: ['sh:hollow_harvester'], sh_monster: ['sh:ember_imp','sh:rust_guard','sh:shadow_hound','sh:sand_scorpion','sh:gloomhorn','sh:hollow_seer','sh:veilfox','sh:magmamoth','sh:grey_bear','sh:bear_cub','sh:prayer_mantis','sh:hollow_harvester'] }[f] || [e.typeId]).includes(e.typeId))) && (!q.type || e.typeId === q.type) && !(q.excludeTypes || []).includes(e.typeId) && !((q.excludeFamilies || []).includes("inanimate") && e.typeId.startsWith("sh:fx_"))
@@ -135,7 +140,9 @@ function mkDim(id) {
       return [player];
     },
     getTopmostBlock(l) { const b = { x: Math.floor(l.x), y: 63, z: Math.floor(l.z), typeId: "minecraft:grass_block", location: { x: l.x, y: 63, z: l.z }, isAir: false, isLiquid: false, dimension: d, above: () => ({ isAir: true }), below: () => ({ isAir: false, isLiquid: false }), getComponent: () => undefined, setType(t) { stats.blockSets = (stats.blockSets || 0) + 1; this.typeId = t; } }; return b; },
-    fillBlocks() {}, setBlockType(l, t) { (stats.setTypes = stats.setTypes || []).push([Math.floor(l.x), Math.floor(l.y), Math.floor(l.z), t]); }, setBlockPermutation() {}, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
+    getBiome() { return { id: globalThis.__biome || "minecraft:plains" }; },
+    fillBlocks(v, b, o) { stats.fills = (stats.fills || 0) + 1; const a = v.a, c = v.b; const n = (Math.abs(c.x - a.x) + 1) * (Math.abs(c.y - a.y) + 1) * (Math.abs(c.z - a.z) + 1); stats.fillMax = Math.max(stats.fillMax || 0, n); if (o && o.blockFilter) stats.filteredFills = (stats.filteredFills || 0) + 1; },
+    setBlockType(l, t) { (stats.setTypes = stats.setTypes || []).push([Math.floor(l.x), Math.floor(l.y), Math.floor(l.z), t]); }, setBlockPermutation(l, pm) { stats.directWrites = (stats.directWrites || 0) + 1; if (Math.abs(l.x) > 1000 || Math.abs(l.z) > 1000) stats.farWrites = (stats.farWrites || 0) + 1; if (pm && pm.id) placed.set(bkey(l.x, l.y, l.z), pm.id); }, runCommand(c) { if (/^setblock .* air destroy$/.test(c)) stats.broken = (stats.broken || 0) + 1; return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   };
   return d;
 }
@@ -183,7 +190,41 @@ export const world = {
   getEntity: (id) => entities.find((e) => e.id === id && e._valid),
   getDimension: (n) => dims[String(n).replace("minecraft:", "")] || dims.overworld,
   getDynamicProperty(k) { return world._dyn[k]; }, setDynamicProperty(k, v) { world._dyn[k] = v; }, _dyn: {},
-  sendMessage() {}, getDefaultSpawnLocation: () => ({ x: 0, y: 64, z: 0 }),
+  sendMessage() {}, getDefaultSpawnLocation: () => ({ x: 0, y: 32767, z: 0 }),
+  // v1.42: مدير البنايات (بالذاكرة) ومناطق التكتك، بنفس توقيعات الـAPI الرسمي
+  structureManager: {
+    _reg: new Map(),
+    createEmpty(id, size) {
+      if (this._reg.has(id)) throw new Error(`structure ${id} exists`);
+      const blocks = new Map(), sx = size.x, sy = size.y;
+      const st = { id, size, isValid: true, blocks, setBlockPermutation(l, pm) { if (l.x < 0 || l.y < 0 || l.z < 0 || l.x >= size.x || l.y >= size.y || l.z >= size.z) throw new Error("out of bounds"); blocks.set(l.x + sx * (l.y + sy * l.z), pm ? pm.id : undefined); } };
+      this._reg.set(id, st); stats.structCreated = (stats.structCreated || 0) + 1; return st;
+    },
+    get(id) { return this._reg.get(id); },
+    delete(s0) { const id = typeof s0 === "string" ? s0 : s0 && s0.id; const st = this._reg.get(id); if (st) st.isValid = false; return this._reg.delete(id); },
+    place(s0, dim, loc, opts) {
+      const st = typeof s0 === "string" ? this._reg.get(s0) : s0;
+      if (!st || !st.isValid) throw new Error("invalid structure");
+      const sx = st.size.x, sy = st.size.y;
+      for (const [k, id] of st.blocks) { if (!id) continue; const x = k % sx, y = Math.floor(k / sx) % sy, z = Math.floor(k / (sx * sy)); placed.set(bkey(loc.x + x, loc.y + y, loc.z + z), id); }
+      (stats.placements = stats.placements || []).push({ x: loc.x, y: loc.y, z: loc.z, n: st.blocks.size, opts });
+    },
+  },
+  tickingAreaManager: {
+    _areas: new Map(), maxChunkCount: 400,
+    get chunkCount() { let n = 0; for (const o of this._areas.values()) n += (Math.floor(Math.abs(o.to.x - o.from.x) / 16) + 2) * (Math.floor(Math.abs(o.to.z - o.from.z) / 16) + 2); return n; },
+    hasCapacity(o) { return !globalThis.__noCapacity && Math.abs(o.to.x - o.from.x) / 16 < 255; },
+    hasTickingArea(id) { return this._areas.has(id); },
+    // القطع البعيدة "تتحمل" بس من يبدي اختبار المدينة (globalThis.__cityGo)، حتى بناء المدينة ما يتداخل ويا اختبارات المهارات
+    createTickingArea(id, o) {
+      if (this._areas.has(id)) return Promise.reject(new Error("exists"));
+      this._areas.set(id, o); stats.areasMade = (stats.areasMade || 0) + 1; stats.areaMax = Math.max(stats.areaMax || 0, this._areas.size);
+      if (globalThis.__cityGo) return Promise.resolve();
+      return new Promise((res) => (globalThis.__pendingAreas = globalThis.__pendingAreas || []).push(res));
+    },
+    removeTickingArea(id) { this._areas.delete(typeof id === "string" ? id : id && id.identifier); },
+    getAllTickingAreas() { return [...this._areas.keys()].map((identifier) => ({ identifier })); },
+  },
 };
 
 const fire = (name, payload) => { for (const fn of subs[name] || []) fn(payload); };
@@ -1546,6 +1587,66 @@ export const __sim = {
       const dashSrc = fs.readFileSync(path.join(root, "AnimePowers/BP/scripts/dash.js"), "utf8");
       if (/spawnParticle|MolangVariableMap/.test(dashSrc)) failures.push("الداش لازم بدون جزيئات");
       reset();
+    }
+    // ═══ v1.42: مدينة Aetheria: موقع واحد بعيد، 16 مربع كل واحد مرة، الشخصيات بأماكنها بدون تكرار، ومحمية من وحوش المود ═══
+    {
+      const flush = () => new Promise((r) => setImmediate(r));
+      const S = () => { const r = world._dyn.sh_city; return typeof r === "string" ? JSON.parse(r) : undefined; };
+      player.location = { x: 0, y: 64, z: 0 };
+      globalThis.__cityGo = true; for (const r of globalThis.__pendingAreas || []) r();
+      let guard = 0;
+      while ((!S() || S().st !== "built") && guard < 60000) { advance(10); guard += 10; await flush(); await flush(); }
+      const s = S();
+      const ok = !!s && s.st === "built";
+      const dist = s ? Math.hypot(s.ox + 124, s.oz + 124) : 0;
+      const plc = stats.placements || [];
+      const tilesOk = s && s.done === 0xffff && plc.length === 16 && new Set(plc.map((q) => `${q.x},${q.z}`)).size === 16;
+      const layers = plc.every((q) => q.opts && q.opts.animationMode === "Layers" && q.opts.includeEntities === false);
+      const clean = world.tickingAreaManager._areas.size === 0 && world.structureManager._reg.size === 0;
+      const T = stats.spawnedTypes || {};
+      const npc = { guard: T["sh:city_guard"] || 0, king: T["sh:aetheria_king"] || 0, woman: T["sh:townswoman"] || 0, man: T["sh:townsman"] || 0 };
+      console.log(`\nمدينة Aetheria: انبنت ${ok ? "✔" : "✖"} بعد ${guard} تك | البعد عن البداية ${Math.round(dist)} (1900..2400 ${dist >= 1880 && dist <= 2420 ? "✔" : "✖"}) | y0=${s && s.y0}`);
+      console.log(`  16 مربع كل واحد مرة ${tilesOk ? "✔" : "✖"} (وضعات ${plc.length}) | حركة طبقات بدون كيانات ${layers ? "✔" : "✖"} | مناطق التكتك والبنايات انشالت ${clean ? "✔" : "✖"} (أكثر وقت ${stats.areaMax} منطقة) | أكبر fillBlocks ${stats.fillMax} (≤ 32768 ${stats.fillMax <= 32768 ? "✔" : "✖"}) | كتابة مباشرة (احتياط) ${stats.farWrites || 0}`);
+      console.log(`  الشخصيات: حراس ${npc.guard}، الملك ${npc.king}، امرأة ${npc.woman}، رجل ${npc.man} | صناديق انعبت: ${(stats.chestItems || []).length} غرض`);
+      if (!ok) failures.push("مدينة Aetheria ما خلصت بالمحاكي");
+      if (!(dist >= 1880 && dist <= 2420)) failures.push(`المدينة مو بعيدة صح عن البداية (${Math.round(dist)})`);
+      if (!tilesOk) failures.push("مربعات المدينة ما انحطت كلها مرة وحدة");
+      if (!layers) failures.push("وضع البنية مو بحركة طبقات أو بيه كيانات");
+      if (!clean) failures.push("بقت مناطق تكتك أو بنايات بالذاكرة بعد البناء");
+      if (!(stats.fillMax <= 32768)) failures.push("fillBlocks أكبر من الحد");
+      const want = (S().posts || []).reduce((o, [t]) => ((o[t] = (o[t] || 0) + 1), o), {});
+      if (npc.guard !== want.guard || npc.king !== 1 || npc.woman !== 1 || npc.man !== 1 || npc.guard < 12) failures.push(`عدد شخصيات المدينة غلط ${JSON.stringify(npc)} (المفروض ${JSON.stringify(want)})`);
+      if (stats.farWrites) failures.push(`بنية مربع ما انحطت (انكتب احتياط ${stats.farWrites} بلوكة)`);
+      if (!(stats.chestItems || []).length) failures.push("صناديق المدينة فاضية");
+      // مرة وحدة: بعد ما تخلص ما ينختار موقع ثاني ولا تنحط بنية ثانية
+      const p0 = plc.length, site0 = JSON.stringify([s.ox, s.oz]);
+      for (let i = 0; i < 300; i++) { advance(10); await flush(); }
+      const once = (stats.placements || []).length === p0 && JSON.stringify([S().ox, S().oz]) === site0;
+      // الصيانة: الشخصيات موجودة = ما ينضاف شي؛ حارس واحد ينقتل = يرجع واحد بس (بعد 3 دقايق وبعيد عن عين اللاعب)
+      entities.length = 0;
+      const posts = S().posts || [];
+      posts.forEach(([type, x, y, z], k) => { const e = mkEntity({ guard: "sh:city_guard", king: "sh:aetheria_king", woman: "sh:townswoman", man: "sh:townsman" }[type], { x: s.ox + x + 0.5, y: s.y0 + y, z: s.oz + z + 0.5 }, dims.overworld, 20); e.addTag("sh_city"); e.addTag(`sh_post_${k}`); entities.push(e); });
+      player.location = { x: s.ox + 124, y: s.y0, z: s.oz + 124 };
+      const before = { ...(stats.spawnedTypes || {}) };
+      const cityN = (o) => ["sh:city_guard", "sh:aetheria_king", "sh:townswoman", "sh:townsman"].map((k) => o[k] || 0).join(",");
+      for (let i = 0; i < 500; i++) { advance(10); await flush(); }
+      const noDup = cityN(stats.spawnedTypes) === cityN(before);
+      const far = posts.findIndex(([t, x, y, z]) => t === "guard" && Math.hypot(x - 124, z - 124) > 60);
+      const victim = entities.find((e) => e.hasTag(`sh_post_${far}`)); if (victim) victim._valid = false;
+      for (let i = 0; i < 450; i++) { advance(10); await flush(); }
+      const back = (stats.spawnedTypes["sh:city_guard"] || 0) - (before["sh:city_guard"] || 0);
+      // وحوش المود ما تطلع حول لاعب جوه المدينة
+      const mon0 = Object.entries(stats.spawnedTypes).filter(([k]) => /^sh:(ember_imp|rust_guard|shadow_hound|sand_scorpion|gloomhorn|hollow_seer|veilfox|magmamoth|grey_bear|prayer_mantis|hollow_harvester)$/.test(k)).reduce((a, [, v]) => a + v, 0);
+      for (let i = 0; i < 400; i++) { advance(10); await flush(); }
+      const mon1 = Object.entries(stats.spawnedTypes).filter(([k]) => /^sh:(ember_imp|rust_guard|shadow_hound|sand_scorpion|gloomhorn|hollow_seer|veilfox|magmamoth|grey_bear|prayer_mantis|hollow_harvester)$/.test(k)).reduce((a, [, v]) => a + v, 0);
+      const welcome = stats.messages.some((m) => /You reached .*Aetheria/.test(m));
+      console.log(`  مرة وحدة بالعالم ${once ? "✔" : "✖"} | ما تتكرر الشخصيات ${noDup ? "✔" : "✖"} | الحارس الميت يرجع واحد ${back === 1 ? "✔" : "✖"} (${back}) | وحوش المود جوه المدينة ${mon1 - mon0} ${mon1 === mon0 ? "✔" : "✖"} | ترحيب ${welcome ? "✔" : "✖"}`);
+      if (!once) failures.push("المدينة انبنت أكثر من مرة أو تغير موقعها");
+      if (!noDup) failures.push("شخصيات المدينة تكررت");
+      if (back !== 1) failures.push(`الحارس الميت ما رجع واحد بالضبط (${back})`);
+      if (mon1 !== mon0) failures.push("وحوش المود طلعت جوه المدينة");
+      if (!welcome) failures.push("ترحيب المدينة ما طلع");
+      entities.length = 0; player.location = { x: 0, y: 64, z: 0 };
     }
     // أوامر التجربة
     fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player });

@@ -5,6 +5,7 @@ import {
   RANKS, LEVELS_PER_RANK, HARD_RANK_FROM, RARITIES, unlockLevel, powerXpNeeded, addPowerXp, xpNeeded, defaultState, addXp, monsterReward, isSkillUnlocked, addSkillXp, skillXpNeeded, skillLevel, SKILL_UNLOCK_LEVEL, SKILL_MAX_LV, rankProgress, rankHealthBonus,
 } from "./logic.js";
 import { setupStructures, buildTemple, findTemple, onShrineBossDeath, onTowerMobDeath, towerHudInfo, structList, setSayHook } from "./structures.js";
+import { setupCity, setCitySay, cityInfo, inCity } from "./city.js";
 import { setupDash, dashCooldown, dashHooks, dashInfo, dashCharges, DASH, setDashSay } from "./dash.js";
 import { SHAPE } from "./shapes.js";
 import { GEAR } from "./gear.js";
@@ -341,7 +342,7 @@ function setBottomText(p, text, sub = "") {
 function say(p, text) {
   try { p.sendMessage(T(p, text, "chat")); } catch (e) { /* */ }
 }
-setSayHook(say); setDashSay(say);
+setSayHook(say); setDashSay(say); setCitySay(say);
 
 // ───────────────────────── واجهة اللاعب (HUD) ─────────────────────────
 // قسمين (RP/ui/hud_screen.json):
@@ -870,6 +871,7 @@ function guideTemple(p, t) {
 function ensureTemple(p) {
   try {
     if (!needsDraw(getState(p)) || p.dimension.id !== "minecraft:overworld") return;
+    if (inCity(p.location.x, p.location.z, 60)) return;                        // ما نبني المعبد جوه المدينة: ينتظر لما يطلع
     // المعبد ينبني مرة وحدة بالعالم: إذا موجود (بأي مسافة) ندلك عليه
     const t = findTemple(p.location);
     if (t) { guideTemple(p, t); return; }
@@ -2190,6 +2192,7 @@ function openRift(p, tierIdx, force) {
     const a = Math.random() * Math.PI * 2, d = force ? 14 + Math.random() * 6 : 40 + Math.random() * 30;
     const x = Math.floor(p.location.x + Math.cos(a) * d), z = Math.floor(p.location.z + Math.sin(a) * d);
     if (!force && nearStructure(x, z, 40)) continue;
+    if (inCity(x, z, 40)) continue;                                           // الصدع ما ينفتح جوه مدينة Aetheria ولا جنبها
     let top;
     try { top = dim.getTopmostBlock({ x, z }); } catch (e) { continue; }
     if (!top || /water|lava|leaves|log|ice/.test(top.typeId)) continue;
@@ -5147,6 +5150,7 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
 function trySpawnMonster(p, force) {
   try {
     if (p.dimension.id !== "minecraft:overworld") return undefined;
+    if (inCity(p.location.x, p.location.z, 48)) return undefined;              // مدينة Aetheria محروسة: وحوش المود ما تطلع جوه ولا جنب السور
     const st = getState(p);
     const near = p.dimension.getEntities({ location: p.location, maxDistance: 64, families: ["sh_monster"] });
     if (near.length >= MONSTER_CAP + (force ? 2 : 0)) return undefined;
@@ -5630,6 +5634,7 @@ system.runInterval(() => {
 }, 2);
 
 try { setupStructures((e, pl) => scaleMonster(e, getState(pl).rank)); } catch (e) { /* */ }
+try { setupCity(); } catch (e) { /* */ }                                     // مدينة Aetheria: مرة وحدة بكل عالم، بعيدة عن البداية
 try { setupDash(); } catch (e) { /* */ }
 
 
@@ -5771,6 +5776,7 @@ const COMPASS_TARGETS = [
   { key: "ruins", name: "Temple Ruins" },
   { key: "village", name: "Sakura Village" },
   { key: "temple", name: "Star Temple" },
+  { key: "city", name: "Aetheria (royal city)" },
   { key: "trainer", name: "Trainer" },
   { key: "rift", name: "Open Rift" },
   { key: "nearest", name: "Nearest (any destination)" },
@@ -5803,6 +5809,10 @@ function compassFind(p, key) {
       const d = dist(s);
       if (d < bd) { bd = d; best = { x: s.x, z: s.z, name: COMPASS_NAMES[s.type] || "Structure" }; }
     }
+  }
+  if (key === "city" || key === "nearest") {
+    const c = cityInfo();
+    if (c && (key === "city" || dist(c) < bd)) { bd = dist(c); best = { x: c.x, z: c.z, name: "Aetheria" }; }
   }
   if (key === "trainer" || key === "nearest") {
     const t = trainerPos(p);

@@ -1,0 +1,57 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sh_city.attack": {
+      "loop": true,
+      "bones": {
+        "arm_r": {
+          "rotation": [
+            "-math.sin(variable.attack_time*180)*80",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            0,
+            "math.sin(variable.attack_time*180)*10",
+            0
+          ]
+        }
+      }
+    },
+    "animation.sh_city.walk_skirt": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*16*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*-16*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*-18*query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved*38.17)*18*query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

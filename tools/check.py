@@ -12,7 +12,7 @@
   8b. الأسلحة 3D (attachables): الأيتم والموديل والتكستشر والحركات موجودة.
   8c. كل مادة (material) من مواد اللعبة الأصلية (tools/vanilla_materials.txt).
   9. المحاكي (tools/sim): يشغل المهارات والكاتانا والبوصلة والـHUD والضريحين والداش على عالم وهمي (يحتاج node، وتتخطاه --no-sim).
- 10. المخططات: قرية الساكورا (check_village.py) وضريحا السيف (check_shrines.py).
+ 10. المخططات: قرية الساكورا (check_village.py) وضريحا السيف (check_shrines.py) ومدينة Aetheria (check_city.py).
 """
 import glob
 import json
@@ -393,6 +393,10 @@ if node:
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_plans.py")], capture_output=True)            # أسماء البلوكات بكل البنايات (القصر، الخرائب، المعبد...) موجودة بـBedrock
     if r.returncode != 0:
         err("أسماء بلوكات غلط بالبنايات:\n" + r.stdout.decode("utf-8", "replace")[-1500:])
+    # v1.42: مدينة Aetheria (248×248): أسماء وحالات البلوكات، الحجم والسور، والوصول مشي لكل صندوق وسرير وشخصية، والصناديق والأسرة بمكانها
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "check_city.py")], capture_output=True)
+    if r.returncode != 0:
+        err("فحص مدينة Aetheria فشل:\n" + r.stdout.decode("utf-8", "replace")[-1800:])
 
 for w in warnings:
     print("تحذير:", w)

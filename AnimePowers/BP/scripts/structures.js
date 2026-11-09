@@ -1,5 +1,6 @@
 // هياكل الاستكشاف: بيوت يابانية، قصر، خرائب معبد. تنبني بالسكربت قرب اللاعب وهو يتحرك.
 import { world, system, BlockPermutation, BlockVolume, ItemStack } from "@minecraft/server";
+import { inCity } from "./city.js";
 import { buildSakuraVillage, SAKURA_HALF } from "./sakura.js";
 import { buildLightShrine, buildDarkShrine, SHRINE_HALF } from "./shrines.js";
 // V1: رسائل البنايات تمر على main.js (الترجمة العربية وتقطيع الأسطر حسب لغة كل لاعب)
@@ -1231,6 +1232,7 @@ export function setupStructures(onGuardSpawn) {
         const site = pickSite(p.dimension, p.location, 48, 95, spec.half);
         if (!site) continue;
         if (reg.some((s) => Math.hypot(s.x - site.x, s.z - site.z) < 125)) continue;
+        if (inCity(site.x, site.z, spec.half + 48)) continue;                 // ما نبني جوه مدينة Aetheria ولا لاصق بسورها
         const seed = Math.floor(Math.random() * 1e9);
         const rot = Math.floor(Math.random() * 4);
         const rec = { x: site.x, y: site.y, z: site.z, type, rot, seed, v: 2, pi: 0 };

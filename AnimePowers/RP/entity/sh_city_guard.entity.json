@@ -1,0 +1,38 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:city_guard",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_city_guard"
+      },
+      "geometry": {
+        "default": "geometry.sh_city_guard"
+      },
+      "animations": {
+        "idle": "animation.sh_trainer.idle",
+        "walk": "animation.sh_trainer.walk",
+        "look": "animation.sh.look",
+        "attack": "animation.sh_city.attack"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "look",
+          "attack"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#2846a8",
+        "overlay_color": "#c8ccd6"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sh:aetheria_king",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/sh_aetheria_king"
+      },
+      "geometry": {
+        "default": "geometry.sh_aetheria_king"
+      },
+      "animations": {
+        "idle": "animation.sh_trainer.idle",
+        "walk": "animation.sh_trainer.walk",
+        "look": "animation.sh.look"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          "walk",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.sh_default"
+      ],
+      "spawn_egg": {
+        "base_color": "#961a26",
+        "overlay_color": "#ecc048"
+      }
+    }
+  }
+}
