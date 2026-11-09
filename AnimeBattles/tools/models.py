@@ -3339,3 +3339,178 @@ def yuji_modulo(m):  # noqa: F811
     _yuji_modulo_v1(m)
     drop = {id(c) for c in m.cubes if (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5]) or (c["bone"] == "hair")}
     m.cubes = [c for c in m.cubes if id(c) not in drop]
+
+
+# ==================================================================================
+# REFERENCE PASS (wiki infobox art): Modulo black jacket, smooth Tankman, Itadori red shoes
+# + zipper + high collar, Goku front belt knot, Sukuna thick tattoo bands.
+# ==================================================================================
+SILVER = (34, 34, 42)  # Modulo jacket: black (as requested)
+
+
+def silver_jacket(face, px, w, h, base):  # noqa: F811 — black parka: subtle sheen, zipper, toggles
+    t = tones(SILVER)
+    if face in ("north", "west"):
+        for y in range(h):
+            for x in range(w):
+                if (x + y) % 13 == 0:
+                    _put(px, w, h, x, y, t[3])
+    if face == "north":
+        for y in range(h):
+            _put(px, w, h, w // 2, y, (120, 122, 134))
+        for y in (2, 3):
+            _put(px, w, h, w // 2 - 3, y + 4, (220, 220, 228)); _put(px, w, h, w // 2 + 2, y + 4, (220, 220, 228))
+
+
+def haki_ball(m, cy, R):  # noqa: F811 — smooth sphere: 11 slices x 3 rotations (12-sided)
+    n = 11
+    for i in range(n):
+        yy = -R + (i + 0.5) * (2 * R / n)
+        r = math.sqrt(max(0.3, R * R - yy * yy)) * 0.93
+        top = cy + yy - R / n
+        for rot in ([0, 0, 0], [0, 30, 0], [0, 60, 0]):
+            m.box("body", [-r, top, -r], [2 * r, 2 * R / n + 0.35, 2 * r], haki_glow, rot=rot, pivot=[0, cy, 0])
+
+
+def round_limb(m, bone, frm, size, paint):
+    """A limb with softened corners: the box plus a 45°-turned copy slightly inset."""
+    m.box(bone, frm, size, paint)
+    x, y, z = frm
+    w, h, d = size
+    m.box(bone, [x + w * 0.08, y, z + d * 0.08], [w * 0.84, h, d * 0.84], paint, rot=[0, 45, 0], pivot=[x + w / 2, y, z + d / 2])
+
+
+_luffy_body_v6 = luffy_body
+
+
+def luffy_body(m, form):  # noqa: F811
+    if form != "g4t":
+        return _luffy_body_v6(m, form)
+    luffy_head(m, (22, 20, 26), "luffy_g4")
+    haki_ball(m, 12.5, 10)
+    # upper torso rising out of the ball, rounded
+    for rot in ([0, 0, 0], [0, 45, 0]):
+        m.box("body", [-4.6, 19.5, -3.6], [9.2, 5, 7.2], layered(SKIN, [abs_chest]), rot=rot, pivot=[0, 19.5, 0])
+    for bone, x0 in (("rightArm", 7.2), ("leftArm", -12.2)):
+        round_limb(m, bone, [x0, 15, -2.6], [5, 8, 5.2], haki_glow)
+    for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
+        round_limb(m, bone, [x0, 0, -2.6], [5, 3.5, 5.2], haki_glow)
+    steam_wreath(m, 22.8, 6.8, 4.8, 8, 4.0)
+
+
+# ---------------------------------------------------------------- Itadori uniform details
+_yuji_body_ref = yuji_body
+
+
+def yuji_body(m, style, iris=(120, 70, 40)):  # noqa: F811
+    _yuji_body_ref(m, style, iris)
+    # red sneakers (anime colour) instead of white ones
+    m.cubes = [c for c in m.cubes if not (c["bone"] in ("rightLeg", "leftLeg") and c["frm"][1] == 0 and c["size"][1] == 1.75)]
+    shoe = layered((196, 30, 36), [band(SIDES, 0.0, 0.25, "skin")])
+    both_legs(m, [-0.35, 0, -2.7], [4.5, 1.9, 5.2], layered((196, 30, 36), [lines((SIDES, [[(0, 0.15), (1, 0.15)]]), (240, 236, 230))]))
+    both_legs(m, [-0.5, 1.9, -2.6], [4.8, 1.0, 5], solid((26, 28, 44)))  # trouser cuffs
+    # high collar with the red hood lining showing, and a zipper
+    m.box("body", [-3.6, 23.2, -2.7], [7.2, 2.6, 5.4], layered((30, 32, 50), [lines((("north",), [[(0.5, 0), (0.5, 1)]]), (140, 142, 160))]))
+    m.box("body", [-3.1, 25.4, -2.1], [6.2, 0.4, 4.2], solid(HOOD_RED))
+
+
+# ---------------------------------------------------------------- Goku: belt knot in front
+_goku_body_ref = goku_body
+
+
+def goku_body(m, hair, iris, brows=True, style="goku"):  # noqa: F811
+    _goku_body_ref(m, hair, iris, brows, style)
+    m.box("body", [-2.6, 11.4, -3.2], [2.6, 2.4, 1.2], solid(GI_BLUE))
+    m.strand([-2.2, 11.6, -3.1], [-0.25, -1, -0.15], 4.2, 1.4, solid(GI_BLUE), bone="body", segs=2, thick=0.4)
+    m.strand([-1.2, 11.6, -3.1], [0.1, -1, -0.15], 3.6, 1.4, solid(GI_BLUE), bone="body", segs=2, thick=0.4)
+
+
+# ---------------------------------------------------------------- Sukuna Heian: thick tattoo bands
+def heian_torso(face, px, w, h, base):
+    tat = (36, 16, 30)
+    if face == "north":
+        cx = w // 2
+        for side in (-1, 1):  # thick curved bands across the pecs and ribs
+            for row, span in ((0.3, 0.42), (0.46, 0.38)):
+                for i in range(int(w * span)):
+                    x = cx + side * (2 + i)
+                    y = int(h * row + (i / (w * span)) ** 2 * h * 0.08)
+                    for dy in range(3):
+                        _put(px, w, h, x, y + dy, tat)
+        cy = int(h * 0.66)  # the abdominal mouth
+        for x in range(cx - 8, cx + 9):
+            _put(px, w, h, x, cy, tat); _put(px, w, h, x, cy + 6, tat)
+            for yy in range(cy + 1, cy + 6):
+                _put(px, w, h, x, yy, (110, 16, 26))
+            if x % 2 == 0:
+                _put(px, w, h, x, cy + 1, (250, 250, 250)); _put(px, w, h, x, cy + 5, (250, 250, 250))
+    if face in ("east", "west", "south"):
+        for y in range(int(h * 0.3), int(h * 0.3) + 3):
+            for x in range(w):
+                _put(px, w, h, x, y, tat)
+
+
+_heian_ref = sukuna_heian_body
+
+
+def sukuna_heian_body(m):  # noqa: F811
+    _heian_ref(m)
+    for c in m.cubes:
+        if c["bone"] == "body" and c["size"] == [8, 12, 4]:
+            c["paint"] = layered(SKIN, [heian_torso])
+    # thick wrist/forearm bands on all four arms
+    tatp = solid((36, 16, 30))
+    both_arms(m, [3.85, 13.2, -2.15], [4.3, 1.2, 4.3], tatp)
+    for bone, x in (("rightArm2", 5.35), ("leftArm2", -9.05)):
+        m.box(bone, [x, 9.2, -0.45], [3.7, 1.2, 3.7], tatp)
+
+
+def ball_slice_paint(i, n):
+    """Glossy black haki sphere: no seams, a red rim light on the outer slices, a pink shine up top."""
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        rim = i in (0, 1, n - 2, n - 1)
+        for y in range(h):
+            for x in range(w):
+                c = (14, 6, 12) if face in ("east", "south", "down") else (24, 10, 18)
+                if rim and face != "up" and face != "down":
+                    c = (150, 22, 46)
+                if face in ("east", "west") and (x == 0 or x == w - 1):
+                    c = (190, 30, 60)
+                px[x, y] = c + (255,)
+        if face == "north" and i == n - 3:
+            for y in range(h // 4, h // 4 + max(2, h // 2)):
+                for x in range(w // 4, w // 4 + max(2, w // 8)):
+                    if 0 <= x < w and 0 <= y < h:
+                        px[x, y] = (236, 140, 168, 255)
+    return p
+
+
+def haki_ball(m, cy, R):  # noqa: F811
+    n = 11
+    for i in range(n):
+        yy = -R + (i + 0.5) * (2 * R / n)
+        r = math.sqrt(max(0.3, R * R - yy * yy)) * 0.93
+        top = cy + yy - R / n
+        paint = ball_slice_paint(i, n)
+        for rot in ([0, 0, 0], [0, 30, 0], [0, 60, 0]):
+            m.box("body", [-r, top, -r], [2 * r, 2 * R / n + 0.35, 2 * r], paint, rot=rot, pivot=[0, cy, 0])
+
+
+_luffy_body_v7 = luffy_body
+
+
+def luffy_body(m, form):  # noqa: F811
+    if form != "g4t":
+        return _luffy_body_v7(m, form)
+    luffy_head(m, (22, 20, 26), "luffy_g4")
+    haki_ball(m, 10.5, 9.5)
+    for rot in ([0, 0, 0], [0, 45, 0]):  # bare chest rising out of the ball
+        m.box("body", [-4.8, 17.5, -3.8], [9.6, 7, 7.6], layered(SKIN, [abs_chest, torso_flames]), rot=rot, pivot=[0, 17.5, 0])
+    for bone, x0 in (("rightArm", 9.6), ("leftArm", -14.6)):
+        round_limb(m, bone, [x0, 16, -2.6], [5, 7.5, 5.2], haki_glow)
+        m.box(bone, [x0 - 4.6 if x0 > 0 else x0 + 4.6, 20, -2.2], [5, 3.6, 4.4], layered(SKIN, [torso_flames]))  # shoulder
+    for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
+        round_limb(m, bone, [x0, 0, -2.6], [5, 2.5, 5.2], haki_glow)
+    steam_wreath(m, 23.2, 7.2, 5, 8, 3.8)
