@@ -143,9 +143,9 @@ def main():
                 "identifier": "sh:fx_body", "is_spawnable": False, "is_summonable": True, "is_experimental": False,
                 "properties": {
                     "sh:v": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
-                    "sh:p": {"type": "float", "range": [-90, 90], "default": 0, "client_sync": True},
+                    "sh:p": {"type": "int", "range": [-180, 180], "default": 0, "client_sync": True},
                     "sh:mv": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
-                    "sh:r": {"type": "float", "range": [0, 4], "default": 1, "client_sync": True},
+                    "sh:r": {"type": "int", "range": [0, 4000], "default": 0, "client_sync": True},   # v1.43: بالمئة
                 },
             },
             "component_groups": {"sh:gone": {"minecraft:instant_despawn": {}}},
@@ -188,7 +188,7 @@ def main():
     an["animations"]["animation.sh_fx.body"] = {
         "loop": True,
         "bones": {
-            "root": {"scale": "query.property('sh:r')"},
+            "root": {"scale": "(query.property('sh:r') * 0.01)"},
             "head": {"rotation": ["query.property('sh:p')", 0, 0]},
             "arm_r": {"rotation": [f"{sw} * 55.0 * query.property('sh:mv')", 0, 0]},
             "arm_l": {"rotation": [f"-{sw} * 55.0 * query.property('sh:mv')", 0, 0]},

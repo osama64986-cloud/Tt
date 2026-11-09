@@ -203,6 +203,23 @@ for f in glob.glob(os.path.join(RP, "attachables", "*.json")):
         if a not in anim_ids:
             err(f"{rel(f)}: الحركة {a} مو معرّفة")
 
+# 8b2) v1.43: خصائص الكيانات: بس int/bool/enum (خصائص float المكتوبة بقيم صحيحة ما كانت تنحمل باللعبة، فكل كيانات المؤثرات
+# كانت تطلع بحجم 0 = الصدع وأشكال المهارات وقشرة الحديد ما تبين). القيمة الافتراضية لازم ضمن المدى، و32 خاصية كحد أقصى
+for f in glob.glob(os.path.join(BP, "entities", "*.json")):
+    props = (load(f).get("minecraft:entity", {}).get("description", {}) or {}).get("properties") or {}
+    if len(props) > 32:
+        err(f"{rel(f)}: أكثر من 32 خاصية")
+    for k, v in props.items():
+        t = v.get("type")
+        if t == "float":
+            err(f"{rel(f)}: الخاصية {k} نوعها float — استعمل int (بالمئة) مثل باقي الخصائص")
+        elif t == "int":
+            r, dflt = v.get("range", [0, 0]), v.get("default", 0)
+            if not (isinstance(dflt, int) and r[0] <= dflt <= r[1]):
+                err(f"{rel(f)}: الخاصية {k} قيمتها الافتراضية {dflt} مو ضمن {r}")
+        if not v.get("client_sync") and f.endswith(tuple(f"{n}.json" for n in ("sh_fx_shape", "sh_fx_body", "sh_fx_circle", "sh_fx_crystal", "sh_fx_plate", "sh_fx_portal"))):
+            err(f"{rel(f)}: الخاصية {k} لازم client_sync (الموديل يقراها)")
+
 # 8c) المواد: كل مادة بالكيانات والأسلحة والدروع لازم تكون من مواد اللعبة الأصلية (مادة غلط مثل entity_alpha = الكيان ما ينرسم)
 try:
     with open(os.path.join(ROOT, "tools", "vanilla_materials.txt"), encoding="utf-8") as fh:

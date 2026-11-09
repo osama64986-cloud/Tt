@@ -1465,13 +1465,13 @@ EXTRA_ANIMS["leaf_swirl"] = {"lw_a": {"rotation": [0, "q.life_time * 420", 0]}, 
                              "lw_c": {"rotation": [0, "q.life_time * 520", 0]}}
 EXTRA_ANIMS["scissor_lock"] = {"sa": {"rotation": [0, "-math.max(0, 62 - q.life_time * 380)", 0]},       # تبدأ مفتوحة لبرا وتنسد خلال 0.16 ثانية
                                "sb": {"rotation": [0, "math.max(0, 62 - q.life_time * 380)", 0]}}
-EXTRA_ANIMS["beam"] = {"body": {"scale": [1, 1, "math.max(0.05, q.property('sh:l'))"]}}
+EXTRA_ANIMS["beam"] = {"body": {"scale": [1, 1, "math.max(0.05, (query.property('sh:l') * 0.01))"]}}
 EXTRA_ANIM_SHAPES["beam"] = ["star_beam", "soul_chain", "seer_beam", "magma_fissure", "puppet_string"]
 # أعمدة الصوت تنبض، وطولها ما يكبر مع نصف القطر (الحلقة تتوسع لـ12 بلوكة بس الأعمدة تبقى ~2 بلوكة)
-EXTRA_ANIMS["sound_pulse"] = {"body": {"scale": [1, "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, q.property('sh:r')))", 1]}}
+EXTRA_ANIMS["sound_pulse"] = {"body": {"scale": [1, "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, (query.property('sh:r') * 0.01)))", 1]}}
 EXTRA_ANIM_SHAPES["sound_pulse"] = ["sound_wave", "echo_pulse"]
 # الحلقات الأرضية الكبيرة (عصفة الريح، موجة المستعر) تتوسع لـ7-14 بلوكة وسمكها يبقى رفيع
-EXTRA_ANIMS["flat_ring"] = {"body": {"scale": [1, "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))", 1]}}
+EXTRA_ANIMS["flat_ring"] = {"body": {"scale": [1, "math.min(1, 2.5 / math.max(0.1, (query.property('sh:r') * 0.01)))", 1]}}
 EXTRA_ANIM_SHAPES["flat_ring"] = ["wind_ring", "nova_ring", "soul_wave", "howl_ring"]
 
 # أشكال الصدع الثانية (v1.37.1) تنسجل بالآخر حتى أرقام كل الأشكال القديمة تبقى نفسها
@@ -1795,12 +1795,13 @@ def main():
                 "identifier": "sh:fx_shape", "is_spawnable": False, "is_summonable": True, "is_experimental": False,
                 "properties": {
                     "sh:v": {"type": "int", "range": [0, 255], "default": 0, "client_sync": True},
-                    "sh:r": {"type": "float", "range": [0, 40], "default": 1, "client_sync": True},
-                    "sh:p": {"type": "float", "range": [-180, 180], "default": 0, "client_sync": True},
-                    "sh:a": {"type": "float", "range": [-360, 360], "default": 0, "client_sync": True},
-                    "sh:s": {"type": "float", "range": [-3000, 3000], "default": 0, "client_sync": True},
-                    "sh:w": {"type": "float", "range": [-3000, 3000], "default": 0, "client_sync": True},
-                    "sh:l": {"type": "float", "range": [0, 64], "default": 1, "client_sync": True},
+                    # v1.43: كلها أعداد صحيحة (الحجم والطول بالمئة): خصائص float بقيم صحيحة ما كانت تنحمل باللعبة فالأشكال تطلع بحجم 0
+                    "sh:r": {"type": "int", "range": [0, 4000], "default": 0, "client_sync": True},
+                    "sh:p": {"type": "int", "range": [-180, 180], "default": 0, "client_sync": True},
+                    "sh:a": {"type": "int", "range": [-360, 360], "default": 0, "client_sync": True},
+                    "sh:s": {"type": "int", "range": [-3000, 3000], "default": 0, "client_sync": True},
+                    "sh:w": {"type": "int", "range": [-3000, 3000], "default": 0, "client_sync": True},
+                    "sh:l": {"type": "int", "range": [0, 6400], "default": 100, "client_sync": True},
                 },
             },
             "component_groups": {"sh:gone": {"minecraft:instant_despawn": {}}},
@@ -1855,7 +1856,7 @@ def main():
         "loop": True,
         "bones": {
             "spin": {"rotation": [0, "query.life_time * query.property('sh:s')", 0],
-                     "scale": "query.property('sh:r') * math.min(1.0, 0.3 + query.life_time * 7.0)"},
+                     "scale": "(query.property('sh:r') * 0.01) * math.min(1.0, 0.3 + query.life_time * 7.0)"},
             "tilt": {"rotation": ["query.property('sh:p')", 0, 0]},
             "roll": {"rotation": [0, 0, "query.property('sh:a') + query.life_time * query.property('sh:w')"]},
         },

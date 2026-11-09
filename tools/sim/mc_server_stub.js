@@ -19,7 +19,27 @@ export const system = {
 };
 // مؤقتات كيانات المؤثرات (minecraft:timer بملفات BP، sh:fx_*): باللعبة الكيان يختفي لما يخلص المؤقت، فالمحاكي يسوي نفس الشي
 const FX_TIMERS = {};
+// v1.43: تعريفات خصائص الكيانات من ملفات BP: setProperty بالمحاكي يرمي خطأ مثل اللعبة (خاصية مو معرّفة، نوع غلط، برا المدى)
+const PROP_DEFS = {};
+function loadPropDefs(root) {
+  try {
+    const dir = path.join(root, "AnimePowers/BP/entities");
+    for (const f of fs.readdirSync(dir)) {
+      const e = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"))["minecraft:entity"];
+      if (e && e.description && e.description.properties) PROP_DEFS[e.description.identifier] = e.description.properties;
+    }
+  } catch (err) { /* */ }
+}
+function checkProp(typeId, k, v) {
+  const defs = PROP_DEFS[typeId];
+  if (!defs) return;
+  const d = defs[k];
+  if (!d) throw new Error(`setProperty: ${typeId} has no property ${k}`);
+  if (d.type === "int" && !Number.isInteger(v)) throw new Error(`setProperty: ${typeId} ${k} needs an int, got ${v}`);
+  if ((d.type === "int" || d.type === "float") && (typeof v !== "number" || v < d.range[0] || v > d.range[1])) throw new Error(`setProperty: ${typeId} ${k}=${v} outside ${JSON.stringify(d.range)}`);
+}
 function loadFxTimers(root) {
+  loadPropDefs(root);
   try {
     const dir = path.join(root, "AnimePowers/BP/entities");
     for (const f of fs.readdirSync(dir)) {
@@ -108,7 +128,7 @@ function mkEntity(typeId, loc, dim, hp = 40) {
     applyKnockback() { stats.knock = (stats.knock || 0) + 1; }, applyImpulse() {},
     addEffect(id, dur, o) { effectLog.push(id); (this._effs = this._effs || {})[id] = { dur, amp: o && o.amplifier }; stats.effects = stats.effects || {}; stats.effects[id] = (stats.effects[id] || 0) + 1; if (id === 'health_boost') stats.lastBoost = o && o.amplifier; }, removeEffect() {}, getEffect() { return undefined; },
     teleport(l, o) { this.location = { x: l.x, y: l.y, z: l.z }; if (o && o.facingLocation) { this._yaw = (Math.atan2(-(o.facingLocation.x - l.x), o.facingLocation.z - l.z) * 180) / Math.PI; } else if (o && o.rotation) this._yaw = o.rotation.y; }, remove() { this._valid = false; }, kill() { this._valid = false; },
-    setProperty(k, v) { if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire(sec) { this._fire = tick + Math.round((sec || 0) * 20); stats.fires = (stats.fires || 0) + 1; },
+    setProperty(k, v) { checkProp(typeId, k, v); if (process.env.SH_TRACE && k === "sh:state" && typeId === "sh:hollow_seer") console.log("   [trace] tick", tick, this.id, "state", v); props[k] = v; if (typeId === "sh:fx_shape" && k === "sh:v") { stats.shapeV = stats.shapeV || {}; stats.shapeV[v] = (stats.shapeV[v] || 0) + 1; } }, getProperty(k) { return props[k]; }, triggerEvent() {}, setOnFire(sec) { this._fire = tick + Math.round((sec || 0) * 20); stats.fires = (stats.fires || 0) + 1; },
     setRotation(r) { if (r) this._yaw = r.y; }, getRotation() { return { x: 0, y: this._yaw || 0 }; }, getVelocity() { return { x: 0, y: 0, z: 0 }; }, clearVelocity() {},
     getDynamicProperty(k) { return dyn[k]; }, setDynamicProperty(k, v) { dyn[k] = v; },
     hasTag(t) { return tags.has(t); }, addTag(t) { tags.add(t); }, removeTag(t) { tags.delete(t); },

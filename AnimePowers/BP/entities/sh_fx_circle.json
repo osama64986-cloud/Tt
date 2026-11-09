@@ -17,12 +17,12 @@
      "client_sync": true
     },
     "sh:r": {
-     "type": "float",
+     "type": "int",
      "range": [
       0,
-      40
+      4000
      ],
-     "default": 1,
+     "default": 0,
      "client_sync": true
     }
    }

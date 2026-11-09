@@ -96,7 +96,7 @@ def render_frame(cap, T, parts_by_t, cam, size, snaps, start_tick):
             life = max(0.0, (T - born.get(e["id"], T)) / 20.0)
             c = e["props"].get("sh:v" if kind == "body" else "sh:c", 0) or 0
             pose, grow = fx_pose(kind, life, e["props"])
-            r = e["props"].get("sh:r", 1.0) or 1.0
+            r = (e["props"].get("sh:r", 100) or 0) / 100.0             # v1.43: الحجم بالمئة (خاصية int)
             S.model(fx_model(kind, c), pose, pos, d, r * grow)
             continue
         if is_player_cap and e["type"] != "sh:fx_shape":
@@ -119,8 +119,8 @@ def render_frame(cap, T, parts_by_t, cam, size, snaps, start_tick):
             if name in SS.SHAPES:
                 p = e["props"]
                 life = max(0.0, (T - born.get(e["id"], T)) / 20.0)
-                S.shape(name, pos, d, p.get("sh:r", 1.0) or 1.0, p.get("sh:p", 0.0) or 0.0, p.get("sh:a", 0.0) or 0.0,
-                        life=life, s=p.get("sh:s", 0.0) or 0.0, w=p.get("sh:w", 0.0) or 0.0, l=p.get("sh:l", 1.0) or 1.0)
+                S.shape(name, pos, d, (p.get("sh:r", 100) or 0) / 100.0, p.get("sh:p", 0.0) or 0.0, p.get("sh:a", 0.0) or 0.0,
+                        life=life, s=p.get("sh:s", 0.0) or 0.0, w=p.get("sh:w", 0.0) or 0.0, l=(p.get("sh:l", 100) or 0) / 100.0)
     Tsec = T / 20.0
     n = 0
     for pt in parts_by_t:

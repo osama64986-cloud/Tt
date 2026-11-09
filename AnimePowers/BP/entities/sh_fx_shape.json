@@ -17,16 +17,16 @@
      "client_sync": true
     },
     "sh:r": {
-     "type": "float",
+     "type": "int",
      "range": [
       0,
-      40
+      4000
      ],
-     "default": 1,
+     "default": 0,
      "client_sync": true
     },
     "sh:p": {
-     "type": "float",
+     "type": "int",
      "range": [
       -180,
       180
@@ -35,7 +35,7 @@
      "client_sync": true
     },
     "sh:a": {
-     "type": "float",
+     "type": "int",
      "range": [
       -360,
       360
@@ -44,7 +44,7 @@
      "client_sync": true
     },
     "sh:s": {
-     "type": "float",
+     "type": "int",
      "range": [
       -3000,
       3000
@@ -53,7 +53,7 @@
      "client_sync": true
     },
     "sh:w": {
-     "type": "float",
+     "type": "int",
      "range": [
       -3000,
       3000
@@ -62,12 +62,12 @@
      "client_sync": true
     },
     "sh:l": {
-     "type": "float",
+     "type": "int",
      "range": [
       0,
-      64
+      6400
      ],
-     "default": 1,
+     "default": 100,
      "client_sync": true
     }
    }

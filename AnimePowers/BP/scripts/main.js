@@ -1854,12 +1854,20 @@ function safeTeleport(e, loc, facing) {
 }
 
 // ───────────────────────── مؤثرات بصرية حقيقية (كيانات) ─────────────────────────
+// v1.43: خصائص كيانات المؤثرات كلها أعداد صحيحة، نفس نوع خصائص الوحوش اللي تشتغل باللعبة (خصائص float المكتوبة بقيم صحيحة
+// ما كانت تنحمل، فالحجم يطلع 0 والشكل ما يبين: الصدع والمهارات وقشرة الحديد). الحجم sh:r والطول sh:l بالمئة (1.5 = 150)،
+// والزوايا والسرعات بالدرجات. القيمة تنقص لمدى الخاصية حتى setProperty ما يرمي خطأ (يرمي إذا برا المدى).
+const FX_PROP = { "sh:r": [100, 0, 4000], "sh:l": [100, 0, 6400], "sh:p": [1, -180, 180], "sh:a": [1, -360, 360], "sh:s": [1, -3000, 3000], "sh:w": [1, -3000, 3000] };
+function fxSet(e, prop, v) {
+  const f = FX_PROP[prop];
+  e.setProperty(prop, f ? Math.max(f[1], Math.min(f[2], Math.round((Number(v) || 0) * f[0]))) : v);
+}
 // ألوان: 0 ذهبي، 1 بنفسجي، 2 أزرق، 3 تركواز، 4 أبيض، 5 أحمر
 function spawnFx(dim, kind, loc, c, r, life, yaw) {
   try {
     const e = dim.spawnEntity(`sh:fx_${kind}`, { x: loc.x, y: loc.y + 0.05, z: loc.z });
     e.setProperty("sh:c", c);
-    e.setProperty("sh:r", r);
+    fxSet(e, "sh:r", r);
     if (yaw !== undefined) { try { e.setRotation({ x: 0, y: yaw }); } catch (err) { /* */ } }
     if (life) system.runTimeout(() => { try { if (valid(e)) e.remove(); } catch (err) { /* */ } }, life);
     return e;
@@ -1918,7 +1926,7 @@ function waveFx(dim, c, rmax, color, dur = 14) {
     try {
       t += 2;
       if (!valid(e) || t >= dur) { system.clearRun(h); removeFx(e); return; }
-      e.setProperty("sh:r", 1 + (rmax - 1) * (t / dur));
+      fxSet(e, "sh:r", 1 + (rmax - 1) * (t / dur));
     } catch (err) { system.clearRun(h); }
   }, 2);
 }
@@ -1933,7 +1941,7 @@ function bodyShell(p, variant, ticks) {
     const dim = p.dimension;
     const e = dim.spawnEntity("sh:fx_body", p.location);
     e.setProperty("sh:v", variant);
-    e.setProperty("sh:r", 0.55);
+    fxSet(e, "sh:r", 0.55);
     const spark = variant === 0 ? [0.85, 0.9, 1.0] : [0.6, 0.62, 0.55];
     // لحظة التحول: الحديد = حلقة شرر تصعد من الرجل للراس ورنة شرر حرج؛ الصخر = غبار حصى وحلقة غبار أرضية (+ وميض شاشة خفيف)
     if (variant === 0) IRON.skinForm(dim, p.location); else TRAIT.rock(dim, p.location);
@@ -1949,10 +1957,10 @@ function bodyShell(p, variant, ticks) {
         }
         const rot = p.getRotation();
         e.teleport(p.location, { rotation: { x: 0, y: rot.y } });
-        e.setProperty("sh:p", Math.max(-90, Math.min(90, rot.x)));
+        fxSet(e, "sh:p", Math.max(-90, Math.min(90, rot.x)));
         const v = p.getVelocity();
         e.setProperty("sh:mv", Math.hypot(v.x, v.z) > 0.04 ? 1 : 0);
-        e.setProperty("sh:r", Math.min(1, 0.55 + t * 0.045));
+        fxSet(e, "sh:r", Math.min(1, 0.55 + t * 0.045));
         const hp = hpNow(p);
         if (hp < lastHp - 0.4) { IRON.skinHit(p.dimension, p.location); sfx(p.dimension, "sh.dagger_hit", p.location, 0.7, 1.9); }
         if (variant === 0 && t % 10 === 0) IRON.skinTick(p.dimension, p.location);
@@ -1995,19 +2003,19 @@ function shapeFx(dim, name, loc, o = {}) {
     const e = dim.spawnEntity("sh:fx_shape", { x: loc.x, y: loc.y, z: loc.z });
     liveShapes.add(e);
     e.setProperty("sh:v", SHAPE[name]);
-    if (o.r !== undefined) e.setProperty("sh:r", Math.max(0, Math.min(40, o.r)));
-    if (o.p) e.setProperty("sh:p", Math.max(-180, Math.min(180, o.p)));
-    if (o.a) e.setProperty("sh:a", o.a);
-    if (o.s) e.setProperty("sh:s", o.s);
-    if (o.w) e.setProperty("sh:w", o.w);
-    if (o.l !== undefined) e.setProperty("sh:l", Math.max(0, Math.min(64, o.l)));
+    fxSet(e, "sh:r", o.r !== undefined ? Math.max(0, Math.min(40, o.r)) : 1);       // (الافتراضي صار 0 حتى ما يبين شكل غلط أول تكة)
+    if (o.p) fxSet(e, "sh:p", o.p);
+    if (o.a) fxSet(e, "sh:a", o.a);
+    if (o.s) fxSet(e, "sh:s", o.s);
+    if (o.w) fxSet(e, "sh:w", o.w);
+    if (o.l !== undefined) fxSet(e, "sh:l", Math.max(0, Math.min(64, o.l)));
     if (o.yaw !== undefined) { try { e.setRotation({ x: 0, y: o.yaw }); } catch (err) { /* */ } }
     const life = o.life ?? 40;
     system.runTimeout(() => { liveShapes.delete(e); removeFx(e); }, Math.max(1, life));
     return e;
   } catch (err) { return undefined; }
 }
-function setShape(e, prop, v) { try { if (e && valid(e)) e.setProperty(prop, v); } catch (err) { /* */ } }
+function setShape(e, prop, v) { try { if (e && valid(e)) fxSet(e, prop, v); } catch (err) { /* */ } }
 function moveShape(e, loc, yaw) {
   try { if (e && valid(e)) e.teleport(loc, yaw !== undefined ? { rotation: { x: 0, y: yaw } } : undefined); } catch (err) { /* */ }
 }
@@ -4053,7 +4061,7 @@ function crystalCount(pid) {
 function crystalEnt(dim, loc, d, r, life, c = 0) {
   const e = spawnFx(dim, "crystal", loc, c, r, life, yawOf({ x: 0, z: 0 }, { x: d.x, z: d.z }));
   if (!e) return undefined;
-  try { e.setProperty("sh:p", Math.max(-90, Math.min(90, (-Math.asin(Math.max(-1, Math.min(1, d.y))) * 180) / Math.PI))); } catch (err) { /* */ }
+  try { fxSet(e, "sh:p", Math.max(-90, Math.min(90, (-Math.asin(Math.max(-1, Math.min(1, d.y))) * 180) / Math.PI))); } catch (err) { /* */ }
   return e;
 }
 function dropCrystal(id) {

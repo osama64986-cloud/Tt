@@ -6,9 +6,9 @@
    "bones": {
     "root": {
      "scale": [
-      "query.property('sh:r')",
+      "(query.property('sh:r') * 0.01)",
       "1",
-      "query.property('sh:r')"
+      "(query.property('sh:r') * 0.01)"
      ]
     },
     "disc": {
@@ -24,7 +24,7 @@
    "loop": true,
    "bones": {
     "root": {
-     "scale": "query.property('sh:r')*math.min(1,query.life_time*5)"
+     "scale": "(query.property('sh:r') * 0.01)*math.min(1,query.life_time*5)"
     },
     "ring": {
      "rotation": [
@@ -39,7 +39,7 @@
    "loop": true,
    "bones": {
     "root": {
-     "scale": "query.property('sh:r')*math.min(1,query.life_time*4)",
+     "scale": "(query.property('sh:r') * 0.01)*math.min(1,query.life_time*4)",
      "position": [
       0,
       "math.sin(query.life_time*180)*0.8",
@@ -59,7 +59,7 @@
    "loop": true,
    "bones": {
     "root": {
-     "scale": "query.property('sh:r')*math.min(1,query.life_time*6)"
+     "scale": "(query.property('sh:r') * 0.01)*math.min(1,query.life_time*6)"
     },
     "spike": {
      "rotation": [
@@ -74,7 +74,7 @@
    "loop": true,
    "bones": {
     "root": {
-     "scale": "query.property('sh:r')"
+     "scale": "(query.property('sh:r') * 0.01)"
     },
     "head": {
      "rotation": [
@@ -122,7 +122,7 @@
       "query.life_time * query.property('sh:s')",
       0
      ],
-     "scale": "query.property('sh:r') * math.min(1.0, 0.3 + query.life_time * 7.0)"
+     "scale": "(query.property('sh:r') * 0.01) * math.min(1.0, 0.3 + query.life_time * 7.0)"
     },
     "tilt": {
      "rotation": [
@@ -312,7 +312,7 @@
      "scale": [
       1,
       1,
-      "math.max(0.05, q.property('sh:l'))"
+      "math.max(0.05, (query.property('sh:l') * 0.01))"
      ]
     }
    }
@@ -323,7 +323,7 @@
     "body": {
      "scale": [
       1,
-      "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, q.property('sh:r')))",
+      "(1 + math.sin(q.life_time * 1400) * 0.25) * math.min(1, 3 / math.max(0.1, (query.property('sh:r') * 0.01)))",
       1
      ]
     }
@@ -335,7 +335,7 @@
     "body": {
      "scale": [
       1,
-      "math.min(1, 2.5 / math.max(0.1, q.property('sh:r')))",
+      "math.min(1, 2.5 / math.max(0.1, (query.property('sh:r') * 0.01)))",
       1
      ]
     }
