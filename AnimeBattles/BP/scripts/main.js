@@ -238,7 +238,7 @@ function state(e) {
     const def = FIGHTERS[e.typeId];
     s = {
       energy: def ? def.energy : 0, cd: {}, busyUntil: 0, stunUntil: 0, burnoutUntil: 0,
-      infinityBrokenUntil: 0, kaiokenUntil: 0, ego: 0, nextTransform: 0, combatSince: 0, lastCombat: 0, meleeCd: 0,
+      infinityBrokenUntil: 0, kaiokenUntil: 0, ego: 0, transformUntil: 0, nextTransform: 0, combatSince: 0, lastCombat: 0, meleeCd: 0,
     };
     states.set(e.id, s);
   }
@@ -469,6 +469,7 @@ function transform(e, s, to, label, color, extraSound) {
   const dim = e.dimension;
   const def = FIGHTERS[e.typeId];
   busy(s, 32);
+  s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
   setPose(e, 3);
   slow(e, 30, 8);
@@ -509,9 +510,10 @@ const GOKU = {
     { label: "Super Saiyan", power: 200, aura: C.gold },
     { label: "Super Saiyan 3", power: 260, aura: C.gold },
     { label: "Super Saiyan Blue", power: 330, aura: C.ssbBlue },
-    { label: "Ultra Instinct", power: 400, aura: C.silver },
+    { label: "Ultra Instinct", power: 430, aura: C.silver },
   ],
   thresholds: [0.9, 0.7, 0.5, 0.3],
+  transformCd: 80,
   formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
   abilities: [
     {
@@ -639,6 +641,7 @@ const VEGETA = {
     { label: "Ultra Ego", power: 360, aura: C.ego },
   ],
   thresholds: [0.85, 0.6, 0.35],
+  transformCd: 80,
   formSound: [null, "mob.enderdragon.growl", "beacon.power", "mob.wither.spawn"],
   abilities: [
     {
@@ -782,7 +785,7 @@ const GOJO = {
   dodge: () => 0,
   forms: [
     { label: "Blindfold", power: 100 },
-    { label: "Six Eyes", power: 120, aura: null },
+    { label: "Six Eyes", power: 115, aura: null },
   ],
   thresholds: [0.75],
   formSound: [null, "beacon.activate"],
@@ -1035,9 +1038,25 @@ const YUJI = {
 const YUJI_FINAL = {
   name: "Itadori", color: "§c", energy: 1200, regen: 22, energyName: "§dCE",
   dodge: () => 0.12,
-  forms: [{ label: "Shinjuku (final)", power: 105, aura: C.blood }],
+  forms: [{ label: "Modulo (2086)", power: 150, aura: C.blood }],
   thresholds: [], formSound: [null],
-  abilities: [divergent, yujiCommon(0.5), {
+  abilities: [divergent, yujiCommon(0.6), {
+    id: "bf7", label: "Black Flash x7", cd: 700, cost: 400, min: 0, max: 10, weight: 5,
+    run(e, s, t) {
+      busy(s, 30); announce(e, "§0§l§kX§r §4§lBlack Flash x7 §0§l§kX");
+      every(4, 7, (i) => {
+        if (!alive(t) || !e.isValid) return false;
+        if (V.dist(e.location, t.location) > 2.4) teleportNear(e, t, i % 2 === 0, 1.3);
+        face(e, aim(t)); setPose(e, i % 2 ? 6 : 5);
+        deal(e, t, 2.5 * 9 * powerOf(e) / 100);
+        const c = aim(t);
+        fx(e.dimension, "orb_solid", c, C.black, 1.6, 0.3);
+        fx(e.dimension, "streak", c, C.red, 1.6, 0.35, { count: 14, speed: 11 });
+        fx(e.dimension, "shock_v", c, C.red, 3.5, 0.3);
+        if (i === 6) { shake(e.dimension, c, 0.4, 0.4); setPose(e, 0); }
+      });
+    },
+  }, {
     id: "dismantle", label: "Dismantle", cd: 120, cost: 120, min: 3, max: 24, weight: 4, technique: true,
     run(e, s, t) {
       busy(s, 14); setPose(e, 19); announce(e, "§c§lDismantle");
@@ -1141,7 +1160,7 @@ const SUKUNA = {
   forms: [
     { label: "In Yuji's body", power: 90, aura: C.haki },
     { label: "In Megumi's body (Ten Shadows)", power: 120, aura: C.haki },
-    { label: "True Form (Heian)", power: 125, aura: C.blood },
+    { label: "True Form (Heian)", power: 132, aura: C.blood },
   ],
   thresholds: [0.7, 0.4], transformCd: 120,
   formSound: [null, "mob.wither.spawn", "mob.enderdragon.growl"],
@@ -1221,7 +1240,7 @@ const LUFFY = {
     { label: "Gear 4: Boundman", power: 110, aura: C.steam },
     { label: "Gear 4: Snakeman", power: 115, aura: C.steam },
     { label: "Gear 4: Tankman", power: 100, aura: C.steam },
-    { label: "Gear 5", power: 140, aura: C.nika },
+    { label: "Gear 5", power: 170, aura: C.nika },
   ],
   thresholds: [0.92, 0.82, 0.7, 0.5, 0.5, 0.5],
   transformCd: 70,
@@ -1473,18 +1492,23 @@ function updateFighter(e, tick) {
   if (!target) return;
   if (tick - s.lastCombat > 100) s.combatSince = tick;
   s.lastCombat = tick;
-  if (tick < s.busyUntil) return;
-
   const ctx = { dist: V.dist(e.location, target.location), power: powerOf(e), tPower: powerOf(target), hp: hpPct(e),
     targetType: target.typeId, adaptTotal: Object.values(s.adapt ?? {}).reduce((a, b) => a + b, 0) };
   const form = formOf(e);
-  if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick - s.combatSince > 40 &&
-      (ctx.hp < def.thresholds[form] || ctx.tPower > ctx.power * 0.95)) {
-    const next = def.nextForm ? def.nextForm(form) : form + 1;
+  const threatened = ctx.tPower > ctx.power * 0.95;
+  // Transform first, even mid-combo, when the opponent is stronger (or when badly hurt).
+  if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick >= s.transformUntil &&
+      (threatened || (tick - s.combatSince > 40 && ctx.hp < def.thresholds[form]))) {
+    let next = def.nextForm ? def.nextForm(form) : form + 1;
+    if (threatened) {
+      const match = def.forms.findIndex((f, i) => i > form && f.power >= ctx.tPower);
+      next = match >= 0 ? match : def.forms.length - 1;
+    }
     const nf = def.forms[next];
     transform(e, s, next, nf.label, nf.aura ?? C.white, def.formSound[next]);
     return;
   }
+  if (tick < s.busyUntil) return;
   if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < 0.6) {
     s.cd.combo = tick + 45 + Math.floor(Math.random() * 40);
     combo(e, s, target);
@@ -1608,8 +1632,18 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       if (item === "ab:team_stick" || item === "ab:kill_stick") { ev.cancel = true; return; }
     }
     const def = FIGHTERS[v.typeId];
-    if (!def || cause === EntityDamageCause.override || cause === EntityDamageCause.fall) return;
+    if (!def || cause === EntityDamageCause.fall) return;
     const s = state(v);
+    const attackerP = src && src.isValid && isFighter(src) ? powerOf(src) : 0;
+    const defenderP = powerOf(v);
+    if (attackerP > 0) {
+      // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
+      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.04, 6);
+      if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
+    }
+    // Sure-hit techniques (domains, World-Cutting Slash) only force a hit on someone not far stronger.
+    const forced = cause === EntityDamageCause.override && !(attackerP > 0 && defenderP > attackerP * 1.1);
+    if (forced) return;
     if (def.infinity && v.hasTag("ab_infinity")) {
       // Infinity stops everything, but holding back stronger attacks costs more cursed energy.
       const attackerPower = src && src.isValid ? powerOf(src) : 50;
@@ -1634,9 +1668,9 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
         return;
       }
     }
-    if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.6, s.ego + ev.damage / 500);
+    if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.1, s.ego + ev.damage / 500);
     if (v.typeId === "ab:luffy" && formOf(v) === 5) ev.damage *= 0.5;  // Tankman: rubber fat absorbs blows
-    if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid) {  // Mahoraga's wheel adapts to each attacker
+    if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid && !(attackerP > defenderP)) {  // Mahoraga's wheel adapts to each attacker
       s.adapt = s.adapt ?? {};
       const n = (s.adapt[src.id] ?? 0) + 1;
       s.adapt[src.id] = n;

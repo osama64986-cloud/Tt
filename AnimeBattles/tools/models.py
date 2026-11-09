@@ -2908,3 +2908,434 @@ def build(char, form):  # noqa: F811
         sukuna_yuji_hair(m, (226, 140, 150))
         return m
     return _build_v3(char, form)
+
+
+# ==================================================================================
+# LUFFY — rebuilt from the official reference art (One Piece Wiki):
+#  base: open red shirt with rolled sleeves, X scar, long yellow sash tail, blue shorts with
+#        white fuzzy cuffs, sandals, straw hat
+#  Gear 2: red-pink skin wrapped in big steam clouds
+#  Gear 3: one gigantic inflated fist
+#  Gear 4: haki = black with glowing red contour lines; Boundman (huge chest + colossal fists,
+#        hat on the back), Snakeman (lean, long wild hair, open black vest, red pants with fur
+#        cuffs), Tankman (giant black haki ball body)
+# ==================================================================================
+HAKI_BLACK = (20, 10, 16)
+HAKI_RED = (226, 44, 74)
+FUR = (246, 244, 240)
+CLOUD = (250, 250, 255)
+
+
+def haki_glow(face, img):
+    """Armament haki: near-black with glowing red contours and a soft pink shine."""
+    w, h = img.size
+    px = img.load()
+    t = tones(HAKI_BLACK)
+    for y in range(h):
+        for x in range(w):
+            k = 2 if face in ("north", "west", "up") else 1
+            c = t[k]
+            edge = x == 0 or x == w - 1 or y == 0 or y == h - 1
+            inner = x == 1 or x == w - 2 or y == 1 or y == h - 2
+            if face != "down":
+                if edge:
+                    c = HAKI_RED
+                elif inner and w > 4 and h > 4:
+                    c = (120, 18, 40)
+            px[x, y] = c + (255,)
+    if face in ("north", "west", "east", "south") and w >= 8 and h >= 8:
+        for y in range(2, h - 2):  # one muscle contour line
+            x = int(w * 0.55 + math.sin(y / h * math.pi * 1.5) * w * 0.15)
+            px[x, y] = HAKI_RED + (255,)
+        for dx in range(2):
+            for dy in range(2):
+                px[2 + dx, 2 + dy] = (240, 150, 170, 255)  # shine
+
+
+def fur_cuff(face, img):
+    w, h = img.size
+    px = img.load()
+    t = tones(FUR)
+    for y in range(h):
+        for x in range(w):
+            k = 2 if face in ("north", "west", "up") else 1
+            if y == h - 1 and x % 2 == 0:
+                k = 0
+            if y == 0 and x % 3 == 1:
+                k = 3
+            px[x, y] = t[k] + (255,)
+
+
+def cloud(m, bone, c, s):
+    """A puffy steam cloud: three overlapping, rotated soft cubes."""
+    x, y, z = c
+    p = solid(CLOUD)
+    m.box(bone, [x - s / 2, y - s / 2, z - s / 2], [s, s * 0.8, s], p)
+    m.box(bone, [x - s * 0.45, y - s * 0.35, z - s * 0.45], [s * 0.9, s * 0.7, s * 0.9], p, rot=[0, 45, 0], pivot=[x, y, z])
+    m.box(bone, [x + s * 0.2 - s * 0.3, y + s * 0.15 - s * 0.3, z - s * 0.3], [s * 0.6, s * 0.6, s * 0.6], p, rot=[45, 0, 45], pivot=[x + s * 0.2, y + s * 0.15, z])
+
+
+def abs_chest(face, px, w, h, base):
+    """Bare muscular chest: pecs, abs and the X scar."""
+    if face != "north":
+        return
+    t = tones(base)
+    cx = w // 2
+    for x in range(2, w - 2):
+        _put(px, w, h, x, int(h * 0.36), t[1])  # under the pecs
+    for y in range(int(h * 0.4), h - 2):
+        _put(px, w, h, cx, y, t[1])            # centre line
+    for row in (0.52, 0.66, 0.8):
+        for x in range(cx - 4, cx + 5):
+            _put(px, w, h, x, int(h * row), t[1])
+    for d in range(-5, 6):                     # X scar
+        _put(px, w, h, cx + d, int(h * 0.2) + d, (176, 96, 84))
+        _put(px, w, h, cx + d, int(h * 0.2) - d, (176, 96, 84))
+
+
+def luffy_head(m, hair, face_style, iris=(30, 24, 26)):
+    m.box("head", [-4, 24, -4], [8, 8, 8], head_paint(hair, iris, True, face_style))
+    ears(m)
+
+
+def luffy_shirt_and_shorts(m, skin, shirt=VEST, shorts=SHORTS, sash=SASH, sleeves=True, fur=True):
+    # bare torso, open shirt panels at the sides of the chest, red back
+    m.box("body", [-4, 12, -2], [8, 12, 4], layered(skin, [abs_chest]))
+    for x0 in (-4.3, 1.75):
+        m.box("body", [x0, 12.5, -2.35], [2.55, 11.75, 0.6], layered(shirt, [lines((("north",), [[(0.9 if x0 < 0 else 0.1, 0), (0.9 if x0 < 0 else 0.1, 1)]]), dark(shirt, 0.55))]))
+    m.box("body", [-4.3, 12.5, -2.3], [8.6, 11.75, 4.6], layered(shirt, [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w)] if f == "north" else None]))
+    m.box("body", [-4.4, 22.8, -2.5], [8.8, 1.4, 5], solid(dark(shirt, 0.85)))  # collar
+    if sleeves:  # sleeves rolled up to the forearm, with a thick cuff
+        both_arms(m, [3.75, 16, -2.3], [3.5, 8.3, 4.6], solid(shirt))
+        both_arms(m, [3.6, 15, -2.45], [3.8, 1.6, 4.9], solid(dark(shirt, 0.8)))
+    m.box("body", [-4.6, 10.8, -2.6], [9.2, 1.9, 5.2], layered(sash, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(sash, 0.7))]))
+    m.strand([-3.9, 11, -1.8], [-0.15, -1, -0.15], 9, 2.2, layered(sash, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), dark(sash, 0.75))]), bone="body", segs=3, thick=0.25)
+    both_legs(m, [-0.4, 4.5, -2.4], [4.6, 7.5, 4.8], layered(shorts, [lines((SIDES, [[(0.35, 0), (0.3, 1)]]), dark(shorts, 0.72))]))
+    if fur:
+        both_legs(m, [-0.7, 3.5, -2.7], [5.2, 1.6, 5.4], fur_cuff)
+    both_legs(m, [-0.3, 0, -2.6], [4.4, 0.6, 5], solid((150, 96, 52)))
+    both_legs(m, [0.3, 0.6, -2.62], [3.2, 0.8, 0.3], solid((120, 72, 40)))
+
+
+def luffy_slim_limbs(m, skin):
+    m.box("rightArm", [4, 12, -2], [3, 12, 4], solid(skin))
+    m.box("leftArm", [-7, 12, -2], [3, 12, 4], solid(skin))
+    m.box("rightLeg", [-0.1, 0, -2], [4, 12, 4], solid(skin))
+    m.box("leftLeg", [-3.9, 0, -2], [4, 12, 4], solid(skin))
+
+
+def hat_on_back(m):
+    weave = layered(STRAW, [lines((SIDES + ("up",), [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), dark(STRAW, 0.75))])
+    for rz in (0, 45):
+        m.box("body", [-7, 9.5, 2.6], [14, 14, 0.5], weave, rot=[0, 0, rz], pivot=[0, 16.5, 2.85])
+    m.box("body", [-3.6, 12.9, 3.1], [7.2, 7.2, 2.6], weave)
+    m.box("body", [-3.7, 12.9, 3.0], [7.4, 1.1, 2.8], solid((200, 30, 34)))
+
+
+FACE32["luffy_g4"] = dict(eye="round", brow="angled", mouth="clench", marks=["luffy_scar", "g4_marks"])
+_face32_v3 = face32
+
+
+def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
+    marks = spec.get("marks", [])
+    _face32_v3(px, W, H, dict(spec, marks=[m for m in marks if m != "g4_marks"]), hair, iris, skin)
+    if "g4_marks" not in marks:
+        return
+    k = W / 32.0
+    t = (16, 10, 14)
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    for side in (0, 1):  # haki marks flaring out from the eyes
+        X = (lambda x: x) if side == 0 else (lambda x: 31 - x)
+        for i, (x, y) in enumerate(((5, 15), (4, 14), (3, 13), (2, 13), (6, 22), (5, 23), (4, 24))):
+            put(X(x), y, t)
+        put(X(14), 13, t); put(X(13), 12, t)
+
+
+def luffy_body(m, form):  # noqa: F811
+    skin = SKIN
+    if form in ("base", "g2", "g3"):
+        if form == "g2":
+            skin = (236, 124, 120)
+        luffy_head(m, (22, 20, 26), "luffy_fight" if form != "base" else "luffy")
+        luffy_slim_limbs(m, skin)
+        luffy_shirt_and_shorts(m, skin)
+        hat(m)
+        if form == "g2":  # big steam clouds rolling off his body
+            for c, s in (((5.5, 22, 0), 3.4), ((-5.5, 22.5, 0.5), 3.2), ((0, 23, 3.6), 3.6), ((3, 15, 3.2), 2.8), ((-3.2, 13, 3), 2.6),
+                         ((6.6, 13, -0.5), 2.4), ((-6.8, 15, 0.5), 2.4), ((2.4, 2, -3.4), 2.2), ((-2.6, 3, 3.2), 2.4)):
+                cloud(m, "body" if c[1] > 10 else "root", c, s)
+        if form == "g3":  # Bone Balloon: one gigantic fist
+            m.cubes = [c for c in m.cubes if c["bone"] != "rightArm"]
+            m.box("rightArm", [3.6, 13, -2.6], [5, 11, 5.2], solid(skin))
+            m.box("rightArm", [3.6, 16, -2.45], [5.2, 8.3, 5.1], solid(VEST))
+            fist = layered(skin, [lines((("north", "east", "west"), [[(0.25, 0.25), (0.25, 0.55)], [(0.5, 0.25), (0.5, 0.55)], [(0.75, 0.25), (0.75, 0.55)], [(0.08, 0.6), (0.92, 0.6)]]), (186, 120, 96))])
+            m.box("rightArm", [1, -1, -5.5], [10.5, 14, 11], fist)
+            m.box("rightArm", [0.4, 5, -6.2], [3, 6, 4], solid(skin))  # thumb
+        return
+    hair = (22, 20, 26)
+    luffy_head(m, hair, "luffy_g4")
+    if form == "g4b":  # BOUNDMAN
+        m.box("body", [-6.5, 15, -4], [13, 9.5, 8], layered(skin, [abs_chest]))
+        m.box("body", [-4.6, 11, -2.8], [9.2, 4.2, 5.6], layered(skin, [abs_chest]))
+        for x0 in (-7, 3.5):  # haki creeping over the shoulders
+            m.box("body", [x0, 18, -4.3], [3.5, 6.5, 8.6], haki_glow)
+        m.box("body", [-6.6, 23, -4.2], [13.2, 1.5, 8.4], solid((120, 24, 34)))  # torn shirt collar
+        both_arms(m, [5.4, 15, -3.2], [5.6, 8, 6.4], haki_glow)          # upper arm
+        both_arms(m, [4.6, 2, -4.8], [8.2, 13, 9.6], haki_glow)          # colossal forearm + fist
+        m.box("body", [-5, 10, -3.2], [10, 2.2, 6.4], solid(SASH))
+        m.strand([-4.2, 10.3, -2.6], [-0.2, -1, -0.1], 7, 2, solid(SASH), bone="body", segs=3, thick=0.25)
+        both_legs(m, [-0.6, 5.5, -2.7], [5.2, 6.5, 5.4], solid(SHORTS))
+        both_legs(m, [-0.9, 4.4, -3], [5.8, 1.8, 6], fur_cuff)
+        both_legs(m, [-0.4, 0, -2.5], [4.8, 4.8, 5], haki_glow)
+        hat_on_back(m)
+        for c, s in (((7.5, 25, 1), 4.2), ((-7.5, 25, 1), 4.2), ((0, 26, 4.5), 4.6), ((4, 27, 3.5), 3.6), ((-4, 27, 3.5), 3.6),
+                     ((9, 21, 3), 3.2), ((-9, 21, 3), 3.2), ((0, 20, 6.5), 3.6)):
+            cloud(m, "body", c, s)
+        return
+    if form == "g4s":  # SNAKEMAN
+        m.box("body", [-4, 12, -2], [8, 12, 4], layered(skin, [abs_chest]))
+        vest = (24, 22, 30)
+        for x0 in (-4.3, 1.9):
+            m.box("body", [x0, 12.5, -2.35], [2.4, 11.75, 0.6], solid(vest))
+        m.box("body", [-4.3, 12.5, -2.3], [8.6, 11.75, 4.6], layered(vest, [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w)] if f == "north" else None]))
+        both_arms(m, [4, 9, -2], [3.6, 15, 4], haki_glow)
+        m.box("body", [-4.6, 10.8, -2.6], [9.2, 1.9, 5.2], solid(SASH))
+        pants = (198, 40, 44)
+        both_legs(m, [-0.4, 4, -2.4], [4.6, 8, 4.8], layered(pants, [lines((SIDES, [[(0.35, 0), (0.3, 1)]]), dark(pants, 0.7))]))
+        both_legs(m, [-0.7, 3, -2.7], [5.2, 1.6, 5.4], fur_cuff)
+        both_legs(m, [-0.3, 0, -2.3], [4.6, 3.6, 4.6], haki_glow)
+        for c, s in (((5, 24, 1), 3.4), ((-5, 24, 1), 3.4), ((0, 24.5, 3.4), 3.6), ((6.5, 20, 2.5), 2.6), ((-6.5, 20, 2.5), 2.6)):
+            cloud(m, "body", c, s)
+        return
+    # TANKMAN
+    for rot in ([0, 0, 0], [0, 45, 0], [45, 0, 0], [0, 0, 45]):
+        m.box("body", [-9, 4, -9], [18, 18, 18], haki_glow, rot=rot, pivot=[0, 13, 0])
+    m.box("body", [-5.5, 20, -4.5], [11, 4.5, 8], layered(skin, [abs_chest]))
+    both_arms(m, [7.5, 14, -2.8], [5, 9, 5.6], haki_glow)
+    both_legs(m, [-0.6, 0, -2.6], [5, 4, 5.2], haki_glow)
+    for c, s in (((7, 25, 0), 3.2), ((-7, 25, 0), 3.2), ((0, 25.5, 3.5), 3.4)):
+        cloud(m, "body", c, s)
+
+
+def luffy_hair(m, c, g5=False, form="base"):  # noqa: F811
+    hp = hair_paint(c)
+    if g5:
+        return _luffy_hair_g5(m, c)
+    if form.startswith("g4"):  # wild spiky hair swept up and back (longer in Snakeman)
+        L = 7.5 if form == "g4s" else 6
+        for x, z in ((-2.6, -1.8), (-0.9, -2.3), (0.9, -2.3), (2.6, -1.8), (-3.4, 0.6), (3.4, 0.6), (-1.6, 2), (1.6, 2)):
+            m.strand([x, 31.8, z], [x * 0.2, 0.9, 0.75], L, 3.4, hp, bend=(0, -0.2, 0.12))
+        if form == "g4s":
+            for x in (-2.6, 0, 2.6):
+                m.strand([x, 30.5, 4], [x * 0.1, -0.5, 1], 8, 3.4, hp, bend=(0, -0.1, 0))
+        m.strand([-1.6, 31.7, -4.1], [-0.2, -1, -0.8], 2.8, 2.6, hp)
+        m.strand([1.6, 31.7, -4.1], [0.2, -1, -0.8], 2.8, 2.6, hp)
+        return
+    _luffy_hair_prev(m, c, False, form)
+
+
+def _luffy_hair_g5(m, c):
+    hp = hair_paint(c)
+    for x, z, L in ((-2.6, -2.2, 7.5), (0, -2.6, 8.5), (2.6, -2.2, 7.5), (-3.6, 0.6, 7), (3.6, 0.6, 7),
+                    (-1.8, 2.6, 7.5), (1.8, 2.6, 7.5), (0, 0.4, 9)):
+        m.strand([x, 31.8, z], [x * 0.2, 1, z * 0.12 + 0.2], L, 4.8, hp, bend=(x * 0.05, -0.05, 0.14))
+    m.mirror_strand([4.3, 30, -1], [0.8, 0.6, 0], 5.5, 3.6, hp, bend=(0, 0.12, 0))
+
+
+_build_v4 = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "luffy" and form != "g5":
+        m = Model()
+        luffy_body(m, form)
+        shell(m, (22, 20, 26), hairline=29.4)
+        luffy_hair(m, (22, 20, 26), False, form)
+        return m
+    return _build_v4(char, form)
+
+
+def cloud_paint(face, img):
+    w, h = img.size
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            c = (252, 252, 255) if face in ("up", "north", "west") else (238, 238, 248)
+            if face not in ("up", "down") and y >= h - max(1, h // 5):
+                c = (222, 220, 238)
+            if face == "down":
+                c = (214, 212, 232)
+            px[x, y] = c + (255,)
+
+
+def cloud(m, bone, c, s):  # noqa: F811 — soft round puff (octagonal), no hard edges
+    x, y, z = c
+    m.box(bone, [x - s / 2, y - s * 0.35, z - s / 2], [s, s * 0.7, s], cloud_paint)
+    m.box(bone, [x - s / 2, y - s * 0.35, z - s / 2], [s, s * 0.7, s], cloud_paint, rot=[0, 45, 0], pivot=[x, y, z])
+    m.box(bone, [x - s * 0.32, y - s * 0.1, z - s * 0.32], [s * 0.64, s * 0.75, s * 0.64], cloud_paint)
+
+
+def steam_wreath(m, y, rx, rz, n, s, bone="body", back=0.0):
+    for k in range(n):
+        a = k * 2 * math.pi / n
+        cloud(m, bone, (math.cos(a) * rx, y + (k % 2) * 0.8, math.sin(a) * rz + back), s * (0.85 + 0.3 * (k % 3) / 2))
+
+
+def haki_ball(m, cy, R):
+    """Tankman's round haki belly: stacked octagonal slices."""
+    n = 7
+    for i in range(n):
+        yy = -R + (i + 0.5) * (2 * R / n)
+        r = math.sqrt(max(0.5, R * R - yy * yy))
+        top = cy + yy - R / n
+        for rot in ([0, 0, 0], [0, 45, 0]):
+            m.box("body", [-r, top, -r], [2 * r, 2 * R / n + 0.6, 2 * r], haki_glow, rot=rot, pivot=[0, cy, 0])
+
+
+_luffy_body_v5 = luffy_body
+
+
+def luffy_body(m, form):  # noqa: F811
+    if form == "g5":
+        return _luffy_body_v2(m, "g5")
+    if form == "g4t":
+        luffy_head(m, (22, 20, 26), "luffy_g4")
+        haki_ball(m, 12.5, 9.5)
+        m.box("body", [-5.5, 20.5, -4.5], [11, 4, 8], layered(SKIN, [abs_chest]))
+        both_arms(m, [7, 15, -2.8], [5, 8, 5.6], haki_glow)
+        both_legs(m, [-0.6, 0, -2.6], [5, 3.5, 5.2], haki_glow)
+        steam_wreath(m, 22.8, 6.8, 4.8, 8, 4.0)
+        return
+    _luffy_body_v5(m, form)
+    # replace the scattered small clouds with big steam wreaths
+    m.cubes = [c for c in m.cubes if c["paint"] is not cloud_paint]
+    if form == "g2":
+        steam_wreath(m, 22.5, 6, 4, 8, 4.4)
+        steam_wreath(m, 13, 6.5, 4.5, 6, 3.6, back=1)
+        steam_wreath(m, 2, 5, 4, 5, 3.4, bone="root")
+    elif form == "g4b":
+        steam_wreath(m, 22.6, 9, 5.8, 10, 5.0)
+        steam_wreath(m, 19, 10, 6, 6, 4.4, back=2.5)
+    elif form == "g4s":
+        steam_wreath(m, 22.4, 6.4, 4.2, 8, 4.0)
+
+
+# ==================================================================================
+# ITADORI YUJI — MODULO (2086), from the JJK wiki + Modulo chapter art:
+# silver reflective hooded jacket, hood up (face hidden), cap under the hood, face mask,
+# same scars, longer relaxed hair, black trousers.
+# ==================================================================================
+SILVER = (198, 202, 214)
+
+FACE32["yuji_modulo"] = dict(eye="anime", brow="flat", mouth="none", marks=["yuji", "scars", "hood_shadow", "mask"])
+_face32_v4 = face32
+
+
+def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
+    marks = spec.get("marks", [])
+    _face32_v4(px, W, H, dict(spec, marks=[m for m in marks if m not in ("hood_shadow", "mask")]), hair, iris, skin)
+    k = W / 32.0
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    if "hood_shadow" in marks:  # the hood and cap throw the upper face into darkness
+        for y in range(0, 21):
+            for x in range(32):
+                xx, yy = int(x * k), int(y * k)
+                r, g, b, a = px[xx, yy]
+                put(x, y, (int(r * 0.22), int(g * 0.2), int(b * 0.24)))
+        for x in (20, 21):  # a single eye glinting out of the shadow
+            put(x, 18, (230, 230, 236))
+        put(21, 17, (150, 110, 80))
+    if "mask" in marks:
+        for y in range(21, 32):
+            for x in range(2, 30):
+                put(x, y, (26, 26, 32) if (x + y) % 9 else (40, 40, 48))
+        for x in range(4, 28):
+            put(x, 21, (54, 54, 64))
+
+
+def silver_jacket(face, px, w, h, base):
+    t = tones(SILVER)
+    for y in range(h):  # reflective sheen bands
+        for x in range(w):
+            if (x + y) % 11 in (0, 1) and face in ("north", "west"):
+                _put(px, w, h, x, y, t[4])
+    if face == "north":
+        for y in range(h):
+            _put(px, w, h, w // 2, y, (90, 92, 104))       # zipper
+        for y in (2, 3):
+            _put(px, w, h, w // 2 - 3, y + 4, (240, 240, 244)); _put(px, w, h, w // 2 + 2, y + 4, (240, 240, 244))
+
+
+def hood_paint(face, img):
+    """Raised hood: open at the front where the face is."""
+    w, h = img.size
+    px = img.load()
+    t = tones(SILVER)
+    for y in range(h):
+        for x in range(w):
+            k = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
+            if (x + y) % 13 == 0 and face in ("north", "west", "up"):
+                k = 4
+            px[x, y] = t[k] + (255,)
+    if face == "north":  # opening
+        for y in range(int(h * 0.12), h):
+            for x in range(int(w * 0.12), int(w * 0.88)):
+                px[x, y] = (0, 0, 0, 0)
+        for x in range(int(w * 0.1), int(w * 0.9)):
+            px[x, int(h * 0.1)] = t[0] + (255,)
+    if face == "down":
+        for y in range(h):
+            for x in range(w):
+                px[x, y] = (0, 0, 0, 0)
+
+
+def yuji_modulo(m):
+    hand = layered(SILVER, [silver_jacket, band(SIDES + ("down",), 0.9, 1.0, "skin")])
+    base_body(m, layered(SILVER, [silver_jacket]), hand, solid((24, 24, 30)),
+              head_paint((226, 150, 152), (120, 70, 40), True, "yuji_modulo"))
+    m.box("body", [-4.4, 9.5, -2.4], [8.8, 14.5, 4.8], layered(SILVER, [silver_jacket]))  # long parka
+    both_arms(m, [3.8, 13.5, -2.3], [4.4, 10.5, 4.6], layered(SILVER, [silver_jacket]))
+    both_arms(m, [3.7, 12.6, -2.4], [4.6, 1.2, 4.8], solid((150, 154, 166)))          # cuffs
+    both_legs(m, [-0.3, 0, -2.6], [4.4, 1.6, 5], solid((16, 16, 20)))                  # black shoes
+    # hood up, cap visor peeking out, drawstrings
+    m.box("head", [-4, 24, -4], [8, 8, 8], hood_paint, inflate=0.7)
+    m.box("head", [-4.5, 31.2, -1], [9, 1.6, 5.8], hood_paint)                         # hood peak
+    m.box("head", [-3.2, 29.6, -6.6], [6.4, 0.6, 2.8], solid((22, 22, 28)))           # cap visor
+    m.box("head", [-3.6, 29.6, -4.6], [7.2, 2.6, 1.2], solid((22, 22, 28)))           # cap front
+    for x in (-1.6, 1.4):
+        m.strand([x, 24.2, -4.9], [0, -1, -0.1], 3.2, 0.5, solid((236, 236, 240)), bone="body", segs=2)
+    hp = hair_paint((226, 150, 152))  # longer, relaxed hair peeking out under the hood
+    for x in (-2.6, 2.4):
+        m.strand([x, 29.8, -4.3], [x * 0.05, -1, -0.4], 2.4, 2.2, hp)
+
+
+_build_v5 = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "yuji_final":
+        m = Model()
+        yuji_modulo(m)
+        return m
+    return _build_v5(char, form)
+
+
+_yuji_modulo_v1 = yuji_modulo
+
+
+def yuji_modulo(m):  # noqa: F811
+    _yuji_modulo_v1(m)
+    drop = {id(c) for c in m.cubes if (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5]) or (c["bone"] == "hair")}
+    m.cubes = [c for c in m.cubes if id(c) not in drop]
