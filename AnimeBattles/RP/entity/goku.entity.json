@@ -62,7 +62,10 @@
     "giant_up": "animation.ab.giant_up",
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
-    "handsign": "animation.ab.handsign"
+    "handsign": "animation.ab.handsign",
+    "powerup": "animation.ab.powerup",
+    "finger_up": "animation.ab.finger_up",
+    "spin": "animation.ab.spin"
    },
    "scripts": {
     "animate": [
@@ -140,6 +143,15 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "powerup": "query.property('ab:pose') == 22"
+     },
+     {
+      "finger_up": "query.property('ab:pose') == 23"
+     },
+     {
+      "spin": "query.property('ab:pose') == 24"
      }
     ]
    },

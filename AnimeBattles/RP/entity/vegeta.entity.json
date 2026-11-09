@@ -58,6 +58,9 @@
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
     "handsign": "animation.ab.handsign",
+    "powerup": "animation.ab.powerup",
+    "finger_up": "animation.ab.finger_up",
+    "spin": "animation.ab.spin",
     "arms_crossed": "animation.ab.arms_crossed"
    },
    "scripts": {
@@ -136,6 +139,15 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "powerup": "query.property('ab:pose') == 22"
+     },
+     {
+      "finger_up": "query.property('ab:pose') == 23"
+     },
+     {
+      "spin": "query.property('ab:pose') == 24"
      },
      {
       "arms_crossed": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"

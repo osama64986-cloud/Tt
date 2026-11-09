@@ -264,7 +264,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign"]  # poses 13..21
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin"]  # poses 13..24
 
 
 def extra_animations():
@@ -289,6 +289,16 @@ def extra_animations():
         "flinch": {"body": {"rotation": [-10, 0, 0]}, "head": {"rotation": [-14, 0, 6]},
                    "rightArm": {"rotation": [-20, 0, 18]}, "leftArm": {"rotation": [-20, 0, -18]},
                    "rightLeg": {"rotation": [6, 0, 0]}, "leftLeg": {"rotation": [-4, 0, 0]}},
+        # transformation power-up: crouched, arms driven down and out, fists clenched, head thrown back, trembling
+        "powerup": {"root": {"position": ["math.sin(query.life_time * 3100.0) * 0.25", -0.8, "math.cos(query.life_time * 2700.0) * 0.25"]},
+                    "body": {"rotation": [-10, 0, 0]}, "head": {"rotation": [-24, 0, 0]},
+                    "rightArm": {"rotation": [-12, 0, 28]}, "leftArm": {"rotation": [-12, 0, -28]},
+                    "rightLeg": {"rotation": [-8, 0, 10]}, "leftLeg": {"rotation": [-8, 0, -10]}},
+        # Frieza's Death Ball: one arm straight up, one finger raised
+        "finger_up": {"rightArm": {"rotation": [-178, 0, -6]}, "leftArm": {"rotation": [-10, 0, 12]}, "head": {"rotation": [-12, 0, 0]}},
+        # Zoro's Tatsumaki: the whole body whirls with both swords held out
+        "spin": {"root": {"rotation": [0, "query.life_time * 1800.0", 0]},
+                 "rightArm": {"rotation": [-80, 0, 70]}, "leftArm": {"rotation": [-80, 0, -70]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},

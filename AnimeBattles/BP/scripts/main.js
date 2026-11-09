@@ -486,7 +486,7 @@ function transform(e, s, to, label, color, extraSound) {
   setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
-  setPose(e, 3);
+  setPose(e, e.typeId === "ab:luffy" ? 3 : 22);  // DB-style power-up (Luffy keeps his own gear pose)
   slow(e, 30, 8);
   sound(dim, "ambient.weather.thunder", e.location, 1.5, 1.2);
   every(4, 7, (i) => {
@@ -1363,7 +1363,7 @@ const ZORO = {
       } },
     { id: "tatsumaki", label: "Tatsumaki", cd: 220, cost: 120, min: 0, max: 6, weight: 3,
       run(e, s, t) {
-        busy(s, 24); announce(e, "§a§lSantoryu: Tatsumaki!"); setPose(e, 8);
+        busy(s, 24); announce(e, "§a§lSantoryu: Tatsumaki!"); setPose(e, 24);
         const dim = e.dimension;
         every(2, 11, (i) => {
           if (!e.isValid) return false;
@@ -1459,7 +1459,7 @@ const FRIEZA = {
       } },
     { id: "deathball", label: "Death Ball", cd: 600, cost: 400, min: 0, max: 40, weight: 4,
       run(e, s, t) {
-        busy(s, 52); setPose(e, 3); slow(e, 44, 8); announce(e, "§6§lDeath Ball!");
+        busy(s, 52); setPose(e, 23); slow(e, 44, 8); announce(e, "§6§lDeath Ball!");
         const dim = e.dimension;
         const ball = spawnVfx(dim, 1, V.up(e.location, 3.4), { slot: 11, size: 0.3, life: 60 });
         every(1, 40, (i) => { if (!e.isValid) { killVfx(ball); return false; } try { ball.teleport(V.up(e.location, 3.2 + i * 0.04)); } catch (err) { /* ignore */ } vset(ball, "ab:size", 0.3 + i * 0.09); });
