@@ -1619,6 +1619,7 @@ function comboStep(e, t, mv, last) {
     teleportNear(e, t, mv.tp === "behind", 1.3);
     return;
   }
+  if (last) setExpr(e, 1, 12);  // battle cry on the finisher
   const d = V.dist(e.location, t.location);
   if (d > 2.3) {  // dash in (a fast step, not a teleport)
     afterimage(e);

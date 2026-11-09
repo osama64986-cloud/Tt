@@ -48,7 +48,8 @@
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
     "handsign": "animation.ab.handsign",
-    "tail_sway": "animation.ab.tail_sway"
+    "tail_sway": "animation.ab.tail_sway",
+    "arms_crossed": "animation.ab.arms_crossed"
    },
    "scripts": {
     "animate": [
@@ -129,6 +130,9 @@
      },
      {
       "tail_sway": "1.0"
+     },
+     {
+      "arms_crossed": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
      }
     ]
    },
@@ -136,8 +140,8 @@
     "controller.render.ab.frieza"
    ],
    "spawn_egg": {
-    "base_color": "#eeeef6",
-    "overlay_color": "#7e40be"
+    "texture": "ab_egg_frieza",
+    "texture_index": 0
    }
   }
  }

@@ -147,8 +147,8 @@
     "controller.render.ab.goku"
    ],
    "spawn_egg": {
-    "base_color": "#f6801a",
-    "overlay_color": "#223aaa"
+    "texture": "ab_egg_goku",
+    "texture_index": 0
    }
   }
  }

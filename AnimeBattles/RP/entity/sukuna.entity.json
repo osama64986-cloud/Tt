@@ -141,8 +141,8 @@
     "controller.render.ab.sukuna"
    ],
    "spawn_egg": {
-    "base_color": "#10080c",
-    "overlay_color": "#e28c96"
+    "texture": "ab_egg_sukuna",
+    "texture_index": 0
    }
   }
  }

@@ -279,16 +279,19 @@ def extra_animations():
         "giant_up": {"rightArm": {"rotation": [-175, 0, 0], "scale": [6, 6, 6]}, "leftArm": {"rotation": [-40, 0, 25]}},
         "slash": {"rightArm": {"rotation": [-85, 65, 0]}, "leftArm": {"rotation": [-20, 0, 25]}, "body": {"rotation": [0, -35, 0]}},
         "fuga": {"leftArm": {"rotation": [-90, 0, 0]}, "rightArm": {"rotation": [-90, -55, 0]}, "body": {"rotation": [0, 30, 0]}},
-        "handsign": {"rightArm": {"rotation": [-75, 35, 0]}, "leftArm": {"rotation": [-75, -35, 0]}},
+        "handsign": {"rightArm": {"rotation": [-75, -35, 0]}, "leftArm": {"rotation": [-75, 35, 0]}},
         # fighting stance while in a team: fists up, lead hand forward, light bounce on the toes
-        "stance": {"rightArm": {"rotation": ["-42 + math.sin(query.life_time * 400.0) * 3", 30, -6]},
-                   "leftArm": {"rotation": ["-74 + math.sin(query.life_time * 400.0 + 60) * 3", -8, 0]},
+        "stance": {"rightArm": {"rotation": ["-42 + math.sin(query.life_time * 400.0) * 3", -30, -6]},
+                   "leftArm": {"rotation": ["-74 + math.sin(query.life_time * 400.0 + 60) * 3", 8, 0]},
                    "body": {"rotation": [3, 22, 0]},
                    "rightLeg": {"rotation": [10, 0, 4]}, "leftLeg": {"rotation": [-10, 0, -4]}},
         # recoil while the pain face is showing
         "flinch": {"body": {"rotation": [-10, 0, 0]}, "head": {"rotation": [-14, 0, 6]},
                    "rightArm": {"rotation": [-20, 0, 18]}, "leftArm": {"rotation": [-20, 0, -18]},
                    "rightLeg": {"rotation": [6, 0, 0]}, "leftLeg": {"rotation": [-4, 0, 0]}},
+        # signature idles out of combat
+        "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
+        "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
@@ -299,10 +302,13 @@ def extra_animations():
     return out
 
 
+IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3")],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2")],
-    "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0")],
+    "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "gojo": [("cool_idle", "animation.ab.cool_idle", IDLE_COND)],
 }
 
 
@@ -358,7 +364,7 @@ def _client_entity(name, cfg, textures, geometry):
                 ] + [{k: f"query.property('ab:pose') == {i}"} for i, k in
                      enumerate(["jab_r", "jab_l", "kick", "round", "upper", "knee", "rush", "elbow"] + EXTRA_POSES, start=5)]},
                 "render_controllers": [f"controller.render.ab.{name}"],
-                "spawn_egg": {"base_color": cfg["egg"][0], "overlay_color": cfg["egg"][1]},
+                "spawn_egg": {"texture": f"ab_egg_{name}", "texture_index": 0},
             }
         },
     }
@@ -614,11 +620,35 @@ def build_vfx():
     json.dump(an, open(an_path, "w"), indent=1)
 
 
+def build_egg_icons():
+    """Spawn eggs show the fighter's own face (32x32) in a coloured frame."""
+    import models
+    data = {"ab_kill_stick": {"textures": "textures/items/kill_stick"},
+            "ab_team_stick": {"textures": "textures/items/team_stick"}}
+    idir = os.path.join(RP, "textures", "items")
+    for ch, forms in models.FORMS.items():
+        face = HEADS[(ch, "eyes" if ch == "gojo" else forms[0])].convert("RGBA").resize((26, 26), Image.NEAREST)
+        base = tuple(int(FIGHTERS[ch]["egg"][0][i:i + 2], 16) for i in (1, 3, 5))
+        edge = tuple(int(FIGHTERS[ch]["egg"][1][i:i + 2], 16) for i in (1, 3, 5))
+        icon = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        for y in range(32):
+            for x in range(32):
+                dx, dy = abs(x - 15.5), abs(y - 15.5)
+                if max(dx, dy) <= 15.5 and (dx + dy) <= 27:
+                    icon.putpixel((x, y), (shade(edge, 0.55) if max(dx, dy) > 14.5 or dx + dy > 26 else base) + (255,))
+        icon.paste(face, (3, 3), face)
+        icon.save(os.path.join(idir, f"egg_{ch}.png"))
+        data[f"ab_egg_{ch}"] = {"textures": f"textures/items/egg_{ch}"}
+    with open(os.path.join(RP, "textures", "item_texture.json"), "w") as f:
+        json.dump({"resource_pack_name": "anime_battles", "texture_name": "atlas.items", "texture_data": data}, f, indent=1)
+
+
 if __name__ == "__main__":
     build_entities()
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     HEADS.update(build_characters())
     build_vfx()
     build_icons()
+    build_egg_icons()
     validate_json()
     print("built", build_zip())

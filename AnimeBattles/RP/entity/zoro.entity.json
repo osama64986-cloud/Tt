@@ -132,8 +132,8 @@
     "controller.render.ab.zoro"
    ],
    "spawn_egg": {
-    "base_color": "#3a5c40",
-    "overlay_color": "#78b05c"
+    "texture": "ab_egg_zoro",
+    "texture_index": 0
    }
   }
  }

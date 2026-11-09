@@ -839,14 +839,14 @@
     "rightArm": {
      "rotation": [
       -75,
-      35,
+      -35,
       0
      ]
     },
     "leftArm": {
      "rotation": [
       -75,
-      -35,
+      35,
       0
      ]
     }
@@ -916,14 +916,14 @@
     "rightArm": {
      "rotation": [
       "-42 + math.sin(query.life_time * 400.0) * 3",
-      30,
+      -30,
       -6
      ]
     },
     "leftArm": {
      "rotation": [
       "-74 + math.sin(query.life_time * 400.0 + 60) * 3",
-      -8,
+      8,
       0
      ]
     },
@@ -1007,6 +1007,60 @@
       -4,
       0,
       0
+     ]
+    }
+   }
+  },
+  "animation.ab.arms_crossed": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -60,
+      -50,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -52,
+      50,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -4,
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.cool_idle": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "head": {
+     "rotation": [
+      -6,
+      0,
+      10
+     ]
+    },
+    "rightArm": {
+     "rotation": [
+      6,
+      0,
+      4
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      6,
+      0,
+      -4
      ]
     }
    }

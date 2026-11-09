@@ -4248,3 +4248,31 @@ def goku_body(m, hair, iris, brows=True, style="goku"):  # noqa: F811
     _goku_body_v3(m, hair, iris, brows, style)
     m.box("body", [-4.0, 19.2, -2.62], [3.0, 3.0, 0.25], emblem_paint)   # left chest
     m.box("body", [-2.75, 15.0, 2.36], [5.5, 5.5, 0.25], emblem_paint)   # back
+
+
+
+# ================================================================ Gojo: Jujutsu High uniform collar + swirl button
+def swirl_button(face, img):
+    w, h = img.size
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            dx, dy = (x + 0.5) / w - 0.5, (y + 0.5) / h - 0.5
+            r = (dx * dx + dy * dy) ** 0.5
+            ang = math.atan2(dy, dx)
+            ring = (r * 9 + ang / 1.4) % 2 < 1
+            px[x, y] = ((214, 178, 76) if ring else (150, 118, 40)) + (255,) if r <= 0.5 else (0, 0, 0, 0)
+
+
+_gojo_body_v2 = gojo_body
+
+
+def gojo_body(m, hair, iris, blindfold):  # noqa: F811
+    _gojo_body_v2(m, hair, iris, blindfold)
+    navy = (24, 26, 44)
+    col = layered(navy, [lines((SIDES, [[(0, 0.15), (1, 0.15)]]), (44, 48, 76))])
+    m.box("body", [-4.15, 21.9, -2.85], [8.3, 2.1, 0.6], col)        # high collar, front (stands up to the chin)
+    m.box("body", [-4.15, 21.9, 2.25], [8.3, 2.1, 0.6], col)         # back
+    m.box("body", [-4.35, 21.9, -2.85], [0.6, 2.1, 5.7], col)        # sides
+    m.box("body", [3.75, 21.9, -2.85], [0.6, 2.1, 5.7], col)
+    m.box("body", [-3.5, 22.3, -3.1], [1.3, 1.3, 0.25], swirl_button)  # swirl button on the collar

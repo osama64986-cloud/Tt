@@ -57,7 +57,8 @@
     "giant_up": "animation.ab.giant_up",
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
-    "handsign": "animation.ab.handsign"
+    "handsign": "animation.ab.handsign",
+    "arms_crossed": "animation.ab.arms_crossed"
    },
    "scripts": {
     "animate": [
@@ -135,6 +136,9 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "arms_crossed": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
      }
     ]
    },
@@ -142,8 +146,8 @@
     "controller.render.ab.vegeta"
    ],
    "spawn_egg": {
-    "base_color": "#223496",
-    "overlay_color": "#eeeee4"
+    "texture": "ab_egg_vegeta",
+    "texture_index": 0
    }
   }
  }

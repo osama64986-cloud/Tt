@@ -161,8 +161,8 @@
     "controller.render.ab.luffy"
    ],
    "spawn_egg": {
-    "base_color": "#ce2226",
-    "overlay_color": "#eece68"
+    "texture": "ab_egg_luffy",
+    "texture_index": 0
    }
   }
  }

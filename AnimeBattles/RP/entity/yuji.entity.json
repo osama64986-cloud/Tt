@@ -127,8 +127,8 @@
     "controller.render.ab.yuji"
    ],
    "spawn_egg": {
-    "base_color": "#1e2238",
-    "overlay_color": "#ee9696"
+    "texture": "ab_egg_yuji",
+    "texture_index": 0
    }
   }
  }
