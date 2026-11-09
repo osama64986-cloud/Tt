@@ -568,7 +568,7 @@ const GOKU = {
     },
     {
       id: "dragonfist", label: "Dragon Fist", cd: 500, cost: 320, min: 2, max: 14, weight: 3,
-      cond: (e) => formOf(e) >= 2,
+      cond: () => true,
       run(e, s, t) {
         busy(s, 22); setPose(e, 4);
         announce(e, "§6§lDragon Fist!");
@@ -593,7 +593,7 @@ const GOKU = {
     },
     {
       id: "spiritbomb", label: "Spirit Bomb", cd: 1800, cost: 0, min: 6, max: 40, weight: 3,
-      cond: (e, s, c) => c.hp < 0.5 && now() - s.combatSince > 200,
+      cond: () => true,
       run(e, s, t) {
         busy(s, 100); setPose(e, 3); slow(e, 92, 8);
         announce(e, "§b§lEveryone, lend me your energy!  §f(Spirit Bomb)");
@@ -694,7 +694,7 @@ const VEGETA = {
     },
     {
       id: "finalflash", label: "Final Flash", cd: 600, cost: 420, min: 6, max: 48, weight: 4,
-      cond: (e) => formOf(e) >= 1,
+      cond: () => true,
       run(e, s, t) {
         busy(s, 72); face(e, aim(t));
         announce(e, "§e§lFinal...");
@@ -845,7 +845,7 @@ const GOJO = {
     },
     {
       id: "purple", label: "Hollow Purple", cd: 700, cost: 600, min: 5, max: 60, weight: 5, technique: true,
-      cond: (e, s, c) => c.hp < 0.85 || c.tPower > c.power,
+      cond: () => true,
       run(e, s, t) {
         const dim = e.dimension;
         busy(s, 50); face(e, aim(t)); setPose(e, 1); slow(e, 38, 8);
@@ -881,12 +881,12 @@ const GOJO = {
     },
     {
       id: "domain", label: "Domain Expansion", cd: 1800, cost: 800, min: 0, max: 13, weight: 6, technique: true,
-      cond: (e, s, c) => c.hp < 0.6 || c.tPower > c.power * 1.2,
+      cond: () => true,
       run: (e, s) => domain(e, s),
     },
     {
       id: "rct", label: "Reverse Cursed Technique", cd: 400, cost: 300, min: 0, max: 64, weight: 5,
-      cond: (e, s, c) => c.hp < 0.5,
+      cond: (e, s, c) => c.hp < 0.95,
       run(e, s) {
         busy(s, 10);
         const h = health(e);
@@ -919,9 +919,10 @@ function stretch(e, s, t, o) {
     if (!alive(t) || !e.isValid) return false;
     face(e, aim(t));
     const { pos, dir } = handPos(e, t);
-    lineHit(e, pos, dir, o.reach, o.radius ?? 0.9, o.dmg * powerOf(e) / 100, { knock: o.knock ?? 0.6, lift: o.lift ?? 0.15 });
+    const reach = Math.max(o.reach, V.dist(pos, aim(t)) + 1.2);
+    lineHit(e, pos, dir, reach, o.radius ?? 0.9, o.dmg * powerOf(e) / 100, { knock: o.knock ?? 0.6, lift: o.lift ?? 0.15 });
     const style = e.typeId === "ab:luffy" ? [null, "steam", null, "haki", "haki", "haki", "nika"][formOf(e)] : null;
-    for (let k = 1; k <= o.reach; k += 1.5) {
+    for (let k = 1; k <= reach; k += 1.5) {
       const q = V.add(pos, V.mul(dir, k));
       fx(e.dimension, "orb", q, o.trail ?? C.white, 0.25, 0.15);
       if (style === "steam") fx(e.dimension, "aura", V.up(q, -0.9), C.steam, 0.6, 0.5, { count: 2, speed: 1 });
@@ -1101,11 +1102,11 @@ const YUJI_FINAL = {
     },
   }, {
     id: "rct", label: "Reverse Cursed Technique", cd: 500, cost: 300, min: 0, max: 64, weight: 5,
-    cond: (e, s, c) => c.hp < 0.45,
+    cond: (e, s, c) => c.hp < 0.95,
     run(e, s) { busy(s, 10); const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 110)); fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 22, speed: 2 }); announce(e, "§aItadori: Reverse Cursed Technique"); },
   }, {
     id: "domain", label: "Domain Expansion", cd: 1800, cost: 700, min: 0, max: 12, weight: 6, technique: true,
-    cond: (e, s, c) => c.hp < 0.55,
+    cond: () => true,
     run(e, s, t) {
       busy(s, 20); setPose(e, 21); announce(e, "§f§lItadori: Domain Expansion");
       const dim = e.dimension, center = V.up(e.location, 1);
@@ -1176,7 +1177,7 @@ const SUKUNA = {
     run(e, s, t) { busy(s, 16); setPose(e, 19); announce(e, "§4§lCleave"); const h = health(t); slashMarks(e, t, C.red, 6, 6 * powerOf(e) / 100 + (h ? Math.min(9, h.effectiveMax * 0.012) : 0)); later(12, () => setPose(e, 0)); },
   }, {
     id: "fuga", label: "Fuga", cd: 700, cost: 500, min: 5, max: 40, weight: 4, technique: true,
-    cond: (e, s, c) => c.hp < 0.7 || c.tPower > c.power,
+    cond: () => true,
     run(e, s, t) {
       busy(s, 44); face(e, aim(t)); announce(e, "§6§l■ Open — Fuga");
       setPose(e, 20); slow(e, 30, 8);
@@ -1191,15 +1192,15 @@ const SUKUNA = {
     },
   }, {
     id: "rct", label: "Reverse Cursed Technique", cd: 400, cost: 250, min: 0, max: 64, weight: 5,
-    cond: (e, s, c) => c.hp < 0.5,
+    cond: (e, s, c) => c.hp < 0.95,
     run(e, s) { busy(s, 10); const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 150)); fx(e.dimension, "aura", e.location, C.heal, 1, 0.8, { count: 22, speed: 2 }); },
   }, {
     id: "worldslash", label: "World-Cutting Slash", cd: 900, cost: 600, min: 0, max: 30, weight: 6, technique: true,
-    cond: (e, s, c) => formOf(e) >= 1 && (c.adaptTotal >= 6 || c.targetType === "ab:gojo"),
+    cond: (e) => formOf(e) >= 1,
     run: (e, s, t) => worldSlash(e, s, t),
   }, {
     id: "shrine", label: "Malevolent Shrine", cd: 1800, cost: 800, min: 0, max: 14, weight: 7, technique: true,
-    cond: (e, s, c) => c.hp < 0.6 || c.tPower > c.power,
+    cond: () => true,
     run(e, s) {
       busy(s, 24); setPose(e, 21);
       announce(e, "§4§lDomain Expansion: §c§lMalevolent Shrine");
@@ -1520,13 +1521,21 @@ function updateFighter(e, tick) {
   }
   if (Math.random() > 0.45) return;
   const burnt = tick < s.burnoutUntil;
-  const ok = def.abilities.filter((a) => (s.cd[a.id] ?? 0) <= tick && s.energy >= a.cost && ctx.dist >= a.min && ctx.dist <= a.max &&
+  // Abilities are free to use at any range; close-range ones dash in first.
+  const ok = def.abilities.filter((a) => (s.cd[a.id] ?? 0) <= tick && s.energy >= a.cost &&
     !(burnt && a.technique) && (!a.cond || a.cond(e, s, ctx)));
   if (!ok.length) return;
   let r = Math.random() * ok.reduce((n, a) => n + a.weight, 0);
   const pick = ok.find((a) => (r -= a.weight) <= 0) ?? ok[0];
   s.energy -= pick.cost;
   s.cd[pick.id] = tick + pick.cd;
+  if (ctx.dist > pick.max) {
+    afterimage(e);
+    teleportNear(e, target, false, Math.max(1.4, Math.min(pick.max * 0.5, 3)));
+    busy(s, 3);
+    later(2, () => { if (e.isValid && alive(target)) pick.run(e, s, target, { ...ctx, dist: V.dist(e.location, target.location) }); });
+    return;
+  }
   pick.run(e, s, target, ctx);
 }
 
