@@ -3514,3 +3514,170 @@ def luffy_body(m, form):  # noqa: F811
     for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
         round_limb(m, bone, [x0, 0, -2.6], [5, 2.5, 5.2], haki_glow)
     steam_wreath(m, 23.2, 7.2, 5, 8, 3.8)
+
+
+# ==================================================================================
+# SUKUNA — full redesign from the JJK wiki art (no abdominal mouth):
+#  Yuji's body (anime): Yuji's uniform, red hood with gold buttons, face tattoos, pink hair swept up
+#  Megumi's body (incarnated): white kimono with wide sleeves, black obi, black fluffy scarf,
+#      wide white trousers, Megumi's spiky black hair
+#  True form: bare upper body with thick tattoo bands, kimono tied at the waist, four arms,
+#      pink spiky hair, black scarf
+# ==================================================================================
+KIMONO_W = (240, 234, 232)
+OBI_B = (22, 20, 26)
+SCARF = (30, 26, 36)
+TAT = (34, 14, 28)
+
+
+def kimono_front(face, px, w, h, base):
+    t = tones(KIMONO_W)
+    if face == "north":  # overlapping collar folds forming a V
+        for y in range(h):
+            x1 = int(w * 0.5 - (1 - y / h) * w * 0.28)
+            x2 = int(w * 0.5 + (1 - y / h) * w * 0.28)
+            if y < h * 0.45:
+                _put(px, w, h, x1, y, t[0]); _put(px, w, h, x2, y, t[0])
+                _put(px, w, h, x1 + 1, y, t[3])
+        for x in (int(w * 0.3), int(w * 0.72)):
+            for y in range(int(h * 0.5), h):
+                _put(px, w, h, x, y, t[1])
+    if face in ("east", "west", "south"):
+        for y in range(int(h * 0.3), h, 7):
+            for x in range(w):
+                _put(px, w, h, x, y, t[1]) if (x + y) % 3 else None
+
+
+def scarf_ring(m, y=22.0, rx=4.3, rz=3.1, n=10, s=2.3):
+    p = solid(SCARF)
+    for k in range(n):
+        a = k * 2 * math.pi / n
+        x, z = math.cos(a) * rx, math.sin(a) * rz
+        m.box("body", [x - s / 2, y, z - s / 2], [s, s * 0.85, s], p)
+        m.box("body", [x - s / 2, y, z - s / 2], [s, s * 0.85, s], p, rot=[0, 45, 0], pivot=[x, y, z])
+
+
+def obi(m):
+    band_p = layered(OBI_B, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (64, 58, 76))])
+    m.box("body", [-4.7, 10.6, -2.75], [9.4, 2.6, 5.5], band_p)
+    m.box("body", [-3.2, 10.8, -3.4], [2.6, 2.2, 1], solid(OBI_B))
+    m.strand([-2.6, 11, -3.3], [-0.2, -1, -0.15], 5.5, 1.8, solid(OBI_B), bone="body", segs=3, thick=0.3)
+    m.strand([-1.4, 11, -3.3], [0.1, -1, -0.2], 4.5, 1.8, solid(OBI_B), bone="body", segs=3, thick=0.3)
+
+
+def wide_sleeves(m):
+    sleeve = layered(KIMONO_W, [lines((SIDES, [[(0, 0.96), (1, 0.96)], [(0.5, 0), (0.5, 0.9)]]), tones(KIMONO_W)[1])])
+    both_arms(m, [3.3, 13.5, -3.2], [5.8, 10.8, 6.4], sleeve)
+    both_arms(m, [3.6, 9.5, -2.8], [5.2, 4.2, 5.6], sleeve, rot=[8, 0, 0], pivot=[6, 13.5, 0])  # hanging drape
+
+
+def hakama(m):
+    pants = layered(KIMONO_W, [lines((SIDES, [[(0.3, 0), (0.25, 1)], [(0.72, 0), (0.78, 1)]]), tones(KIMONO_W)[1])])
+    both_legs(m, [-0.7, 1.4, -2.9], [5.4, 9.8, 5.8], pants)
+    both_legs(m, [-0.3, 0, -2.4], [4.6, 1.4, 4.8], solid((40, 34, 40)))  # ankle wraps / zori
+
+
+def arm_bands(m, bone_pairs):
+    p = solid(TAT)
+    for bone, x, w in bone_pairs:
+        for y in (12.6, 14.0):
+            m.box(bone, [x, y, -2.15], [w, 0.9, 4.3], p)
+
+
+def bare_tattooed_torso(face, px, w, h, base):
+    t = tones(SKIN)
+    cx = w // 2
+    if face == "north":
+        for x in range(2, w - 2):  # pec line + ab lines (muscle)
+            _put(px, w, h, x, int(h * 0.36), t[1])
+        for y in range(int(h * 0.4), h - 2):
+            _put(px, w, h, cx, y, t[1])
+        for side in (-1, 1):  # thick curved tattoo bands over the chest and ribs
+            for row in (0.24, 0.5, 0.7):
+                for i in range(int(w * 0.36)):
+                    x = cx + side * (3 + i)
+                    y = int(h * row + (i / (w * 0.36)) ** 2 * h * 0.07)
+                    for dy in range(3):
+                        _put(px, w, h, x, y + dy, TAT)
+    else:
+        for row in (0.24, 0.5):
+            for x in range(w):
+                for dy in range(3):
+                    _put(px, w, h, x, int(h * row) + dy, TAT)
+
+
+def sukuna_kimono_body(m, hair, face_style, four_arms=False, bare=False):
+    if four_arms:
+        m.bones = BONES_4ARMS
+    arm_skin = layered(SKIN, [lines((SIDES, [[(0, 0.1), (1, 0.1)]]), TAT)])
+    torso = layered(SKIN, [bare_tattooed_torso]) if bare else layered(KIMONO_W, [kimono_front])
+    base_body(m, torso, arm_skin, solid(KIMONO_W), head_paint(hair, (200, 30, 40), True, face_style))
+    if not bare:
+        m.box("body", [-4.3, 11.5, -2.3], [8.6, 12.5, 4.6], layered(KIMONO_W, [kimono_front]))
+        wide_sleeves(m)
+    else:  # kimono slipped down and tied at the waist
+        m.box("body", [-4.6, 9.5, -2.6], [9.2, 3.2, 5.2], layered(KIMONO_W, [kimono_front]))
+        both_arms(m, [3.85, 15.5, -2.15], [4.3, 1.2, 4.3], solid(TAT))                 # upper-arm bands
+    obi(m)
+    hakama(m)
+    scarf_ring(m)
+    arm_bands(m, [("rightArm", 3.85, 4.3), ("leftArm", -8.15, 4.3)])
+    if four_arms:
+        for bone, x in (("rightArm2", 5.4), ("leftArm2", -9.0)):
+            m.box(bone, [x, 7.5, -0.4], [3.6, 11, 3.6], layered(SKIN, []))
+            for y in (9.0, 10.4, 14.5):
+                m.box(bone, [x - 0.05, y, -0.45], [3.7, 0.9, 3.7], solid(TAT))
+
+
+FACE32["sukuna_heian2"] = dict(eye="narrow", brow="sharp", mouth="none", marks=["sukuna_face", "heian_mask"])
+
+
+def sukuna_v2(form):
+    m = Model()
+    if form == "yuji":
+        yuji_body(m, "sukuna")
+        for x in (-1.6, 1.0):  # gold buttons on the red hood collar (anime)
+            m.box("body", [x, 23.9, -2.95], [0.6, 0.6, 0.3], solid((226, 180, 60)))
+        sukuna_yuji_hair(m, (226, 140, 150))
+    elif form == "megumi":
+        sukuna_kimono_body(m, (20, 20, 28), "sukuna_megumi")
+        megumi_hair(m, (20, 20, 28))
+    else:
+        sukuna_kimono_body(m, (226, 140, 150), "sukuna_heian2", four_arms=True, bare=True)
+        heian_hair(m, (226, 140, 150))
+    return m
+
+
+_build_v6 = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "sukuna":
+        return sukuna_v2(form)
+    if char == "luffy" and form == "g2":
+        m = _build_v6(char, form)
+        for c in m.cubes:
+            c["paint"] = pinkify(c["paint"])
+        return m
+    return _build_v6(char, form)
+
+
+# ---------------------------------------------------------------- Gear 2: the whole body turns pink
+def pinkify(inner):
+    import colorsys
+
+    def p(face, img):
+        inner(face, img)
+        px = img.load()
+        w, h = img.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a == 0:
+                    continue
+                hh, ss, vv = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                # skin tones (orange-ish hue, mid saturation, bright) -> vivid pink
+                if (0.02 <= hh <= 0.11) and 0.12 <= ss <= 0.6 and vv >= 0.45:
+                    nr, ng, nb = colorsys.hsv_to_rgb(0.955, min(1, ss * 1.25 + 0.12), min(1, vv * 1.02))
+                    px[x, y] = (int(nr * 255), int(ng * 255), int(nb * 255), a)
+    return p
