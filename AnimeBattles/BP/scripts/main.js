@@ -567,8 +567,12 @@ const GOKU = {
     {
       id: "it", label: "Instant Transmission", cd: 140, cost: 70, min: 8, max: 48, weight: 3,
       run(e, s, t) {
-        busy(s, 14);
-        if (teleportNear(e, t, true)) punches(e, t, 3, 10 * powerOf(e) / 100, C.kiYellow);
+        busy(s, 20); setPose(e, 25);  // two fingers to the forehead, lock on to the ki... then vanish
+        later(6, () => {
+          if (!e.isValid) return;
+          setPose(e, 0);
+          if (alive(t) && teleportNear(e, t, true)) punches(e, t, 3, 10 * powerOf(e) / 100, C.kiYellow);
+        });
       },
     },
     {
@@ -760,7 +764,7 @@ function domain(e, s) {
   const dim = e.dimension;
   const center = V.up(e.location, 1);
   const R = 14;
-  busy(s, 24); setPose(e, 3); slow(e, 20, 8);
+  busy(s, 24); setPose(e, 26); slow(e, 20, 8);
   if (formOf(e) === 0) { try { e.triggerEvent("ab:form_1"); } catch (err) { /* ignore */ } }
   announce(e, "§b§lDomain Expansion: §f§lUnlimited Void");
   sound(dim, "mob.warden.sonic_boom", center, 2, 0.5);

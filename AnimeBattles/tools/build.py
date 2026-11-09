@@ -229,7 +229,7 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 24], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 30], "default": 0, "client_sync": True},
                     "ab:expr": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
                     "ab:stance": {"type": "bool", "default": False, "client_sync": True},
                 },
@@ -264,7 +264,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin"]  # poses 13..24
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign"]  # poses 13..26
 
 
 def extra_animations():
@@ -299,6 +299,10 @@ def extra_animations():
         # Zoro's Tatsumaki: the whole body whirls with both swords held out
         "spin": {"root": {"rotation": [0, "query.life_time * 1800.0", 0]},
                  "rightArm": {"rotation": [-80, 0, 70]}, "leftArm": {"rotation": [-80, 0, -70]}},
+        # Goku's Instant Transmission: index and middle finger to the forehead
+        "two_fingers": {"rightArm": {"rotation": [-150, -38, 0]}, "leftArm": {"rotation": [-8, 0, 8]}, "head": {"rotation": [6, 0, 0]}},
+        # Gojo's Unlimited Void: one hand raised before the face, fingers crossed
+        "void_sign": {"rightArm": {"rotation": [-120, -12, 0]}, "leftArm": {"rotation": [-8, 0, 10]}, "head": {"rotation": [6, 0, 0]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},

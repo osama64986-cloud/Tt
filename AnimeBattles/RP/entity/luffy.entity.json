@@ -76,6 +76,8 @@
     "powerup": "animation.ab.powerup",
     "finger_up": "animation.ab.finger_up",
     "spin": "animation.ab.spin",
+    "two_fingers": "animation.ab.two_fingers",
+    "void_sign": "animation.ab.void_sign",
     "bounce": "animation.ab.bounce"
    },
    "scripts": {
@@ -163,6 +165,12 @@
      },
      {
       "spin": "query.property('ab:pose') == 24"
+     },
+     {
+      "two_fingers": "query.property('ab:pose') == 25"
+     },
+     {
+      "void_sign": "query.property('ab:pose') == 26"
      },
      {
       "bounce": "query.property('ab:form') == 3"
