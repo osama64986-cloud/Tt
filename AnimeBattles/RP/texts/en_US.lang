@@ -14,3 +14,7 @@ item.spawn_egg.entity.ab:yuji.name=Spawn Itadori Yuji
 item.spawn_egg.entity.ab:yuji_final.name=Spawn Itadori Yuji (Modulo)
 item.spawn_egg.entity.ab:sukuna.name=Spawn Ryomen Sukuna
 item.spawn_egg.entity.ab:luffy.name=Spawn Monkey D. Luffy
+entity.ab:zoro.name=Roronoa Zoro
+entity.ab:frieza.name=Frieza
+item.spawn_egg.entity.ab:zoro.name=Spawn Roronoa Zoro
+item.spawn_egg.entity.ab:frieza.name=Spawn Frieza

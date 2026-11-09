@@ -85,12 +85,14 @@ const C = {
   nika: { red: 1, green: 0.97, blue: 0.85 },
   steam: { red: 1, green: 0.78, blue: 0.8 },
   ce: { red: 0.35, green: 0.55, blue: 1 },
+  death: { red: 0.9, green: 0.3, blue: 0.85 },
+  zoro: { red: 0.55, green: 0.95, blue: 0.55 },
 };
 
 // ------------------------------------------------------------------ 3D energy entities (beams + balls)
 const SLOT = new Map([[C.kameBlue, 0], [C.ssbBlue, 0], [C.galick, 1], [C.ego, 1], [C.flash, 2], [C.bigBang, 3], [C.red, 4], [C.kaioken, 4],
   [C.blue, 5], [C.purple, 6], [C.hakai, 7], [C.kiYellow, 9], [C.gold, 9], [C.silver, 10], [C.white, 10],
-  [C.fire, 11], [C.blood, 12], [C.haki, 13], [C.black, 13], [C.nika, 14], [C.ce, 5]]);
+  [C.fire, 11], [C.blood, 12], [C.haki, 13], [C.black, 13], [C.nika, 14], [C.ce, 5], [C.death, 15], [C.zoro, 16]]);
 const slotOf = (c) => SLOT.get(c) ?? 10;
 const vfxAlive = new Map();
 function spawnVfx(dim, kind, loc, o) {
@@ -1039,7 +1041,7 @@ const YUJI = {
 const YUJI_FINAL = {
   name: "Itadori", color: "§c", energy: 1200, regen: 22, energyName: "§dCE",
   dodge: () => 0.12,
-  forms: [{ label: "Modulo (2086)", power: 150, aura: C.blood }],
+  forms: [{ label: "Modulo (2086)", power: 154, aura: C.blood }],
   thresholds: [], formSound: [null],
   abilities: [divergent, yujiCommon(0.6), {
     id: "bf7", label: "Black Flash x7", cd: 700, cost: 400, min: 0, max: 10, weight: 5,
@@ -1327,7 +1329,180 @@ const LUFFY = {
   ],
 };
 
-const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY };
+
+// ------------------------------------------------------------------ Roronoa Zoro (Santoryu)
+const ZORO = {
+  name: "Zoro", color: "§a", energy: 1100, regen: 20, energyName: "§aSTAMINA",
+  dodge: () => 0.12,
+  forms: [
+    { label: "Three Sword Style", power: 95 },
+    { label: "King of Hell", power: 146, aura: C.haki },
+  ],
+  thresholds: [0.6], transformCd: 100,
+  formSound: [null, "mob.wither.spawn"],
+  abilities: [
+    { id: "onigiri", label: "Oni Giri", cd: 120, cost: 60, min: 0, max: 8, weight: 4,
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§a§lSantoryu: Oni Giri!"); setPose(e, 1); afterimage(e);
+        teleportNear(e, t, true, 1.6);
+        later(2, () => { if (alive(t)) slashMarks(e, t, formOf(e) ? C.haki : C.zoro, 3, 9 * powerOf(e) / 100); });
+        later(10, () => setPose(e, 0));
+      } },
+    { id: "tatsumaki", label: "Tatsumaki", cd: 220, cost: 120, min: 0, max: 6, weight: 3,
+      run(e, s, t) {
+        busy(s, 24); announce(e, "§a§lSantoryu: Tatsumaki!"); setPose(e, 8);
+        const dim = e.dimension;
+        every(2, 11, (i) => {
+          if (!e.isValid) return false;
+          const c = V.up(e.location, 1);
+          for (let k = 0; k < 3; k++) {
+            const a = i * 0.9 + k * 2.09;
+            const v = slashVfx(dim, V.add(c, { x: Math.cos(a) * 2.2, y: i * 0.25, z: Math.sin(a) * 2.2 }), { x: -Math.sin(a), y: 0.3, z: Math.cos(a) }, C.zoro, 0.8, 0);
+            later(3, () => killVfx(v));
+          }
+          fx(dim, "aura", e.location, C.zoro, 1, 0.5, { count: 10, speed: 3 });
+          let list = []; try { list = dim.getEntities({ location: c, maxDistance: 5 }); } catch (err) { /* ignore */ }
+          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 4 * powerOf(e) / 100); try { o.applyKnockback({ x: 0, z: 0 }, 0.35); } catch (err) { /* ignore */ } }
+          if (i === 10) setPose(e, 0);
+        });
+      } },
+    { id: "phoenix", label: "36 Pound Phoenix", cd: 140, cost: 80, min: 0, max: 30, weight: 4,
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 19); announce(e, "§a§lSanjuroku Pound Ho!");
+        flyingSlash(e, t, { color: formOf(e) ? C.haki : C.zoro, dmg: 30 * powerOf(e) / 100, range: 28, roll: 10, carve: true, size: 1.5 });
+        later(8, () => { if (e.isValid) flyingSlash(e, t, { color: C.zoro, dmg: 18 * powerOf(e) / 100, range: 26, roll: 170, size: 1.2 }); setPose(e, 0); });
+      } },
+    { id: "shishi", label: "Shishi Sonson", cd: 160, cost: 70, min: 0, max: 10, weight: 4,
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§a§lShishi Sonson!"); setPose(e, 6); afterimage(e);
+        teleportNear(e, t, true, 2);
+        later(1, () => {
+          if (!alive(t)) return;
+          deal(e, t, 45 * powerOf(e) / 100);
+          const v = slashVfx(t.dimension, aim(t), V.norm(V.sub(aim(t), aim(e))), C.white, 2.2, 0);
+          later(5, () => killVfx(v));
+          fx(t.dimension, "flash", aim(t), C.zoro, 3, 0.2);
+          setPose(e, 0);
+        });
+      } },
+    { id: "asura", label: "Kyutoryu Asura", cd: 600, cost: 300, min: 0, max: 12, weight: 5,
+      run(e, s, t) {
+        busy(s, 34); setPose(e, 21); announce(e, "§2§lKyutoryu: §4§lAsura — Ichibugin!");
+        const dim = e.dimension;
+        every(2, 8, () => {  // the three-headed, six-armed demon illusion
+          if (!e.isValid) return false;
+          for (const sx of [-1.4, 0, 1.4]) fx(dim, "orb_solid", V.add(e.location, { x: sx, y: 2.6, z: 0 }), C.haki, 0.9, 0.4);
+          for (const sx of [-2, -1.6, -1.2, 1.2, 1.6, 2]) fx(dim, "orb", V.add(e.location, { x: sx, y: 1.6 + Math.abs(sx) * 0.2, z: 0 }), C.zoro, 0.5, 0.4);
+          fx(dim, "aura", e.location, C.haki, 1.4, 0.6, { count: 12, speed: 2 });
+        });
+        later(16, () => {
+          if (!e.isValid || !alive(t)) return;
+          afterimage(e); teleportNear(e, t, true, 2); setPose(e, 8);
+          slashMarks(e, t, C.zoro, 9, 10 * powerOf(e) / 100);
+          later(16, () => setPose(e, 0));
+        });
+      } },
+    { id: "sanzen", label: "Three Thousand Worlds", cd: 500, cost: 350, min: 0, max: 20, weight: 6, cond: (e) => formOf(e) === 1,
+      run(e, s, t) {
+        busy(s, 26); setPose(e, 14); announce(e, "§0§lKing of Hell — §4§lSanzen Sekai!");
+        const dim = e.dimension;
+        later(10, () => {
+          if (!e.isValid || !alive(t)) return;
+          const dir = V.norm(V.sub(aim(t), aim(e)));
+          afterimage(e); teleportNear(e, t, true, 2.2);
+          for (let k = -2; k <= 2; k++) { const v = slashVfx(dim, V.add(aim(t), V.mul(dir, k * 1.2)), dir, C.haki, 2.6, 30 + k * 25); later(8, () => killVfx(v)); }
+          deal(e, t, 120 * powerOf(e) / 100);
+          fx(dim, "flash", aim(t), C.white, 5, 0.25);
+          fx(dim, "streak", aim(t), C.haki, 2.4, 0.5, { count: 26, speed: 13 });
+          shake(dim, aim(t), 0.5, 0.5);
+          later(8, () => setPose(e, 0));
+        });
+      } },
+  ],
+};
+
+// ------------------------------------------------------------------ Frieza
+const FRIEZA = {
+  name: "Frieza", color: "§5", energy: 1300, regen: 22, energyName: "§bKI",
+  dodge: () => 0.12,
+  forms: [
+    { label: "Final Form", power: 180 },
+    { label: "Golden Frieza", power: 320, aura: C.gold },
+  ],
+  thresholds: [0.6], transformCd: 100,
+  formSound: [null, "beacon.power"],
+  abilities: [
+    { id: "deathbeam", label: "Death Beam", cd: 60, cost: 40, min: 0, max: 40, weight: 4,
+      run(e, s, t) {
+        busy(s, 10); face(e, aim(t)); setPose(e, 4);
+        beam(e, t, { color: C.death, width: 0.22 + formOf(e) * 0.1, length: 40, dmg: 28 * powerOf(e) / 100, ticks: 2, blast: 1.2, pitch: 2 });
+        later(6, () => setPose(e, 0));
+      } },
+    { id: "barrage", label: "Death Beam Barrage", cd: 160, cost: 120, min: 0, max: 40, weight: 3,
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 4); announce(e, "§5§lDeath Beam!");
+        every(3, 5, () => { if (!alive(t) || !e.isValid) return false; face(e, aim(t)); beam(e, t, { color: C.death, width: 0.2, length: 40, dmg: 14 * powerOf(e) / 100, ticks: 2, blast: 0.8, pitch: 2.2 }); });
+        later(15, () => setPose(e, 0));
+      } },
+    { id: "deathball", label: "Death Ball", cd: 600, cost: 400, min: 0, max: 40, weight: 4,
+      run(e, s, t) {
+        busy(s, 52); setPose(e, 3); slow(e, 44, 8); announce(e, "§6§lDeath Ball!");
+        const dim = e.dimension;
+        const ball = spawnVfx(dim, 1, V.up(e.location, 3.4), { slot: 11, size: 0.3, life: 60 });
+        every(1, 40, (i) => { if (!e.isValid) { killVfx(ball); return false; } try { ball.teleport(V.up(e.location, 3.2 + i * 0.04)); } catch (err) { /* ignore */ } vset(ball, "ab:size", 0.3 + i * 0.09); });
+        later(40, () => {
+          killVfx(ball);
+          if (!e.isValid) return;
+          setPose(e, 4);
+          const c = V.up(e.location, 4.8);
+          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
+          projectile(e, c, V.norm(V.sub(tgt, c)), { speed: 0.6, maxDist: 50, radius: 2.4, size: 5.6, color: C.fire, slot: 11, homing: t, homingStrength: 0.05,
+            explode: { radius: 7, dmg: 220 * powerOf(e) / 100, color: C.fire, carve: 4, knock: 3 } });
+          later(10, () => setPose(e, 0));
+        });
+      } },
+    { id: "saucer", label: "Death Saucer", cd: 220, cost: 120, min: 0, max: 30, weight: 3,
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 3); announce(e, "§d§lDeath Saucer!");
+        later(6, () => { if (!e.isValid) return; setPose(e, 4);
+          flyingSlash(e, t, { color: C.death, dmg: 40 * powerOf(e) / 100, range: 30, roll: 0, size: 1.3, carve: true });
+          later(4, () => { if (e.isValid) flyingSlash(e, t, { color: C.death, dmg: 40 * powerOf(e) / 100, range: 30, roll: 0, size: 1.3 }); setPose(e, 0); }); });
+      } },
+    { id: "nova", label: "Nova Strike", cd: 200, cost: 150, min: 0, max: 25, weight: 3,
+      run(e, s, t) {
+        busy(s, 14); announce(e, "§5§lNova Strike!");
+        fx(e.dimension, "aura", e.location, C.death, 1.4, 0.6, { count: 20, speed: 3 });
+        every(1, 6, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          const step = V.add(e.location, V.mul(V.sub(t.location, e.location), 0.4));
+          try { e.teleport(step, { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+          fx(e.dimension, "orb", V.up(e.location, 1), C.death, 1.6, 0.4);
+          if (i === 5) explosion(e, aim(t), { radius: 3, dmg: 50 * powerOf(e) / 100, color: C.death, slot: 15, knock: 3 });
+        });
+      } },
+    { id: "telekinesis", label: "Telekinesis", cd: 260, cost: 140, min: 0, max: 30, weight: 3,
+      run(e, s, t) {
+        busy(s, 22); setPose(e, 4); announce(e, "§5Frieza lifts his enemy with telekinesis");
+        try { t.applyKnockback({ x: 0, z: 0 }, 1.4); } catch (err) { /* ignore */ }
+        every(2, 6, () => { if (alive(t)) fx(t.dimension, "orb", aim(t), C.death, 1.2, 0.3); });
+        later(14, () => {
+          if (!alive(t)) return;
+          try { t.applyKnockback({ x: 0, z: 0 }, -2); } catch (err) { /* ignore */ }
+          deal(e, t, 40 * powerOf(e) / 100);
+          fx(t.dimension, "shock", t.location, C.death, 6, 0.5);
+          setPose(e, 0);
+        });
+      } },
+    { id: "goldbeam", label: "Golden Death Beam", cd: 300, cost: 250, min: 0, max: 45, weight: 5, cond: (e) => formOf(e) === 1,
+      run(e, s, t) {
+        busy(s, 22); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lGolden Frieza: §5§lDeath Beam!");
+        chargeOrb(e, t, 8, C.death, 0.2, 0.6, 4);
+        later(8, () => { if (!e.isValid) return; beam(e, alive(t) ? t : e, { color: C.death, width: 0.8, length: 45, dmg: 120 * powerOf(e) / 100, ticks: 3, blast: 4, carve: 1, pitch: 1.6 }); later(8, () => setPose(e, 0)); });
+      } },
+  ],
+};
+
+const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -1352,12 +1527,14 @@ const COMBOS = {
   "ab:yuji_final": [["jab_r", "jab_l", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "jab_l", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
   "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
+  "ab:zoro": [["jab_r", "jab_l", "jab_r", "kick_r", "upper"], ["rush", "jab_l", "kick_l"], ["jab_l", "jab_r", "rush", "axe"]],
+  "ab:frieza": [["jab_r", "kick_l", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
 MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };
 MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "right" };
 const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
-const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white };
+const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -1822,7 +1999,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");

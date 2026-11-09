@@ -155,6 +155,12 @@ FIGHTERS.update({
               "egg": ("#ce2226", "#eece68"), "gigant": True},
 })
 
+FIGHTERS.update({
+    "zoro": {"hp": 700, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c")},
+    "frieza": {"hp": 900, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
+               "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
+})
+
 TEAM_FILTER = {
     "any_of": [
         {"all_of": [{"test": "has_tag", "subject": "self", "value": "ab_red"},
@@ -372,6 +378,8 @@ VFX_COLORS = [  # (core, edge) per colour slot used by the script
     ((255, 200, 200), (170, 0, 20)),     # 12 blood
     ((255, 120, 120), (30, 0, 6)),       # 13 black-red (haki / black flash / cleave)
     ((255, 255, 255), (255, 240, 200)),  # 14 Nika white
+    ((255, 220, 255), (210, 60, 200)),   # 15 Frieza death beam (magenta)
+    ((240, 255, 240), (120, 200, 120)),  # 16 Zoro sword aura (green)
 ]
 
 
@@ -417,6 +425,25 @@ def _face_uv(size=32):
     return {k: dict(f) for k in ("north", "south", "east", "west", "up", "down")}
 
 
+def _sphere_slices(r, n, yaws, uv):
+    """A round ball out of n horizontal slices (each a square prism) copied at several yaw angles."""
+    import math as _m
+    cubes = []
+    h = 2 * r / n
+    for i in range(n):
+        y0 = -r + i * h
+        ym = y0 + h / 2
+        w = 2 * _m.sqrt(max(r * r - ym * ym, 0)) * 0.94 + 0.2
+        w = round(w, 3)
+        for yaw in yaws:
+            c = {"origin": [-w / 2, round(y0, 3), -w / 2], "size": [w, round(h, 3), w], "uv": uv}
+            if yaw:
+                c["rotation"] = [0, yaw, 0]
+                c["pivot"] = [0, 0, 0]
+            cubes.append(c)
+    return cubes
+
+
 def vfx_geometry():
     uv = _face_uv()
     beam = {
@@ -448,16 +475,8 @@ def vfx_geometry():
                         "visible_bounds_width": 64, "visible_bounds_height": 64, "visible_bounds_offset": [0, 0, 0]},
         "bones": [
             {"name": "root", "pivot": [0, 0, 0]},
-            {"name": "core", "parent": "root", "pivot": [0, 0, 0], "cubes": [
-                {"origin": [-4, -4, -4], "size": [8, 8, 8], "uv": uv},
-                {"origin": [-4, -4, -4], "size": [8, 8, 8], "uv": uv, "rotation": [45, 45, 0], "pivot": [0, 0, 0]},
-            ]},
-            {"name": "outer_shell", "parent": "root", "pivot": [0, 0, 0], "cubes": [
-                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv},
-                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [45, 0, 0], "pivot": [0, 0, 0]},
-                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [0, 45, 0], "pivot": [0, 0, 0]},
-                {"origin": [-8, -8, -8], "size": [16, 16, 16], "uv": uv, "rotation": [0, 0, 45], "pivot": [0, 0, 0]},
-            ]},
+            {"name": "core", "parent": "root", "pivot": [0, 0, 0], "cubes": _sphere_slices(4, 8, (0, 30, 60), uv)},
+            {"name": "outer_shell", "parent": "root", "pivot": [0, 0, 0], "cubes": _sphere_slices(8, 6, (0, 45), uv)},
         ],
     }
     slash = {

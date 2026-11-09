@@ -3681,3 +3681,272 @@ def pinkify(inner):
                     nr, ng, nb = colorsys.hsv_to_rgb(0.955, min(1, ss * 1.25 + 0.12), min(1, vv * 1.02))
                     px[x, y] = (int(nr * 255), int(ng * 255), int(nb * 255), a)
     return p
+
+
+# ==================================================================================
+# NEW: RORONOA ZORO (post-timeskip, One Piece Wiki infobox) and FRIEZA (DBS, DB Wiki)
+# ==================================================================================
+ZORO_COAT = (58, 92, 64)
+ZORO_HARAMAKI = (120, 176, 92)
+ZORO_SASH = (128, 30, 52)
+ZORO_HAIR = (104, 170, 104)
+
+FACE32["zoro"] = dict(eye="anime", brow="angled", mouth="neutral", marks=["zoro_eye"])
+FACE32["zoro_king"] = dict(eye="anime", brow="sharp", mouth="clench", marks=["zoro_eye", "zoro_king"])
+_face32_v5 = face32
+
+
+def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
+    _face32_v5(px, W, H, spec, hair, iris, skin)
+    if "zoro_eye" not in spec.get("marks", []):
+        return
+    k = W / 32.0
+    sr = ramp(skin)
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    # the left eye (viewer's right) is closed: a curved lash line with the long vertical scar through its middle
+    for y in range(15, 23):
+        for x in range(18, 27):
+            put(x, y, sr[2])
+    for x in range(19, 27):
+        put(x, 19 if 20 <= x <= 25 else 18, (30, 20, 22))
+    for y in range(12, 26):
+        put(23, y, (176, 88, 82))
+    put(22, 13, (200, 120, 110)); put(24, 24, (200, 120, 110))
+    if "zoro_king" in spec.get("marks", []):  # King of Hell: shadowed brow and a glowing red eye
+        for y in range(13, 16):
+            for x in range(3, 14):
+                put(x, y, sr[0])
+        for x, y in ((8, 18), (9, 18), (8, 19), (9, 19), (8, 20), (9, 20)):
+            put(x, y, (220, 30, 40))
+        put(8, 18, (255, 120, 120))
+
+
+def katana(m, bone, hilt, direction, length, hilt_col, blade_col=(214, 220, 232), guard_col=(206, 168, 64)):
+    """A katana as a straight blade + square guard + wrapped hilt, along `direction` (BB space)."""
+    hx, hy, hz = hilt
+    d = norm(direction)
+    ax, az = math.degrees(math.asin(clampf(d[2]))), math.degrees(math.atan2(-d[0], d[1]))
+    rot = [round(ax, 2), 0, round(az, 2)]
+    piv = [hx, hy, hz]
+    wrap = layered(hilt_col, [lines((SIDES, [[(0, 0.2), (1, 0.4)], [(0, 0.6), (1, 0.8)]]), (236, 236, 236))])
+    m.box(bone, [hx - 0.35, hy - 3.2, hz - 0.35], [0.7, 3.2, 0.7], wrap, rot=rot, pivot=piv)          # hilt (behind the hand)
+    m.box(bone, [hx - 0.9, hy - 0.2, hz - 0.9], [1.8, 0.4, 1.8], solid(guard_col), rot=rot, pivot=piv)  # tsuba
+    blade = layered(blade_col, [lines((SIDES, [[(0, 0.0), (0, 1)]]), (250, 250, 255))])
+    m.box(bone, [hx - 0.15, hy + 0.2, hz - 0.45], [0.3, length, 0.9], blade, rot=rot, pivot=piv)
+
+
+def zoro_body(m, king=False):
+    coat = layered(ZORO_COAT, [lines((("north",), [[(0.5, 0.4), (0.5, 1)]]), dark(ZORO_COAT, 0.6))])
+    face = "zoro_king" if king else "zoro"
+    def chest(face_, px, w, h, base):
+        if face_ != "north":
+            return
+        t = tones(SKIN)
+        for x in range(2, w - 2):
+            _put(px, w, h, x, int(h * 0.34), t[1])
+        for i in range(int(w * 0.8)):  # the great diagonal scar
+            x = int(w * 0.85) - i
+            y = int(h * 0.08) + int(i * h * 0.75 / (w * 0.8))
+            _put(px, w, h, x, y, (176, 104, 90))
+            if i % 2 == 0:
+                _put(px, w, h, x - 1, y - 1, (176, 104, 90)); _put(px, w, h, x + 1, y + 1, (176, 104, 90))
+    base_body(m, layered(SKIN, [chest]), solid(ZORO_COAT), solid((26, 26, 30)),
+              head_paint(ZORO_HAIR, (40, 40, 30), True, face))
+    # haramaki (striped belly band) under the open coat
+    m.box("body", [-4.2, 12.4, -2.2], [8.4, 4.6, 4.4], layered(ZORO_HARAMAKI, [lines((SIDES, [[(x / 8, 0), (x / 8, 1)] for x in range(1, 8)]), dark(ZORO_HARAMAKI, 0.7))]))
+    # open long coat: side panels at the front, full back, skirt down to the knees
+    for x0 in (-4.5, 1.6):
+        m.box("body", [x0, 9.5, -2.55], [2.9, 14.7, 0.6], solid(ZORO_COAT))
+    m.box("body", [-4.5, 9.5, -2.5], [9, 14.7, 5], layered(ZORO_COAT, [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w)] if f == "north" else None]))
+    for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
+        m.box(bone, [x0, 4.5, -2.6], [5, 7.6, 5.2], layered(ZORO_COAT, [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w // 3, w * 2 // 3)] if f == "north" else None]))
+    m.box("body", [-4.6, 22.4, -2.7], [9.2, 1.8, 5.4], solid(dark(ZORO_COAT, 0.85)))  # collar
+    both_arms(m, [3.7, 12.3, -2.3], [4.6, 11.8, 4.6], coat)                         # sleeves
+    # sash with the knot on his left side
+    m.box("body", [-4.8, 10.6, -2.8], [9.6, 2.2, 5.6], layered(ZORO_SASH, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(ZORO_SASH, 0.7))]))
+    m.box("body", [-5.6, 10.2, -1.6], [1.6, 2.6, 3], solid(ZORO_SASH))
+    m.strand([-5, 10.4, -0.6], [-0.2, -1, 0.05], 5, 1.8, solid(ZORO_SASH), bone="body", segs=3, thick=0.3)
+    # black bandana tied around the left upper arm
+    m.box("leftArm", [-8.75, 19.5, -2.45], [4.9, 1.6, 4.9], solid((20, 20, 24)))
+    m.strand([-8.8, 20.3, 1.8], [-0.4, -1, 0.5], 2.6, 1, solid((20, 20, 24)), bone="leftArm", segs=2, thick=0.4)
+    both_legs(m, [-0.35, 0, -2.6], [4.6, 3.2, 5.1], solid((20, 18, 20)))           # boots
+    # three gold earrings on the left ear
+    for i in range(3):
+        m.box("head", [-4.95, 26.0 + i * 0.75, -0.2], [0.35, 0.45, 0.35], solid((230, 190, 70)))
+    # SANTORYU: Enma in the left hand, Sandai Kitetsu in the right, Wado Ichimonji in the mouth
+    enma_blade = (40, 30, 44) if king else (214, 220, 232)
+    katana(m, "leftArm", (-6, 12.2, -1.2), (0, 0.1, -1), 15, (110, 50, 150), blade_col=enma_blade)
+    katana(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, (170, 30, 40))
+    katana(m, "head", (-1.4, 25.3, -4.7), (1, 0, -0.12), 13, (240, 240, 240))
+
+
+def zoro_hair(m, c):
+    hp = hair_paint(c)
+    shell(m, c, hairline=30.2, sideburn=False, teeth=0.5)
+    m.box("head", [-4.25, 31.4, -4.25], [8.5, 0.9, 8.5], hp)          # short, close-cropped volume
+    for x, z, dz in ((-2.6, -2.6, -0.4), (0, -3.0, -0.4), (2.6, -2.6, -0.4), (-3.2, 0.4, 0.1), (3.2, 0.4, 0.1),
+                     (0, 0.2, 0.1), (-1.8, 2.6, 0.5), (1.8, 2.6, 0.5)):
+        m.strand([x, 32.0, z], [x * 0.15, 1, dz], 1.4, 2.8, hp)
+
+
+# ---------------------------------------------------------------- Frieza
+FRIEZA_WHITE = (238, 238, 246)
+FRIEZA_PURPLE = (126, 64, 190)
+FRIEZA_GOLD = (236, 190, 48)
+
+
+def gem(face, img):
+    """Glossy purple bio-gem."""
+    w, h = img.size
+    px = img.load()
+    t = tones(FRIEZA_PURPLE)
+    for y in range(h):
+        for x in range(w):
+            k = 2 if face in ("north", "west", "up") else 1
+            if y < h * 0.35 and x < w * 0.45 and face in ("north", "west", "up"):
+                k = 4
+            px[x, y] = t[k] + (255,)
+
+
+def frieza_head(skin, golden):
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        pixel_mat(img, skin, face, seed=21)
+        if face != "north":
+            return
+        k = w / 32.0
+
+        def put(x, y, c):
+            for dx in range(int(k)):
+                for dy in range(int(k)):
+                    xx, yy = int(x * k) + dx, int(y * k) + dy
+                    if 0 <= xx < w and 0 <= yy < h:
+                        px[xx, yy] = c + (255,)
+        if golden:  # purple face: the gold runs down the sides like a hood and frames it
+            fp = tones(FRIEZA_PURPLE)
+            for y in range(11, 32):
+                for x in range(5, 27):
+                    top = y - 11
+                    if top < 4 and (min(x - 5, 26 - x) + top) < 4:
+                        continue                                   # rounded brow corners
+                    if y > 27 and (x < 5 + (y - 27) or x > 26 - (y - 27)):
+                        continue                                   # narrowing chin
+                    put(x, y, fp[2] if (x in (5, 26) or y == 11) else fp[3])
+        for side in (0, 1):  # sharp red eyes with black outline
+            X = (lambda x: x) if side == 0 else (lambda x: 31 - x)
+            for x in range(7, 14):
+                put(X(x), 16 + (x - 7) // 3, (20, 12, 18))
+            for x in range(8, 13):
+                put(X(x), 18, (250, 250, 250)); put(X(x), 19, (250, 250, 250))
+            for x in (10, 11):
+                put(X(x), 18, (210, 30, 40)); put(X(x), 19, (150, 14, 24))
+            put(X(6), 15, (20, 12, 18))
+        for x in range(13, 19):  # dark purple lips, smug
+            put(x, 26, (70, 30, 80))
+        put(19, 25, (70, 30, 80))
+        put(16, 23, tones(skin)[1])
+    return p
+
+
+def oval_cuff(skin, faces=("north",)):
+    """A bracer in the skin colour carrying a glossy purple oval gem (shins; forearms when golden)."""
+    def p(face, img):
+        pixel_mat(img, skin, face, seed=5)
+        if face not in faces:
+            return
+        w, h = img.size
+        px = img.load()
+        t = tones(FRIEZA_PURPLE)
+        for y in range(h):
+            for x in range(w):
+                dx = (x + 0.5 - w / 2) / (w * 0.34)
+                dy = (y + 0.5 - h / 2) / (h * 0.42)
+                r = dx * dx + dy * dy
+                if r < 1:
+                    k = 4 if (-0.75 < dx < -0.2 and -0.8 < dy < -0.1) else (2 if r < 0.7 else 1)
+                    px[x, y] = t[k] + (255,)
+    return p
+
+
+def dome_front(face, img):
+    """Head dome: glossy purple, its front edge rounded down onto the forehead."""
+    gem(face, img)
+    if face != "north":
+        return
+    w, h = img.size
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            dx = (x + 0.5 - w / 2) / (w / 2)
+            if (y + 0.5) / h > 0.25 + 0.75 * (1 - dx * dx) ** 0.5:
+                px[x, y] = (0, 0, 0, 0)
+
+
+def frieza_chest(face, px, w, h, base):
+    """Smooth alien chest: soft pecs and abs lines, no scars."""
+    if face != "north":
+        return
+    t = tones(base)
+    cx = w // 2
+    for x in range(3, w - 3):
+        if abs(x - cx) > 1:
+            _put(px, w, h, x, int(h * 0.38) - abs(x - cx) // 4, t[1])
+    for y in range(int(h * 0.48), h - 3):
+        _put(px, w, h, cx, y, t[1])
+    for row in (0.6, 0.74):
+        for x in range(cx - 4, cx + 5):
+            if x != cx:
+                _put(px, w, h, x, int(h * row), t[1])
+
+
+def frieza_body(m, golden=False):
+    skin = FRIEZA_GOLD if golden else FRIEZA_WHITE
+    limb = solid(skin)
+    m.box("head", [-4, 24, -4], [8, 8, 8], frieza_head(skin, golden))
+    m.box("head", [-3.2, 29.4, -4.3], [6.4, 3.0, 8.4], dome_front)                # dome: crown down onto the forehead
+    m.box("head", [-2.6, 32.4, -3.6], [5.2, 0.7, 7.2], gem)
+    m.box("body", [-4, 12, -2], [8, 12, 4], layered(skin, [frieza_chest]))
+    for i, (wd, ht) in enumerate([(4.8, 1.5), (4.0, 0.9), (2.8, 0.7), (1.4, 0.5)]):  # shield-shaped chest gem
+        y = 20.6 - sum(hh for _, hh in [(4.8, 1.5), (4.0, 0.9), (2.8, 0.7), (1.4, 0.5)][:i + 1])
+        m.box("body", [-wd / 2, y, -2.45], [wd, ht, 0.5], gem if i == 0 else solid(tones(FRIEZA_PURPLE)[2]))
+    m.box("rightArm", [4, 12, -2], [3.4, 12, 4], limb)
+    m.box("leftArm", [-7.4, 12, -2], [3.4, 12, 4], limb)
+    m.box("rightLeg", [-0.1, 0, -2], [4, 12, 4], limb)
+    m.box("leftLeg", [-3.9, 0, -2], [4, 12, 4], limb)
+    both_arms(m, [3.6, 20, -2.6], [4.4, 3.8, 5.2], solid(skin) if golden else gem)  # shoulder domes (gold when golden)
+    if golden:
+        both_arms(m, [3.75, 13.4, -2.25], [3.9, 4.2, 4.5], oval_cuff(skin, ("north", "east", "west")))  # forearm bracers
+    both_legs(m, [-0.35, 2.2, -2.45], [4.5, 5.6, 4.9], oval_cuff(skin))              # shin bracers with oval gems
+    if golden:
+        both_arms(m, [3.85, 11.6, -2.1], [3.7, 2, 4.2], solid(FRIEZA_PURPLE))       # purple hands
+        both_legs(m, [-0.25, 0, -2.4], [4.3, 1.4, 4.8], solid(FRIEZA_PURPLE))        # purple feet
+    both_legs(m, [0.2, 0, -3.3], [3.4, 1.1, 1.4], solid(FRIEZA_PURPLE if golden else skin))  # toes
+    tail = layered(skin, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), tones(skin)[1])])
+    m.strand([0, 12.4, 2.1], [0, -0.55, 1], 15, 3.2, tail, bone="body", segs=3, thick=1.0, bend=(0.25, 0.15, -0.1))
+
+
+_build_v7 = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "zoro":
+        m = Model()
+        zoro_body(m, king=form == "king")
+        zoro_hair(m, ZORO_HAIR)
+        return m
+    if char == "frieza":
+        m = Model()
+        frieza_body(m, golden=form == "golden")
+        return m
+    return _build_v7(char, form)
+
+
+FORMS["zoro"] = ["base", "king"]
+FORMS["frieza"] = ["final", "golden"]

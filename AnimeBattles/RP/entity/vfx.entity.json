@@ -22,7 +22,9 @@
     "c11": "textures/entity/vfx/vfx_11",
     "c12": "textures/entity/vfx/vfx_12",
     "c13": "textures/entity/vfx/vfx_13",
-    "c14": "textures/entity/vfx/vfx_14"
+    "c14": "textures/entity/vfx/vfx_14",
+    "c15": "textures/entity/vfx/vfx_15",
+    "c16": "textures/entity/vfx/vfx_16"
    },
    "geometry": {
     "beam": "geometry.ab.vfx_beam",

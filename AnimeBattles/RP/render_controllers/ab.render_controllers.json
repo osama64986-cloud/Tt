@@ -194,6 +194,56 @@
     "Array.skins[query.property('ab:form')]"
    ]
   },
+  "controller.render.ab.zoro": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.king"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.king"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
+  "controller.render.ab.frieza": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.final",
+      "Texture.golden"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.final",
+      "Geometry.golden"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form')]"
+   ]
+  },
   "controller.render.ab.vfx": {
    "arrays": {
     "textures": {
@@ -212,7 +262,9 @@
       "Texture.c11",
       "Texture.c12",
       "Texture.c13",
-      "Texture.c14"
+      "Texture.c14",
+      "Texture.c15",
+      "Texture.c16"
      ]
     },
     "geometries": {
