@@ -1828,7 +1828,7 @@ FACE32 = {
     "goku": dict(eye="anime", brow="angled", mouth="neutral"),
     "calm": dict(eye="calm", brow="flat", mouth="neutral"),
     "ssj3": dict(eye="anime", brow="none", mouth="neutral"),
-    "vegeta": dict(eye="narrow", brow="sharp", mouth="corner"),
+    "vegeta": dict(eye="narrow", brow="sharp", mouth="corner", marks=["widow_peak"]),
     "gojo": dict(eye="big", brow="thin", mouth="smirk"),
     "gojo_band": dict(eye="band", brow="none", mouth="smirk"),
     "yuji": dict(eye="anime", brow="flat", mouth="smile", marks=["yuji"]),
@@ -1923,7 +1923,7 @@ def face32(px, W, H, spec, hair, iris, skin):
             both(9, y, white); both(10, y, white)
         for x in range(6, 14):
             both(x, 15, ink)
-    else:
+    elif e != "__none__":
         narrow = e == "narrow"
         top = 17 if narrow else 16
         bot = 20 if narrow else 21
@@ -3772,18 +3772,27 @@ def zoro_body(m, king=False):
     m.box("body", [-4.8, 10.6, -2.8], [9.6, 2.2, 5.6], layered(ZORO_SASH, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(ZORO_SASH, 0.7))]))
     m.box("body", [-5.6, 10.2, -1.6], [1.6, 2.6, 3], solid(ZORO_SASH))
     m.strand([-5, 10.4, -0.6], [-0.2, -1, 0.05], 5, 1.8, solid(ZORO_SASH), bone="body", segs=3, thick=0.3)
-    # black bandana tied around the left upper arm
-    m.box("leftArm", [-8.75, 19.5, -2.45], [4.9, 1.6, 4.9], solid((20, 20, 24)))
-    m.strand([-8.8, 20.3, 1.8], [-0.4, -1, 0.5], 2.6, 1, solid((20, 20, 24)), bone="leftArm", segs=2, thick=0.4)
+    if king:  # serious: the black bandana comes off the arm and is tied over his head, shading his eyes
+        band = layered((26, 26, 30), [lines((SIDES, [[(0, 0.35), (1, 0.45)], [(0, 0.75), (1, 0.7)]]), (48, 48, 56))])
+        m.box("head", [-4.4, 28.75, -4.45], [8.8, 3.75, 8.85], band)
+        m.box("head", [-3.9, 32.45, -3.9], [7.8, 0.35, 7.8], solid((26, 26, 30)))
+        m.box("head", [-1.2, 28.9, 4.3], [2.4, 1.8, 1.0], solid((22, 22, 26)))       # knot at the back
+        for sx in (-1, 1):
+            m.strand([sx * 0.7, 29.6, 4.9], [sx * 0.35, -1, 0.5], 4.2, 1.5, solid((26, 26, 30)), bone="head", segs=3, thick=0.3)
+    else:  # black bandana tied around the left upper arm
+        m.box("leftArm", [-8.75, 19.5, -2.45], [4.9, 1.6, 4.9], solid((20, 20, 24)))
+        m.strand([-8.8, 20.3, 1.8], [-0.4, -1, 0.5], 2.6, 1, solid((20, 20, 24)), bone="leftArm", segs=2, thick=0.4)
     both_legs(m, [-0.35, 0, -2.6], [4.6, 3.2, 5.1], solid((20, 18, 20)))           # boots
     # three gold earrings on the left ear
     for i in range(3):
         m.box("head", [-4.95, 26.0 + i * 0.75, -0.2], [0.35, 0.45, 0.35], solid((230, 190, 70)))
     # SANTORYU: Enma in the left hand, Sandai Kitetsu in the right, Wado Ichimonji in the mouth
-    enma_blade = (40, 30, 44) if king else (214, 220, 232)
-    katana(m, "leftArm", (-6, 12.2, -1.2), (0, 0.1, -1), 15, (110, 50, 150), blade_col=enma_blade)
-    katana(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, (170, 30, 40))
-    katana(m, "head", (-1.4, 25.3, -4.7), (1, 0, -0.12), 13, (240, 240, 240))
+    enma = dict(SWORDS["enma"], blade=(34, 26, 40), edge=(150, 40, 60)) if king else SWORDS["enma"]
+    katana2(m, "leftArm", (-6, 12.2, -1.2), (0, 0.1, -1), 16, enma)
+    katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 15, SWORDS["kitetsu"])
+    katana2(m, "head", (-2.4, 25.3, -4.75), (1, 0, -0.1), 14, SWORDS["wado"], grip=0.4)
+    for i, key in enumerate(("wado", "kitetsu", "enma")):  # the three empty scabbards tied at the left hip
+        sheath(m, (-4.3 - i * 0.55, 13.6 - i * 0.35, -0.6 + i * 0.8), (-0.18, -0.5, 1), 14, SWORDS[key])
 
 
 def zoro_hair(m, c):
@@ -3814,7 +3823,11 @@ def gem(face, img):
             px[x, y] = t[k] + (255,)
 
 
-def frieza_head(skin, golden):
+def frieza_head(skin, golden):  # noqa: F811  (expressions handled in frieza_head_x)
+    return frieza_head_x(skin, golden)
+
+
+def _frieza_head_orig(skin, golden):
     def p(face, img):
         w, h = img.size
         px = img.load()
@@ -3929,7 +3942,8 @@ def frieza_body(m, golden=False):
         both_legs(m, [-0.25, 0, -2.4], [4.3, 1.4, 4.8], solid(FRIEZA_PURPLE))        # purple feet
     both_legs(m, [0.2, 0, -3.3], [3.4, 1.1, 1.4], solid(FRIEZA_PURPLE if golden else skin))  # toes
     tail = layered(skin, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), tones(skin)[1])])
-    m.strand([0, 12.4, 2.1], [0, -0.55, 1], 15, 3.2, tail, bone="body", segs=3, thick=1.0, bend=(0.25, 0.15, -0.1))
+    m.bones = BONES + [{"name": "tail", "parent": "body", "pivot": [0, 12.4, 2.1]}]
+    m.strand([0, 12.4, 2.1], [0, -0.55, 1], 15, 3.2, tail, bone="tail", segs=3, thick=1.0, bend=(0.25, 0.15, -0.1))
 
 
 _build_v7 = build
@@ -3939,7 +3953,10 @@ def build(char, form):  # noqa: F811
     if char == "zoro":
         m = Model()
         zoro_body(m, king=form == "king")
-        zoro_hair(m, ZORO_HAIR)
+        if form == "king":  # hair hidden under the bandana; the painted head shows the cropped sides
+            pass
+        else:
+            zoro_hair(m, ZORO_HAIR)
         return m
     if char == "frieza":
         m = Model()
@@ -3950,3 +3967,284 @@ def build(char, form):  # noqa: F811
 
 FORMS["zoro"] = ["base", "king"]
 FORMS["frieza"] = ["final", "golden"]
+
+
+# ================================================================ facial expressions
+# build.py renders every form four times with EXPR = None / "shout" / "hurt" / "blink"; the script picks the face.
+EXPR = None
+
+
+def _expr_put(px, W, H):
+    k = W / 32.0
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    return put
+
+
+def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mouth=True, mouth_skin=None):
+    put = _expr_put(px, W, H)
+    sr = ramp(skin)
+    ms = ramp(mouth_skin) if mouth_skin else sr
+    ink, white = (20, 12, 14), (250, 250, 250)
+    sides = (False,) if left_only else (False, True)
+
+    def P(x, y, c):
+        for mirror in sides:
+            put(31 - x if mirror else x, y, c)
+    if expr == "blink" and eye_type != "band":
+        for x in range(6, 14):  # relaxed closed lids with lashes
+            P(x, 20 if 7 <= x <= 12 else 19, ink)
+        P(5, 19, ink); P(13, 19, ink)
+        for x in (7, 9, 11):
+            P(x, 21, sr[1])
+    if expr == "hurt" and eye_type != "band":
+        for x, y in ((6, 16), (7, 17), (8, 17), (9, 18), (10, 18), (11, 19), (12, 19), (11, 20), (10, 20),
+                     (9, 21), (8, 21), (7, 22), (6, 22)):
+            P(x, y, ink)  # squeezed shut: > <
+        for x in range(5, 13):
+            P(x, 14 if x > 7 else 15, dark(skin, 0.55))  # knitted brow
+    if not mouth:
+        return
+    if expr == "shout":
+        for y in range(24, 31):
+            for x in range(11, 21):
+                put(x, y, ms[2])
+        rows = {24: (13, 18), 25: (12, 19), 26: (11, 20), 27: (11, 20), 28: (11, 20), 29: (12, 19), 30: (13, 18)}
+        for y, (a, b) in rows.items():
+            for x in range(a, b + 1):
+                edge = x in (a, b) or y in (24, 30)
+                c = ink if edge else ((246, 246, 246) if y == 25 else ((196, 74, 86) if y >= 29 else (96, 22, 34)))
+                put(x, y, c)
+    if expr in ("hurt", "mouth_hurt"):
+        for y in range(24, 30):
+            for x in range(11, 21):
+                put(x, y, ms[2])
+        for x in range(12, 20):
+            put(x, 25, ink); put(x, 28, ink)
+            put(x, 26, white); put(x, 27, white)
+        put(11, 26, ink); put(11, 27, ink); put(20, 26, ink); put(20, 27, ink)
+        for x in (14, 16, 18):
+            put(x, 26, (160, 160, 168)); put(x, 27, (160, 160, 168))
+
+
+_face32_v6 = face32
+
+
+def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
+    expr = EXPR
+    marks = spec.get("marks", [])
+    eye = spec.get("eye", "")
+    own_eyes = "sukuna_face" in marks  # Sukuna's four eyes are painted by his mark layer: keep them, change the mouth
+    closed = expr in ("blink", "hurt") and eye != "band" and not own_eyes
+    _face32_v6(px, W, H, dict(spec, eye="__none__") if closed else spec, hair, iris, skin)
+    if "widow_peak" in marks:  # Vegeta's sharp M-shaped hairline
+        put = _expr_put(px, W, H)
+        hr = ramp(hair)
+        for y, (a, b) in {12: (10, 21), 13: (12, 19), 14: (13, 18), 15: (14, 17), 16: (15, 16)}.items():
+            for x in range(a, b + 1):
+                put(x, y, hr[1] if x in (a, b) else hr[2])
+    if expr:
+        if closed and "zoro_king" in marks:
+            put = _expr_put(px, W, H)
+            for x in (8, 9):
+                for y in (18, 19, 20):
+                    put(x, y, ramp(skin)[2])
+        masked = any(m in marks for m in ("mask", "heian_mask"))
+        draw_expr(px, W, H, expr if (closed or expr == "shout") else ("mouth_" + expr), skin, marks, eye,
+                  left_only="zoro_eye" in marks, mouth=not masked)
+
+
+def frieza_head_x(skin, golden):
+    base = _frieza_head_orig(skin, golden)
+
+    def p(face, img):
+        if face != "north" or not EXPR:
+            base(face, img)
+            return
+        before = EXPR
+        base(face, img)
+        w, h = img.size
+        px = img.load()
+        k = w / 32.0
+        face_c = px[int(16 * k) + 1, int(21 * k) + 1][:3]  # sample the actual face tone between the eyes
+        if before in ("blink", "hurt"):
+            put = _expr_put(px, w, h)
+            for y in range(14, 21):
+                for x in list(range(5, 15)) + list(range(17, 27)):
+                    put(x, y, face_c)
+        draw_expr(px, w, h, before, face_c, mouth_skin=face_c)
+    return p
+
+
+# ================================================================ Zoro's three swords (wiki reference art)
+SWORDS = {
+    # white hilt with black diamond wrap, round brass guard, white scabbard
+    "wado": dict(wrap=(236, 236, 240), diamond=(26, 24, 30), tsuba="round", metal=(196, 160, 72),
+                 blade=(206, 214, 226), edge=(248, 250, 255), hamon=None, saya=(234, 234, 238), saya_band=(30, 28, 34)),
+    # crimson hilt wrap, four-lobed gold guard, wavy (cursed) hamon, dark red scabbard
+    "kitetsu": dict(wrap=(150, 26, 34), diamond=(54, 14, 20), tsuba="cross", metal=(184, 160, 84),
+                    blade=(204, 210, 222), edge=(246, 248, 255), hamon=(232, 168, 120), saya=(120, 24, 32), saya_band=(196, 196, 204)),
+    # purple hilt with gold bands and a pink flower, three-ring gold guard, black scabbard
+    "enma": dict(wrap=(120, 52, 170), diamond=(84, 30, 128), tsuba="trio", metal=(214, 176, 70), flower=(250, 180, 220),
+                 blade=(70, 74, 86), edge=(220, 232, 244), hamon=None, saya=(28, 26, 32), saya_band=(214, 176, 70)),
+}
+
+
+def _rot_for(d):
+    ax, az = math.degrees(math.asin(clampf(d[2]))), math.degrees(math.atan2(-d[0], d[1]))
+    return [round(ax, 2), 0, round(az, 2)]
+
+
+def _width_axis(d):
+    c = max(1e-4, math.sqrt(max(0.0, 1 - d[2] * d[2])))
+    return (-d[2] * d[0] / c, -d[2] * d[1] / c, c)
+
+
+def wrap_paint(col, diamond, flower=None, metal=None):
+    """Tsuka: silk wrap crossing over the ray skin, so a chain of diamonds runs down the hilt."""
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            for x in range(w):
+                c = col
+                if face in SIDES and ((x + y) % 4 == 0 or (x - y) % 4 == 0):
+                    c = diamond
+                if face in ("up", "down"):
+                    c = dark(col, 0.7)
+                px[x, y] = c + (255,)
+        if flower and face in ("east", "west") and h > 6:
+            cy = h // 2
+            for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+                if 0 <= w // 2 + dx < w:
+                    px[w // 2 + dx, cy + dy] = (flower if (dx or dy) else (255, 240, 120)) + (255,)
+        if metal and face in SIDES:  # gold bands (Enma)
+            for y in (1, h - 2):
+                for x in range(w):
+                    px[x, y] = metal + (255,)
+    return p
+
+
+def blade_paint(st, tip=False):
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            for x in range(w):
+                if face == "north":
+                    c = st["edge"]
+                elif face == "south":
+                    c = dark(st["blade"], 0.72)
+                elif face in ("up", "down"):
+                    c = st["blade"]
+                else:  # the flat: polished edge band, the shinogi ridge line, darker spine side
+                    u = x / max(1, w - 1)
+                    c = st["edge"] if u < 0.3 else (dark(st["blade"], 0.86) if u > 0.75 else st["blade"])
+                    if st.get("hamon") and 0.3 <= u <= 0.6:
+                        c = st["hamon"]
+                px[x, y] = c + (255,)
+    return p
+
+
+def katana2(m, bone, hand, direction, length, st, grip=1.2):
+    """A katana built like the real thing: kashira, diamond-wrapped tsuka, fuchi, shaped tsuba, habaki and a
+    curved blade (several segments bending toward the spine) ending in a kissaki."""
+    d = norm(direction)
+    gx, gy, gz = hand
+    # the guard sits a little in front of the fist
+    hx, hy, hz = gx + d[0] * grip, gy + d[1] * grip, gz + d[2] * grip
+    rot, piv = _rot_for(d), [hx, hy, hz]
+    metal = solid(st["metal"])
+    m.box(bone, [hx - 0.42, hy - 4.2, hz - 0.36], [0.84, 0.45, 0.72], metal, rot=rot, pivot=piv)               # kashira
+    m.box(bone, [hx - 0.38, hy - 3.8, hz - 0.32], [0.76, 3.4, 0.64],
+          wrap_paint(st["wrap"], st["diamond"], st.get("flower"), st["metal"] if st.get("flower") else None), rot=rot, pivot=piv)
+    m.box(bone, [hx - 0.42, hy - 0.45, hz - 0.36], [0.84, 0.4, 0.72], metal, rot=rot, pivot=piv)              # fuchi
+    t = st["tsuba"]
+    if t == "round":
+        m.box(bone, [hx - 1.1, hy - 0.05, hz - 0.75], [2.2, 0.3, 1.5], metal, rot=rot, pivot=piv)
+        m.box(bone, [hx - 0.75, hy - 0.05, hz - 1.1], [1.5, 0.3, 2.2], metal, rot=rot, pivot=piv)
+    elif t == "cross":
+        m.box(bone, [hx - 1.3, hy - 0.05, hz - 0.55], [2.6, 0.3, 1.1], metal, rot=rot, pivot=piv)
+        m.box(bone, [hx - 0.55, hy - 0.05, hz - 1.3], [1.1, 0.3, 2.6], metal, rot=rot, pivot=piv)
+        m.box(bone, [hx - 0.85, hy - 0.06, hz - 0.85], [1.7, 0.32, 1.7], solid(dark(st["metal"], 0.8)), rot=rot, pivot=piv)
+    else:  # Enma's three gold rings
+        for ox, oz in ((0, -0.95), (-0.85, 0.5), (0.85, 0.5)):
+            m.box(bone, [hx + ox - 0.6, hy - 0.05, hz + oz - 0.6], [1.2, 0.3, 1.2], metal, rot=rot, pivot=piv)
+        m.box(bone, [hx - 0.5, hy - 0.06, hz - 0.5], [1.0, 0.32, 1.0], metal, rot=rot, pivot=piv)
+    m.box(bone, [hx - 0.2, hy + 0.25, hz - 0.5], [0.4, 0.6, 1.0], solid(st["metal"]), rot=rot, pivot=piv)     # habaki
+    # curved blade
+    p = [hx + d[0] * 0.85, hy + d[1] * 0.85, hz + d[2] * 0.85]
+    seg = 5
+    cur = d
+    for i in range(seg):
+        L = length / seg
+        wdt = 0.86 - 0.06 * i
+        r = _rot_for(cur)
+        m.box(bone, [p[0] - 0.13, p[1], p[2] - wdt / 2], [0.26, L + 0.05, wdt], blade_paint(st), rot=r, pivot=list(p))
+        p = [p[k] + cur[k] * L for k in range(3)]
+        W = _width_axis(cur)
+        cur = norm(tuple(cur[k] + W[k] * 0.055 for k in range(3)))
+    W = _width_axis(cur)
+    tipd = norm(tuple(cur[k] + W[k] * 0.25 for k in range(3)))
+    m.box(bone, [p[0] - 0.12, p[1], p[2] - 0.28], [0.24, 1.3, 0.5], blade_paint(st, True), rot=_rot_for(tipd), pivot=list(p))  # kissaki
+
+
+def sheath(m, top, direction, length, st):
+    """An empty saya hanging from the sash: koiguchi collar, lacquered body with bands, kojiri cap."""
+    d = norm(direction)
+    rot, piv = _rot_for(d), list(top)
+    x, y, z = top
+    lacq = layered(st["saya"], [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), light(st["saya"], 0.18))])
+    m.box("body", [x - 0.4, y, z - 0.55], [0.8, length, 1.1], lacq, rot=rot, pivot=piv)
+    m.box("body", [x - 0.46, y - 0.05, z - 0.6], [0.92, 0.5, 1.2], solid(st["saya_band"]), rot=rot, pivot=piv)         # koiguchi
+    m.box("body", [x - 0.46, y + 2.2, z - 0.6], [0.92, 0.35, 1.2], solid(st["saya_band"]), rot=rot, pivot=piv)         # kurikata band
+    m.box("body", [x - 0.46, y + length - 0.6, z - 0.6], [0.92, 0.7, 1.2], solid(st["saya_band"]), rot=rot, pivot=piv)  # kojiri
+
+
+
+# ================================================================ Goku's "Go" (悟) emblem, Super-era gi
+GO_GLYPH = [
+    "............",
+    "............",
+    "...#.######.",
+    "...#...#....",
+    "..###.####..",
+    "...#.....#..",
+    "...#.######.",
+    "...#..####..",
+    "...#..#..#..",
+    "...#..#..#..",
+    "...#..####..",
+    "............",
+]
+
+
+def emblem_paint(face, img):
+    w, h = img.size
+    px = img.load()
+    show = face in ("north", "south")
+    for y in range(h):
+        for x in range(w):
+            if not show:
+                px[x, y] = (244, 244, 240, 255)
+                continue
+            dx, dy = (x + 0.5) / w - 0.5, (y + 0.5) / h - 0.5
+            if dx * dx + dy * dy > 0.25:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+            g = GO_GLYPH[min(11, int(y * 12 / h))][min(11, int(x * 12 / w))]
+            px[x, y] = ((22, 18, 22) if g == "#" else (246, 246, 242)) + (255,)
+
+
+_goku_body_v3 = goku_body
+
+
+def goku_body(m, hair, iris, brows=True, style="goku"):  # noqa: F811
+    _goku_body_v3(m, hair, iris, brows, style)
+    m.box("body", [-4.0, 19.2, -2.62], [3.0, 3.0, 0.25], emblem_paint)   # left chest
+    m.box("body", [-2.75, 15.0, 2.36], [5.5, 5.5, 0.25], emblem_paint)   # back

@@ -23,6 +23,20 @@
      ],
      "default": 0,
      "client_sync": true
+    },
+    "ab:expr": {
+     "type": "int",
+     "range": [
+      0,
+      3
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "ab:stance": {
+     "type": "bool",
+     "default": false,
+     "client_sync": true
     }
    }
   },

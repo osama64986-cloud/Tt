@@ -8,9 +8,21 @@
    },
    "textures": {
     "base": "textures/entity/vegeta/base",
+    "base_shout": "textures/entity/vegeta/base_shout",
+    "base_hurt": "textures/entity/vegeta/base_hurt",
+    "base_blink": "textures/entity/vegeta/base_blink",
     "ssj": "textures/entity/vegeta/ssj",
+    "ssj_shout": "textures/entity/vegeta/ssj_shout",
+    "ssj_hurt": "textures/entity/vegeta/ssj_hurt",
+    "ssj_blink": "textures/entity/vegeta/ssj_blink",
     "ssb": "textures/entity/vegeta/ssb",
-    "ue": "textures/entity/vegeta/ue"
+    "ssb_shout": "textures/entity/vegeta/ssb_shout",
+    "ssb_hurt": "textures/entity/vegeta/ssb_hurt",
+    "ssb_blink": "textures/entity/vegeta/ssb_blink",
+    "ue": "textures/entity/vegeta/ue",
+    "ue_shout": "textures/entity/vegeta/ue_shout",
+    "ue_hurt": "textures/entity/vegeta/ue_hurt",
+    "ue_blink": "textures/entity/vegeta/ue_blink"
    },
    "geometry": {
     "base": "geometry.ab.vegeta_base",
@@ -22,6 +34,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -52,6 +66,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

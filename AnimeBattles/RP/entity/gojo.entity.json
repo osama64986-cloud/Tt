@@ -8,7 +8,13 @@
    },
    "textures": {
     "blindfold": "textures/entity/gojo/blindfold",
-    "eyes": "textures/entity/gojo/eyes"
+    "blindfold_shout": "textures/entity/gojo/blindfold_shout",
+    "blindfold_hurt": "textures/entity/gojo/blindfold_hurt",
+    "blindfold_blink": "textures/entity/gojo/blindfold_blink",
+    "eyes": "textures/entity/gojo/eyes",
+    "eyes_shout": "textures/entity/gojo/eyes_shout",
+    "eyes_hurt": "textures/entity/gojo/eyes_hurt",
+    "eyes_blink": "textures/entity/gojo/eyes_blink"
    },
    "geometry": {
     "blindfold": "geometry.ab.gojo_blindfold",
@@ -18,6 +24,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -48,6 +56,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

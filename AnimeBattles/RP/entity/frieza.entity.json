@@ -8,7 +8,13 @@
    },
    "textures": {
     "final": "textures/entity/frieza/final",
-    "golden": "textures/entity/frieza/golden"
+    "final_shout": "textures/entity/frieza/final_shout",
+    "final_hurt": "textures/entity/frieza/final_hurt",
+    "final_blink": "textures/entity/frieza/final_blink",
+    "golden": "textures/entity/frieza/golden",
+    "golden_shout": "textures/entity/frieza/golden_shout",
+    "golden_hurt": "textures/entity/frieza/golden_hurt",
+    "golden_blink": "textures/entity/frieza/golden_blink"
    },
    "geometry": {
     "final": "geometry.ab.frieza_final",
@@ -18,6 +24,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -39,7 +47,8 @@
     "giant_up": "animation.ab.giant_up",
     "slash": "animation.ab.slash",
     "fuga": "animation.ab.fuga",
-    "handsign": "animation.ab.handsign"
+    "handsign": "animation.ab.handsign",
+    "tail_sway": "animation.ab.tail_sway"
    },
    "scripts": {
     "animate": [
@@ -48,6 +57,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"
@@ -111,6 +126,9 @@
      },
      {
       "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "tail_sway": "1.0"
      }
     ]
    },

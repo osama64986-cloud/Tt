@@ -8,10 +8,25 @@
    },
    "textures": {
     "base": "textures/entity/goku/base",
+    "base_shout": "textures/entity/goku/base_shout",
+    "base_hurt": "textures/entity/goku/base_hurt",
+    "base_blink": "textures/entity/goku/base_blink",
     "ssj": "textures/entity/goku/ssj",
+    "ssj_shout": "textures/entity/goku/ssj_shout",
+    "ssj_hurt": "textures/entity/goku/ssj_hurt",
+    "ssj_blink": "textures/entity/goku/ssj_blink",
     "ssj3": "textures/entity/goku/ssj3",
+    "ssj3_shout": "textures/entity/goku/ssj3_shout",
+    "ssj3_hurt": "textures/entity/goku/ssj3_hurt",
+    "ssj3_blink": "textures/entity/goku/ssj3_blink",
     "ssb": "textures/entity/goku/ssb",
-    "ui": "textures/entity/goku/ui"
+    "ssb_shout": "textures/entity/goku/ssb_shout",
+    "ssb_hurt": "textures/entity/goku/ssb_hurt",
+    "ssb_blink": "textures/entity/goku/ssb_blink",
+    "ui": "textures/entity/goku/ui",
+    "ui_shout": "textures/entity/goku/ui_shout",
+    "ui_hurt": "textures/entity/goku/ui_hurt",
+    "ui_blink": "textures/entity/goku/ui_blink"
    },
    "geometry": {
     "base": "geometry.ab.goku_base",
@@ -24,6 +39,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -54,6 +71,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

@@ -8,12 +8,33 @@
    },
    "textures": {
     "base": "textures/entity/luffy/base",
+    "base_shout": "textures/entity/luffy/base_shout",
+    "base_hurt": "textures/entity/luffy/base_hurt",
+    "base_blink": "textures/entity/luffy/base_blink",
     "g2": "textures/entity/luffy/g2",
+    "g2_shout": "textures/entity/luffy/g2_shout",
+    "g2_hurt": "textures/entity/luffy/g2_hurt",
+    "g2_blink": "textures/entity/luffy/g2_blink",
     "g3": "textures/entity/luffy/g3",
+    "g3_shout": "textures/entity/luffy/g3_shout",
+    "g3_hurt": "textures/entity/luffy/g3_hurt",
+    "g3_blink": "textures/entity/luffy/g3_blink",
     "g4b": "textures/entity/luffy/g4b",
+    "g4b_shout": "textures/entity/luffy/g4b_shout",
+    "g4b_hurt": "textures/entity/luffy/g4b_hurt",
+    "g4b_blink": "textures/entity/luffy/g4b_blink",
     "g4s": "textures/entity/luffy/g4s",
+    "g4s_shout": "textures/entity/luffy/g4s_shout",
+    "g4s_hurt": "textures/entity/luffy/g4s_hurt",
+    "g4s_blink": "textures/entity/luffy/g4s_blink",
     "g4t": "textures/entity/luffy/g4t",
-    "g5": "textures/entity/luffy/g5"
+    "g4t_shout": "textures/entity/luffy/g4t_shout",
+    "g4t_hurt": "textures/entity/luffy/g4t_hurt",
+    "g4t_blink": "textures/entity/luffy/g4t_blink",
+    "g5": "textures/entity/luffy/g5",
+    "g5_shout": "textures/entity/luffy/g5_shout",
+    "g5_hurt": "textures/entity/luffy/g5_hurt",
+    "g5_blink": "textures/entity/luffy/g5_blink"
    },
    "geometry": {
     "base": "geometry.ab.luffy_base",
@@ -28,6 +49,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -59,6 +82,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

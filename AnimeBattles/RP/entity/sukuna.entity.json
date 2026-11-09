@@ -8,8 +8,17 @@
    },
    "textures": {
     "yuji": "textures/entity/sukuna/yuji",
+    "yuji_shout": "textures/entity/sukuna/yuji_shout",
+    "yuji_hurt": "textures/entity/sukuna/yuji_hurt",
+    "yuji_blink": "textures/entity/sukuna/yuji_blink",
     "megumi": "textures/entity/sukuna/megumi",
-    "heian": "textures/entity/sukuna/heian"
+    "megumi_shout": "textures/entity/sukuna/megumi_shout",
+    "megumi_hurt": "textures/entity/sukuna/megumi_hurt",
+    "megumi_blink": "textures/entity/sukuna/megumi_blink",
+    "heian": "textures/entity/sukuna/heian",
+    "heian_shout": "textures/entity/sukuna/heian_shout",
+    "heian_hurt": "textures/entity/sukuna/heian_hurt",
+    "heian_blink": "textures/entity/sukuna/heian_blink"
    },
    "geometry": {
     "yuji": "geometry.ab.sukuna_yuji",
@@ -20,6 +29,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -51,6 +62,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

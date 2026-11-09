@@ -201,7 +201,18 @@ function slow(e, ticks, amp = 4) {
 function nearbyPlayers(dim, loc, r = 64) {
   try { return dim.getPlayers({ location: loc, maxDistance: r }); } catch (e) { return []; }
 }
+// Face expression shown by the render controller: 0 normal (blinks on its own), 1 shout, 2 pain.
+function setExpr(e, v, ticks) {
+  if (!e || !e.isValid || !FIGHTERS[e.typeId]) return;
+  const s = state(e);
+  s.exprUntil = now() + ticks;
+  if (s.expr !== v) {
+    s.expr = v;
+    try { e.setProperty("ab:expr", v); } catch (e2) { /* ignore */ }
+  }
+}
 function announce(e, text) {
+  setExpr(e, 1, 30);
   for (const p of nearbyPlayers(e.dimension, e.location)) {
     try { p.onScreenDisplay.setActionBar(text); } catch (e2) { /* ignore */ }
   }
@@ -331,6 +342,7 @@ function explosion(src, pos, o) {
 
 // A beam that grows from the caster toward the target, hitting everything along it once.
 function beam(src, target, o) {
+  setExpr(src, 1, 26);
   const dim = src.dimension;
   const { pos: start, dir } = handPos(src, target);
   const hit = new Set();
@@ -471,6 +483,7 @@ function transform(e, s, to, label, color, extraSound) {
   const dim = e.dimension;
   const def = FIGHTERS[e.typeId];
   busy(s, 32);
+  setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
   setPose(e, 3);
@@ -1660,6 +1673,10 @@ function updateFighter(e, tick) {
   }
   if (s.kaiokenUntil > tick && tick % 20 === 0) deal(undefined, e, 2);
   aura(e, s, def);
+  if (s.expr && tick >= s.exprUntil) {
+    s.expr = 0;
+    try { e.setProperty("ab:expr", 0); } catch (e2) { /* ignore */ }
+  }
 
   if (!team) return;
   if (tick < s.stunUntil) {
@@ -1833,7 +1850,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     }
     // Sure-hit techniques (domains, World-Cutting Slash) only force a hit on someone not far stronger.
     const forced = cause === EntityDamageCause.override && !(attackerP > 0 && defenderP > attackerP * 1.1);
-    if (forced) return;
+    if (forced) { system.run(() => setExpr(v, 2, 10)); return; }
     if (def.infinity && v.hasTag("ab_infinity")) {
       // Infinity stops everything, but holding back stronger attacks costs more cursed energy.
       const attackerPower = src && src.isValid ? powerOf(src) : 50;
@@ -1858,6 +1875,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
         return;
       }
     }
+    if (ev.damage > 1.5) system.run(() => setExpr(v, 2, ev.damage > 25 ? 14 : 8));
     if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.1, s.ego + ev.damage / 500);
     if (v.typeId === "ab:luffy" && formOf(v) === 5) ev.damage *= 0.5;  // Tankman: rubber fat absorbs blows
     if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid && !(attackerP > defenderP)) {  // Mahoraga's wheel adapts to each attacker
@@ -1903,7 +1921,7 @@ function setTeam(e, team) {
   e.removeTag(BLUE);
   e.addTag(team);
   if (isFighter(e)) {
-    try { e.triggerEvent("ab:enter_combat"); } catch (err) { /* ignore */ }
+    try { e.triggerEvent("ab:enter_combat"); e.setProperty("ab:stance", true); } catch (err) { /* ignore */ }
   }
   const c = C.team[team];
   ring(e.dimension, V.up(e.location, 0.1), 1.2, c, 20, 0.35);
@@ -1946,6 +1964,7 @@ function resetTeams(p) {
           e.removeTag(RED); e.removeTag(BLUE);
           if (isFighter(e)) {
             e.triggerEvent("ab:leave_combat");
+            try { e.setProperty("ab:stance", false); e.setProperty("ab:expr", 0); } catch (err) { /* ignore */ }
             e.triggerEvent("ab:form_0");
             if (e.typeId === "ab:luffy") e.triggerEvent("ab:gigant_off");
             setPose(e, 0);

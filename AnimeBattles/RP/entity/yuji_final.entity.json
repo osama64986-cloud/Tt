@@ -7,7 +7,10 @@
     "default": "entity_alphatest"
    },
    "textures": {
-    "base": "textures/entity/yuji_final/base"
+    "base": "textures/entity/yuji_final/base",
+    "base_shout": "textures/entity/yuji_final/base_shout",
+    "base_hurt": "textures/entity/yuji_final/base_hurt",
+    "base_blink": "textures/entity/yuji_final/base_blink"
    },
    "geometry": {
     "base": "geometry.ab.yuji_final_base"
@@ -16,6 +19,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -46,6 +51,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

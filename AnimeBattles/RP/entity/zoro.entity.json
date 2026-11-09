@@ -8,7 +8,13 @@
    },
    "textures": {
     "base": "textures/entity/zoro/base",
-    "king": "textures/entity/zoro/king"
+    "base_shout": "textures/entity/zoro/base_shout",
+    "base_hurt": "textures/entity/zoro/base_hurt",
+    "base_blink": "textures/entity/zoro/base_blink",
+    "king": "textures/entity/zoro/king",
+    "king_shout": "textures/entity/zoro/king_shout",
+    "king_hurt": "textures/entity/zoro/king_hurt",
+    "king_blink": "textures/entity/zoro/king_blink"
    },
    "geometry": {
     "base": "geometry.ab.zoro_base",
@@ -18,6 +24,8 @@
     "look": "animation.ab.look_at_target",
     "move": "animation.ab.move",
     "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
     "attack": "animation.ab.attack",
     "pose_beam": "animation.ab.pose_beam",
     "pose_cup": "animation.ab.pose_cup",
@@ -48,6 +56,12 @@
      "idle",
      {
       "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
      },
      {
       "pose_beam": "query.property('ab:pose') == 1"

@@ -23,6 +23,11 @@ def shade(c, f):
     return tuple(max(0, min(255, int(v * f))) for v in c)
 
 
+EXPRS = [None, "shout", "hurt", "blink"]
+EXPR_MOLANG = ("(query.property('ab:expr') > 0 ? query.property('ab:expr') : "
+               "(math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))")
+
+
 def build_characters():
     import models
     heads = {}
@@ -30,12 +35,18 @@ def build_characters():
         tdir = os.path.join(RP, "textures", "entity", ch)
         os.makedirs(tdir, exist_ok=True)
         for form in forms:
-            geo, img, head = models.export(models.build(ch, form), f"geometry.ab.{ch}_{form}")
-            with open(os.path.join(RP, "models", "entity", f"{ch}_{form}.geo.json"), "w") as f:
-                json.dump(geo, f, indent=1)
-            img.save(os.path.join(tdir, f"{form}.png"))
-            x, y, w, h = head
-            heads[(ch, form)] = img.crop((x, y, x + w, y + h))
+            for expr in EXPRS:  # same model, four faces: normal, shout, pain, blink
+                models.EXPR = expr
+                geo, img, head = models.export(models.build(ch, form), f"geometry.ab.{ch}_{form}")
+                if expr is None:
+                    with open(os.path.join(RP, "models", "entity", f"{ch}_{form}.geo.json"), "w") as f:
+                        json.dump(geo, f, indent=1)
+                    img.save(os.path.join(tdir, f"{form}.png"))
+                    x, y, w, h = head
+                    heads[(ch, form)] = img.crop((x, y, x + w, y + h))
+                else:
+                    img.save(os.path.join(tdir, f"{form}_{expr}.png"))
+            models.EXPR = None
     return heads
 
 
@@ -219,6 +230,8 @@ def behavior_entity(name, cfg):
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
                     "ab:pose": {"type": "int", "range": [0, 24], "default": 0, "client_sync": True},
+                    "ab:expr": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
+                    "ab:stance": {"type": "bool", "default": False, "client_sync": True},
                 },
             },
             "component_groups": groups,
@@ -267,6 +280,16 @@ def extra_animations():
         "slash": {"rightArm": {"rotation": [-85, 65, 0]}, "leftArm": {"rotation": [-20, 0, 25]}, "body": {"rotation": [0, -35, 0]}},
         "fuga": {"leftArm": {"rotation": [-90, 0, 0]}, "rightArm": {"rotation": [-90, -55, 0]}, "body": {"rotation": [0, 30, 0]}},
         "handsign": {"rightArm": {"rotation": [-75, 35, 0]}, "leftArm": {"rotation": [-75, -35, 0]}},
+        # fighting stance while in a team: fists up, lead hand forward, light bounce on the toes
+        "stance": {"rightArm": {"rotation": ["-42 + math.sin(query.life_time * 400.0) * 3", 30, -6]},
+                   "leftArm": {"rotation": ["-74 + math.sin(query.life_time * 400.0 + 60) * 3", -8, 0]},
+                   "body": {"rotation": [3, 22, 0]},
+                   "rightLeg": {"rotation": [10, 0, 4]}, "leftLeg": {"rotation": [-10, 0, -4]}},
+        # recoil while the pain face is showing
+        "flinch": {"body": {"rotation": [-10, 0, 0]}, "head": {"rotation": [-14, 0, 6]},
+                   "rightArm": {"rotation": [-20, 0, 18]}, "leftArm": {"rotation": [-20, 0, -18]},
+                   "rightLeg": {"rotation": [6, 0, 0]}, "leftLeg": {"rotation": [-4, 0, 0]}},
+        "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": True, "bones": v} for k, v in A.items()}
     out["animation.ab.bounce"] = {"loop": True, "bones": {"root": {"position": [0, "math.abs(math.sin(query.life_time * 240.0)) * 3.0", 0]}}}
@@ -279,11 +302,16 @@ def extra_animations():
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3")],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2")],
+    "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0")],
 }
 
 
 def client_entity(name, cfg):
-    textures = {t: f"textures/entity/{name}/{t}" for t in dict.fromkeys(cfg["tex"])}
+    textures = {}
+    for t in dict.fromkeys(cfg["tex"]):
+        textures[t] = f"textures/entity/{name}/{t}"
+        for ex in EXPRS[1:]:
+            textures[f"{t}_{ex}"] = f"textures/entity/{name}/{t}_{ex}"
     geometry = {g: f"geometry.ab.{name}_{g}" for g in dict.fromkeys(cfg["geo"])}
     out = _client_entity(name, cfg, textures, geometry)
     for key, anim, cond in CHAR_ANIMS.get(name, []):
@@ -306,6 +334,8 @@ def _client_entity(name, cfg, textures, geometry):
                     "look": "animation.ab.look_at_target",
                     "move": "animation.ab.move",
                     "idle": "animation.ab.idle",
+                    "stance": "animation.ab.stance",
+                    "flinch": "animation.ab.flinch",
                     "attack": "animation.ab.attack",
                     "pose_beam": "animation.ab.pose_beam",
                     "pose_cup": "animation.ab.pose_cup",
@@ -319,6 +349,8 @@ def _client_entity(name, cfg, textures, geometry):
                 "scripts": {"animate": [
                     "look", "move", "idle",
                     {"attack": "variable.attack_time > 0.0"},
+                    {"stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"},
+                    {"flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"},
                     {"pose_beam": "query.property('ab:pose') == 1"},
                     {"pose_cup": "query.property('ab:pose') == 2"},
                     {"pose_raise": "query.property('ab:pose') == 3"},
@@ -337,12 +369,12 @@ def render_controllers():
     for name, cfg in FIGHTERS.items():
         out["render_controllers"][f"controller.render.ab.{name}"] = {
             "arrays": {
-                "textures": {"Array.skins": [f"Texture.{t}" for t in cfg["tex"]]},
+                "textures": {"Array.skins": [f"Texture.{t}{'_' + ex if ex else ''}" for t in cfg["tex"] for ex in EXPRS]},
                 "geometries": {"Array.geos": [f"Geometry.{g}" for g in cfg["geo"]]},
             },
             "geometry": "Array.geos[query.property('ab:form')]",
             "materials": [{"*": "Material.default"}],
-            "textures": ["Array.skins[query.property('ab:form')]"],
+            "textures": ["Array.skins[query.property('ab:form') * 4 + " + EXPR_MOLANG + "]"],
         }
     return out
 

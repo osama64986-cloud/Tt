@@ -6,10 +6,25 @@
     "textures": {
      "Array.skins": [
       "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
       "Texture.ssj",
+      "Texture.ssj_shout",
+      "Texture.ssj_hurt",
+      "Texture.ssj_blink",
       "Texture.ssj3",
+      "Texture.ssj3_shout",
+      "Texture.ssj3_hurt",
+      "Texture.ssj3_blink",
       "Texture.ssb",
-      "Texture.ui"
+      "Texture.ssb_shout",
+      "Texture.ssb_hurt",
+      "Texture.ssb_blink",
+      "Texture.ui",
+      "Texture.ui_shout",
+      "Texture.ui_hurt",
+      "Texture.ui_blink"
      ]
     },
     "geometries": {
@@ -29,7 +44,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.vegeta": {
@@ -37,9 +52,21 @@
     "textures": {
      "Array.skins": [
       "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
       "Texture.ssj",
+      "Texture.ssj_shout",
+      "Texture.ssj_hurt",
+      "Texture.ssj_blink",
       "Texture.ssb",
-      "Texture.ue"
+      "Texture.ssb_shout",
+      "Texture.ssb_hurt",
+      "Texture.ssb_blink",
+      "Texture.ue",
+      "Texture.ue_shout",
+      "Texture.ue_hurt",
+      "Texture.ue_blink"
      ]
     },
     "geometries": {
@@ -58,7 +85,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.gojo": {
@@ -66,7 +93,13 @@
     "textures": {
      "Array.skins": [
       "Texture.blindfold",
-      "Texture.eyes"
+      "Texture.blindfold_shout",
+      "Texture.blindfold_hurt",
+      "Texture.blindfold_blink",
+      "Texture.eyes",
+      "Texture.eyes_shout",
+      "Texture.eyes_hurt",
+      "Texture.eyes_blink"
      ]
     },
     "geometries": {
@@ -83,14 +116,17 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.yuji": {
    "arrays": {
     "textures": {
      "Array.skins": [
-      "Texture.base"
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink"
      ]
     },
     "geometries": {
@@ -106,14 +142,17 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.yuji_final": {
    "arrays": {
     "textures": {
      "Array.skins": [
-      "Texture.base"
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink"
      ]
     },
     "geometries": {
@@ -129,7 +168,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.sukuna": {
@@ -137,8 +176,17 @@
     "textures": {
      "Array.skins": [
       "Texture.yuji",
+      "Texture.yuji_shout",
+      "Texture.yuji_hurt",
+      "Texture.yuji_blink",
       "Texture.megumi",
-      "Texture.heian"
+      "Texture.megumi_shout",
+      "Texture.megumi_hurt",
+      "Texture.megumi_blink",
+      "Texture.heian",
+      "Texture.heian_shout",
+      "Texture.heian_hurt",
+      "Texture.heian_blink"
      ]
     },
     "geometries": {
@@ -156,7 +204,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.luffy": {
@@ -164,12 +212,33 @@
     "textures": {
      "Array.skins": [
       "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
       "Texture.g2",
+      "Texture.g2_shout",
+      "Texture.g2_hurt",
+      "Texture.g2_blink",
       "Texture.g3",
+      "Texture.g3_shout",
+      "Texture.g3_hurt",
+      "Texture.g3_blink",
       "Texture.g4b",
+      "Texture.g4b_shout",
+      "Texture.g4b_hurt",
+      "Texture.g4b_blink",
       "Texture.g4s",
+      "Texture.g4s_shout",
+      "Texture.g4s_hurt",
+      "Texture.g4s_blink",
       "Texture.g4t",
-      "Texture.g5"
+      "Texture.g4t_shout",
+      "Texture.g4t_hurt",
+      "Texture.g4t_blink",
+      "Texture.g5",
+      "Texture.g5_shout",
+      "Texture.g5_hurt",
+      "Texture.g5_blink"
      ]
     },
     "geometries": {
@@ -191,7 +260,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.zoro": {
@@ -199,7 +268,13 @@
     "textures": {
      "Array.skins": [
       "Texture.base",
-      "Texture.king"
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.king",
+      "Texture.king_shout",
+      "Texture.king_hurt",
+      "Texture.king_blink"
      ]
     },
     "geometries": {
@@ -216,7 +291,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.frieza": {
@@ -224,7 +299,13 @@
     "textures": {
      "Array.skins": [
       "Texture.final",
-      "Texture.golden"
+      "Texture.final_shout",
+      "Texture.final_hurt",
+      "Texture.final_blink",
+      "Texture.golden",
+      "Texture.golden_shout",
+      "Texture.golden_hurt",
+      "Texture.golden_blink"
      ]
     },
     "geometries": {
@@ -241,7 +322,7 @@
     }
    ],
    "textures": [
-    "Array.skins[query.property('ab:form')]"
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
   "controller.render.ab.vfx": {
