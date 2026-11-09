@@ -180,11 +180,20 @@ Object.assign(player, {
   // وstats.top / stats.bottom كل قسم لحاله حتى نتأكد وين انكتبت كل شغلة.
   onScreenDisplay: {
     setActionBar(t) { stats.top = String(t); stats.actionBars.push(stats.top + (stats.bottom ? "\n" + stats.bottom : "")); seenText(t); },
-    setTitle(t, o) { (stats.titles = stats.titles || []).push(t); stats.bottom = String(t); stats.titleOpts = o; stats.actionBars.push((stats.top || "") + "\n" + stats.bottom); seenText(t); if (o && o.subtitle) seenText(o.subtitle); },
-    clearTitle() { stats.bottom = ""; },
+    // v1.43: كود شريط المهارات (رموز تنسيق تبدي بـ §k وتخلص بـ §r§f) ما ينرسم باللعبة: ينفصل هنا بـ stats.barCode والباقي هو الكتابة الظاهرة
+    setTitle(t, o) {
+      let s = String(t);
+      stats.barCode = "";
+      if (s.startsWith("§k")) { const k = s.indexOf("§r§f"); if (k >= 0) { stats.barCode = s.slice(0, k + 4); s = s.slice(k + 4); } }
+      (stats.barCodes = stats.barCodes || []).push(stats.barCode);
+      (stats.titles = stats.titles || []).push(s); stats.bottom = s; stats.titleOpts = o; stats.actionBars.push((stats.top || "") + "\n" + stats.bottom); seenText(s); if (o && o.subtitle) seenText(o.subtitle);
+    },
+    clearTitle() { stats.bottom = ""; stats.barCode = ""; },
     setHudVisibility(v, els) { stats.hudHidden = v === 0 ? els : []; },
   },
   sendMessage(m) { stats.messages.push(String(m)); seenText(m); }, playSound(s) { stats.sounds++; stats.soundIds.add(s); },
+  // v1.43: قيمة خاصة باللاعب لخاصية كيان (مثل الـAPI: لازم الخاصية موجودة ونوعها ومداها صح)
+  setPropertyOverrideForEntity(e, k, v) { checkProp(e.typeId, k, v); (stats.overrides = stats.overrides || []).push([e.typeId, k, v]); },
   runCommand() { return { successCount: 1 }; }, runCommandAsync: async () => ({}),
   getRotation() { return { x: 0, y: 0 }; },
   inputInfo: { getMovementVector: () => player._mv || { x: 0, y: 0 } },
@@ -427,11 +436,14 @@ export const __sim = {
     }
     // تطور القدرة: ليفل اللاعب العالي يرفع القدرة، والقتل يكمل
     {
+      // v1.43: ليفل القدرة يصعد ليفل واحد بكل مرة خبرة (حتى لو كان متأخر عن ليفل اللاعب) فالمهارات تنفتح وحدة وحدة
       setState({ ...baseState("crystal"), level: 44, rank: 2, plevel: 2, pxp: 105 });
-      fire("scriptEventReceive", { id: "sh:xp", message: "5", sourceEntity: player });
+      const steps = [];
+      for (let i = 0; i < 4; i++) { fire("scriptEventReceive", { id: "sh:xp", message: "5", sourceEntity: player }); steps.push(JSON.parse(player.getDynamicProperty("sh")).plevel); }
       let st = JSON.parse(player.getDynamicProperty("sh"));
-      console.log("\nتطور القدرة: لاعب ليفل 44 كان عالق Lv2 → صار Lv", st.plevel);
+      console.log("\nتطور القدرة: لاعب ليفل 44 كان عالق Lv2 → بكل خبرة:", steps.join(" → "));
       if (st.plevel < 6) failures.push("ليفل القدرة ما لحق بليفل اللاعب");
+      if (steps.some((v, i) => v - (i ? steps[i - 1] : 2) > 1)) failures.push("ليفل القدرة قفز أكثر من ليفل بمرة وحدة");
       setState({ ...baseState("crystal"), level: 3, rank: 0, plevel: 1, pxp: 0 });
       let kills = 0;
       for (; kills < 60; kills++) {
@@ -485,10 +497,12 @@ export const __sim = {
     }
     // v1.35.1: اللوحة فوق يسار = الأشرطة وشريط المهارات بس؛ معلومات الأيتم بإيدك فوق الهوت بار (كتابة صغيرة بدون خلفية)
     {
-      hold("sh:skill_meteor"); stats.actionBars.length = 0; advance(20);
+      // v1.43: شريط المهارات صار تحت يمين (كود بأول العنوان)، فاللوحة فوق يسار ما بيها أيقونات المهارات بعد
+      setState({ ...baseState("star"), sel: "meteor" }); hold("sh:power_sigil"); stats.actionBars.length = 0; advance(20);
       const top = stats.top || "", low = stats.bottom || "";
-      const ok = /[\uE530\uE531\uE533]/.test(top) && !/Level \d/.test(top) && /Level \d/.test(low) && stats.titleOpts && stats.titleOpts.fadeInDuration === 0;
-      console.log(`  المكان: الأشرطة فوق يسار + معلومات المهارة فوق الهوت بار ${ok ? "✔" : "✖"} | فوق الهوت بار: ${low.replace(/§./g, "").replace(/\n/g, " ⏎ ")}`);
+      const ok = !/[\uE530\uE531\uE532\uE533]/.test(top) && !/Level \d/.test(top) && /Meteor/.test(low) && /Level \d/.test(low) && /^§k§l§8/.test(stats.barCode || "")
+        && stats.titleOpts && stats.titleOpts.fadeInDuration === 0;
+      console.log(`  المكان: الأشرطة فوق يسار + المهارة المختارة فوق الهوت بار + الشريط تحت يمين ${ok ? "✔" : "✖"} | فوق الهوت بار: ${low.replace(/§./g, "").replace(/\n/g, " ⏎ ")}`);
       if (!ok) failures.push("معلومات الأيتم مو فوق الهوت بار (أو اللوحة فوق يسار بيها كتابات)");
       hold(""); advance(30);
       const cleared = !(stats.bottom || "").includes("Level");
@@ -516,6 +530,106 @@ export const __sim = {
         player._hp = 20; player._max = 20; system_cd_reset(); fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });
       }
       if (!cleared) failures.push("الكتابة فوق الهوت بار ما تنمسح لما تنزل الأيتم");
+    }
+    // v1.43: صولجان القدرة + شريط المهارات تحت يمين + المهارات تنفتح وحدة وحدة
+    {
+      console.log("\nصولجان القدرة وشريط المهارات (v1.43):");
+      const SIG = "sh:power_sigil";
+      const CODE_RE = /^(§k(§l§[0-8]|§o§[0-6]|§[0-6]§[a-d]|§m§[0-6]§[1-9]|§n§[0-6]§[0-9]))+§r§f$/;
+      // نفك الكود بنفس قواعد tools/gen_skillbar_ui.py: لكل خانة الحالة والرقم، والمختارة، والقدرة
+      const decode = (c) => {
+        const out = { power: -1, sel: -1, slots: {} };
+        for (const m of c.matchAll(/§k(§l§([0-8])|§o§([0-6])|§([0-6])§([a-d])|§m§([0-6])§([1-9])|§n§([0-6])§([0-9]))/g)) {
+          if (m[2] !== undefined) out.power = +m[2];
+          else if (m[3] !== undefined) out.sel = +m[3];
+          else if (m[4] !== undefined) (out.slots[m[4]] = out.slots[m[4]] || { n: 0 }).x = m[5];
+          else if (m[6] !== undefined) (out.slots[m[6]] = out.slots[m[6]] || { n: 0 }).n += 10 * +m[7];
+          else if (m[8] !== undefined) (out.slots[m[8]] = out.slots[m[8]] || { n: 0 }).n += +m[9];
+        }
+        return out;
+      };
+      const stNow = () => JSON.parse(player.getDynamicProperty("sh"));
+      const invIds = () => inventory.filter(Boolean).map((x) => x.typeId);
+      // 1) لاعب قديم عنده أيتمات مهارات: بأول دخول تنشال ويجيه الصولجان (مرة وحدة)
+      for (let i = 0; i < 36; i++) inventory[i] = undefined;
+      inventory[3] = new ItemStack("sh:skill_meteor"); inventory[4] = new ItemStack("sh:skill_orbit");
+      setState({ ...baseState("star"), plevel: 3, pxp: 0 });
+      stats.messages.length = 0; fire("playerSpawn", { player, initialSpawn: true }); advance(60);
+      const migr = invIds().includes(SIG) && !invIds().some((t) => t.startsWith("sh:skill_")) && stNow().sigilV === 1 && stNow().sel === "meteor";
+      const sigStack = inventory.find((x) => x && x.typeId === SIG);
+      const kept = !!(sigStack && sigStack.keepOnDeath === true && sigStack.lockMode === "inventory");
+      console.log(`  ترحيل اللاعب القديم: أيتمات المهارات انشالت والصولجان وصل ${migr ? "✔" : "✖"} | يبقى بعد الموت وما ينرمي ${kept ? "✔" : "✖"}`);
+      if (!migr) failures.push("الترحيل: أيتمات المهارات ما انشالت أو الصولجان ما وصل");
+      if (!kept) failures.push("الصولجان مو keepOnDeath/lockMode inventory");
+      // بعد الموت (respawn): إذا ضاع يرجع
+      for (let i = 0; i < 36; i++) inventory[i] = undefined;
+      fire("playerSpawn", { player, initialSpawn: false }); advance(20);
+      const back = invIds().includes(SIG);
+      console.log(`  بعد الموت إذا ضاع الصولجان يرجع ${back ? "✔" : "✖"}`);
+      if (!back) failures.push("الصولجان ما رجع بعد الموت");
+      // 2) قدرة جديدة: ليفل 1، المختارة أول مهارة، والصولجان
+      for (let i = 0; i < 36; i++) inventory[i] = undefined;
+      setState({ ...baseState(null), power: null, plevel: 7, pxp: 0 });
+      fire("scriptEventReceive", { id: "sh:power", message: "star", sourceEntity: player }); advance(5);
+      let st = stNow();
+      const fresh = st.power === "star" && st.plevel === 1 && st.sel === "meteor" && invIds().includes(SIG);
+      console.log(`  قدرة جديدة تبدي ليفل 1 والمختارة أول مهارة ويجي الصولجان ${fresh ? "✔" : "✖"} (ليفل ${st.plevel})`);
+      if (!fresh) failures.push("القدرة الجديدة ما تبدي من ليفل 1 / ما يجي الصولجان");
+      // 3) الكود: كله رموز تنسيق، ونفس القواعد، والمقفولة بيها ليفل فتحها، والمختارة صح
+      hold(SIG); system_cd_reset(); fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player }); advance(10);
+      let code = stats.barCode || "", d = decode(code);
+      const starN = skills.filter((x) => x.power === "star").length;
+      const locks = Object.entries(d.slots).filter(([, v]) => v.x === "c").map(([k, v]) => `${k}:${v.n}`);
+      const okCode = CODE_RE.test(code) && d.power === 8 && d.sel === starN - 1 && Object.keys(d.slots).length === starN && locks.length === starN - 1
+        && Object.values(d.slots).filter((v) => v.x === "c").every((v) => v.n >= 2);
+      console.log(`  الكود: ${okCode ? "✔" : "✖"} قدرة ${d.power}، المختارة خانة ${d.sel}، مقفولة (خانة:ليفل) ${locks.join(" ")} | طول ${code.length}`);
+      if (!okCode) failures.push("كود شريط المهارات غلط: " + code.replace(/§/g, "&"));
+      const allTitles = (stats.titles || []).concat(stats.bottom || "");
+      if (allTitles.some((t) => t.includes("§k"))) failures.push("كتابة فوق الهوت بار بيها §k (تخرب بحث الواجهة)");
+      if ((stats.barCodes || []).some((c) => c && !CODE_RE.test(c))) failures.push("كود شريط بصيغة غلط انرسل");
+      // 4) الفتح وحدة وحدة: خبرة كبيرة كلش (500) كل مرة = ليفل واحد ومهارة وحدة بالأكثر
+      const opened = [];
+      for (let i = 0; i < 12; i++) {
+        fire("scriptEventReceive", { id: "sh:xp", message: "500", sourceEntity: player }); advance(6);
+        d = decode(stats.barCode || "");
+        opened.push(Object.values(d.slots).filter((v) => v.x !== "c").length);
+      }
+      st = stNow();
+      const oneByOne = opened.every((v, i) => v - (i ? opened[i - 1] : 1) <= 1) && opened[opened.length - 1] === starN && st.plevel === 10;
+      console.log(`  الفتح وحدة وحدة (خبرة 500 كل مرة) — المفتوحة: 1 → ${opened.join(" → ")} ${oneByOne ? "✔" : "✖"}`);
+      if (!oneByOne) failures.push("المهارات تنفتح أكثر من وحدة بمرة وحدة");
+      // 5) الصولجان يرمي المختارة، وضغطة سنيك قصيرة (وهو بإيدك) = المهارة الجاية
+      system_cd_reset(); fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });
+      setState({ ...stNow(), sel: "meteor" }); spawnZombies(); hold(SIG);
+      await useItem(SIG); advance(6);
+      d = decode(stats.barCode || "");
+      const castOk = d.slots[String(starN - 1)] && d.slots[String(starN - 1)].x === "b" && d.slots[String(starN - 1)].n > 0;
+      const tap = (dt = 2) => { fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Pressed" }); advance(dt); fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Released" }); advance(6); };
+      tap(); const s1 = stNow().sel; tap(); const s2 = stNow().sel;
+      d = decode(stats.barCode || "");
+      const cycOk = s1 === "gravwell" && s2 === "orbit" && d.sel === starN - 3;
+      tap(20); const longHold = stNow().sel === "orbit";                          // سنيك طويل (تمشي متخفي) ما يبدل
+      fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Pressed" }); await useItem(SIG); advance(1);
+      fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Released" }); advance(6);
+      const sneakUse = stNow().sel === "orbit";                                   // سنيك + استعمال ما يبدل
+      hold("sh:dark_katana"); tap(); const otherItem = stNow().sel === "orbit"; hold(SIG);   // بدون الصولجان ما يبدل
+      for (let i = 0; i < 5; i++) tap();
+      const wrap = stNow().sel === "meteor";                                      // يلف من الأخيرة للأولى
+      console.log(`  الصولجان يرمي المختارة (كولداون بالشريط) ${castOk ? "✔" : "✖"} | سنيك قصير يبدل ${cycOk ? "✔" : "✖"} (${s1}, ${s2}) | سنيك طويل ما يبدل ${longHold ? "✔" : "✖"} | سنيك+استعمال ما يبدل ${sneakUse ? "✔" : "✖"} | بدون الصولجان ما يبدل ${otherItem ? "✔" : "✖"} | يلف ${wrap ? "✔" : "✖"}`);
+      if (!castOk) failures.push("الصولجان ما رمى المهارة المختارة");
+      if (!cycOk || !longHold || !sneakUse || !otherItem || !wrap) failures.push("تبديل المهارات بالسنيك ما يشتغل صح");
+      // 6) المقفولة ما تنختار بالسنيك (قدرة ليفل 1 = مهارة وحدة)
+      setState({ ...stNow(), plevel: 1, sel: "meteor" }); stats.messages.length = 0; tap();
+      const onlyOne = stNow().sel === "meteor";
+      if (!onlyOne) failures.push("السنيك اختار مهارة مقفولة");
+      // 7) سحب القدرة من جديد (sh:redraw) يشيل الصولجان
+      fire("scriptEventReceive", { id: "sh:redraw", message: "", sourceEntity: player }); advance(5);
+      const gone = !invIds().includes(SIG) && !stNow().power;
+      d = decode(stats.barCode || "");
+      console.log(`  مقفولة ما تنختار ${onlyOne ? "✔" : "✖"} | سحب القدرة يشيل الصولجان ${gone ? "✔" : "✖"} | الشريط ينطفي بدون قدرة ${!stats.barCode ? "✔" : "✖"}`);
+      if (!gone) failures.push("سحب القدرة ما شال الصولجان");
+      if (stats.barCode) failures.push("شريط المهارات باقي بدون قدرة");
+      setState(baseState("star")); system_cd_reset(); hold("");
     }
     // كتاب + نافذة الحالة
     const ui = (await import("@minecraft/server-ui")).sim;

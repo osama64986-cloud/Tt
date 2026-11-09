@@ -1,3 +1,8 @@
+§83. §c[Locked] rank Warrior
+§84. §c[Locked] rank Elite
+§85. §c[Locked] rank Commander
+§86. §c[Locked] rank Legend
+§87. §c[Locked] rank Master
 §b§l[Rhythm Strike unlocked]§r §7No item needed. Hit enemies in a steady beat, like playing a drum: your first two hits set the beat. Keep hitting on that beat and every hit plays a higher note; a soft tick tells you when the next hit is due. §fthe 4th hit in rhythm = Rhythm§7 (area hit), §dthe 7th = Crescendo§7, §6the 10th = Finale§7 (huge blast). Hitting off beat or stopping resets it. Practice: /scriptevent sh:rhythm
 §l§ranima ignis spiritus
 §l§raqua vitae flamma

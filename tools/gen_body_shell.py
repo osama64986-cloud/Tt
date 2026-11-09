@@ -146,6 +146,8 @@ def main():
                     "sh:p": {"type": "int", "range": [-180, 180], "default": 0, "client_sync": True},
                     "sh:mv": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
                     "sh:r": {"type": "int", "range": [0, 4000], "default": 0, "client_sync": True},   # v1.43: بالمئة
+                    # v1.43: 1 بس عند صاحب الدرع (setPropertyOverrideForEntity): راس الدرع يختفي من عنده لما الكاميرا جواه (منظور أول)
+                    "sh:fp": {"type": "int", "range": [0, 1], "default": 0, "client_sync": True},
                 },
             },
             "component_groups": {"sh:gone": {"minecraft:instant_despawn": {}}},
@@ -179,6 +181,9 @@ def main():
         "arrays": {"textures": {"Array.t": ["Texture.v0", "Texture.v1", "Texture.v0", "Texture.v1"]}},
         "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
         "textures": ["Array.t[query.property('sh:v')]"],
+        # المنظور الأول: الكاميرا (عين اللاعب ~1.6 بلوكة فوق رجله) تصير جوه راس الدرع وتسد الشاشة، فنخفي الراس بس عند صاحبه
+        # ولما الكاميرا قريبة. بالمنظور الثالث الكاميرا أبعد من 2.6 فيبين الدرع كامل، والباقين يشوفونه كامل دائماً.
+        "part_visibility": [{"*": True}, {"head": "!(query.property('sh:fp') == 1 && query.distance_from_camera < 2.6)"}],
     }
     write(rc_path, rc, indent=1)
     # animation: الرأس يتبع الميل، الأطراف تتأرجح مع الحركة، والحجم يظهر بنبضة

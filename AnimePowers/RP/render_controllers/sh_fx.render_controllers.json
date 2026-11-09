@@ -113,6 +113,14 @@
    ],
    "textures": [
     "Array.t[query.property('sh:v')]"
+   ],
+   "part_visibility": [
+    {
+     "*": true
+    },
+    {
+     "head": "!(query.property('sh:fp') == 1 && query.distance_from_camera < 2.6)"
+    }
    ]
   },
   "controller.render.sh_fx_shape": {

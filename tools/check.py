@@ -382,6 +382,35 @@ try:
 except Exception as e:  # noqa: BLE001
     err(f"فحص شاشة الخيميائي فشل: {e}")
 
+# v1.43: شريط المهارات (تحت يمين) وصولجان القدرة: ملفات الواجهة والصور والأيتم مطابقة لمولّدها (ترتيب المهارات من main.js)،
+#        وكل صورة يأشر عليها الشريط موجودة، والكود بأول العنوان ما يتصادم ويا علامة العربي §r§r§r
+r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_skillbar_ui.py"), "--check"], capture_output=True)
+if r.returncode != 0:
+    err("شريط المهارات: " + r.stdout.decode("utf-8", "replace")[-800:])
+try:
+    ui = load(os.path.join(RP, "ui", "hud_screen.json"))
+    ins = ui["root_panel"]["modifications"][0]["value"]
+    if not any("sh_skillbar@hud.sh_skillbar" in c for c in ins):
+        err("hud_screen.json: شريط المهارات مو مضاف لـ root_panel")
+    def _walk(c):
+        yield c
+        for ch in c.get("controls", []):
+            for v in ch.values():
+                yield from _walk(v)
+    for k, v in ui.items():
+        if not (k == "sh_skillbar" or k.startswith("sh_sb_")):
+            continue
+        for c in _walk(v):
+            t = c.get("texture")
+            if t and not t.startswith("#") and not os.path.exists(os.path.join(RP, t + ".png")):
+                err(f"hud_screen.json: {k}: الصورة {t} مو موجودة")
+            for b in c.get("bindings", []):
+                src = b.get("source_property_name", "")
+                if "'" in src and ("§r§r§r" in src or "§k" not in src):
+                    err(f"hud_screen.json: {k}: بحث الشريط لازم يكون عن رمز يبدي بـ §k: {src}")
+except Exception as e:  # noqa: BLE001
+    err(f"فحص شريط المهارات فشل: {e}")
+
 # V1.1: الموديلات والأنيميشن اللي انضبطت بالمعاينة القديمة (معكوسة) لازم تكون مقلوبة لحساب اللعبة (tools/handed.py)
 r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "handed.py"), "--check"], capture_output=True)
 if r.returncode != 0:

@@ -125,27 +125,28 @@ export function powerFloor(level, maxLv) {
 }
 
 export function addPowerXp(st, amount, maxLv) {
+  // v1.43: ليفل القدرة يصعد ليفل واحد بالمرة بس (حتى دفعة خبرة كبيرة أو الحد الأدنى حسب ليفلك ما يقفز كم ليفل سوا)،
+  // وكل مهارة إلها ليفل فتح مختلف، فالمهارات تنفتح وحدة وحدة ويا التلفيل
   const ups = [];
   if (!st.plevel) st.plevel = 1;
   if (!st.pxp) st.pxp = 0;
-  const floor = powerFloor(st.level || 1, maxLv);
-  while (st.plevel < floor) { st.plevel++; ups.push({ type: "plevel", level: st.plevel }); }
-  if (st.plevel >= maxLv) { st.pxp = 0; return ups; }
+  if (st.plevel >= maxLv) { st.pxp = 0; st.plevel = maxLv; return ups; }
   st.pxp += Math.max(0, amount);
-  while (st.plevel < maxLv && st.pxp >= powerXpNeeded(st.plevel)) {
-    st.pxp -= powerXpNeeded(st.plevel);
+  const floor = powerFloor(st.level || 1, maxLv);
+  if (st.plevel < floor || st.pxp >= powerXpNeeded(st.plevel)) {
+    if (st.pxp >= powerXpNeeded(st.plevel)) st.pxp -= powerXpNeeded(st.plevel);
     st.plevel++;
     ups.push({ type: "plevel", level: st.plevel });
+    st.pxp = Math.min(st.pxp, powerXpNeeded(st.plevel) - 1);              // الزايد ما يفتح ليفل ثاني بنفس اللحظة
   }
   if (st.plevel >= maxLv) st.pxp = 0;
   return ups;
 }
 
-// أول مهارة بكل قدرة مفتوحة دائما. الباقي: يخلص التدريب + ليفل القدرة يوصل لليفل فتح المهارة
+// v1.43: الفتح بس بليفل القدرة (كل مهارة بليفلها). التدريب ما يقفل المهارات بعد: لما كان يقفلها، تخليص التدريب كان يفتح
+// كل المهارات اللي وصلت ليفلها بنفس اللحظة. المدرب يبقى يعطي لفائف وخبرة ومهمة القصة
 export function isSkillUnlocked(st, skill) {
   if (st.power !== skill.power) return false;
   if (skill.first) return true;
-  const tr = st.training && st.training[skill.power];
-  if (!tr || tr.status !== "done") return false;
   return (st.plevel || 1) >= skill.unlock;
 }

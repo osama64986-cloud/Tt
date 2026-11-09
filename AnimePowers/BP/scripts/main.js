@@ -135,7 +135,7 @@ for (const s of [
   mk("chorus", "echo", "Echo Chorus", "sh:skill_chorus", 3, 1000, "Three echo waves expand around you, each stronger than the last."),
   mk("spacerewind", "distance", "Spatial Rewind", "sh:skill_spacerewind", 5, 20, "First use: saves your position for 15 seconds. Second use: return to that spot and recover some health."),
 
-  mk("shards", "crystal", "Crystal Shards", "sh:skill_shards", 0, 30, "Three shards where you look. While sneaking: one powerful crystal spear that pierces everything. Shards leave crystals on enemies."),
+  mk("shards", "crystal", "Crystal Shards", "sh:skill_shards", 0, 30, "Three shards where you look. Every third cast (or sneak + use): one powerful crystal spear that pierces everything. Shards leave crystals on enemies."),
   mk("crystalshield", "crystal", "Crystal Shield", "sh:skill_crystalshield", 1, 400, "Crystals orbit you and give you an absorption shield for 10 seconds."),
   mk("prison", "crystal", "Crystal Prison", "sh:skill_prison", 2, 700, "Trap an enemy in crystals: frozen in place and weakened (bosses for a shorter time)."),
   mk("burst", "crystal", "Crystal Burst", "sh:skill_burst", 3, 500, "Detonate every crystal stuck on enemies. Each crystal deals damage and a small blast hits those around it."),
@@ -164,6 +164,15 @@ for (const s of [
 }
 const ITEM_TO_SKILL = {};
 for (const s of Object.values(SKILLS)) ITEM_TO_SKILL[s.item] = s;
+// v1.43: صولجان القدرة يرمي المهارة المختارة. ترتيب المهارات هنا = ترتيبها بشريط المهارات (tools/gen_skillbar_ui.py يقراه من mk فوق)
+const SIGIL = "sh:power_sigil";
+const SKILL_LIST = Object.values(SKILLS);
+function firstSkillOf(power) { const s = SKILL_LIST.find((x) => x.power === power); return s ? s.id : undefined; }
+function mySkills(st) { return SKILL_LIST.filter((s) => s.power === st.power); }
+function selectedSkill(st) {
+  const open = mySkills(st).filter((s) => isSkillUnlocked(st, s));
+  return open.find((s) => s.id === st.sel) || open[0];
+}
 
 // طريقة استعمال كل مهارة (تظهر بالـHUD وبنافذة الحالة)
 const SKILL_USAGE = {
@@ -172,7 +181,7 @@ const SKILL_USAGE = {
   transfer: "Aim at a marked enemy: its number moves to the nearest enemy",
   divide: "Aim at a marked enemy: its number splits between it and the nearest enemy",
   zero: "Aim at an enemy: if its number is 5 or less it collapses instantly",
-  shards: "Use: 3 shards. Sneak + use: one powerful piercing crystal spear",
+  shards: "Use: 3 shards. Every 3rd use (or sneak + use): one powerful piercing crystal spear",
   crystalshield: "Use: crystals orbit you and absorb damage",
   prison: "Aim at an enemy: imprison it in crystals (frozen in place)",
   burst: "Use Crystal Shards on enemies first, then use: detonates every crystal",
@@ -331,13 +340,14 @@ function banner(p, text, ticks = 60) {
 // V1: العنوان الفرعي (subtitle) يحمل مهمة القصة: ملف hud_screen.json يعرضه صغير فوق يمين الشاشة. فكل عنوان ينرسل ويا المهمة
 // (أو " " إذا ماكو)، وإذا ماكو كتابة تحت بس أكو مهمة نرسل عنوان " " (ما يبين) حتى تبقى المهمة ظاهرة.
 const bottomSent = new Map();
-function setBottomText(p, text, sub = "") {
-  if (!text && !sub) {
+// code: كود شريط المهارات (v1.43) بأول العنوان: رموز تنسيق ما تنرسم، والواجهة تقراها وترسم الشريط تحت يمين
+function setBottomText(p, text, sub = "", code = "") {
+  if (!text && !sub && !code) {
     if (bottomSent.get(p.id)) { try { p.onScreenDisplay.clearTitle(); } catch (e) { /* */ } bottomSent.set(p.id, ""); }
     return;
   }
-  p.onScreenDisplay.setTitle(text || " ", { fadeInDuration: 0, stayDuration: 14, fadeOutDuration: 4, subtitle: sub || " " });
-  bottomSent.set(p.id, `${text}\u0001${sub}`);
+  p.onScreenDisplay.setTitle(code + (text || " "), { fadeInDuration: 0, stayDuration: 14, fadeOutDuration: 4, subtitle: sub || " " });
+  bottomSent.set(p.id, `${code}${text}\u0001${sub}`);
 }
 function say(p, text) {
   try { p.sendMessage(T(p, text, "chat")); } catch (e) { /* */ }
@@ -432,34 +442,6 @@ function dashGlyphs(p, plain) {
 }
 // شريط المهارات + نغمة خفيفة لما تخلص مهارة طويلة الكولداون
 const wasCooling = new Map();
-function skillStrip(p, st, heldId, plain) {
-  if (!st.power) return "";
-  const now = system.currentTick;
-  const mine = Object.values(SKILLS).filter((s) => s.power === st.power);
-  const parts = mine.map((s, i) => {
-    const n = i + 1;
-    let txt;
-    if (!isSkillUnlocked(st, s)) txt = plain ? `§8${n}✖` : `§f${GL(GI.lock)}§8${n}`;
-    else {
-      const key = `${p.id}:${s.id}`;
-      const left = (cooldowns.get(key) ?? 0) - now;
-      const cooling = left > 0;
-      if (wasCooling.get(key) && !cooling && s.cooldown >= 100) {
-        sfxPlayer(p, "sh.ready", 0.5);
-        const m = tempMsg.get(p.id);
-        if (!m || m.until <= now) notify(p, `§a✔ ${s.name} ready`, 25);
-      }
-      wasCooling.set(key, cooling);
-      const secs = Math.ceil(left / 20);
-      txt = plain ? (cooling ? `§c${n}:${secs}` : `§a${n}✔`) : (cooling ? `§f${GL(GI.cool)}§c${secs}` : `§f${GL(GI.ready)}§a${n}`);
-    }
-    return heldId === s.id ? (plain ? `§e[${txt}§e]` : `§f${GL(GI.held)}${txt}`) : txt;
-  });
-  const rows = [];
-  for (let i = 0; i < parts.length; i += 4) rows.push(parts.slice(i, i + 4).join(" "));
-  return rows.join("\n");
-}
-
 // معلومات الأيتم اللي بإيدك + تلميح طريقة الاستعمال
 const heldSeen = new Map();
 function heldLine(p, st, plain) {
@@ -476,6 +458,18 @@ function heldLine(p, st, plain) {
   const stateOf = (left) => (left > 0 ? `§c⏳ ${fmtSec(left)}s` : "§a✔ Ready");
   const mini = (left) => (left > 0 ? `§c${fmtSec(left)}s` : "§a✔");
 
+  if (id === SIGIL) {
+    const cur = st.power ? selectedSkill(st) : undefined;
+    if (!cur) return { line: "§d✦ Power Sigil §8│ §7no skill yet", tip: "" };
+    const lv = skillLevel(st, cur.id);
+    const x = (st.skills && st.skills[cur.id] && st.skills[cur.id].xp) || 0;
+    const left = (cooldowns.get(`${p.id}:${cur.id}`) ?? 0) - now;
+    return {
+      skillId: cur.id,
+      line: `${POWERS[cur.power].color}◆ ${cur.name} §8│ §bLevel ${lv}${lv >= SKILL_MAX_LV ? " §6MAX" : ""} ${bar(lv >= SKILL_MAX_LV ? 1 : x / skillXpNeeded(lv), 5, "§b", "§8", plain)} §8│ §9✦${manaCost(cur)} §8│ ${stateOf(left)}`,
+      tip: showTip ? `§7Use: cast ${cur.name} §8│ §7Tap sneak: next skill` : "",
+    };
+  }
   const sk = ITEM_TO_SKILL[id];
   if (sk) {
     if (st.power !== sk.power) return { line: `§c${sk.name}: not part of your power`, tip: "" };
@@ -533,10 +527,10 @@ function renderHud(p) {
       const h = off ? { line: "", tip: "" } : heldLine(p, st, plain);
       if (!off) {
         let text = hudText(p, st, plain);
-        const strip = skillStrip(p, st, h.skillId, plain), dg = dashGlyphs(p, plain);
-        if (strip) text += "\n" + (dg ? dg + " " : "") + strip;                 // شحنات الداش أول سطر المهارات
-        else if (dg) text += "\n" + dg;
+        const dg = dashGlyphs(p, plain);                                        // v1.43: المهارات صارت بشريطها تحت يمين
+        if (dg) text += "\n" + dg;
         p.onScreenDisplay.setActionBar(i18nShow(lang, text, "hud"));
+        readyChimes(p, st);
       }
       // تحت: الإعلانات والرسائل جمل (تنقلب كاملة بالعربي)، وسطر الأيتم وتلميحه مرتبين بفواصل (كل مقطع عربي ينقلب بمكانه)
       const low = [];
@@ -548,7 +542,8 @@ function renderHud(p) {
         else low.push(i18nShow(lang, h.tip, "seg"), i18nShow(lang, h.line, "seg"));
       }
       const bottom = low.filter(Boolean).join("\n");
-      setBottomText(p, lang === "ar" && bottom ? AR_MARK + bottom : bottom, storyTracker(p, lang, now));   // العربي: علامة الخط الأكبر
+      const code = !off && st.power ? skillBarCode(p, st) : "";
+      setBottomText(p, lang === "ar" && bottom ? AR_MARK + bottom : bottom, storyTracker(p, lang, now), code);   // العربي: علامة الخط الأكبر
     } catch (e) { /* */ }
 }
 system.runInterval(() => { for (const p of world.getAllPlayers()) renderHud(p); }, 5);
@@ -797,6 +792,24 @@ function giveItem(p, typeId, amount = 1) {
   const left = inv(p).addItem(new ItemStack(typeId, amount));
   if (left) p.dimension.spawnItem(left, p.location);
 }
+function givePowerItem(p) {
+  try {
+    removeSkillItems(p);
+    if (hasItem(p, SIGIL)) return;
+    const it = new ItemStack(SIGIL, 1);
+    try { it.keepOnDeath = true; it.lockMode = "inventory"; } catch (e) { /* */ }   // يبقى ويا اللاعب بعد الموت وما ينرمي ولا ينحط بصندوق
+    const left = inv(p).addItem(it);
+    if (left) p.dimension.spawnItem(left, p.location);
+  } catch (e) { /* */ }
+}
+function removePowerItems(p) {
+  removeSkillItems(p);
+  const c = inv(p);
+  for (let i = 0; i < c.size; i++) {
+    const it = c.getItem(i);
+    if (it && it.typeId === SIGIL) c.setItem(i, undefined);
+  }
+}
 function removeSkillItems(p) {
   const c = inv(p);
   for (let i = 0; i < c.size; i++) {
@@ -816,9 +829,12 @@ const NO_POWER_CHANCE = 0.005;
 function grantPower(player, key) {
   const pw = POWERS[key];
   const st = getState(player);
+  if (st.power !== key) { st.plevel = 1; st.pxp = 0; }                        // v1.43: قدرة جديدة تبدي من ليفل 1 (ما تفتح مهاراتها كلها بليفل القدرة القديمة)
   st.power = key;
   st.powerless = false;
+  st.sel = firstSkillOf(key);
   saveState(player, st);
+  givePowerItem(player);
   sfxPlayer(player, "sh.select");
   burst(player.dimension, headPos(player), 24, POWER_COLOR[key], 3);
   notify(player, `${pw.color}Your power: ${pw.name}`, 80);
@@ -1034,7 +1050,9 @@ async function openPowerMenu(player) {
   const st = getState(player);
   if (st.power) return;
   st.power = key;
+  st.plevel = 1; st.pxp = 0; st.sel = firstSkillOf(key);
   saveState(player, st);
+  givePowerItem(player);
   sfxPlayer(player, "sh.select");
   burst(player.dimension, headPos(player), 24, POWER_COLOR[key], 3);
   notify(player, `${pw.color}Your power: ${pw.name}`, 80);
@@ -1264,15 +1282,13 @@ async function showStatus(player) {
   if (pw) {
     const r = rarityOf(st.power);
     b += `\n${pw.color}${pw.name}§r ${rarityStars(st.power)}§r ${r.color}${r.name}§r\n§dPower level ${st.plevel || 1}/${r.maxLv}§r ${(st.plevel || 1) >= r.maxLv ? "§6(MAX)" : `§7(${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}\n`;
-    const tr = st.training && st.training[st.power];
-    if (!tr || tr.status !== "done") b += "§e⚠ Finish the Trainer's training to unlock the other skills\n";
-    b += "\n§eSkills:§r\n";
+    b += "\n§eSkills:§r §7(each one unlocks at its own power level)\n";
     Object.values(SKILLS).filter((s) => s.power === st.power).forEach((s, i) => {
       if (isSkillUnlocked(st, s)) {
         const lv = skillLevel(st, s.id), x = (st.skills[s.id] && st.skills[s.id].xp) || 0;
         b += `§a${i + 1}. ${s.name}§r §bLevel ${lv}§7 ${skillProg(lv, x)}\n§7   ${usageOf(s)}\n`;
       } else {
-        b += `§8${i + 1}. ${s.name} §c(unlocks at power level ${s.unlock}${tr && tr.status === "done" ? "" : " + training"})\n`;
+        b += `§8${i + 1}. ${s.name} §c(unlocks at power level ${s.unlock})\n`;
       }
     });
   } else b += st.powerless ? "\n§8Unbound§7: no power. Your body grows stronger and faster with each rank.\n" : "\n§7You have no power yet. Step on the crystal in the Star Temple.\n";
@@ -1322,7 +1338,7 @@ async function openBook(player) {
   const form = new ActionFormData()
     .title("Evolution Book")
     .body(
-      `${pw.color}${pw.name} ${rarityOf(st.power).color}[${rarityOf(st.power).name}]§r\nPower level: §d${st.plevel || 1}/${rarityOf(st.power).maxLv}§r ${(st.plevel || 1) >= rarityOf(st.power).maxLv ? "§6(MAX)" : `§7(XP ${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}§r\nRank: §e${RANKS[st.rank]}§r\nLevel: §b${st.level}§r\nXP: §a${st.xp}/${xpNeeded(st.level)}§r\n${nextRankLine(st)}\n\n§7Pick a skill to receive it. Your power grows with every kill, every skill hit and with your level.`
+      `${pw.color}${pw.name} ${rarityOf(st.power).color}[${rarityOf(st.power).name}]§r\nPower level: §d${st.plevel || 1}/${rarityOf(st.power).maxLv}§r ${(st.plevel || 1) >= rarityOf(st.power).maxLv ? "§6(MAX)" : `§7(XP ${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}§r\nRank: §e${RANKS[st.rank]}§r\nLevel: §b${st.level}§r\nXP: §a${st.xp}/${xpNeeded(st.level)}§r\n${nextRankLine(st)}\n\n§7Pick a skill to select it on your skill bar (bottom right). Cast it with the Power Sigil; tap sneak while holding it to switch. Your power grows with every kill, every skill hit and with your level.`
     );
   for (const s of mine) {
     if (isSkillUnlocked(st, s)) {
@@ -1331,9 +1347,7 @@ async function openBook(player) {
       form.button(`§a${s.name} §bLevel ${lv} §7${skillProg(lv, sk.xp)} §e${AIMED.has(s.id) ? "[Aimed]" : "[Around you]"}\n§7${usageOf(s)}`);
     }
     else {
-      const tr = st.training[st.power];
-      const need = !tr || tr.status !== "done" ? "Finish the Trainer's training" : `Unlocks at power level ${s.unlock}`;
-      form.button(`§8${s.name}\n§c${need}`);
+      form.button(`§8${s.name}\n§cUnlocks at power level ${s.unlock}`);
     }
   }
   const extra = bookExtras(player, form, true);
@@ -1343,14 +1357,14 @@ async function openBook(player) {
   const s = mine[r.selection];
   if (!s) return;
   if (!isSkillUnlocked(st, s)) { notify(player, `§c${s.name}: still locked`, 60); return; }
-  const c = inv(player);
-  let has = false;
-  for (let i = 0; i < c.size; i++) { const it = c.getItem(i); if (it && it.typeId === s.item) { has = true; break; } }
-  if (has) { notify(player, `§e${s.name} is already in your inventory`, 50); return; }
-  giveItem(player, s.item);
+  // v1.43: المهارات ما تنحط بالحقيبة: الاختيار يحددها على شريط المهارات، وصولجان القدرة يرميها
+  const s2 = getState(player);
+  s2.sel = s.id;
+  saveState(player, s2);
+  givePowerItem(player);
   sfxPlayer(player, "sh.select", 0.7, 1.3);
-  notify(player, `§aYou received: ${s.name}`, 60);
-  say(player, `§e[${s.name}] §f${s.desc}\n§7How to use: ${usageOf(s)}. You can take several skills and spread them across the hotbar.`);
+  notify(player, `§aSelected: ${s.name}`, 60);
+  say(player, `§e[${s.name}] §f${s.desc}\n§7How to use: hold the Power Sigil and use it. ${usageOf(s)}. Tap sneak (with the sigil) to switch skills.`);
 }
 
 // ───────────────────────── المدرب ─────────────────────────
@@ -1471,7 +1485,7 @@ async function trainerTalk(player) {
     if (reward) { giveItem(player, "sh:skill_scroll", reward); say(player, `§b[Trainer] §fTake ${reward} Skill Upgrade Scrolls. Use one while holding it and pick the skill to level up.`); }
     if (!hasItem(player, "sh:evolution_book")) giveItem(player, "sh:evolution_book");
     sfxPlayer(player, "sh.mission");
-    say(player, `§e[Trainer] §fWell done! You learned the basics of ${pw.color}${pw.name}§f. Open the Evolution Book and choose your skill.`);
+    say(player, `§e[Trainer] §fWell done! You learned the basics of ${pw.color}${pw.name}§f. Your other skills unlock one by one as your power levels up.`);
     announceUps(player, ups);
     return;
   }
@@ -1516,7 +1530,10 @@ function announceUps(player, ups) {
       const stx = getState(player);
       say(player, `§d[Power] §fYour power reached level §d${u.level}`);
       for (const sk of Object.values(SKILLS)) {
-        if (sk.power === stx.power && !sk.first && sk.unlock === u.level) say(player, `§a[New skill] §f${sk.name} unlocked${(stx.training[stx.power] || {}).status === "done" ? " - open the Evolution Book." : " (needs the Trainer's training)."}`);
+        if (sk.power === stx.power && !sk.first && sk.unlock === u.level) {
+          say(player, `§a[New skill] §f${sk.name} unlocked! §7Hold the Power Sigil and tap sneak to select it on your skill bar.`);
+          notify(player, `§a✦ New skill: ${sk.name}`, 70);
+        }
       }
     } else if (u.type === "skill") {
       sfxPlayer(player, "sh.level_up", 0.8, 1.3);
@@ -1942,6 +1959,7 @@ function bodyShell(p, variant, ticks) {
     const e = dim.spawnEntity("sh:fx_body", p.location);
     e.setProperty("sh:v", variant);
     fxSet(e, "sh:r", 0.55);
+    try { p.setPropertyOverrideForEntity(e, "sh:fp", 1); } catch (err) { /* */ }   // راس الدرع ما يسد شاشة صاحبه بالمنظور الأول
     const spark = variant === 0 ? [0.85, 0.9, 1.0] : [0.6, 0.62, 0.55];
     // لحظة التحول: الحديد = حلقة شرر تصعد من الرجل للراس ورنة شرر حرج؛ الصخر = غبار حصى وحلقة غبار أرضية (+ وميض شاشة خفيف)
     if (variant === 0) IRON.skinForm(dim, p.location); else TRAIT.rock(dim, p.location);
@@ -4122,6 +4140,8 @@ function applyTrait(p, id, m) {
     const d0 = flatDir(p);
     popShape(p.dimension, "fang_jaw", { x: p.location.x + d0.x * 1.3, y: p.location.y + 1.3, z: p.location.z + d0.z * 1.3 }, 1.4, 1.8, 10, { yaw: dirYaw({ ...d0, y: 0 }) + 180 });
     TRAIT.fangs(p.dimension, p.location, { x: p.location.x + d0.x * 1.3, y: p.location.y + 1.3, z: p.location.z + d0.z * 1.3 });
+    // v1.43: الصفة تبين عليك طول مدتها: فك أنياب شبحي يطفو فوق راسك ويلتفت وياك (فوق الراس حتى ما يسد الشاشة بالمنظور الأول)
+    followShape(p, "fang_jaw", Math.round(160 * m), { r: 0.6, dy: 0.8, faceYaw: () => (valid(p) ? dirYaw({ ...flatDir(p), y: 0 }) + 180 : undefined) });
   } else if (id === "wings") {
     const d = flatDir(p);
     try { p.applyKnockback({ x: d.x * 0.9, z: d.z * 0.9 }, 1.1); } catch (e) { /* */ }
@@ -4133,6 +4153,8 @@ function applyTrait(p, id, m) {
   } else if (id === "eye") {
     effect(p, "night_vision", 300 * m, 0);
     popShape(p.dimension, "hunter_eye", { x: p.location.x, y: p.location.y + 3, z: p.location.z }, 0.4, 2.2, 12, { yaw: dirYaw({ ...flatDir(p), y: 0 }) + 180 });
+    // v1.43: عين الصياد تبقى فوق راسك طول مدة العلامات (تشوفها بالمنظور الثالث، وفوق الراس حتى ما تسد الشاشة)
+    followShape(p, "hunter_eye", Math.round(200 * m), { r: 0.5, dy: 0.9, faceYaw: () => (valid(p) ? dirYaw({ ...flatDir(p), y: 0 }) + 180 : undefined) });
     const list = enemiesNear(p.dimension, p.location, 24, p.id).slice(0, 10);
     TRAIT.eyeScan(p.dimension, p.location);                       // نبضة رادار ذهبية
     for (const e of list) {
@@ -4190,12 +4212,16 @@ system.runInterval(() => {
 }, 100);
 
 const rewindAnchors = new Map();
+const shardCount = new Map();
 
 Object.assign(SKILL_FN, {
   // ── سيد البلورات ──
   shards(p) {
     const base = viewDir(p);
-    const sneak = !!p.isSneaking;
+    // v1.43: السنيك صار يبدل المهارة بشريط المهارات، فالرمح البلوري صار كل ثالث مرة (أو إذا انت جاثي فعلاً وقت الاستعمال)
+    const nShard = ((shardCount.get(p.id) || 0) + 1) % 3;
+    shardCount.set(p.id, nShard);
+    const sneak = !!p.isSneaking || nShard === 0;
     if (sneak) {
       // رمح بلوري عملاق يخترق كل شي بالخط
       const hits = rayHits(p, base, 20, 1.3);
@@ -5013,15 +5039,110 @@ world.afterEvents.itemUse.subscribe((ev) => {
     if (id === "sh:star_shard") { useStarShard(p); return; }
     if (id === "sh:explorer_compass") { achCount(p, "compass"); useCompass(p); return; }
     if (id === "sh:monster_book") { openMonsterBook(p); return; }
+    if (id === SIGIL) { useSigil(p); return; }
     const skill = ITEM_TO_SKILL[id];
     if (skill) useSkill(p, skill);
   } catch (e) { /* */ }
 });
 
+// ═════════════════ v1.43: صولجان القدرة + شريط المهارات (تحت يمين) ═════════════════
+// المهارات ما تنحط بالحقيبة بعد: أيتم واحد (صولجان القدرة) يرمي المهارة المختارة، وضغطة سنيك قصيرة وانت ماسكه = المهارة الجاية.
+// باللمس كل ضغطة على زر السنيك = ضغطة وحدة (حسب الوثائق: pressed ثم released خلال تكة)، وبالكيبورد ضغطة قصيرة (≤ 8 تكات) بدون استعمال.
+// ضغطة سنيك صارت "صد مثالي" (Perfect Guard) ما تبدل المهارة.
+function useSigil(p) {
+  const st = getState(p);
+  if (!st.power) { notify(p, "§7You have no power yet", 40); return; }
+  const sk = selectedSkill(st);
+  if (!sk) { notify(p, "§7No skill unlocked yet", 40); return; }
+  const tap = sneakTap.get(p.id);
+  if (tap) tap.used = true;                                                    // سنيك + استعمال (كيبورد) ما يبدل المهارة
+  useSkill(p, sk);
+}
+const sneakTap = new Map();
+world.afterEvents.playerButtonInput.subscribe((ev) => {
+  try {
+    if (ev.button !== "Sneak") return;
+    const p = ev.player;
+    if (ev.newButtonState === "Pressed") { sneakTap.set(p.id, { t: system.currentTick, used: false }); return; }
+    const tap = sneakTap.get(p.id);
+    sneakTap.delete(p.id);
+    if (!tap || tap.used || system.currentTick - tap.t > 8) return;
+    const held = inv(p).getItem(p.selectedSlotIndex);
+    if (!held || held.typeId !== SIGIL) return;
+    later(4, () => {
+      try {
+        const g = guardAt.get(p.id);
+        if (!valid(p) || (g && g.used && g.at >= tap.t - 1)) return;               // انصد هجوم بنفس الضغطة
+        cycleSkill(p, 1);
+      } catch (e2) { /* */ }
+    });
+  } catch (e) { /* */ }
+});
+function cycleSkill(p, dir) {
+  const st = getState(p);
+  const open = mySkills(st).filter((s) => isSkillUnlocked(st, s));
+  if (open.length < 2) { notify(p, open.length ? `§7Only ${open[0].name} is unlocked so far` : "§7No skill unlocked yet", 30); return; }
+  const cur = Math.max(0, open.findIndex((s) => s.id === (selectedSkill(st) || {}).id));
+  const nx = open[(cur + dir + open.length) % open.length];
+  st.sel = nx.id;
+  saveState(p, st);
+  sfxPlayer(p, "sh.select", 0.45, 1.7);
+  notify(p, `${POWERS[nx.power].color}◆ ${nx.name}`, 30);
+  renderHud(p);                                                                 // الإطار الذهبي ينتقل فوراً (ما ينتظر دورة الـHUD)
+}
+// كود شريط المهارات بأول نص العنوان (اللي فوق الهوت بار). الكود كله رموز تنسيق (§ + حرف) فما ينرسم بالشاشة أبداً؛
+// ملف RP/ui/hud_screen.json (يولده tools/gen_skillbar_ui.py) يدور على كل رمز بطرح النص ويرسم الشريط تحت يمين.
+//   §k§l§P القدرة (رقمها بـ POWER_KEYS) │ §k§o§S الخانة المختارة │ §k§S§X حالة الخانة: a جاهزة، b كولداون، c مقفولة، d مانا ما تكفي
+//   §k§m§S§T عشرات الرقم │ §k§n§S§U آحاد الرقم (ثواني الكولداون أو ليفل الفتح) │ §r§f النهاية
+// الخانة 0 بالزاوية والخانات تصعد؛ أول مهارة بأعلى خانة. الكتابة العادية ما بيها §k أبداً، فكل بحث يطابق رمز واحد.
+function skillBarCode(p, st) {
+  const pi = st.power ? POWER_KEYS.indexOf(st.power) : -1;
+  if (pi < 0) return "";
+  const mine = mySkills(st), n = mine.length;
+  const cur = selectedSkill(st);
+  const now = system.currentTick;
+  const mana = manaOf(p, st);
+  let out = "§k§l§" + pi;
+  mine.forEach((s, i) => {
+    const slot = n - 1 - i;
+    let x = "a", num = -1;
+    if (!isSkillUnlocked(st, s)) { x = "c"; num = Math.min(99, s.unlock); }
+    else {
+      if (cur && cur.id === s.id) out += "§k§o§" + slot;
+      const left = (cooldowns.get(`${p.id}:${s.id}`) ?? 0) - now;
+      if (left > 0) { x = "b"; num = Math.min(99, Math.ceil(left / 20)); }
+      else if (mana < manaCost(s)) x = "d";
+    }
+    out += "§k§" + slot + "§" + x;
+    if (num >= 10) out += "§k§m§" + slot + "§" + Math.floor(num / 10);
+    if (num >= 0) out += "§k§n§" + slot + "§" + (num % 10);
+  });
+  return out + "§r§f";
+}
+// نغمة خفيفة لما تخلص مهارة كولداونها طويل (كانت بشريط المهارات القديم فوق يسار)
+function readyChimes(p, st) {
+  if (!st.power) return;
+  const now = system.currentTick;
+  for (const s of mySkills(st)) {
+    if (!isSkillUnlocked(st, s)) continue;
+    const key = `${p.id}:${s.id}`;
+    const cooling = (cooldowns.get(key) ?? 0) - now > 0;
+    if (wasCooling.get(key) && !cooling && s.cooldown >= 100) {
+      sfxPlayer(p, "sh.ready", 0.5);
+      const m = tempMsg.get(p.id);
+      if (!m || m.until <= now) notify(p, `§a✔ ${s.name} ready`, 25);
+    }
+    wasCooling.set(key, cooling);
+  }
+}
+
 // ───────────────────────── الدخول للعالم ─────────────────────────
 world.afterEvents.playerSpawn.subscribe((ev) => {
-  if (!ev.initialSpawn) return;
   const p = ev.player;
+  if (!ev.initialSpawn) {                                                       // بعد الموت: الصولجان يبقى (keepOnDeath)، وإذا ضاع يرجع
+    system.runTimeout(() => { try { if (valid(p) && getState(p).power) givePowerItem(p); } catch (e) { /* */ } }, 10);
+    return;
+  }
   system.runTimeout(() => {
     try {
       const st = getState(p);
@@ -5035,6 +5156,15 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         s3.gotCompass = true;
         saveState(p, s3);
         if (!hasItem(p, "sh:explorer_compass")) giveItem(p, "sh:explorer_compass");
+      }
+      // v1.43: أيتمات المهارات القديمة تنشال وبدالها صولجان القدرة (مرة وحدة لكل لاعب عنده قدرة)
+      if (st.power && !st.sigilV) {
+        const s4 = getState(p);
+        s4.sigilV = 1;
+        if (!s4.sel) s4.sel = firstSkillOf(s4.power);
+        saveState(p, s4);
+        givePowerItem(p);
+        say(p, "§d[Skills] §fYour skills now live on the skill bar (bottom right). Hold the §dPower Sigil§f and use it to cast; tap sneak while holding it to switch skills.");
       }
       if (!st.sawIntro) {
         const s2 = getState(p);
@@ -7528,7 +7658,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
       else if (msg === "here" || ev.id === "sh:temple") { buildTemple(p, (rec) => guideTemple(p, rec)); say(p, "§bA Star Temple is rising near you"); }
       else ensureTemple(p);
     } else if (ev.id === "sh:redraw") {
-      const st = getState(p); st.power = null; st.powerless = false; saveState(p, st); removeSkillItems(p); say(p, "§bYour power was released. Step on a temple crystal to draw again.");
+      const st = getState(p); st.power = null; st.powerless = false; st.sel = undefined; saveState(p, st); removePowerItems(p); say(p, "§bYour power was released. Step on a temple crystal to draw again.");
     } else if (ev.id === "sh:curse") {
       const vils = p.dimension.getEntities({ type: "minecraft:villager_v2", location: p.location, maxDistance: 32 }).filter((v) => !v.getComponent("minecraft:is_baby"));
       vils.sort((a, b) => dist2d(a.location, p.location) - dist2d(b.location, p.location));
