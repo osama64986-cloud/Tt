@@ -59,6 +59,7 @@
     "two_fingers": "animation.ab.two_fingers",
     "void_sign": "animation.ab.void_sign",
     "arms_wide": "animation.ab.arms_wide",
+    "slash_l": "animation.ab.slash_l",
     "arms2": "animation.ab.arms2"
    },
    "scripts": {
@@ -155,6 +156,9 @@
      },
      {
       "arms_wide": "query.property('ab:pose') == 27"
+     },
+     {
+      "slash_l": "query.property('ab:pose') == 28"
      },
      {
       "arms2": "query.property('ab:form') == 2"

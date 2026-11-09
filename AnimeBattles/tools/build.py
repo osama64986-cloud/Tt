@@ -264,7 +264,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide"]  # poses 13..27
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l"]  # poses 13..28
 
 
 def extra_animations():
@@ -349,6 +349,23 @@ def extra_animations():
         "rightArm": {"rotation": {"0.0": [-170, -15, 0], "0.05": [-115, 15, 0], "0.1": [-38, 45, 0], "0.16": [-44, 40, 0]}},
         "leftArm": {"rotation": [-20, 0, 25]},
         "body": {"rotation": {"0.0": [-6, 20, 0], "0.1": [6, -38, 0], "0.16": [4, -35, 0]}}}, 0.16)
+    # axe kick (pose 10): leg swung high overhead, then hammered down onto the target
+    out["animation.ab.knee"] = strike({
+        "rightLeg": {"rotation": {"0.0": [-120, 0, 0], "0.07": [-165, 0, 0], "0.13": [-35, 0, 0], "0.2": [-28, 0, 0]}},
+        "leftLeg": {"rotation": [10, 0, 0]},
+        "body": {"rotation": {"0.0": [-14, 0, 0], "0.13": [10, 0, 0]}},
+        "rightArm": {"rotation": [-30, 0, -35]}, "leftArm": {"rotation": [-30, 0, 35]}}, 0.2)
+    # left roundhouse (pose 12), mirror of the right one
+    out["animation.ab.elbow"] = strike({
+        "leftLeg": {"rotation": {"0.0": [-15, 0, -15], "0.08": [-25, 0, -90], "0.16": [-25, 0, -80]}},
+        "rightLeg": {"rotation": [5, 0, 5]},
+        "body": {"rotation": {"0.0": [0, -15, 0], "0.08": [0, 42, 10], "0.16": [0, 35, 10]}},
+        "leftArm": {"rotation": [-20, 0, -50]}, "rightArm": {"rotation": [-40, 0, 35]}}, 0.18)
+    # left-hand sword cut (pose 28), mirror of the right slash
+    out["animation.ab.slash_l"] = strike({
+        "leftArm": {"rotation": {"0.0": [-170, 15, 0], "0.05": [-115, -15, 0], "0.1": [-38, -45, 0], "0.16": [-44, -40, 0]}},
+        "rightArm": {"rotation": [-20, 0, -25]},
+        "body": {"rotation": {"0.0": [-6, -20, 0], "0.1": [6, 38, 0], "0.16": [4, 35, 0]}}}, 0.16)
     out["animation.ab.upper"] = strike({
         "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
         "leftArm": {"rotation": [-30, 0, 20]},

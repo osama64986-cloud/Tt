@@ -1535,6 +1535,10 @@ const MOVES = {
   rush: { pose: 11, t: 16, dmg: 3.5, hits: 8, kb: 0.1, arc: "punch" },
   kick_l: { pose: 12, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },
   kiburst: { pose: 4, t: 7, ki: true, dmg: 24, kb: 2.6, strong: true },
+  // sword cuts (Zoro): right-hand cut, left-hand cut, and the two-sword X cross-cut
+  cut_r: { pose: 19, t: 3, dmg: 8, kb: 0.3, arc: "right", sword: true },
+  cut_l: { pose: 28, t: 3, dmg: 8, kb: 0.3, arc: "left", sword: true },
+  cut_x: { pose: 1, t: 5, dmg: 15, kb: 0.4, strong: true, arc: "front", sword: true },
   blink: { tp: "behind", t: 3 },
   blinkfront: { tp: "front", t: 3 },
 };
@@ -1546,7 +1550,7 @@ const COMBOS = {
   "ab:yuji_final": [["jab_r", "jab_l", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "jab_l", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
   "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
-  "ab:zoro": [["jab_r", "jab_l", "jab_r", "kick_r", "upper"], ["rush", "jab_l", "kick_l"], ["jab_l", "jab_r", "rush", "axe"]],
+  "ab:zoro": [["cut_r", "cut_l", "cut_r", "kick_r", "cut_x"], ["cut_l", "cut_r", "cut_l", "kick_l", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
   "ab:frieza": [["jab_r", "kick_l", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
@@ -1647,6 +1651,13 @@ function comboStep(e, t, mv, last) {
       }
       deal(e, t, mv.dmg * pw * (last ? 1.3 : 1));
       swingArc(e, t, mv.arc, color);
+      if (mv.sword) {  // a visible blade streak across the target for every sword cut
+        const sd = V.norm(V.sub(aim(t), aim(e)));
+        for (const roll of mv.pose === 1 ? [45, -45] : [mv.pose === 28 ? -35 : 35]) {
+          const v = slashVfx(t.dimension, aim(t), sd, formOf(e) ? C.haki : color, 1.0, roll);
+          later(4, () => killVfx(v));
+        }
+      }
       impact(e, t, mv.strong || last, color, mv);
       const n = V.norm(V.sub(t.location, e.location));
       const kb = mv.kb * (last ? 1.8 : 1);

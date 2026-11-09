@@ -54,6 +54,7 @@
     "two_fingers": "animation.ab.two_fingers",
     "void_sign": "animation.ab.void_sign",
     "arms_wide": "animation.ab.arms_wide",
+    "slash_l": "animation.ab.slash_l",
     "cool_idle": "animation.ab.cool_idle"
    },
    "scripts": {
@@ -150,6 +151,9 @@
      },
      {
       "arms_wide": "query.property('ab:pose') == 27"
+     },
+     {
+      "slash_l": "query.property('ab:pose') == 28"
      },
      {
       "cool_idle": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
