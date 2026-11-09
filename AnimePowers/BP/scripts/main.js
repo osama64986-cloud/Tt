@@ -5812,7 +5812,7 @@ function compassFind(p, key) {
   }
   if (key === "city" || key === "nearest") {
     const c = cityInfo();
-    if (c && (key === "city" || dist(c) < bd)) { bd = dist(c); best = { x: c.x, z: c.z, name: "Aetheria" }; }
+    if (c && c.built && (key === "city" || dist(c) < bd)) { bd = dist(c); best = { x: c.x, z: c.z, name: "Aetheria" }; }   // البوصلة تدل عليها بس لما تكمل
   }
   if (key === "trainer" || key === "nearest") {
     const t = trainerPos(p);

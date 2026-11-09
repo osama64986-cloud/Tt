@@ -1640,6 +1640,8 @@ export const __sim = {
       for (let i = 0; i < 400; i++) { advance(10); await flush(); }
       const mon1 = Object.entries(stats.spawnedTypes).filter(([k]) => /^sh:(ember_imp|rust_guard|shadow_hound|sand_scorpion|gloomhorn|hollow_seer|veilfox|magmamoth|grey_bear|prayer_mantis|hollow_harvester)$/.test(k)).reduce((a, [, v]) => a + v, 0);
       const welcome = stats.messages.some((m) => /You reached .*Aetheria/.test(m));
+      const news = stats.messages.filter((m) => /Travellers speak of .*Aetheria/.test(m)).length;
+      if (news !== 1) failures.push(`خبر المدينة لازم يطلع مرة وحدة لما تكمل (طلع ${news})`);
       console.log(`  مرة وحدة بالعالم ${once ? "✔" : "✖"} | ما تتكرر الشخصيات ${noDup ? "✔" : "✖"} | الحارس الميت يرجع واحد ${back === 1 ? "✔" : "✖"} (${back}) | وحوش المود جوه المدينة ${mon1 - mon0} ${mon1 === mon0 ? "✔" : "✖"} | ترحيب ${welcome ? "✔" : "✖"}`);
       if (!once) failures.push("المدينة انبنت أكثر من مرة أو تغير موقعها");
       if (!noDup) failures.push("شخصيات المدينة تكررت");

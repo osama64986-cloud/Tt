@@ -252,7 +252,6 @@ async function buildCity() {
       if (load()) return;                                                // (احتياط: ما نكتب فوق موقع انحفظ)
       s = { v: VER, st: "site", ox: site.ox, oz: site.oz, y0: site.y0, seed: SEED, done: 0 };
       save(s);
-      announce(s);
     }
     if (s.st === "built") return;
     const P = planCity(s.seed || SEED), out = {};
@@ -282,6 +281,7 @@ async function buildCity() {
     s.st = "built";
     s.posts = P.posts.map((p) => [p.type, p.x, p.y, p.z]);                     // أماكن الشخصيات (للصيانة بدون إعادة حساب المخطط)
     save(s);
+    announce(s);                                                               // الخبر بس لما تكمل (حتى ما يوصلها اللاعب وهي تنبني)
   } catch (e) {
     console.warn(`[Aetheria] ${e}`);
   } finally { job = false; }
