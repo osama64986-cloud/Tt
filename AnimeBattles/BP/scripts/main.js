@@ -1495,13 +1495,17 @@ function updateFighter(e, tick) {
   const ctx = { dist: V.dist(e.location, target.location), power: powerOf(e), tPower: powerOf(target), hp: hpPct(e),
     targetType: target.typeId, adaptTotal: Object.values(s.adapt ?? {}).reduce((a, b) => a + b, 0) };
   const form = formOf(e);
-  const threatened = ctx.tPower > ctx.power * 0.95;
+  // Look at the most the opponent can become, not just their current form.
+  const tdef = FIGHTERS[target.typeId];
+  const tMax = tdef ? Math.max(...tdef.forms.map((f) => f.power)) * (tdef.ego ? 1.1 : 1) : ctx.tPower;
+  const threatened = Math.max(ctx.tPower, tMax) > ctx.power * 0.95;
   // Transform first, even mid-combo, when the opponent is stronger (or when badly hurt).
   if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick >= s.transformUntil &&
       (threatened || (tick - s.combatSince > 40 && ctx.hp < def.thresholds[form]))) {
     let next = def.nextForm ? def.nextForm(form) : form + 1;
     if (threatened) {
-      const match = def.forms.findIndex((f, i) => i > form && f.power >= ctx.tPower);
+      const need = Math.max(ctx.tPower, tMax);
+      const match = def.forms.findIndex((f, i) => i > form && f.power >= need);
       next = match >= 0 ? match : def.forms.length - 1;
     }
     const nf = def.forms[next];
