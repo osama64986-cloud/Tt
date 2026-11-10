@@ -135,7 +135,7 @@ for (const s of [
   mk("chorus", "echo", "Echo Chorus", "sh:skill_chorus", 3, 1000, "Three echo waves expand around you, each stronger than the last."),
   mk("spacerewind", "distance", "Spatial Rewind", "sh:skill_spacerewind", 5, 20, "First use: saves your position for 15 seconds. Second use: return to that spot and recover some health."),
 
-  mk("shards", "crystal", "Crystal Shards", "sh:skill_shards", 0, 30, "Three shards where you look. Every third cast (or sneak + use): one powerful crystal spear that pierces everything. Shards leave crystals on enemies."),
+  mk("shards", "crystal", "Crystal Shards", "sh:skill_shards", 0, 30, "Three shards where you look. Every third cast: one powerful crystal spear that pierces everything. Shards leave crystals on enemies."),
   mk("crystalshield", "crystal", "Crystal Shield", "sh:skill_crystalshield", 1, 400, "Crystals orbit you and give you an absorption shield for 10 seconds."),
   mk("prison", "crystal", "Crystal Prison", "sh:skill_prison", 2, 700, "Trap an enemy in crystals: frozen in place and weakened (bosses for a shorter time)."),
   mk("burst", "crystal", "Crystal Burst", "sh:skill_burst", 3, 500, "Detonate every crystal stuck on enemies. Each crystal deals damage and a small blast hits those around it."),
@@ -181,7 +181,7 @@ const SKILL_USAGE = {
   transfer: "Aim at a marked enemy: its number moves to the nearest enemy",
   divide: "Aim at a marked enemy: its number splits between it and the nearest enemy",
   zero: "Aim at an enemy: if its number is 5 or less it collapses instantly",
-  shards: "Use: 3 shards. Every 3rd use (or sneak + use): one powerful piercing crystal spear",
+  shards: "Use: 3 shards. Every 3rd use: one powerful piercing crystal spear",
   crystalshield: "Use: crystals orbit you and absorb damage",
   prison: "Aim at an enemy: imprison it in crystals (frozen in place)",
   burst: "Use Crystal Shards on enemies first, then use: detonates every crystal",
@@ -467,7 +467,7 @@ function heldLine(p, st, plain) {
     return {
       skillId: cur.id,
       line: `${POWERS[cur.power].color}◆ ${cur.name} §8│ §bLevel ${lv}${lv >= SKILL_MAX_LV ? " §6MAX" : ""} ${bar(lv >= SKILL_MAX_LV ? 1 : x / skillXpNeeded(lv), 5, "§b", "§8", plain)} §8│ §9✦${manaCost(cur)} §8│ ${stateOf(left)}`,
-      tip: showTip ? `§7Use: cast ${cur.name} §8│ §7Tap sneak: next skill` : "",
+      tip: showTip ? `§7Use: cast ${cur.name} §8│ §7Sneak + use: skill menu` : "",
     };
   }
   const sk = ITEM_TO_SKILL[id];
@@ -797,7 +797,7 @@ function givePowerItem(p) {
     removeSkillItems(p);
     if (hasItem(p, SIGIL)) return;
     const it = new ItemStack(SIGIL, 1);
-    try { it.keepOnDeath = true; it.lockMode = "inventory"; } catch (e) { /* */ }   // يبقى ويا اللاعب بعد الموت وما ينرمي ولا ينحط بصندوق
+    try { it.keepOnDeath = true; it.lockMode = (MC.ItemLockMode && MC.ItemLockMode.inventory) || "inventory"; } catch (e) { /* */ }   // يبقى ويا اللاعب بعد الموت وما ينرمي ولا ينحط بصندوق
     const left = inv(p).addItem(it);
     if (left) p.dimension.spawnItem(left, p.location);
   } catch (e) { /* */ }
@@ -1338,7 +1338,7 @@ async function openBook(player) {
   const form = new ActionFormData()
     .title("Evolution Book")
     .body(
-      `${pw.color}${pw.name} ${rarityOf(st.power).color}[${rarityOf(st.power).name}]§r\nPower level: §d${st.plevel || 1}/${rarityOf(st.power).maxLv}§r ${(st.plevel || 1) >= rarityOf(st.power).maxLv ? "§6(MAX)" : `§7(XP ${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}§r\nRank: §e${RANKS[st.rank]}§r\nLevel: §b${st.level}§r\nXP: §a${st.xp}/${xpNeeded(st.level)}§r\n${nextRankLine(st)}\n\n§7Pick a skill to select it on your skill bar (bottom right). Cast it with the Power Sigil; tap sneak while holding it to switch. Your power grows with every kill, every skill hit and with your level.`
+      `${pw.color}${pw.name} ${rarityOf(st.power).color}[${rarityOf(st.power).name}]§r\nPower level: §d${st.plevel || 1}/${rarityOf(st.power).maxLv}§r ${(st.plevel || 1) >= rarityOf(st.power).maxLv ? "§6(MAX)" : `§7(XP ${st.pxp || 0}/${powerXpNeeded(st.plevel || 1)})`}§r\nRank: §e${RANKS[st.rank]}§r\nLevel: §b${st.level}§r\nXP: §a${st.xp}/${xpNeeded(st.level)}§r\n${nextRankLine(st)}\n\n§7Pick a skill to select it on your skill bar (bottom right). Cast it with the Power Sigil; sneak + use the sigil opens your skills menu. Your power grows with every kill, every skill hit and with your level.`
     );
   for (const s of mine) {
     if (isSkillUnlocked(st, s)) {
@@ -1364,7 +1364,7 @@ async function openBook(player) {
   givePowerItem(player);
   sfxPlayer(player, "sh.select", 0.7, 1.3);
   notify(player, `§aSelected: ${s.name}`, 60);
-  say(player, `§e[${s.name}] §f${s.desc}\n§7How to use: hold the Power Sigil and use it. ${usageOf(s)}. Tap sneak (with the sigil) to switch skills.`);
+  say(player, `§e[${s.name}] §f${s.desc}\n§7How to use: hold the Power Sigil and use it. ${usageOf(s)}. Sneak + use the sigil to open your skills menu.`);
 }
 
 // ───────────────────────── المدرب ─────────────────────────
@@ -1531,7 +1531,7 @@ function announceUps(player, ups) {
       say(player, `§d[Power] §fYour power reached level §d${u.level}`);
       for (const sk of Object.values(SKILLS)) {
         if (sk.power === stx.power && !sk.first && sk.unlock === u.level) {
-          say(player, `§a[New skill] §f${sk.name} unlocked! §7Hold the Power Sigil and tap sneak to select it on your skill bar.`);
+          say(player, `§a[New skill] §f${sk.name} unlocked! §7Sneak + use the Power Sigil to open your skills and pick it.`);
           notify(player, `§a✦ New skill: ${sk.name}`, 70);
         }
       }
@@ -5052,13 +5052,16 @@ world.afterEvents.itemUse.subscribe((ev) => {
 function useSigil(p) {
   const st = getState(p);
   if (!st.power) { notify(p, "§7You have no power yet", 40); return; }
+  const tap = sneakTap.get(p.id);
+  if (tap) tap.used = true;                                                    // سنيك + استعمال ما يبدل المهارة
+  if (p.isSneaking) { sneakMenu.add(p.id); openSkillScreen(p); return; }       // v1.44: سنيك + استعمال = شاشة المهارات
   const sk = selectedSkill(st);
   if (!sk) { notify(p, "§7No skill unlocked yet", 40); return; }
-  const tap = sneakTap.get(p.id);
-  if (tap) tap.used = true;                                                    // سنيك + استعمال (كيبورد) ما يبدل المهارة
   useSkill(p, sk);
 }
-const sneakTap = new Map();
+// ضغطة سنيك قصيرة (≤ 8 تكات) وانت ماسك الصولجان = المهارة الجاية. نتأكد بعد 4 تكات إنك واقف:
+// باللمس زر السنيك يثبت الجثو (تبديل)، فضغطة الجثو ما تبدل، وضغطة القيام تبدل إلا إذا فتحت قائمة المهارات وانت جاثي.
+const sneakTap = new Map(), sneakMenu = new Set();
 world.afterEvents.playerButtonInput.subscribe((ev) => {
   try {
     if (ev.button !== "Sneak") return;
@@ -5066,18 +5069,69 @@ world.afterEvents.playerButtonInput.subscribe((ev) => {
     if (ev.newButtonState === "Pressed") { sneakTap.set(p.id, { t: system.currentTick, used: false }); return; }
     const tap = sneakTap.get(p.id);
     sneakTap.delete(p.id);
-    if (!tap || tap.used || system.currentTick - tap.t > 8) return;
-    const held = inv(p).getItem(p.selectedSlotIndex);
-    if (!held || held.typeId !== SIGIL) return;
+    const short = !!tap && !tap.used && system.currentTick - tap.t <= 8;
     later(4, () => {
       try {
+        if (!valid(p) || p.isSneaking) return;
+        const menu = sneakMenu.delete(p.id);
+        if (!short || menu) return;
+        const held = inv(p).getItem(p.selectedSlotIndex);
+        if (!held || held.typeId !== SIGIL) return;
         const g = guardAt.get(p.id);
-        if (!valid(p) || (g && g.used && g.at >= tap.t - 1)) return;               // انصد هجوم بنفس الضغطة
+        if (g && g.used && g.at >= tap.t - 1) return;                           // انصد هجوم بنفس الضغطة
         cycleSkill(p, 1);
       } catch (e2) { /* */ }
     });
   } catch (e) { /* */ }
 });
+// ═════ v1.44: شاشة المهارات (مثل الحقيبة بس للمهارات) ═════
+// شاشة ActionForm مرسومة من RP/ui/server_form.json (tools/gen_skillbar_ui.py): العنوان يبدي بـ SKILL_SCREEN،
+// و8 بطاقات (صفين × 4): أيقونة كبيرة واسم المهارة وحالتها. تكبس على مهارة = تنختار، والصولجان يرميها.
+// رموز أول نص الزر (ما تنرسم): §k§s مختارة، §k§c مقفولة، §k§b كولداون، §k§d مانا ما تكفي، §k§e خانة فاضية.
+const SKILL_SCREEN = "§t§s§q§r";
+const SK_TOK = { sel: "§k§s", lock: "§k§c", cool: "§k§b", mana: "§k§d", empty: "§k§e" };
+const skillMenuOpen = new Set();
+async function openSkillScreen(p) {
+  if (skillMenuOpen.has(p.id)) return;
+  const st = getState(p);
+  if (!st.power) { notify(p, "§7You have no power yet", 40); return; }
+  const lang = langOf(p), tr = (x) => (lang === "ar" ? i18nShow(lang, x, "seg") : x);
+  const mine = mySkills(st), cur = selectedSkill(st), now = system.currentTick, mana = manaOf(p, st);
+  const pw = POWERS[st.power], rar = rarityOf(st.power), pl = st.plevel || 1;
+  const f = new RawActionForm();
+  f.title(SKILL_SCREEN + "§f" + GL(GI.power0 + Math.max(0, GLYPH_POWERS.indexOf(st.power))) + " " + tr(`${pw.color}${pw.name}`));
+  const lines = [`§dPower level ${pl}/${rar.maxLv} §8· §9Mana ${Math.floor(mana)}/${manaMax(st)}`, "§7Tap a skill to select it, then use the Sigil to cast it."];
+  f.body(lang === "ar" ? AR_MARK + lines.map((l) => i18nShow(lang, l, "form")).join("\n") : lines.join("\n"));
+  for (let i = 0; i < 8; i++) {
+    const s = mine[i];
+    if (!s) { f.button(SK_TOK.empty + "§r"); continue; }
+    const left = (cooldowns.get(`${p.id}:${s.id}`) ?? 0) - now;
+    const isSel = !!cur && cur.id === s.id;
+    let tok = "", col = "§f", status;
+    if (!isSkillUnlocked(st, s)) { tok = SK_TOK.lock; col = "§7"; status = `§8${GL(GI.lock)} Lv ${s.unlock}`; }
+    else {
+      if (isSel) { tok += SK_TOK.sel; col = "§e"; }
+      if (left > 0) { tok += SK_TOK.cool; status = `§c${GL(GI.cool)} ${Math.ceil(left / 20)}s`; }
+      else if (mana < manaCost(s)) { tok += SK_TOK.mana; status = `§9✦${manaCost(s)}`; }
+      else status = isSel ? `§a${GL(GI.ready)} ${tr("Selected")}` : `§7Lv ${skillLevel(st, s.id)}`;
+    }
+    f.button(`${tok}§r${col}${tr(s.name)}\n${status}`, `textures/items/sh_${s.id}`);
+  }
+  skillMenuOpen.add(p.id);
+  let r;
+  try { r = await showForm(p, f); } finally { skillMenuOpen.delete(p.id); }
+  if (!r || r.canceled || r.selection === undefined || !valid(p)) return;
+  const s = mine[r.selection];
+  if (!s) return;
+  const st2 = getState(p);
+  if (st2.power !== s.power) return;
+  if (!isSkillUnlocked(st2, s)) { notify(p, `§c${s.name}: unlocks at power level ${s.unlock}`, 60); sfxPlayer(p, "note.bass", 0.5, 0.6); return; }
+  st2.sel = s.id;
+  saveState(p, st2);
+  sfxPlayer(p, "sh.select", 0.6, 1.4);
+  notify(p, `${pw.color}◆ ${s.name}`, 40);
+  renderHud(p);
+}
 function cycleSkill(p, dir) {
   const st = getState(p);
   const open = mySkills(st).filter((s) => isSkillUnlocked(st, s));
@@ -5109,16 +5163,22 @@ function skillBarCode(p, st) {
     if (!isSkillUnlocked(st, s)) { x = "c"; num = Math.min(99, s.unlock); }
     else {
       if (cur && cur.id === s.id) out += "§k§o§" + slot;
-      const left = (cooldowns.get(`${p.id}:${s.id}`) ?? 0) - now;
-      if (left > 0) { x = "b"; num = Math.min(99, Math.ceil(left / 20)); }
-      else if (mana < manaCost(s)) x = "d";
+      const key = `${p.id}:${s.id}`, end = cooldowns.get(key) ?? 0, left = end - now;
+      if (left > 0) {
+        x = "b"; num = Math.min(99, Math.ceil(left / 20));
+        let seen = cdSeen.get(key);                                              // مدة الكولداون كاملة = أول مرة نشوفه (الـHUD كل 5 تكات)
+        if (!seen || seen.end !== end) { seen = { end, total: Math.max(left, 1) }; cdSeen.set(key, seen); }
+        out += "§k§p§" + slot + "§" + Math.max(1, Math.min(8, Math.ceil((left / seen.total) * 8)));
+      } else if (mana < manaCost(s)) x = "d";
     }
     out += "§k§" + slot + "§" + x;
     if (num >= 10) out += "§k§m§" + slot + "§" + Math.floor(num / 10);
     if (num >= 0) out += "§k§n§" + slot + "§" + (num % 10);
   });
+  if (langOf(p) === "ar") out += "§k§q§1";                                     // اسم المختارة بالعربي
   return out + "§r§f";
 }
+const cdSeen = new Map();
 // نغمة خفيفة لما تخلص مهارة كولداونها طويل (كانت بشريط المهارات القديم فوق يسار)
 function readyChimes(p, st) {
   if (!st.power) return;
@@ -5164,7 +5224,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         if (!s4.sel) s4.sel = firstSkillOf(s4.power);
         saveState(p, s4);
         givePowerItem(p);
-        say(p, "§d[Skills] §fYour skills now live on the skill bar (bottom right). Hold the §dPower Sigil§f and use it to cast; tap sneak while holding it to switch skills.");
+        say(p, "§d[Skills] §fYour skills now live on the skill bar (bottom right). Use the §dPower Sigil§f to cast; sneak + use it to open your skills menu, or tap sneak to switch.");
       }
       if (!st.sawIntro) {
         const s2 = getState(p);

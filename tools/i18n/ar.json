@@ -975,5 +975,17 @@
  "§7Only {0} is unlocked so far": "§7المفتوحة حتى الآن: {0} فقط",
  "§d[Skills] §fYour skills now live on the skill bar (bottom right). Hold the §dPower Sigil§f and use it to cast; tap sneak while holding it to switch skills.": "§d[المهارات] §fمهاراتك صارت على شريط المهارات (أسفل اليمين). أمسك §dصولجان القدرة§f واستعمله لإطلاقها، وانقر التسلل وأنت تمسكه لتبديل المهارات.",
  "Three shards where you look. Every third cast (or sneak + use): one powerful crystal spear that pierces everything. Shards leave crystals on enemies.": "ثلاث شظايا حيث تنظر. كل ثالث رمية (أو انحناء + استعمال): رمحٌ بلوري قوي يخترق كل شيء. والشظايا تترك بلوراتٍ على الأعداء.",
- "Use: 3 shards. Every 3rd use (or sneak + use): one powerful piercing crystal spear": "استعمال: 3 شظايا. كل ثالث استعمال (أو انحناء + استعمال): رمحٌ بلوري خارق"
+ "Use: 3 shards. Every 3rd use (or sneak + use): one powerful piercing crystal spear": "استعمال: 3 شظايا. كل ثالث استعمال (أو انحناء + استعمال): رمحٌ بلوري خارق",
+ "Three shards where you look. Every third cast: one powerful crystal spear that pierces everything. Shards leave crystals on enemies.": "ثلاث شظايا حيث تنظر. كل ثالث رمية: رمحٌ بلوري قوي يخترق كل شيء. والشظايا تترك بلوراتٍ على الأعداء.",
+ "Use: 3 shards. Every 3rd use: one powerful piercing crystal spear": "استعمال: 3 شظايا. كل ثالث استعمال: رمحٌ بلوري خارق",
+ "§7Use: cast {0} §8│ §7Sneak + use: skill menu": "§7استعمله: يطلق {0} §8│ §7تسلل + استعمال: قائمة المهارات",
+ "§7Sneak + use: skill menu": "§7تسلل + استعمال: قائمة المهارات",
+ "§7Pick a skill to select it on your skill bar (bottom right). Cast it with the Power Sigil; sneak + use the sigil opens your skills menu. Your power grows with every kill, every skill hit and with your level.": "§7اختر مهارة لتحددها على شريط المهارات (أسفل اليمين). أطلقها بصولجان القدرة، والتسلل + استعمال الصولجان يفتح قائمة مهاراتك. قوتك تكبر مع كل قتل، وكل إصابة بمهارة، ومع مستواك.",
+ "§7How to use: hold the Power Sigil and use it. {0}. Sneak + use the sigil to open your skills menu.": "§7طريقة الاستعمال: أمسك صولجان القدرة واستعمله. {0}. التسلل + استعمال الصولجان يفتح قائمة مهاراتك.",
+ "§a[New skill] §f{0} unlocked! §7Sneak + use the Power Sigil to open your skills and pick it.": "§a[مهارة جديدة] §fانفتحت {0}! §7تسلل واستعمل صولجان القدرة لتفتح مهاراتك وتختارها.",
+ "§dPower level {0}/{1} §8· §9Mana {2}/{3}": "§dمستوى القوة {0}/{1} §8· §9المانا {2}/{3}",
+ "§7Tap a skill to select it, then use the Sigil to cast it.": "§7اضغط على مهارة لتختارها، ثم استعمل الصولجان لتطلقها.",
+ "Selected": "مختارة",
+ "§c{0}: unlocks at power level {1}": "§c{0}: تنفتح عند مستوى القوة {1}",
+ "§d[Skills] §fYour skills now live on the skill bar (bottom right). Use the §dPower Sigil§f to cast; sneak + use it to open your skills menu, or tap sneak to switch.": "§d[المهارات] §fمهاراتك صارت على شريط المهارات (أسفل اليمين). استعمل §dصولجان القدرة§f لإطلاقها، والتسلل + استعماله يفتح قائمة المهارات، أو انقر التسلل للتبديل."
 }

@@ -376,9 +376,13 @@ try:
     raw = json.dumps(sf, ensure_ascii=False)
     if not mk or raw.count(f"'{mk.group(1)}'") != 2:
         err("server_form.json: علامة الخيميائي ما تطابق ALC_MARK بـ main.js")
-    for tex in set(re.findall(r'"(textures/ui/sh_[a-z_]+)"', raw)):
+    for tex in set(re.findall(r'"(textures/ui/sh_[a-z_0-9/]+)"', raw)):
         if not os.path.exists(os.path.join(RP, tex + ".png")):
             err(f"server_form.json: الصورة {tex} مو موجودة")
+    # v1.44: شاشة المهارات: علامتها بالعنوان لازم تطابق SKILL_SCREEN بالسكربت وتنذكر بـ long_form (تخفي القائمة العادية) وبالشاشة نفسها
+    mk2 = re.search(r'const SKILL_SCREEN = "([^"]+)"', open(os.path.join(BP, "scripts", "main.js"), encoding="utf-8").read())
+    if not mk2 or raw.count(f"'{mk2.group(1)}'") != 2 or "sh_sk_form" not in sf or "sh_skills_factory" not in raw:
+        err("server_form.json: شاشة المهارات ما تطابق SKILL_SCREEN بـ main.js (أو ناقصة)")
 except Exception as e:  # noqa: BLE001
     err(f"فحص شاشة الخيميائي فشل: {e}")
 
@@ -410,6 +414,12 @@ try:
                     err(f"hud_screen.json: {k}: بحث الشريط لازم يكون عن رمز يبدي بـ §k: {src}")
 except Exception as e:  # noqa: BLE001
     err(f"فحص شريط المهارات فشل: {e}")
+
+# v1.44: كل إشارة بالمود لشي من المود موجودة: تكستشر وموديل وأنميشن ومتحكم وrender controller للكيانات والأسلحة،
+#        جداول الغنائم وقواعد الظهور، والكيانات والأيتمات اللي تنطلب بالسكربت (tools/audit_refs.py)
+r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "audit_refs.py")], capture_output=True)
+if r.returncode != 0:
+    err("فحص الإشارات: " + r.stdout.decode("utf-8", "replace")[-1500:])
 
 # V1.1: الموديلات والأنيميشن اللي انضبطت بالمعاينة القديمة (معكوسة) لازم تكون مقلوبة لحساب اللعبة (tools/handed.py)
 r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "handed.py"), "--check"], capture_output=True)

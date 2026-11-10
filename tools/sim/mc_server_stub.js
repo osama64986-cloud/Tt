@@ -103,6 +103,7 @@ export class BlockVolume { constructor(a, b) { this.a = a; this.b = b; } }
 export const GameMode = new Proxy({}, { get: (t, k) => String(k) });
 export const HudElement = { PaperDoll: 0, Armor: 1, ToolTips: 2, TouchControls: 3, Crosshair: 4, Hotbar: 5, Health: 6, ProgressBar: 7, Hunger: 8, AirBubbles: 9, HorseHealth: 10, StatusEffects: 11, ItemText: 12 };
 export const HudVisibility = { Hide: 0, Reset: 1 };
+export const ItemLockMode = { inventory: "inventory", none: "none", slot: "slot" };
 export const EquipmentSlot = { Head: "Head", Chest: "Chest", Legs: "Legs", Feet: "Feet", Mainhand: "Mainhand", Offhand: "Offhand" };
 
 // تسجيل: لما rec.on يسجل كل جزيء انطلب (النوع والمكان والمتغيرات) وتحرك كل كيان، حتى تنرسم النتيجة الحقيقية بدل مشاهد مرسومة باليد
@@ -535,7 +536,7 @@ export const __sim = {
     {
       console.log("\nصولجان القدرة وشريط المهارات (v1.43):");
       const SIG = "sh:power_sigil";
-      const CODE_RE = /^(§k(§l§[0-8]|§o§[0-6]|§[0-6]§[a-d]|§m§[0-6]§[1-9]|§n§[0-6]§[0-9]))+§r§f$/;
+      const CODE_RE = /^(§k(§l§[0-8]|§o§[0-6]|§[0-6]§[a-d]|§m§[0-6]§[1-9]|§n§[0-6]§[0-9]|§p§[0-6]§[1-8]|§q§1))+§r§f$/;
       // نفك الكود بنفس قواعد tools/gen_skillbar_ui.py: لكل خانة الحالة والرقم، والمختارة، والقدرة
       const decode = (c) => {
         const out = { power: -1, sel: -1, slots: {} };
@@ -605,6 +606,9 @@ export const __sim = {
       d = decode(stats.barCode || "");
       const castOk = d.slots[String(starN - 1)] && d.slots[String(starN - 1)].x === "b" && d.slots[String(starN - 1)].n > 0;
       const tap = (dt = 2) => { fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Pressed" }); advance(dt); fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Released" }); advance(6); };
+      d = decode(stats.barCode || "");
+      const cdStep = (stats.barCode || "").match(new RegExp(`§k§p§${starN - 1}§([1-8])`));
+      if (!cdStep || +cdStep[1] < 7) failures.push("ظل الكولداون بالشريط (§k§p) ما يبين أو مو بأوله: " + (cdStep ? cdStep[1] : "ماكو"));
       tap(); const s1 = stNow().sel; tap(); const s2 = stNow().sel;
       d = decode(stats.barCode || "");
       const cycOk = s1 === "gravwell" && s2 === "orbit" && d.sel === starN - 3;
@@ -618,6 +622,36 @@ export const __sim = {
       console.log(`  الصولجان يرمي المختارة (كولداون بالشريط) ${castOk ? "✔" : "✖"} | سنيك قصير يبدل ${cycOk ? "✔" : "✖"} (${s1}, ${s2}) | سنيك طويل ما يبدل ${longHold ? "✔" : "✖"} | سنيك+استعمال ما يبدل ${sneakUse ? "✔" : "✖"} | بدون الصولجان ما يبدل ${otherItem ? "✔" : "✖"} | يلف ${wrap ? "✔" : "✖"}`);
       if (!castOk) failures.push("الصولجان ما رمى المهارة المختارة");
       if (!cycOk || !longHold || !sneakUse || !otherItem || !wrap) failures.push("تبديل المهارات بالسنيك ما يشتغل صح");
+      // 5ب) v1.44: سنيك + استعمال الصولجان = شاشة المهارات (مثل الحقيبة): 8 بطاقات بأيقونات، تكبس على مهارة = تنختار، وما ترمي شي
+      {
+        const ui2 = (await import("@minecraft/server-ui")).sim;
+        system_cd_reset(); fire("scriptEventReceive", { id: "sh:clearbuffs", message: "", sourceEntity: player });
+        setState({ ...stNow(), plevel: 10, sel: "meteor" }); hold(SIG);
+        ui2.formsShown.length = 0; ui2.queue.length = 0; ui2.nextSelection = 3;
+        player.isSneaking = true; fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Pressed" });
+        await useItem(SIG); advance(2); await new Promise((r) => setTimeout(r, 10));
+        fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Released" }); player.isSneaking = false; advance(8);
+        const fm = ui2.formsShown.find((f) => typeof f.title === "string" && f.title.startsWith("§t§s§q§r"));
+        const starIds = skills.filter((x) => x.power === "star").map((x) => x.id);
+        const okForm = !!fm && fm.buttons.length === 8 && fm.icons.slice(0, starN).every((ic, i) => ic === `textures/items/sh_${starIds[i]}`)
+          && fm.buttons[starN] === "§k§e§r" && /^§k§s§r/.test(fm.buttons[0]) && fm.buttons.every((b) => /^(§k§[scbde])*§r/.test(b));
+        const picked = stNow().sel === starIds[3];
+        d = decode(stats.barCode || "");
+        const noCast = !Object.values(d.slots).some((v) => v.x === "b");
+        // مقفولة من الشاشة ما تنختار
+        setState({ ...stNow(), plevel: 1, sel: "meteor" }); stats.messages.length = 0;
+        ui2.nextSelection = 5; player.isSneaking = true; fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Pressed" });
+        await useItem(SIG); advance(2); await new Promise((r) => setTimeout(r, 10));
+        fire("playerButtonInput", { player, button: "Sneak", newButtonState: "Released" }); player.isSneaking = false; advance(8);
+        const fm2 = ui2.formsShown[ui2.formsShown.length - 1];
+        const lockedOk = stNow().sel === "meteor" && fm2 && /^§k§c§r/.test(fm2.buttons[5]) && /\uE532 Lv \d+/.test(fm2.buttons[5]);
+        console.log(`  شاشة المهارات (سنيك + استعمال): تنفتح بـ8 بطاقات وأيقونات ${okForm ? "✔" : "✖"} | تكبس = تنختار (${stNow().sel === "meteor" ? "meteor" : stNow().sel}) ${picked ? "✔" : "✖"} | ما رمت مهارة ${noCast ? "✔" : "✖"} | المقفولة ما تنختار ${lockedOk ? "✔" : "✖"}`);
+        if (!okForm) failures.push("شاشة المهارات: البطاقات أو الأيقونات أو الرموز غلط: " + JSON.stringify(fm && fm.buttons).replace(/§/g, "&").slice(0, 400));
+        if (!picked) failures.push("شاشة المهارات: الاختيار ما غيّر المهارة المختارة");
+        if (!noCast) failures.push("شاشة المهارات: سنيك + استعمال رمى مهارة");
+        if (!lockedOk) failures.push("شاشة المهارات: المقفولة انختارت أو ما عليها القفل");
+        ui2.nextSelection = 0; ui2.formsShown.length = 0;                          // نرجع الاختيار الافتراضي للاختبارات اللي بعدها
+      }
       // 6) المقفولة ما تنختار بالسنيك (قدرة ليفل 1 = مهارة وحدة)
       setState({ ...stNow(), plevel: 1, sel: "meteor" }); stats.messages.length = 0; tap();
       const onlyOne = stNow().sel === "meteor";
@@ -651,6 +685,8 @@ export const __sim = {
       if (!lore) failures.push("حكاية العالم ما فتحت");
       else if (lore.buttons.length !== 8) failures.push("سجلّ إثيريا لازم 8 (مقدمة + 7 فصول)");
       ui.nextSelection = 0;
+      // اختيار "آخر زر" بالكتاب يوصل للإعدادات ويبدل لوحة الواجهة مرات كثيرة (لحد حد السلسلة): نرجعها شغالة حتى الاختبارات اللي بعدها ما تتأثر
+      try { player.removeTag("sh_hud_off"); } catch (e) { /* */ }
     }
     // V1: طور القصة: المتتبع فوق يمين (العنوان الفرعي)، «اكتملت المهمة» ثم يختفي ثم الجاية، والمكافأة؛ ولاعب قديم ينحسبله اللي خلصه بدون مكافأة
     {
