@@ -63,33 +63,10 @@ def build(out, flip, variations):
         sl.append(t)
     out["sea_lantern"] = stack_frames(sl)
 
-    # ------------------------------------------------------------ metal blocks
-    def mb(name, style, metal, rough, contrast=0.3, emis=0):
-        t = P.metal_block(name, vramp(name, 5, contrast=contrast), style, metal=metal, rough=rough)
-        t.emis = emis
-        out[name] = t
-    mb("iron_block", "plate", 240, 70, 0.2)
-    mb("gold_block", "bars", 250, 50, 0.32)
-    mb("diamond_block", "facets", 60, 25, 0.34)
-    mb("emerald_block", "facets", 60, 30, 0.38)
-    mb("lapis_block", "rough", 0, 120, 0.34)
-    mb("redstone_block", "rough", 0, 110, 0.34, emis=30)
-    mb("coal_block", "rough", 0, 150, 0.3)
-    mb("amethyst_block", "facets", 30, 40, 0.3)
-    if "budding_amethyst" in STATS:
-        t = P.metal_block("amethyst_block", vramp("budding_amethyst", 5, contrast=0.3), "facets", metal=30, rough=40)
-        for (x, y) in ((4, 4), (11, 5), (6, 11), (12, 12)):   # bud sockets
-            for dx, dy, v in ((0, 0, 0), (1, 0, 1), (0, 1, 1), (-1, 0, 4), (0, -1, 4)):
-                t.rgb[y + dy, x + dx] = vramp("budding_amethyst", 5, contrast=0.4)[v]
-        out["budding_amethyst"] = t
-    for stage in ("copper_block", "exposed_copper", "weathered_copper", "oxidized_copper"):
-        ramp = vramp(stage, 5, contrast=0.26)
-        rough = {"copper_block": 70, "exposed_copper": 110, "weathered_copper": 150, "oxidized_copper": 185}[stage]
-        metal = {"copper_block": 235, "exposed_copper": 190, "weathered_copper": 120, "oxidized_copper": 60}[stage]
-        t = P.metal_block("copper", ramp, "sheet", metal=metal, rough=rough)
-        out[stage] = t
-        cut = {"copper_block": "cut_copper", "exposed_copper": "exposed_cut_copper",
-               "weathered_copper": "weathered_cut_copper", "oxidized_copper": "oxidized_cut_copper"}[stage]
+    # mineral / storage blocks live in blocks_minerals.py; only cut copper here
+    for stage, cut, metal, rough in (("copper_block", "cut_copper", 235, 70), ("exposed_copper", "exposed_cut_copper", 190, 110),
+                                     ("weathered_copper", "weathered_cut_copper", 120, 150),
+                                     ("oxidized_copper", "oxidized_cut_copper", 60, 185)):
         cr = vramp(cut, 5, contrast=0.26)
         c = P.bricks("cut_copper", cr, [cr[0], shift(cr[0], dv=0.04)], rows=2, cols=2, stagger=False, vary=0.14, chip=0.02)
         c.metal, c.rough = metal, rough

@@ -43,7 +43,7 @@ for root, _, files in os.walk(bdir):
             "mean": px.mean(0).round().astype(int).tolist(),
             "ramp": ramp,
         })
-        if rel in ("end_rod", "endframe_eye"):          # UV layout only: 1 = pixel used by the model
+        if (al == 0).any() and (al > 0).any():          # layout only: 1 = pixel used by the model / sprite
             e["mask"] = ["".join("1" if v > 0 else "0" for v in row) for row in al]
         m = os.path.join(root, stem + "_mers.tga")
         if os.path.exists(m):

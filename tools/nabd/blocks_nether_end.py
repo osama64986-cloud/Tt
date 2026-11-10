@@ -199,18 +199,28 @@ def build(out, flip, variations):
     # scrap-metal bands on the side and a bold square spiral on top
     body = [(40, 24, 20), (58, 36, 30), (80, 52, 44), (104, 70, 58), (130, 92, 78)]
     plate = [(124, 88, 76), (168, 128, 112), (204, 168, 152), (236, 208, 194)]
-    t = P.rock("ancient_debris", body, "strata", cracks=2, rough=170)
+    # side: four stacked scrap plates of uneven height, each with a lit top
+    # edge, a dark underside, a staggered seam and one pale rivet
+    idx = np.zeros((N, N), int)
+    hgt = np.zeros((N, N))
     met = np.zeros((N, N))
-    for k, y0 in enumerate((2, 7, 12)):
-        for x in range(N):
-            y = y0 + int(round(np.sin((x + k * 5) / N * 2 * np.pi) * 1.2))
-            t.rgb[y % N, x] = plate[3] if x % 5 == k else plate[2]
-            t.rgb[(y + 1) % N, x] = plate[0]
-            t.height[y % N, x] = 1.0
-            t.height[(y + 1) % N, x] = 0.85
-            met[y % N, x] = met[(y + 1) % N, x] = 150
-    t.metal = met
-    t.rough = np.where(met > 0, 90, 170)
+    rgb = np.zeros((N, N, 3), np.uint8)
+    y = 0
+    for k, (hh, seam, tone) in enumerate(((4, 5, 1), (5, 11, 0), (3, 3, 1), (4, 9, 0))):
+        pal = [body[1 + tone], body[2 + tone], plate[tone], plate[1 + tone]]     # underside, body, face, lit edge
+        for dy in range(hh):
+            row = y + dy
+            c = pal[3] if dy == 0 else (pal[0] if dy == hh - 1 else (pal[2] if dy == 1 else pal[1]))
+            rgb[row, :] = c
+            hgt[row, :] = 0.2 if dy == hh - 1 else (1.0 if dy == 0 else 0.7)
+            met[row, :] = 0 if dy == hh - 1 else 150
+        rgb[y:y + hh - 1, seam] = body[0]
+        hgt[y:y + hh - 1, seam] = 0.15
+        rv = (seam + 5) % N
+        rgb[y + 1, rv] = plate[3]
+        rgb[y + 2, rv] = body[0]
+        y += hh
+    t = Tex(rgb, hgt, rough=np.where(met > 0, 90, 170), metal=met, bump=1.3)
     out["ancient_debris_side"] = t
     tp = P.rock("ancient_debris_top", body, "smooth", cracks=0, rough=170)
     met = np.zeros((N, N))
@@ -230,7 +240,6 @@ def build(out, flip, variations):
     tp.metal = met
     tp.rough = np.where(met > 0, 90, 170)
     out["ancient_debris_top"] = tp
-    out["netherite_block"] = P.metal_block("netherite_block", vramp("netherite_block", 5, contrast=0.4), "plate", metal=230, rough=90)
 
     # respawn anchor: obsidian frame, a charge gauge on the side, a swirling well on top
     ob = make_ramp((44, 30, 70), 5, 0.6, warm=0.02)
