@@ -2156,7 +2156,7 @@ const SASUKE = {
 // ------------------------------------------------------------------ Ichigo Kurosaki (Bleach)
 const ICHIGO = {
   name: "Ichigo", color: "§6", energy: 1600, regen: 28, energyName: "§bREIATSU",
-  dodge: () => 0.12,
+  dodge: (e) => (formOf(e) >= 1 ? 0.18 : 0.12),  // Bankai compresses all that power into speed
   forms: [
     { label: "Shikai — Zangetsu", power: 90 },
     { label: "Bankai — Tensa Zangetsu", power: 150, aura: C.black },
@@ -2286,6 +2286,7 @@ const TANJIRO = {
 };
 
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
+const SWORDSMEN = new Set(["ab:zoro", "ab:ichigo", "ab:tanjiro", "ab:sasuke"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
   "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
   "ab:sasuke": SASUKE, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
@@ -2429,6 +2430,16 @@ function comboStep(e, t, mv, last) {
       }
       deal(e, t, mv.dmg * pw * (last ? 1.3 : 1));
       swingArc(e, t, mv.arc, color);
+      if (mv.sword && SWORDSMEN.has(t.typeId) && Math.random() < 0.2) {  // blade lock between two swordsmen
+        const c = V.add(aim(e), V.mul(V.sub(aim(t), aim(e)), 0.5));
+        fx(e.dimension, "flash", c, C.white, 2.6, 0.2);
+        fx(e.dimension, "streak", c, C.kiYellow, 1.4, 0.35, { count: 16, speed: 9 });
+        sound(e.dimension, "random.anvil_land", c, 0.6, 1.6);
+        announce(e, "§f§lBlade lock!");
+        const n2 = V.norm(V.sub(t.location, e.location));
+        try { e.applyKnockback({ x: -n2.x * 0.8, z: -n2.z * 0.8 }, 0.15); } catch (err) { /* ignore */ }
+        try { t.applyKnockback({ x: n2.x * 0.8, z: n2.z * 0.8 }, 0.15); } catch (err) { /* ignore */ }
+      }
       if (mv.sword) {  // a visible blade streak across the target for every sword cut
         const sd = V.norm(V.sub(aim(t), aim(e)));
         for (const roll of mv.pose === 1 ? [45, -45] : [mv.pose === 28 ? -35 : 35]) {
@@ -2674,6 +2685,10 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
       ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.04, 6);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
+    }
+    if (v.typeId === "ab:sasuke" && formOf(v) === 1) {  // Susanoo's ribcage takes part of every blow
+      ev.damage *= 0.85;
+      system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
     }
     if (now() < (s.calmUntil ?? 0) && src && src.isValid) {  // Tanjiro's Dead Calm: parry and counter
       ev.damage *= 0.3;
