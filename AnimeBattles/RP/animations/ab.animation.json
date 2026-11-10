@@ -1872,6 +1872,33 @@
      ]
     }
    }
+  },
+  "animation.ab.cross": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -60,
+      -50,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -52,
+      50,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -8,
+      0,
+      6
+     ]
+    }
+   }
   }
  }
 }

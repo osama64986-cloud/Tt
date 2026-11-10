@@ -57,6 +57,7 @@
     "slash_l": "animation.ab.slash_l",
     "dodge": "animation.ab.dodge",
     "pump": "animation.ab.pump",
+    "cross": "animation.ab.cross",
     "tail_sway": "animation.ab.tail_sway",
     "hover": "animation.ab.hover",
     "arms_crossed": "animation.ab.arms_crossed"
@@ -164,6 +165,9 @@
      },
      {
       "pump": "query.property('ab:pose') == 30"
+     },
+     {
+      "cross": "query.property('ab:pose') == 31"
      },
      {
       "tail_sway": "1.0"

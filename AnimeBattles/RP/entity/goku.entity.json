@@ -71,7 +71,8 @@
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
     "dodge": "animation.ab.dodge",
-    "pump": "animation.ab.pump"
+    "pump": "animation.ab.pump",
+    "cross": "animation.ab.cross"
    },
    "scripts": {
     "animate": [
@@ -176,6 +177,9 @@
      },
      {
       "pump": "query.property('ab:pose') == 30"
+     },
+     {
+      "cross": "query.property('ab:pose') == 31"
      }
     ]
    },

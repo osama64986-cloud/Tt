@@ -2055,9 +2055,10 @@ world.afterEvents.entityDie.subscribe((ev) => {
     if (k && k.isValid && FIGHTERS[k.typeId] && k.id !== e.id) {
       const ks = state(k);
       if (now() >= ks.busyUntil) {
+        const vp = VICTORY[k.typeId] ?? 3;
         busy(ks, 22);
-        setPose(k, 3);
-        setExpr(k, 1, 22);
+        setPose(k, vp);
+        if (vp !== 31) setExpr(k, 1, 22);  // the arms-crossed ones keep their smug face
         later(22, () => { if (k.isValid && formOf(k) >= 0) setPose(k, 0); });
       }
     }
@@ -2065,6 +2066,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
 
+const VICTORY = { "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
   "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1 };

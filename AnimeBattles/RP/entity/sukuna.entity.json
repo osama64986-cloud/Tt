@@ -62,6 +62,7 @@
     "slash_l": "animation.ab.slash_l",
     "dodge": "animation.ab.dodge",
     "pump": "animation.ab.pump",
+    "cross": "animation.ab.cross",
     "arms2": "animation.ab.arms2"
    },
    "scripts": {
@@ -167,6 +168,9 @@
      },
      {
       "pump": "query.property('ab:pose') == 30"
+     },
+     {
+      "cross": "query.property('ab:pose') == 31"
      },
      {
       "arms2": "query.property('ab:form') == 2"
