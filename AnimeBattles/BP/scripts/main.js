@@ -590,6 +590,25 @@ const GOKU = {
       },
     },
     {
+      // Cell Games: charge the Kamehameha, vanish with Instant Transmission, fire point-blank from beside the enemy
+      id: "itkame", label: "Instant Kamehameha", cd: 520, cost: 300, min: 0, max: 48, weight: 4, cond: (e) => formOf(e) >= 1,
+      run(e, s, t) {
+        busy(s, 44); face(e, aim(t));
+        announce(e, "§bKa... me... ha... me...");
+        chargeOrb(e, t, 18, C.kameBlue, 0.3, 1.3, 2);
+        later(18, () => { if (e.isValid) setPose(e, 25); });
+        later(24, () => {
+          if (!e.isValid || !alive(t)) { if (e.isValid) setPose(e, 0); return; }
+          afterimage(e);
+          teleportNear(e, t, false, 2.2);
+          face(e, aim(t)); setPose(e, 1);
+          announce(e, "§b§lHAAAAA! §7(Instant Kamehameha)");
+          beam(e, t, { color: C.kameBlue, width: 1.5 + 0.25 * formOf(e), length: 30, dmg: 95 * powerOf(e) / 100, carve: 1, blast: 4, ticks: 5 });
+          later(16, () => { if (e.isValid) setPose(e, 0); });
+        });
+      },
+    },
+    {
       id: "kaioken", label: "Kaioken", cd: 900, cost: 120, min: 0, max: 48, weight: 2,
       cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 3) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
       run(e, s) {
@@ -1070,6 +1089,21 @@ const YUJI = {
   abilities: [divergent, yujiCommon(0.2), {
     id: "manji", label: "Manji Kick", cd: 140, cost: 40, min: 0, max: 4, weight: 3,
     run(e, s, t) { stretch(e, s, t, { pose: 7, ticks: 8, reach: 2.6, dmg: 16, color: C.ce, knock: 1.6, strong: true }); },
+  }, {
+    // cursed energy hits within 0.000001 s of the punch: space bends and the blow lands at 2.5x
+    id: "blackflash", label: "Black Flash", cd: 240, cost: 120, min: 0, max: 10, weight: 4,
+    run(e, s, t) {
+      busy(s, 14); afterimage(e); teleportNear(e, t, false, 1.3); face(e, aim(t)); setPose(e, 5);
+      announce(e, "§0§l§kX§r §4§lBlack Flash! §0§l§kX");
+      const c = aim(t), dim = e.dimension;
+      deal(e, t, 2.5 * 14 * powerOf(e) / 100);
+      fx(dim, "orb_solid", c, C.black, 1.8, 0.35);
+      fx(dim, "streak", c, C.red, 1.8, 0.4, { count: 18, speed: 12 });
+      fx(dim, "shock_v", c, C.red, 3.6, 0.3);
+      burst(dim, c, C.black, 16, 4, 0.4, 0.45);
+      shake(dim, c, 0.35, 0.35);
+      later(8, () => { if (e.isValid) setPose(e, 0); });
+    },
   }],
 };
 const YUJI_FINAL = {
@@ -1434,6 +1468,19 @@ const ZORO = {
           afterimage(e); teleportNear(e, t, true, 2); setPose(e, 1);
           slashMarks(e, t, C.zoro, 9, 10 * powerOf(e) / 100);
           later(16, () => setPose(e, 0));
+        });
+      } },
+    { id: "rengoku", label: "Purgatory Oni Giri", cd: 280, cost: 180, min: 0, max: 12, weight: 5, cond: (e) => formOf(e) === 1,
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 1); announce(e, "§4§lSantoryu: Rengoku Oni Giri! §7— Purgatory");
+        afterimage(e); teleportNear(e, t, true, 1.8);
+        later(2, () => {
+          if (!alive(t) || !e.isValid) return;
+          setPose(e, 19);
+          slashMarks(e, t, C.haki, 3, 22 * powerOf(e) / 100);
+          fx(t.dimension, "aura", t.location, C.fire, 1.6, 0.7, { count: 18, speed: 2.5 });   // the slashes leave dark flames behind
+          every(8, 4, () => { if (alive(t)) { deal(e, t, 5 * powerOf(e) / 100); fx(t.dimension, "orb_solid", V.up(t.location, 1.2), C.haki, 1.2, 0.5); } });
+          later(10, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
     { id: "sanzen", label: "Three Thousand Worlds", cd: 500, cost: 350, min: 0, max: 20, weight: 6, cond: (e) => formOf(e) === 1,
@@ -2471,6 +2518,17 @@ function dodgeFx(v, src) {
   const side = V.mul(sideOf(V.norm(V.sub(v.location, from))), Math.random() < 0.5 ? 1.6 : -1.6);
   try { v.tryTeleport(V.add(v.location, side), { checkForBlocks: true }); } catch (e) { /* ignore */ }
   sound(v.dimension, "mob.endermen.portal", v.location, 0.6, 2);
+  if (ui && src && src.isValid && alive(src)) {  // Ultra Instinct: the body answers on its own
+    later(2, () => {
+      if (!v.isValid || !alive(src)) return;
+      face(v, aim(src)); setPose(v, Math.random() < 0.5 ? 5 : 8);
+      deal(v, src, 16 * powerOf(v) / 100);
+      fx(v.dimension, "flash", aim(src), C.silver, 2.2, 0.2);
+      burst(v.dimension, aim(src), C.silver, 14, 3, 0.35, 0.35);
+      later(6, () => { if (v.isValid) setPose(v, 0); });
+    });
+    return;
+  }
   const s = state(v);
   if (now() >= s.busyUntil) {  // visible sway, only when not in the middle of a technique
     setPose(v, 29);
