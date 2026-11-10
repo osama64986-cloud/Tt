@@ -1150,10 +1150,41 @@ function slashMarks(e, t, color, n, dmg) {
     fx(t.dimension, "streak", c, C.white, 1, 0.25, { count: 6, speed: 7 });
   });
 }
+// Two Conqueror's Haki users release at once: black lightning crackles between them without touching;
+// the weaker will buckles and is frozen for a moment.
+function hakiClash(a, b) {
+  const dim = a.dimension;
+  announce(a, "§0§lCONQUEROR'S HAKI CLASH! §4§l— the sky splits");
+  const winner = powerOf(a) >= powerOf(b) ? a : b;
+  const loser = winner === a ? b : a;
+  every(2, 12, (i) => {
+    if (!a.isValid || !b.isValid) return false;
+    const pa = aim(a), pb = aim(b);
+    for (let k = 0; k <= 8; k++) {
+      const t = k / 8, j = (k % 2 ? 1 : -1) * 0.4 * Math.sin(i + k);
+      fx(dim, "orb_solid", V.add(V.add(pa, V.mul(V.sub(pb, pa), t)), { x: j, y: Math.cos(i * 2 + k) * 0.4, z: -j }), k % 3 ? C.haki : C.red, 0.7, 0.25);
+    }
+    if (i % 3 === 0) { fx(dim, "flash", V.add(pa, V.mul(V.sub(pb, pa), 0.5)), C.red, 3, 0.2); shake(dim, pa, 0.3, 0.2); }
+  });
+  later(26, () => {
+    if (!alive(loser)) return;
+    const ls = state(loser);
+    ls.stunUntil = Math.max(ls.stunUntil, now() + 30);
+    announce(loser, "§7...overwhelmed by the stronger will.");
+  });
+}
 function conqueror(e, s) {
   busy(s, 16); setPose(e, 22);  // haki pouring out: fists clenched, braced
   const dim = e.dimension, c = V.up(e.location, 1);
   announce(e, "§4§lConqueror's Haki!");
+  try {  // a rival Conqueror (Zoro, King of Hell) answers in kind
+    for (const o of dim.getEntities({ location: e.location, maxDistance: 25, families: ["anime_fighter"] })) {
+      if (o.typeId === "ab:zoro" && formOf(o) === 1 && alive(o) && teamOf(o) && teamOf(o) !== teamOf(e)) {
+        later(4, () => { if (alive(o) && e.isValid) { setPose(o, 22); hakiClash(e, o); later(18, () => { if (o.isValid) setPose(o, 0); }); } });
+        break;
+      }
+    }
+  } catch (err) { /* ignore */ }
   fx(dim, "shock", e.location, C.haki, 18, 0.8);
   fx(dim, "shock_v", c, C.haki, 10, 0.5);
   for (let k = 0; k < 14; k++) {
