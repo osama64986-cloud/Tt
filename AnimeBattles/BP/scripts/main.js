@@ -2077,6 +2077,13 @@ const TANJIRO = {
           if (i === 6) setPose(e, 0);
         });
       } },
+    { id: "calm", label: "Dead Calm", cd: 300, cost: 120, min: 0, max: 8, weight: 3, cond: G(0),
+      run(e, s, t) {
+        busy(s, 40); setPose(e, 19); announce(e, "§b§lEleventh Form: Dead Calm §7— every blow is turned aside");
+        s.calmUntil = now() + 40;
+        every(4, 10, () => { if (e.isValid) ring(e.dimension, V.up(e.location, 0.1), 1.6, C.kameBlue, 18, 0.35); });
+        later(40, () => { if (e.isValid) setPose(e, 0); });
+      } },
     { id: "dance", label: "Hinokami Kagura: Dance", cd: 110, cost: 60, min: 0, max: 26, weight: 5, cond: G(1),
       run(e, s, t) {
         busy(s, 14); setPose(e, 19); announce(e, "§6§lHinokami Kagura: Dance!");
@@ -2491,6 +2498,16 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
       ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.04, 6);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
+    }
+    if (now() < (s.calmUntil ?? 0) && src && src.isValid) {  // Tanjiro's Dead Calm: parry and counter
+      ev.damage *= 0.3;
+      system.run(() => {
+        if (!v.isValid || !alive(src)) return;
+        face(v, aim(src));
+        const cv = slashVfx(v.dimension, aim(src), V.norm(V.sub(aim(src), aim(v))), C.kameBlue, 1.2, Math.random() * 90);
+        later(4, () => killVfx(cv));
+        deal(v, src, 8 * powerOf(v) / 100);
+      });
     }
     // Sure-hit techniques (domains, World-Cutting Slash) only force a hit on someone not far stronger.
     const forced = cause === EntityDamageCause.override && !(attackerP > 0 && defenderP > attackerP * 1.1);
