@@ -4040,6 +4040,18 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
         for x in range(13, 19, 2):
             put(x, 25, (190, 190, 196))
         return
+    if expr == "shout" and mouth_type == "smirk" and eye_type in ("big", "band"):  # Gojo: a cocky open grin
+        for y in range(24, 30):
+            for x in range(10, 22):
+                put(x, y, ms[2])
+        rows = {25: (12, 20), 26: (12, 20), 27: (13, 19)}
+        for y, (a, b) in rows.items():
+            for x in range(a, b + 1):
+                edge = x in (a, b) or y == 27
+                put(x, y, ink if edge else (white if y == 25 else (150, 50, 60)))
+        put(11, 24, ink); put(21, 24, ink); put(20, 24, ink)  # one corner hitched higher
+        put(21, 23, ink)
+        return
     if expr == "shout" and mouth_type == "corner":  # Vegeta yells through clenched teeth
         for y in range(24, 30):
             for x in range(10, 22):
