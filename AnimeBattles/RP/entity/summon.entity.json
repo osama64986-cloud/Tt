@@ -1,0 +1,64 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:summon",
+   "materials": {
+    "glow": "entity_alphablend",
+    "solid": "entity_alphatest"
+   },
+   "textures": {
+    "susanoo": "textures/entity/summon/susanoo",
+    "kurama": "textures/entity/summon/kurama",
+    "gamabunta": "textures/entity/summon/gamabunta",
+    "susanoo_ribs": "textures/entity/summon/susanoo_ribs",
+    "susanoo_armour": "textures/entity/summon/susanoo_armour",
+    "muzan_infant": "textures/entity/summon/muzan_infant"
+   },
+   "geometry": {
+    "susanoo": "geometry.ab.summon_susanoo",
+    "kurama": "geometry.ab.summon_kurama",
+    "gamabunta": "geometry.ab.summon_gamabunta",
+    "susanoo_ribs": "geometry.ab.summon_susanoo_ribs",
+    "susanoo_armour": "geometry.ab.summon_susanoo_armour",
+    "muzan_infant": "geometry.ab.summon_muzan_infant"
+   },
+   "animations": {
+    "base": "animation.ab.summon_base",
+    "wings": "animation.ab.summon_wings",
+    "tails": "animation.ab.summon_tails",
+    "swing": "animation.ab.summon_swing",
+    "aim": "animation.ab.summon_aim",
+    "leap": "animation.ab.summon_leap"
+   },
+   "scripts": {
+    "animate": [
+     "base",
+     {
+      "wings": "query.property('ab:kind') == 0"
+     },
+     {
+      "tails": "query.property('ab:kind') == 1"
+     },
+     {
+      "swing": "query.property('ab:pose') == 1"
+     },
+     {
+      "aim": "query.property('ab:pose') == 2"
+     },
+     {
+      "leap": "query.property('ab:pose') == 3"
+     }
+    ]
+   },
+   "render_controllers": [
+    {
+     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5"
+    },
+    {
+     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5"
+    }
+   ]
+  }
+ }
+}

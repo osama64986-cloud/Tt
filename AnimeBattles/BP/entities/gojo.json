@@ -1,0 +1,256 @@
+{
+ "format_version": "1.21.60",
+ "minecraft:entity": {
+  "description": {
+   "identifier": "ab:gojo",
+   "is_spawnable": true,
+   "is_summonable": true,
+   "properties": {
+    "ab:form": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "ab:pose": {
+     "type": "int",
+     "range": [
+      0,
+      40
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "ab:expr": {
+     "type": "int",
+     "range": [
+      0,
+      3
+     ],
+     "default": 0,
+     "client_sync": true
+    },
+    "ab:stance": {
+     "type": "bool",
+     "default": false,
+     "client_sync": true
+    }
+   }
+  },
+  "component_groups": {
+   "ab:combat": {
+    "minecraft:behavior.nearest_attackable_target": {
+     "priority": 1,
+     "must_see": false,
+     "reselect_targets": true,
+     "within_radius": 48,
+     "scan_interval": 10,
+     "entity_types": [
+      {
+       "filters": {
+        "any_of": [
+         {
+          "all_of": [
+           {
+            "test": "has_tag",
+            "subject": "self",
+            "value": "ab_red"
+           },
+           {
+            "test": "has_tag",
+            "subject": "other",
+            "value": "ab_blue"
+           }
+          ]
+         },
+         {
+          "all_of": [
+           {
+            "test": "has_tag",
+            "subject": "self",
+            "value": "ab_blue"
+           },
+           {
+            "test": "has_tag",
+            "subject": "other",
+            "value": "ab_red"
+           }
+          ]
+         }
+        ]
+       },
+       "max_dist": 48
+      }
+     ]
+    },
+    "minecraft:behavior.melee_attack": {
+     "priority": 2,
+     "speed_multiplier": 1.35,
+     "track_target": true,
+     "reach_multiplier": 1.6
+    }
+   },
+   "ab:form_0": {
+    "minecraft:attack": {
+     "damage": 10
+    },
+    "minecraft:movement": {
+     "value": 0.32
+    }
+   },
+   "ab:form_1": {
+    "minecraft:attack": {
+     "damage": 13
+    },
+    "minecraft:movement": {
+     "value": 0.34
+    }
+   }
+  },
+  "components": {
+   "minecraft:type_family": {
+    "family": [
+     "anime_fighter",
+     "ab_gojo",
+     "mob"
+    ]
+   },
+   "minecraft:health": {
+    "value": 600,
+    "max": 600
+   },
+   "minecraft:scale": {
+    "value": 1.06
+   },
+   "minecraft:collision_box": {
+    "width": 0.6,
+    "height": 1.9
+   },
+   "minecraft:physics": {},
+   "minecraft:pushable": {
+    "is_pushable": true,
+    "is_pushable_by_piston": true
+   },
+   "minecraft:persistent": {},
+   "minecraft:nameable": {
+    "always_show": true,
+    "allow_name_tag_renaming": false
+   },
+   "minecraft:knockback_resistance": {
+    "value": 0.75
+   },
+   "minecraft:follow_range": {
+    "value": 48,
+    "max": 64
+   },
+   "minecraft:movement.basic": {},
+   "minecraft:navigation.walk": {
+    "can_path_over_water": true,
+    "avoid_damage_blocks": true,
+    "can_open_doors": true
+   },
+   "minecraft:jump.static": {},
+   "minecraft:can_climb": {},
+   "minecraft:breathable": {
+    "total_supply": 15,
+    "suffocate_time": 0
+   },
+   "minecraft:damage_sensor": {
+    "triggers": [
+     {
+      "cause": "fall",
+      "deals_damage": "no"
+     }
+    ]
+   },
+   "minecraft:behavior.float": {
+    "priority": 0
+   },
+   "minecraft:behavior.random_stroll": {
+    "priority": 6,
+    "speed_multiplier": 0.8
+   },
+   "minecraft:behavior.look_at_player": {
+    "priority": 7,
+    "look_distance": 8
+   },
+   "minecraft:behavior.random_look_around": {
+    "priority": 8
+   }
+  },
+  "events": {
+   "minecraft:entity_spawned": {
+    "add": {
+     "component_groups": [
+      "ab:form_0"
+     ]
+    }
+   },
+   "ab:enter_combat": {
+    "add": {
+     "component_groups": [
+      "ab:combat"
+     ]
+    }
+   },
+   "ab:leave_combat": {
+    "remove": {
+     "component_groups": [
+      "ab:combat"
+     ]
+    }
+   },
+   "ab:form_0": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_0"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 0
+      }
+     }
+    ]
+   },
+   "ab:form_1": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_1"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 1
+      }
+     }
+    ]
+   }
+  }
+ }
+}

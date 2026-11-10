@@ -1,0 +1,216 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:naruto_kid",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "base": "textures/entity/naruto_kid/base",
+    "base_shout": "textures/entity/naruto_kid/base_shout",
+    "base_hurt": "textures/entity/naruto_kid/base_hurt",
+    "base_blink": "textures/entity/naruto_kid/base_blink",
+    "cloak": "textures/entity/naruto_kid/cloak",
+    "cloak_shout": "textures/entity/naruto_kid/cloak_shout",
+    "cloak_hurt": "textures/entity/naruto_kid/cloak_hurt",
+    "cloak_blink": "textures/entity/naruto_kid/cloak_blink"
+   },
+   "geometry": {
+    "base": "geometry.ab.naruto_kid_base",
+    "cloak": "geometry.ab.naruto_kid_cloak"
+   },
+   "animations": {
+    "look": "animation.ab.look_at_target",
+    "move": "animation.ab.move",
+    "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
+    "attack": "animation.ab.attack",
+    "pose_beam": "animation.ab.pose_beam",
+    "pose_cup": "animation.ab.pose_cup",
+    "pose_raise": "animation.ab.pose_raise",
+    "pose_point": "animation.ab.pose_point",
+    "jab_r": "animation.ab.jab_r",
+    "jab_l": "animation.ab.jab_l",
+    "kick": "animation.ab.kick",
+    "round": "animation.ab.round",
+    "upper": "animation.ab.upper",
+    "knee": "animation.ab.knee",
+    "rush": "animation.ab.rush",
+    "elbow": "animation.ab.elbow",
+    "pistol": "animation.ab.pistol",
+    "gatling": "animation.ab.gatling",
+    "bazooka": "animation.ab.bazooka",
+    "giant_fist": "animation.ab.giant_fist",
+    "whip": "animation.ab.whip",
+    "giant_up": "animation.ab.giant_up",
+    "slash": "animation.ab.slash",
+    "fuga": "animation.ab.fuga",
+    "handsign": "animation.ab.handsign",
+    "powerup": "animation.ab.powerup",
+    "finger_up": "animation.ab.finger_up",
+    "spin": "animation.ab.spin",
+    "two_fingers": "animation.ab.two_fingers",
+    "void_sign": "animation.ab.void_sign",
+    "arms_wide": "animation.ab.arms_wide",
+    "slash_l": "animation.ab.slash_l",
+    "dodge": "animation.ab.dodge",
+    "pump": "animation.ab.pump",
+    "cross": "animation.ab.cross",
+    "tie_bandana": "animation.ab.tie_bandana",
+    "tail_whip": "animation.ab.tail_whip",
+    "scratch": "animation.ab.scratch",
+    "seal": "animation.ab.seal",
+    "rasengan": "animation.ab.rasengan",
+    "nrun": "animation.ab.nrun",
+    "knees": "animation.ab.knees",
+    "cape_sway": "animation.ab.cape_sway",
+    "tail_sway": "animation.ab.tail_sway"
+   },
+   "scripts": {
+    "animate": [
+     "look",
+     "move",
+     "idle",
+     {
+      "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
+     },
+     {
+      "pose_beam": "query.property('ab:pose') == 1"
+     },
+     {
+      "pose_cup": "query.property('ab:pose') == 2"
+     },
+     {
+      "pose_raise": "query.property('ab:pose') == 3"
+     },
+     {
+      "pose_point": "query.property('ab:pose') == 4"
+     },
+     {
+      "jab_r": "query.property('ab:pose') == 5"
+     },
+     {
+      "jab_l": "query.property('ab:pose') == 6"
+     },
+     {
+      "kick": "query.property('ab:pose') == 7"
+     },
+     {
+      "round": "query.property('ab:pose') == 8"
+     },
+     {
+      "upper": "query.property('ab:pose') == 9"
+     },
+     {
+      "knee": "query.property('ab:pose') == 10"
+     },
+     {
+      "rush": "query.property('ab:pose') == 11"
+     },
+     {
+      "elbow": "query.property('ab:pose') == 12"
+     },
+     {
+      "pistol": "query.property('ab:pose') == 13"
+     },
+     {
+      "gatling": "query.property('ab:pose') == 14"
+     },
+     {
+      "bazooka": "query.property('ab:pose') == 15"
+     },
+     {
+      "giant_fist": "query.property('ab:pose') == 16"
+     },
+     {
+      "whip": "query.property('ab:pose') == 17"
+     },
+     {
+      "giant_up": "query.property('ab:pose') == 18"
+     },
+     {
+      "slash": "query.property('ab:pose') == 19"
+     },
+     {
+      "fuga": "query.property('ab:pose') == 20"
+     },
+     {
+      "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "powerup": "query.property('ab:pose') == 22"
+     },
+     {
+      "finger_up": "query.property('ab:pose') == 23"
+     },
+     {
+      "spin": "query.property('ab:pose') == 24"
+     },
+     {
+      "two_fingers": "query.property('ab:pose') == 25"
+     },
+     {
+      "void_sign": "query.property('ab:pose') == 26"
+     },
+     {
+      "arms_wide": "query.property('ab:pose') == 27"
+     },
+     {
+      "slash_l": "query.property('ab:pose') == 28"
+     },
+     {
+      "dodge": "query.property('ab:pose') == 29"
+     },
+     {
+      "pump": "query.property('ab:pose') == 30"
+     },
+     {
+      "cross": "query.property('ab:pose') == 31"
+     },
+     {
+      "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "tail_whip": "query.property('ab:pose') == 33"
+     },
+     {
+      "scratch": "query.property('ab:pose') == 34"
+     },
+     {
+      "seal": "query.property('ab:pose') == 35"
+     },
+     {
+      "rasengan": "query.property('ab:pose') == 36"
+     },
+     {
+      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"
+     },
+     {
+      "knees": "1.0"
+     },
+     {
+      "cape_sway": "1.0"
+     },
+     {
+      "tail_sway": "query.property('ab:form') == 1"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.ab.naruto_kid"
+   ],
+   "spawn_egg": {
+    "texture": "ab_egg_naruto_kid",
+    "texture_index": 0
+   }
+  }
+ }
+}

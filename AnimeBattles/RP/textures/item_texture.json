@@ -1,0 +1,75 @@
+{
+ "resource_pack_name": "anime_battles",
+ "texture_name": "atlas.items",
+ "texture_data": {
+  "ab_kill_stick": {
+   "textures": "textures/items/kill_stick"
+  },
+  "ab_team_stick": {
+   "textures": "textures/items/team_stick"
+  },
+  "ab_egg_goku": {
+   "textures": "textures/items/egg_goku"
+  },
+  "ab_egg_vegeta": {
+   "textures": "textures/items/egg_vegeta"
+  },
+  "ab_egg_gojo": {
+   "textures": "textures/items/egg_gojo"
+  },
+  "ab_egg_yuji": {
+   "textures": "textures/items/egg_yuji"
+  },
+  "ab_egg_yuji_final": {
+   "textures": "textures/items/egg_yuji_final"
+  },
+  "ab_egg_luffy": {
+   "textures": "textures/items/egg_luffy"
+  },
+  "ab_egg_sukuna": {
+   "textures": "textures/items/egg_sukuna"
+  },
+  "ab_egg_zoro": {
+   "textures": "textures/items/egg_zoro"
+  },
+  "ab_egg_frieza": {
+   "textures": "textures/items/egg_frieza"
+  },
+  "ab_egg_naruto_kid": {
+   "textures": "textures/items/egg_naruto_kid"
+  },
+  "ab_egg_naruto_teen": {
+   "textures": "textures/items/egg_naruto_teen"
+  },
+  "ab_egg_naruto_war": {
+   "textures": "textures/items/egg_naruto_war"
+  },
+  "ab_egg_naruto_adult": {
+   "textures": "textures/items/egg_naruto_adult"
+  },
+  "ab_egg_sasuke_kid": {
+   "textures": "textures/items/egg_sasuke_kid"
+  },
+  "ab_egg_sasuke": {
+   "textures": "textures/items/egg_sasuke"
+  },
+  "ab_egg_sasuke_war": {
+   "textures": "textures/items/egg_sasuke_war"
+  },
+  "ab_egg_sasuke_adult": {
+   "textures": "textures/items/egg_sasuke_adult"
+  },
+  "ab_egg_ichigo": {
+   "textures": "textures/items/egg_ichigo"
+  },
+  "ab_egg_tanjiro": {
+   "textures": "textures/items/egg_tanjiro"
+  },
+  "ab_egg_tanjiro_demon": {
+   "textures": "textures/items/egg_tanjiro_demon"
+  },
+  "ab_egg_muzan": {
+   "textures": "textures/items/egg_muzan"
+  }
+ }
+}

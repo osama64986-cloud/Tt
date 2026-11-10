@@ -1,0 +1,54 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Anime Battles BP",
+    "description": "Goku, Vegeta & Gojo with real abilities. Team Stick + Kill Stick.",
+    "uuid": "da8fb047-b286-4180-94cf-afa1715ad272",
+    "version": [
+      1,
+      9,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      60
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "1c689de9-e3d8-4cb4-8a63-2d7401420cf0",
+      "version": [
+        1,
+        9,
+        1
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "43aa9454-89ec-4f1e-a380-7641f6fb41d4",
+      "entry": "scripts/main.js",
+      "version": [
+        1,
+        9,
+        1
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "8660b29f-ee5b-4672-898d-8cc1353f5e83",
+      "version": [
+        1,
+        9,
+        1
+      ]
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.9.0"
+    }
+  ]
+}

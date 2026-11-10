@@ -1,0 +1,237 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:luffy",
+   "materials": {
+    "default": "entity_alphatest"
+   },
+   "textures": {
+    "base": "textures/entity/luffy/base",
+    "base_shout": "textures/entity/luffy/base_shout",
+    "base_hurt": "textures/entity/luffy/base_hurt",
+    "base_blink": "textures/entity/luffy/base_blink",
+    "g2": "textures/entity/luffy/g2",
+    "g2_shout": "textures/entity/luffy/g2_shout",
+    "g2_hurt": "textures/entity/luffy/g2_hurt",
+    "g2_blink": "textures/entity/luffy/g2_blink",
+    "g3": "textures/entity/luffy/g3",
+    "g3_shout": "textures/entity/luffy/g3_shout",
+    "g3_hurt": "textures/entity/luffy/g3_hurt",
+    "g3_blink": "textures/entity/luffy/g3_blink",
+    "g4b": "textures/entity/luffy/g4b",
+    "g4b_shout": "textures/entity/luffy/g4b_shout",
+    "g4b_hurt": "textures/entity/luffy/g4b_hurt",
+    "g4b_blink": "textures/entity/luffy/g4b_blink",
+    "g4s": "textures/entity/luffy/g4s",
+    "g4s_shout": "textures/entity/luffy/g4s_shout",
+    "g4s_hurt": "textures/entity/luffy/g4s_hurt",
+    "g4s_blink": "textures/entity/luffy/g4s_blink",
+    "g4t": "textures/entity/luffy/g4t",
+    "g4t_shout": "textures/entity/luffy/g4t_shout",
+    "g4t_hurt": "textures/entity/luffy/g4t_hurt",
+    "g4t_blink": "textures/entity/luffy/g4t_blink",
+    "g5": "textures/entity/luffy/g5",
+    "g5_shout": "textures/entity/luffy/g5_shout",
+    "g5_hurt": "textures/entity/luffy/g5_hurt",
+    "g5_blink": "textures/entity/luffy/g5_blink"
+   },
+   "geometry": {
+    "base": "geometry.ab.luffy_base",
+    "g2": "geometry.ab.luffy_g2",
+    "g3": "geometry.ab.luffy_g3",
+    "g4b": "geometry.ab.luffy_g4b",
+    "g4s": "geometry.ab.luffy_g4s",
+    "g4t": "geometry.ab.luffy_g4t",
+    "g5": "geometry.ab.luffy_g5"
+   },
+   "animations": {
+    "look": "animation.ab.look_at_target",
+    "move": "animation.ab.move",
+    "idle": "animation.ab.idle",
+    "stance": "animation.ab.stance",
+    "flinch": "animation.ab.flinch",
+    "attack": "animation.ab.attack",
+    "pose_beam": "animation.ab.pose_beam",
+    "pose_cup": "animation.ab.pose_cup",
+    "pose_raise": "animation.ab.pose_raise",
+    "pose_point": "animation.ab.pose_point",
+    "jab_r": "animation.ab.jab_r",
+    "jab_l": "animation.ab.jab_l",
+    "kick": "animation.ab.kick",
+    "round": "animation.ab.round",
+    "upper": "animation.ab.upper",
+    "knee": "animation.ab.knee",
+    "rush": "animation.ab.rush",
+    "elbow": "animation.ab.elbow",
+    "pistol": "animation.ab.pistol",
+    "gatling": "animation.ab.gatling",
+    "bazooka": "animation.ab.bazooka",
+    "giant_fist": "animation.ab.giant_fist",
+    "whip": "animation.ab.whip",
+    "giant_up": "animation.ab.giant_up",
+    "slash": "animation.ab.slash",
+    "fuga": "animation.ab.fuga",
+    "handsign": "animation.ab.handsign",
+    "powerup": "animation.ab.powerup",
+    "finger_up": "animation.ab.finger_up",
+    "spin": "animation.ab.spin",
+    "two_fingers": "animation.ab.two_fingers",
+    "void_sign": "animation.ab.void_sign",
+    "arms_wide": "animation.ab.arms_wide",
+    "slash_l": "animation.ab.slash_l",
+    "dodge": "animation.ab.dodge",
+    "pump": "animation.ab.pump",
+    "cross": "animation.ab.cross",
+    "tie_bandana": "animation.ab.tie_bandana",
+    "tail_whip": "animation.ab.tail_whip",
+    "scratch": "animation.ab.scratch",
+    "seal": "animation.ab.seal",
+    "rasengan": "animation.ab.rasengan",
+    "bounce": "animation.ab.bounce",
+    "toon": "animation.ab.toon",
+    "happy_bounce": "animation.ab.happy_bounce"
+   },
+   "scripts": {
+    "animate": [
+     "look",
+     "move",
+     "idle",
+     {
+      "attack": "variable.attack_time > 0.0"
+     },
+     {
+      "stance": "query.property('ab:stance') && query.property('ab:pose') == 0 && variable.attack_time <= 0.0"
+     },
+     {
+      "flinch": "query.property('ab:expr') == 2 && query.property('ab:pose') == 0"
+     },
+     {
+      "pose_beam": "query.property('ab:pose') == 1"
+     },
+     {
+      "pose_cup": "query.property('ab:pose') == 2"
+     },
+     {
+      "pose_raise": "query.property('ab:pose') == 3"
+     },
+     {
+      "pose_point": "query.property('ab:pose') == 4"
+     },
+     {
+      "jab_r": "query.property('ab:pose') == 5"
+     },
+     {
+      "jab_l": "query.property('ab:pose') == 6"
+     },
+     {
+      "kick": "query.property('ab:pose') == 7"
+     },
+     {
+      "round": "query.property('ab:pose') == 8"
+     },
+     {
+      "upper": "query.property('ab:pose') == 9"
+     },
+     {
+      "knee": "query.property('ab:pose') == 10"
+     },
+     {
+      "rush": "query.property('ab:pose') == 11"
+     },
+     {
+      "elbow": "query.property('ab:pose') == 12"
+     },
+     {
+      "pistol": "query.property('ab:pose') == 13"
+     },
+     {
+      "gatling": "query.property('ab:pose') == 14"
+     },
+     {
+      "bazooka": "query.property('ab:pose') == 15"
+     },
+     {
+      "giant_fist": "query.property('ab:pose') == 16"
+     },
+     {
+      "whip": "query.property('ab:pose') == 17"
+     },
+     {
+      "giant_up": "query.property('ab:pose') == 18"
+     },
+     {
+      "slash": "query.property('ab:pose') == 19"
+     },
+     {
+      "fuga": "query.property('ab:pose') == 20"
+     },
+     {
+      "handsign": "query.property('ab:pose') == 21"
+     },
+     {
+      "powerup": "query.property('ab:pose') == 22"
+     },
+     {
+      "finger_up": "query.property('ab:pose') == 23"
+     },
+     {
+      "spin": "query.property('ab:pose') == 24"
+     },
+     {
+      "two_fingers": "query.property('ab:pose') == 25"
+     },
+     {
+      "void_sign": "query.property('ab:pose') == 26"
+     },
+     {
+      "arms_wide": "query.property('ab:pose') == 27"
+     },
+     {
+      "slash_l": "query.property('ab:pose') == 28"
+     },
+     {
+      "dodge": "query.property('ab:pose') == 29"
+     },
+     {
+      "pump": "query.property('ab:pose') == 30"
+     },
+     {
+      "cross": "query.property('ab:pose') == 31"
+     },
+     {
+      "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "tail_whip": "query.property('ab:pose') == 33"
+     },
+     {
+      "scratch": "query.property('ab:pose') == 34"
+     },
+     {
+      "seal": "query.property('ab:pose') == 35"
+     },
+     {
+      "rasengan": "query.property('ab:pose') == 36"
+     },
+     {
+      "bounce": "query.property('ab:form') == 3"
+     },
+     {
+      "toon": "query.property('ab:form') == 6"
+     },
+     {
+      "happy_bounce": "query.property('ab:form') == 0 && !query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.ab.luffy"
+   ],
+   "spawn_egg": {
+    "texture": "ab_egg_luffy",
+    "texture_index": 0
+   }
+  }
+ }
+}
