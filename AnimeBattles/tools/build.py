@@ -318,7 +318,7 @@ def extra_animations():
                  "rightLeg": {"rotation": ["math.sin(query.life_time * 1400.0) * 14", 0, 12]},
                  "leftLeg": {"rotation": ["-math.sin(query.life_time * 1400.0) * 14", 0, -12]}},
         # victory "hmph": arms crossed (Vegeta, Frieza)
-        "cross": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-8, 0, 6]}},
+        "cross": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-10, 28, 6]}},  # chin up, face turned away: "Tch."
         # Zoro getting serious: both hands up behind his head, tying the bandana
         "tie_bandana": {"rightArm": {"rotation": [-165, -32, 0]}, "leftArm": {"rotation": [-165, 32, 0]}, "head": {"rotation": [10, 0, 0]}},
         # signature idles out of combat
