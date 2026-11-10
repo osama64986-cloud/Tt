@@ -830,7 +830,8 @@ const VEGETA = {
           const { pos, dir } = handPos(e, tt);
           projectile(e, pos, dir, { speed: 0.9, maxDist: 16, radius: 1.2, size: 1.0, color: C.hakai, core: C.ego, solid: true, homing: t,
             onEnd(p) {
-              if (alive(t) && V.dist(aim(t), p) < 3) deal(e, t, 210 * powerOf(e) / 100);
+              // Destruction fails on someone stronger than the God of Destruction's student: it only scorches them
+              if (alive(t) && V.dist(aim(t), p) < 3) deal(e, t, 210 * powerOf(e) / 100 * (powerOf(t) > powerOf(e) ? 0.3 : 1));
               for (let k = 0; k < 3; k++) sphereFx(e.dimension, p, 1 + k * 0.6, k % 2 ? C.ego : C.hakai, 14, 0.5, "orb_solid", 0.9);
               sound(e.dimension, "mob.wither.death", p, 0.8, 1.6);
             } });
@@ -2593,8 +2594,9 @@ const ICHIGO = {
 const TANJIRO = {
   name: "Tanjiro", color: "§2", energy: 700, regen: 14, energyName: "§bBREATH",
   dodge: () => 0.1,
-  forms: [{ label: "Water Breathing", power: 40 }, { label: "Sun Breathing — Demon Slayer Mark", power: 60, aura: C.fire }],
-  thresholds: [0.6], transformCd: 100, formSound: [null, "mob.blaze.shoot"],
+  forms: [{ label: "Water Breathing", power: 40 }, { label: "Hinokami Kagura (Sun Breathing)", power: 50, aura: C.fire },
+    { label: "Demon Slayer Mark — Crimson Blade", power: 62, aura: C.fire }],
+  thresholds: [0.75, 0.45], transformCd: 100, formSound: [null, "mob.blaze.shoot", "mob.blaze.shoot"],
   abilities: [
     { id: "surface", label: "Water Surface Slash", cd: 90, cost: 40, min: 0, max: 12, weight: 4, cond: G(0),
       run(e, s, t) {
@@ -2651,13 +2653,13 @@ const TANJIRO = {
         every(4, 10, () => { if (e.isValid) ring(e.dimension, V.up(e.location, 0.1), 1.6, C.kameBlue, 18, 0.35); });
         later(40, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "dance", label: "Hinokami Kagura: Dance", cd: 110, cost: 60, min: 0, max: 26, weight: 5, cond: G(1),
+    { id: "dance", label: "Hinokami Kagura: Dance", cd: 110, cost: 60, min: 0, max: 26, weight: 5, cond: G(1, 2),
       run(e, s, t) {
         busy(s, 14); setPose(e, 19); announce(e, "§6§lHinokami Kagura: Dance!");
         flyingSlash(e, t, { color: C.fire, dmg: 26 * powerOf(e) / 100, range: 20, roll: 30, size: 1.6 });
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "bluesky", label: "Clear Blue Sky", cd: 180, cost: 90, min: 0, max: 8, weight: 4, cond: G(1),
+    { id: "bluesky", label: "Clear Blue Sky", cd: 180, cost: 90, min: 0, max: 8, weight: 4, cond: G(1, 2),
       run(e, s, t) {
         busy(s, 16); setPose(e, 24); announce(e, "§6§lHinokami Kagura: Clear Blue Sky!");
         const dim = e.dimension;
@@ -2665,13 +2667,121 @@ const TANJIRO = {
         hitArea(e, V.up(e.location, 1), 4, 24 * powerOf(e) / 100, new Set(), { knock: 1.6, lift: 0.4 });
         later(14, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "sunflower", label: "Sunflower Thrust", cd: 160, cost: 80, min: 0, max: 14, weight: 4, cond: G(1),
+    { id: "sunflower", label: "Sunflower Thrust", cd: 160, cost: 80, min: 0, max: 14, weight: 4, cond: G(1, 2),
       run(e, s, t) {
         busy(s, 12); announce(e, "§6§lHinokami Kagura: Sunflower Thrust!");
         afterimage(e); teleportNear(e, t, false, 1.4); setPose(e, 5);
         deal(e, t, 34 * powerOf(e) / 100);
         fx(e.dimension, "flash", aim(t), C.fire, 3, 0.25); burst(e.dimension, aim(t), C.fire, 24, 5, 0.45, 0.5);
         later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "flowing", label: "Flowing Dance", cd: 140, cost: 60, min: 0, max: 10, weight: 4, cond: G(0),
+      run(e, s, t) {
+        busy(s, 18); announce(e, "§b§lWater Breathing, Third Form: Flowing Dance!");
+        every(3, 4, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.5); setPose(e, i % 2 ? 28 : 19);
+          const v = slashVfx(e.dimension, aim(t), V.norm(V.sub(aim(t), aim(e))), C.kameBlue, 1.3, i * 50); later(4, () => killVfx(v));
+          deal(e, t, 7 * powerOf(e) / 100);
+          if (i === 3) setPose(e, 0);
+        });
+      } },
+    { id: "tide", label: "Striking Tide", cd: 170, cost: 80, min: 0, max: 10, weight: 4, cond: G(0),
+      run(e, s, t) {
+        busy(s, 18); announce(e, "§b§lFourth Form: Striking Tide!");
+        afterimage(e); teleportNear(e, t, false, 1.5);
+        slashMarks(e, t, C.kameBlue, 4, 6 * powerOf(e) / 100);
+        every(2, 4, (i) => { if (alive(t)) fx(t.dimension, "shock_v", aim(t), C.kameBlue, 2 + i * 0.4, 0.3); });
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "ripple", label: "Drop Ripple Thrust", cd: 120, cost: 50, min: 0, max: 8, weight: 3, cond: G(0),
+      run(e, s, t) {
+        busy(s, 10); announce(e, "§b§lSeventh Form: Drop Ripple Thrust!");
+        afterimage(e); teleportNear(e, t, false, 1.4); setPose(e, 5);
+        deal(e, t, 24 * powerOf(e) / 100);
+        ring(e.dimension, aim(t), 1.4, C.kameBlue, 20, 0.4); fx(e.dimension, "flash", aim(t), C.white, 2, 0.15);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "basin", label: "Waterfall Basin", cd: 160, cost: 70, min: 0, max: 8, weight: 4, cond: G(0),
+      run(e, s, t) {
+        busy(s, 16); announce(e, "§b§lEighth Form: Waterfall Basin!");
+        if (alive(t)) { try { e.teleport(V.up(t.location, 3), { facingLocation: aim(t) }); } catch (err) { /* ignore */ } }
+        setPose(e, 10);
+        later(4, () => {
+          if (!e.isValid || !alive(t)) return;
+          for (let y = 3; y > 0; y -= 0.5) fx(e.dimension, "orb", V.up(t.location, y), C.kameBlue, 1.4, 0.4);
+          deal(e, t, 30 * powerOf(e) / 100);
+          fx(e.dimension, "shock", t.location, C.kameBlue, 5, 0.4);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "headbutt", label: "Headbutt", cd: 220, cost: 30, min: 0, max: 4, weight: 3,
+      run(e, s, t) {  // the hardest head in the Demon Slayer Corps
+        busy(s, 12); announce(e, "§2§lTanjiro's HEADBUTT! §7— his skull is harder than a rock");
+        afterimage(e); teleportNear(e, t, false, 1.0); setPose(e, 11);
+        deal(e, t, 20 * powerOf(e) / 100);
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 14); }
+        ring(t.dimension, V.up(t.location, 2.2), 0.6, C.kiYellow, 10, 0.5);
+        fx(t.dimension, "flash", V.up(t.location, 1.6), C.white, 1.6, 0.15);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "firewheel", label: "Fire Wheel", cd: 150, cost: 70, min: 0, max: 10, weight: 4, cond: G(1, 2),
+      run(e, s, t) {
+        busy(s, 14); announce(e, "§6§lHinokami Kagura: Fire Wheel!");
+        if (alive(t)) { try { e.teleport(V.up(t.location, 2.6), { facingLocation: aim(t) }); } catch (err) { /* ignore */ } }
+        setPose(e, 24);
+        for (let k = 0; k < 4; k++) { const v = slashVfx(e.dimension, V.up(e.location, 1), { x: 1, y: 0, z: 0 }, C.fire, 1.6, k * 45); later(5, () => killVfx(v)); }
+        later(4, () => {
+          if (!e.isValid || !alive(t)) return;
+          deal(e, t, 30 * powerOf(e) / 100);
+          fx(e.dimension, "shock", t.location, C.fire, 5, 0.4);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "halo", label: "Dragon Sun Halo Head Dance", cd: 260, cost: 140, min: 0, max: 20, weight: 5, cond: G(1, 2),
+      run(e, s, t) {
+        busy(s, 26); announce(e, "§6§lHinokami Kagura: Dragon Sun Halo Head Dance! §7— a dragon of fire");
+        const dim = e.dimension;
+        every(3, 7, (i) => {  // the fiery dragon coils round the target while he slashes
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.6); setPose(e, i % 2 ? 28 : 19);
+          for (let k = 0; k < 12; k++) {
+            const a = k * 0.5 + i;
+            fx(dim, "orb", V.add(aim(t), { x: Math.cos(a) * 1.6, y: (k - 6) * 0.18, z: Math.sin(a) * 1.6 }), C.fire, 0.8, 0.5);
+          }
+          deal(e, t, 8 * powerOf(e) / 100);
+          if (i === 6) setPose(e, 0);
+        });
+      } },
+    { id: "bones", label: "Burning Bones Summer Sun", cd: 200, cost: 100, min: 0, max: 8, weight: 4, cond: G(2),
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 24); announce(e, "§6§lBurning Bones, Summer Sun!");
+        const dim = e.dimension;
+        ring(dim, V.up(e.location, 1), 3.2, C.fire, 30, 0.5); ring(dim, V.up(e.location, 1.4), 2.4, C.flash, 24, 0.4);
+        hitArea(e, V.up(e.location, 1), 3.8, 30 * powerOf(e) / 100, new Set(), { knock: 1.4, lift: 0.3 });
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "setting", label: "Setting Sun Transformation", cd: 220, cost: 110, min: 0, max: 10, weight: 4, cond: G(2),
+      run(e, s, t) {
+        busy(s, 14); announce(e, "§6§lSetting Sun Transformation!");
+        afterimage(e); teleportNear(e, t, true, 1.4); setPose(e, 28);
+        const v = slashVfx(e.dimension, aim(t), { x: 0, y: -1, z: 0 }, C.fire, 2, 90); later(5, () => killVfx(v));
+        deal(e, t, 36 * powerOf(e) / 100);
+        burst(e.dimension, aim(t), C.fire, 22, 4, 0.45, 0.5);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "thirteenth", label: "Hinokami Kagura: Thirteenth Form", cd: 900, cost: 400, min: 0, max: 14, weight: 7, cond: G(2),
+      run(e, s, t) {  // all twelve forms linked in one endless circle — the form that was made to kill Muzan
+        busy(s, 44); announce(e, "§c§lSun Breathing, Thirteenth Form! §7— all twelve dances linked without end");
+        const dim = e.dimension;
+        every(3, 12, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.5); setPose(e, [19, 28, 24, 5, 19, 28, 10, 24, 19, 28, 5, 1][i]);
+          const v = slashVfx(dim, aim(t), V.norm({ x: Math.cos(i), y: Math.sin(i * 0.7), z: Math.sin(i) }), i % 3 ? C.fire : C.flash, 1.6, i * 30);
+          later(4, () => killVfx(v));
+          deal(e, t, 8 * powerOf(e) / 100);
+          if (i === 11) { explosion(e, aim(t), { radius: 3.5, dmg: 30 * powerOf(e) / 100, color: C.fire, knock: 2 }); setPose(e, 0); }
+        });
       } },
   ],
 };
@@ -2689,7 +2799,7 @@ const TRANSFORM_LINES = {
   "ab:sasuke": [null, "§5§lCursed Seal Level Two! §7— the wings tear free", "§c§lMangekyo Sharingan... §5§lSusanoo!"],
   "ab:sasuke_war": [null, "§5§lPerfect Susanoo! §7— a giant with wings", "§5§l(the Rinnegan opens) §7— I'll be the one to change the world"],
   "ab:sasuke_adult": [null, "§5§lSusanoo. §7— Perfect form"],
-  "ab:tanjiro": [null, "§6§lSun Breathing! §7— the mark blazes on his forehead"],
+  "ab:tanjiro": [null, "§6§lHinokami Kagura! §7— his father's dance of fire", "§c§lThe Demon Slayer Mark blazes! §7— the blade turns crimson"],
   "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
     "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
   "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],

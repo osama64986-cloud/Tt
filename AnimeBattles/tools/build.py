@@ -149,7 +149,7 @@ def validate_json():
 # spawn egg colours. Numbers follow the agreed power order: Goku > Vegeta > Gojo.
 FIGHTERS = {
     "goku": {
-        "hp": 1000,
+        "hp": 1800,
         "forms": [(14, 0.33), (20, 0.36), (27, 0.38), (34, 0.4), (42, 0.42), (58, 0.46)],
         "tex": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
         "geo": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
@@ -157,7 +157,7 @@ FIGHTERS = {
     },
     "vegeta": {
         "scale": 0.94,  # canon: noticeably shorter than Goku
-        "hp": 950,
+        "hp": 1700,
         "forms": [(13, 0.33), (19, 0.36), (31, 0.39), (40, 0.41), (52, 0.43)],
         "tex": ["base", "ssj", "ssg", "ssb", "ue"],
         "geo": ["base", "ssj", "ssg", "ssb", "ue"],
@@ -205,9 +205,9 @@ FIGHTERS.update({
     "ichigo": {"hp": 1100, "forms": [(24, 0.38), (30, 0.42), (34, 0.44), (44, 0.44), (52, 0.46), (60, 0.46), (68, 0.47)],
                "tex": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
                "geo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"], "egg": ("#1e1e24", "#ff8428")},
-    "tanjiro": {"hp": 420, "forms": [(11, 0.38), (16, 0.4)], "tex": ["water", "mark"], "geo": ["water", "mark"],
+    "tanjiro": {"hp": 440, "forms": [(11, 0.38), (13, 0.4), (16, 0.42)], "tex": ["water", "hinokami", "mark"], "geo": ["water", "hinokami", "mark"],
                 "egg": ("#287a5a", "#18181c")},
-    "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
+    "frieza": {"hp": 1500, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
 

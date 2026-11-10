@@ -11,6 +11,10 @@
     "water_shout": "textures/entity/tanjiro/water_shout",
     "water_hurt": "textures/entity/tanjiro/water_hurt",
     "water_blink": "textures/entity/tanjiro/water_blink",
+    "hinokami": "textures/entity/tanjiro/hinokami",
+    "hinokami_shout": "textures/entity/tanjiro/hinokami_shout",
+    "hinokami_hurt": "textures/entity/tanjiro/hinokami_hurt",
+    "hinokami_blink": "textures/entity/tanjiro/hinokami_blink",
     "mark": "textures/entity/tanjiro/mark",
     "mark_shout": "textures/entity/tanjiro/mark_shout",
     "mark_hurt": "textures/entity/tanjiro/mark_hurt",
@@ -18,6 +22,7 @@
    },
    "geometry": {
     "water": "geometry.ab.tanjiro_water",
+    "hinokami": "geometry.ab.tanjiro_hinokami",
     "mark": "geometry.ab.tanjiro_mark"
    },
    "animations": {

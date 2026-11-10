@@ -830,33 +830,53 @@ def ichigo(m, form):
 
 
 # ------------------------------------------------------------------ Tanjiro (Demon Slayer)
-TAN_HAIR = (138, 40, 44)
-NICHIRIN = dict(wrap=(30, 30, 36), diamond=(200, 60, 50), tsuba="round", metal=(30, 30, 34),
-                blade=(36, 36, 42), edge=(120, 124, 140), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
+TAN_HAIR = (124, 36, 40)
+NICHIRIN = dict(wrap=(34, 36, 56), diamond=(170, 40, 50), tsuba="round", metal=(30, 30, 34),
+                blade=(36, 36, 42), edge=(120, 124, 140), hamon=None, saya=(30, 30, 34), saya_band=(200, 200, 200))
+# Demon Slayer Mark: the blade glows crimson, Rengoku's flame guard
+CRIMSON = dict(NICHIRIN, metal=(214, 92, 36), blade=(190, 40, 30), edge=(255, 150, 90))
+UNIFORM = (86, 44, 50)
 
 
 def tanjiro(m, form):
     mark = form == "mark"
-    uni = (28, 30, 40)
-    base_body(m, layered(uni, [region((0.45, 0, 0.55, 1), (200, 170, 70), faces=("north",))]), arm_paint(uni),
-              leg_paint(uni, (60, 50, 44), band=(WHITE, 0.55, 0.86)),
+    uni = UNIFORM
+    buttons = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (230, 200, 120)) for y in range(int(h * 0.1), int(h * 0.7), max(2, h // 6))] if f == "north" else None
+    base_body(m, layered(uni, [buttons, region((0.47, 0, 0.53, 1), dark(uni, 0.8), faces=("north",))]),
+              arm_paint(uni, sleeve_to=0.88),
+              layered(uni, [region((0, 0.42, 1, 0.84), (232, 230, 222)),                                         # white kyahan leg wraps
+                            lines((SIDES, [[(0, 0.5), (1, 0.52)], [(0, 0.62), (1, 0.64)], [(0, 0.74), (1, 0.76)]]), (196, 194, 186)),
+                            region((0, 0.84, 1, 0.94), (236, 234, 228)), region((0, 0.94, 1, 1), (150, 40, 44))]),  # white tabi, red sandals
               head_paint(TAN_HAIR, (150, 30, 44), True, "tanjiro_mark" if mark else "tanjiro"))
-    m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.4, 5.0], solid(WHITE))                                          # belt
-    hao = layered((40, 130, 90), [checker((40, 130, 90), (24, 24, 28))])
-    m.box("body", [-4.6, 7.5, 2.1], [9.2, 16.7, 0.5], hao)                                                    # checkered haori
-    for x0 in (-4.6, 2.0):
-        m.box("body", [x0, 7.5, -2.6], [2.6, 16.7, 0.5], hao)
-    both_arms(m, [3.6, 15.0, -2.6], [4.8, 9.2, 5.2], hao)                                                     # wide sleeves
-    m.box("body", [-3.0, 13.0, 2.7], [6.0, 9.0, 4.2], layered((150, 104, 60), [lines((SIDES, [[(0, 0.2), (1, 0.2)], [(0, 0.8), (1, 0.8)]]), (90, 60, 34))]))  # Nezuko's box
-    for s in (1, -1):  # hanafuda earrings
-        m.box("head", [s * 4.0 - (0.5 if s > 0 else 0.1), 24.6, -0.4], [0.6, 1.6, 0.8], layered(WHITE, [region((0.2, 0.3, 0.8, 0.7), (200, 40, 30))]))
-    M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, NICHIRIN)
+    both_legs(m, [-0.7, 4.2, -2.7], [5.1, 8.0, 5.4], layered(uni, [lines((SIDES, [[(0.3, 0), (0.25, 1)], [(0.7, 0), (0.75, 1)]]), dark(uni, 0.78))]))  # baggy trousers
+    m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.4, 5.0], layered((240, 240, 236), [region((0.4, 0, 0.6, 1), (170, 172, 180), faces=("north",))]))  # white belt, buckle
+    m.box("body", [-2.2, 22.6, -2.4], [4.4, 1.8, 4.8], solid(uni))                                                # high collar
+    hao = layered((44, 168, 128), [checker((44, 168, 128), (26, 24, 28))])
+    lining = solid((200, 200, 196))
+    m.box("body", [-4.6, 6.5, 2.1], [9.2, 17.7, 0.5], hao)                                                        # checkered haori
+    for x0 in (-4.6, 2.2):
+        m.box("body", [x0, 6.5, -2.6], [2.4, 17.7, 0.5], hao)
+    both_arms(m, [3.5, 13.6, -2.7], [5.0, 10.6, 5.4], hao)                                                        # wide sleeves
+    both_arms(m, [3.6, 13.4, -2.6], [4.8, 0.4, 5.2], lining)
+    box_c = (142, 90, 52)
+    m.box("body", [-3.2, 12.6, 2.7], [6.4, 10.2, 4.4], layered(box_c, [lines((SIDES, [[(0, 0.15), (1, 0.15)], [(0, 0.5), (1, 0.5)], [(0, 0.85), (1, 0.85)]]), (40, 34, 30)),
+                                                                     lines((("east", "west"), [[(0.5, 0), (0.5, 1)]]), dark(box_c, 0.75))]))  # Nezuko's box
+    for x0 in (-2.9, 1.9):  # its shoulder straps
+        m.box("body", [x0, 12.8, -2.75], [1.0, 11.4, 0.4], solid((214, 204, 176)))
+    for s_ in (1, -1):  # hanafuda earrings
+        m.box("head", [s_ * 4.0 - (0.5 if s_ > 0 else 0.1), 24.6, -0.4], [0.6, 1.6, 0.8], layered(WHITE, [region((0.2, 0.3, 0.8, 0.7), (200, 40, 30))]))
+    st = CRIMSON if mark else dict(NICHIRIN, edge=(255, 150, 60), metal=(214, 92, 36)) if form == "hinokami" else NICHIRIN
+    M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, st)
+    M.sheath(m, (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, st)                                                     # the empty scabbard at his left hip
     shell(m, TAN_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
     hp = M.hair_paint(TAN_HAIR)
-    for x, z, lean in ((0, -2.0, 0), (2.2, -1.2, 0.5), (-2.2, -1.2, -0.5), (3.0, 1.2, 0.9), (-3.0, 1.2, -0.9), (0, 2.4, 0)):
-        m.strand([x, 32.0, z], [lean, 1.0, z * 0.25], 3.2, 2.8, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.05, -0.1, z * 0.05))
-    for x, tilt in ((-2.6, -0.3), (-0.6, 0), (1.6, 0.2)):
-        m.strand([x, 31.6, -4.1], [tilt, -0.6, -0.5], 2.8, 2.2, hp, bone="hair", segs=3, thick=0.7)
+    for x, z, lean in ((0, -2.0, 0), (2.2, -1.2, 0.5), (-2.2, -1.2, -0.5), (3.0, 1.2, 0.9), (-3.0, 1.2, -0.9), (0, 2.4, 0), (1.6, 3.0, 0.4), (-1.6, 3.0, -0.4)):
+        m.strand([x, 32.0, z], [lean, 1.0, z * 0.25], 3.4, 2.8, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.05, -0.1, z * 0.05))
+    for x, tilt in ((-2.6, -0.3), (-0.6, 0), (1.6, 0.2), (3.2, 0.4)):  # bangs (the forehead stays clear for the scar)
+        m.strand([x, 31.8, -4.1], [tilt, -0.6, -0.5], 2.4, 2.0, hp, bone="hair", segs=3, thick=0.7)
+    for s_ in (1, -1):
+        m.strand([s_ * 4.1, 30.0, -1.0], [s_ * 0.3, -1, 0.1], 3.2, 1.8, hp, bone="hair", segs=2, thick=0.6)
+        m.strand([s_ * 2.6, 29.6, 4.2], [s_ * 0.4, -0.6, 1], 3.6, 2.4, hp, bone="hair", segs=3, thick=0.7)
 
 
 FORMS = {
@@ -869,7 +889,7 @@ FORMS = {
     "sasuke_war": ["ems", "perfect", "rinnegan"],
     "sasuke_adult": ["adult", "adult_sus"],
     "ichigo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
-    "tanjiro": ["water", "mark"],
+    "tanjiro": ["water", "hinokami", "mark"],
 }
 
 

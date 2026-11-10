@@ -661,6 +661,10 @@
       "Texture.water_shout",
       "Texture.water_hurt",
       "Texture.water_blink",
+      "Texture.hinokami",
+      "Texture.hinokami_shout",
+      "Texture.hinokami_hurt",
+      "Texture.hinokami_blink",
       "Texture.mark",
       "Texture.mark_shout",
       "Texture.mark_hurt",
@@ -670,6 +674,7 @@
     "geometries": {
      "Array.geos": [
       "Geometry.water",
+      "Geometry.hinokami",
       "Geometry.mark"
      ]
     }
