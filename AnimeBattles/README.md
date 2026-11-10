@@ -74,6 +74,8 @@
 ## للمطورين
 - `python3 tools/build.py` يولّد الموديلات والنسيج ويبني `dist/AnimeBattles.mcaddon`.
 - `tools/sim/` محاكاة للسكربت خارج اللعبة (نسخ `main.js` إلى `main.mjs` مع استبدال الاستيراد بـ `./mock.mjs`).
+- مع كل إصدار جديد ارفع `version` في `BP/manifest.json` و`RP/manifest.json` (والاعتماد المتبادل بينهما)، وإلا قد يتجاهل ماين كرافت التحديث عند الاستيراد.
+- كل شكل له أربع خامات: `<form>.png` و`<form>_shout.png` و`<form>_hurt.png` و`<form>_blink.png`، يختار بينها الـ render controller عبر الخاصية `ab:expr` (والرمش تلقائي).
 
 ## ترتيب القوة (الأقوى يفوز دائماً)
 | الترتيب | الشخصية | القوة (أقصى شكل) |
