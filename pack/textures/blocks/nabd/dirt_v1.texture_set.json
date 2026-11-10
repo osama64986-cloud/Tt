@@ -1,0 +1,8 @@
+{
+  "format_version": "1.21.30",
+  "minecraft:texture_set": {
+    "color": "dirt_v1",
+    "metalness_emissive_roughness_subsurface": "dirt_v1_mers",
+    "normal": "dirt_v1_normal"
+  }
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/nabd/gold_ore_shimmer",
+    "atlas_tile": "gold_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/deepslate_gold_ore_shimmer",
+    "atlas_tile": "deepslate_gold_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/redstone_ore_shimmer",
+    "atlas_tile": "redstone_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/deepslate_redstone_ore_shimmer",
+    "atlas_tile": "deepslate_redstone_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/lapis_ore_shimmer",
+    "atlas_tile": "lapis_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/deepslate_lapis_ore_shimmer",
+    "atlas_tile": "deepslate_lapis_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/diamond_ore_shimmer",
+    "atlas_tile": "diamond_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/deepslate_diamond_ore_shimmer",
+    "atlas_tile": "deepslate_diamond_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/emerald_ore_shimmer",
+    "atlas_tile": "emerald_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/deepslate_emerald_ore_shimmer",
+    "atlas_tile": "deepslate_emerald_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
+  }
+]

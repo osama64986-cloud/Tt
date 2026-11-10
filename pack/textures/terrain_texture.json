@@ -1,0 +1,102 @@
+{
+  "resource_pack_name": "nabd",
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "stone": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/stone"
+          },
+          {
+            "path": "textures/blocks/nabd/stone_v1"
+          },
+          {
+            "path": "textures/blocks/nabd/stone_v2"
+          }
+        ]
+      }
+    },
+    "cobblestone": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/cobblestone"
+          },
+          {
+            "path": "textures/blocks/nabd/cobblestone_v1"
+          }
+        ]
+      }
+    },
+    "stonebrick": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/stonebrick"
+          },
+          {
+            "path": "textures/blocks/nabd/stonebrick_v1"
+          },
+          {
+            "path": "textures/blocks/nabd/stonebrick_v2"
+          }
+        ]
+      }
+    },
+    "sand": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/sand"
+          },
+          {
+            "path": "textures/blocks/nabd/sand_v1"
+          }
+        ]
+      }
+    },
+    "gravel": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/gravel"
+          },
+          {
+            "path": "textures/blocks/nabd/gravel_v1"
+          }
+        ]
+      }
+    },
+    "dirt": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/dirt"
+          },
+          {
+            "path": "textures/blocks/nabd/dirt_v1"
+          },
+          {
+            "path": "textures/blocks/nabd/dirt_v2"
+          }
+        ]
+      }
+    },
+    "grass_top": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/grass_top"
+          },
+          {
+            "path": "textures/blocks/nabd/grass_top_v1"
+          },
+          {
+            "path": "textures/blocks/nabd/grass_top_v2"
+          }
+        ]
+      }
+    }
+  }
+}
