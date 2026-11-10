@@ -674,7 +674,7 @@ const VEGETA = {
     {
       id: "barrage", label: "Ki Barrage", cd: 80, cost: 60, min: 3, max: 32, weight: 3,
       run(e, s, t) {
-        busy(s, 18); setPose(e, 1);
+        busy(s, 18); setPose(e, 11);  // alternating palms, one blast per hand
         every(2, 8, () => {
           if (!alive(t) || !e.isValid) return false;
           face(e, aim(t));
