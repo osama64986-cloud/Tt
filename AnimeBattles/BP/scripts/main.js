@@ -1549,6 +1549,7 @@ const MOVES = {
   cut_r: { pose: 19, t: 3, dmg: 8, kb: 0.3, arc: "right", sword: true },
   cut_l: { pose: 28, t: 3, dmg: 8, kb: 0.3, arc: "left", sword: true },
   cut_x: { pose: 1, t: 5, dmg: 15, kb: 0.4, strong: true, arc: "front", sword: true },
+  tail: { pose: 33, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },  // Frieza's tail lash
   blink: { tp: "behind", t: 3 },
   blinkfront: { tp: "front", t: 3 },
 };
@@ -1561,7 +1562,7 @@ const COMBOS = {
   "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
   "ab:zoro": [["cut_r", "cut_l", "cut_r", "kick_r", "cut_x"], ["cut_l", "cut_r", "cut_l", "kick_l", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
-  "ab:frieza": [["jab_r", "kick_l", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
+  "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
 MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };

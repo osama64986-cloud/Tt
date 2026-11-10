@@ -1986,6 +1986,65 @@
      ]
     }
    }
+  },
+  "animation.ab.tail_whip": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.2,
+   "override_previous_animation": true,
+   "bones": {
+    "root": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.1": [
+       0,
+       150,
+       0
+      ],
+      "0.2": [
+       0,
+       180,
+       0
+      ]
+     }
+    },
+    "tail": {
+     "rotation": {
+      "0.0": [
+       10,
+       -40,
+       0
+      ],
+      "0.1": [
+       45,
+       60,
+       0
+      ],
+      "0.2": [
+       35,
+       40,
+       0
+      ]
+     }
+    },
+    "rightArm": {
+     "rotation": [
+      -20,
+      0,
+      40
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -20,
+      0,
+      -40
+     ]
+    }
+   }
   }
  }
 }

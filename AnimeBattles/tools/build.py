@@ -235,7 +235,7 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 32], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 34], "default": 0, "client_sync": True},
                     "ab:expr": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
                     "ab:stance": {"type": "bool", "default": False, "client_sync": True},
                 },
@@ -270,7 +270,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana"]  # poses 13..32
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip"]  # poses 13..33
 
 
 def extra_animations():
@@ -410,6 +410,11 @@ def extra_animations():
         "leftArm": {"rotation": {"0.0": [-60, 12, 0], "0.1": [35, 12, 0], "0.18": [-92, 12, 0], "0.3": [-90, 12, 0]},
                     "scale": {"0.0": [1, 1, 1], "0.1": [1, 3, 1], "0.18": [1, 5.5, 1], "0.3": [1, 5, 1]}},
         "body": {"rotation": {"0.0": [0, 0, 0], "0.1": [-8, 0, 0], "0.18": [8, 0, 0]}}}, 0.3)
+    # Frieza's tail whip (pose 33): body whips round, the tail lashes across
+    out["animation.ab.tail_whip"] = strike({
+        "root": {"rotation": {"0.0": [0, 0, 0], "0.1": [0, 150, 0], "0.2": [0, 180, 0]}},
+        "tail": {"rotation": {"0.0": [10, -40, 0], "0.1": [45, 60, 0], "0.2": [35, 40, 0]}},
+        "rightArm": {"rotation": [-20, 0, 40]}, "leftArm": {"rotation": [-20, 0, -40]}}, 0.2)
     out["animation.ab.upper"] = strike({
         "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
         "leftArm": {"rotation": [-30, 0, 20]},

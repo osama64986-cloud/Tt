@@ -84,6 +84,7 @@
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
+    "tail_whip": "animation.ab.tail_whip",
     "bounce": "animation.ab.bounce",
     "toon": "animation.ab.toon",
     "happy_bounce": "animation.ab.happy_bounce"
@@ -197,6 +198,9 @@
      },
      {
       "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "tail_whip": "query.property('ab:pose') == 33"
      },
      {
       "bounce": "query.property('ab:form') == 3"

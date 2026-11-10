@@ -59,6 +59,7 @@
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
+    "tail_whip": "animation.ab.tail_whip",
     "cool_idle": "animation.ab.cool_idle"
    },
    "scripts": {
@@ -170,6 +171,9 @@
      },
      {
       "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "tail_whip": "query.property('ab:pose') == 33"
      },
      {
       "cool_idle": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"

@@ -64,6 +64,7 @@
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
+    "tail_whip": "animation.ab.tail_whip",
     "arms2": "animation.ab.arms2",
     "arms_crossed": "animation.ab.arms_crossed"
    },
@@ -176,6 +177,9 @@
      },
      {
       "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "tail_whip": "query.property('ab:pose') == 33"
      },
      {
       "arms2": "query.property('ab:form') == 2"
