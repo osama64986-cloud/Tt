@@ -139,7 +139,7 @@
     "max": 950
    },
    "minecraft:scale": {
-    "value": 1.0
+    "value": 0.94
    },
    "minecraft:collision_box": {
     "width": 0.6,

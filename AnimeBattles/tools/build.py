@@ -140,6 +140,7 @@ FIGHTERS = {
         "egg": ("#f6801a", "#223aaa"),
     },
     "vegeta": {
+        "scale": 0.94,  # canon: noticeably shorter than Goku
         "hp": 950,
         "forms": [(13, 0.33), (19, 0.36), (37, 0.41), (50, 0.43)],
         "tex": ["base", "ssj", "ssb", "ue"],
@@ -167,7 +168,8 @@ FIGHTERS.update({
 })
 
 FIGHTERS.update({
-    "zoro": {"hp": 700, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c")},
+    "zoro": {"hp": 700, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c"),
+             "scale": 1.03},
     "frieza": {"hp": 900, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
