@@ -4052,7 +4052,7 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
         put(11, 24, ink); put(21, 24, ink); put(20, 24, ink)  # one corner hitched higher
         put(21, 23, ink)
         return
-    if expr == "shout" and mouth_type == "corner":  # Vegeta yells through clenched teeth
+    if expr == "shout" and (mouth_type == "corner" or "zoro_eye" in marks):  # Vegeta, and Zoro biting Wado
         for y in range(24, 30):
             for x in range(10, 22):
                 put(x, y, ms[2])
