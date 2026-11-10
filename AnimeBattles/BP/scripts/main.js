@@ -1796,6 +1796,10 @@ function bar(pct) {
   const col = pct > 0.6 ? "§a" : pct > 0.3 ? "§e" : "§c";
   return `${col}${"|".repeat(full)}§8${"|".repeat(n - full)}`;
 }
+function ebar(pct) {
+  const n = 12, full = Math.round(clamp(pct, 0, 1) * n);
+  return `§b${"|".repeat(full)}§8${"|".repeat(n - full)}`;
+}
 function teamLabel(team) {
   return team === RED ? "§c[RED] " : team === BLUE ? "§9[BLUE] " : "";
 }
@@ -1817,7 +1821,7 @@ function updateTag(e) {
     if (e.hasTag("ab_infinity")) extra += " §b[Infinity]";
     if (s.burnoutUntil > now()) extra += " §7[Burnout]";
     if (s.stunUntil > now()) extra += " §f[Stunned]";
-    text = `${teamLabel(team)}${def.color}§l${def.name}§r §7(${form})${extra}\n${bar(pct)} §f${hp}§7/${max}\n${def.energyName} §f${Math.max(0, Math.floor(s.energy))}`;
+    text = `${teamLabel(team)}${def.color}§l${def.name}§r §7(${form})${extra}\n${bar(pct)} §f${hp}§7/${max}\n${def.energyName} ${ebar(s.energy / def.energy)} §f${Math.max(0, Math.floor(s.energy))}`;
   } else if (team) {
     text = `${teamLabel(team)}§f${prettyType(e.typeId)}\n${bar(pct)} §f${hp}§7/${max}`;
   } else return;
@@ -2049,6 +2053,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const e = ev.deadEntity;
     const def = FIGHTERS[e.typeId];
     if (def && teamOf(e)) announce(e, `${teamLabel(teamOf(e))}${def.color}§l${def.name} §r§fhas been defeated!`);
+    if (def) { try { e.setProperty("ab:expr", 2); e.setProperty("ab:pose", 0); } catch (err) { /* ignore */ } }  // falls with a pained face
     states.delete(e.id);
     // victory: the fighter who landed the last blow raises a fist with a shout
     const k = ev.damageSource && ev.damageSource.damagingEntity;
