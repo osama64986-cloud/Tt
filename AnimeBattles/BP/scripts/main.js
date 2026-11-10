@@ -340,9 +340,58 @@ function explosion(src, pos, o) {
   carve(dim, pos, o.carve ?? 0);
 }
 
+// Beam struggle: two beams fired at each other meet in the middle; the stronger side pushes the clash
+// point onto the weaker one and it blows up there.
+const activeBeams = new Map();
+function beamClash(a, b, color) {
+  const dim = a.dimension;
+  announce(a, "§e§lBEAM STRUGGLE!");
+  const winner = powerOf(a) >= powerOf(b) ? a : b;
+  const loser = winner === a ? b : a;
+  every(2, 12, (i) => {
+    if (!a.isValid || !b.isValid) return false;
+    const pa = aim(a), pb = aim(b);
+    const t = 0.5 + (winner === a ? 1 : -1) * i * 0.03;
+    const mid = V.add(pa, V.mul(V.sub(pb, pa), t));
+    fx(dim, "flash", mid, C.white, 3 + (i % 3), 0.2);
+    fx(dim, "orb", mid, color, 4, 0.2);
+    fx(dim, "streak", mid, C.white, 1.6, 0.3, { count: 8, speed: 9 });
+    if (i % 3 === 0) shake(dim, mid, 0.3, 0.2);
+  });
+  later(26, () => {
+    if (winner.isValid && alive(loser)) explosion(winner, aim(loser), { radius: 3, dmg: 30 * powerOf(winner) / 100, color, knock: 2 });
+  });
+}
+
+// Fighters with a signature beam answer an incoming beam with their own — and the two collide.
+const COUNTER_BEAM = { "ab:goku": ["§b§lKAMEHAMEHA!", C.kameBlue], "ab:vegeta": ["§d§lGALICK GUN!", C.galick],
+  "ab:frieza": ["§5§lDeath Beam!", C.death], "ab:ichigo": ["§4§lCero!", C.red] };
+function counterBeam(d, src) {
+  const cb = COUNTER_BEAM[d.typeId];
+  if (!cb || !alive(d) || !alive(src) || d.hasTag("ab_clone")) return;
+  if (d.typeId === "ab:ichigo" && formOf(d) !== 2) return;  // Cero needs the Hollow mask
+  const ds = state(d);
+  if (now() < ds.busyUntil || now() < (ds.cd.counterBeam ?? 0) || ds.energy < 150 || Math.random() > 0.5) return;
+  ds.cd.counterBeam = now() + 400;
+  ds.energy -= 150;
+  busy(ds, 26);
+  later(3, () => {
+    if (!alive(d) || !alive(src)) return;
+    face(d, aim(src)); setPose(d, 1); announce(d, cb[0]);
+    beam(d, src, { color: cb[1], width: 1.2, length: 40, dmg: 45 * powerOf(d) / 100, blast: 2.5, ticks: 6 });
+    later(18, () => { if (d.isValid) setPose(d, 0); });
+  });
+}
+
 // A beam that grows from the caster toward the target, hitting everything along it once.
 function beam(src, target, o) {
   setExpr(src, 1, 26);
+  if (target && target.isValid && target !== src) {
+    const other = activeBeams.get(target.id);
+    activeBeams.set(src.id, { target: target.id, until: now() + 30 });
+    if (other && other.target === src.id && now() < other.until && isFighter(target)) beamClash(src, target, o.color);
+    else counterBeam(target, src);
+  }
   const dim = src.dimension;
   const { pos: start, dir } = handPos(src, target);
   const hit = new Set();
