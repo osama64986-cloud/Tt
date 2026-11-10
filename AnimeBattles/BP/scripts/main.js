@@ -484,6 +484,10 @@ function transform(e, s, to, label, color, extraSound) {
   const def = FIGHTERS[e.typeId];
   busy(s, 32);
   const calm = e.typeId === "ab:goku" && to === 4;  // Ultra Instinct awakens in silence: no yell, no crouch
+  if (e.typeId === "ab:frieza" && to === 1) {  // Golden Frieza is born inside a cocoon of golden light
+    const cocoon = spawnVfx(dim, 1, V.up(e.location, 1.1), { slot: 9, size: 1.7, life: 34 });
+    later(30, () => killVfx(cocoon));
+  }
   if (!calm) setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
