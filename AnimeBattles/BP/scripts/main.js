@@ -2096,6 +2096,9 @@ world.afterEvents.entitySpawn.subscribe((ev) => {
       busy(s, 30);
       setPose(e, ENTRANCE[e.typeId]);
       setExpr(e, 1, 26);
+      const c = HIT_COLOR[e.typeId] ?? C.white;  // arrival burst in the fighter's own colour
+      ring(e.dimension, V.up(e.location, 0.1), 1.6, c, 24, 0.4);
+      fx(e.dimension, "aura", e.location, c, 1.3, 0.6, { count: 18 * fxLevel(), speed: 2 });
       later(30, () => { if (e.isValid && now() >= state(e).busyUntil) setPose(e, 0); });
     });
   } catch (err) { /* ignore */ }
