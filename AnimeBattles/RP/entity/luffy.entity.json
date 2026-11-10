@@ -85,7 +85,8 @@
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
     "bounce": "animation.ab.bounce",
-    "toon": "animation.ab.toon"
+    "toon": "animation.ab.toon",
+    "happy_bounce": "animation.ab.happy_bounce"
    },
    "scripts": {
     "animate": [
@@ -202,6 +203,9 @@
      },
      {
       "toon": "query.property('ab:form') == 6"
+     },
+     {
+      "happy_bounce": "query.property('ab:form') == 0 && !query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
      }
     ]
    },

@@ -1946,6 +1946,26 @@
      ]
     }
    }
+  },
+  "animation.ab.happy_bounce": {
+   "loop": true,
+   "override_previous_animation": false,
+   "bones": {
+    "root": {
+     "position": [
+      0,
+      "math.abs(math.sin(query.life_time * 200.0)) * 0.7",
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      0,
+      0,
+      "math.sin(query.life_time * 100.0) * 4"
+     ]
+    }
+   }
   }
  }
 }
