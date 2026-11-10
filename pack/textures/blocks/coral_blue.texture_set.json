@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "coral_blue",
     "metalness_emissive_roughness_subsurface": "coral_blue_mers",
-    "normal": "coral_blue_normal"
+    "heightmap": "coral_blue_heightmap"
   }
 }

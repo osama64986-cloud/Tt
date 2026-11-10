@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "cracked_deepslate_tiles",
     "metalness_emissive_roughness_subsurface": "cracked_deepslate_tiles_mers",
-    "normal": "cracked_deepslate_tiles_normal"
+    "heightmap": "cracked_deepslate_tiles_heightmap"
   }
 }

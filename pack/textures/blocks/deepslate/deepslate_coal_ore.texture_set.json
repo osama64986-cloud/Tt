@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "deepslate_coal_ore",
     "metalness_emissive_roughness_subsurface": "deepslate_coal_ore_mers",
-    "normal": "deepslate_coal_ore_normal"
+    "heightmap": "deepslate_coal_ore_heightmap"
   }
 }

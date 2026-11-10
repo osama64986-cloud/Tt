@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "stripped_poplar_log_side",
     "metalness_emissive_roughness_subsurface": "stripped_poplar_log_side_mers",
-    "normal": "stripped_poplar_log_side_normal"
+    "heightmap": "stripped_poplar_log_side_heightmap"
   }
 }

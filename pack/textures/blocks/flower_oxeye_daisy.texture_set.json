@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "flower_oxeye_daisy",
     "metalness_emissive_roughness_subsurface": "flower_oxeye_daisy_mers",
-    "normal": "flower_oxeye_daisy_normal"
+    "heightmap": "flower_oxeye_daisy_heightmap"
   }
 }

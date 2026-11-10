@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "mud_bricks",
     "metalness_emissive_roughness_subsurface": "mud_bricks_mers",
-    "normal": "mud_bricks_normal"
+    "heightmap": "mud_bricks_heightmap"
   }
 }

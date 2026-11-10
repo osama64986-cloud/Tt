@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "iron_ore",
     "metalness_emissive_roughness_subsurface": "iron_ore_mers",
-    "normal": "iron_ore_normal"
+    "heightmap": "iron_ore_heightmap"
   }
 }

@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "deepslate_redstone_ore",
     "metalness_emissive_roughness_subsurface": "deepslate_redstone_ore_mers",
-    "normal": "deepslate_redstone_ore_normal"
+    "heightmap": "deepslate_redstone_ore_heightmap"
   }
 }

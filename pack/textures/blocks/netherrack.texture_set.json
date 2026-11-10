@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "netherrack",
     "metalness_emissive_roughness_subsurface": "netherrack_mers",
-    "normal": "netherrack_normal"
+    "heightmap": "netherrack_heightmap"
   }
 }

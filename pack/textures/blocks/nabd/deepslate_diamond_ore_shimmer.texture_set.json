@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "deepslate_diamond_ore_shimmer",
     "metalness_emissive_roughness_subsurface": "deepslate_diamond_ore_shimmer_mers",
-    "normal": "deepslate_diamond_ore_shimmer_normal"
+    "heightmap": "deepslate_diamond_ore_shimmer_heightmap"
   }
 }

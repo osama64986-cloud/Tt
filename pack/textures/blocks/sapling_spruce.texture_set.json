@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "sapling_spruce",
     "metalness_emissive_roughness_subsurface": "sapling_spruce_mers",
-    "normal": "sapling_spruce_normal"
+    "heightmap": "sapling_spruce_heightmap"
   }
 }

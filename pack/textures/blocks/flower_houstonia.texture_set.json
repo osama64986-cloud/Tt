@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "flower_houstonia",
     "metalness_emissive_roughness_subsurface": "flower_houstonia_mers",
-    "normal": "flower_houstonia_normal"
+    "heightmap": "flower_houstonia_heightmap"
   }
 }

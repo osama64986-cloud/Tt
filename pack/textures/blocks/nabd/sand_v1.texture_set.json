@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "sand_v1",
     "metalness_emissive_roughness_subsurface": "sand_v1_mers",
-    "normal": "sand_v1_normal"
+    "heightmap": "sand_v1_heightmap"
   }
 }

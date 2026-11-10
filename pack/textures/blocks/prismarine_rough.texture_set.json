@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "prismarine_rough",
     "metalness_emissive_roughness_subsurface": "prismarine_rough_mers",
-    "normal": "prismarine_rough_normal"
+    "heightmap": "prismarine_rough_heightmap"
   }
 }

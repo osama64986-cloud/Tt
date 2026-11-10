@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "clay",
     "metalness_emissive_roughness_subsurface": "clay_mers",
-    "normal": "clay_normal"
+    "heightmap": "clay_heightmap"
   }
 }

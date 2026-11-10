@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "deepslate_gold_ore",
     "metalness_emissive_roughness_subsurface": "deepslate_gold_ore_mers",
-    "normal": "deepslate_gold_ore_normal"
+    "heightmap": "deepslate_gold_ore_heightmap"
   }
 }

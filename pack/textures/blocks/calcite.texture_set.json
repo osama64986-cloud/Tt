@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "calcite",
     "metalness_emissive_roughness_subsurface": "calcite_mers",
-    "normal": "calcite_normal"
+    "heightmap": "calcite_heightmap"
   }
 }

@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "sweet_berry_bush_stage0",
     "metalness_emissive_roughness_subsurface": "sweet_berry_bush_stage0_mers",
-    "normal": "sweet_berry_bush_stage0_normal"
+    "heightmap": "sweet_berry_bush_stage0_heightmap"
   }
 }

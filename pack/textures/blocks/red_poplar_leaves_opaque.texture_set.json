@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "red_poplar_leaves_opaque",
     "metalness_emissive_roughness_subsurface": "red_poplar_leaves_opaque_mers",
-    "normal": "red_poplar_leaves_opaque_normal"
+    "heightmap": "red_poplar_leaves_opaque_heightmap"
   }
 }

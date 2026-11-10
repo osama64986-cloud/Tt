@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "poplar_planks",
     "metalness_emissive_roughness_subsurface": "poplar_planks_mers",
-    "normal": "poplar_planks_normal"
+    "heightmap": "poplar_planks_heightmap"
   }
 }

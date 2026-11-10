@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "cracked_deepslate_bricks",
     "metalness_emissive_roughness_subsurface": "cracked_deepslate_bricks_mers",
-    "normal": "cracked_deepslate_bricks_normal"
+    "heightmap": "cracked_deepslate_bricks_heightmap"
   }
 }

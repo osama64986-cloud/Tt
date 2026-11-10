@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "glowstone",
     "metalness_emissive_roughness_subsurface": "glowstone_mers",
-    "normal": "glowstone_normal"
+    "heightmap": "glowstone_heightmap"
   }
 }

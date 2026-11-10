@@ -75,19 +75,22 @@ def write_tex(name, tex):
         im.save(base + "." + ext)
     stem = os.path.basename(name)
     tex.mers_image().save(base + "_mers.tga")
-    frame_h = tex.w if tex.h > tex.w else None
-    tex.normal_image(frame_h).save(base + "_normal.png")
+    # Height map (1-channel): black = pushed in, white = pushed out, 127 = flat.
+    # Chosen over a normal map because its meaning is unambiguous in the docs.
+    hm = np.clip(127.5 + (tex.height - float(tex.height.mean())) * 150.0 * tex.bump, 0, 255).astype(np.uint8)
+    Image.fromarray(hm, "L").save(base + "_heightmap.png")
     ts = {"format_version": "1.21.30",
           "minecraft:texture_set": {"color": stem,
                                     "metalness_emissive_roughness_subsurface": stem + "_mers",
-                                    "normal": stem + "_normal"}}
+                                    "heightmap": stem + "_heightmap"}}
     json.dump(ts, open(base + ".texture_set.json", "w"), indent=2)
 
 
 def write_atlas(out, flip, variations):
     td = {}
     for short, names in variations.items():
-        td[short] = {"textures": {"variations": [{"path": "textures/blocks/" + n} for n in names]}}
+        td[short] = {"textures": {"variations": [{"path": "textures/blocks/" + n, "weight": 2 if i == 0 else 1}
+                                                 for i, n in enumerate(names)]}}
     fb = []
     for key, f in flip.items():
         short = f.get("short", os.path.basename(key))
@@ -130,6 +133,77 @@ def sheet(out, names, path, scale=5, cols=10, tile=2):
     im.save(path)
 
 
+def make_icon(out, size=256):
+    """Isometric grass block built from our own textures."""
+    top, side = out["grass_carried"].rgb, out["grass_side_carried"].rgb
+    img = np.zeros((size, size, 4), np.uint8)
+    cx, w, hh, sh = size / 2, size * 0.42, size * 0.21, size * 0.46
+    y0 = (size - (2 * hh + sh)) / 2
+    for y in range(size):
+        for x in range(size):
+            dx, dy = (x + 0.5 - cx) / w, (y + 0.5 - y0) / hh
+            u, v = (dx + dy) / 2, (dy - dx) / 2
+            if 0 <= u < 1 and 0 <= v < 1:
+                img[y, x, :3] = top[int(v * 16), int(u * 16)]
+                img[y, x, 3] = 255
+                continue
+            if -1 <= dx < 0:
+                uu = dx + 1
+                vv = (y + 0.5 - (y0 + hh + uu * hh)) / sh
+                k = 0.82
+            elif 0 <= dx < 1:
+                uu = dx
+                vv = (y + 0.5 - (y0 + 2 * hh - uu * hh)) / sh
+                k = 0.6
+            else:
+                continue
+            if 0 <= vv < 1:
+                img[y, x, :3] = (side[int(vv * 16), int(uu * 16)] * k).astype(np.uint8)
+                img[y, x, 3] = 255
+    bg = np.zeros((size, size, 4), np.uint8)
+    yy = np.linspace(0, 1, size)[:, None]
+    bg[..., 0] = 28 + 30 * yy
+    bg[..., 1] = 34 + 44 * yy
+    bg[..., 2] = 58 + 60 * yy
+    bg[..., 3] = 255
+    a = img[..., 3:4] / 255.0
+    bg[..., :3] = (img[..., :3] * a + bg[..., :3] * (1 - a)).astype(np.uint8)
+    return Image.fromarray(bg, "RGBA")
+
+
+def validate(out):
+    """Fails the build on anything the game would reject or mis-size."""
+    problems = []
+    bdir = os.path.join(PACK, "textures", "blocks")
+    for name, tex in out.items():
+        st = core.STATS.get(name)
+        if st and [tex.w, tex.h] != st["size"]:
+            problems.append(f"{name}: size {tex.w}x{tex.h} but the game expects {st['size']}")
+    for d, _, fs in os.walk(PACK):
+        for f in fs:
+            p = os.path.join(d, f)
+            if f.endswith(".json"):
+                try:
+                    j = json.load(open(p, encoding="utf-8"))
+                except Exception as e:
+                    problems.append(f"{p}: {e}")
+                    continue
+                if f.endswith(".texture_set.json"):
+                    for layer, ref in j["minecraft:texture_set"].items():
+                        if not any(os.path.exists(os.path.join(d, ref + e)) for e in (".png", ".tga")):
+                            problems.append(f"{p}: missing layer {layer} -> {ref}")
+    for jf, getter in (("terrain_texture.json", lambda j: [v["path"] for e in j["texture_data"].values() for v in e["textures"]["variations"]]),
+                       ("flipbook_textures.json", lambda j: [e["flipbook_texture"] for e in j])):
+        p = os.path.join(PACK, "textures", jf)
+        if os.path.exists(p):
+            for ref in getter(json.load(open(p))):
+                if not any(os.path.exists(os.path.join(PACK, ref + e)) for e in (".png", ".tga")):
+                    problems.append(f"{jf}: missing {ref}")
+    if problems:
+        print("\n".join(problems))
+        raise SystemExit(f"{len(problems)} validation problem(s)")
+
+
 def main():
     preview = "--preview" in sys.argv
     out, flip, variations = generate()
@@ -148,6 +222,8 @@ def main():
                   open(os.path.join(tdir, "terrain_texture.json"), "w"), indent=2)
     if fb:
         json.dump(fb, open(os.path.join(tdir, "flipbook_textures.json"), "w"), indent=2)
+    make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
+    validate(out)
     print(f"{len(out)} textures, {len(variations)} variation groups, {len(fb)} flipbooks")
     if preview:
         names = list(out)

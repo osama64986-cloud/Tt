@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "copper_ore",
     "metalness_emissive_roughness_subsurface": "copper_ore_mers",
-    "normal": "copper_ore_normal"
+    "heightmap": "copper_ore_heightmap"
   }
 }

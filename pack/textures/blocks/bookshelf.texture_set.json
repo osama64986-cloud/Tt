@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "bookshelf",
     "metalness_emissive_roughness_subsurface": "bookshelf_mers",
-    "normal": "bookshelf_normal"
+    "heightmap": "bookshelf_heightmap"
   }
 }

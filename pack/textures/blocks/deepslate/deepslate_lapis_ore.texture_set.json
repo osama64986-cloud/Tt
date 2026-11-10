@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "deepslate_lapis_ore",
     "metalness_emissive_roughness_subsurface": "deepslate_lapis_ore_mers",
-    "normal": "deepslate_lapis_ore_normal"
+    "heightmap": "deepslate_lapis_ore_heightmap"
   }
 }

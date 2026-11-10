@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "glass_brown",
     "metalness_emissive_roughness_subsurface": "glass_brown_mers",
-    "normal": "glass_brown_normal"
+    "heightmap": "glass_brown_heightmap"
   }
 }

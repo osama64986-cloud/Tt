@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "sapling_roofed_oak",
     "metalness_emissive_roughness_subsurface": "sapling_roofed_oak_mers",
-    "normal": "sapling_roofed_oak_normal"
+    "heightmap": "sapling_roofed_oak_heightmap"
   }
 }

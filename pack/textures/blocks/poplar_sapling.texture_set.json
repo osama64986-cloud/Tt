@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "poplar_sapling",
     "metalness_emissive_roughness_subsurface": "poplar_sapling_mers",
-    "normal": "poplar_sapling_normal"
+    "heightmap": "poplar_sapling_heightmap"
   }
 }

@@ -2,17 +2,20 @@
   "resource_pack_name": "nabd",
   "texture_name": "atlas.terrain",
   "texture_data": {
-    "stone": {
+    "flattened_stone": {
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/stone"
+            "path": "textures/blocks/stone",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/stone_v1"
+            "path": "textures/blocks/nabd/stone_v1",
+            "weight": 1
           },
           {
-            "path": "textures/blocks/nabd/stone_v2"
+            "path": "textures/blocks/nabd/stone_v2",
+            "weight": 1
           }
         ]
       }
@@ -21,37 +24,44 @@
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/cobblestone"
+            "path": "textures/blocks/cobblestone",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/cobblestone_v1"
+            "path": "textures/blocks/nabd/cobblestone_v1",
+            "weight": 1
           }
         ]
       }
     },
-    "stonebrick": {
+    "stone_bricks": {
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/stonebrick"
+            "path": "textures/blocks/stonebrick",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/stonebrick_v1"
+            "path": "textures/blocks/nabd/stonebrick_v1",
+            "weight": 1
           },
           {
-            "path": "textures/blocks/nabd/stonebrick_v2"
+            "path": "textures/blocks/nabd/stonebrick_v2",
+            "weight": 1
           }
         ]
       }
     },
-    "sand": {
+    "flattened_sand": {
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/sand"
+            "path": "textures/blocks/sand",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/sand_v1"
+            "path": "textures/blocks/nabd/sand_v1",
+            "weight": 1
           }
         ]
       }
@@ -60,40 +70,30 @@
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/gravel"
+            "path": "textures/blocks/gravel",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/gravel_v1"
+            "path": "textures/blocks/nabd/gravel_v1",
+            "weight": 1
           }
         ]
       }
     },
-    "dirt": {
+    "flattened_dirt": {
       "textures": {
         "variations": [
           {
-            "path": "textures/blocks/dirt"
+            "path": "textures/blocks/dirt",
+            "weight": 2
           },
           {
-            "path": "textures/blocks/nabd/dirt_v1"
+            "path": "textures/blocks/nabd/dirt_v1",
+            "weight": 1
           },
           {
-            "path": "textures/blocks/nabd/dirt_v2"
-          }
-        ]
-      }
-    },
-    "grass_top": {
-      "textures": {
-        "variations": [
-          {
-            "path": "textures/blocks/grass_top"
-          },
-          {
-            "path": "textures/blocks/nabd/grass_top_v1"
-          },
-          {
-            "path": "textures/blocks/nabd/grass_top_v2"
+            "path": "textures/blocks/nabd/dirt_v2",
+            "weight": 1
           }
         ]
       }

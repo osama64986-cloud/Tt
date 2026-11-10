@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "stonebrick",
     "metalness_emissive_roughness_subsurface": "stonebrick_mers",
-    "normal": "stonebrick_normal"
+    "heightmap": "stonebrick_heightmap"
   }
 }

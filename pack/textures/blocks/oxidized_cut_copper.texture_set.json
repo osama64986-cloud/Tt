@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "oxidized_cut_copper",
     "metalness_emissive_roughness_subsurface": "oxidized_cut_copper_mers",
-    "normal": "oxidized_cut_copper_normal"
+    "heightmap": "oxidized_cut_copper_heightmap"
   }
 }

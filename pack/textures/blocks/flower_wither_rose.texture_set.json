@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "flower_wither_rose",
     "metalness_emissive_roughness_subsurface": "flower_wither_rose_mers",
-    "normal": "flower_wither_rose_normal"
+    "heightmap": "flower_wither_rose_heightmap"
   }
 }

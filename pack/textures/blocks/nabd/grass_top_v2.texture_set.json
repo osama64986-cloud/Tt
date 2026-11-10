@@ -1,8 +1,0 @@
-{
-  "format_version": "1.21.30",
-  "minecraft:texture_set": {
-    "color": "grass_top_v2",
-    "metalness_emissive_roughness_subsurface": "grass_top_v2_mers",
-    "normal": "grass_top_v2_normal"
-  }
-}

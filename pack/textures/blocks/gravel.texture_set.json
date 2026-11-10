@@ -3,6 +3,6 @@
   "minecraft:texture_set": {
     "color": "gravel",
     "metalness_emissive_roughness_subsurface": "gravel_mers",
-    "normal": "gravel_normal"
+    "heightmap": "gravel_heightmap"
   }
 }

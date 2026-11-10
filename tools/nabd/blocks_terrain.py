@@ -27,13 +27,15 @@ ORE_COUNT = {"coal": 7, "iron": 7, "copper": 7, "gold": 7, "redstone": 9, "lapis
 
 
 def build(out, flip, variations):
-    """out[name] = Tex; flip[name] = dict(frames, ticks); variations[shortname] = [names]"""
+    """out[name] = Tex; flip[name] = dict(strip, ticks); variations[atlas key] = [names].
+    Variation keys must be atlas entries that hold ONE texture in the game
+    (flattened_stone, cobblestone, ...) - never the legacy indexed lists."""
     # ------------------------------------------------------------------- stone
     st = vramp("stone", 5, contrast=0.2)
     out["stone"] = P.rock("stone", st, "smooth", cracks=3)
     for i in (1, 2):
         out[f"nabd/stone_v{i}"] = P.rock(f"stone_v{i}", st, "smooth", cracks=2 + i)
-    variations["stone"] = ["stone", "nabd/stone_v1", "nabd/stone_v2"]
+    variations["flattened_stone"] = ["stone", "nabd/stone_v1", "nabd/stone_v2"]
 
     cb = vramp("cobblestone", 6, contrast=0.36)
     out["cobblestone"] = P.cells("cobblestone", cb, 9)
@@ -54,7 +56,7 @@ def build(out, flip, variations):
     out["stonebrick"] = P.bricks("stonebrick", sb, GREY_MORTAR, rows=2, cols=1, chip=0.03)
     for i in (1, 2):
         out[f"nabd/stonebrick_v{i}"] = P.bricks(f"stonebrick_v{i}", sb, GREY_MORTAR, rows=2, cols=1, chip=0.04 + 0.02 * i)
-    variations["stonebrick"] = ["stonebrick", "nabd/stonebrick_v1", "nabd/stonebrick_v2"]
+    variations["stone_bricks"] = ["stonebrick", "nabd/stonebrick_v1", "nabd/stonebrick_v2"]
     out["stonebrick_mossy"] = P.bricks("stonebrick", sb, GREY_MORTAR, rows=2, cols=1, chip=0.03, moss=moss_ramp())
     out["stonebrick_cracked"] = P.bricks("stonebrick", sb, GREY_MORTAR, rows=2, cols=1, chip=0.05, crack=4)
     out["stonebrick_carved"] = P.slab_face("stonebrick_carved", sb, border=1, inset=4, vary=0.12, rough=180)
@@ -97,7 +99,7 @@ def build(out, flip, variations):
     # ------------------------------------------------------------- sand/gravel
     out["sand"] = P.rock("sand", vramp("sand", 5, contrast=0.13), "fine", cracks=0, speck=0.07, rough=220, bump=0.7)
     out["nabd/sand_v1"] = P.rock("sand_v1", vramp("sand", 5, contrast=0.13), "fine", cracks=0, speck=0.08, rough=220, bump=0.7)
-    variations["sand"] = ["sand", "nabd/sand_v1"]
+    variations["flattened_sand"] = ["sand", "nabd/sand_v1"]
     out["red_sand"] = P.rock("red_sand", vramp("red_sand", 5, contrast=0.15), "fine", cracks=0, speck=0.07, rough=220, bump=0.7)
     gv = vramp("gravel", 6, contrast=0.34)
     warm = make_ramp((132, 116, 104), 6, 0.3)
@@ -125,7 +127,7 @@ def build(out, flip, variations):
     out["dirt"] = P.soil("dirt", dirt_r, pebbles=5, pebble_ramp=stone_peb)
     for i in (1, 2):
         out[f"nabd/dirt_v{i}"] = P.soil(f"dirt_v{i}", dirt_r, pebbles=3 + 2 * i, pebble_ramp=stone_peb)
-    variations["dirt"] = ["dirt", "nabd/dirt_v1", "nabd/dirt_v2"]
+    variations["flattened_dirt"] = ["dirt", "nabd/dirt_v1", "nabd/dirt_v2"]
     out["coarse_dirt"] = P.soil("coarse_dirt", vramp("coarse_dirt", 5, contrast=0.3), pebbles=16, pebble_ramp=stone_peb,
                                 clump=((4, 1.0), (8, 1.0), (16, 0.6)))
     out["mud"] = P.soil("mud", vramp("mud", 5, contrast=0.22), pebbles=0, rough=90, clump=((2, 1.0), (4, 0.6)), dither=0.3)
@@ -160,9 +162,6 @@ def build(out, flip, variations):
     # grass (top is biome tinted -> pure grey ramp at the vanilla brightness)
     g_grey = vramp("grass_top", 5, grey=True, contrast=0.3)
     out["grass_top"] = P.turf("grass_top", g_grey, sss=60)
-    for i in (1, 2):
-        out[f"nabd/grass_top_v{i}"] = P.turf(f"grass_top_v{i}", g_grey, sss=60, blades=22 + 6 * i)
-    variations["grass_top"] = ["grass_top", "nabd/grass_top_v1", "nabd/grass_top_v2"]
     g_green = vramp("grass_carried", 5, contrast=0.32)
     out["grass_carried"] = P.turf("grass_top", g_green, sss=60)
 
