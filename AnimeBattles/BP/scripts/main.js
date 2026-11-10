@@ -870,7 +870,7 @@ const GOJO = {
       cond: () => true,
       run(e, s, t) {
         const dim = e.dimension;
-        busy(s, 50); face(e, aim(t)); setPose(e, 1); slow(e, 38, 8);
+        busy(s, 50); face(e, aim(t)); setPose(e, 4); slow(e, 38, 8);  // one hand forward, as in the anime
         announce(e, "§5§lHollow Technique: Purple");
         sound(dim, "beacon.activate", e.location, 2, 0.5);
         const bb = spawnVfx(dim, 1, e.location, { slot: 5, size: 0.7, life: 50 });
@@ -2061,6 +2061,24 @@ world.afterEvents.entityDie.subscribe((ev) => {
   } catch (err) { /* ignore */ }
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
+
+// Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
+const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
+  "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1 };
+world.afterEvents.entitySpawn.subscribe((ev) => {
+  try {
+    const e = ev.entity;
+    if (!e || ENTRANCE[e.typeId] === undefined) return;
+    later(4, () => {
+      if (!e.isValid) return;
+      const s = state(e);
+      busy(s, 30);
+      setPose(e, ENTRANCE[e.typeId]);
+      setExpr(e, 1, 26);
+      later(30, () => { if (e.isValid && now() >= state(e).busyUntil) setPose(e, 0); });
+    });
+  } catch (err) { /* ignore */ }
+});
 
 world.afterEvents.playerSpawn.subscribe((ev) => {
   try {
