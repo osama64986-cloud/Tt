@@ -135,8 +135,8 @@
     ]
    },
    "minecraft:health": {
-    "value": 1000,
-    "max": 1000
+    "value": 1100,
+    "max": 1100
    },
    "minecraft:scale": {
     "value": 1.0

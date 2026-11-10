@@ -196,7 +196,7 @@ FIGHTERS.update({
                      "geo": ["hokage", "link", "baryon"], "egg": ("#ff8a1e", "#f6f6f2")},
     "sasuke": {"hp": 600, "forms": [(18, 0.4), (26, 0.42)], "tex": ["sharingan", "susanoo"], "geo": ["sharingan", "susanoo"],
                "egg": ("#eeeef2", "#5a3a8a")},
-    "ichigo": {"hp": 1000, "forms": [(24, 0.38), (34, 0.44), (44, 0.44), (60, 0.46)], "tex": ["shikai", "bankai", "hollow", "mugetsu"],
+    "ichigo": {"hp": 1100, "forms": [(24, 0.38), (34, 0.44), (44, 0.44), (60, 0.46)], "tex": ["shikai", "bankai", "hollow", "mugetsu"],
                "geo": ["shikai", "bankai", "hollow", "mugetsu"], "egg": ("#1e1e24", "#ff8428")},
     "tanjiro": {"hp": 420, "forms": [(11, 0.38), (16, 0.4)], "tex": ["water", "mark"], "geo": ["water", "mark"],
                 "egg": ("#287a5a", "#18181c")},
