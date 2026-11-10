@@ -23,16 +23,9 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 from nabd import core  # noqa: E402
 from nabd import blocks_terrain  # noqa: E402
 
-try:
-    from nabd import blocks_wood, blocks_build, blocks_plants  # noqa: E402
-    EXTRA = [blocks_wood, blocks_build, blocks_plants]
-except ImportError as e:  # modules are added progressively
-    EXTRA = []
-    for m in ("blocks_wood", "blocks_build", "blocks_plants"):
-        try:
-            EXTRA.append(__import__("nabd." + m, fromlist=[m]))
-        except ImportError:
-            pass
+from nabd import blocks_wood, blocks_build, blocks_plants, blocks_village  # noqa: E402
+
+EXTRA = [blocks_wood, blocks_build, blocks_plants, blocks_village]
 
 PACK = os.path.join(ROOT, "pack")
 SRC = os.path.join(ROOT, "pack_src")
