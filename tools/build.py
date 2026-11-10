@@ -25,6 +25,7 @@ from nabd import blocks_terrain  # noqa: E402
 
 from nabd import blocks_wood, blocks_build, blocks_plants, blocks_village  # noqa: E402
 from nabd import blocks_nether_end, blocks_more, blocks_fluids, blocks_minerals, blocks_rest  # noqa: E402
+from nabd import items  # noqa: E402
 
 EXTRA = [blocks_wood, blocks_build, blocks_plants, blocks_village, blocks_nether_end, blocks_more, blocks_fluids,
          blocks_minerals, blocks_rest]
@@ -43,12 +44,12 @@ def generate():
     return out, flip, variations
 
 
-def write_tex(name, tex):
-    """Writes colour (+ same file types the game ships), MERS, normal and the
-    texture set that ties them together for Vibrant Visuals."""
-    base = os.path.join(PACK, "textures", "blocks", name)
+def write_tex(name, tex, kind="blocks", stats=None):
+    """Writes colour (+ same file types the game ships), MERS, height map and
+    the texture set that ties them together for Vibrant Visuals."""
+    base = os.path.join(PACK, "textures", kind, name)
     os.makedirs(os.path.dirname(base), exist_ok=True)
-    st = core.STATS.get(name)
+    st = (core.STATS if stats is None else stats).get(name)
     exts = st["ext"] if st else ["png"]
     img = tex.color_image()
     for ext in exts:
@@ -210,6 +211,13 @@ def main():
         os.makedirs(PACK)
     for name, tex in out.items():
         write_tex(name, tex)
+    item_out = {}
+    items.build(item_out)
+    for name, tex in item_out.items():
+        st = items.ISTATS[name]
+        if [tex.w, tex.h] != st["size"]:
+            raise SystemExit(f"item {name}: size {tex.w}x{tex.h} but the game expects {st['size']}")
+        write_tex(name, tex, kind="items", stats={name: {"ext": st["ext"]}})
     td, fb = write_atlas(out, flip, variations)
     tdir = os.path.join(PACK, "textures")
     if td:
@@ -219,11 +227,14 @@ def main():
         json.dump(fb, open(os.path.join(tdir, "flipbook_textures.json"), "w"), indent=2)
     make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
     validate(out)
-    print(f"{len(out)} textures, {len(variations)} variation groups, {len(fb)} flipbooks")
+    print(f"{len(out)} block textures, {len(item_out)} item textures, {len(variations)} variation groups, {len(fb)} flipbooks")
     if preview:
         names = list(out)
         for i in range(0, len(names), 80):
             sheet(out, names[i:i + 80], os.path.join(PREVIEW, f"sheet_{i // 80:02d}.png"))
+        inames = list(item_out)
+        for i in range(0, len(inames), 120):
+            sheet(item_out, inames[i:i + 120], os.path.join(PREVIEW, f"items_{i // 120:02d}.png"), scale=6, cols=15, tile=1)
     if os.path.exists(os.path.join(PACK, "manifest.json")):
         os.makedirs(DIST, exist_ok=True)
         zp = os.path.join(DIST, "Nabd.mcpack")
