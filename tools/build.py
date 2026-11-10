@@ -57,7 +57,22 @@ def write_tex(name, tex):
     exts = st["ext"] if st else ["png"]
     img = tex.color_image()
     for ext in exts:
-        img.save(base + "." + ext)
+        im = img
+        if st and len(exts) > 1:
+            # the game ships two files for this texture with different
+            # brightness / alpha conventions: honour each one
+            pe = st["per_ext"][ext]
+            ref = st["per_ext"][exts[-1]]
+            k = (sum(pe["mean"]) + 1.0) / (sum(ref["mean"]) + 1.0)
+            arr = np.array(img).astype(float)
+            if abs(k - 1) > 0.05:
+                arr[..., :3] = np.clip(arr[..., :3] * k, 0, 255)
+            if pe["alpha"] == [0]:
+                arr[..., 3] = 0
+            elif pe["alpha"] == [255]:
+                arr[..., 3] = 255
+            im = Image.fromarray(arr.astype(np.uint8), "RGBA")
+        im.save(base + "." + ext)
     stem = os.path.basename(name)
     tex.mers_image().save(base + "_mers.tga")
     frame_h = tex.w if tex.h > tex.w else None

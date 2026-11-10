@@ -32,6 +32,10 @@ for root, _, files in os.walk(bdir):
         ramp = [px[b].mean(0).round().astype(int).tolist() if len(b) else px.mean(0).round().astype(int).tolist() for b in bins]
         e = out.setdefault(rel, {"ext": []})
         e["ext"].append(ext[1:])
+        e.setdefault("per_ext", {})[ext[1:]] = {
+            "mean": px.mean(0).round().astype(int).tolist(),
+            "alpha": sorted(set(int(v) for v in np.unique(al)))[:4],
+        }
         e.update({
             "size": [w, h],
             "alpha": sorted(set(int(v) for v in np.unique(al)))[:4],
