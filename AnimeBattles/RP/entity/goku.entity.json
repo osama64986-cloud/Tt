@@ -70,7 +70,8 @@
     "void_sign": "animation.ab.void_sign",
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
-    "dodge": "animation.ab.dodge"
+    "dodge": "animation.ab.dodge",
+    "pump": "animation.ab.pump"
    },
    "scripts": {
     "animate": [
@@ -172,6 +173,9 @@
      },
      {
       "dodge": "query.property('ab:pose') == 29"
+     },
+     {
+      "pump": "query.property('ab:pose') == 30"
      }
     ]
    },

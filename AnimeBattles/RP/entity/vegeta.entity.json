@@ -66,6 +66,7 @@
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
     "dodge": "animation.ab.dodge",
+    "pump": "animation.ab.pump",
     "arms_crossed": "animation.ab.arms_crossed"
    },
    "scripts": {
@@ -168,6 +169,9 @@
      },
      {
       "dodge": "query.property('ab:pose') == 29"
+     },
+     {
+      "pump": "query.property('ab:pose') == 30"
      },
      {
       "arms_crossed": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"

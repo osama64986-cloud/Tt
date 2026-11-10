@@ -81,6 +81,7 @@
     "arms_wide": "animation.ab.arms_wide",
     "slash_l": "animation.ab.slash_l",
     "dodge": "animation.ab.dodge",
+    "pump": "animation.ab.pump",
     "bounce": "animation.ab.bounce"
    },
    "scripts": {
@@ -183,6 +184,9 @@
      },
      {
       "dodge": "query.property('ab:pose') == 29"
+     },
+     {
+      "pump": "query.property('ab:pose') == 30"
      },
      {
       "bounce": "query.property('ab:form') == 3"

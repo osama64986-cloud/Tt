@@ -486,7 +486,8 @@ function transform(e, s, to, label, color, extraSound) {
   setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
-  setPose(e, e.typeId === "ab:luffy" ? 3 : 22);  // DB-style power-up (Luffy keeps his own gear pose)
+  // DB-style power-up; Luffy has a move per gear: pump (G2), thumb/arm to the mouth and blow (G3, G4), laugh arms wide (G5)
+  setPose(e, e.typeId === "ab:luffy" ? (to === 1 ? 30 : to === 6 ? 27 : 25) : 22);
   slow(e, 30, 8);
   sound(dim, "ambient.weather.thunder", e.location, 1.5, 1.2);
   every(4, 7, (i) => {
