@@ -2253,6 +2253,21 @@ const TANJIRO = {
           if (i === 6) setPose(e, 0);
         });
       } },
+    { id: "nezuko", label: "Nezuko: Exploding Blood", cd: 900, cost: 0, min: 0, max: 10, weight: 9, cond: (e, s, c) => c.hp < 0.4,
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 1); announce(e, "§d§lNezuko! §5§lBlood Demon Art: Exploding Blood!");
+        const dim = e.dimension, c = V.up(e.location, 1), pink = { red: 1, green: 0.35, blue: 0.6 };
+        burst(dim, V.up(e.location, 1.6), pink, 30, 4, 0.5, 0.6);   // she bursts out of the box on his back
+        fx(dim, "shock", e.location, pink, 9, 0.5);
+        ring(dim, V.up(e.location, 0.3), 4, pink, 30, 0.5);
+        hitArea(e, c, 4.5, 18 * powerOf(e) / 100, new Set(), { knock: 1.4, lift: 0.3 });
+        every(8, 6, () => {  // the blood keeps burning on the enemies around him
+          if (!e.isValid) return false;
+          let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 5 }); } catch (err) { /* ignore */ }
+          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 3 * powerOf(e) / 100); fx(dim, "aura", o.location, pink, 1, 0.5, { count: 6, speed: 1.5 }); }
+        });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
     { id: "calm", label: "Dead Calm", cd: 300, cost: 120, min: 0, max: 8, weight: 3, cond: G(0),
       run(e, s, t) {
         busy(s, 40); setPose(e, 19); announce(e, "§b§lEleventh Form: Dead Calm §7— every blow is turned aside");
