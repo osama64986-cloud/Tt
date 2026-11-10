@@ -4254,8 +4254,53 @@ def emblem_paint(face, img):
 _goku_body_v3 = goku_body
 
 
+def torn_undershirt(face, img):
+    """Ultra Instinct (Tournament of Power): the gi top is gone, the blue undershirt is shredded open."""
+    w, h = img.size
+    px = img.load()
+    bt, st = tones(GI_BLUE), tones(SKIN)
+    for y in range(h):
+        for x in range(w):
+            u, v = (x + 0.5) / w, (y + 0.5) / h
+            n = (x * 7 + y * 13) % 5
+            c = bt[2] if face not in ("east",) else bt[1]
+            if face in ("up", "down"):
+                px[x, y] = c + (255,)
+                continue
+            hole = False
+            n2 = ((x * 5 + y * 3) % 7 - 3) * 0.09 + (n - 2) * 0.1
+            if face == "north":  # a diagonal rip from the left shoulder across the chest
+                ru, rv = u - 0.46, v - 0.42
+                a1 = ru * 0.87 + rv * 0.5
+                b1 = -ru * 0.5 + rv * 0.87
+                hole = (a1 / 0.44) ** 2 + (b1 / 0.17) ** 2 < 1 + n2
+                hole = hole or ((u - 0.15) / 0.12) ** 2 + ((v - 0.12) / 0.1) ** 2 < 1 + n2
+            elif face == "south":
+                ru, rv = u - 0.55, v - 0.5
+                a1 = ru * 0.8 - rv * 0.6
+                b1 = ru * 0.6 + rv * 0.8
+                hole = (a1 / 0.32) ** 2 + (b1 / 0.12) ** 2 < 1 + n2
+            else:
+                hole = ((u - 0.5) / 0.22) ** 2 + ((v - 0.25) / 0.1) ** 2 < 1 + n2
+            if v > 0.9 - (n % 3) * 0.05:  # ragged hem
+                hole = True
+            if hole:
+                c = st[2] if face != "east" else st[1]
+                if face == "north" and abs(u - 0.5) < 0.03 and 0.4 < v < 0.7:
+                    c = st[1]  # sternum line
+            px[x, y] = c + (255,)
+        # dark frayed edge around the openings
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            if px[x, y][:3] in (bt[2], bt[1]) and any(px[x + dx, y + dy][:3] in (st[2], st[1]) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                px[x, y] = bt[0] + (255,)
+
+
 def goku_body(m, hair, iris, brows=True, style="goku"):  # noqa: F811
     _goku_body_v3(m, hair, iris, brows, style)
+    if style == "calm":  # Ultra Instinct: torn undershirt instead of the gi top, no emblem
+        m.box("body", [-4.45, 13.7, -2.75], [8.9, 10.6, 5.5], torn_undershirt)
+        return
     m.box("body", [-4.0, 19.2, -2.62], [3.0, 3.0, 0.25], emblem_paint)   # left chest
     m.box("body", [-2.75, 15.0, 2.36], [5.5, 5.5, 0.25], emblem_paint)   # back
 
