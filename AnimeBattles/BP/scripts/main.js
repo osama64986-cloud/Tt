@@ -597,7 +597,7 @@ const GOKU = {
       id: "dragonfist", label: "Dragon Fist", cd: 500, cost: 320, min: 2, max: 14, weight: 3,
       cond: () => true,
       run(e, s, t) {
-        busy(s, 22); setPose(e, 4);
+        busy(s, 22); setPose(e, 5);  // a full-body punch, not an open palm
         announce(e, "§6§lDragon Fist!");
         sound(e.dimension, "mob.enderdragon.growl", e.location, 2, 0.8);
         every(1, 6, (i) => {
