@@ -64,6 +64,12 @@
   },
   "ab_egg_tanjiro": {
    "textures": "textures/items/egg_tanjiro"
+  },
+  "ab_egg_tanjiro_demon": {
+   "textures": "textures/items/egg_tanjiro_demon"
+  },
+  "ab_egg_muzan": {
+   "textures": "textures/items/egg_muzan"
   }
  }
 }

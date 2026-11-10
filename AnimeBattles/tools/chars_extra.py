@@ -4,6 +4,7 @@ Built on the helpers of models.py; imported at the end of it."""
 import math
 
 import models as M
+import sculpt as SC
 from models import (SIDES, SKIN, _put, both_arms, both_legs, base_body, dark, head_paint, layered, light,
                     lines, ramp, shell, solid, tones)
 
@@ -143,6 +144,10 @@ M.FACE32.update({
     "ichigo_vasto": dict(eye="narrow", brow="sharp", mouth="none", marks=["vasto_mask"]),
     "tanjiro": dict(eye="anime", brow="angled", mouth="smile", marks=["tanjiro_scar"]),
     "tanjiro_mark": dict(eye="anime", brow="sharp", mouth="neutral", marks=["tanjiro_mark"]),
+    "tanjiro_demon": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark"]),
+    "tanjiro_demon_sun": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark", "temple_mark"]),
+    "muzan": dict(eye="narrow", brow="flat", mouth="neutral", marks=["slit_eyes"]),
+    "muzan_final": dict(eye="narrow", brow="sharp", mouth="clench", marks=["slit_eyes", "fangs", "brow_scales", "face_veins"]),
 })
 
 _face32_prev = M.face32
@@ -223,6 +228,28 @@ def face32(px, W, H, spec, hair, iris, skin):
         put(21, 19, (60, 40, 90)); put(22, 20, (60, 40, 90))
         for x, y in ((19, 18), (24, 18), (19, 21), (24, 21), (21, 17), (22, 22)):
             put(x, y, (10, 6, 8))
+    if "slit_eyes" in marks and open_eyes:  # demon eyes: cat-like vertical slits
+        for cx in (10, 21):
+            for y in range(17, 23):
+                put(cx, y, (10, 4, 6))
+                put(cx + 1, y, (10, 4, 6)) if y in (19, 20) else None
+    if "fangs" in marks:
+        for x in (13, 18):
+            put(x, 26, (250, 250, 246)); put(x, 27, (250, 250, 246))
+    if "jaw_mark" in marks:  # flame mark climbing his right jaw
+        for x, y in ((4, 29), (5, 28), (5, 27), (6, 26), (7, 25), (6, 27), (7, 26), (8, 24), (4, 28), (6, 28)):
+            put(x, y, (170, 30, 34))
+    if "temple_mark" in marks:  # the third flame, from the right side of his head down to the brow
+        for x, y in ((4, 9), (5, 10), (6, 11), (6, 12), (7, 13), (8, 14), (5, 11), (7, 12)):
+            put(x, y, (170, 30, 34))
+    if "brow_scales" in marks:  # Muzan's final form: dark red scales over the forehead
+        for y in range(9, 14):
+            for x in range(6, 26):
+                if (x + y) % 3:
+                    put(x, y, (110, 14, 24) if (x * y) % 4 else (150, 24, 34))
+    if "face_veins" in marks:
+        for y in range(15, 30):
+            put(3 + (y % 3 == 0), y, (150, 20, 30)); put(28 - (y % 3 == 0), y, (150, 20, 30))
     if "hollow_mask" in marks:  # the white Hollow mask with the red stripes on the left
         for y in range(10, 32):
             for x in range(0, 32):
@@ -355,7 +382,8 @@ def naruto(m, char, form):
             both_legs(m, [-0.5, -0.4, -2.4], [4.8, 12.8, 4.8], sh)
             for s in (1, -1):
                 m.strand([s * 2.4, 32.4, -0.5], [s * 0.3, 1, 0.1], 3.6, 2.4, solid(red), bone="hair", segs=2, thick=0.6)
-            m.strand([0, 12.6, 2.2], [0, 0.5, 1], 11, 3.2, solid(red), bone="body", segs=3, thick=1.0, bend=(0, 0.25, -0.1))
+            SC.curve_tube(m, "body", [[0, 12.6, 2.4], [0, 13.5, 6], [0, 17, 9.5], [0, 22, 10.5], [0, 26, 8.5]], 1.9, 0.7,
+                          [SC.smooth(red), SC.smooth(dark(red, 0.85))], n=2)
         return
     if char == "naruto_teen" and form in ("v2", "eight"):  # Version 2 (four tails) / the Eight-Tails' skeletal form
         eight = form == "eight"
@@ -367,8 +395,10 @@ def naruto(m, char, form):
         n = 8 if eight else 4
         for k in range(n):  # the tails, fanned out behind him
             a = math.radians(-60 + 120 * k / (n - 1))
-            m.strand([math.sin(a) * 1.2, 12.4, 2.4], [math.sin(a) * 1.1, 0.9, 1], 12 if eight else 10, 3.0, solid(red), bone="body", segs=3, thick=1.0,
-                     bend=(math.sin(a) * 0.15, 0.3, -0.25))
+            L = 1.25 if eight else 1.0
+            SC.curve_tube(m, "body", [[math.sin(a) * 1.2, 12.4, 2.4], [math.sin(a) * 4 * L, 14, 6.5 * L], [math.sin(a) * 7 * L, 19 * L, 9 * L],
+                                      [math.sin(a) * 8.5 * L, 24 * L, 8 * L], [math.sin(a) * 8 * L, 27 * L, 4.5 * L]], 1.8, 0.6,
+                          [SC.smooth(red), SC.smooth(deep)], n=2)
         if eight:  # the bones of the fox growing over him: ribs, spine, skull
             bone_c = solid((236, 226, 210))
             for i in range(3):
@@ -523,16 +553,28 @@ def sasuke_hair(m, col, style):
 
 
 def hand_wings(m, col=(84, 90, 116), size=1.0):
-    """Cursed Seal Lv2: the two great webbed hands growing from his shoulder blades."""
-    hp = layered(col, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), dark(col, 0.7))])
+    """Cursed Seal Lv2: two great webbed hands growing from his shoulder blades — a jointed arm, five jointed fingers
+    and a membrane stretched between them."""
+    bone_p = SC.smooth(col)
+    web = SC.alpha(SC.smooth(dark(col, 0.78)), 235)
+    k = size
     for s_ in (1, -1):
-        m.strand([s_ * 1.6, 20.5, 2.6], [s_ * 0.9, 0.5, 0.5], 7.5 * size, 2.2 * size, hp, bone="body", segs=2, thick=0.8)
-        root = [s_ * (1.6 + 4.46 * size), 20.5 + 2.48 * size, 2.6 + 2.48 * size]
-        for k, a in enumerate((-35, -5, 25, 55, 85)):
-            r = math.radians(a)
-            m.strand(root, [s_ * math.cos(r), math.sin(r), 0.35], (8.5 - abs(k - 2) * 0.9) * size, 1.6 * size, hp, bone="body", segs=3, thick=0.6)
-        m.box("body", [root[0] - (3.2 if s_ > 0 else 0.4) * size, root[1] - 1.0, root[2] - 0.3], [3.6 * size, 3.4 * size, 0.6], solid(dark(col, 0.85)))
-
+        arm = SC.curve_tube(m, "body", [[s_ * 1.6, 20.5, 2.6], [s_ * 4.5 * k, 22.5 * k ** 0.2 + 1, 5 * k], [s_ * 7.5 * k, 25, 6.5 * k]], 1.2 * k, 0.9 * k, bone_p, n=2)
+        root = arm[-1]
+        tips = []
+        for i, ang in enumerate((15, 40, 65, 90, 115)):
+            r = math.radians(ang)
+            L = (10.5 - abs(i - 2) * 1.1) * k
+            d = [s_ * math.cos(r), math.sin(r), 0.25]
+            mid = SC.add(root, SC.mul(d, L * 0.5))
+            tip = SC.add(SC.add(root, SC.mul(d, L)), [0, -0.8 * k, 0.6])
+            SC.tube(m, "body", [root, mid, tip], [0.6 * k, 0.5 * k, 0.3 * k], bone_p)
+            tips.append((mid, tip))
+        for (m1, t1), (m2, t2) in zip(tips, tips[1:]):  # webbing: thin panels between neighbouring fingers
+            for u in (0.3, 0.55, 0.8):
+                p1 = SC.add(root, SC.mul(SC.sub(t1, root), u))
+                p2 = SC.add(root, SC.mul(SC.sub(t2, root), u))
+                SC.tube(m, "body", [p1, p2], [1.5 * k * u + 0.4, 1.5 * k * u + 0.4], web, knuckles=False, flat=0.18)
 
 def susanoo(m, stage):
     """stage 1: ribcage + skull + skeletal arms (Mangekyo); 2: armoured (Eternal); 3: perfect, with wings."""
@@ -613,13 +655,8 @@ def sasuke(m, char, form):
         m.box("body", [-8.6, 13.7, 2.5], [2.6, 1.0, 1.0], solid((60, 60, 70)))
     sasuke_hair(m, hair, "cs2" if cs2 else ("kid" if kid else "adult" if adult else "war" if war else "teen"))
     if cs2:
-        hand_wings(m, size=0.8 if kid else 1.0)
-    if form == "susanoo":
-        susanoo(m, 1)
-    elif form == "ems" or form == "adult_sus":
-        susanoo(m, 2 if form == "ems" else 3)
-    elif form in ("perfect", "rinnegan"):
-        susanoo(m, 3)
+        hand_wings(m, size=1.0 if kid else 1.35)
+    # the Susanoo itself is a separate giant entity (summons.py) that stays with him in these forms
     if adult:  # the black cloak with purple lining; he lost his left arm in the Valley of the End
         m.cubes = [c for c in m.cubes if c["bone"] != "leftArm"]
         cloak, lining = (30, 30, 38), (110, 70, 160)
@@ -800,8 +837,8 @@ def ichigo(m, form):
             m.strand([s * 3.4, 24.0, 2.0], [s * 0.6, 1, 0.4], 3.2, 2.6, fur, bone="body", segs=2, thick=0.7)
         both_arms(m, [3.3, 11.6, -2.7], [5.4, 3.4, 5.4], fur)                                                     # fur cuffs
         for s in (1, -1):  # horns: out from the temples, curving forward
-            m.strand([s * 4.0, 30.4, -1.0], [s * 1, 0.55, -0.1], 7.5, 2.0, layered(MASK_W, [region((0, 0, 1, 0.25), BLACK)]),
-                     bone="head", segs=3, thick=0.9, bend=(-s * 0.12, 0.05, -0.45))
+            SC.curve_tube(m, "head", [[s * 4.0, 30.4, -1.0], [s * 7.2, 32.4, -1.6], [s * 8.4, 34.2, -4.2], [s * 7.6, 35.0, -7.4]], 1.3, 0.35,
+                          [SC.smooth(MASK_W), SC.smooth(MASK_W), SC.smooth(BLACK)], n=2)
         m.box("hair", [-4.3, 28.6, -4.3], [8.6, 3.6, 8.6], layered(MASK_W, [region((0.42, 0, 0.58, 1), BLACK, faces=("north", "up"))]))  # mask crown
         long_hair(m, ICH_HAIR, back_len=17, front=False)
         return
@@ -879,6 +916,126 @@ def tanjiro(m, form):
         m.strand([s_ * 2.6, 29.6, 4.2], [s_ * 0.4, -0.6, 1], 3.6, 2.4, hp, bone="hair", segs=3, thick=0.7)
 
 
+# ------------------------------------------------------------------ Demon Tanjiro (manga, chapters 200-203)
+def tanjiro_demon(m, form):
+    sun = form == "sun"
+    uni = UNIFORM
+    blood = (118, 14, 22)
+
+    def stains(face, px, w, h, base):  # his corps uniform soaked with blood
+        for y in range(h):
+            for x in range(w):
+                if ((x * 7 + y * 5) % 23 < 3 and (x + y) % 3) or ((x // 3 + y // 4) % 9 == 0 and y > h // 3):
+                    _put(px, w, h, x, y, blood)
+    base_body(m, layered(uni, [stains, region((0.47, 0, 0.53, 1), dark(uni, 0.8), faces=("north",))]),
+              arm_paint(uni, sleeve_to=0.88),
+              layered(uni, [stains, region((0, 0.42, 1, 0.84), (214, 206, 196)), region((0, 0.94, 1, 1), (150, 40, 44))]),
+              head_paint(TAN_HAIR, (214, 40, 64), True, "tanjiro_demon_sun" if sun else "tanjiro_demon"))
+    both_legs(m, [-0.7, 4.2, -2.7], [5.1, 8.0, 5.4], layered(uni, [stains]))
+    m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.4, 5.0], layered((226, 224, 218), [stains]))
+    # the left sleeve is torn away: the regrown arm is bare, veined
+    m.box("leftArm", [-8.1, 11.9, -2.1], [4.2, 10.4, 4.2], layered(SKIN, [lines((SIDES, [[(0.3, 0), (0.4, 1)], [(0.7, 0.2), (0.6, 1)]]), (150, 40, 60))]))
+    m.box("leftArm", [-8.3, 21.6, -2.3], [4.6, 1.6, 4.6], layered(uni, [lambda f, px, w, h, b: [px.__setitem__((x, h - 1), (0, 0, 0, 0)) for x in range(0, w, 2)] if f in SIDES else None]))
+    for arm, x0 in (("rightArm", 4.0), ("leftArm", -8.0)):  # claws
+        for k in range(4):
+            m.box(arm, [x0 + k * 1.0 + 0.1, 11.0, -2.3], [0.6, 1.0, 0.6], solid((40, 26, 36)))
+    for s_ in (1, -1):
+        m.box("head", [s_ * 4.0 - (0.5 if s_ > 0 else 0.1), 24.6, -0.4], [0.6, 1.6, 0.8], layered(WHITE, [region((0.2, 0.3, 0.8, 0.7), (200, 40, 30))]))
+    shell(m, TAN_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(TAN_HAIR)
+    for x, z, lean in ((0, -2.0, 0), (2.2, -1.2, 0.6), (-2.2, -1.2, -0.6), (3.0, 1.2, 1.0), (-3.0, 1.2, -1.0), (0, 2.4, 0), (1.6, 3.0, 0.5), (-1.6, 3.0, -0.5)):
+        m.strand([x, 32.0, z], [lean, 1.0, z * 0.3], 4.2, 2.8, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.06, -0.1, z * 0.06))
+    for x, tilt in ((-2.6, -0.3), (-0.6, 0), (1.6, 0.2), (3.2, 0.4)):
+        m.strand([x, 31.8, -4.1], [tilt, -0.6, -0.5], 2.6, 2.0, hp, bone="hair", segs=3, thick=0.7)
+    if sun:  # the Demon King's blood: flesh tendrils with bone tips burst from his back
+        flesh_p = SC.smooth((150, 24, 34), [SC.speckle((96, 10, 20), 7)])
+        tip = SC.smooth((236, 226, 210))
+        for k, (dx, up) in enumerate(((5, 7), (-5, 7), (8, 2), (-8, 2))):
+            pts = SC.curve_tube(m, "body", [[dx * 0.2, 19 - k % 2, 2.6], [dx * 0.7, 21 + up * 0.5, 6], [dx * 1.2, 22 + up, 8], [dx * 1.5, 20 + up * 1.4, 5]], 1.1, 0.5, flesh_p, n=2)
+            SC.blade(m, "body", pts[-1], SC.sub(pts[-1], pts[-2]), 2.6, 1.2, 0.6, tip)
+
+
+# ------------------------------------------------------------------ Muzan Kibutsuji
+MUZAN_SKIN = (238, 228, 224)
+
+
+def muzan_hair(m, col, long_=False):
+    hp = M.hair_paint(col)
+    shell(m, col, hairline=30.8, sideburn=False, teeth=0.8)
+    if long_:  # final form: the hair grows long and white
+        long_hair(m, col, back_len=17, front=True)
+        return
+    for x, z in ((-3.6, -1.4), (3.6, -1.4), (-3.8, 1.6), (3.8, 1.6), (-2.2, 3.8), (0, 4.2), (2.2, 3.8)):  # short, wavy curls
+        m.strand([x, 30.5, z], [x * 0.08, -1, z * 0.08], 3.4, 2.4, hp, bone="hair", segs=3, thick=0.7, bend=(0.12 if x > 0 else -0.12, 0, 0.1))
+    for s_ in (1, -1):  # the bangs, parted in the middle, curling at each side of his face
+        m.strand([s_ * 1.2, 32.0, -4.2], [s_ * 0.5, -1, -0.35], 4.2, 2.4, hp, bone="hair", segs=3, thick=0.7, bend=(s_ * 0.18, 0, 0.05))
+        m.strand([s_ * 3.4, 31.4, -4.1], [s_ * 0.2, -1, -0.15], 4.6, 2.0, hp, bone="hair", segs=3, thick=0.6, bend=(-s_ * 0.12, 0, 0))
+
+
+def muzan(m, form):
+    final = form == "final"
+    if not final:  # Asakusa disguise: white fedora, embroidered black tuxedo, white tie over a black shirt, white trousers
+        tux = (30, 28, 34)
+
+        def suit(face, px, w, h, base):
+            for y in range(h):
+                for x in range(w):
+                    if (x + 2 * y) % 7 == 0:
+                        _put(px, w, h, x, y, (52, 48, 58))     # embroidery
+            if face == "north":
+                for y in range(int(h * 0.62)):
+                    for x in range(w // 2 - 2, w // 2 + 2):
+                        _put(px, w, h, x, y, (16, 14, 18))      # black shirt
+                    _put(px, w, h, w // 2, y, WHITE); _put(px, w, h, w // 2 - 1, y, WHITE)   # white tie
+                for y in (int(h * 0.68), int(h * 0.82)):
+                    _put(px, w, h, w // 2 - 3, y, (120, 72, 40))  # brown buttons
+        hands = layered(MUZAN_SKIN, [region((0, 0.92, 1, 1), (120, 160, 210))])   # blue nails
+        base_body(m, layered(tux, [suit]), layered(tux, [region((0, 0.86, 1, 1), MUZAN_SKIN), region((0, 0.82, 1, 0.86), WHITE)]),
+                  layered((232, 230, 224), [region((0, 0.9, 1, 1), (24, 22, 26))]),
+                  skin_swap(head_paint((20, 18, 24), (214, 24, 34), True, "muzan"), MUZAN_SKIN))
+        m.box("body", [-4.5, 6.0, 2.2], [9.0, 18.2, 0.5], layered(tux, [suit]))                        # tailcoat
+        m.box("body", [-2.4, 22.6, -2.4], [4.8, 1.8, 4.8], solid(WHITE))                                # collar
+        muzan_hair(m, (20, 18, 24))
+        m.box("hat", [-5.6, 31.4, -5.6], [11.2, 0.6, 11.2], solid((236, 234, 228)))                   # fedora brim
+        m.box("hat", [-4.3, 31.8, -4.3], [8.6, 3.4, 8.6], layered((236, 234, 228), [region((0, 0.68, 1, 1), (104, 42, 30))]))  # crown, ribbon
+        return
+    # Final form (manga): long white hair, mouths all over his limbs, a dark red scaled mass over the lower body,
+    # bone-bladed whips from his arms, nine red spine-whips from his back
+    scale_c = (112, 14, 24)
+
+    def mouths(face, px, w, h, base):
+        if face in ("up", "down"):
+            return
+        for k in range(2):
+            y0 = int(h * (0.25 + 0.4 * k))
+            for x in range(1, w - 1):
+                _put(px, w, h, x, y0, (50, 4, 10)); _put(px, w, h, x, y0 + 1, (90, 10, 20))
+                if x % 2:
+                    _put(px, w, h, x, y0 - 1, (246, 242, 230)); _put(px, w, h, x, y0 + 2, (246, 242, 230))
+
+    def scales(face, px, w, h, base):
+        for y in range(h):
+            for x in range(w):
+                if (x + (y // 2) % 2) % 2 == 0:
+                    _put(px, w, h, x, y, (150, 26, 36))
+    torso = layered(MUZAN_SKIN, [lines((("north",), [[(0.5, 0.1), (0.5, 0.9)], [(0.2, 0.3), (0.8, 0.3)]]), (196, 170, 170)), region((0, 0.8, 1, 1), scale_c)])
+    base_body(m, torso, layered(MUZAN_SKIN, [mouths, region((0, 0.92, 1, 1), (120, 160, 210))]), layered(scale_c, [scales]),
+              skin_swap(head_paint((236, 236, 240), (214, 24, 34), True, "muzan_final"), MUZAN_SKIN))
+    both_legs(m, [-0.6, 0.0, -2.6], [4.9, 12.2, 5.2], layered(scale_c, [scales, mouths]))
+    muzan_hair(m, (236, 236, 240), long_=True)
+    pink, bone_c, red = SC.smooth((232, 128, 150), [SC.speckle((190, 80, 104), 7)]), SC.smooth((238, 232, 220)), SC.smooth((170, 22, 34), [SC.speckle((110, 10, 20), 7)])
+    for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # the arms become long spiked flesh whips
+        pts = SC.curve_tube(m, arm, [[s_ * 6, 12, -0.5], [s_ * 7.5, 7, -3], [s_ * 9, 2, -1], [s_ * 11, 0.6, 4], [s_ * 13, 1.2, 9]], 1.3, 0.6, pink, n=2)
+        for i in range(1, len(pts) - 1, 2):
+            SC.blade(m, arm, pts[i], [s_ * 0.6, 0.7, -0.3], 1.8, 0.9, 0.5, bone_c)
+        SC.blade(m, arm, pts[-1], SC.sub(pts[-1], pts[-2]), 3.2, 1.4, 0.6, bone_c)
+    for k in range(9):  # nine spine-like red whips from his back, tipped with bone blades
+        a = math.radians(-80 + 160 * k / 8)
+        ctrl = [[math.sin(a) * 1.5, 19, 2.6], [math.sin(a) * 6, 24, 7], [math.sin(a) * 11, 26 + (k % 3) * 2, 11], [math.sin(a) * 14, 22 + (k % 2) * 4, 15]]
+        pts = SC.curve_tube(m, "body", ctrl, 0.8, 0.45, red, n=2, knuckles=True)
+        SC.blade(m, "body", pts[-1], SC.sub(pts[-1], pts[-2]), 2.4, 1.1, 0.5, bone_c)
+
+
 FORMS = {
     "naruto_kid": ["base", "cloak"],
     "naruto_teen": ["base", "v2", "sage", "eight"],
@@ -890,6 +1047,8 @@ FORMS = {
     "sasuke_adult": ["adult", "adult_sus"],
     "ichigo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
     "tanjiro": ["water", "hinokami", "mark"],
+    "tanjiro_demon": ["feral", "sun"],
+    "muzan": ["disguise", "final"],
 }
 
 
@@ -903,6 +1062,10 @@ def build(char, form):
         ichigo(m, form)
     elif char == "tanjiro":
         tanjiro(m, form)
+    elif char == "tanjiro_demon":
+        tanjiro_demon(m, form)
+    elif char == "muzan":
+        muzan(m, form)
     if char in ("naruto_kid", "sasuke_kid"):  # kid proportions: a bigger head on the small body
         f, P = 1.15, (0.0, 24.0, 0.0)
         for c in m.cubes:

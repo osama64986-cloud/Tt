@@ -653,6 +653,68 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.tanjiro_demon": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.feral",
+      "Texture.feral_shout",
+      "Texture.feral_hurt",
+      "Texture.feral_blink",
+      "Texture.sun",
+      "Texture.sun_shout",
+      "Texture.sun_hurt",
+      "Texture.sun_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.feral",
+      "Geometry.sun"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.muzan": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.disguise",
+      "Texture.disguise_shout",
+      "Texture.disguise_hurt",
+      "Texture.disguise_blink",
+      "Texture.final",
+      "Texture.final_shout",
+      "Texture.final_hurt",
+      "Texture.final_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.disguise",
+      "Geometry.final"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.tanjiro": {
    "arrays": {
     "textures": {
@@ -771,14 +833,20 @@
      "Array.t": [
       "Texture.susanoo",
       "Texture.kurama",
-      "Texture.gamabunta"
+      "Texture.gamabunta",
+      "Texture.susanoo_ribs",
+      "Texture.susanoo_armour",
+      "Texture.muzan_infant"
      ]
     },
     "geometries": {
      "Array.g": [
       "Geometry.susanoo",
       "Geometry.kurama",
-      "Geometry.gamabunta"
+      "Geometry.gamabunta",
+      "Geometry.susanoo_ribs",
+      "Geometry.susanoo_armour",
+      "Geometry.muzan_infant"
      ]
     }
    },
@@ -799,14 +867,20 @@
      "Array.t": [
       "Texture.susanoo",
       "Texture.kurama",
-      "Texture.gamabunta"
+      "Texture.gamabunta",
+      "Texture.susanoo_ribs",
+      "Texture.susanoo_armour",
+      "Texture.muzan_infant"
      ]
     },
     "geometries": {
      "Array.g": [
       "Geometry.susanoo",
       "Geometry.kurama",
-      "Geometry.gamabunta"
+      "Geometry.gamabunta",
+      "Geometry.susanoo_ribs",
+      "Geometry.susanoo_armour",
+      "Geometry.muzan_infant"
      ]
     }
    },

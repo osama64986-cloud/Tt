@@ -205,6 +205,8 @@ FIGHTERS.update({
     "ichigo": {"hp": 1100, "forms": [(24, 0.38), (30, 0.42), (34, 0.44), (44, 0.44), (52, 0.46), (60, 0.46), (68, 0.47)],
                "tex": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
                "geo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"], "egg": ("#1e1e24", "#ff8428")},
+    "tanjiro_demon": {"hp": 700, "forms": [(14, 0.42), (18, 0.44)], "tex": ["feral", "sun"], "geo": ["feral", "sun"], "egg": ("#56282e", "#d62840")},
+    "muzan": {"hp": 820, "forms": [(16, 0.4), (22, 0.43)], "tex": ["disguise", "final"], "geo": ["disguise", "final"], "egg": ("#1e1c22", "#eceae4"), "scale": 1.06},
     "tanjiro": {"hp": 440, "forms": [(11, 0.38), (13, 0.4), (16, 0.42)], "tex": ["water", "hinokami", "mark"], "geo": ["water", "hinokami", "mark"],
                 "egg": ("#287a5a", "#18181c")},
     "frieza": {"hp": 1500, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
@@ -840,7 +842,7 @@ def build_summons():
         finally:
             models.S = old
         d = geo["minecraft:geometry"][0]["description"]
-        d.update({"visible_bounds_width": 12, "visible_bounds_height": 12, "visible_bounds_offset": [0, 4, 0]})
+        d.update({"visible_bounds_width": 48, "visible_bounds_height": 48, "visible_bounds_offset": [0, 20, 0]})
         with open(os.path.join(RP, "models", "entity", f"summon_{name}.geo.json"), "w") as f:
             json.dump(geo, f, indent=1)
         img.save(os.path.join(tdir, f"{name}.png"))
@@ -883,7 +885,8 @@ def build_summons():
                 "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
                                         {"leap": "query.property('ab:pose') == 3"}]},
-                "render_controllers": [{"controller.render.ab.summon_glow": f"{K} != 2"}, {"controller.render.ab.summon_solid": f"{K} == 2"}],
+                "render_controllers": [{"controller.render.ab.summon_glow": " && ".join(f"{K} != {i}" for i, n in enumerate(names) if n in summons.SOLID)},
+                                       {"controller.render.ab.summon_solid": " || ".join(f"{K} == {i}" for i, n in enumerate(names) if n in summons.SOLID)}],
             }
         },
     }
@@ -903,7 +906,10 @@ def build_summons():
     W = "query.property('ab:size')"
     an["animations"]["animation.ab.summon_base"] = {"loop": True, "bones": {
         "root": {"scale": [W, W, W]},
-        "body": {"position": [0, "math.sin(query.life_time * 120.0) * 0.6", 0]}}}
+        "body": {"position": [0, "math.sin(query.life_time * 120.0) * 0.6", 0]},
+        "head": {"rotation": ["math.sin(query.life_time * 70.0) * 2", "math.sin(query.life_time * 45.0) * 4", 0]},
+        "rightArm": {"rotation": ["math.sin(query.life_time * 90.0) * 3", 0, 0]},
+        "leftArm": {"rotation": ["-math.sin(query.life_time * 90.0) * 3", 0, 0]}}}
     an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
         "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
         "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}

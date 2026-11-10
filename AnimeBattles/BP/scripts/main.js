@@ -119,26 +119,68 @@ function fadeVfx(v, from, ticks = 5) {
 }
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
-const SUMMON_COLOR = [C.purple, C.gold, C.white];
+// kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood];
+function spawnSummon(dim, kind, at, dir, size, life) {
+  const v = dim.spawnEntity("ab:summon", at);
+  try { v.teleport(at, { facingLocation: V.add(at, V.mul(dir, 10)) }); } catch (err) { /* ignore */ }
+  v.setProperty("ab:kind", kind);
+  v.setProperty("ab:size", 0);
+  vfxAlive.set(v.id, now() + life + 30);
+  every(1, 10, (i) => vset(v, "ab:size", (size * (i + 1)) / 10));           // it grows out of the chakra
+  fx(dim, "aura", V.up(at, 3), SUMMON_COLOR[kind], 2 + size, 1.1, { count: 50 * fxLevel(), speed: 3 });
+  burst(dim, V.up(at, 2), SUMMON_COLOR[kind], 30, 3 + size, 0.5, 0.7);
+  if (size >= 3) shake(dim, at, 0.3, 0.5);
+  return v;
+}
 function summonGiant(e, kind, t, o = {}) {
   try {
-    const dim = e.dimension;
     let dir = alive(t) ? V.sub(t.location, e.location) : e.getViewDirection();
     dir = V.norm({ x: dir.x, y: 0, z: dir.z });
     const at = o.at ?? V.add(e.location, V.mul(dir, -(o.behind ?? 2.5)));
-    const v = dim.spawnEntity("ab:summon", at);
-    try { v.teleport(at, { facingLocation: V.add(at, V.mul(dir, 10)) }); } catch (err) { /* ignore */ }
-    v.setProperty("ab:kind", kind);
-    v.setProperty("ab:size", 0);
     const life = o.life ?? 60, size = o.size ?? 3;
-    vfxAlive.set(v.id, now() + life + 30);
-    every(1, 8, (i) => vset(v, "ab:size", (size * (i + 1)) / 8));
-    fx(dim, "aura", V.up(at, 3), SUMMON_COLOR[kind], 4.5, 1.1, { count: 50 * fxLevel(), speed: 3 });
-    burst(dim, V.up(at, 2), SUMMON_COLOR[kind], 30, 5, 0.5, 0.7);
+    const v = spawnSummon(e.dimension, kind, at, dir, size, life);
     if (o.pose) later(o.poseAt ?? 0, () => vset(v, "ab:pose", o.pose));
     later(life, () => fadeVfx(v, size, 8));
     return v;
   } catch (err) { warn("summon", err); return undefined; }
+}
+// The Susanoo stays with Sasuke for as long as he holds a Susanoo form, wrapped round him or towering behind him.
+const SUSANOO_SIZE = { 3: 1.05, 4: 2.3, 0: 5 }, SUSANOO_BACK = { 3: 0, 4: 0.3, 0: 3.5 };
+function susanooStage(e) {
+  const f = formOf(e);
+  if (e.typeId === "ab:sasuke") return f === 2 ? 3 : -1;
+  if (e.typeId === "ab:sasuke_war") return f === 0 ? 4 : 0;
+  if (e.typeId === "ab:sasuke_adult") return f === 1 ? 0 : -1;
+  return -1;
+}
+function updateSusanoo(e, s) {
+  const stage = e.hasTag("ab_clone") ? -1 : susanooStage(e);
+  if (s.susanoo && (!s.susanoo.isValid || s.susanooStage !== stage)) {
+    if (s.susanoo.isValid) fadeVfx(s.susanoo, SUSANOO_SIZE[s.susanooStage] ?? 1, 8);
+    s.susanoo = undefined;
+  }
+  if (stage < 0) return;
+  let yaw = 0;
+  try { yaw = e.getRotation().y; } catch (err) { /* ignore */ }
+  const fwd = { x: -Math.sin((yaw * Math.PI) / 180), y: 0, z: Math.cos((yaw * Math.PI) / 180) };
+  const at = V.add(e.location, V.mul(fwd, -SUSANOO_BACK[stage]));
+  try {
+    if (!s.susanoo) {
+      s.susanoo = spawnSummon(e.dimension, stage, at, fwd, SUSANOO_SIZE[stage], 40);
+      s.susanooStage = stage;
+      sound(e.dimension, "mob.wither.spawn", e.location, 1, 1.4);
+    } else {
+      s.susanoo.teleport(at, { rotation: { x: 0, y: yaw } });
+      vfxAlive.set(s.susanoo.id, now() + 40);
+    }
+  } catch (err) { s.susanoo = undefined; }
+}
+function susanooPose(e, pose, ticks) {
+  const v = state(e).susanoo;
+  if (!v || !v.isValid) return;
+  vset(v, "ab:pose", pose);
+  later(ticks, () => vset(v, "ab:pose", 0));
 }
 const perfectSusanoo = (e) => (e.typeId === "ab:sasuke_war" && formOf(e) >= 1) || (e.typeId === "ab:sasuke_adult" && formOf(e) === 1);
 const kuramaAvatar = (e) => (e.typeId === "ab:naruto_war" && formOf(e) >= 1) || (e.typeId === "ab:naruto_adult" && formOf(e) === 2);
@@ -1875,7 +1917,7 @@ function rasengan(e, s, t, o) {
 }
 function rasenshuriken(e, s, t, o) {
   busy(s, 34); announce(e, o.say); setPose(e, 23); slow(e, 30, 6);
-  if (o.color === C.hakai && kuramaAvatar(e)) summonGiant(e, 1, t, { size: 2.8, behind: 3.5, life: 36, pose: 2, poseAt: 4 });
+  if (o.color === C.hakai && kuramaAvatar(e)) summonGiant(e, 1, t, { size: 4, behind: 6, life: 40, pose: 2, poseAt: 6 });
   const dim = e.dimension;
   const orb = spawnVfx(dim, 1, V.up(e.location, 3.3), { slot: 10, size: 0.3, life: 40 });
   every(1, 18, (i) => {
@@ -1952,7 +1994,7 @@ const summonToad = (cond) => ({ id: "gamabunta", label: "Summoning: Gamabunta", 
       if (!e.isValid) return;
       const c = alive(t) ? t.location : e.location;
       fx(dim, "aura", V.up(c, 2), C.white, 5, 1.2, { count: 60 * fxLevel(), speed: 3 });   // the summoning smoke
-      summonGiant(e, 2, t, { at: V.add(c, V.mul(V.norm(V.sub(e.location, c)), 1.5)), size: 2.4, life: 40, pose: 3 });
+      summonGiant(e, 2, t, { at: c, size: 4, life: 46, pose: 3 });
       later(6, () => {
         if (!e.isValid) return;
         fx(dim, "shock", c, { red: 0.55, green: 0.25, blue: 0.15 }, 10, 0.6);
@@ -1984,7 +2026,7 @@ const rasenRendan = (cond, o = {}) => ({ id: "rendan2", label: o.label ?? "Rasen
   } });
 const kuramaBomb = (cond, o = {}) => ({ id: o.id ?? "bijuu", label: o.label ?? "Tailed Beast Bomb", cd: o.cd ?? 520, cost: o.cost ?? 380, min: 0, max: 45, weight: o.weight ?? 5, cond,
   run(e, s, t) {
-    if (kuramaAvatar(e)) { summonGiant(e, 1, t, { size: 2.8, behind: 3.5, life: 46, pose: 2, poseAt: 4 }); announce(e, "§6§lKurama! §7— the giant fox rises behind him"); }
+    if (kuramaAvatar(e)) { summonGiant(e, 1, t, { size: 4, behind: 6, life: 50, pose: 2, poseAt: 6 }); announce(e, "§6§lKurama! §7— the giant fox rises behind him"); }
     bijuudama(e, s, t, { size: o.size ?? 3, radius: o.radius ?? 7, dmg: o.dmg ?? 150 });
   } });
 const sixPathsHeal = (cond) => ({ id: "yang", label: "Six Paths: Yang Power", cd: 700, cost: 200, min: 0, max: 60, weight: 8, cond: (e, s, c) => cond(e) && c.hp < 0.45,
@@ -2340,7 +2382,7 @@ const SAS = {
   arrow: (o = {}) => ({ id: "arrow", label: "Susanoo Arrow", cd: 260, cost: 200, min: 0, max: 45, weight: 4, cond: o.cond,
     run(e, s, t) {
       busy(s, 20); face(e, aim(t)); setPose(e, 20); announce(e, o.say ?? "§5§lSusanoo: Arrow!");
-      if (perfectSusanoo(e)) summonGiant(e, 0, t, { size: 3.2, life: 26, pose: 2 });
+      susanooPose(e, 2, 22);
       later(10, () => {
         if (!e.isValid) return;
         const { pos } = handPos(e, alive(t) ? t : e);
@@ -2353,7 +2395,7 @@ const SAS = {
   susSword: (o = {}) => ({ id: "susSword", label: "Susanoo Sword", cd: 240, cost: 180, min: 0, max: 30, weight: 5, cond: o.cond,
     run(e, s, t) {
       busy(s, 20); setPose(e, 23); announce(e, "§5§lSusanoo! §7— the great blade comes down");
-      if (perfectSusanoo(e)) summonGiant(e, 0, t, { size: 3.2, life: 30, pose: 1, poseAt: 6 });
+      later(4, () => susanooPose(e, 1, 20));
       later(8, () => {
         if (!e.isValid) return;
         setPose(e, 19);
@@ -2365,7 +2407,7 @@ const SAS = {
   indra: () => ({ id: "indra", label: "Indra's Arrow", cd: 1000, cost: 700, min: 0, max: 50, weight: 8, cond: G(2),
     run(e, s, t) {
       busy(s, 44); setPose(e, 20); face(e, aim(t)); announce(e, "§5§lIndra's Arrow! §7— the chakra of all nine tailed beasts in one shot");
-      summonGiant(e, 0, t, { size: 3.6, life: 44, pose: 2 });
+      susanooPose(e, 2, 42);
       const dim = e.dimension;
       chargeOrb(e, t, 22, C.purple, 0.5, 2.6, 20);
       every(2, 11, () => { if (e.isValid) { fx(dim, "streak", V.up(e.location, 1.5), C.kameBlue, 2, 0.3, { count: 8, speed: 10 }); fx(dim, "aura", e.location, C.purple, 2.2, 0.8, { count: 16, speed: 3 }); } });
@@ -2819,6 +2861,204 @@ const TANJIRO = {
   ],
 };
 
+// ------------------------------------------------------------------ Demon Slayer: the demons
+// A lash of flesh: a curved line of particles from the hand to the target, then the cut.
+function whipLash(e, t, color, dmg, o = {}) {
+  if (!alive(t)) return;
+  const dim = e.dimension;
+  const { pos } = handPos(e, t);
+  const end = aim(t);
+  const side = sideOf(V.norm(V.sub(end, pos)));
+  const bend = (o.bend ?? 1.6) * (Math.random() < 0.5 ? -1 : 1);
+  for (let k = 0; k <= 16; k++) {
+    const u = k / 16, arc = Math.sin(u * Math.PI) * bend;
+    fx(dim, "orb", V.add(V.add(pos, V.mul(V.sub(end, pos), u)), V.add(V.mul(side, arc), { x: 0, y: arc * 0.4, z: 0 })), color, 0.5, 0.3);
+  }
+  const v = slashVfx(dim, end, V.norm(V.sub(end, pos)), color, 1.2, Math.random() * 360);
+  later(4, () => killVfx(v));
+  deal(e, t, dmg);
+  burst(dim, end, color, 10, 3, 0.35, 0.4);
+}
+const regenAbility = (label, say, pct, cond, cd = 600) => ({ id: "regen", label, cd, cost: 100, min: 0, max: 60, weight: 8, cond: (e, s, c) => (!cond || cond(e)) && c.hp < 0.5,
+  run(e, s) {
+    busy(s, 10); setPose(e, 22); announce(e, say);
+    const h = health(e);
+    if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * pct));
+    fx(e.dimension, "aura", e.location, C.blood, 1.2, 0.8, { count: 24, speed: 2 });
+    burst(e.dimension, V.up(e.location, 1), C.blood, 16, 2, 0.35, 0.5);
+    later(10, () => { if (e.isValid) setPose(e, 0); });
+  } });
+
+const TANJIRO_DEMON = {
+  name: "Tanjiro", color: "§4", energy: 900, regen: 18, energyName: "§4BLOOD",
+  dodge: () => 0.12,
+  forms: [{ label: "Demon (feral)", power: 66, aura: C.blood }, { label: "Demon King — the sun conquered", power: 80, aura: C.fire }],
+  thresholds: [0.55], transformCd: 100, formSound: [null, "mob.enderdragon.growl"],
+  abilities: [
+    { id: "claws", label: "Feral Claws", cd: 100, cost: 40, min: 0, max: 10, weight: 5,
+      run(e, s, t) {
+        busy(s, 16); announce(e, "§4§l(a feral snarl — he lunges)");
+        every(3, 4, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.2); setPose(e, 34);
+          slashMarks(e, t, C.blood, 1, 7 * powerOf(e) / 100);
+          if (i === 3) later(4, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "roar", label: "Demon Roar", cd: 220, cost: 90, min: 0, max: 8, weight: 4,
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 22); setExpr(e, 1, 20); announce(e, "§4§lGRRAAAAAH!");
+        const dim = e.dimension;
+        fx(dim, "shock", e.location, C.blood, 8, 0.5); ring(dim, V.up(e.location, 0.3), 4, C.blood, 28, 0.5);
+        sound(dim, "mob.ravager.roar", e.location, 1.6, 1.2);
+        hitArea(e, V.up(e.location, 1), 4.6, 16 * powerOf(e) / 100, new Set(), { knock: 2.6, lift: 0.5 });
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "bite", label: "Demon Bite", cd: 160, cost: 60, min: 0, max: 6, weight: 4,
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§4§l(he bites down — the blood heals him)");
+        afterimage(e); teleportNear(e, t, false, 1.0); setPose(e, 11); setExpr(e, 1, 12);
+        deal(e, t, 24 * powerOf(e) / 100);
+        const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 30));
+        burst(e.dimension, aim(t), C.blood, 18, 3, 0.4, 0.5);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "headbutt", label: "Demon Headbutt", cd: 220, cost: 30, min: 0, max: 4, weight: 3,
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§4§lDEMON HEADBUTT! §7— even harder than before");
+        afterimage(e); teleportNear(e, t, false, 1.0); setPose(e, 11);
+        deal(e, t, 26 * powerOf(e) / 100);
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 16); }
+        ring(t.dimension, V.up(t.location, 2.2), 0.6, C.kiYellow, 10, 0.5);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "tendrils", label: "Flesh Tendrils", cd: 180, cost: 100, min: 0, max: 14, weight: 5, cond: G(1),
+      run(e, s, t) {
+        busy(s, 18); setPose(e, 27); announce(e, "§4§lThe Demon King's blood! §7— tendrils burst from his back");
+        every(3, 5, () => { if (e.isValid && alive(t)) whipLash(e, t, C.blood, 8 * powerOf(e) / 100, { bend: 2.4 }); });
+        later(16, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "sunrush", label: "Sun-Proof Rampage", cd: 260, cost: 140, min: 0, max: 18, weight: 5, cond: G(1),
+      run(e, s, t) {
+        busy(s, 24); announce(e, "§6§lHe walks in the sunlight! §4§l— nothing can stop him now");
+        every(4, 5, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.2); setPose(e, [34, 5, 7, 34, 10][i]);
+          deal(e, t, 9 * powerOf(e) / 100);
+          fx(t.dimension, "shock_v", aim(t), C.fire, 2.6, 0.3);
+          if (i === 4) later(6, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    regenAbility("Nigh-Absolute Regeneration", "§4§l(his wounds close almost instantly — he regrows what was cut)", 0.16, null, 420),
+  ],
+};
+
+const MUZAN = {
+  name: "Muzan", color: "§4", energy: 1300, regen: 24, energyName: "§4BLOOD",
+  dodge: (e) => (formOf(e) ? 0.16 : 0.13),
+  forms: [{ label: "Muzan Kibutsuji", power: 72, aura: C.blood }, { label: "Final Form — the Progenitor", power: 90, aura: C.blood }],
+  thresholds: [0.65], transformCd: 100, formSound: [null, "mob.wither.spawn"],
+  abilities: [
+    { id: "whips", label: "Arm Whips", cd: 110, cost: 50, min: 0, max: 14, weight: 5,
+      run(e, s, t) {
+        busy(s, 18); setPose(e, 17); announce(e, "§d§l(his arms become flesh whips sharp as swords)");
+        every(3, 4, (i) => { if (e.isValid && alive(t)) { setPose(e, i % 2 ? 17 : 28); whipLash(e, t, { red: 0.95, green: 0.5, blue: 0.6 }, 9 * powerOf(e) / 100); } });
+        later(16, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "brambles", label: "Black Blood: Brambles", cd: 200, cost: 110, min: 0, max: 18, weight: 5,
+      run(e, s, t) {
+        busy(s, 18); face(e, aim(t)); setPose(e, 4); announce(e, "§4§lBlack Blood, Brambles! §7— Kokketsu Kikyoku");
+        if (!alive(t)) return;
+        const c = t.location, dim = e.dimension;
+        every(2, 6, (i) => {  // thorny black-red tendrils erupt round the target and entangle it
+          for (let k = 0; k < 6; k++) {
+            const a = k + i * 0.9;
+            for (let y = 0; y < 2.6; y += 0.4) fx(dim, "orb", V.add(c, { x: Math.cos(a) * (1.4 - y * 0.4), y, z: Math.sin(a) * (1.4 - y * 0.4) }), i % 2 ? C.black : C.blood, 0.45, 0.4);
+          }
+          if (alive(t)) deal(e, t, 5 * powerOf(e) / 100);
+        });
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 18); }
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "predator", label: "Indiscriminate Predator", cd: 240, cost: 120, min: 0, max: 8, weight: 4,
+      run(e, s, t) {  // the arm swells into a huge mouth full of eyes and devours
+        busy(s, 16); announce(e, "§4§l(his arm becomes a monstrous maw — it devours)");
+        afterimage(e); teleportNear(e, t, false, 1.5); setPose(e, 16);
+        later(4, () => {
+          if (!e.isValid || !alive(t)) return;
+          deal(e, t, 30 * powerOf(e) / 100);
+          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 50));
+          sphereFx(e.dimension, aim(t), 1.4, C.blood, 20, 0.6, "orb", 0.4);
+          sound(e.dimension, "mob.ravager.bite", t.location, 1.4, 0.7);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "blood", label: "Demon King's Blood", cd: 320, cost: 140, min: 0, max: 10, weight: 4,
+      run(e, s, t) {  // his blood floods the body and destroys the cells from inside
+        busy(s, 12); announce(e, "§4§lMy blood will destroy your cells.");
+        afterimage(e); teleportNear(e, t, false, 1.3); setPose(e, 5);
+        deal(e, t, 12 * powerOf(e) / 100);
+        every(10, 8, () => {
+          if (!alive(t)) return false;
+          deal(e, t, 4 * powerOf(e) / 100);
+          fx(t.dimension, "aura", t.location, C.blood, 1, 0.6, { count: 8, speed: 1 });
+        });
+        if (t.typeId === "ab:tanjiro_demon" && isFighter(t)) {  // a demon of his blood: he seizes its cells
+          const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 30);
+          announce(e, "§4§lYou are a demon of MY blood. §7— your cells obey me");
+        }
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "backwhips", label: "Nine Back Whips", cd: 180, cost: 120, min: 0, max: 16, weight: 6, cond: G(1),
+      run(e, s, t) {
+        busy(s, 22); setPose(e, 27); announce(e, "§4§l(nine bladed whips tear out of his back)");
+        every(2, 9, () => { if (e.isValid && alive(t)) whipLash(e, t, C.blood, 6 * powerOf(e) / 100, { bend: 3 }); });
+        later(20, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "suction", label: "Mouths: Suction", cd: 220, cost: 120, min: 0, max: 16, weight: 4, cond: G(1),
+      run(e, s, t) {  // the mouths on his whips suck the target in to be sliced apart
+        busy(s, 20); setPose(e, 27); announce(e, "§4§l(the mouths on his whips inhale — everything is dragged in)");
+        const dim = e.dimension;
+        every(2, 6, () => {
+          if (!alive(t) || !e.isValid) return false;
+          const d = V.norm(V.sub(e.location, t.location));
+          try { t.applyKnockback({ x: d.x * 1.2, z: d.z * 1.2 }, 0.1); } catch (err) { /* ignore */ }
+          implode(dim, V.up(e.location, 1), C.blood, 4, 10);
+        });
+        later(12, () => { if (e.isValid && alive(t)) { slashMarks(e, t, C.blood, 4, 7 * powerOf(e) / 100); } });
+        later(18, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "maw", label: "Chest Maw Shockwave", cd: 260, cost: 160, min: 0, max: 10, weight: 5, cond: G(1),
+      run(e, s, t) {  // his torso splits into a giant mouth and blasts out a shockwave
+        busy(s, 16); setPose(e, 27); setExpr(e, 1, 14); announce(e, "§4§l(his torso opens into a giant maw)");
+        const dim = e.dimension;
+        later(6, () => {
+          if (!e.isValid) return;
+          fx(dim, "shock", e.location, C.blood, 10, 0.5); fx(dim, "shock_v", V.up(e.location, 1.2), C.blood, 5, 0.4);
+          sound(dim, "mob.ravager.roar", e.location, 2, 0.6);
+          hitArea(e, V.up(e.location, 1), 6, 28 * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.6 });
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    regenAbility("Regeneration (five brains, seven hearts)", "§4§l(his flesh knits back — five brains, seven hearts)", 0.14),
+    { id: "infant", label: "Giant Infant Form", cd: 2000, cost: 0, min: 0, max: 20, weight: 10, cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.3,
+      run(e, s, t) {  // at the very end, to hide from the dawn, he swells into a gigantic infant of flesh
+        busy(s, 40); setPose(e, 22); announce(e, "§4§lMuzan swells into a GIANT INFANT of flesh! §7— he will not die");
+        const dim = e.dimension;
+        const v = summonGiant(e, 5, t, { size: 3.2, behind: 3, life: 48, pose: 3, poseAt: 12 });
+        void v;
+        later(22, () => {  // it crashes down on everything in front of it
+          if (!e.isValid) return;
+          const c = alive(t) ? t.location : e.location;
+          fx(dim, "shock", c, C.blood, 12, 0.6); shake(dim, c, 0.7, 0.6);
+          hitArea(e, V.up(c, 1), 7, 60 * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.8 });
+          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.15));
+          later(10, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+  ],
+};
+
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
 // what each fighter shouts as the transformation lands (by target form)
 const TRANSFORM_LINES = {
@@ -2833,6 +3073,8 @@ const TRANSFORM_LINES = {
   "ab:sasuke_war": [null, "§5§lPerfect Susanoo! §7— a giant with wings", "§5§l(the Rinnegan opens) §7— I'll be the one to change the world"],
   "ab:sasuke_adult": [null, "§5§lSusanoo. §7— Perfect form"],
   "ab:tanjiro": [null, "§6§lHinokami Kagura! §7— his father's dance of fire", "§c§lThe Demon Slayer Mark blazes! §7— the blade turns crimson"],
+  "ab:tanjiro_demon": [null, "§6§l(the third mark burns on his head) §4§l— he has conquered the sun"],
+  "ab:muzan": [null, "§4§lI am the Progenitor of all demons. §7— his hair turns white, mouths open all over his body"],
   "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
     "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
   "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
@@ -2842,7 +3084,7 @@ const TRANSFORM_LINES = {
 const SWORDSMEN = new Set(["ab:zoro", "ab:ichigo", "ab:tanjiro", "ab:sasuke", "ab:sasuke_war", "ab:sasuke_adult"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
   "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
-  "ab:sasuke_kid": SASUKE_KID, "ab:sasuke": SASUKE, "ab:sasuke_war": SASUKE_WAR, "ab:sasuke_adult": SASUKE_ADULT, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
+  "ab:tanjiro_demon": TANJIRO_DEMON, "ab:muzan": MUZAN, "ab:sasuke_kid": SASUKE_KID, "ab:sasuke": SASUKE, "ab:sasuke_war": SASUKE_WAR, "ab:sasuke_adult": SASUKE_ADULT, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -2884,6 +3126,8 @@ const COMBOS = {
   "ab:sasuke_adult": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
   "ab:ichigo": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "blink", "cut_r", "kick_r", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
   "ab:tanjiro": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick", "cut_x"], ["cut_r", "cut_l", "cut_l", "kick_r"]],
+  "ab:tanjiro_demon": [["jab_r", "jab_l", "kick", "upper"], ["jab_l", "jab_r", "blink", "axe"], ["kick_r", "jab_r", "jab_l", "kick_l"]],
+  "ab:muzan": [["jab_r", "jab_l", "kick_r", "upper"], ["blink", "jab_r", "kick_l", "axe"], ["jab_l", "jab_r", "kick", "kick_r"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
@@ -2892,7 +3136,7 @@ MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "r
 const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
 const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death,
   "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold,
-  "ab:sasuke": C.kameBlue, "ab:sasuke_kid": C.kameBlue, "ab:sasuke_war": C.purple, "ab:sasuke_adult": C.purple, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue };
+  "ab:sasuke": C.kameBlue, "ab:sasuke_kid": C.kameBlue, "ab:sasuke_war": C.purple, "ab:sasuke_adult": C.purple, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue, "ab:tanjiro_demon": C.blood, "ab:muzan": C.blood };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -3027,6 +3271,7 @@ function updateFighter(e, tick) {
   const def = FIGHTERS[e.typeId];
   const s = state(e);
   if (s.cloneUntil && tick >= s.cloneUntil) { poof(e); return; }
+  if (SASUKES.has(e.typeId)) updateSusanoo(e, s);
   s.energy = Math.min(def.energy, s.energy + def.regen / 4);
   const team = teamOf(e);
 
@@ -3462,12 +3707,13 @@ const ENTRANCE_LINES = {
   "ab:naruto_war": "§e§lKurama and I will end this war!", "ab:naruto_adult": "§6§lThe Seventh Hokage is here. §7Believe it.",
   "ab:sasuke_kid": "§9§lI'm an avenger. §7I have to kill a certain man.", "ab:sasuke": "§9§lI have only one goal.",
   "ab:sasuke_war": "§5§lI will become Hokage — and change the shinobi world.", "ab:sasuke_adult": "§5§lI'm the shadow that supports the Hokage.", "ab:ichigo": "§6§lI'm Ichigo Kurosaki, Substitute Soul Reaper.",
-  "ab:tanjiro": "§2§lI'll turn Nezuko back into a human!",
+  "ab:tanjiro": "§2§lI'll turn Nezuko back into a human!", "ab:tanjiro_demon": "§4§l(a low growl — his eyes are slits)",
+  "ab:muzan": "§4§lI am the closest thing to perfection. §7— Muzan Kibutsuji",
 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
   "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35,
-  "ab:sasuke": 21, "ab:sasuke_kid": 21, "ab:sasuke_war": 21, "ab:sasuke_adult": 0, "ab:ichigo": 19, "ab:tanjiro": 19 };
+  "ab:tanjiro_demon": 22, "ab:muzan": 0, "ab:sasuke": 21, "ab:sasuke_kid": 21, "ab:sasuke_war": 21, "ab:sasuke_adult": 0, "ab:ichigo": 19, "ab:tanjiro": 19 };
 world.afterEvents.entitySpawn.subscribe((ev) => {
   try {
     const e = ev.entity;
@@ -3493,7 +3739,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");
