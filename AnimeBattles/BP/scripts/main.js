@@ -562,7 +562,8 @@ function transform(e, s, to, label, color, extraSound) {
       ring(dim, V.up(e.location, 0.1), 3, color, 24, 0.6);
       sound(dim, extraSound ?? "random.explode", e.location, 1.5, 0.7);
       hitArea(e, e.location, 4, 0, null, { knock: 1.5, lift: 0.3 });
-      announce(e, `§l${def.color}${def.name} §r§f→ §l${label}`);
+      const line = (TRANSFORM_LINES[e.typeId] ?? [])[to];
+      announce(e, line ? `${line} §r§7(${label})` : `§l${def.color}${def.name} §r§f→ §l${label}`);
     }
   });
 }
@@ -2301,6 +2302,20 @@ const TANJIRO = {
 };
 
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
+// what each fighter shouts as the transformation lands (by target form)
+const TRANSFORM_LINES = {
+  "ab:ichigo": [null, "§f§lBAN... §4§lKAI! §f§lTensa Zangetsu!", "§4§l(the Hollow mask slams over his face)", "§0§lThis is the Final Getsuga Tensho... §4§lMUGETSU."],
+  "ab:naruto_kid": [null, "§4§l(the Nine-Tails' red chakra boils over)"],
+  "ab:naruto_teen": [null, "§6§lSage Mode! §7— nature energy, gathered"],
+  "ab:naruto_war": [null, "§6§lLet's go, Kurama!", "§e§lSix Paths Sage Mode!"],
+  "ab:naruto_adult": [null, "§6§lKurama, let's do this!", "§4§lBaryon Mode! §7— it's burning our lives away"],
+  "ab:sasuke": [null, "§c§lMangekyo Sharingan... §5§lSusanoo!"],
+  "ab:tanjiro": [null, "§6§lSun Breathing! §7— the mark blazes on his forehead"],
+  "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
+  "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
+  "ab:frieza": [null, "§6§lThis is Golden Frieza!"],
+  "ab:zoro": [null, "§0§lI am... §4§lthe King of Hell."],
+};
 const SWORDSMEN = new Set(["ab:zoro", "ab:ichigo", "ab:tanjiro", "ab:sasuke"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
   "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
