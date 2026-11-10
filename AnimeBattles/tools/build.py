@@ -380,6 +380,19 @@ def extra_animations():
         "rightArm": {"rotation": {"0.0": [0, 0, 0], "0.06": [-30, 0, 30]}},
         "leftArm": {"rotation": {"0.0": [0, 0, 0], "0.06": [-40, 0, -10]}},
         "rightLeg": {"rotation": [0, 0, 10]}, "leftLeg": {"rotation": [0, 0, -4]}}, 0.25)
+    # Gum-Gum Pistol: the arm stretches far back behind him, then snaps forward
+    out["animation.ab.pistol"] = strike({
+        "rightArm": {"rotation": {"0.0": [-30, 0, 0], "0.1": [40, 0, 10], "0.18": [-92, 0, 0], "0.3": [-90, 0, 0]},
+                     "scale": {"0.0": [1, 1, 1], "0.1": [1, 3.5, 1], "0.18": [1, 7.5, 1], "0.3": [1, 7, 1]}},
+        "leftArm": {"rotation": [-30, 0, 20]},
+        "body": {"rotation": {"0.0": [0, 10, 0], "0.1": [0, 25, 0], "0.18": [0, -22, 0]}}}, 0.3)
+    # Gum-Gum Bazooka: both arms stretch back, then both palms slam forward
+    out["animation.ab.bazooka"] = strike({
+        "rightArm": {"rotation": {"0.0": [-60, -12, 0], "0.1": [35, -12, 0], "0.18": [-92, -12, 0], "0.3": [-90, -12, 0]},
+                     "scale": {"0.0": [1, 1, 1], "0.1": [1, 3, 1], "0.18": [1, 5.5, 1], "0.3": [1, 5, 1]}},
+        "leftArm": {"rotation": {"0.0": [-60, 12, 0], "0.1": [35, 12, 0], "0.18": [-92, 12, 0], "0.3": [-90, 12, 0]},
+                    "scale": {"0.0": [1, 1, 1], "0.1": [1, 3, 1], "0.18": [1, 5.5, 1], "0.3": [1, 5, 1]}},
+        "body": {"rotation": {"0.0": [0, 0, 0], "0.1": [-8, 0, 0], "0.18": [8, 0, 0]}}}, 0.3)
     out["animation.ab.upper"] = strike({
         "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
         "leftArm": {"rotation": [-30, 0, 20]},
