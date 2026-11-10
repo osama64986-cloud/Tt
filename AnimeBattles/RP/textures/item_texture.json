@@ -34,6 +34,18 @@
   },
   "ab_egg_frieza": {
    "textures": "textures/items/egg_frieza"
+  },
+  "ab_egg_naruto_kid": {
+   "textures": "textures/items/egg_naruto_kid"
+  },
+  "ab_egg_naruto_teen": {
+   "textures": "textures/items/egg_naruto_teen"
+  },
+  "ab_egg_naruto_war": {
+   "textures": "textures/items/egg_naruto_war"
+  },
+  "ab_egg_naruto_adult": {
+   "textures": "textures/items/egg_naruto_adult"
   }
  }
 }

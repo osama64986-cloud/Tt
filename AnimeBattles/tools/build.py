@@ -37,7 +37,13 @@ def build_characters():
         for form in forms:
             for expr in EXPRS:  # same model, four faces: normal, shout, pain, blink
                 models.EXPR = expr
-                geo, img, head = models.export(models.build(ch, form), f"geometry.ab.{ch}_{form}")
+                mdl = models.build(ch, form)
+                old_s = models.S
+                models.S = getattr(mdl, "S", old_s)  # style 2 paints at 8 px per unit
+                try:
+                    geo, img, head = models.export(mdl, f"geometry.ab.{ch}_{form}")
+                finally:
+                    models.S = old_s
                 if expr is None:
                     with open(os.path.join(RP, "models", "entity", f"{ch}_{form}.geo.json"), "w") as f:
                         json.dump(geo, f, indent=1)
@@ -170,6 +176,14 @@ FIGHTERS.update({
 FIGHTERS.update({
     "zoro": {"hp": 700, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c"),
              "scale": 1.03},
+    "naruto_kid": {"hp": 350, "forms": [(8, 0.36), (12, 0.42)], "tex": ["base", "cloak"], "geo": ["base", "cloak"],
+                   "egg": ("#ff8a1e", "#2a40a0"), "scale": 0.8},
+    "naruto_teen": {"hp": 550, "forms": [(12, 0.38), (20, 0.41)], "tex": ["base", "sage"], "geo": ["base", "sage"],
+                    "egg": ("#ff8a1e", "#26262e")},
+    "naruto_war": {"hp": 950, "forms": [(28, 0.4), (34, 0.42), (42, 0.44)], "tex": ["kcm", "kurama", "spsm"], "geo": ["kcm", "kurama", "spsm"],
+                   "egg": ("#ffce40", "#1c1410")},
+    "naruto_adult": {"hp": 1000, "forms": [(28, 0.38), (38, 0.42), (52, 0.46)], "tex": ["hokage", "link", "baryon"],
+                     "geo": ["hokage", "link", "baryon"], "egg": ("#ff8a1e", "#f6f6f2")},
     "frieza": {"hp": 900, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
@@ -755,7 +769,15 @@ def build_egg_icons():
             "ab_team_stick": {"textures": "textures/items/team_stick"}}
     idir = os.path.join(RP, "textures", "items")
     for ch, forms in models.FORMS.items():
-        face = HEADS[(ch, "eyes" if ch == "gojo" else forms[0])].convert("RGBA").resize((26, 26), Image.NEAREST)
+        src = HEADS[(ch, "eyes" if ch == "gojo" else forms[0])].convert("RGBA")
+        if src.width != src.height:  # style-2 faces are wider than tall: keep the aspect, show the eyes
+            src = src.crop((0, max(0, src.height - src.width * 26 // 26 // 1), src.width, src.height)) if False else src
+            fw = 26
+            fh = max(1, round(src.height * fw / src.width))
+            face = Image.new("RGBA", (26, 26), (0, 0, 0, 0))
+            face.paste(src.resize((fw, fh), Image.LANCZOS), (0, (26 - fh) // 2))
+        else:
+            face = src.resize((26, 26), Image.NEAREST)
         base = tuple(int(FIGHTERS[ch]["egg"][0][i:i + 2], 16) for i in (1, 3, 5))
         edge = tuple(int(FIGHTERS[ch]["egg"][1][i:i + 2], 16) for i in (1, 3, 5))
         icon = Image.new("RGBA", (32, 32), (0, 0, 0, 0))

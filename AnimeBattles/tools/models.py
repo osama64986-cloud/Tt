@@ -4383,3 +4383,17 @@ def gojo_body(m, hair, iris, blindfold):  # noqa: F811
     m.box("body", [-4.35, 21.9, -2.85], [0.6, 2.1, 5.7], col)        # sides
     m.box("body", [3.75, 21.9, -2.85], [0.6, 2.1, 5.7], col)
     m.box("body", [-3.5, 22.3, -3.1], [1.3, 1.3, 0.25], swirl_button)  # swirl button on the collar
+
+
+
+# ================================================================ STYLE 2 (anime toon) — the Naruto fighters
+import style2  # noqa: E402  (imported last: it builds on everything above)
+
+FORMS.update(style2.FORMS2)
+_build_v8 = build
+
+
+def build(char, form):  # noqa: F811
+    if char.startswith("naruto"):
+        return style2.build(char, form)
+    return _build_v8(char, form)

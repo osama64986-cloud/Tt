@@ -294,6 +294,140 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.naruto_kid": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.cloak",
+      "Texture.cloak_shout",
+      "Texture.cloak_hurt",
+      "Texture.cloak_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.cloak"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.naruto_teen": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.sage",
+      "Texture.sage_shout",
+      "Texture.sage_hurt",
+      "Texture.sage_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.sage"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.naruto_war": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.kcm",
+      "Texture.kcm_shout",
+      "Texture.kcm_hurt",
+      "Texture.kcm_blink",
+      "Texture.kurama",
+      "Texture.kurama_shout",
+      "Texture.kurama_hurt",
+      "Texture.kurama_blink",
+      "Texture.spsm",
+      "Texture.spsm_shout",
+      "Texture.spsm_hurt",
+      "Texture.spsm_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.kcm",
+      "Geometry.kurama",
+      "Geometry.spsm"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.naruto_adult": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.hokage",
+      "Texture.hokage_shout",
+      "Texture.hokage_hurt",
+      "Texture.hokage_blink",
+      "Texture.link",
+      "Texture.link_shout",
+      "Texture.link_hurt",
+      "Texture.link_blink",
+      "Texture.baryon",
+      "Texture.baryon_shout",
+      "Texture.baryon_hurt",
+      "Texture.baryon_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.hokage",
+      "Geometry.link",
+      "Geometry.baryon"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.frieza": {
    "arrays": {
     "textures": {
