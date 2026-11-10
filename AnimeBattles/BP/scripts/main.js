@@ -1707,6 +1707,12 @@ function updateFighter(e, tick) {
     s.expr = 0;
     try { e.setProperty("ab:expr", 0); } catch (e2) { /* ignore */ }
   }
+  if (e.typeId === "ab:gojo" && formOf(e) === 1 && team && tick % 50 === 0) {  // the Six Eyes glint
+    try {
+      const hp = e.getHeadLocation(), vd = e.getViewDirection();
+      fx(e.dimension, "flash", { x: hp.x + vd.x * 0.32, y: hp.y + 0.05, z: hp.z + vd.z * 0.32 }, C.blue, 0.35, 0.2);
+    } catch (err) { /* ignore */ }
+  }
   if (!s.expr && tick % 70 === 0 && team) {  // worn out: below 20% health the fighter winces and staggers now and then
     const hh = health(e);
     if (hh && hh.currentValue < hh.effectiveMax * 0.2) setExpr(e, 2, 10);
