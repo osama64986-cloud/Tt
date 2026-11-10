@@ -270,7 +270,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip"]  # poses 13..33
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip", "scratch"]  # poses 13..34
 
 
 def extra_animations():
@@ -321,6 +321,8 @@ def extra_animations():
         "cross": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-10, 28, 6]}},  # chin up, face turned away: "Tch."
         # Zoro getting serious: both hands up behind his head, tying the bandana
         "tie_bandana": {"rightArm": {"rotation": [-165, -32, 0]}, "leftArm": {"rotation": [-165, 32, 0]}, "head": {"rotation": [10, 0, 0]}},
+        # Goku after a win: hand to the back of his head, laughing
+        "scratch": {"rightArm": {"rotation": [-168, "-24 + math.sin(query.life_time * 900.0) * 5", 0]}, "head": {"rotation": [-6, 0, -8]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},

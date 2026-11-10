@@ -54,7 +54,8 @@
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
-    "tail_whip": "animation.ab.tail_whip"
+    "tail_whip": "animation.ab.tail_whip",
+    "scratch": "animation.ab.scratch"
    },
    "scripts": {
     "animate": [
@@ -168,6 +169,9 @@
      },
      {
       "tail_whip": "query.property('ab:pose') == 33"
+     },
+     {
+      "scratch": "query.property('ab:pose') == 34"
      }
     ]
    },

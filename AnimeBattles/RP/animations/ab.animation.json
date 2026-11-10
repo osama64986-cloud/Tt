@@ -2045,6 +2045,26 @@
      ]
     }
    }
+  },
+  "animation.ab.scratch": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -168,
+      "-24 + math.sin(query.life_time * 900.0) * 5",
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -6,
+      0,
+      -8
+     ]
+    }
+   }
   }
  }
 }
