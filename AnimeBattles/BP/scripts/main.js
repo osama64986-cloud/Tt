@@ -2081,6 +2081,7 @@ const SASUKE = {
           afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
           const c = aim(t);
           deal(e, t, 34 * powerOf(e) / 100);
+          if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 8); }  // the lightning locks the muscles
           fx(e.dimension, "streak", c, C.kameBlue, 1.8, 0.4, { count: 22, speed: 12 });
           fx(e.dimension, "flash", c, C.white, 3, 0.2);
           burst(e.dimension, c, C.kameBlue, 20, 4, 0.4, 0.4);
@@ -2157,7 +2158,7 @@ const SASUKE = {
 // ------------------------------------------------------------------ Ichigo Kurosaki (Bleach)
 const ICHIGO = {
   name: "Ichigo", color: "§6", energy: 1600, regen: 28, energyName: "§bREIATSU",
-  dodge: (e) => (formOf(e) >= 1 ? 0.18 : 0.12),  // Bankai compresses all that power into speed
+  dodge: (e) => (formOf(e) >= 1 ? 0.15 : 0.12),  // Bankai compresses all that power into speed
   forms: [
     { label: "Shikai — Zangetsu", power: 90 },
     { label: "Bankai — Tensa Zangetsu", power: 150, aura: C.black },
@@ -2927,6 +2928,16 @@ world.afterEvents.entityDie.subscribe((ev) => {
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
 
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:ichigo": 0 };
+const ENTRANCE_LINES = {
+  "ab:goku": "§6§lHey, it's me, Goku! §7Let's fight!", "ab:vegeta": "§9§lKakarot! §7The Prince of all Saiyans is here.",
+  "ab:frieza": "§5§lOhohoho... §7you should be honoured.", "ab:gojo": "§b§lThroughout heaven and earth, I alone am the honoured one.",
+  "ab:sukuna": "§c§lKnow your place, fool.", "ab:yuji": "§d§lI'll save as many people as I can!", "ab:yuji_final": "§c§l...",
+  "ab:luffy": "§c§lI'm Luffy! §7The man who'll become King of the Pirates!", "ab:zoro": "§a§lNothing happened.",
+  "ab:naruto_kid": "§6§lBelieve it! §7I'm gonna be Hokage!", "ab:naruto_teen": "§6§lI never go back on my word — that's my ninja way!",
+  "ab:naruto_war": "§e§lKurama and I will end this war!", "ab:naruto_adult": "§6§lThe Seventh Hokage is here. §7Believe it.",
+  "ab:sasuke": "§9§lI have only one goal.", "ab:ichigo": "§6§lI'm Ichigo Kurosaki, Substitute Soul Reaper.",
+  "ab:tanjiro": "§2§lI'll turn Nezuko back into a human!",
+};
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
   "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35,
@@ -2941,6 +2952,7 @@ world.afterEvents.entitySpawn.subscribe((ev) => {
       busy(s, 30);
       setPose(e, ENTRANCE[e.typeId]);
       setExpr(e, 1, 26);
+      if (ENTRANCE_LINES[e.typeId]) announce(e, ENTRANCE_LINES[e.typeId]);
       const c = HIT_COLOR[e.typeId] ?? C.white;  // arrival burst in the fighter's own colour
       ring(e.dimension, V.up(e.location, 0.1), 1.6, c, 24, 0.4);
       fx(e.dimension, "aura", e.location, c, 1.3, 0.6, { count: 18 * fxLevel(), speed: 2 });

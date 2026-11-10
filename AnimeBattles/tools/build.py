@@ -200,7 +200,7 @@ FIGHTERS.update({
                "geo": ["shikai", "bankai", "hollow", "mugetsu"], "egg": ("#1e1e24", "#ff8428")},
     "tanjiro": {"hp": 420, "forms": [(11, 0.38), (16, 0.4)], "tex": ["water", "mark"], "geo": ["water", "mark"],
                 "egg": ("#287a5a", "#18181c")},
-    "frieza": {"hp": 900, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
+    "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
 
