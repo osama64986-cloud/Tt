@@ -4,7 +4,7 @@
 
 ![زورو وفريزا](docs/sheet_zoro_frieza.png)
 ![قدرات زورو وفريزا](docs/abilities_zoro_frieza.png)
-![الشخصيات الجديدة](docs/new_characters.png)
+![سوكونا ولوفي](docs/sheet_sukuna_luffy.png)
 ![القدرات](docs/abilities_new.png)
 
 ![الشخصيات](docs/preview.png)
@@ -32,6 +32,8 @@
 ![التعابير](docs/expressions.png)
 ![الحركات](docs/poses.png)
 ![الضربات المتحركة](docs/strikes.gif)
+![الوقفات والتحولات](docs/idles.png)
+![سيوف زورو](docs/zoro_swords.png)
 
 - **أربعة وجوه لكل شكل**: عادي، صراخ (عند استخدام قدرة أو تحول أو الضربة الأخيرة في الكومبو)، ألم (عند تلقي ضربة، مع ارتداد للخلف)، ورمش تلقائي كل بضع ثوانٍ.
 - **وقفة قتال** عند دخول فريق: القبضة الأمامية ممدودة والخلفية عند الصدر، مع ارتداد خفيف.
