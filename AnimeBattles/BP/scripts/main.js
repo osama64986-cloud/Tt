@@ -495,6 +495,7 @@ function transform(e, s, to, label, color, extraSound) {
   setPose(e, e.typeId === "ab:luffy" ? (to === 1 ? 30 : to === 6 ? 27 : 25)
     : e.typeId === "ab:zoro" ? 32      // ties the bandana on
     : e.typeId === "ab:gojo" ? 25      // pulls the blindfold off
+    : (e.typeId === "ab:ichigo" && to === 2) ? 25   // drags the Hollow mask down over his face
     : (e.typeId === "ab:naruto_teen" || (e.typeId === "ab:naruto_war" && to === 2)) ? 35   // still, hands in a seal, gathering nature energy
     : calm ? 0
     : 22);
@@ -1817,9 +1818,225 @@ const NARUTO_ADULT = {
   ],
 };
 
+// ------------------------------------------------------------------ Sasuke (Shippuden)
+const SASUKE = {
+  name: "Sasuke", color: "§9", energy: 900, regen: 16, energyName: "§6CHAKRA",
+  dodge: (e) => (formOf(e) === 1 ? 0.18 : 0.14),  // the Sharingan reads the blow before it lands
+  forms: [{ label: "Sharingan", power: 70 }, { label: "Mangekyo Sharingan — Susanoo", power: 98, aura: C.purple }],
+  thresholds: [0.6], transformCd: 100, formSound: [null, "mob.wither.spawn"],
+  abilities: [
+    { id: "chidori", label: "Chidori", cd: 140, cost: 90, min: 0, max: 20, weight: 5,
+      run(e, s, t) {
+        busy(s, 22); face(e, aim(t)); announce(e, "§b§lChidori!");
+        chargeOrb(e, t, 10, C.kameBlue, 0.4, 1.1, 4);
+        every(2, 5, () => { if (e.isValid) fx(e.dimension, "streak", handPos(e, alive(t) ? t : e).pos, C.white, 0.8, 0.2, { count: 4, speed: 6 }); });
+        later(10, () => {
+          if (!e.isValid || !alive(t)) return;
+          afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
+          const c = aim(t);
+          deal(e, t, 34 * powerOf(e) / 100);
+          fx(e.dimension, "streak", c, C.kameBlue, 1.8, 0.4, { count: 22, speed: 12 });
+          fx(e.dimension, "flash", c, C.white, 3, 0.2);
+          burst(e.dimension, c, C.kameBlue, 20, 4, 0.4, 0.4);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "fireball", label: "Great Fireball", cd: 160, cost: 90, min: 0, max: 30, weight: 4,
+      run(e, s, t) {
+        busy(s, 16); face(e, aim(t)); setPose(e, 21); announce(e, "§6§lFire Style: Great Fireball Technique!");
+        later(8, () => {
+          if (!e.isValid) return;
+          setPose(e, 4);
+          const { pos } = handPos(e, alive(t) ? t : e);
+          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
+          projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 0.9, maxDist: 30, radius: 1.6, size: 2.4, color: C.fire, slot: 11, trail: true,
+            explode: { radius: 3.5, dmg: 30 * powerOf(e) / 100, color: C.fire, carve: 1, knock: 1.6 } });
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "nagashi", label: "Chidori Current", cd: 200, cost: 100, min: 0, max: 5, weight: 3,
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 22); announce(e, "§b§lChidori Current!");
+        const dim = e.dimension;
+        fx(dim, "shock", e.location, C.kameBlue, 7, 0.4);
+        fx(dim, "streak", V.up(e.location, 1), C.white, 2, 0.4, { count: 26, speed: 10 });
+        let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 4 }); } catch (err) { /* ignore */ }
+        for (const o of list) {
+          if (!canHit(e, teamOf(e), o)) continue;
+          deal(e, o, 16 * powerOf(e) / 100);
+          if (isFighter(o)) { const os = state(o); os.stunUntil = Math.max(os.stunUntil, now() + 16); }  // paralysed by the current
+        }
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "kirin", label: "Kirin", cd: 700, cost: 400, min: 0, max: 40, weight: 5,
+      run(e, s, t) {
+        busy(s, 34); setPose(e, 23); announce(e, "§b§lKirin! §7— the lightning of the heavens");
+        const dim = e.dimension;
+        later(22, () => {
+          if (!e.isValid || !alive(t)) return;
+          const c = t.location;
+          for (let y = 30; y > 0; y -= 1.5) fx(dim, "orb", V.add(c, { x: Math.sin(y) * 0.8, y, z: Math.cos(y) * 0.8 }), C.kameBlue, 2.2, 0.4);
+          fx(dim, "flash", V.up(c, 2), C.white, 8, 0.3);
+          explosion(e, V.up(c, 1), { radius: 5.5, dmg: 120 * powerOf(e) / 100, color: C.kameBlue, carve: 2, knock: 2.5 });
+          shake(dim, c, 0.6, 0.6);
+          later(6, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "amaterasu", label: "Amaterasu", cd: 400, cost: 220, min: 0, max: 30, weight: 5, cond: G(1),
+      run(e, s, t) {
+        busy(s, 14); face(e, aim(t)); setPose(e, 26); announce(e, "§0§lAmaterasu! §7— black flames that never go out");
+        every(8, 12, () => {
+          if (!alive(t)) return false;
+          deal(e, t, 7 * powerOf(e) / 100);
+          fx(t.dimension, "orb_solid", V.up(t.location, 1 + Math.random()), C.black, 1.6, 0.6);
+          fx(t.dimension, "aura", t.location, C.black, 1.2, 0.7, { count: 8, speed: 1.5 });
+        });
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "arrow", label: "Susanoo Arrow", cd: 260, cost: 200, min: 0, max: 45, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 20); face(e, aim(t)); setPose(e, 20); announce(e, "§5§lSusanoo!");
+        later(10, () => {
+          if (!e.isValid) return;
+          const { pos } = handPos(e, alive(t) ? t : e);
+          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
+          projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 2.2, maxDist: 50, radius: 1.4, size: 1.2, color: C.purple, slot: 6, pierce: true, trail: true,
+            dmg: 60 * powerOf(e) / 100, explode: { radius: 3, dmg: 20 * powerOf(e) / 100, color: C.purple, knock: 2 } });
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+  ],
+};
+
+// ------------------------------------------------------------------ Ichigo Kurosaki (Bleach)
+const ICHIGO = {
+  name: "Ichigo", color: "§6", energy: 1600, regen: 28, energyName: "§bREIATSU",
+  dodge: () => 0.12,
+  forms: [
+    { label: "Shikai — Zangetsu", power: 90 },
+    { label: "Bankai — Tensa Zangetsu", power: 150, aura: C.black },
+    { label: "Hollow Mask", power: 200, aura: C.red },
+    { label: "Final Getsuga Tensho (Mugetsu)", power: 270, aura: C.black },
+  ],
+  thresholds: [0.75, 0.55, 0.35], transformCd: 80, formSound: [null, "mob.wither.spawn", "mob.enderdragon.growl", "mob.wither.spawn"],
+  abilities: [
+    { id: "getsuga", label: "Getsuga Tensho", cd: 110, cost: 70, min: 0, max: 30, weight: 5,
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 19); announce(e, "§b§lGetsuga... TENSHO!");
+        const col = formOf(e) ? C.haki : C.kameBlue;
+        flyingSlash(e, t, { color: col, dmg: 30 * powerOf(e) / 100, range: 28, roll: 20, carve: true, size: 1.6 + formOf(e) * 0.3 });
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "jujisho", label: "Getsuga Jujisho", cd: 220, cost: 130, min: 0, max: 28, weight: 4, cond: G(1, 2, 3),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 1); announce(e, "§4§lGetsuga Jujisho!");
+        for (const roll of [45, -45]) flyingSlash(e, t, { color: C.haki, dmg: 28 * powerOf(e) / 100, range: 28, roll, carve: true, size: 1.8 });
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "shunpo", label: "Flash Step", cd: 160, cost: 90, min: 0, max: 20, weight: 4, cond: G(1, 2, 3),
+      run(e, s, t) {
+        busy(s, 20); announce(e, "§f§lBankai speed!");
+        every(4, 4, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.4); setPose(e, i % 2 ? 28 : 19);
+          slashMarks(e, t, C.haki, 2, 6 * powerOf(e) / 100);
+          if (i === 3) setPose(e, 0);
+        });
+      } },
+    { id: "cero", label: "Cero", cd: 260, cost: 180, min: 0, max: 40, weight: 5, cond: G(2),
+      run(e, s, t) {
+        busy(s, 26); face(e, aim(t)); announce(e, "§4§lCero!");
+        chargeOrb(e, t, 12, C.red, 0.3, 1.2, 4);
+        later(12, () => {
+          if (!e.isValid) return;
+          beam(e, alive(t) ? t : e, { color: C.red, width: 1.3, length: 40, dmg: 70 * powerOf(e) / 100, carve: 1, blast: 3.5, ticks: 6 });
+          later(14, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "mugetsu", label: "Mugetsu", cd: 900, cost: 700, min: 0, max: 40, weight: 7, cond: G(3),
+      run(e, s, t) {
+        busy(s, 40); setPose(e, 23); announce(e, "§0§lFinal Getsuga Tensho... §4§lMUGETSU");
+        const dim = e.dimension;
+        every(2, 10, (i) => { if (e.isValid) fx(dim, "aura", e.location, C.black, 2, 0.8, { count: 18, speed: 3 }); });
+        later(20, () => {
+          if (!e.isValid) return;
+          setPose(e, 19);
+          beam(e, alive(t) ? t : e, { color: C.black, width: 3.2, length: 48, dmg: 200 * powerOf(e) / 100, carve: 3, blast: 7, ticks: 10, pitch: 0.5 });
+          later(20, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+  ],
+};
+
+// ------------------------------------------------------------------ Tanjiro Kamado (Demon Slayer)
+const TANJIRO = {
+  name: "Tanjiro", color: "§2", energy: 700, regen: 14, energyName: "§bBREATH",
+  dodge: () => 0.1,
+  forms: [{ label: "Water Breathing", power: 40 }, { label: "Sun Breathing — Demon Slayer Mark", power: 60, aura: C.fire }],
+  thresholds: [0.6], transformCd: 100, formSound: [null, "mob.blaze.shoot"],
+  abilities: [
+    { id: "surface", label: "Water Surface Slash", cd: 90, cost: 40, min: 0, max: 12, weight: 4, cond: G(0),
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§b§lWater Breathing, First Form: Water Surface Slash!");
+        afterimage(e); teleportNear(e, t, false, 1.5); setPose(e, 19);
+        const v = slashVfx(e.dimension, aim(t), V.norm(V.sub(aim(t), aim(e))), C.kameBlue, 1.6, 0);
+        later(5, () => killVfx(v));
+        deal(e, t, 20 * powerOf(e) / 100);
+        burst(e.dimension, aim(t), C.kameBlue, 18, 3, 0.4, 0.5);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "wheel", label: "Water Wheel", cd: 130, cost: 60, min: 0, max: 10, weight: 4, cond: G(0),
+      run(e, s, t) {
+        busy(s, 14); announce(e, "§b§lSecond Form: Water Wheel!");
+        afterimage(e); teleportNear(e, t, false, 1.5); setPose(e, 24);
+        for (let k = 0; k < 4; k++) { const v = slashVfx(e.dimension, aim(t), { x: 0, y: 1, z: 0 }, C.kameBlue, 1.4, k * 45); later(5, () => killVfx(v)); }
+        deal(e, t, 24 * powerOf(e) / 100);
+        try { t.applyKnockback({ x: 0, z: 0 }, 0.9); } catch (err) { /* ignore */ }
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "flux", label: "Constant Flux", cd: 260, cost: 140, min: 0, max: 20, weight: 5, cond: G(0),
+      run(e, s, t) {
+        busy(s, 26); announce(e, "§b§lTenth Form: Constant Flux! §7— the water dragon");
+        const dim = e.dimension;
+        every(3, 7, (i) => {  // a flowing water dragon that hits harder with every turn
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.6); setPose(e, i % 2 ? 28 : 19);
+          const v = slashVfx(dim, aim(t), V.norm(V.sub(aim(t), aim(e))), C.kameBlue, 1.2 + i * 0.15, i * 30);
+          later(4, () => killVfx(v));
+          deal(e, t, (5 + i * 1.5) * powerOf(e) / 100);
+          for (let k = 0; k < 10; k++) fx(dim, "orb", V.add(aim(t), { x: Math.cos(k + i) * 1.4, y: (k - 5) * 0.2, z: Math.sin(k + i) * 1.4 }), C.kameBlue, 0.6, 0.5);
+          if (i === 6) setPose(e, 0);
+        });
+      } },
+    { id: "dance", label: "Hinokami Kagura: Dance", cd: 110, cost: 60, min: 0, max: 26, weight: 5, cond: G(1),
+      run(e, s, t) {
+        busy(s, 14); setPose(e, 19); announce(e, "§6§lHinokami Kagura: Dance!");
+        flyingSlash(e, t, { color: C.fire, dmg: 26 * powerOf(e) / 100, range: 20, roll: 30, size: 1.6 });
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "bluesky", label: "Clear Blue Sky", cd: 180, cost: 90, min: 0, max: 8, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 24); announce(e, "§6§lHinokami Kagura: Clear Blue Sky!");
+        const dim = e.dimension;
+        ring(dim, V.up(e.location, 1), 3.5, C.fire, 32, 0.6); fx(dim, "shock", e.location, C.fire, 7, 0.4);
+        hitArea(e, V.up(e.location, 1), 4, 24 * powerOf(e) / 100, new Set(), { knock: 1.6, lift: 0.4 });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "sunflower", label: "Sunflower Thrust", cd: 160, cost: 80, min: 0, max: 14, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§6§lHinokami Kagura: Sunflower Thrust!");
+        afterimage(e); teleportNear(e, t, false, 1.4); setPose(e, 5);
+        deal(e, t, 34 * powerOf(e) / 100);
+        fx(e.dimension, "flash", aim(t), C.fire, 3, 0.25); burst(e.dimension, aim(t), C.fire, 24, 5, 0.45, 0.5);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      } },
+  ],
+};
+
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
-  "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT };
+  "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
+  "ab:sasuke": SASUKE, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -1855,6 +2072,9 @@ const COMBOS = {
   "ab:naruto_teen": [["jab_r", "jab_l", "kick_r", "upper"], ["rush", "kick_l", "blink", "axe"], ["jab_l", "jab_r", "kick", "kick_r"]],
   "ab:naruto_war": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_l", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
   "ab:naruto_adult": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_r", "kick_l", "upper", "axe"], ["rush", "jab_l", "kick_r", "kiburst"]],
+  "ab:sasuke": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
+  "ab:ichigo": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "blink", "cut_r", "kick_r", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
+  "ab:tanjiro": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick", "cut_x"], ["cut_r", "cut_l", "cut_l", "kick_r"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
@@ -1862,7 +2082,8 @@ MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };
 MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "right" };
 const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
 const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death,
-  "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold };
+  "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold,
+  "ab:sasuke": C.kameBlue, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -1959,7 +2180,8 @@ function comboStep(e, t, mv, last) {
       if (mv.sword) {  // a visible blade streak across the target for every sword cut
         const sd = V.norm(V.sub(aim(t), aim(e)));
         for (const roll of mv.pose === 1 ? [45, -45] : [mv.pose === 28 ? -35 : 35]) {
-          const v = slashVfx(t.dimension, aim(t), sd, formOf(e) ? C.haki : color, 1.0, roll);
+          const sc = e.typeId === "ab:tanjiro" ? (formOf(e) ? C.fire : C.kameBlue) : (formOf(e) && (e.typeId === "ab:zoro" || e.typeId === "ab:ichigo") ? C.haki : color);
+          const v = slashVfx(t.dimension, aim(t), sd, sc, 1.0, roll);
           later(4, () => killVfx(v));
         }
       }
@@ -2386,10 +2608,11 @@ world.afterEvents.entityDie.subscribe((ev) => {
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
 
-const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0 };
+const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:ichigo": 0 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
-  "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35 };
+  "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35,
+  "ab:sasuke": 21, "ab:ichigo": 19, "ab:tanjiro": 19 };
 world.afterEvents.entitySpawn.subscribe((ev) => {
   try {
     const e = ev.entity;
@@ -2414,7 +2637,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");

@@ -194,6 +194,12 @@ FIGHTERS.update({
                    "egg": ("#ffce40", "#1c1410")},
     "naruto_adult": {"hp": 1000, "forms": [(28, 0.38), (38, 0.42), (52, 0.46)], "tex": ["hokage", "link", "baryon"],
                      "geo": ["hokage", "link", "baryon"], "egg": ("#ff8a1e", "#f6f6f2")},
+    "sasuke": {"hp": 600, "forms": [(18, 0.4), (26, 0.42)], "tex": ["sharingan", "susanoo"], "geo": ["sharingan", "susanoo"],
+               "egg": ("#eeeef2", "#5a3a8a")},
+    "ichigo": {"hp": 1000, "forms": [(24, 0.38), (34, 0.44), (44, 0.44), (60, 0.46)], "tex": ["shikai", "bankai", "hollow", "mugetsu"],
+               "geo": ["shikai", "bankai", "hollow", "mugetsu"], "egg": ("#1e1e24", "#ff8428")},
+    "tanjiro": {"hp": 420, "forms": [(11, 0.38), (16, 0.4)], "tex": ["water", "mark"], "geo": ["water", "mark"],
+                "egg": ("#287a5a", "#18181c")},
     "frieza": {"hp": 900, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
@@ -348,8 +354,7 @@ def extra_animations():
         # Goku after a win: hand to the back of his head, laughing
         "scratch": {"rightArm": {"rotation": [-168, "-24 + math.sin(query.life_time * 900.0) * 5", 0]}, "head": {"rotation": [-6, 0, -8]}},
         # style-2 (jointed) poses — Naruto
-        "seal": {"rightArm": {"rotation": [-38, -36, 0]}, "rightForearm": {"rotation": [-82, 0, 0]},
-                 "leftArm": {"rotation": [-38, 36, 0]}, "leftForearm": {"rotation": [-82, 0, 0]}, "head": {"rotation": [6, 0, 0]}},
+        "seal": {"rightArm": {"rotation": [-75, -35, 0]}, "leftArm": {"rotation": [-75, 35, 0]}, "head": {"rotation": [6, 0, 0]}},
         "rasengan": {"rightArm": {"rotation": [-78, -12, 0]}, "rightForearm": {"rotation": [-10, 0, 0]},
                      "leftArm": {"rotation": [-60, 34, 0]}, "leftForearm": {"rotation": [-42, 0, 0]}, "body": {"rotation": [0, -15, 0]}},
         "nrun": {"rightArm": {"rotation": [64, 0, -8]}, "leftArm": {"rotation": [64, 0, 8]}, "rightForearm": {"rotation": [14, 0, 0]},

@@ -4386,14 +4386,14 @@ def gojo_body(m, hair, iris, blindfold):  # noqa: F811
 
 
 
-# ================================================================ STYLE 2 (anime toon) — the Naruto fighters
-import style2  # noqa: E402  (imported last: it builds on everything above)
+# ================================================================ Naruto x4, Sasuke, Ichigo, Tanjiro (house style)
+import chars_extra  # noqa: E402  (imported last: it builds on everything above)
 
-FORMS.update(style2.FORMS2)
+FORMS.update(chars_extra.FORMS)
 _build_v8 = build
 
 
 def build(char, form):  # noqa: F811
-    if char.startswith("naruto"):
-        return style2.build(char, form)
+    if char in chars_extra.FORMS:
+        return chars_extra.build(char, form)
     return _build_v8(char, form)

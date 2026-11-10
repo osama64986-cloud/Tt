@@ -46,6 +46,15 @@
   },
   "ab_egg_naruto_adult": {
    "textures": "textures/items/egg_naruto_adult"
+  },
+  "ab_egg_sasuke": {
+   "textures": "textures/items/egg_sasuke"
+  },
+  "ab_egg_ichigo": {
+   "textures": "textures/items/egg_ichigo"
+  },
+  "ab_egg_tanjiro": {
+   "textures": "textures/items/egg_tanjiro"
   }
  }
 }

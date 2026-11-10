@@ -2226,29 +2226,15 @@
    "bones": {
     "rightArm": {
      "rotation": [
-      -38,
-      -36,
-      0
-     ]
-    },
-    "rightForearm": {
-     "rotation": [
-      -82,
-      0,
+      -75,
+      -35,
       0
      ]
     },
     "leftArm": {
      "rotation": [
-      -38,
-      36,
-      0
-     ]
-    },
-    "leftForearm": {
-     "rotation": [
-      -82,
-      0,
+      -75,
+      35,
       0
      ]
     },
