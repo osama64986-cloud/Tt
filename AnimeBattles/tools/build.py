@@ -42,6 +42,16 @@ def build_characters():
                 models.S = getattr(mdl, "S", old_s)  # style 2 paints at 8 px per unit
                 try:
                     geo, img, head = models.export(mdl, f"geometry.ab.{ch}_{form}")
+                    portrait = None
+                    if expr is None and getattr(mdl, "S", None):  # style 2: the face spans the skull and the jaw
+                        _, uvs = models.pack(mdl.cubes)
+                        sk = models.face_rects(*uvs[0], mdl.cubes[0]["size"])["north"]
+                        jw = models.face_rects(*uvs[1], mdl.cubes[1]["size"])["north"]
+                        a = img.crop((sk[0], sk[1], sk[0] + sk[2], sk[1] + sk[3]))
+                        b = img.crop((jw[0], jw[1], jw[0] + jw[2], jw[1] + jw[3]))
+                        portrait = Image.new("RGBA", (a.width, a.height + b.height), (0, 0, 0, 0))
+                        portrait.paste(a, (0, 0))
+                        portrait.paste(b, ((a.width - b.width) // 2, a.height))
                 finally:
                     models.S = old_s
                 if expr is None:
@@ -49,7 +59,7 @@ def build_characters():
                         json.dump(geo, f, indent=1)
                     img.save(os.path.join(tdir, f"{form}.png"))
                     x, y, w, h = head
-                    heads[(ch, form)] = img.crop((x, y, x + w, y + h))
+                    heads[(ch, form)] = portrait if portrait is not None else img.crop((x, y, x + w, y + h))
                 else:
                     img.save(os.path.join(tdir, f"{form}_{expr}.png"))
             models.EXPR = None
@@ -809,10 +819,10 @@ def build_egg_icons():
         src = HEADS[(ch, "eyes" if ch == "gojo" else forms[0])].convert("RGBA")
         if src.width != src.height:  # style-2 faces are wider than tall: keep the aspect, show the eyes
             src = src.crop((0, max(0, src.height - src.width * 26 // 26 // 1), src.width, src.height)) if False else src
-            fw = 26
-            fh = max(1, round(src.height * fw / src.width))
+            k = min(26 / src.width, 26 / src.height)
+            fw, fh = max(1, round(src.width * k)), max(1, round(src.height * k))
             face = Image.new("RGBA", (26, 26), (0, 0, 0, 0))
-            face.paste(src.resize((fw, fh), Image.LANCZOS), (0, (26 - fh) // 2))
+            face.paste(src.resize((fw, fh), Image.LANCZOS), ((26 - fw) // 2, (26 - fh) // 2))
         else:
             face = src.resize((26, 26), Image.NEAREST)
         base = tuple(int(FIGHTERS[ch]["egg"][0][i:i + 2], 16) for i in (1, 3, 5))
