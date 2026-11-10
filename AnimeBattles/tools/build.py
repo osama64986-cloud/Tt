@@ -58,8 +58,11 @@ def build_characters():
                     with open(os.path.join(RP, "models", "entity", f"{ch}_{form}.geo.json"), "w") as f:
                         json.dump(geo, f, indent=1)
                     img.save(os.path.join(tdir, f"{form}.png"))
-                    x, y, w, h = head
-                    heads[(ch, form)] = portrait if portrait is not None else img.crop((x, y, x + w, y + h))
+                    if head is None:  # sculpted model without a painted face
+                        heads[(ch, form)] = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+                    else:
+                        x, y, w, h = head
+                        heads[(ch, form)] = portrait if portrait is not None else img.crop((x, y, x + w, y + h))
                 else:
                     img.save(os.path.join(tdir, f"{form}_{expr}.png"))
             models.EXPR = None
@@ -898,7 +901,7 @@ def build_summons():
         rc["render_controllers"][f"controller.render.ab.summon_{key}"] = {
             "arrays": {"textures": {"Array.t": [f"Texture.{n}" for n in names]}, "geometries": {"Array.g": [f"Geometry.{n}" for n in names]}},
             "geometry": f"Array.g[{K}]", "textures": [f"Array.t[{K}]"], "materials": [{"*": mat}],
-            **({"ignore_lighting": True} if key == "glow" else {}),
+
         }
     json.dump(rc, open(rc_path, "w"), indent=1)
     an_path = os.path.join(RP, "animations", "ab.animation.json")

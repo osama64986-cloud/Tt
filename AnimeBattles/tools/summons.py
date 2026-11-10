@@ -243,7 +243,7 @@ def muzan_infant():
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 18, 0], "head": [0, 30, -6], "rightArm": [11, 26, -4], "leftArm": [-11, 26, -4],
                       "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 16, 8]})
     SKIN_P, VEIN = (234, 198, 188), (176, 26, 40)
-    skin = smooth(SKIN_P, [speckle(VEIN, 13), stripes(dark(SKIN_P, 0.85), 9, "x")])
+    skin = smooth(SKIN_P)
     vein = smooth(VEIN)
     blob(m, "body", [0, 20, 2], [12, 13, 10], skin, slices=6)                                    # torso
     blob(m, "body", [0, 14, -4], [10, 8, 7], skin, slices=4)                                     # belly

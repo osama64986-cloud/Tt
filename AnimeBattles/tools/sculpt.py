@@ -25,6 +25,51 @@ def rot_for(d):
     return [round(ax, 2), 0, round(az, 2)]
 
 
+def vcross(a, b):
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+
+def dot(a, b):
+    return sum(a[i] * b[i] for i in range(3))
+
+
+def orient(d, spin=0.0, width=None):
+    """Euler angles (model space = Blockbench/three.js, order ZYX) that put a box's local +Y along d,
+    its local +X along `width` (if given) and then spin it `spin` degrees about its own axis."""
+    Y = norm(d)
+    if width is not None:
+        X = sub(width, mul(Y, dot(width, Y)))
+        if length(X) < 1e-4:
+            width = None
+        else:
+            X = norm(X)
+    if width is None:
+        ref = [0, 0, 1] if abs(Y[2]) < 0.9 else [1, 0, 0]
+        X = norm(vcross(Y, ref))
+    Z = vcross(X, Y)
+    if spin:
+        c, s_ = math.cos(math.radians(spin)), math.sin(math.radians(spin))
+        X, Z = add(mul(X, c), mul(Z, -s_)), add(mul(X, s_), mul(Z, c))
+    m31, m32, m33 = X[2], Y[2], Z[2]
+    m21, m11, m12, m22 = X[1], X[0], Y[0], Y[1]
+    y = math.asin(max(-1.0, min(1.0, -m31)))
+    if abs(m31) < 0.9999999:
+        x, z = math.atan2(m32, m33), math.atan2(m21, m11)
+    else:
+        x, z = 0.0, math.atan2(-m12, m22)
+    return [round(math.degrees(x), 3), round(math.degrees(y), 3), round(math.degrees(z), 3)]
+
+
+def obox(m, bone, center, size, paint, d=(0, 1, 0), spin=0.0, width=None):
+    """A box centred on `center`, its height along d (rotation about its own centre)."""
+    frm = [center[i] - size[i] / 2 for i in range(3)]
+    rot = orient(d, spin, width)
+    if not any(abs(r) > 1e-3 for r in rot):
+        m.box(bone, frm, size, paint)
+    else:
+        m.box(bone, frm, size, paint, rot=rot, pivot=list(center))
+
+
 def spline(points, n=4):
     """Catmull-Rom curve through the control points, n samples per span."""
     if len(points) < 3:
@@ -45,6 +90,9 @@ def spline(points, n=4):
 # ------------------------------------------------------------------ paints
 def alpha(painter, a):
     """See-through version of a painter (chakra constructs)."""
+    if getattr(painter, "swatch", None):
+        return swatch(painter.swatch[0], min(a, painter.swatch[1]))
+
     def p(face, img):
         painter(face, img)
         px = img.load()
@@ -89,9 +137,27 @@ def stripes(col, every=4, axis="y"):
 FACE_TONE = {"up": 3, "north": 2, "west": 3, "east": 1, "south": 1, "down": 0}
 
 
+def swatch(base, a=255):
+    """Plain sculpt material: a flat tone per face. Cubes painted with it share a tiny colour tile on the texture
+    (per-face UVs), so a model can use hundreds of them without the texture growing."""
+    t = M.tones(base)
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        c = t[FACE_TONE[face]] + (a,)
+        for y in range(h):
+            for x in range(w):
+                px[x, y] = c
+    p.swatch = (tuple(base), a)
+    return p
+
+
 def smooth(base, details=()):
     """Sculpt material: one tone per face (lit from above-front), a faint dither, NO outline or bevel —
     so hundreds of small cubes melt into one smooth surface instead of reading as bricks."""
+    if not details:
+        return swatch(base)
     t = M.tones(base)
 
     def p(face, img):
@@ -108,12 +174,12 @@ def smooth(base, details=()):
 
 
 def chakra(col, a=200, edge=None):
-    """A chakra-construct material: smooth, translucent, a slightly brighter top."""
-    return alpha(smooth(col, [speckle(light(col, 0.25), 13)]), a)
+    """A chakra-construct material: smooth and translucent."""
+    return swatch(col, a)
 
 
 def flesh(col, vein=None):
-    return smooth(col, [speckle(dark(col, 0.85), 9)] + ([stripes(vein, 7, "x")] if vein else []))
+    return swatch(col) if not vein else smooth(col, [stripes(vein, 7, "x")])
 
 
 # ------------------------------------------------------------------ shapes
@@ -123,36 +189,37 @@ def box_at(m, bone, center, size, paint, rot=None):
     m.box(bone, frm, size, paint, rot=rot, pivot=list(center) if rot else None)
 
 
-def blob(m, bone, center, radii, paint, slices=6, axis="y", rot=None, cross=0.72):
-    """Ellipsoid from stacked slabs; every slab is two crossed boxes, so the section is an octagon.
-    `rot` turns the whole blob about its centre."""
-    cx, cy, cz = center
-    rx, ry, rz = radii
-    along = {"x": 0, "y": 1, "z": 2}[axis]
-    R = radii[along]
+def _rad(radii, v):
+    return 1.0 / math.sqrt(sum((v[i] / radii[i]) ** 2 for i in range(3)))
+
+
+AXES = {"x": [1, 0, 0], "y": [0, 1, 0], "z": [0, 0, 1]}
+
+
+def blob(m, bone, center, radii, paint, slices=6, axis="y", rot=None, cross=0.72, spins=(0, 30, 60)):
+    """Ellipsoid from stacked slices; every slice is three slabs turned 0/30/60 degrees about the axis, each sized to
+    the ellipse — a near-round 12-sided section. `axis` may be "x"/"y"/"z" or a direction vector."""
+    A = norm(AXES[axis] if isinstance(axis, str) else axis)
+    R = _rad(radii, A)
     for i in range(slices):
-        a0 = -R + 2 * R * i / slices
-        a1 = a0 + 2 * R / slices
-        am = (a0 + a1) / 2
-        k = math.sqrt(max(0.0, 1 - (am / R) ** 2))
-        k = max(k, 0.35)
-        dims = [radii[j] * k for j in range(3)]
-        dims[along] = (a1 - a0) / 2 + 0.05
-        others = [j for j in range(3) if j != along]
-        for wide in others:  # two crossed slabs
-            s = list(dims)
-            narrow = [j for j in others if j != wide][0]
-            s[narrow] *= cross
-            frm = [center[j] - s[j] for j in range(3)]
-            frm[along] = center[along] + a0
-            size = [2 * s[j] for j in range(3)]
-            size[along] = a1 - a0 + 0.1
-            m.box(bone, frm, size, paint, rot=rot, pivot=list(center) if rot else None)
+        t0 = -R + 2 * R * i / slices
+        t1 = t0 + 2 * R / slices
+        tm = (t0 + t1) / 2
+        k = max(0.3, math.sqrt(max(0.0, 1 - (tm / R) ** 2)))
+        c = add(center, mul(A, tm))
+        for sp in spins:
+            X = norm(vcross(A, [0, 0, 1] if abs(A[2]) < 0.9 else [1, 0, 0]))
+            Z = vcross(X, A)
+            cs, sn = math.cos(math.radians(sp)), math.sin(math.radians(sp))
+            Xs, Zs = add(mul(X, cs), mul(Z, -sn)), add(mul(X, sn), mul(Z, cs))
+            wx, wz = _rad(radii, Xs) * k * 0.94, _rad(radii, Zs) * k * 0.94
+            obox(m, bone, c, [2 * wx, (t1 - t0) + 0.12, 2 * wz], paint, A, sp)
 
 
-def tube(m, bone, points, radii, paints, knuckles=True, cross=0.72, flat=1.0):
-    """A tapered limb through `points` (use spline() for curves). `radii` per point; `paints` is one painter
-    or a list cycled per segment (colour bands, like an insect's segments). `flat` < 1 squashes the section."""
+def tube(m, bone, points, radii, paints, knuckles=True, cross=0.72, flat=1.0, spins=(0, 30, 60), width=None):
+    """A tapered limb through `points` (use spline() for curves). Each segment is three boxes turned about the
+    segment's own axis (a round 12-sided section); `paints` is one painter or a list cycled per segment (colour
+    bands). `flat` < 1 makes a flat ribbon (one box, its wide side along `width` if given)."""
     if not isinstance(paints, (list, tuple)):
         paints = [paints]
     for i in range(len(points) - 1):
@@ -162,15 +229,17 @@ def tube(m, bone, points, radii, paints, knuckles=True, cross=0.72, flat=1.0):
         if L < 0.05:
             continue
         r = (radii[i] + radii[i + 1]) / 2
-        rot = rot_for(d)
         p = paints[i % len(paints)]
-        ext = r * 0.35
-        start = sub(a, mul(norm(d), ext * 0.5))
-        m.box(bone, [start[0] - r, start[1], start[2] - r * cross * flat], [2 * r, L + ext, 2 * r * cross * flat], p, rot=rot, pivot=start)
-        m.box(bone, [start[0] - r * cross, start[1], start[2] - r * flat], [2 * r * cross, L + ext, 2 * r * flat], p, rot=rot, pivot=start)
-        if knuckles and 0 < i:
-            k = radii[i] * 1.12
-            box_at(m, bone, a, [k * 1.6, k * 1.6, k * 1.6 * flat], p, rot=rot)
+        ext = r * 0.45
+        c = add(a, mul(d, 0.5))
+        if flat < 0.999:
+            obox(m, bone, c, [2 * r, L + ext, max(0.25, 2 * r * flat)], p, d, 0, width)
+        else:
+            for sp in spins:
+                obox(m, bone, c, [2 * r * 0.9, L + ext, 2 * r * 0.9], p, d, sp)
+        if knuckles and 0 < i and flat >= 0.999:
+            k = radii[i] * 1.05
+            obox(m, bone, a, [2 * k * 0.9, 2 * k * 0.8, 2 * k * 0.9], p, d, 45)
 
 
 def curve_tube(m, bone, ctrl, r0, r1, paints, n=3, **kw):
@@ -180,17 +249,22 @@ def curve_tube(m, bone, ctrl, r0, r1, paints, n=3, **kw):
     return pts
 
 
-def blade(m, bone, base, direction, length_, width, thick, paint, taper=True):
-    """A flat blade / feather / plate grown from `base` along `direction`, tapering to a point."""
+def blade(m, bone, base, direction, length_, width, thick, paint, taper=True, width_dir=None):
+    """A flat blade / feather / claw grown from `base` along `direction`, its flat side spanning `width_dir`
+    (if given), tapering to a point in three steps."""
     d = norm(direction)
-    rot = rot_for(d)
     segs = 3 if taper else 1
     p = list(base)
     for i in range(segs):
         w = width * (1 - i / (segs + 0.6)) if taper else width
         L = length_ / segs
-        m.box(bone, [p[0] - w / 2, p[1], p[2] - thick / 2], [w, L + 0.2, thick], paint, rot=rot, pivot=list(p))
+        obox(m, bone, add(p, mul(d, L / 2)), [w, L + 0.2, thick], paint, d, 0, width_dir)
         p = add(p, mul(d, L))
+
+
+def plate(m, bone, center, along, across, length_, width, thick, paint):
+    """A flat panel: length along `along`, width along `across` (membranes, armour plates)."""
+    obox(m, bone, center, [width, length_, thick], paint, along, 0, across)
 
 
 def bones_from(pivots, parents):

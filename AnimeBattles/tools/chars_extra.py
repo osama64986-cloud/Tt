@@ -108,10 +108,10 @@ def arm_paint(sleeve, hand=SKIN, cuff=None, top=None, sleeve_to=0.8):
     return layered(sleeve, ex)
 
 
-def leg_paint(col, shoe, band=None, shoe_from=0.86, toes=True):
+def leg_paint(col, shoe, band=None, shoe_from=0.86, toes=True, toe=None):
     ex = [region((0, shoe_from, 1, 1), shoe)]
     if toes:
-        ex.append(region((0.15, shoe_from, 0.85, shoe_from + 0.06), SKIN, faces=("north",)))
+        ex.append(region((0.15, shoe_from, 0.85, shoe_from + 0.06), toe or SKIN, faces=("north",)))
     if band:
         ex.append(region((0, band[1], 1, band[2]), band[0]))
     return layered(col, ex)
@@ -355,6 +355,60 @@ def gold_body(m, key, iris, hair_style="war", band=True, coat=False, orbs=False)
             m.box("body", [math.cos(a) * 6.2 - 0.9, 20 + math.sin(a) * 6 - 0.9, 3.6], [1.8, 1.8, 1.8], solid((18, 16, 22)))
 
 
+def v2_fox(m, eight):
+    """Version 2: Naruto's whole body sealed inside a shroud of dark-red chakra shaped like a small fox — round head,
+    ears, white ringed eyes and a jagged white mouth, clawed hands and feet, bubbles boiling off it, four tails.
+    At eight tails the shroud turns red-orange and the fox's bones grow over him."""
+    red, deep, bub = ((112, 12, 16), (72, 6, 10), (186, 34, 26)) if not eight else ((190, 50, 26), (130, 24, 14), (240, 110, 50))
+    R, D, B = SC.swatch(red), SC.swatch(deep), SC.swatch(bub)
+    W, BONE = SC.swatch((250, 246, 236)), SC.swatch((236, 226, 208))
+    # head
+    SC.blob(m, "head", [0, 28.2, 0.1], [4.3, 4.0, 4.2], R, slices=6)
+    SC.blob(m, "head", [0, 26.7, -3.6], [2.3, 1.5, 1.9], R, slices=3, axis="z")                     # snout
+    SC.blob(m, "head", [0, 25.5, -2.4], [2.7, 0.9, 2.3], D, slices=2)                               # jaw
+    for s_ in (1, -1):
+        SC.curve_tube(m, "head", [[s_ * 2.3, 31.2, -0.2], [s_ * 3.0, 34.0, 0.2], [s_ * 3.3, 36.4, 0.9]], 1.5, 0.25, R, n=2, flat=0.45, width=[1, 0, 0])
+        SC.obox(m, "head", [s_ * 1.75, 29.1, -4.5], [2.2, 1.4, 0.8], W)                                # white, pupil-less eyes
+        SC.obox(m, "head", [s_ * 3.0, 29.6, -4.15], [1.0, 0.6, 0.8], W)                               # slanting outer corners
+    SC.obox(m, "head", [0, 25.7, -5.15], [3.6, 0.45, 0.6], W)                                         # the jagged white mouth on the snout
+    for k in range(-3, 4):
+        SC.obox(m, "head", [k * 0.5, 25.7 + (0.35 if k % 2 else -0.35), -5.2], [0.35, 0.55, 0.5], W)
+    # body
+    SC.blob(m, "body", [0, 18.6, 0.3], [4.3, 6.0, 2.9], R, slices=6)
+    SC.blob(m, "body", [0, 22.0, 0.1], [5.0, 2.3, 2.8], R, slices=3)
+    SC.tube(m, "body", [[0, 23.4, 0], [0, 25.0, -0.3]], [1.9, 1.7], R)
+    for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
+        SC.blob(m, arm, [s_ * 5.4, 21.4, 0], [2.0, 2.0, 2.0], R, slices=3)
+        SC.tube(m, arm, [[s_ * 5.7, 21.2, 0], [s_ * 6.0, 17.0, -0.2], [s_ * 6.0, 12.9, -0.6]], [1.8, 1.55, 1.3], [R, D])
+        SC.blob(m, arm, [s_ * 6.0, 11.7, -0.8], [1.5, 1.3, 1.6], R, slices=3)
+        for k in (-1, 0, 1):
+            SC.blade(m, arm, [s_ * 6.0 + k * 0.75, 10.9, -1.9], [0, -0.55, -1], 1.5, 0.45, 0.35, D)
+    for s_, leg in ((1, "rightLeg"), (-1, "leftLeg")):
+        SC.tube(m, leg, [[s_ * 2.0, 12.2, 0], [s_ * 2.1, 6.6, -0.3], [s_ * 2.1, 1.7, 0.2]], [2.0, 1.7, 1.4], [R, D])
+        SC.blob(m, leg, [s_ * 2.1, 0.85, -1.0], [1.5, 0.85, 2.3], R, slices=2)
+        for k in (-1, 0, 1):
+            SC.blade(m, leg, [s_ * 2.1 + k * 0.7, 0.6, -3.2], [0, -0.3, -1], 1.2, 0.45, 0.35, D)
+    for i in range(16):  # chakra boiling off the surface
+        a = i * 2.39996
+        y = 14 + (i * 5 % 12)
+        SC.obox(m, "body", [math.cos(a) * 4.1, y, 0.3 + math.sin(a) * 2.8], [1.1, 1.1, 1.1], B, (0, 1, 0), 45)
+    n = 8 if eight else 4
+    L = 1.25 if eight else 1.0
+    for k in range(n):  # the tails, fanned out behind him and curling up
+        a = math.radians(-60 + 120 * k / (n - 1))
+        SC.curve_tube(m, "body", [[math.sin(a) * 1.2, 12.6, 2.6], [math.sin(a) * 4 * L, 14, 6.5 * L], [math.sin(a) * 7 * L, 19 * L, 9 * L],
+                                  [math.sin(a) * 8.5 * L, 24 * L, 8 * L], [math.sin(a) * 8 * L, 27 * L, 4.5 * L]], 1.8, 0.6, [R, D], n=2)
+    if eight:  # the Nine-Tails' skeleton forming over him: skull plate, ribs, spine
+        SC.blob(m, "head", [0, 30.8, 0.4], [4.5, 1.6, 4.4], BONE, slices=2)
+        for s_ in (1, -1):
+            SC.tube(m, "head", [[s_ * 3.9, 30.2, -2.5], [s_ * 4.1, 26.5, -2.9]], [0.45, 0.35], BONE, knuckles=False)
+            for i in range(3):
+                y = 21 - i * 2.2
+                SC.curve_tube(m, "body", [[s_ * 0.6, y, -3.1], [s_ * 3.4, y - 0.3, -2.6], [s_ * 4.6, y - 0.6, 0.2]], 0.45, 0.35, BONE, n=2, knuckles=False)
+        for i in range(6):
+            SC.obox(m, "body", [0, 13 + i * 1.9, 3.4], [1.1, 1.1, 1.1], BONE, (0, 1, 0), 45)
+
+
 def naruto(m, char, form):
     kid = char == "naruto_kid"
     if char == "naruto_war" or (char == "naruto_adult" and form == "link"):
@@ -374,39 +428,27 @@ def naruto(m, char, form):
         m.box("body", [-3.4, 22.6, -2.5], [6.8, 1.8, 5.0], solid(WHITE))                                     # white collar
         naruto_hair(m, N_HAIR, "kid")
         headband(m, NAVY)
-        if form == "cloak":  # Version 1: a red, bubbling chakra skin, fox ears and one tail
+        if form == "cloak":  # Version 1: red chakra boiling over his whole body, fox ears of chakra and one tail
             red = (226, 66, 34)
-            sh = layered(red, [holes])
-            m.box("body", [-4.4, 11.6, -2.4], [8.8, 13.0, 4.8], sh)
-            both_arms(m, [3.6, 11.6, -2.4], [4.8, 12.8, 4.8], sh)
-            both_legs(m, [-0.5, -0.4, -2.4], [4.8, 12.8, 4.8], sh)
+            Rb, Rd = SC.swatch(red), SC.swatch((176, 30, 20))
+            def bubbles(bone, cx, y0, y1, rx, rz, n, seed):
+                for i in range(n):
+                    a = (i + seed) * 2.39996
+                    y = y0 + (y1 - y0) * ((i * 7 + seed) % n) / n
+                    r = 0.7 + (i % 3) * 0.3
+                    SC.obox(m, bone, [cx + math.cos(a) * rx, y, math.sin(a) * rz], [r, r, r], Rb if i % 3 else Rd, (0, 1, 0), 45 * (i % 2))
+            bubbles("body", 0, 12.5, 24, 4.5, 2.6, 26, 1)
+            for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
+                bubbles(arm, s_ * 6, 12, 23, 2.3, 2.3, 12, 3 if s_ > 0 else 5)
+            for s_, leg in ((1, "rightLeg"), (-1, "leftLeg")):
+                bubbles(leg, s_ * 2, 0.5, 12, 2.3, 2.3, 12, 7 if s_ > 0 else 9)
             for s in (1, -1):
-                m.strand([s * 2.4, 32.4, -0.5], [s * 0.3, 1, 0.1], 3.6, 2.4, solid(red), bone="hair", segs=2, thick=0.6)
+                SC.curve_tube(m, "hair", [[s * 2.4, 31.8, -0.5], [s * 3.0, 34.0, -0.3], [s * 3.3, 36.0, 0.2]], 1.3, 0.25, Rb, n=2, flat=0.45, width=[1, 0, 0])
             SC.curve_tube(m, "body", [[0, 12.6, 2.4], [0, 13.5, 6], [0, 17, 9.5], [0, 22, 10.5], [0, 26, 8.5]], 1.9, 0.7,
                           [SC.smooth(red), SC.smooth(dark(red, 0.85))], n=2)
         return
-    if char == "naruto_teen" and form in ("v2", "eight"):  # Version 2 (four tails) / the Eight-Tails' skeletal form
-        eight = form == "eight"
-        red, deep = ((150, 24, 18), (70, 6, 10)) if not eight else ((196, 52, 26), (110, 18, 12))
-        skinp = layered(red, [lambda f, px, w, h, b: [_put(px, w, h, x, y, deep) for y in range(h) for x in range(w) if (x * 5 + y * 3) % 9 == 0]])
-        base_body(m, skinp, skinp, skinp, skin_swap(head_paint(deep, (250, 246, 236), False, "naruto_v2"), deep))
-        for s_ in (1, -1):  # fox ears
-            m.strand([s_ * 2.6, 32.0, -0.5], [s_ * 0.35, 1, 0.1], 4.6 if eight else 3.6, 2.6, solid(red), bone="head", segs=2, thick=0.6)
-        n = 8 if eight else 4
-        for k in range(n):  # the tails, fanned out behind him
-            a = math.radians(-60 + 120 * k / (n - 1))
-            L = 1.25 if eight else 1.0
-            SC.curve_tube(m, "body", [[math.sin(a) * 1.2, 12.4, 2.4], [math.sin(a) * 4 * L, 14, 6.5 * L], [math.sin(a) * 7 * L, 19 * L, 9 * L],
-                                      [math.sin(a) * 8.5 * L, 24 * L, 8 * L], [math.sin(a) * 8 * L, 27 * L, 4.5 * L]], 1.8, 0.6,
-                          [SC.smooth(red), SC.smooth(deep)], n=2)
-        if eight:  # the bones of the fox growing over him: ribs, spine, skull
-            bone_c = solid((236, 226, 210))
-            for i in range(3):
-                m.box("body", [-4.8, 15.0 + i * 2.6, -2.9], [9.6, 0.8, 0.5], bone_c)
-            m.box("body", [-0.5, 12.0, 2.3], [1.0, 12.0, 0.8], bone_c)
-            m.box("head", [-4.4, 30.4, -4.6], [8.8, 1.2, 9.2], bone_c)
-            for s_ in (1, -1):
-                m.box("head", [s_ * 3.9 - 0.4, 24.4, -4.6], [0.8, 6.0, 0.5], bone_c)
+    if char == "naruto_teen" and form in ("v2", "eight"):  # Version 2 (four tails) / Eight-Tails: a fox of boiling chakra
+        v2_fox(m, form == "eight")
         return
     if char == "naruto_teen":
         sage = form == "sage"
@@ -644,7 +686,7 @@ def sasuke(m, char, form):
             torso = layered(shirt, [open_v, uchiha_crest(0.12, 0.14)] + ([zipper((120, 120, 130))] if war else []))
             arm = (layered(skin, [region((0, 0, 1, 0.3), shirt), region((0, 0.7, 1, 0.9), (60, 80, 150))]) if war
                    else layered(shirt, [region((0, 0.5, 1, 0.88), (30, 30, 36)), region((0, 0.88, 1, 1), skin)]))
-            base_body(m, torso, arm, leg_paint((40, 44, 80), BLACK), head)
+            base_body(m, torso, arm, leg_paint((40, 44, 80), BLACK, toe=skin), head)
             m.box("body", [-4.3, 22.0, -2.4], [8.6, 2.4, 4.8], layered(shirt, [uchiha_crest(0.5, 0.18)]))       # high collar
             m.box("body", [-4.6, 11.4, -2.7], [9.2, 2.0, 5.4], layered(PURPLE_ROPE, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (90, 50, 130))]))  # rope belt
             for s_ in (1, -1):  # the big rope bow at the back
@@ -831,11 +873,18 @@ def ichigo(m, form):
         m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.4, 5.2], solid(WHITE))                                       # white sash and its knot
         m.box("body", [-1.0, 8.4, -3.2], [2.0, 3.6, 0.6], solid(WHITE))
         fur = layered(FUR, [lambda f, px, w, h, b: [_put(px, w, h, x, y, dark(FUR, 0.75)) for y in range(h) for x in range(w) if (x * 5 + y * 3) % 7 == 0]])
-        m.box("body", [-5.0, 22.4, -2.9], [10.0, 2.8, 5.8], fur)                                                 # fur collar
-        for s in (1, -1):
-            m.strand([s * 3.4, 24.0, -2.4], [s * 0.6, 1, -0.4], 3.2, 2.6, fur, bone="body", segs=2, thick=0.7)
-            m.strand([s * 3.4, 24.0, 2.0], [s * 0.6, 1, 0.4], 3.2, 2.6, fur, bone="body", segs=2, thick=0.7)
-        both_arms(m, [3.3, 11.6, -2.7], [5.4, 3.4, 5.4], fur)                                                     # fur cuffs
+        F1, F2 = SC.swatch(FUR), SC.swatch(dark(FUR, 0.78))
+        for ring, (y, rx, rz, up) in enumerate(((23.0, 4.6, 3.0, 0.9), (24.2, 4.0, 2.6, 1.3))):   # the red fur ruff round his neck
+            for k in range(16):
+                a = 2 * math.pi * (k + ring * 0.5) / 16
+                base_ = [math.cos(a) * rx, y, math.sin(a) * rz]
+                SC.blade(m, "body", base_, [math.cos(a), up, math.sin(a) * 0.8], 2.6 + (k % 3) * 0.5, 1.7, 0.7, F1 if (k + ring) % 2 else F2,
+                         width_dir=[-math.sin(a), 0, math.cos(a)])
+        for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # fur cuffs at the wrists
+            for k in range(12):
+                a = 2 * math.pi * k / 12
+                base_ = [s_ * 6 + math.cos(a) * 2.2, 13.4, math.sin(a) * 2.2]
+                SC.blade(m, arm, base_, [math.cos(a), -0.35, math.sin(a)], 2.4, 1.5, 0.6, F1 if k % 2 else F2, width_dir=[-math.sin(a), 0, math.cos(a)])
         for s in (1, -1):  # horns: out from the temples, curving forward
             SC.curve_tube(m, "head", [[s * 4.0, 30.4, -1.0], [s * 7.2, 32.4, -1.6], [s * 8.4, 34.2, -4.2], [s * 7.6, 35.0, -7.4]], 1.3, 0.35,
                           [SC.smooth(MASK_W), SC.smooth(MASK_W), SC.smooth(BLACK)], n=2)
@@ -936,9 +985,11 @@ def tanjiro_demon(m, form):
     # the left sleeve is torn away: the regrown arm is bare, veined
     m.box("leftArm", [-8.1, 11.9, -2.1], [4.2, 10.4, 4.2], layered(SKIN, [lines((SIDES, [[(0.3, 0), (0.4, 1)], [(0.7, 0.2), (0.6, 1)]]), (150, 40, 60))]))
     m.box("leftArm", [-8.3, 21.6, -2.3], [4.6, 1.6, 4.6], layered(uni, [lambda f, px, w, h, b: [px.__setitem__((x, h - 1), (0, 0, 0, 0)) for x in range(0, w, 2)] if f in SIDES else None]))
-    for arm, x0 in (("rightArm", 4.0), ("leftArm", -8.0)):  # claws
+    claw = SC.swatch((44, 26, 40))
+    for arm, s_ in (("rightArm", 1), ("leftArm", -1)):  # claws curving forward from the fingertips
         for k in range(4):
-            m.box(arm, [x0 + k * 1.0 + 0.1, 11.0, -2.3], [0.6, 1.0, 0.6], solid((40, 26, 36)))
+            x = s_ * (4.6 + k * 0.95)
+            SC.tube(m, arm, [[x, 12.1, -1.6], [x, 11.2, -2.3], [x, 10.9, -3.0]], [0.32, 0.26, 0.12], claw, knuckles=False)
     for s_ in (1, -1):
         m.box("head", [s_ * 4.0 - (0.5 if s_ > 0 else 0.1), 24.6, -0.4], [0.6, 1.6, 0.8], layered(WHITE, [region((0.2, 0.3, 0.8, 0.7), (200, 40, 30))]))
     shell(m, TAN_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
@@ -1026,9 +1077,17 @@ def muzan(m, form):
     pink, bone_c, red = SC.smooth((232, 128, 150), [SC.speckle((190, 80, 104), 7)]), SC.smooth((238, 232, 220)), SC.smooth((170, 22, 34), [SC.speckle((110, 10, 20), 7)])
     for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # the arms become long spiked flesh whips
         pts = SC.curve_tube(m, arm, [[s_ * 6, 12, -0.5], [s_ * 7.5, 7, -3], [s_ * 9, 2, -1], [s_ * 11, 0.6, 4], [s_ * 13, 1.2, 9]], 1.3, 0.6, pink, n=2)
-        for i in range(1, len(pts) - 1, 2):
-            SC.blade(m, arm, pts[i], [s_ * 0.6, 0.7, -0.3], 1.8, 0.9, 0.5, bone_c)
+        for i in range(1, len(pts) - 1):  # bone spikes standing out of the whip, alternating sides
+            T = SC.norm(SC.sub(pts[i + 1], pts[i - 1]))
+            out = SC.norm(SC.vcross(T, [0, 1, 0]) if abs(T[1]) < 0.9 else SC.vcross(T, [1, 0, 0]))
+            out = SC.mul(out, 1 if i % 2 else -1)
+            SC.blade(m, arm, pts[i], SC.add(out, SC.mul(T, 0.5)), 1.6, 0.8, 0.45, bone_c, width_dir=T)
         SC.blade(m, arm, pts[-1], SC.sub(pts[-1], pts[-2]), 3.2, 1.4, 0.6, bone_c)
+    for s_, leg in ((1, "rightLeg"), (-1, "leftLeg")):  # whips sprouting from his thighs
+        for k in range(2):
+            pts = SC.curve_tube(m, leg, [[s_ * 3.6, 9 - k * 2, 0.5], [s_ * (6 + k), 6 - k, 3], [s_ * (8 + k * 2), 1.2, 6 + k * 2], [s_ * (9 + k * 2), 0.6, 11 + k]],
+                                0.7, 0.35, red, n=2)
+            SC.blade(m, leg, pts[-1], SC.sub(pts[-1], pts[-2]), 1.8, 0.9, 0.45, bone_c)
     for k in range(9):  # nine spine-like red whips from his back, tipped with bone blades
         a = math.radians(-80 + 160 * k / 8)
         ctrl = [[math.sin(a) * 1.5, 19, 2.6], [math.sin(a) * 6, 24, 7], [math.sin(a) * 11, 26 + (k % 3) * 2, 11], [math.sin(a) * 14, 22 + (k % 2) * 4, 15]]

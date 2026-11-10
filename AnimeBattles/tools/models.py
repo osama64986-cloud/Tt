@@ -696,7 +696,80 @@ def pack(cubes):
     raise RuntimeError("texture too small")
 
 
+SWATCH_FACES = ("north", "south", "east", "west", "up", "down")
+SWATCH_TONE = {"up": 2, "north": 2, "west": 2, "east": 2, "south": 2, "down": 1}   # one colour; the game's lighting shades it
+
+
 def export(m, identifier):
+    # Sculpted cubes painted with a plain swatch share one small colour tile per (colour, face) through per-face
+    # UVs, so hundreds of them cost almost no texture; everything else keeps its own box-UV area.
+    sw = [i for i, c in enumerate(m.cubes) if getattr(c["paint"], "swatch", None)]
+    if not sw:
+        return _export_box(m, identifier)
+    keys = sorted({m.cubes[i]["paint"].swatch for i in sw})
+    tile = 2
+    A, B = tile * len(SWATCH_FACES), tile * len(keys)
+    regular = [c for i, c in enumerate(m.cubes) if i not in set(sw)]
+    dummy = {"bone": "root", "frm": [0, 0, 0], "size": [A / (2 * S), B / S, 0], "rot": None, "pivot": None, "inflate": 0.0,
+             "paint": lambda face, img: None}
+    tex, uvs = pack(regular + [dummy])
+    img = Image.new("RGBA", (tex, tex), (0, 0, 0, 0))
+    for c, (u, v) in zip(regular, uvs):
+        for face, (x, y, w, h) in face_rects(u, v, c["size"]).items():
+            if w <= 0 or h <= 0:
+                continue
+            fimg = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            c["paint"](face, fimg)
+            img.paste(fimg, (x, y))
+    au, av = uvs[-1]
+    tile_at = {}
+    for r, (base, a) in enumerate(keys):
+        t = tones(base)
+        for f, face in enumerate(SWATCH_FACES):
+            x0, y0 = au + f * tile, av + r * tile
+            for yy in range(tile):
+                for xx in range(tile):
+                    img.putpixel((x0 + xx, y0 + yy), t[SWATCH_TONE[face]] + (a,))
+            tile_at[(base, a, face)] = (x0, y0)
+    bone_list = getattr(m, "bones", BONES)
+    bones = {b["name"]: dict(b, cubes=[]) for b in bone_list}
+    reg_uv = {id(c): uv for c, uv in zip(regular, uvs)}
+    for c in m.cubes:
+        fx, fy, fz = c["frm"]
+        sx, sy, sz = c["size"]
+        cube = {"origin": [round(-(fx + sx), 3), round(fy, 3), round(fz, 3)], "size": c["size"]}
+        swc = getattr(c["paint"], "swatch", None)
+        if swc:
+            cube["uv"] = {face: {"uv": [tile_at[(swc[0], swc[1], face)][0] / S, tile_at[(swc[0], swc[1], face)][1] / S],
+                                 "uv_size": [tile / S, tile / S]} for face in SWATCH_FACES}
+        else:
+            u, v = reg_uv[id(c)]
+            cube["uv"] = [u / S, v / S]
+        if c["inflate"]:
+            cube["inflate"] = c["inflate"]
+        if c["rot"]:
+            px, py, pz = c["pivot"]
+            cube["pivot"] = [round(-px, 3), py, pz]
+            rx, ry, rz = c["rot"]
+            cube["rotation"] = [round(-rx, 3), round(-ry, 3), round(rz, 3)]
+        bones[c["bone"]]["cubes"].append(cube)
+    out_bones = []
+    for b in bone_list:
+        bb = bones[b["name"]]
+        if not bb["cubes"]:
+            del bb["cubes"]
+        out_bones.append(bb)
+    geo = {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": identifier, "texture_width": tex // S, "texture_height": tex // S,
+                        "visible_bounds_width": 4, "visible_bounds_height": 4.5, "visible_bounds_offset": [0, 1.75, 0]},
+        "bones": out_bones}]}
+    head = None
+    if regular and m.cubes[0] is regular[0]:
+        head = face_rects(*uvs[0], regular[0]["size"])["north"]
+    return geo, img, head
+
+
+def _export_box(m, identifier):
     tex, uvs = pack(m.cubes)
     img = Image.new("RGBA", (tex, tex), (0, 0, 0, 0))
     for c, (u, v) in zip(m.cubes, uvs):

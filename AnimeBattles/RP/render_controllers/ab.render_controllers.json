@@ -858,8 +858,7 @@
     {
      "*": "Material.glow"
     }
-   ],
-   "ignore_lighting": true
+   ]
   },
   "controller.render.ab.summon_solid": {
    "arrays": {
