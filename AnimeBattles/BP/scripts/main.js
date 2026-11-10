@@ -845,6 +845,61 @@ const VEGETA = {
   ],
 };
 
+// Domain clash (Shinjuku): two domains opened against each other push at their boundary;
+// the stronger one holds and the other shatters.
+const activeDomains = new Map();
+function domainOpened(e) {
+  for (const [id, d] of activeDomains) if (now() > d.until || !alive(d.e)) activeDomains.delete(id);
+  for (const d of activeDomains.values()) {
+    const o = d.e;
+    if (o !== e && teamOf(o) && teamOf(o) !== teamOf(e) && V.dist(o.location, e.location) < 40) {
+      activeDomains.set(e.id, { e, until: now() + 120 });
+      domainClash(e, o);
+      return;
+    }
+  }
+  activeDomains.set(e.id, { e, until: now() + 120 });
+  counterDomain(e);
+}
+function counterDomain(e) {
+  let list = [];
+  try { list = e.dimension.getEntities({ location: e.location, maxDistance: 30, families: ["anime_fighter"] }); } catch (err) { return; }
+  for (const o of list) {
+    if (o === e || !alive(o) || o.hasTag("ab_clone") || !teamOf(o) || teamOf(o) === teamOf(e)) continue;
+    const os = state(o);
+    if (now() < os.busyUntil || Math.random() > 0.6) continue;
+    if (o.typeId === "ab:gojo" && os.energy >= 400 && now() >= os.burnoutUntil) {
+      os.energy -= 400; later(4, () => { if (alive(o)) domain(o, os); }); return;
+    }
+    if (o.typeId === "ab:sukuna") {
+      const shrine = FIGHTERS["ab:sukuna"].abilities.find((a) => a.id === "shrine");
+      if (shrine && os.energy >= shrine.cost) { os.energy -= shrine.cost; later(4, () => { if (alive(o)) shrine.run(o, os); }); return; }
+    }
+  }
+}
+function domainClash(a, b) {
+  const dim = a.dimension;
+  announce(a, "§5§lDOMAIN CLASH! §7— the two domains push against each other");
+  const winner = powerOf(a) >= powerOf(b) ? a : b;
+  const loser = winner === a ? b : a;
+  every(3, 10, (i) => {
+    if (!a.isValid || !b.isValid) return false;
+    const pa = a.location, pb = b.location;
+    const mid = V.up(V.add(pa, V.mul(V.sub(pb, pa), 0.5 + (winner === a ? 1 : -1) * i * 0.02)), 1.5);
+    fx(dim, "flash", mid, C.white, 4, 0.25);
+    fx(dim, "shock_v", mid, C.purple, 6, 0.3);
+    fx(dim, "streak", mid, i % 2 ? C.blood : C.void, 2, 0.4, { count: 12, speed: 10 });
+    shake(dim, mid, 0.4, 0.25);
+  });
+  later(32, () => {
+    if (!alive(loser)) return;
+    state(loser).domainBroken = now() + 200;
+    announce(loser, "§c§lThe domain shatters!");
+    burst(dim, V.up(loser.location, 2), C.white, 40, 6, 0.4, 0.6);
+    sound(dim, "random.glass", loser.location, 2, 0.6);
+  });
+}
+
 function domain(e, s) {
   const dim = e.dimension;
   const center = V.up(e.location, 1);
@@ -857,8 +912,9 @@ function domain(e, s) {
   later(20, () => setPose(e, 0));
   const gojoPower = powerOf(e);
   const team = teamOf(e);
+  domainOpened(e);
   every(4, 30, (i) => {
-    if (!e.isValid) return false;
+    if (!e.isValid || (state(e).domainBroken ?? 0) > now()) return false;
     sphereFx(dim, center, R, C.void, 40, 1.6, "orb_solid", 0.5);
     sphereFx(dim, center, R * 0.85, C.white, 12, 0.2, "orb", 0.6);
     if (i % 5 === 0) {
@@ -1349,8 +1405,9 @@ const SUKUNA = {
       sound(dim, "mob.warden.sonic_boom", center, 2, 0.4);
       fx(dim, "shock", e.location, C.blood, R * 2.4, 1.4);
       shake(dim, center, 0.5, 1);
+      domainOpened(e);
       every(3, 40, (i) => {
-        if (!e.isValid) return false;
+        if (!e.isValid || (state(e).domainBroken ?? 0) > now()) return false;
         sphereFx(dim, center, R, C.blood, 16, 1.6, "orb_solid", 0.5);
         for (let k = 0; k < 2; k++) {
           const p = V.add(center, { x: (Math.random() - 0.5) * R * 1.6, y: Math.random() * 3 - 0.5, z: (Math.random() - 0.5) * R * 1.6 });
