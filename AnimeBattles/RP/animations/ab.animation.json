@@ -2381,6 +2381,192 @@
      ]
     }
    }
+  },
+  "animation.ab.summon_base": {
+   "loop": true,
+   "bones": {
+    "root": {
+     "scale": [
+      "query.property('ab:size')",
+      "query.property('ab:size')",
+      "query.property('ab:size')"
+     ]
+    },
+    "body": {
+     "position": [
+      0,
+      "math.sin(query.life_time * 120.0) * 0.6",
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_wings": {
+   "loop": true,
+   "bones": {
+    "rightWing": {
+     "rotation": [
+      0,
+      "-10 + math.sin(query.life_time * 160.0) * 12",
+      "math.sin(query.life_time * 160.0) * 6"
+     ]
+    },
+    "leftWing": {
+     "rotation": [
+      0,
+      "10 - math.sin(query.life_time * 160.0) * 12",
+      "-math.sin(query.life_time * 160.0) * 6"
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_tails": {
+   "loop": true,
+   "bones": {
+    "tails": {
+     "rotation": [
+      "math.sin(query.life_time * 140.0) * 8",
+      "math.sin(query.life_time * 90.0) * 14",
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_swing": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.6,
+   "bones": {
+    "rightArm": {
+     "rotation": {
+      "0.0": [
+       -150,
+       0,
+       0
+      ],
+      "0.3": [
+       -170,
+       0,
+       0
+      ],
+      "0.45": [
+       20,
+       0,
+       0
+      ],
+      "0.6": [
+       10,
+       0,
+       0
+      ]
+     }
+    },
+    "body": {
+     "rotation": {
+      "0.0": [
+       -8,
+       0,
+       0
+      ],
+      "0.45": [
+       12,
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "animation.ab.summon_aim": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.4,
+   "bones": {
+    "head": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.4": [
+       -25,
+       0,
+       0
+      ]
+     }
+    },
+    "rightArm": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.4": [
+       -85,
+       0,
+       0
+      ]
+     }
+    },
+    "leftArm": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.4": [
+       -85,
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "animation.ab.summon_leap": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.8,
+   "bones": {
+    "body": {
+     "position": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.35": [
+       0,
+       14,
+       0
+      ],
+      "0.7": [
+       0,
+       0,
+       0
+      ]
+     }
+    },
+    "head": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.35": [
+       -15,
+       0,
+       0
+      ],
+      "0.7": [
+       5,
+       0,
+       0
+      ]
+     }
+    }
+   }
   }
  }
 }

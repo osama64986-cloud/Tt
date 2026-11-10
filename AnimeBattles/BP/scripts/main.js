@@ -13,7 +13,7 @@ const UNBREAKABLE = new Set([
   "minecraft:repeating_command_block", "minecraft:structure_block", "minecraft:jigsaw", "minecraft:end_portal_frame",
   "minecraft:end_portal", "minecraft:portal", "minecraft:light_block", "minecraft:allow", "minecraft:deny", "minecraft:border_block",
 ]);
-const IGNORE_TYPES = new Set(["ab:vfx", "minecraft:item", "minecraft:xp_orb", "minecraft:arrow", "minecraft:armor_stand", "minecraft:painting",
+const IGNORE_TYPES = new Set(["ab:vfx", "ab:summon", "minecraft:item", "minecraft:xp_orb", "minecraft:arrow", "minecraft:armor_stand", "minecraft:painting",
   "minecraft:leash_knot", "minecraft:fishing_hook", "minecraft:falling_block", "minecraft:tnt", "minecraft:boat", "minecraft:minecart"]);
 
 function setting(key, fallback) {
@@ -117,6 +117,31 @@ function killVfx(v) { try { if (v && v.isValid) { vfxAlive.delete(v.id); v.remov
 function fadeVfx(v, from, ticks = 5) {
   every(1, ticks, (i) => { vset(v, "ab:size", from * (1 - (i + 1) / ticks)); if (i === ticks - 1) killVfx(v); });
 }
+// Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
+// act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
+const SUMMON_COLOR = [C.purple, C.gold, C.white];
+function summonGiant(e, kind, t, o = {}) {
+  try {
+    const dim = e.dimension;
+    let dir = alive(t) ? V.sub(t.location, e.location) : e.getViewDirection();
+    dir = V.norm({ x: dir.x, y: 0, z: dir.z });
+    const at = o.at ?? V.add(e.location, V.mul(dir, -(o.behind ?? 2.5)));
+    const v = dim.spawnEntity("ab:summon", at);
+    try { v.teleport(at, { facingLocation: V.add(at, V.mul(dir, 10)) }); } catch (err) { /* ignore */ }
+    v.setProperty("ab:kind", kind);
+    v.setProperty("ab:size", 0);
+    const life = o.life ?? 60, size = o.size ?? 3;
+    vfxAlive.set(v.id, now() + life + 30);
+    every(1, 8, (i) => vset(v, "ab:size", (size * (i + 1)) / 8));
+    fx(dim, "aura", V.up(at, 3), SUMMON_COLOR[kind], 4.5, 1.1, { count: 50 * fxLevel(), speed: 3 });
+    burst(dim, V.up(at, 2), SUMMON_COLOR[kind], 30, 5, 0.5, 0.7);
+    if (o.pose) later(o.poseAt ?? 0, () => vset(v, "ab:pose", o.pose));
+    later(life, () => fadeVfx(v, size, 8));
+    return v;
+  } catch (err) { warn("summon", err); return undefined; }
+}
+const perfectSusanoo = (e) => (e.typeId === "ab:sasuke_war" && formOf(e) >= 1) || (e.typeId === "ab:sasuke_adult" && formOf(e) === 1);
+const kuramaAvatar = (e) => (e.typeId === "ab:naruto_war" && formOf(e) >= 1) || (e.typeId === "ab:naruto_adult" && formOf(e) === 2);
 function shake(dim, loc, power = 0.25, secs = 0.3) {
   try { dim.runCommand(`camerashake add @a[x=${Math.floor(loc.x)},y=${Math.floor(loc.y)},z=${Math.floor(loc.z)},r=14] ${power} ${secs} positional`); } catch (e) { /* ignore */ }
 }
@@ -1850,6 +1875,7 @@ function rasengan(e, s, t, o) {
 }
 function rasenshuriken(e, s, t, o) {
   busy(s, 34); announce(e, o.say); setPose(e, 23); slow(e, 30, 6);
+  if (o.color === C.hakai && kuramaAvatar(e)) summonGiant(e, 1, t, { size: 2.8, behind: 3.5, life: 36, pose: 2, poseAt: 4 });
   const dim = e.dimension;
   const orb = spawnVfx(dim, 1, V.up(e.location, 3.3), { slot: 10, size: 0.3, life: 40 });
   every(1, 18, (i) => {
@@ -1926,6 +1952,7 @@ const summonToad = (cond) => ({ id: "gamabunta", label: "Summoning: Gamabunta", 
       if (!e.isValid) return;
       const c = alive(t) ? t.location : e.location;
       fx(dim, "aura", V.up(c, 2), C.white, 5, 1.2, { count: 60 * fxLevel(), speed: 3 });   // the summoning smoke
+      summonGiant(e, 2, t, { at: V.add(c, V.mul(V.norm(V.sub(e.location, c)), 1.5)), size: 2.4, life: 40, pose: 3 });
       later(6, () => {
         if (!e.isValid) return;
         fx(dim, "shock", c, { red: 0.55, green: 0.25, blue: 0.15 }, 10, 0.6);
@@ -1956,7 +1983,10 @@ const rasenRendan = (cond, o = {}) => ({ id: "rendan2", label: o.label ?? "Rasen
     });
   } });
 const kuramaBomb = (cond, o = {}) => ({ id: o.id ?? "bijuu", label: o.label ?? "Tailed Beast Bomb", cd: o.cd ?? 520, cost: o.cost ?? 380, min: 0, max: 45, weight: o.weight ?? 5, cond,
-  run(e, s, t) { bijuudama(e, s, t, { size: o.size ?? 3, radius: o.radius ?? 7, dmg: o.dmg ?? 150 }); } });
+  run(e, s, t) {
+    if (kuramaAvatar(e)) { summonGiant(e, 1, t, { size: 2.8, behind: 3.5, life: 46, pose: 2, poseAt: 4 }); announce(e, "§6§lKurama! §7— the giant fox rises behind him"); }
+    bijuudama(e, s, t, { size: o.size ?? 3, radius: o.radius ?? 7, dmg: o.dmg ?? 150 });
+  } });
 const sixPathsHeal = (cond) => ({ id: "yang", label: "Six Paths: Yang Power", cd: 700, cost: 200, min: 0, max: 60, weight: 8, cond: (e, s, c) => cond(e) && c.hp < 0.45,
   run(e, s) {
     busy(s, 14); setPose(e, 35); announce(e, "§e§lSix Paths Yang Power! §7— the life force mends his wounds");
@@ -2310,6 +2340,7 @@ const SAS = {
   arrow: (o = {}) => ({ id: "arrow", label: "Susanoo Arrow", cd: 260, cost: 200, min: 0, max: 45, weight: 4, cond: o.cond,
     run(e, s, t) {
       busy(s, 20); face(e, aim(t)); setPose(e, 20); announce(e, o.say ?? "§5§lSusanoo: Arrow!");
+      if (perfectSusanoo(e)) summonGiant(e, 0, t, { size: 3.2, life: 26, pose: 2 });
       later(10, () => {
         if (!e.isValid) return;
         const { pos } = handPos(e, alive(t) ? t : e);
@@ -2322,6 +2353,7 @@ const SAS = {
   susSword: (o = {}) => ({ id: "susSword", label: "Susanoo Sword", cd: 240, cost: 180, min: 0, max: 30, weight: 5, cond: o.cond,
     run(e, s, t) {
       busy(s, 20); setPose(e, 23); announce(e, "§5§lSusanoo! §7— the great blade comes down");
+      if (perfectSusanoo(e)) summonGiant(e, 0, t, { size: 3.2, life: 30, pose: 1, poseAt: 6 });
       later(8, () => {
         if (!e.isValid) return;
         setPose(e, 19);
@@ -2333,6 +2365,7 @@ const SAS = {
   indra: () => ({ id: "indra", label: "Indra's Arrow", cd: 1000, cost: 700, min: 0, max: 50, weight: 8, cond: G(2),
     run(e, s, t) {
       busy(s, 44); setPose(e, 20); face(e, aim(t)); announce(e, "§5§lIndra's Arrow! §7— the chakra of all nine tailed beasts in one shot");
+      summonGiant(e, 0, t, { size: 3.6, life: 44, pose: 2 });
       const dim = e.dimension;
       chargeOrb(e, t, 22, C.purple, 0.5, 2.6, 20);
       every(2, 11, () => { if (e.isValid) { fx(dim, "streak", V.up(e.location, 1.5), C.kameBlue, 2, 0.3, { count: 8, speed: 10 }); fx(dim, "aura", e.location, C.purple, 2.2, 0.8, { count: 16, speed: 3 }); } });
@@ -3164,7 +3197,7 @@ system.runInterval(() => {
     }
     if (tick % 20 === 0) {
       let vs = [];
-      try { vs = dim.getEntities({ type: "ab:vfx" }); } catch (e) { /* ignore */ }
+      try { vs = [...dim.getEntities({ type: "ab:vfx" }), ...dim.getEntities({ type: "ab:summon" })]; } catch (e) { /* ignore */ }
       for (const v of vs) { const exp = vfxAlive.get(v.id); if (exp === undefined || exp < tick) { vfxAlive.delete(v.id); try { v.remove(); } catch (e) { /* ignore */ } } }
     }
     if (tick % 10 === 0) {

@@ -764,6 +764,61 @@
     "Array.c[query.property('ab:color')]"
    ],
    "ignore_lighting": true
+  },
+  "controller.render.ab.summon_glow": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.susanoo",
+      "Texture.kurama",
+      "Texture.gamabunta"
+     ]
+    },
+    "geometries": {
+     "Array.g": [
+      "Geometry.susanoo",
+      "Geometry.kurama",
+      "Geometry.gamabunta"
+     ]
+    }
+   },
+   "geometry": "Array.g[query.property('ab:kind')]",
+   "textures": [
+    "Array.t[query.property('ab:kind')]"
+   ],
+   "materials": [
+    {
+     "*": "Material.glow"
+    }
+   ],
+   "ignore_lighting": true
+  },
+  "controller.render.ab.summon_solid": {
+   "arrays": {
+    "textures": {
+     "Array.t": [
+      "Texture.susanoo",
+      "Texture.kurama",
+      "Texture.gamabunta"
+     ]
+    },
+    "geometries": {
+     "Array.g": [
+      "Geometry.susanoo",
+      "Geometry.kurama",
+      "Geometry.gamabunta"
+     ]
+    }
+   },
+   "geometry": "Array.g[query.property('ab:kind')]",
+   "textures": [
+    "Array.t[query.property('ab:kind')]"
+   ],
+   "materials": [
+    {
+     "*": "Material.solid"
+    }
+   ]
   }
  }
 }

@@ -825,6 +825,102 @@ def build_vfx():
     json.dump(an, open(an_path, "w"), indent=1)
 
 
+def build_summons():
+    """ab:summon — Perfect Susanoo (0), Kurama avatar (1), Gamabunta (2): built small, grown in game by ab:size."""
+    import models
+    import summons
+    tdir = os.path.join(RP, "textures", "entity", "summon")
+    os.makedirs(tdir, exist_ok=True)
+    names = [n for n, _ in summons.SUMMONS]
+    for name, fn in summons.SUMMONS:
+        old = models.S
+        models.S = 2
+        try:
+            geo, img, _ = models.export(fn(), f"geometry.ab.summon_{name}")
+        finally:
+            models.S = old
+        d = geo["minecraft:geometry"][0]["description"]
+        d.update({"visible_bounds_width": 12, "visible_bounds_height": 12, "visible_bounds_offset": [0, 4, 0]})
+        with open(os.path.join(RP, "models", "entity", f"summon_{name}.geo.json"), "w") as f:
+            json.dump(geo, f, indent=1)
+        img.save(os.path.join(tdir, f"{name}.png"))
+    bp = {
+        "format_version": "1.21.60",
+        "minecraft:entity": {
+            "description": {
+                "identifier": "ab:summon", "is_spawnable": False, "is_summonable": True,
+                "properties": {
+                    "ab:kind": {"type": "int", "range": [0, len(names) - 1], "default": 0, "client_sync": True},
+                    "ab:size": {"type": "float", "range": [0, 8], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
+                },
+            },
+            "components": {
+                "minecraft:type_family": {"family": ["ab_vfx", "inanimate"]},
+                "minecraft:collision_box": {"width": 0.01, "height": 0.01},
+                "minecraft:physics": {"has_gravity": False, "has_collision": False},
+                "minecraft:pushable": {"is_pushable": False, "is_pushable_by_piston": False},
+                "minecraft:damage_sensor": {"triggers": [{"cause": "all", "deals_damage": "no"}]},
+                "minecraft:health": {"value": 1, "max": 1},
+                "minecraft:knockback_resistance": {"value": 1},
+                "minecraft:fire_immune": True,
+            },
+        },
+    }
+    with open(os.path.join(BP, "entities", "summon.json"), "w") as f:
+        json.dump(bp, f, indent=1)
+    K = "query.property('ab:kind')"
+    client = {
+        "format_version": "1.10.0",
+        "minecraft:client_entity": {
+            "description": {
+                "identifier": "ab:summon",
+                "materials": {"glow": "entity_alphablend", "solid": "entity_alphatest"},
+                "textures": {n: f"textures/entity/summon/{n}" for n in names},
+                "geometry": {n: f"geometry.ab.summon_{n}" for n in names},
+                "animations": {"base": "animation.ab.summon_base", "wings": "animation.ab.summon_wings", "tails": "animation.ab.summon_tails",
+                               "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap"},
+                "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"},
+                                        {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
+                                        {"leap": "query.property('ab:pose') == 3"}]},
+                "render_controllers": [{"controller.render.ab.summon_glow": f"{K} != 2"}, {"controller.render.ab.summon_solid": f"{K} == 2"}],
+            }
+        },
+    }
+    with open(os.path.join(RP, "entity", "summon.entity.json"), "w") as f:
+        json.dump(client, f, indent=1)
+    rc_path = os.path.join(RP, "render_controllers", "ab.render_controllers.json")
+    rc = json.load(open(rc_path))
+    for key, mat in (("glow", "Material.glow"), ("solid", "Material.solid")):
+        rc["render_controllers"][f"controller.render.ab.summon_{key}"] = {
+            "arrays": {"textures": {"Array.t": [f"Texture.{n}" for n in names]}, "geometries": {"Array.g": [f"Geometry.{n}" for n in names]}},
+            "geometry": f"Array.g[{K}]", "textures": [f"Array.t[{K}]"], "materials": [{"*": mat}],
+            **({"ignore_lighting": True} if key == "glow" else {}),
+        }
+    json.dump(rc, open(rc_path, "w"), indent=1)
+    an_path = os.path.join(RP, "animations", "ab.animation.json")
+    an = json.load(open(an_path))
+    W = "query.property('ab:size')"
+    an["animations"]["animation.ab.summon_base"] = {"loop": True, "bones": {
+        "root": {"scale": [W, W, W]},
+        "body": {"position": [0, "math.sin(query.life_time * 120.0) * 0.6", 0]}}}
+    an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
+        "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
+        "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}
+    an["animations"]["animation.ab.summon_tails"] = {"loop": True, "bones": {
+        "tails": {"rotation": ["math.sin(query.life_time * 140.0) * 8", "math.sin(query.life_time * 90.0) * 14", 0]}}}
+    an["animations"]["animation.ab.summon_swing"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {
+        "rightArm": {"rotation": {"0.0": [-150, 0, 0], "0.3": [-170, 0, 0], "0.45": [20, 0, 0], "0.6": [10, 0, 0]}},
+        "body": {"rotation": {"0.0": [-8, 0, 0], "0.45": [12, 0, 0]}}}}
+    an["animations"]["animation.ab.summon_aim"] = {"loop": "hold_on_last_frame", "animation_length": 0.4, "bones": {
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.4": [-25, 0, 0]}},
+        "rightArm": {"rotation": {"0.0": [0, 0, 0], "0.4": [-85, 0, 0]}}, "leftArm": {"rotation": {"0.0": [0, 0, 0], "0.4": [-85, 0, 0]}}}}
+    an["animations"]["animation.ab.summon_leap"] = {"loop": "hold_on_last_frame", "animation_length": 0.8, "bones": {
+        "body": {"position": {"0.0": [0, 0, 0], "0.35": [0, 14, 0], "0.7": [0, 0, 0]}},
+        "head": {"rotation": {"0.0": [0, 0, 0], "0.35": [-15, 0, 0], "0.7": [5, 0, 0]}}}}
+    json.dump(an, open(an_path, "w"), indent=1)
+
+
 def build_egg_icons():
     """Spawn eggs show the fighter's own face (32x32) in a coloured frame."""
     import models
@@ -861,6 +957,7 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     HEADS.update(build_characters())
     build_vfx()
+    build_summons()
     build_icons()
     build_egg_icons()
     validate_json()
