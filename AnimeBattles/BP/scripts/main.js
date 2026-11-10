@@ -994,7 +994,7 @@ function slashMarks(e, t, color, n, dmg) {
   });
 }
 function conqueror(e, s) {
-  busy(s, 16); setPose(e, 3);
+  busy(s, 16); setPose(e, 22);  // haki pouring out: fists clenched, braced
   const dim = e.dimension, c = V.up(e.location, 1);
   announce(e, "§4§lConqueror's Haki!");
   fx(dim, "shock", e.location, C.haki, 18, 0.8);
