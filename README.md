@@ -21,6 +21,7 @@ scratch with depth and shine (Vibrant Visuals / PBR) and livelier player motion.
 | **العمق واللمعان** | لكل بلوكة خريطة ارتفاع + خريطة MERS (معدن/توهج/خشونة/نفاذ ضوء) |
 | **التنويعات** | الحجر، الكوبلستون، التراب، الرمل، الحصى، وطوب الحجر تظهر بأشكال متعددة عشوائياً |
 | **الوميض** | الألماس، الزمرد، الذهب، الريدستون، واللازورد تلمع بحركة |
+| **جو العالم** | ضبابية خفيفة في الأفق (وضباب أرضي رقيق مع Vibrant Visuals)، وعشب وأوراق بألوان أفقع |
 | **الأنيميشن** | مشي، ركض (ميلان للأمام)، قفز وسقوط، تنفّس عند الوقوف، ضربة، تسلّل، سباحة، ومنظور الشخص الأول |
 
 ## كيف صُنعت — How it is made
@@ -34,6 +35,7 @@ any other pack. Only colour references (so blocks stay recognisable and biome
 tinting keeps working) come from Mojang's public creator samples.
 
 ```bash
+python3 tools/make_world.py <vanilla resource_pack>   # haze + vivid biome colours -> pack_src (already committed)
 python3 tools/make_animations.py     # player animations -> pack_src/animations
 python3 tools/check_animations.py    # numeric sanity check of every expression
 python3 tools/build.py --preview     # pack/ , dist/Nabd.mcpack , preview/*.png

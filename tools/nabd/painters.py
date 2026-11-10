@@ -37,21 +37,19 @@ def _speckle(r, density, w=N, h=N):
 # ------------------------------------------------------------------------- rock
 def rock(name, ramp, style="smooth", rough=195, cracks=3, speck=None, speck_ramp=None, bump=1.0,
          seed=None):
-    """Natural rock, v2: a flat mid tone carrying soft strokes one step lighter
-    or darker.  Calm on purpose - the eye should read the material, not noise."""
+    """Natural rock, v3 (cartoon): flat mid tone, soft strokes one step lighter
+    or darker, and every dark stroke gets a lit lip underneath so the surface
+    reads as carved rather than printed."""
     r = rng_of(seed or name)
     mid = len(ramp) // 2
     idx = np.full((N, N), mid)
     hgt = np.full((N, N), 0.5)
     if style == "smooth":            # stone: scattered horizontal lenses
-        dashes(r, idx, hgt, 7, mid - 1, (3, 7), lift=-0.12)
-        dashes(r, idx, hgt, 6, mid + 1, (3, 6), lift=0.12)
+        dashes(r, idx, hgt, 6, mid - 1, (3, 7), lift=-0.14)
     elif style == "strata":          # deepslate, tuff, sandstone: long layers
-        dashes(r, idx, hgt, 9, mid - 1, (5, 11), thick=0.5, lift=-0.14, wobble=0.15)
-        dashes(r, idx, hgt, 7, mid + 1, (4, 9), thick=0.3, lift=0.14, wobble=0.15)
+        dashes(r, idx, hgt, 8, mid - 1, (5, 11), thick=0.5, lift=-0.16, wobble=0.15)
     elif style == "pillars":         # basalt, dripstone: vertical flow
-        dashes(r, idx, hgt, 9, mid - 1, (5, 11), thick=0.5, vertical=True, lift=-0.14, wobble=0.15)
-        dashes(r, idx, hgt, 7, mid + 1, (4, 9), thick=0.3, vertical=True, lift=0.14, wobble=0.15)
+        dashes(r, idx, hgt, 8, mid - 1, (5, 11), thick=0.5, vertical=True, lift=-0.16, wobble=0.15)
     elif style == "grain":           # granite & friends: soft blotches
         g = fbm(r, ((3, 1.0), (5, 0.6)))
         idx = np.where(g > 0.64, mid + 1, np.where(g < 0.36, mid - 1, mid))
@@ -70,7 +68,13 @@ def rock(name, ramp, style="smooth", rough=195, cracks=3, speck=None, speck_ramp
                         hgt[(y + 1) % N, x] -= 0.1
     else:
         raise ValueError(style)
-    if cracks:                       # short hairline cracks, one step darker than the dark strokes
+    if style in ("smooth", "strata", "pillars"):
+        dark = idx == mid - 1
+        ax = 1 if style == "pillars" else 0
+        lip = np.roll(dark, 1, ax) & ~dark                   # lit edge just past each groove
+        idx = np.where(lip, mid + 1, idx)
+        hgt = np.where(lip, np.minimum(1, hgt + 0.14), hgt)
+    if cracks:
         crack = _strokes(r, cracks, (2, 4))
         idx = np.where(crack, max(0, mid - 2), idx)
         hgt = np.where(crack, 0.2, hgt)
@@ -78,7 +82,7 @@ def rock(name, ramp, style="smooth", rough=195, cracks=3, speck=None, speck_ramp
     if speck:
         sp = _speckle(r, speck)
         sr = [mix(c, ramp[mid], 0.5) for c in speck_ramp] if speck_ramp else \
-             [ramp[max(0, mid - 1)], ramp[min(len(ramp) - 1, mid + 1)]]    # grains stay close to the body tone
+             [ramp[max(0, mid - 1)], ramp[min(len(ramp) - 1, mid + 1)]]
         pick = r.integers(0, len(sr), (N, N))
         rgb = np.where(sp[..., None], np.array(sr, np.uint8)[pick], rgb)
         hgt = np.where(sp, np.clip(hgt + 0.08, 0, 1), hgt)
@@ -87,24 +91,24 @@ def rock(name, ramp, style="smooth", rough=195, cracks=3, speck=None, speck_ramp
 
 def cells(name, ramp, count=8, gap=None, rough=200, vary=0.28, dome=0.55, bump=1.25, tints=None,
           seed=None, moss=None):
-    """Cobble / gravel / nuggets, v2: flat-toned stones with a one-step rim
-    light on the top-left and soft seams (never black)."""
+    """Cobble / gravel / nuggets, v3 (cartoon): flat-toned rounded stones, a
+    bright rim on the top-left, a shaded rim on the bottom-right and clean
+    dark seams."""
     r = rng_of(seed or name)
     ids, f1, f2, pts = voronoi(r, count)
     edge = cell_edges(ids)
     nc = len(pts)
     n = len(ramp)
-    lo, hi = 2, n - 2                                   # stone body tones
+    lo, hi = 2, n - 3 if n >= 6 else n - 2
     tone_of = r.integers(lo, hi + 1, nc)
-    if vary < 0.25:
-        tone_of = np.clip(tone_of, lo, max(lo, hi - 1))
     idx = tone_of[ids]
-    rim = (ids != np.roll(ids, 1, 1)) | (ids != np.roll(ids, 1, 0))   # top / left border of each stone
+    rim = (ids != np.roll(ids, 1, 1)) | (ids != np.roll(ids, 1, 0))          # lit side
+    shade = np.roll(edge, 1, 0) | np.roll(edge, 1, 1)                        # just inside the seam
+    idx = np.where(shade & ~edge & ~rim, np.maximum(idx - 1, 1), idx)
     idx = np.where(rim & ~edge, np.minimum(idx + 1, n - 1), idx)
-    idx = np.where(edge, 1 if count < 14 else 0, idx)
-    idx = np.where(edge & (np.roll(edge, 1, 0) | np.roll(edge, 1, 1)) & (r.random((N, N)) < 0.5), 0, idx)
+    idx = np.where(edge, 0, idx)
     d = norm01(f2 - f1)
-    hgt = np.where(edge, 0.12, np.clip(0.5 + dome * 0.5 * np.sqrt(d) + (tone_of[ids] - lo) * 0.05, 0, 1))
+    hgt = np.where(edge, 0.1, np.clip(0.5 + dome * 0.5 * np.sqrt(d) + (tone_of[ids] - lo) * 0.05, 0, 1))
     rgb = paint_idx(idx, ramp)
     if tints:
         which = r.integers(0, len(tints) + 1, nc)
@@ -217,47 +221,52 @@ def slab_face(name, ramp, border=1, rough=150, bump=0.9, inset=None, vary=0.1, s
 # ------------------------------------------------------------------------- soil
 def soil(name, ramp, pebbles=5, pebble_ramp=None, rough=215, clump=((3, 1.0), (6, 0.8), (12, 0.4)),
          bump=1.0, seed=None, dither=0.7):
-    """Earth, v2: big soft clods drawn with broken one-step outlines, a few
-    lighter crumbs and the odd pebble."""
+    """Earth, v3 (cartoon): chunky rounded clods with a clear dark outline on
+    the shadow side, a soft highlight tick on the lit side, and a few pebbles."""
     r = rng_of(seed or name)
     mid = len(ramp) // 2
-    ids, f1, f2, pts = voronoi(r, 7)
-    edge = cell_edges(ids) & (fbm(r, ((4, 1.0),)) > 0.3)      # outlines fade in and out
+    ids, f1, f2, pts = voronoi(r, 6)
+    edge = cell_edges(ids)
+    keep = fbm(r, ((3, 1.0),)) > 0.22                         # outlines break here and there
     idx = np.full((N, N), mid)
-    patch = fbm(r, clump[:2])
-    idx = np.where(patch > 0.68, mid + 1, idx)
-    idx = np.where(edge, mid - 1, idx)
-    hgt = np.where(edge, 0.3, 0.5 + (patch - 0.5) * 0.3)
-    deep = edge & (r.random((N, N)) < 0.18)
-    idx = np.where(deep, max(0, mid - 2), idx)
+    tone_of = r.integers(0, 3, len(pts))                      # some clods a step lighter
+    idx = np.where(tone_of[ids] == 2, mid + 1, idx)
+    rim = (ids != np.roll(ids, 1, 1)) | (ids != np.roll(ids, 1, 0))
+    lit = rim & ~edge & (r.random((N, N)) < 0.45)
+    idx = np.where(lit, np.minimum(idx + 1, len(ramp) - 1), idx)
+    idx = np.where(edge & keep, mid - 1, idx)
+    corner = edge & keep & np.roll(edge, 1, 0) & np.roll(edge, 1, 1)
+    idx = np.where(corner, max(0, mid - 2), idx)
+    d = norm01(f2 - f1)
+    hgt = np.where(edge & keep, 0.25, 0.5 + 0.3 * np.sqrt(d))
     rgb = paint_idx(idx, ramp)
     pr = pebble_ramp or ramp
     for _ in range(pebbles):
         x, y = int(r.integers(N)), int(r.integers(N))
-        rgb[y, x] = pr[-2]
-        hgt[y, x] = 0.9
-        if r.random() < 0.5:
-            rgb[y, (x + 1) % N] = pr[len(pr) // 2]
-            hgt[y, (x + 1) % N] = 0.85
+        rgb[y, x] = pr[-1]
+        hgt[y, x] = 0.95
+        rgb[y, (x + 1) % N] = pr[len(pr) // 2]
+        hgt[y, (x + 1) % N] = 0.9
         rgb[(y + 1) % N, x] = ramp[max(0, mid - 2)]
+        rgb[(y + 1) % N, (x + 1) % N] = ramp[max(0, mid - 2)]
     return Tex(rgb, np.clip(hgt, 0, 1), rough=rough, bump=bump)
 
 
 def turf(name, ramp, rough=225, sss=0, blades=26, seed=None, bump=0.9):
-    """Lawn seen from above, v2: soft two-tone mottling with little upright
-    blade ticks (light tip, dark root)."""
+    """Lawn seen from above, v3 (cartoon): big soft two-tone patches and
+    little v-shaped tufts with a bright tip."""
     r = rng_of(seed or name)
     mid = len(ramp) // 2
-    g = fbm(r, ((3, 1.0), (6, 0.5)))
-    idx = np.where(g > 0.6, mid + 1, np.where(g < 0.34, mid - 1, mid))
+    top = len(ramp) - 1
+    g = fbm(r, ((2, 1.0), (4, 0.6)))
+    idx = np.where(g > 0.58, mid + 1, mid)
     hgt = 0.35 + g * 0.25
-    for _ in range(blades):
+    for _ in range(max(6, blades // 3)):
         x, y = int(r.integers(N)), int(r.integers(N))
-        idx[y, x] = min(len(ramp) - 1, mid + 2 if r.random() < 0.45 else mid + 1)
-        hgt[y, x] = 0.85
-        idx[(y + 1) % N, x] = mid - 1 if r.random() < 0.7 else max(0, mid - 2)
-        hgt[(y + 1) % N, x] = 0.3
-    return Tex(paint_idx(idx, ramp), hgt, rough=rough, sss=sss, bump=bump)
+        for dx, dy, tone in ((0, 0, top), (-1, 1, mid + 1), (1, 1, mid + 1), (0, 1, mid - 1), (0, 2, mid - 1)):
+            idx[(y + dy) % N, (x + dx) % N] = min(top, max(0, tone))
+            hgt[(y + dy) % N, (x + dx) % N] = 0.4 + 0.12 * tone
+    return Tex(paint_idx(np.clip(idx, 0, top), ramp), hgt, rough=rough, sss=sss, bump=bump)
 
 
 def fringe_mask(name, depth=3, extra=2, seed=None):

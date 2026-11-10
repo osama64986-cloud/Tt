@@ -151,16 +151,17 @@ def _toward(h, target, amt):
     return (h + d * amt) % 1.0
 
 
-def make_ramp(base, steps=5, contrast=0.30, warm=0.10, grey=False, sat=1.22):
-    """Our house ramp (v2): calm value steps, rich colour, almost no hue drift.
-    `base` is the middle tone.  Shadows gain a little saturation, lights lose a
-    little, and the whole material is a touch more saturated than its base.
-    With grey=True hue and saturation are untouched (biome-tinted textures)."""
+def make_ramp(base, steps=5, contrast=0.30, warm=0.10, grey=False, sat=1.5, lift=0.05):
+    """Our house ramp (v3, "cheerful"): calm value steps, bright punchy colour.
+    `base` is the middle tone.  Muted colours are enriched the most, the whole
+    material is lifted a little, shadows stay colourful instead of going grey.
+    With grey=True nothing but value changes (biome-tinted textures)."""
     h, s, v = colorsys.rgb_to_hsv(base[0] / 255, base[1] / 255, base[2] / 255)
     c = contrast * 0.6
     coloured = (not grey) and s >= 0.04
-    if coloured:                      # enrich muted colours most, vivid ones barely
-        s = min(1.0, s * (1 + (sat - 1) * (1 - 0.75 * s)))
+    if coloured:
+        s = min(1.0, s * (1 + (sat - 1) * (1 - 0.8 * s)))
+        v = min(1.0, v * (1 + lift) + lift * 0.4)
     out = []
     for i in range(steps):
         t = (i / (steps - 1)) * 2 - 1 if steps > 1 else 0.0  # -1 .. 1
@@ -170,10 +171,10 @@ def make_ramp(base, steps=5, contrast=0.30, warm=0.10, grey=False, sat=1.22):
             continue
         if t < 0:
             hh = _toward(h, 0.68, warm * 0.18 * -t)
-            ss = min(1.0, s * (1 + 0.12 * -t))
+            ss = min(1.0, s * (1 + 0.16 * -t))
         else:
             hh = _toward(h, 0.13, warm * 0.18 * t)
-            ss = s * (1 - 0.14 * t)
+            ss = s * (1 - 0.12 * t)
         out.append(_clip8(tuple(x * 255 for x in colorsys.hsv_to_rgb(hh, ss, vv))))
     return out
 

@@ -122,7 +122,8 @@ def build(out, flip, variations):
     out["clay"] = P.flat("clay", vramp("clay", 5, contrast=0.12), "smooth", rough=150, amount=0.7)
 
     # -------------------------------------------------------------------- soil
-    dirt_r = vramp("dirt", 5, contrast=0.3)
+    # dirt gets its own warmer, brighter brown: it is the block players see most
+    dirt_r = make_ramp(shift(vbase("dirt"), ds=0.07, dv=0.04), 5, 0.3)
     stone_peb = make_ramp((150, 140, 132), 5, 0.3)
     out["dirt"] = P.soil("dirt", dirt_r, pebbles=5, pebble_ramp=stone_peb)
     for i in (1, 2):
