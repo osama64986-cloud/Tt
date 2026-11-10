@@ -1521,6 +1521,7 @@ const FRIEZA = {
   ],
 };
 
+const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA };
 
 // ------------------------------------------------------------------ melee combos
@@ -1726,6 +1727,20 @@ function updateFighter(e, tick) {
     return;
   }
   if (tick < s.busyUntil) return;
+  // Dragon Ball fighters stop to power up when their ki runs low: crouch, yell, aura surging
+  if (KI_CHARGERS.has(e.typeId) && s.energy < def.energy * 0.2 && tick >= (s.nextCharge ?? 0)) {
+    s.nextCharge = tick + 400;
+    busy(s, 30); setPose(e, 22); setExpr(e, 1, 30);
+    announce(e, `${def.color}§l${def.name} §r§fis charging ki!`);
+    const ac = def.forms[clamp(formOf(e), 0, def.forms.length - 1)].aura ?? C.white;
+    every(3, 10, () => {
+      if (!e.isValid) return false;
+      s.energy = Math.min(def.energy, s.energy + def.energy * 0.035);
+      fx(e.dimension, "aura", e.location, ac, 1.3, 0.6, { count: 14 * fxLevel(), speed: 2 });
+    });
+    later(30, () => { if (e.isValid) setPose(e, 0); });
+    return;
+  }
   if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < 0.6) {
     s.cd.combo = tick + 45 + Math.floor(Math.random() * 40);
     combo(e, s, target);
