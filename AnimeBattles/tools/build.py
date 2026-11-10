@@ -270,7 +270,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross"]  # poses 13..31
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana"]  # poses 13..32
 
 
 def extra_animations():
@@ -319,6 +319,8 @@ def extra_animations():
                  "leftLeg": {"rotation": ["-math.sin(query.life_time * 1400.0) * 14", 0, -12]}},
         # victory "hmph": arms crossed (Vegeta, Frieza)
         "cross": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-8, 0, 6]}},
+        # Zoro getting serious: both hands up behind his head, tying the bandana
+        "tie_bandana": {"rightArm": {"rotation": [-165, -32, 0]}, "leftArm": {"rotation": [-165, 32, 0]}, "head": {"rotation": [10, 0, 0]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},

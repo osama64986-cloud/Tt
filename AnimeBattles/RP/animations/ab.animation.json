@@ -1919,6 +1919,33 @@
      ]
     }
    }
+  },
+  "animation.ab.tie_bandana": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      -165,
+      -32,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -165,
+      32,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      10,
+      0,
+      0
+     ]
+    }
+   }
   }
  }
 }

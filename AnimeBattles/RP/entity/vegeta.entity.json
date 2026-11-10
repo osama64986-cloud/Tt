@@ -68,6 +68,7 @@
     "dodge": "animation.ab.dodge",
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
+    "tie_bandana": "animation.ab.tie_bandana",
     "arms_crossed": "animation.ab.arms_crossed"
    },
    "scripts": {
@@ -176,6 +177,9 @@
      },
      {
       "cross": "query.property('ab:pose') == 31"
+     },
+     {
+      "tie_bandana": "query.property('ab:pose') == 32"
      },
      {
       "arms_crossed": "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
