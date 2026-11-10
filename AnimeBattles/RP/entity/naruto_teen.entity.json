@@ -11,14 +11,24 @@
     "base_shout": "textures/entity/naruto_teen/base_shout",
     "base_hurt": "textures/entity/naruto_teen/base_hurt",
     "base_blink": "textures/entity/naruto_teen/base_blink",
+    "v2": "textures/entity/naruto_teen/v2",
+    "v2_shout": "textures/entity/naruto_teen/v2_shout",
+    "v2_hurt": "textures/entity/naruto_teen/v2_hurt",
+    "v2_blink": "textures/entity/naruto_teen/v2_blink",
     "sage": "textures/entity/naruto_teen/sage",
     "sage_shout": "textures/entity/naruto_teen/sage_shout",
     "sage_hurt": "textures/entity/naruto_teen/sage_hurt",
-    "sage_blink": "textures/entity/naruto_teen/sage_blink"
+    "sage_blink": "textures/entity/naruto_teen/sage_blink",
+    "eight": "textures/entity/naruto_teen/eight",
+    "eight_shout": "textures/entity/naruto_teen/eight_shout",
+    "eight_hurt": "textures/entity/naruto_teen/eight_hurt",
+    "eight_blink": "textures/entity/naruto_teen/eight_blink"
    },
    "geometry": {
     "base": "geometry.ab.naruto_teen_base",
-    "sage": "geometry.ab.naruto_teen_sage"
+    "v2": "geometry.ab.naruto_teen_v2",
+    "sage": "geometry.ab.naruto_teen_sage",
+    "eight": "geometry.ab.naruto_teen_eight"
    },
    "animations": {
     "look": "animation.ab.look_at_target",

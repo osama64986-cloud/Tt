@@ -15,6 +15,10 @@
     "kurama_shout": "textures/entity/naruto_war/kurama_shout",
     "kurama_hurt": "textures/entity/naruto_war/kurama_hurt",
     "kurama_blink": "textures/entity/naruto_war/kurama_blink",
+    "sagekurama": "textures/entity/naruto_war/sagekurama",
+    "sagekurama_shout": "textures/entity/naruto_war/sagekurama_shout",
+    "sagekurama_hurt": "textures/entity/naruto_war/sagekurama_hurt",
+    "sagekurama_blink": "textures/entity/naruto_war/sagekurama_blink",
     "spsm": "textures/entity/naruto_war/spsm",
     "spsm_shout": "textures/entity/naruto_war/spsm_shout",
     "spsm_hurt": "textures/entity/naruto_war/spsm_hurt",
@@ -23,6 +27,7 @@
    "geometry": {
     "kcm": "geometry.ab.naruto_war_kcm",
     "kurama": "geometry.ab.naruto_war_kurama",
+    "sagekurama": "geometry.ab.naruto_war_sagekurama",
     "spsm": "geometry.ab.naruto_war_spsm"
    },
    "animations": {
@@ -206,10 +211,10 @@
       "cape_sway": "1.0"
      },
      {
-      "orbs_spin": "query.property('ab:form') == 2"
+      "orbs_spin": "query.property('ab:form') == 3"
      },
      {
-      "hover": "query.property('ab:form') == 2"
+      "hover": "query.property('ab:form') == 3"
      }
     ]
    },

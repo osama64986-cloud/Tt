@@ -545,7 +545,7 @@ function transform(e, s, to, label, color, extraSound) {
     : e.typeId === "ab:zoro" ? 32      // ties the bandana on
     : e.typeId === "ab:gojo" ? 25      // pulls the blindfold off
     : (e.typeId === "ab:ichigo" && to === 3) ? 25   // drags the Hollow mask down over his face
-    : (e.typeId === "ab:naruto_teen" || (e.typeId === "ab:naruto_war" && to === 2)) ? 35   // still, hands in a seal, gathering nature energy
+    : ((e.typeId === "ab:naruto_teen" || e.typeId === "ab:naruto_war") && to === 2) || (e.typeId === "ab:naruto_adult" && to === 1) ? 35   // still, hands in a seal, gathering nature energy
     : calm ? 0
     : 22);
   slow(e, 30, 8);
@@ -1868,14 +1868,15 @@ function rasenshuriken(e, s, t, o) {
     const start = V.up(e.location, 3.3), pw = powerOf(e) / 100;
     const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
     projectile(e, start, V.norm(V.sub(tgt, start)), {
-      speed: 0.9, maxDist: 45, radius: 1.6, size: 1.8 * o.size, color: C.white, slot: 10, trail: true,
+      speed: 0.9, maxDist: 45, radius: 1.6, size: 1.8 * o.size, color: o.color ?? C.white, slot: o.color ? slotOf(o.color) : 10, trail: true, core: o.color ? C.white : undefined,
       homing: alive(t) ? t : undefined, homingStrength: 0.08,
-      explode: { radius: o.radius, dmg: o.dmg * pw, color: C.white, carve: o.carve ?? 1, knock: 2 },
+      explode: { radius: o.radius, dmg: o.dmg * pw, color: o.color ?? C.white, carve: o.carve ?? 1, knock: 2 },
       onEnd: (pos) => {  // the wind sphere keeps slicing for a moment
-        const dome = spawnVfx(dim, 1, pos, { slot: 10, size: o.radius * 0.5, life: 30 });
+        const dome = spawnVfx(dim, 1, pos, { slot: o.color ? slotOf(o.color) : 10, size: o.radius * 0.5, life: 30 });
         every(4, 5, () => {
           hitArea(e, pos, o.radius, o.dmg * 0.08 * pw, new Set(), { knock: 0.2 });
-          fx(dim, "streak", pos, C.white, 2, 0.3, { count: 10, speed: 9 });
+          fx(dim, "streak", pos, o.color ?? C.white, 2, 0.3, { count: 10, speed: 9 });
+          if (o.burn) fx(dim, "aura", pos, o.color, o.radius * 0.5, 0.8, { count: 12, speed: 2 });
         });
         later(22, () => fadeVfx(dome, o.radius * 0.5, 6));
       },
@@ -1915,6 +1916,56 @@ const chakraArms = (color, cond) => ({
   },
 });
 
+// Summoning: Gamabunta lands on the battlefield, crushes the ground and spits a water bullet.
+const summonToad = (cond) => ({ id: "gamabunta", label: "Summoning: Gamabunta", cd: 900, cost: 300, min: 0, max: 30, weight: 5, cond,
+  run(e, s, t) {
+    busy(s, 30); setPose(e, 35); announce(e, "§a§lSummoning Jutsu! §6— §lGamabunta!");
+    const dim = e.dimension;
+    later(8, () => {
+      if (!e.isValid) return;
+      const c = alive(t) ? t.location : e.location;
+      fx(dim, "aura", V.up(c, 2), C.white, 5, 1.2, { count: 60 * fxLevel(), speed: 3 });   // the summoning smoke
+      later(6, () => {
+        if (!e.isValid) return;
+        fx(dim, "shock", c, { red: 0.55, green: 0.25, blue: 0.15 }, 10, 0.6);
+        shake(dim, c, 0.6, 0.5);
+        hitArea(e, V.up(c, 1), 5, 34 * powerOf(e) / 100, new Set(), { knock: 2.4, lift: 0.6 });
+        later(8, () => {
+          if (!e.isValid || !alive(t)) return;
+          const start = V.up(e.location, 5);
+          projectile(e, start, V.norm(V.sub(aim(t), start)), { speed: 1.4, maxDist: 30, radius: 1.6, size: 2.2, color: C.kameBlue, trail: true,
+            explode: { radius: 3.2, dmg: 26 * powerOf(e) / 100, color: C.kameBlue, knock: 2 } });
+          setPose(e, 0);
+        });
+      });
+    });
+  } });
+const rasenRendan = (cond, o = {}) => ({ id: "rendan2", label: o.label ?? "Rasengan Barrage", cd: 300, cost: 200, min: 0, max: 16, weight: 5, cond,
+  run(e, s, t) {
+    busy(s, 30); announce(e, o.say ?? "§b§lRasengan Barrage!");
+    shadowClones(e, s, 3, 80);
+    every(6, 4, (i) => {
+      if (!alive(t) || !e.isValid) return false;
+      afterimage(e); teleportNear(e, t, i % 2 === 0, 1.3); setPose(e, 36);
+      deal(e, t, (o.dmg ?? 16) * powerOf(e) / 100);
+      const c = aim(t);
+      for (let k = 0; k < 14; k++) { const a = (k / 14) * Math.PI * 4; fx(e.dimension, "orb", V.add(c, { x: Math.cos(a) * 0.7, y: 0, z: Math.sin(a) * 0.7 }), o.color ?? C.blue, 0.5, 0.3); }
+      fx(e.dimension, "shock_v", c, o.color ?? C.blue, 2.5, 0.3);
+      if (i === 3) later(6, () => { if (e.isValid) setPose(e, 0); });
+    });
+  } });
+const kuramaBomb = (cond, o = {}) => ({ id: o.id ?? "bijuu", label: o.label ?? "Tailed Beast Bomb", cd: o.cd ?? 520, cost: o.cost ?? 380, min: 0, max: 45, weight: o.weight ?? 5, cond,
+  run(e, s, t) { bijuudama(e, s, t, { size: o.size ?? 3, radius: o.radius ?? 7, dmg: o.dmg ?? 150 }); } });
+const sixPathsHeal = (cond) => ({ id: "yang", label: "Six Paths: Yang Power", cd: 700, cost: 200, min: 0, max: 60, weight: 8, cond: (e, s, c) => cond(e) && c.hp < 0.45,
+  run(e, s) {
+    busy(s, 14); setPose(e, 35); announce(e, "§e§lSix Paths Yang Power! §7— the life force mends his wounds");
+    const h = health(e);
+    if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.12));
+    fx(e.dimension, "aura", e.location, C.gold, 1.4, 0.8, { count: 26, speed: 2 });
+    ring(e.dimension, V.up(e.location, 0.2), 2.5, C.gold, 24, 0.5);
+    later(12, () => { if (e.isValid) setPose(e, 0); });
+  } });
+
 const NARUTO_KID = {
   name: "Naruto", color: "§6", energy: 600, regen: 12, energyName: "§6CHAKRA",
   dodge: () => 0.08,
@@ -1944,6 +1995,7 @@ const NARUTO_KID = {
         });
       } },
     rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 0.8, dmg: 28, radius: 1.6 }),
+    summonToad(),
     { id: "claw", label: "Chakra Claw", cd: 120, cost: 60, min: 0, max: 8, weight: 4, cond: G(1),
       run(e, s, t) {
         busy(s, 12); announce(e, "§c§lThe Nine-Tails' claw!"); afterimage(e); teleportNear(e, t, false, 1.6);
@@ -1962,16 +2014,38 @@ const NARUTO_KID = {
 };
 
 const NARUTO_TEEN = {
-  name: "Naruto", color: "§6", energy: 900, regen: 16, energyName: "§6CHAKRA",
-  dodge: () => 0.1,
-  forms: [{ label: "Shippuden", power: 50 }, { label: "Sage Mode", power: 85, aura: C.kiYellow }],
-  thresholds: [0.6], transformCd: 100, formSound: [null, "beacon.power"],
+  name: "Naruto", color: "§6", energy: 1000, regen: 18, energyName: "§6CHAKRA",
+  dodge: (e) => (formOf(e) === 2 ? 0.14 : 0.1),  // Sage Mode senses every attack coming
+  forms: [{ label: "Shippuden", power: 50 }, { label: "Four-Tails (Version 2)", power: 70, aura: C.blood },
+    { label: "Sage Mode", power: 88, aura: C.kiYellow }, { label: "Eight-Tails Form", power: 106, aura: C.blood }],
+  thresholds: [0.8, 0.6, 0.35], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "beacon.power", "mob.enderdragon.growl"],
   abilities: [
     cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
-    rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 1.0, dmg: 34, radius: 2 }),
-    rasenganAbility("odama", "Big Ball Rasengan", { say: "§b§lBig Ball Rasengan!", color: C.blue, size: 1.8, dmg: 52, radius: 3.4, carve: 1, cd: 260, cost: 160 }),
-    shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lSage Art: Rasenshuriken!", size: 1.0, dmg: 80, radius: 4.5, carve: 1 }, G(1)),
-    { id: "kumite", label: "Frog Kumite", cd: 140, cost: 70, min: 0, max: 10, weight: 4, cond: G(1),
+    rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 1.0, dmg: 34, radius: 2 }, G(0, 2)),
+    rasenganAbility("odama", "Big Ball Rasengan", { say: "§b§lBig Ball Rasengan!", color: C.blue, size: 1.8, dmg: 52, radius: 3.4, carve: 1, cd: 260, cost: 160 }, G(0, 2)),
+    rasenganAbility("wind", "Wind Style: Rasenshuriken", { say: "§f§lWind Style: Rasenshuriken! §7— driven home by hand", color: C.white, size: 1.6, dmg: 64, radius: 3.6, carve: 1, cd: 420, cost: 260 }, G(0)),
+    summonToad(G(0, 2)),
+    { id: "v2arms", label: "Chakra Arm Stretch", cd: 150, cost: 80, min: 0, max: 14, weight: 5, cond: G(1, 3),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 13); announce(e, "§4§l(a chakra arm lashes out across the field)");
+        afterimage(e); teleportNear(e, t, false, 2.2);
+        punches(e, t, 4, 9 * powerOf(e) / 100, C.blood);
+        slashMarks(e, t, C.blood, 3, 6 * powerOf(e) / 100);
+      } },
+    { id: "v2roar", label: "Chakra Roar", cd: 240, cost: 120, min: 0, max: 8, weight: 4, cond: G(1, 3),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 22); announce(e, "§4§lGRRRAAAAH!");
+        const dim = e.dimension;
+        fx(dim, "shock", e.location, C.blood, 9, 0.5); ring(dim, V.up(e.location, 0.2), 4.5, C.blood, 30, 0.5);
+        sound(dim, "mob.enderdragon.growl", e.location, 1.5, 1.1);
+        hitArea(e, V.up(e.location, 1), 5, 18 * powerOf(e) / 100, new Set(), { knock: 2.8, lift: 0.5 });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    kuramaBomb(G(1), { id: "minibijuu", label: "Mini Tailed Beast Bomb", size: 1.4, radius: 4, dmg: 70, cd: 400, cost: 260 }),
+    kuramaBomb(G(3), { label: "Tailed Beast Bomb", size: 2.6, radius: 6.5, dmg: 120 }),
+    shurikenAbility("shuriken", "Sage Art: Rasenshuriken", { say: "§f§lSage Art: Wind Style Rasenshuriken!", size: 1.0, dmg: 80, radius: 4.5, carve: 1 }, G(2)),
+    rasenRendan(G(2), { label: "Sage Art: Rasengan Barrage", say: "§e§lSage Art: Rasengan Barrage!", dmg: 16 }),
+    { id: "kumite", label: "Frog Kumite", cd: 140, cost: 70, min: 0, max: 10, weight: 4, cond: G(2),
       run(e, s, t) {
         busy(s, 16); announce(e, "§e§lSage Art: Frog Kumite!"); afterimage(e); teleportNear(e, t, false, 1.6);
         punches(e, t, 5, 8 * powerOf(e) / 100, C.kiYellow);
@@ -1981,28 +2055,31 @@ const NARUTO_TEEN = {
 };
 
 const NARUTO_WAR = {
-  name: "Naruto", color: "§e", energy: 1500, regen: 26, energyName: "§6CHAKRA",
-  dodge: () => 0.14,
+  name: "Naruto", color: "§e", energy: 1700, regen: 28, energyName: "§6CHAKRA",
+  dodge: (e) => (formOf(e) >= 2 ? 0.18 : 0.14),
   forms: [
-    { label: "Nine-Tails Chakra Mode", power: 120, aura: C.gold },
-    { label: "Kurama Mode", power: 150, aura: C.gold },
-    { label: "Six Paths Sage Mode", power: 182, aura: C.gold },
+    { label: "Nine-Tails Chakra Mode", power: 140, aura: C.gold },
+    { label: "Kurama Mode", power: 165, aura: C.gold },
+    { label: "Sage + Kurama Mode", power: 190, aura: C.gold },
+    { label: "Six Paths Sage Mode", power: 240, aura: C.gold },
   ],
-  thresholds: [0.7, 0.5], transformCd: 80, formSound: [null, "mob.enderdragon.growl", "beacon.power"],
+  thresholds: [0.75, 0.55, 0.35], transformCd: 80, formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
   abilities: [
     cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
     rasenganAbility("rasengan", "Flash Rasengan", { say: "§e§lRasengan!", color: C.blue, size: 1.4, dmg: 40, radius: 2.6, cd: 140 }),
     shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lRasenshuriken!", size: 1.2, dmg: 70, radius: 5, carve: 2 }),
+    rasenRendan(G(0, 1, 2, 3), { label: "Rasengan Barrage", say: "§e§lMulti Rasengan Barrage!", dmg: 18 }),
     chakraArms(C.gold),
-    { id: "bijuu", label: "Tailed Beast Bomb", cd: 520, cost: 380, min: 0, max: 45, weight: 5, cond: G(1, 2),
-      run(e, s, t) { bijuudama(e, s, t, { size: 3, radius: 7, dmg: 150 }); } },
-    { id: "kclaw", label: "Kurama's Claws", cd: 200, cost: 120, min: 0, max: 12, weight: 4, cond: G(1, 2),
+    kuramaBomb(G(1, 2, 3), { dmg: 150 }),
+    shurikenAbility("bijuushuriken", "Tailed Beast Rasenshuriken", { say: "§5§lTailed Beast Rasenshuriken!", size: 1.8, dmg: 130, radius: 7, carve: 3, color: C.hakai, cd: 560, cost: 400, weight: 5 }, G(1, 2, 3)),
+    { id: "kclaw", label: "Kurama's Claws", cd: 200, cost: 120, min: 0, max: 12, weight: 4, cond: G(1, 2, 3),
       run(e, s, t) {
         busy(s, 16); announce(e, "§6§lKurama, lend me your power!"); afterimage(e); teleportNear(e, t, false, 2);
         slashMarks(e, t, C.gold, 5, 14 * powerOf(e) / 100);
         fx(e.dimension, "shock", t.location, C.gold, 6, 0.4);
       } },
-    { id: "gudo", label: "Truth-Seeking Balls", cd: 260, cost: 200, min: 0, max: 40, weight: 4, cond: G(2),
+    rasenganAbility("sageodama", "Sage Art: Super Big Ball Rasengan", { say: "§e§lSage Art: Super Big Ball Rasengan!", color: C.blue, size: 2.6, dmg: 90, radius: 4.5, carve: 2, cd: 360, cost: 260 }, G(2, 3)),
+    { id: "gudo", label: "Truth-Seeking Balls", cd: 260, cost: 200, min: 0, max: 40, weight: 4, cond: G(3),
       run(e, s, t) {
         busy(s, 24); setPose(e, 4); announce(e, "§0§lTruth-Seeking Balls!");
         every(3, 6, (i) => {
@@ -2013,28 +2090,40 @@ const NARUTO_WAR = {
         });
         later(20, () => { if (e.isValid) setPose(e, 0); });
       } },
+    shurikenAbility("lava", "Lava Release: Rasenshuriken", { say: "§6§lSix Paths: Lava Release Rasenshuriken!", size: 1.6, dmg: 120, radius: 6, carve: 2, color: C.fire, burn: true, cd: 480, cost: 320 }, G(3)),
+    rasenganAbility("magnet", "Magnet Release: Rasengan", { say: "§0§lSix Paths: Magnet Release Rasengan!", color: C.black, size: 1.6, dmg: 80, radius: 3.4, cd: 300, cost: 200 }, G(3)),
+    rasenganAbility("planetary", "Planetary Rasengan", { say: "§b§lPlanetary Rasengan!", color: C.blue, size: 2.2, dmg: 110, radius: 4, carve: 2, cd: 420, cost: 300, weight: 5 }, G(3)),
+    sixPathsHeal(G(3)),
     shurikenAbility("ultra", "Six Paths Ultra Big Ball Rasenshuriken",
-      { say: "§e§lSix Paths: Ultra Big Ball Rasenshuriken!", size: 2.6, dmg: 170, radius: 9, carve: 3, cd: 600, cost: 450, weight: 6 }, G(2)),
+      { say: "§e§lSix Paths: Ultra Big Ball Rasenshuriken!", size: 2.6, dmg: 170, radius: 9, carve: 3, cd: 600, cost: 450, weight: 6 }, G(3)),
   ],
 };
 
 const NARUTO_ADULT = {
-  name: "Naruto", color: "§6", energy: 1600, regen: 28, energyName: "§6CHAKRA",
-  dodge: () => 0.14,
+  name: "Naruto", color: "§6", energy: 1800, regen: 30, energyName: "§6CHAKRA",
+  dodge: (e) => (formOf(e) === 1 ? 0.17 : 0.14),
   forms: [
-    { label: "Seventh Hokage", power: 125 },
-    { label: "Kurama Link Mode", power: 165, aura: C.gold },
-    { label: "Baryon Mode", power: 230, aura: C.blood },
+    { label: "Seventh Hokage", power: 150 },
+    { label: "Sage Mode", power: 175, aura: C.kiYellow },
+    { label: "Kurama Link Mode", power: 210, aura: C.gold },
+    { label: "Baryon Mode", power: 290, aura: C.blood },
   ],
-  thresholds: [0.7, 0.4], transformCd: 80, formSound: [null, "mob.enderdragon.growl", "mob.wither.spawn"],
+  thresholds: [0.8, 0.6, 0.35], transformCd: 80, formSound: [null, "beacon.power", "mob.enderdragon.growl", "mob.wither.spawn"],
   abilities: [
     cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
     rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 1.4, dmg: 42, radius: 2.6, cd: 140 }),
+    rasenganAbility("odama", "Big Ball Rasengan", { say: "§b§lBig Ball Rasengan!", color: C.blue, size: 2.0, dmg: 60, radius: 3.6, carve: 1, cd: 260, cost: 160 }, G(0, 1)),
     shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lRasenshuriken!", size: 1.4, dmg: 85, radius: 5.5, carve: 2 }),
-    chakraArms(C.gold, G(1)),
-    { id: "bijuu", label: "Tailed Beast Bomb", cd: 520, cost: 380, min: 0, max: 45, weight: 5, cond: G(1),
-      run(e, s, t) { bijuudama(e, s, t, { size: 3.2, radius: 7.5, dmg: 160 }); } },
-    { id: "baryon", label: "Baryon Punch", cd: 180, cost: 140, min: 0, max: 14, weight: 6, cond: G(2),
+    rasenRendan(G(1, 2), { label: "Sage Art: Rasengan Barrage", say: "§e§lSage Art: Rasengan Barrage!", dmg: 20 }),
+    { id: "kumite", label: "Frog Kumite", cd: 140, cost: 70, min: 0, max: 10, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 16); announce(e, "§e§lSage Art: Frog Kumite!"); afterimage(e); teleportNear(e, t, false, 1.6);
+        punches(e, t, 5, 9 * powerOf(e) / 100, C.kiYellow);
+      } },
+    chakraArms(C.gold, G(2)),
+    kuramaBomb(G(2), { size: 3.2, radius: 7.5, dmg: 160 }),
+    shurikenAbility("bijuushuriken", "Tailed Beast Rasenshuriken", { say: "§5§lTailed Beast Rasenshuriken!", size: 2.0, dmg: 140, radius: 7.5, carve: 3, color: C.hakai, cd: 560, cost: 400, weight: 5 }, G(2)),
+    { id: "baryon", label: "Baryon Punch", cd: 180, cost: 140, min: 0, max: 14, weight: 6, cond: G(3),
       run(e, s, t) {
         busy(s, 22); announce(e, "§c§lBaryon Mode: every blow burns away the enemy's life!");
         afterimage(e); teleportNear(e, t, true, 1.3);
@@ -2052,7 +2141,7 @@ const NARUTO_ADULT = {
           fx(t.dimension, "aura", t.location, C.blood, 1, 0.5, { count: 6, speed: 1 });
         });
       } },
-    { id: "baryonrush", label: "Baryon Rush", cd: 240, cost: 160, min: 0, max: 20, weight: 4, cond: G(2),
+    { id: "baryonrush", label: "Baryon Rush", cd: 240, cost: 160, min: 0, max: 20, weight: 4, cond: G(3),
       run(e, s, t) {
         busy(s, 26); announce(e, "§4§lBaryon Mode!");
         every(4, 6, (i) => {
@@ -2593,9 +2682,9 @@ const TRANSFORM_LINES = {
   "ab:ichigo": [null, "§f§lFullbring! §7— the badge burns white", "§f§lBAN... §4§lKAI! §f§lTensa Zangetsu!", "§4§l(the Hollow mask slams over his face)",
     "§4§l(a roar that shakes the sky) §f§lVasto Lorde!", "§0§lThis is the Final Getsuga Tensho... §4§lMUGETSU.", "§b§lBankai! §f§lZangetsu — §7both of you are my power."],
   "ab:naruto_kid": [null, "§4§l(the Nine-Tails' red chakra boils over)"],
-  "ab:naruto_teen": [null, "§6§lSage Mode! §7— nature energy, gathered"],
-  "ab:naruto_war": [null, "§6§lLet's go, Kurama!", "§e§lSix Paths Sage Mode!"],
-  "ab:naruto_adult": [null, "§6§lKurama, let's do this!", "§4§lBaryon Mode! §7— it's burning our lives away"],
+  "ab:naruto_teen": [null, "§4§l(four tails of red chakra boil out of him)", "§6§lSage Mode! §7— nature energy, gathered", "§4§l(eight tails... the Nine-Tails' bones form round him)"],
+  "ab:naruto_war": [null, "§6§lLet's go, Kurama!", "§6§lSage Mode and Kurama — together!", "§e§lSix Paths Sage Mode!"],
+  "ab:naruto_adult": [null, "§6§lSage Mode. §7— the toads taught me well", "§6§lKurama, let's do this!", "§4§lBaryon Mode! §7— it's burning our lives away"],
   "ab:sasuke_kid": [null, "§5§l(the Cursed Seal spreads over his skin)", "§5§lCursed Seal... §0§lLevel Two!"],
   "ab:sasuke": [null, "§5§lCursed Seal Level Two! §7— the wings tear free", "§c§lMangekyo Sharingan... §5§lSusanoo!"],
   "ab:sasuke_war": [null, "§5§lPerfect Susanoo! §7— a giant with wings", "§5§l(the Rinnegan opens) §7— I'll be the one to change the world"],

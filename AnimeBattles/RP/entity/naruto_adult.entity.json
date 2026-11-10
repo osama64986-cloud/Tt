@@ -11,6 +11,10 @@
     "hokage_shout": "textures/entity/naruto_adult/hokage_shout",
     "hokage_hurt": "textures/entity/naruto_adult/hokage_hurt",
     "hokage_blink": "textures/entity/naruto_adult/hokage_blink",
+    "sage": "textures/entity/naruto_adult/sage",
+    "sage_shout": "textures/entity/naruto_adult/sage_shout",
+    "sage_hurt": "textures/entity/naruto_adult/sage_hurt",
+    "sage_blink": "textures/entity/naruto_adult/sage_blink",
     "link": "textures/entity/naruto_adult/link",
     "link_shout": "textures/entity/naruto_adult/link_shout",
     "link_hurt": "textures/entity/naruto_adult/link_hurt",
@@ -22,6 +26,7 @@
    },
    "geometry": {
     "hokage": "geometry.ab.naruto_adult_hokage",
+    "sage": "geometry.ab.naruto_adult_sage",
     "link": "geometry.ab.naruto_adult_link",
     "baryon": "geometry.ab.naruto_adult_baryon"
    },

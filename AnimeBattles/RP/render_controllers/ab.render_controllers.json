@@ -343,16 +343,26 @@
       "Texture.base_shout",
       "Texture.base_hurt",
       "Texture.base_blink",
+      "Texture.v2",
+      "Texture.v2_shout",
+      "Texture.v2_hurt",
+      "Texture.v2_blink",
       "Texture.sage",
       "Texture.sage_shout",
       "Texture.sage_hurt",
-      "Texture.sage_blink"
+      "Texture.sage_blink",
+      "Texture.eight",
+      "Texture.eight_shout",
+      "Texture.eight_hurt",
+      "Texture.eight_blink"
      ]
     },
     "geometries": {
      "Array.geos": [
       "Geometry.base",
-      "Geometry.sage"
+      "Geometry.v2",
+      "Geometry.sage",
+      "Geometry.eight"
      ]
     }
    },
@@ -378,6 +388,10 @@
       "Texture.kurama_shout",
       "Texture.kurama_hurt",
       "Texture.kurama_blink",
+      "Texture.sagekurama",
+      "Texture.sagekurama_shout",
+      "Texture.sagekurama_hurt",
+      "Texture.sagekurama_blink",
       "Texture.spsm",
       "Texture.spsm_shout",
       "Texture.spsm_hurt",
@@ -388,6 +402,7 @@
      "Array.geos": [
       "Geometry.kcm",
       "Geometry.kurama",
+      "Geometry.sagekurama",
       "Geometry.spsm"
      ]
     }
@@ -410,6 +425,10 @@
       "Texture.hokage_shout",
       "Texture.hokage_hurt",
       "Texture.hokage_blink",
+      "Texture.sage",
+      "Texture.sage_shout",
+      "Texture.sage_hurt",
+      "Texture.sage_blink",
       "Texture.link",
       "Texture.link_shout",
       "Texture.link_hurt",
@@ -423,6 +442,7 @@
     "geometries": {
      "Array.geos": [
       "Geometry.hokage",
+      "Geometry.sage",
       "Geometry.link",
       "Geometry.baryon"
      ]

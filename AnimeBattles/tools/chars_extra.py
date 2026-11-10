@@ -125,6 +125,9 @@ M.FACE32.update({
     "naruto_kcm": dict(eye="narrow", brow="angled", mouth="smile", marks=["whiskers", "fox"]),
     "naruto_spsm": dict(eye="anime", brow="angled", mouth="neutral", marks=["whiskers", "fox", "sage"]),
     "naruto_adult": dict(eye="anime", brow="angled", mouth="smile", marks=["whiskers"]),
+    "naruto_adult_sage": dict(eye="anime", brow="angled", mouth="neutral", marks=["whiskers", "sage"]),
+    "naruto_sk": dict(eye="narrow", brow="angled", mouth="smile", marks=["whiskers", "fox", "sage"]),
+    "naruto_v2": dict(eye="narrow", brow="none", mouth="none", marks=["v2"]),
     "sasuke": dict(eye="narrow", brow="flat", mouth="neutral"),
     "sasuke_sh": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["sharingan"]),
     "sasuke_cs1": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["sharingan", "cs1"]),
@@ -156,6 +159,18 @@ def face32(px, W, H, spec, hair, iris, skin):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
+    if "v2" in marks:  # Version 2: the face lost under the boiling chakra: white ringed eyes, a white jagged mouth
+        for y in range(8, 32):
+            for x in range(32):
+                put(x, y, (92, 10, 12) if (x * 3 + y * 7) % 11 else (70, 6, 10))
+        for cx in (10, 21):
+            for a in range(24):
+                t = a / 24 * math.pi * 2
+                put(int(cx + 0.5 + math.cos(t) * 2.4), int(19 + math.sin(t) * 2.0), (250, 246, 236))
+            put(cx, 19, (250, 246, 236)); put(cx + 1, 19, (250, 246, 236))
+        for x in range(9, 23):
+            put(x, 26 + (x % 2), (250, 246, 236))
+        return
     if "sage" in marks:  # orange pigment over the lids and out to the corners
         for x in list(range(4, 14)) + list(range(18, 28)):
             put(x, 14, (232, 100, 30)); put(x, 15, (232, 100, 30))
@@ -317,9 +332,11 @@ def naruto(m, char, form):
     kid = char == "naruto_kid"
     if char == "naruto_war" or (char == "naruto_adult" and form == "link"):
         adult = char == "naruto_adult"
-        key = "naruto_spsm" if form == "spsm" else "naruto_kcm"
+        key = "naruto_spsm" if form == "spsm" else "naruto_sk" if form == "sagekurama" else "naruto_kcm"
         gold_body(m, key, (255, 140, 20) if form != "spsm" else (250, 180, 50), hair_style="adult" if adult else "war",
-                  band=not adult, coat=form in ("kurama", "spsm", "link"), orbs=form == "spsm")
+                  band=not adult, coat=form in ("kurama", "sagekurama", "spsm", "link"), orbs=form == "spsm")
+        if form == "sagekurama":  # Sage + Kurama: the Sage's red-and-black flame cloak flaps over the chakra coat
+            m.box("body", [-4.9, 9.0, 2.7], [9.8, 15.0, 0.5], layered((200, 42, 40), [region((0, 0.78, 1, 1), BLACK)]))
         return
     if kid:
         key = "naruto_fox" if form == "cloak" else "naruto_kid"
@@ -339,6 +356,27 @@ def naruto(m, char, form):
             for s in (1, -1):
                 m.strand([s * 2.4, 32.4, -0.5], [s * 0.3, 1, 0.1], 3.6, 2.4, solid(red), bone="hair", segs=2, thick=0.6)
             m.strand([0, 12.6, 2.2], [0, 0.5, 1], 11, 3.2, solid(red), bone="body", segs=3, thick=1.0, bend=(0, 0.25, -0.1))
+        return
+    if char == "naruto_teen" and form in ("v2", "eight"):  # Version 2 (four tails) / the Eight-Tails' skeletal form
+        eight = form == "eight"
+        red, deep = ((150, 24, 18), (70, 6, 10)) if not eight else ((196, 52, 26), (110, 18, 12))
+        skinp = layered(red, [lambda f, px, w, h, b: [_put(px, w, h, x, y, deep) for y in range(h) for x in range(w) if (x * 5 + y * 3) % 9 == 0]])
+        base_body(m, skinp, skinp, skinp, skin_swap(head_paint(deep, (250, 246, 236), False, "naruto_v2"), deep))
+        for s_ in (1, -1):  # fox ears
+            m.strand([s_ * 2.6, 32.0, -0.5], [s_ * 0.35, 1, 0.1], 4.6 if eight else 3.6, 2.6, solid(red), bone="head", segs=2, thick=0.6)
+        n = 8 if eight else 4
+        for k in range(n):  # the tails, fanned out behind him
+            a = math.radians(-60 + 120 * k / (n - 1))
+            m.strand([math.sin(a) * 1.2, 12.4, 2.4], [math.sin(a) * 1.1, 0.9, 1], 12 if eight else 10, 3.0, solid(red), bone="body", segs=3, thick=1.0,
+                     bend=(math.sin(a) * 0.15, 0.3, -0.25))
+        if eight:  # the bones of the fox growing over him: ribs, spine, skull
+            bone_c = solid((236, 226, 210))
+            for i in range(3):
+                m.box("body", [-4.8, 15.0 + i * 2.6, -2.9], [9.6, 0.8, 0.5], bone_c)
+            m.box("body", [-0.5, 12.0, 2.3], [1.0, 12.0, 0.8], bone_c)
+            m.box("head", [-4.4, 30.4, -4.6], [8.8, 1.2, 9.2], bone_c)
+            for s_ in (1, -1):
+                m.box("head", [s_ * 3.9 - 0.4, 24.4, -4.6], [0.8, 6.0, 0.5], bone_c)
         return
     if char == "naruto_teen":
         sage = form == "sage"
@@ -361,8 +399,8 @@ def naruto(m, char, form):
         return
     # adult: the Seventh Hokage
     baryon = form == "baryon"
-    key = "naruto_adult"
-    iris = (255, 90, 40) if baryon else (46, 120, 230)
+    key = "naruto_adult_sage" if form == "sage" else "naruto_adult"
+    iris = (255, 90, 40) if baryon else (246, 206, 46) if form == "sage" else (46, 120, 230)
     torso = layered(ORANGE, [zipper((40, 40, 46)), region((0, 0.82, 1, 0.88), BLACK), region((0, 0.92, 1, 0.98), BLACK)])
     base_body(m, torso, arm_paint(ORANGE, cuff=BLACK), leg_paint(BLACK, (28, 28, 34), band=((70, 70, 80), 0.6, 0.7)),
               head_paint(N_HAIR, iris, True, key if not baryon else "naruto_kcm"))
@@ -823,9 +861,9 @@ def tanjiro(m, form):
 
 FORMS = {
     "naruto_kid": ["base", "cloak"],
-    "naruto_teen": ["base", "sage"],
-    "naruto_war": ["kcm", "kurama", "spsm"],
-    "naruto_adult": ["hokage", "link", "baryon"],
+    "naruto_teen": ["base", "v2", "sage", "eight"],
+    "naruto_war": ["kcm", "kurama", "sagekurama", "spsm"],
+    "naruto_adult": ["hokage", "sage", "link", "baryon"],
     "sasuke_kid": ["sharingan", "cs1", "cs2"],
     "sasuke": ["sharingan", "cs2", "susanoo"],
     "sasuke_war": ["ems", "perfect", "rinnegan"],

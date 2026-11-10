@@ -10,7 +10,7 @@
      "type": "int",
      "range": [
       0,
-      2
+      3
      ],
      "default": 0,
      "client_sync": true
@@ -111,10 +111,18 @@
    },
    "ab:form_2": {
     "minecraft:attack": {
-     "damage": 42
+     "damage": 38
     },
     "minecraft:movement": {
-     "value": 0.44
+     "value": 0.43
+    }
+   },
+   "ab:form_3": {
+    "minecraft:attack": {
+     "damage": 46
+    },
+    "minecraft:movement": {
+     "value": 0.45
     }
    }
   },
@@ -218,7 +226,8 @@
        "component_groups": [
         "ab:form_0",
         "ab:form_1",
-        "ab:form_2"
+        "ab:form_2",
+        "ab:form_3"
        ]
       }
      },
@@ -243,7 +252,8 @@
        "component_groups": [
         "ab:form_0",
         "ab:form_1",
-        "ab:form_2"
+        "ab:form_2",
+        "ab:form_3"
        ]
       }
      },
@@ -268,7 +278,8 @@
        "component_groups": [
         "ab:form_0",
         "ab:form_1",
-        "ab:form_2"
+        "ab:form_2",
+        "ab:form_3"
        ]
       }
      },
@@ -282,6 +293,32 @@
      {
       "set_property": {
        "ab:form": 2
+      }
+     }
+    ]
+   },
+   "ab:form_3": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2",
+        "ab:form_3"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_3"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 3
       }
      }
     ]
