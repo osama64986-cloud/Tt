@@ -438,6 +438,42 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.sasuke_kid": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.sharingan",
+      "Texture.sharingan_shout",
+      "Texture.sharingan_hurt",
+      "Texture.sharingan_blink",
+      "Texture.cs1",
+      "Texture.cs1_shout",
+      "Texture.cs1_hurt",
+      "Texture.cs1_blink",
+      "Texture.cs2",
+      "Texture.cs2_shout",
+      "Texture.cs2_hurt",
+      "Texture.cs2_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.sharingan",
+      "Geometry.cs1",
+      "Geometry.cs2"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.sasuke": {
    "arrays": {
     "textures": {
@@ -446,6 +482,10 @@
       "Texture.sharingan_shout",
       "Texture.sharingan_hurt",
       "Texture.sharingan_blink",
+      "Texture.cs2",
+      "Texture.cs2_shout",
+      "Texture.cs2_hurt",
+      "Texture.cs2_blink",
       "Texture.susanoo",
       "Texture.susanoo_shout",
       "Texture.susanoo_hurt",
@@ -455,7 +495,75 @@
     "geometries": {
      "Array.geos": [
       "Geometry.sharingan",
+      "Geometry.cs2",
       "Geometry.susanoo"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.sasuke_war": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.ems",
+      "Texture.ems_shout",
+      "Texture.ems_hurt",
+      "Texture.ems_blink",
+      "Texture.perfect",
+      "Texture.perfect_shout",
+      "Texture.perfect_hurt",
+      "Texture.perfect_blink",
+      "Texture.rinnegan",
+      "Texture.rinnegan_shout",
+      "Texture.rinnegan_hurt",
+      "Texture.rinnegan_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.ems",
+      "Geometry.perfect",
+      "Geometry.rinnegan"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.sasuke_adult": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.adult",
+      "Texture.adult_shout",
+      "Texture.adult_hurt",
+      "Texture.adult_blink",
+      "Texture.adult_sus",
+      "Texture.adult_sus_shout",
+      "Texture.adult_sus_hurt",
+      "Texture.adult_sus_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.adult",
+      "Geometry.adult_sus"
      ]
     }
    },

@@ -126,7 +126,14 @@ M.FACE32.update({
     "naruto_spsm": dict(eye="anime", brow="angled", mouth="neutral", marks=["whiskers", "fox", "sage"]),
     "naruto_adult": dict(eye="anime", brow="angled", mouth="smile", marks=["whiskers"]),
     "sasuke": dict(eye="narrow", brow="flat", mouth="neutral"),
-    "sasuke_ms": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["sharingan"]),
+    "sasuke_sh": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["sharingan"]),
+    "sasuke_cs1": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["sharingan", "cs1"]),
+    "sasuke_cs2": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["cs2", "sharingan"]),
+    "sasuke_ms": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ms"]),
+    "sasuke_ems": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems"]),
+    "sasuke_rinne": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems", "rinnegan"]),
+    "sasuke_adult": dict(eye="narrow", brow="flat", mouth="neutral", marks=["rinnegan"]),
+    "sasuke_adult_sh": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems", "rinnegan"]),
     "ichigo": dict(eye="narrow", brow="sharp", mouth="corner"),
     "ichigo_hollow": dict(eye="narrow", brow="sharp", mouth="none", marks=["hollow_mask"]),
     "ichigo_mugetsu": dict(eye="narrow", brow="flat", mouth="neutral"),
@@ -167,6 +174,40 @@ def face32(px, W, H, spec, hair, iris, skin):
         for cx in (10, 21):
             for x, y in ((cx - 1, 18), (cx + 2, 18), (cx, 21)):
                 put(x, y, (10, 6, 8))
+    open_eyes = M.EXPR not in ("blink", "hurt")
+    if "cs2" in marks and open_eyes:  # black sclera, the dark cross over the bridge of the nose
+        for cx in (10, 21):
+            for y in range(17, 22):
+                for x in range(cx - 2, cx + 4):
+                    put(x, y, (16, 14, 20))
+            for x, y in ((cx, 19), (cx + 1, 19), (cx, 20), (cx + 1, 20)):
+                put(x, y, (200, 20, 30))
+    if "cs2" in marks:
+        for i in range(-2, 3):
+            put(15 + i, 21 + i, (30, 24, 36)); put(16 - i, 21 + i, (30, 24, 36))
+    if "cs1" in marks:  # the black flame marks spreading over the left side of his face
+        for x, y in ((24, 12), (25, 13), (26, 14), (23, 15), (27, 16), (25, 24), (26, 25), (24, 26), (27, 27), (25, 28), (26, 29), (28, 23), (29, 24)):
+            put(x, y, (20, 16, 22))
+    if "ms" in marks and open_eyes:  # Sasuke's Mangekyo: a three-bladed pinwheel
+        for cx in (10, 21):
+            for x, y in ((cx, 19), (cx + 1, 19), (cx, 20), (cx + 1, 20), (cx - 1, 18), (cx + 2, 18), (cx + 2, 21), (cx - 1, 21), (cx - 2, 19), (cx + 3, 20)):
+                put(x, y, (10, 6, 8))
+    if "ems" in marks and open_eyes:  # Eternal Mangekyo: the pinwheel laid over a six-pointed star
+        for cx in (10, 21):
+            if "rinnegan" in marks and cx == 21:
+                continue
+            for x, y in ((cx, 19), (cx + 1, 19), (cx, 20), (cx + 1, 20), (cx - 2, 19), (cx + 3, 20), (cx - 1, 17), (cx + 2, 17), (cx - 1, 22), (cx + 2, 22),
+                         (cx - 2, 21), (cx + 3, 18)):
+                put(x, y, (10, 6, 8))
+    if "rinnegan" in marks and open_eyes:  # his left eye: lavender rings with six tomoe
+        cx, cy = 21.5, 19.5
+        for y in range(17, 23):
+            for x in range(19, 25):
+                d = math.hypot(x - cx, y - cy)
+                put(x, y, (120, 96, 170) if 1.2 < d < 1.9 or d > 2.7 else (196, 178, 232))
+        put(21, 19, (60, 40, 90)); put(22, 20, (60, 40, 90))
+        for x, y in ((19, 18), (24, 18), (19, 21), (24, 21), (21, 17), (22, 22)):
+            put(x, y, (10, 6, 8))
     if "hollow_mask" in marks:  # the white Hollow mask with the red stripes on the left
         for y in range(10, 32):
             for x in range(0, 32):
@@ -355,45 +396,200 @@ def naruto(m, char, form):
             m.strand([s * 4.6, 17.0, 2.2], [s * 0.8, 0.7, 0.4], 8.5, 2.8, solid(red), bone="body", segs=3, thick=0.5)
 
 
-# ------------------------------------------------------------------ Sasuke (Shippuden, Taka)
+# ------------------------------------------------------------------ Sasuke (Part I, Shippuden, War, Adult)
 SAS_HAIR = (34, 36, 56)
+CS2_SKIN = (138, 132, 146)
+CS2_HAIR = (96, 104, 140)
+PURPLE_ROPE = (120, 70, 170)
+SUS = (150, 80, 222)
 
 
-def sasuke(m, form):
-    ms = form == "susanoo"
-    shirt = (236, 236, 240)
+def uchiha_crest(cy=0.2, r=0.15, face_="south"):
+    """The Uchiha fan: red top, white bottom, on the back."""
+    def f(face, px, w, h, base):
+        if face != face_:
+            return
+        cx, c_y, R = w / 2, h * cy, w * r
+        for y in range(h):
+            for x in range(w):
+                d = math.hypot(x - cx, y - c_y)
+                if d <= R:
+                    _put(px, w, h, x, y, (200, 30, 36) if y < c_y else (240, 240, 236))
+                if R < d <= R + 0.9 and y >= c_y - R:
+                    _put(px, w, h, x, y, (30, 30, 36))
+        for y in range(int(c_y + R), int(c_y + R * 1.9)):
+            _put(px, w, h, int(cx), y, (240, 240, 236))
+    return f
 
-    def open_v(face, px, w, h, base):
+
+def chakra(col, density=3):
+    """Susanoo chakra: a bright solid rim and a see-through diamond lattice, so it reads as energy, not a box."""
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            for x in range(w):
+                rim = x in (0, w - 1) or y in (0, h - 1)
+                if rim:
+                    px[x, y] = light(col, 0.3) + (255,)
+                elif (x + y) % density == 0 or (x - y) % density == 0:
+                    px[x, y] = (col if (x // 2 + y // 2) % 2 else dark(col, 0.82)) + (255,)
+                else:
+                    px[x, y] = (0, 0, 0, 0)
+    return p
+
+
+def skull_paint(col):
+    """The Susanoo skull around his head: only its outline, eye sockets, brow ridge and teeth glow."""
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for y in range(h):
+            for x in range(w):
+                px[x, y] = (0, 0, 0, 0)
+                if x in (0, w - 1) or y in (0, h - 1):
+                    px[x, y] = light(col, 0.3) + (255,)
         if face == "north":
-            for y in range(int(h * 0.55)):
-                half = int((h * 0.55 - y) / (h * 0.55) * w * 0.22)
-                for x in range(w // 2 - half, w // 2 + half + 1):
-                    _put(px, w, h, x, y, SKIN)
-    base_body(m, layered(shirt, [open_v]), arm_paint(shirt, cuff=NAVY, sleeve_to=0.55), leg_paint((40, 44, 80), BLACK),
-              head_paint(SAS_HAIR, (200, 20, 30) if ms else (36, 30, 40), True, "sasuke_ms" if ms else "sasuke"))
-    m.box("body", [-4.3, 22.0, -2.4], [8.6, 2.2, 4.8], solid(shirt))                                       # high open collar
-    m.box("body", [-4.6, 11.4, -2.7], [9.2, 2.0, 5.4], layered((120, 70, 170), [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (90, 50, 130))]))  # purple rope belt
-    for s in (1, -1):  # the big rope bow at the back
-        m.strand([s * 0.6, 12.4, 2.8], [s * 1, 0.2, 0.3], 3.4, 2.0, solid((120, 70, 170)), bone="body", segs=2, thick=0.8)
-    m.box("body", [-4.5, 6.5, -2.6], [9.0, 5.0, 5.2], layered((40, 44, 90), [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w // 3, 2 * w // 3)] if f == "north" else None]))  # cloth over the hips
-    # Kusanagi, sheathed across the small of his back
-    m.box("body", [-6.0, 13.8, 2.6], [12.0, 0.8, 0.8], solid((30, 30, 36)))
-    m.box("body", [-8.6, 13.7, 2.5], [2.6, 1.0, 1.0], solid((60, 60, 70)))
-    hp = M.hair_paint(SAS_HAIR)
-    shell(m, SAS_HAIR, hairline=30.4, sideburn=False, teeth=0.8)
-    for x, y in ((-2.2, 31.5), (0, 32.0), (2.2, 31.5), (-1.2, 30.0), (1.2, 30.0), (0, 28.8)):  # the spikes swept back
-        m.strand([x, y, 2.8], [x * 0.12, 0.45, 1], 5.2, 3.0, hp, bone="hair", segs=3, thick=0.75, bend=(0, 0.05, 0))
-    for s in (1, -1):  # long bangs framing the face
-        m.strand([s * 3.4, 31.4, -4.1], [s * 0.15, -1, -0.1], 6.0, 2.0, hp, bone="hair", segs=3, thick=0.6)
-    m.strand([0.8, 31.6, -4.1], [0.1, -1, -0.2], 3.0, 1.8, hp, bone="hair", segs=2, thick=0.6)
-    if ms:  # Susanoo: a purple chakra ribcage around him
-        pur = (150, 70, 220)
-        for i in range(4):
-            y = 14 + i * 2.6
-            m.box("body", [-5.6, y, -3.4], [11.2, 0.9, 0.6], solid(pur))
-            m.box("body", [-5.6, y, -3.4], [0.6, 0.9, 6.8], solid(pur))
-            m.box("body", [5.0, y, -3.4], [0.6, 0.9, 6.8], solid(pur))
-        m.box("body", [-0.4, 12.5, 3.0], [0.8, 12.0, 0.8], solid(pur))                                         # spine
+            for cx in (w * 0.3, w * 0.7):  # eye sockets
+                for a in range(40):
+                    t = a / 40 * math.pi * 2
+                    _put(px, w, h, int(cx + math.cos(t) * w * 0.13), int(h * 0.42 + math.sin(t) * h * 0.1), col)
+            for x in range(int(w * 0.15), int(w * 0.85)):  # brow ridge and teeth
+                _put(px, w, h, x, int(h * 0.28), col)
+                if x % 3:
+                    _put(px, w, h, x, int(h * 0.86), light(col, 0.2))
+        elif face in ("east", "west", "up"):
+            for x in range(w):
+                _put(px, w, h, x, h // 2, col)
+    return p
+
+
+def sasuke_hair(m, col, style):
+    hp = M.hair_paint(col)
+    shell(m, col, hairline=30.4, sideburn=False, teeth=0.8)
+    if style == "cs2":  # Cursed Seal Lv2: the hair grows long and pale
+        long_hair(m, col, back_len=14, front=True)
+        return
+    k = {"kid": 0.85, "teen": 1.0, "war": 1.0, "adult": 0.85}[style]
+    for x, y in ((-2.2, 31.5), (0, 32.0), (2.2, 31.5), (-1.2, 30.0), (1.2, 30.0), (0, 28.8), (-3.2, 29.6), (3.2, 29.6)):  # the spikes swept back
+        m.strand([x, y, 2.8], [x * 0.12, 0.45, 1], 5.2 * k, 3.0, hp, bone="hair", segs=3, thick=0.75, bend=(0, 0.05, 0))
+    side = {"kid": 5.4, "teen": 6.0, "war": 6.2, "adult": 7.0}[style]
+    for s_ in (1, -1):  # long bangs framing the face
+        m.strand([s_ * 3.4, 31.4, -4.1], [s_ * 0.15, -1, -0.1], side, 2.0, hp, bone="hair", segs=3, thick=0.6)
+    if style == "adult":  # the long bang over his left eye, hiding the Rinnegan
+        m.strand([-2.0, 31.8, -4.4], [-0.05, -1, -0.22], 6.8, 3.2, hp, bone="hair", segs=3, thick=0.6)
+        m.strand([0.9, 31.7, -4.2], [0.2, -1, -0.3], 3.0, 1.8, hp, bone="hair", segs=2, thick=0.6)
+    else:
+        m.strand([0.8, 31.6, -4.1], [0.1, -1, -0.2], 3.0, 1.8, hp, bone="hair", segs=2, thick=0.6)
+        m.strand([-1.2, 31.6, -4.1], [-0.1, -1, -0.2], 2.6, 1.8, hp, bone="hair", segs=2, thick=0.6)
+
+
+def hand_wings(m, col=(84, 90, 116), size=1.0):
+    """Cursed Seal Lv2: the two great webbed hands growing from his shoulder blades."""
+    hp = layered(col, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), dark(col, 0.7))])
+    for s_ in (1, -1):
+        m.strand([s_ * 1.6, 20.5, 2.6], [s_ * 0.9, 0.5, 0.5], 7.5 * size, 2.2 * size, hp, bone="body", segs=2, thick=0.8)
+        root = [s_ * (1.6 + 4.46 * size), 20.5 + 2.48 * size, 2.6 + 2.48 * size]
+        for k, a in enumerate((-35, -5, 25, 55, 85)):
+            r = math.radians(a)
+            m.strand(root, [s_ * math.cos(r), math.sin(r), 0.35], (8.5 - abs(k - 2) * 0.9) * size, 1.6 * size, hp, bone="body", segs=3, thick=0.6)
+        m.box("body", [root[0] - (3.2 if s_ > 0 else 0.4) * size, root[1] - 1.0, root[2] - 0.3], [3.6 * size, 3.4 * size, 0.6], solid(dark(col, 0.85)))
+
+
+def susanoo(m, stage):
+    """stage 1: ribcage + skull + skeletal arms (Mangekyo); 2: armoured (Eternal); 3: perfect, with wings."""
+    pur = SUS if stage < 3 else (170, 110, 240)
+    ch = chakra(pur)
+    for i in range(4):  # ribs
+        y = 13.6 + i * 2.6
+        m.box("body", [-6.4, y, -3.9], [12.8, 0.9, 0.7], ch)
+        m.box("body", [-6.4, y, -3.9], [0.7, 0.9, 7.8], ch)
+        m.box("body", [5.7, y, -3.9], [0.7, 0.9, 7.8], ch)
+    m.box("body", [-0.5, 12.0, 3.4], [1.0, 14.5, 1.0], ch)                                                     # spine
+    m.box("body", [-6.6, 23.0, -4.0], [13.2, 1.2, 8.0], ch)                                                    # shoulder girdle
+    for s_ in (1, -1):  # skeletal arms reaching forward
+        m.strand([s_ * 7.0, 23.0, 0.0], [s_ * 0.5, -0.5, -0.7], 10, 2.2, ch, bone="body", segs=3, thick=0.9)
+        m.box("body", [s_ * 10.2 - 1.3, 14.6, -6.8], [2.6, 2.6, 2.6], ch)
+    if stage >= 2:  # armour: breastplate, pauldrons, the long-nosed helmet with its crescent
+        plate = chakra(dark(pur, 0.92), 2)
+        m.box("head", [-4.7, 30.2, -4.9], [9.4, 1.4, 9.8], solid(light(pur, 0.15)))                             # helmet band
+        m.box("body", [-6.6, 12.4, -4.6], [13.2, 11.0, 0.8], plate)
+        for s_ in (1, -1):
+            m.box("body", [s_ * 7.6 - 2.0, 21.4, -4.2], [4.0, 3.2, 8.4], plate)
+            m.strand([s_ * 3.0, 31.0, -4.6], [s_ * 0.8, 1, -0.3], 5.5, 1.8, solid(light(pur, 0.15)), bone="head", segs=3, thick=0.6, bend=(-s_ * 0.2, 0, 0))  # crescent horns
+    if stage >= 3:  # Perfect Susanoo: the great wings
+        for s_ in (1, -1):
+            for k in range(5):
+                m.strand([s_ * 2.0, 22.0 - k * 1.6, 4.0], [s_ * (1.0 - k * 0.12), 0.9 - k * 0.35, 0.6], 15 - k * 1.6, 3.0, ch, bone="body", segs=3, thick=0.4)
+
+
+def sasuke(m, char, form):
+    kid, war, adult = char == "sasuke_kid", char == "sasuke_war", char == "sasuke_adult"
+    cs2 = form == "cs2"
+    skin = CS2_SKIN if cs2 else SKIN
+    hair = CS2_HAIR if cs2 else SAS_HAIR
+    key = {"base": "sasuke", "sharingan": "sasuke_sh", "cs1": "sasuke_cs1", "cs2": "sasuke_cs2", "susanoo": "sasuke_ms",
+           "ems": "sasuke_ems", "perfect": "sasuke_ems", "rinnegan": "sasuke_rinne", "adult": "sasuke_adult", "adult_sus": "sasuke_adult_sh"}[form]
+    iris = (30, 28, 36) if form in ("base", "adult") else (200, 20, 30)
+    head = head_paint(hair, iris, True, key)
+    if cs2:
+        head = skin_swap(head, CS2_SKIN)
+    if kid:  # Part I: navy high-collared short-sleeved shirt, white shorts, white arm warmers, the Leaf headband
+        navy = (44, 62, 138)
+        torso = layered(navy, [uchiha_crest(0.18, 0.16)] + ([lambda f, px, w, h, b: [_put(px, w, h, x, y, (20, 16, 22)) for y in range(h) for x in range(w)
+                                                                                         if f == "north" and x > w * 0.6 and (x * 3 + y * 5) % 7 == 0]] if form == "cs1" else []))
+        base_body(m, torso, layered(skin, [region((0, 0, 1, 0.28), navy), region((0, 0.45, 1, 0.85), WHITE)]),
+                  layered(skin, [region((0, 0, 1, 0.5), (226, 226, 216)), region((0, 0.86, 1, 1), navy), region((0, 0.55, 1, 0.75), WHITE)]), head)
+        m.box("body", [-4.0, 22.2, -2.6], [8.0, 3.0, 5.2], layered(navy, [uchiha_crest(0.45, 0.2)]))           # the big collar
+        if not cs2:
+            headband(m, navy)
+    else:
+        if adult:  # grey long-sleeved shirt, periwinkle vest, black trousers, purple belt
+            shirt = (150, 152, 162)
+            vest = (150, 156, 204)
+            base_body(m, layered(vest, [zipper(dark(vest, 0.7)), region((0, 0, 1, 0.08), shirt)]), layered(shirt, [region((0, 0.82, 1, 1), (50, 50, 58))]),
+                      leg_paint((36, 36, 42), (40, 40, 52), band=((40, 40, 52), 0.7, 0.86)), head)
+            m.box("body", [-2.4, 22.8, -2.5], [4.8, 1.8, 5.0], solid(shirt))                                    # collar
+            m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.2, 5.2], solid(PURPLE_ROPE))                              # belt
+            m.box("body", [3.6, 7.6, -1.0], [1.2, 4.0, 2.0], layered(NAVY, [region((0, 0, 1, 0.4), (196, 202, 212))]))  # headband at the hip
+        else:  # Shippuden: white open shirt, black arm guards / War: grey zipped high-collar shirt, blue wrist warmers
+            shirt = (196, 198, 206) if war else (236, 236, 240)
+
+            def open_v(face, px, w, h, base):
+                if face == "north" and not war:
+                    for y in range(int(h * 0.55)):
+                        half = int((h * 0.55 - y) / (h * 0.55) * w * 0.22)
+                        for x in range(w // 2 - half, w // 2 + half + 1):
+                            _put(px, w, h, x, y, skin)
+            torso = layered(shirt, [open_v, uchiha_crest(0.12, 0.14)] + ([zipper((120, 120, 130))] if war else []))
+            arm = (layered(skin, [region((0, 0, 1, 0.3), shirt), region((0, 0.7, 1, 0.9), (60, 80, 150))]) if war
+                   else layered(shirt, [region((0, 0.5, 1, 0.88), (30, 30, 36)), region((0, 0.88, 1, 1), skin)]))
+            base_body(m, torso, arm, leg_paint((40, 44, 80), BLACK), head)
+            m.box("body", [-4.3, 22.0, -2.4], [8.6, 2.4, 4.8], layered(shirt, [uchiha_crest(0.5, 0.18)]))       # high collar
+            m.box("body", [-4.6, 11.4, -2.7], [9.2, 2.0, 5.4], layered(PURPLE_ROPE, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (90, 50, 130))]))  # rope belt
+            for s_ in (1, -1):  # the big rope bow at the back
+                m.strand([s_ * 0.6, 12.4, 2.8], [s_ * 1, 0.2, 0.3], 3.4, 2.0, solid(PURPLE_ROPE), bone="body", segs=2, thick=0.8)
+            m.box("body", [-4.5, 6.5, -2.6], [9.0, 5.0, 5.2], layered((40, 44, 90), [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w // 3, 2 * w // 3)] if f == "north" else None]))  # cloth over the hips
+        # Kusanagi, sheathed across the small of his back
+        m.box("body", [-6.0, 13.8, 2.6], [12.0, 0.8, 0.8], solid((30, 30, 36) if not adult else (40, 30, 34)))
+        m.box("body", [-8.6, 13.7, 2.5], [2.6, 1.0, 1.0], solid((60, 60, 70)))
+    sasuke_hair(m, hair, "cs2" if cs2 else ("kid" if kid else "adult" if adult else "war" if war else "teen"))
+    if cs2:
+        hand_wings(m, size=0.8 if kid else 1.0)
+    if form == "susanoo":
+        susanoo(m, 1)
+    elif form == "ems" or form == "adult_sus":
+        susanoo(m, 2 if form == "ems" else 3)
+    elif form in ("perfect", "rinnegan"):
+        susanoo(m, 3)
+    if adult:  # the black cloak with purple lining; he lost his left arm in the Valley of the End
+        m.cubes = [c for c in m.cubes if c["bone"] != "leftArm"]
+        cloak, lining = (30, 30, 38), (110, 70, 160)
+        m.box("body", [-5.2, 3.0, 2.3], [10.4, 21.6, 0.6], layered(cloak, [region((0, 0, 1, 1), lining, faces=("north",))]))
+        m.box("body", [-8.4, 3.6, -2.9], [3.6, 21.0, 5.8], layered(cloak, [region((0, 0, 1, 1), lining, faces=("east",))]))  # drapes over the missing arm
+        m.box("body", [-5.3, 22.0, -3.0], [10.6, 2.6, 6.0], solid(cloak))                                     # shoulder cape
+        m.box("body", [-2.6, 23.6, -2.8], [5.2, 1.6, 5.6], layered(cloak, [region((0, 0.3, 1, 0.7), (120, 30, 40))]))  # collar with its maroon cinch
+        m.box("rightArm", [3.7, 11.6, -2.2], [4.6, 2.2, 4.4], solid((50, 50, 58)))                              # fingerless glove
 
 
 # ------------------------------------------------------------------ Ichigo (Bleach)
@@ -630,7 +826,10 @@ FORMS = {
     "naruto_teen": ["base", "sage"],
     "naruto_war": ["kcm", "kurama", "spsm"],
     "naruto_adult": ["hokage", "link", "baryon"],
-    "sasuke": ["sharingan", "susanoo"],
+    "sasuke_kid": ["sharingan", "cs1", "cs2"],
+    "sasuke": ["sharingan", "cs2", "susanoo"],
+    "sasuke_war": ["ems", "perfect", "rinnegan"],
+    "sasuke_adult": ["adult", "adult_sus"],
     "ichigo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
     "tanjiro": ["water", "mark"],
 }
@@ -640,18 +839,18 @@ def build(char, form):
     m = M.Model()
     if char.startswith("naruto"):
         naruto(m, char, form)
-        if char == "naruto_kid":  # kid proportions: a bigger head on the small body
-            f, P = 1.15, (0.0, 24.0, 0.0)
-            for c in m.cubes:
-                if c["bone"] in ("head", "hair", "hat"):
-                    c["frm"] = [P[i] + (c["frm"][i] - P[i]) * f for i in range(3)]
-                    c["size"] = [round(v * f * 4) / 4 for v in c["size"]]
-                    if c["pivot"]:
-                        c["pivot"] = [round(P[i] + (c["pivot"][i] - P[i]) * f, 3) for i in range(3)]
-    elif char == "sasuke":
-        sasuke(m, form)
+    elif char.startswith("sasuke"):
+        sasuke(m, char, form)
     elif char == "ichigo":
         ichigo(m, form)
     elif char == "tanjiro":
         tanjiro(m, form)
+    if char in ("naruto_kid", "sasuke_kid"):  # kid proportions: a bigger head on the small body
+        f, P = 1.15, (0.0, 24.0, 0.0)
+        for c in m.cubes:
+            if c["bone"] in ("head", "hair", "hat"):
+                c["frm"] = [P[i] + (c["frm"][i] - P[i]) * f for i in range(3)]
+                c["size"] = [round(v * f * 4) / 4 for v in c["size"]]
+                if c["pivot"]:
+                    c["pivot"] = [round(P[i] + (c["pivot"][i] - P[i]) * f, 3) for i in range(3)]
     return m

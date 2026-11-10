@@ -11,6 +11,10 @@
     "sharingan_shout": "textures/entity/sasuke/sharingan_shout",
     "sharingan_hurt": "textures/entity/sasuke/sharingan_hurt",
     "sharingan_blink": "textures/entity/sasuke/sharingan_blink",
+    "cs2": "textures/entity/sasuke/cs2",
+    "cs2_shout": "textures/entity/sasuke/cs2_shout",
+    "cs2_hurt": "textures/entity/sasuke/cs2_hurt",
+    "cs2_blink": "textures/entity/sasuke/cs2_blink",
     "susanoo": "textures/entity/sasuke/susanoo",
     "susanoo_shout": "textures/entity/sasuke/susanoo_shout",
     "susanoo_hurt": "textures/entity/sasuke/susanoo_hurt",
@@ -18,6 +22,7 @@
    },
    "geometry": {
     "sharingan": "geometry.ab.sasuke_sharingan",
+    "cs2": "geometry.ab.sasuke_cs2",
     "susanoo": "geometry.ab.sasuke_susanoo"
    },
    "animations": {
@@ -62,7 +67,8 @@
     "tail_whip": "animation.ab.tail_whip",
     "scratch": "animation.ab.scratch",
     "seal": "animation.ab.seal",
-    "rasengan": "animation.ab.rasengan"
+    "rasengan": "animation.ab.rasengan",
+    "nrun": "animation.ab.nrun"
    },
    "scripts": {
     "animate": [
@@ -185,6 +191,9 @@
      },
      {
       "rasengan": "query.property('ab:pose') == 36"
+     },
+     {
+      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"
      }
     ]
    },

@@ -1821,7 +1821,7 @@ function rasenganVsChidori(n, sk, o) {
   });
 }
 function rasengan(e, s, t, o) {
-  if (t.typeId === "ab:sasuke" && !t.hasTag("ab_clone") && !e.hasTag("ab_clone")) {
+  if (SASUKES.has(t.typeId) && !t.hasTag("ab_clone") && !e.hasTag("ab_clone")) {
     const ts = state(t);
     if (now() >= ts.busyUntil && ts.energy >= 90 && Math.random() < 0.6) {
       ts.energy -= 90;
@@ -2066,95 +2066,267 @@ const NARUTO_ADULT = {
   ],
 };
 
-// ------------------------------------------------------------------ Sasuke (Shippuden)
+// ------------------------------------------------------------------ Sasuke Uchiha (Part I, Shippuden, War, Adult)
+// One move library, four versions: each version picks the techniques he really had at that age.
+const SASUKES = new Set(["ab:sasuke_kid", "ab:sasuke", "ab:sasuke_war", "ab:sasuke_adult"]);
+const SAS = {
+  chidori: (o = {}) => ({ id: o.id ?? "chidori", label: o.label ?? "Chidori", cd: 140, cost: 90, min: 0, max: 20, weight: 5, cond: o.cond,
+    run(e, s, t) {
+      const col = o.color ?? C.kameBlue;
+      busy(s, 22); face(e, aim(t)); announce(e, o.say ?? "§b§lChidori!");
+      chargeOrb(e, t, 10, col, 0.4, 1.1, 4);
+      every(2, 5, () => { if (e.isValid) fx(e.dimension, "streak", handPos(e, alive(t) ? t : e).pos, C.white, 0.8, 0.2, { count: 4, speed: 6 }); });
+      later(10, () => {
+        if (!e.isValid || !alive(t)) return;
+        afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
+        const c = aim(t);
+        deal(e, t, (o.dmg ?? 34) * powerOf(e) / 100);
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 8); }  // the lightning locks the muscles
+        fx(e.dimension, "streak", c, col, 1.8, 0.4, { count: 22, speed: 12 });
+        fx(e.dimension, "flash", c, C.white, 3, 0.2);
+        burst(e.dimension, c, col, 20, 4, 0.4, 0.4);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  fireball: (o = {}) => ({ id: "fireball", label: "Great Fireball", cd: 160, cost: 90, min: 0, max: 30, weight: 4, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 16); face(e, aim(t)); setPose(e, 21); announce(e, "§6§lFire Style: Great Fireball Technique!");
+      later(8, () => {
+        if (!e.isValid) return;
+        setPose(e, 4);
+        const { pos } = handPos(e, alive(t) ? t : e);
+        const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
+        projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 0.9, maxDist: 30, radius: 1.6, size: (o.size ?? 2.4), color: C.fire, slot: 11, trail: true,
+          explode: { radius: 3.5, dmg: 30 * powerOf(e) / 100, color: C.fire, carve: 1, knock: 1.6 } });
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  phoenix: () => ({ id: "phoenix", label: "Phoenix Flower", cd: 150, cost: 70, min: 0, max: 26, weight: 4,
+    run(e, s, t) {
+      busy(s, 16); face(e, aim(t)); setPose(e, 21); announce(e, "§6§lFire Style: Phoenix Flower Technique!");
+      later(6, () => {
+        if (!e.isValid) return;
+        setPose(e, 4);
+        const { pos } = handPos(e, alive(t) ? t : e);
+        const base = V.norm(V.sub(alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10)), pos));
+        const side = { x: -base.z, y: 0, z: base.x };
+        for (let k = -2; k <= 2; k++) {  // five fireballs fanning out, each hiding a shuriken
+          const d = V.norm(V.add(base, V.mul(side, k * 0.12)));
+          later(Math.abs(k) * 2, () => projectile(e, pos, d, { speed: 1.1, maxDist: 26, radius: 1.1, size: 0.9, color: C.fire, slot: 11, trail: true,
+            explode: { radius: 1.6, dmg: 9 * powerOf(e) / 100, color: C.fire, knock: 0.6 } }));
+        }
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  lion: () => ({ id: "lion", label: "Lion Combo", cd: 170, cost: 70, min: 0, max: 8, weight: 4,
+    run(e, s, t) {
+      busy(s, 22); announce(e, "§9§lLion Combo! §7— the move he copied from Lee");
+      afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 9);
+      deal(e, t, 8 * powerOf(e) / 100);
+      try { t.applyKnockback({ x: 0, z: 0 }, 1.1); } catch (err) { /* ignore */ }
+      later(8, () => {  // shadow of the leaf: behind him in the air, then the crushing heel
+        if (!e.isValid || !alive(t)) return;
+        try { e.teleport(V.up(t.location, 1.6), { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+        setPose(e, 7); deal(e, t, 8 * powerOf(e) / 100);
+        later(4, () => {
+          if (!e.isValid || !alive(t)) return;
+          setPose(e, 10); deal(e, t, 18 * powerOf(e) / 100);
+          try { t.applyKnockback({ x: 0, z: 0 }, -1.6); } catch (err) { /* ignore */ }
+          fx(t.dimension, "shock", t.location, C.white, 5, 0.4);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      });
+    } }),
+  nagashi: (o = {}) => ({ id: "nagashi", label: "Chidori Current", cd: 200, cost: 100, min: 0, max: 5, weight: 3, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 14); setPose(e, 22); announce(e, "§b§lChidori Current!");
+      const dim = e.dimension;
+      fx(dim, "shock", e.location, C.kameBlue, 7, 0.4);
+      fx(dim, "streak", V.up(e.location, 1), C.white, 2, 0.4, { count: 26, speed: 10 });
+      let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 4 }); } catch (err) { /* ignore */ }
+      for (const x of list) {
+        if (!canHit(e, teamOf(e), x)) continue;
+        deal(e, x, 16 * powerOf(e) / 100);
+        if (isFighter(x)) { const xs = state(x); xs.stunUntil = Math.max(xs.stunUntil, now() + 16); }  // paralysed by the current
+      }
+      later(12, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  spear: () => ({ id: "spear", label: "Chidori Spear", cd: 150, cost: 80, min: 0, max: 16, weight: 4,
+    run(e, s, t) {
+      busy(s, 14); face(e, aim(t)); setPose(e, 4); announce(e, "§b§lChidori Sharp Spear!");
+      beam(e, alive(t) ? t : e, { color: C.kameBlue, width: 0.45, length: 16, dmg: 30 * powerOf(e) / 100, blast: 1.2, ticks: 3, sound: "random.anvil_land", pitch: 1.6 });
+      later(10, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  senbon: () => ({ id: "senbon", label: "Chidori Senbon", cd: 160, cost: 80, min: 0, max: 22, weight: 3,
+    run(e, s, t) {
+      busy(s, 14); face(e, aim(t)); setPose(e, 27); announce(e, "§b§lChidori Senbon!");
+      later(4, () => {
+        if (!e.isValid) return;
+        const { pos } = handPos(e, alive(t) ? t : e);
+        for (let k = 0; k < 6; k++) {
+          const tgt = alive(t) ? V.add(aim(t), { x: (Math.random() - 0.5) * 1.2, y: (Math.random() - 0.5) * 1.2, z: (Math.random() - 0.5) * 1.2 }) : V.add(pos, e.getViewDirection());
+          later(k, () => projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 2.2, maxDist: 24, radius: 0.8, size: 0.35, color: C.kameBlue,
+            explode: { radius: 0.8, dmg: 6 * powerOf(e) / 100, color: C.kameBlue, knock: 0.2 } }));
+        }
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  kirin: () => ({ id: "kirin", label: "Kirin", cd: 700, cost: 400, min: 0, max: 40, weight: 5,
+    run(e, s, t) {
+      busy(s, 34); setPose(e, 23); announce(e, "§b§lKirin! §7— the lightning of the heavens");
+      const dim = e.dimension;
+      later(22, () => {
+        if (!e.isValid || !alive(t)) return;
+        const c = t.location;
+        for (let y = 30; y > 0; y -= 1.5) fx(dim, "orb", V.add(c, { x: Math.sin(y) * 0.8, y, z: Math.cos(y) * 0.8 }), C.kameBlue, 2.2, 0.4);
+        fx(dim, "flash", V.up(c, 2), C.white, 8, 0.3);
+        explosion(e, V.up(c, 1), { radius: 5.5, dmg: 120 * powerOf(e) / 100, color: C.kameBlue, carve: 2, knock: 2.5 });
+        shake(dim, c, 0.6, 0.6);
+        later(6, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  genjutsu: (o = {}) => ({ id: "genjutsu", label: o.label ?? "Sharingan Genjutsu", cd: 380, cost: 160, min: 0, max: 14, weight: 4, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 12); face(e, aim(t)); setPose(e, 26); announce(e, o.say ?? "§c§l(the Sharingan turns) §7— look into my eyes");
+      if (!alive(t)) return;
+      fx(t.dimension, "flash", V.up(t.location, 1.6), C.red, 2.4, 0.3);
+      ring(t.dimension, V.up(t.location, 1.7), 1.2, C.red, 18, 0.4);
+      if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + (o.stun ?? 30)); }
+      deal(e, t, (o.dmg ?? 8) * powerOf(e) / 100);
+      later(12, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  amaterasu: (o = {}) => ({ id: "amaterasu", label: "Amaterasu", cd: 400, cost: 220, min: 0, max: 30, weight: 5, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 14); face(e, aim(t)); setPose(e, 26); announce(e, "§0§lAmaterasu! §7— black flames that never go out");
+      every(8, 12, () => {
+        if (!alive(t)) return false;
+        deal(e, t, 7 * powerOf(e) / 100);
+        fx(t.dimension, "orb_solid", V.up(t.location, 1 + Math.random()), C.black, 1.6, 0.6);
+        fx(t.dimension, "aura", t.location, C.black, 1.2, 0.7, { count: 8, speed: 1.5 });
+      });
+      later(12, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  kagutsuchi: (o = {}) => ({ id: "kagutsuchi", label: "Blaze Release: Kagutsuchi", cd: 300, cost: 180, min: 0, max: 26, weight: 4, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 18); setPose(e, 19); announce(e, "§0§lBlaze Release: §4§lKagutsuchi's Sword!");
+      flyingSlash(e, t, { color: C.black, dmg: 34 * powerOf(e) / 100, range: 26, roll: 30, size: 2.2 });
+      every(8, 6, () => {  // the shaped black flame keeps burning where it cut
+        if (!alive(t)) return false;
+        deal(e, t, 4 * powerOf(e) / 100);
+        fx(t.dimension, "aura", t.location, C.black, 1.1, 0.6, { count: 8, speed: 1.4 });
+      });
+      later(10, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  arrow: (o = {}) => ({ id: "arrow", label: "Susanoo Arrow", cd: 260, cost: 200, min: 0, max: 45, weight: 4, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 20); face(e, aim(t)); setPose(e, 20); announce(e, o.say ?? "§5§lSusanoo: Arrow!");
+      later(10, () => {
+        if (!e.isValid) return;
+        const { pos } = handPos(e, alive(t) ? t : e);
+        const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
+        projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 2.2, maxDist: 50, radius: 1.4, size: o.size ?? 1.2, color: o.color ?? C.purple, slot: 6, pierce: true, trail: true,
+          dmg: (o.dmg ?? 60) * powerOf(e) / 100, explode: { radius: 3, dmg: 20 * powerOf(e) / 100, color: o.color ?? C.purple, knock: 2 } });
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  susSword: (o = {}) => ({ id: "susSword", label: "Susanoo Sword", cd: 240, cost: 180, min: 0, max: 30, weight: 5, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 20); setPose(e, 23); announce(e, "§5§lSusanoo! §7— the great blade comes down");
+      later(8, () => {
+        if (!e.isValid) return;
+        setPose(e, 19);
+        flyingSlash(e, t, { color: C.purple, dmg: (o.dmg ?? 56) * powerOf(e) / 100, range: 30, roll: 85, carve: true, size: 3.4 });
+        if (alive(t)) { fx(t.dimension, "shock", t.location, C.purple, 6, 0.4); shake(t.dimension, t.location, 0.35, 0.3); }
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  indra: () => ({ id: "indra", label: "Indra's Arrow", cd: 1000, cost: 700, min: 0, max: 50, weight: 8, cond: G(2),
+    run(e, s, t) {
+      busy(s, 44); setPose(e, 20); face(e, aim(t)); announce(e, "§5§lIndra's Arrow! §7— the chakra of all nine tailed beasts in one shot");
+      const dim = e.dimension;
+      chargeOrb(e, t, 22, C.purple, 0.5, 2.6, 20);
+      every(2, 11, () => { if (e.isValid) { fx(dim, "streak", V.up(e.location, 1.5), C.kameBlue, 2, 0.3, { count: 8, speed: 10 }); fx(dim, "aura", e.location, C.purple, 2.2, 0.8, { count: 16, speed: 3 }); } });
+      later(22, () => {
+        if (!e.isValid) return;
+        beam(e, alive(t) ? t : e, { color: C.purple, width: 3.4, length: 52, dmg: 220 * powerOf(e) / 100, carve: 3, blast: 7.5, ticks: 8, pitch: 0.5 });
+        later(18, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  ameno: (o = {}) => ({ id: "ameno", label: "Amenotejikara", cd: 150, cost: 80, min: 0, max: 30, weight: 5, cond: o.cond,
+    run(e, s, t) {
+      busy(s, 12); announce(e, "§5§l(Rinnegan) §d§lAmenotejikara! §7— they've switched places");
+      if (!alive(t)) return;
+      const a = e.location, b = t.location;
+      fx(e.dimension, "flash", V.up(a, 1), C.purple, 2, 0.15); fx(e.dimension, "flash", V.up(b, 1), C.purple, 2, 0.15);
+      try { e.teleport(V.add(b, V.mul(V.norm(V.sub(a, b)), -1.4)), { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+      setPose(e, 19);
+      later(2, () => {
+        if (!e.isValid || !alive(t)) return;
+        slashMarks(e, t, C.kameBlue, 2, 14 * powerOf(e) / 100);
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+  raiha: () => ({ id: "raiha", label: "Yin Release: Lightning", cd: 260, cost: 160, min: 0, max: 36, weight: 5,
+    run(e, s, t) {
+      busy(s, 20); setPose(e, 23); announce(e, "§5§lYin Release Lightning! §7— purple bolts from the Rinnegan");
+      const dim = e.dimension;
+      every(5, 3, () => {
+        if (!e.isValid || !alive(t)) return false;
+        const c = t.location;
+        for (let y = 14; y > 0; y -= 1) fx(dim, "orb", V.add(c, { x: Math.sin(y * 2) * 0.5, y, z: Math.cos(y * 3) * 0.5 }), C.purple, 1.4, 0.3);
+        explosion(e, V.up(c, 0.6), { radius: 2.5, dmg: 22 * powerOf(e) / 100, color: C.purple, knock: 1 });
+      });
+      later(18, () => { if (e.isValid) setPose(e, 0); });
+    } }),
+  blackChidori: () => ({ id: "blackChidori", label: "Chidori (Cursed Seal)", cd: 160, cost: 110, min: 0, max: 20, weight: 6, cond: (e) => formOf(e) >= 1,
+    run(e, s, t) {
+      busy(s, 24); face(e, aim(t)); announce(e, "§0§lChidori! §5§l— blackened by the Cursed Seal");
+      chargeOrb(e, t, 12, C.hakai, 0.4, 1.4, 4);
+      later(12, () => {
+        if (!e.isValid || !alive(t)) return;
+        afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
+        const c = aim(t);
+        deal(e, t, 44 * powerOf(e) / 100);
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 10); }
+        fx(e.dimension, "streak", c, C.hakai, 2, 0.4, { count: 24, speed: 12 });
+        explosion(e, c, { radius: 2.2, dmg: 10 * powerOf(e) / 100, color: C.hakai, knock: 1.6 });
+        later(8, () => { if (e.isValid) setPose(e, 0); });
+      });
+    } }),
+};
+const SASUKE_KID = {
+  name: "Sasuke", color: "§9", energy: 520, regen: 10, energyName: "§6CHAKRA",
+  dodge: (e) => 0.12,
+  forms: [{ label: "Sharingan", power: 24 }, { label: "Cursed Seal Level 1", power: 34, aura: C.hakai }, { label: "Cursed Seal Level 2", power: 50, aura: C.purple }],
+  thresholds: [0.7, 0.45], transformCd: 90, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
+  abilities: [SAS.fireball({ size: 1.8 }), SAS.phoenix(), SAS.lion(), SAS.chidori({ cond: G(0) }), SAS.blackChidori()],
+};
 const SASUKE = {
   name: "Sasuke", color: "§9", energy: 900, regen: 16, energyName: "§6CHAKRA",
-  dodge: (e) => (formOf(e) === 1 ? 0.18 : 0.14),  // the Sharingan reads the blow before it lands
-  forms: [{ label: "Sharingan", power: 70 }, { label: "Mangekyo Sharingan — Susanoo", power: 98, aura: C.purple }],
-  thresholds: [0.6], transformCd: 100, formSound: [null, "mob.wither.spawn"],
-  abilities: [
-    { id: "chidori", label: "Chidori", cd: 140, cost: 90, min: 0, max: 20, weight: 5,
-      run(e, s, t) {
-        busy(s, 22); face(e, aim(t)); announce(e, "§b§lChidori!");
-        chargeOrb(e, t, 10, C.kameBlue, 0.4, 1.1, 4);
-        every(2, 5, () => { if (e.isValid) fx(e.dimension, "streak", handPos(e, alive(t) ? t : e).pos, C.white, 0.8, 0.2, { count: 4, speed: 6 }); });
-        later(10, () => {
-          if (!e.isValid || !alive(t)) return;
-          afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
-          const c = aim(t);
-          deal(e, t, 34 * powerOf(e) / 100);
-          if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 8); }  // the lightning locks the muscles
-          fx(e.dimension, "streak", c, C.kameBlue, 1.8, 0.4, { count: 22, speed: 12 });
-          fx(e.dimension, "flash", c, C.white, 3, 0.2);
-          burst(e.dimension, c, C.kameBlue, 20, 4, 0.4, 0.4);
-          later(8, () => { if (e.isValid) setPose(e, 0); });
-        });
-      } },
-    { id: "fireball", label: "Great Fireball", cd: 160, cost: 90, min: 0, max: 30, weight: 4,
-      run(e, s, t) {
-        busy(s, 16); face(e, aim(t)); setPose(e, 21); announce(e, "§6§lFire Style: Great Fireball Technique!");
-        later(8, () => {
-          if (!e.isValid) return;
-          setPose(e, 4);
-          const { pos } = handPos(e, alive(t) ? t : e);
-          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
-          projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 0.9, maxDist: 30, radius: 1.6, size: 2.4, color: C.fire, slot: 11, trail: true,
-            explode: { radius: 3.5, dmg: 30 * powerOf(e) / 100, color: C.fire, carve: 1, knock: 1.6 } });
-          later(8, () => { if (e.isValid) setPose(e, 0); });
-        });
-      } },
-    { id: "nagashi", label: "Chidori Current", cd: 200, cost: 100, min: 0, max: 5, weight: 3,
-      run(e, s, t) {
-        busy(s, 14); setPose(e, 22); announce(e, "§b§lChidori Current!");
-        const dim = e.dimension;
-        fx(dim, "shock", e.location, C.kameBlue, 7, 0.4);
-        fx(dim, "streak", V.up(e.location, 1), C.white, 2, 0.4, { count: 26, speed: 10 });
-        let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 4 }); } catch (err) { /* ignore */ }
-        for (const o of list) {
-          if (!canHit(e, teamOf(e), o)) continue;
-          deal(e, o, 16 * powerOf(e) / 100);
-          if (isFighter(o)) { const os = state(o); os.stunUntil = Math.max(os.stunUntil, now() + 16); }  // paralysed by the current
-        }
-        later(12, () => { if (e.isValid) setPose(e, 0); });
-      } },
-    { id: "kirin", label: "Kirin", cd: 700, cost: 400, min: 0, max: 40, weight: 5,
-      run(e, s, t) {
-        busy(s, 34); setPose(e, 23); announce(e, "§b§lKirin! §7— the lightning of the heavens");
-        const dim = e.dimension;
-        later(22, () => {
-          if (!e.isValid || !alive(t)) return;
-          const c = t.location;
-          for (let y = 30; y > 0; y -= 1.5) fx(dim, "orb", V.add(c, { x: Math.sin(y) * 0.8, y, z: Math.cos(y) * 0.8 }), C.kameBlue, 2.2, 0.4);
-          fx(dim, "flash", V.up(c, 2), C.white, 8, 0.3);
-          explosion(e, V.up(c, 1), { radius: 5.5, dmg: 120 * powerOf(e) / 100, color: C.kameBlue, carve: 2, knock: 2.5 });
-          shake(dim, c, 0.6, 0.6);
-          later(6, () => { if (e.isValid) setPose(e, 0); });
-        });
-      } },
-    { id: "amaterasu", label: "Amaterasu", cd: 400, cost: 220, min: 0, max: 30, weight: 5, cond: G(1),
-      run(e, s, t) {
-        busy(s, 14); face(e, aim(t)); setPose(e, 26); announce(e, "§0§lAmaterasu! §7— black flames that never go out");
-        every(8, 12, () => {
-          if (!alive(t)) return false;
-          deal(e, t, 7 * powerOf(e) / 100);
-          fx(t.dimension, "orb_solid", V.up(t.location, 1 + Math.random()), C.black, 1.6, 0.6);
-          fx(t.dimension, "aura", t.location, C.black, 1.2, 0.7, { count: 8, speed: 1.5 });
-        });
-        later(12, () => { if (e.isValid) setPose(e, 0); });
-      } },
-    { id: "arrow", label: "Susanoo Arrow", cd: 260, cost: 200, min: 0, max: 45, weight: 4, cond: G(1),
-      run(e, s, t) {
-        busy(s, 20); face(e, aim(t)); setPose(e, 20); announce(e, "§5§lSusanoo!");
-        later(10, () => {
-          if (!e.isValid) return;
-          const { pos } = handPos(e, alive(t) ? t : e);
-          const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
-          projectile(e, pos, V.norm(V.sub(tgt, pos)), { speed: 2.2, maxDist: 50, radius: 1.4, size: 1.2, color: C.purple, slot: 6, pierce: true, trail: true,
-            dmg: 60 * powerOf(e) / 100, explode: { radius: 3, dmg: 20 * powerOf(e) / 100, color: C.purple, knock: 2 } });
-          later(8, () => { if (e.isValid) setPose(e, 0); });
-        });
-      } },
-  ],
+  dodge: (e) => (formOf(e) === 2 ? 0.18 : 0.14),  // the Sharingan reads the blow before it lands
+  forms: [{ label: "Sharingan", power: 70 }, { label: "Cursed Seal Level 2", power: 80, aura: C.hakai }, { label: "Mangekyo Sharingan — Susanoo", power: 98, aura: C.purple }],
+  thresholds: [0.7, 0.45], transformCd: 100, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
+  abilities: [SAS.chidori(), SAS.fireball(), SAS.nagashi(), SAS.spear(), SAS.senbon(), SAS.kirin(), SAS.genjutsu({ cond: G(0, 1) }),
+    SAS.blackChidori(), SAS.amaterasu({ cond: G(2) }), SAS.kagutsuchi({ cond: G(2) }), SAS.arrow({ cond: G(2) })],
+};
+const SASUKE_WAR = {
+  name: "Sasuke", color: "§5", energy: 1500, regen: 26, energyName: "§6CHAKRA",
+  dodge: (e) => (formOf(e) === 2 ? 0.2 : 0.17),
+  forms: [{ label: "Eternal Mangekyo — Susanoo", power: 150, aura: C.purple }, { label: "Perfect Susanoo", power: 175, aura: C.purple },
+    { label: "Rinnegan — Six Paths chakra", power: 210, aura: C.galick }],
+  thresholds: [0.6, 0.35], transformCd: 100, formSound: [null, "mob.wither.spawn", "beacon.activate"],
+  abilities: [SAS.chidori({ dmg: 40 }), SAS.spear(), SAS.senbon(), SAS.nagashi(), SAS.kirin(), SAS.fireball({ size: 3 }), SAS.amaterasu(), SAS.kagutsuchi(),
+    SAS.arrow({ say: "§5§lSusanoo: Yasaka Magatama!", dmg: 70 }), SAS.susSword({ cond: G(1, 2) }), SAS.indra(),
+    SAS.ameno({ cond: G(2) }), SAS.chidori({ id: "susChidori", label: "Susanoo Chidori", say: "§5§lSusanoo Chidori!", color: C.purple, dmg: 60, cond: G(1, 2) })],
+};
+const SASUKE_ADULT = {
+  name: "Sasuke", color: "§5", energy: 1500, regen: 28, energyName: "§6CHAKRA",
+  dodge: (e) => 0.19,
+  forms: [{ label: "Rinnegan", power: 160, aura: C.galick }, { label: "Perfect Susanoo", power: 190, aura: C.purple }],
+  thresholds: [0.5], transformCd: 100, formSound: [null, "mob.wither.spawn"],
+  abilities: [SAS.chidori({ dmg: 42 }), SAS.spear(), SAS.kirin(), SAS.amaterasu(), SAS.kagutsuchi(), SAS.ameno(), SAS.raiha(),
+    SAS.genjutsu({ label: "Rinnegan Genjutsu", say: "§5§l(the Rinnegan glows) §7— you are already in my genjutsu", stun: 34, dmg: 12 }),
+    SAS.arrow({ cond: G(1), dmg: 76 }), SAS.susSword({ cond: G(1), dmg: 64 })],
 };
 
 // ------------------------------------------------------------------ Ichigo Kurosaki (Bleach)
@@ -2424,7 +2596,10 @@ const TRANSFORM_LINES = {
   "ab:naruto_teen": [null, "§6§lSage Mode! §7— nature energy, gathered"],
   "ab:naruto_war": [null, "§6§lLet's go, Kurama!", "§e§lSix Paths Sage Mode!"],
   "ab:naruto_adult": [null, "§6§lKurama, let's do this!", "§4§lBaryon Mode! §7— it's burning our lives away"],
-  "ab:sasuke": [null, "§c§lMangekyo Sharingan... §5§lSusanoo!"],
+  "ab:sasuke_kid": [null, "§5§l(the Cursed Seal spreads over his skin)", "§5§lCursed Seal... §0§lLevel Two!"],
+  "ab:sasuke": [null, "§5§lCursed Seal Level Two! §7— the wings tear free", "§c§lMangekyo Sharingan... §5§lSusanoo!"],
+  "ab:sasuke_war": [null, "§5§lPerfect Susanoo! §7— a giant with wings", "§5§l(the Rinnegan opens) §7— I'll be the one to change the world"],
+  "ab:sasuke_adult": [null, "§5§lSusanoo. §7— Perfect form"],
   "ab:tanjiro": [null, "§6§lSun Breathing! §7— the mark blazes on his forehead"],
   "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
     "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
@@ -2432,10 +2607,10 @@ const TRANSFORM_LINES = {
   "ab:frieza": [null, "§6§lThis is Golden Frieza!"],
   "ab:zoro": [null, "§0§lI am... §4§lthe King of Hell."],
 };
-const SWORDSMEN = new Set(["ab:zoro", "ab:ichigo", "ab:tanjiro", "ab:sasuke"]);
+const SWORDSMEN = new Set(["ab:zoro", "ab:ichigo", "ab:tanjiro", "ab:sasuke", "ab:sasuke_war", "ab:sasuke_adult"]);
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
   "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
-  "ab:sasuke": SASUKE, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
+  "ab:sasuke_kid": SASUKE_KID, "ab:sasuke": SASUKE, "ab:sasuke_war": SASUKE_WAR, "ab:sasuke_adult": SASUKE_ADULT, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -2472,6 +2647,9 @@ const COMBOS = {
   "ab:naruto_war": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_l", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
   "ab:naruto_adult": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_r", "kick_l", "upper", "axe"], ["rush", "jab_l", "kick_r", "kiburst"]],
   "ab:sasuke": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
+  "ab:sasuke_kid": [["jab_r", "jab_l", "kick", "upper"], ["kick_r", "jab_r", "blink", "axe"], ["jab_l", "kick_l", "kick_r"]],
+  "ab:sasuke_war": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
+  "ab:sasuke_adult": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
   "ab:ichigo": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "blink", "cut_r", "kick_r", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
   "ab:tanjiro": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick", "cut_x"], ["cut_r", "cut_l", "cut_l", "kick_r"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
@@ -2482,7 +2660,7 @@ MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "r
 const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
 const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death,
   "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold,
-  "ab:sasuke": C.kameBlue, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue };
+  "ab:sasuke": C.kameBlue, "ab:sasuke_kid": C.kameBlue, "ab:sasuke_war": C.purple, "ab:sasuke_adult": C.purple, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -2832,7 +3010,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.04, 6);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
     }
-    if (v.typeId === "ab:sasuke" && formOf(v) === 1) {  // Susanoo's ribcage takes part of every blow
+    if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
       system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
     }
@@ -3042,7 +3220,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
 
-const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:ichigo": 0 };
+const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
 const ENTRANCE_LINES = {
   "ab:goku": "§6§lHey, it's me, Goku! §7Let's fight!", "ab:vegeta": "§9§lKakarot! §7The Prince of all Saiyans is here.",
   "ab:frieza": "§5§lOhohoho... §7you should be honoured.", "ab:gojo": "§b§lThroughout heaven and earth, I alone am the honoured one.",
@@ -3050,13 +3228,14 @@ const ENTRANCE_LINES = {
   "ab:luffy": "§c§lI'm Luffy! §7The man who'll become King of the Pirates!", "ab:zoro": "§a§lNothing happened.",
   "ab:naruto_kid": "§6§lBelieve it! §7I'm gonna be Hokage!", "ab:naruto_teen": "§6§lI never go back on my word — that's my ninja way!",
   "ab:naruto_war": "§e§lKurama and I will end this war!", "ab:naruto_adult": "§6§lThe Seventh Hokage is here. §7Believe it.",
-  "ab:sasuke": "§9§lI have only one goal.", "ab:ichigo": "§6§lI'm Ichigo Kurosaki, Substitute Soul Reaper.",
+  "ab:sasuke_kid": "§9§lI'm an avenger. §7I have to kill a certain man.", "ab:sasuke": "§9§lI have only one goal.",
+  "ab:sasuke_war": "§5§lI will become Hokage — and change the shinobi world.", "ab:sasuke_adult": "§5§lI'm the shadow that supports the Hokage.", "ab:ichigo": "§6§lI'm Ichigo Kurosaki, Substitute Soul Reaper.",
   "ab:tanjiro": "§2§lI'll turn Nezuko back into a human!",
 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
   "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35,
-  "ab:sasuke": 21, "ab:ichigo": 19, "ab:tanjiro": 19 };
+  "ab:sasuke": 21, "ab:sasuke_kid": 21, "ab:sasuke_war": 21, "ab:sasuke_adult": 0, "ab:ichigo": 19, "ab:tanjiro": 19 };
 world.afterEvents.entitySpawn.subscribe((ev) => {
   try {
     const e = ev.entity;
@@ -3082,7 +3261,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");
