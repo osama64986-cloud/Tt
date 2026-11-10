@@ -17,6 +17,10 @@
       "Texture.ssj3_shout",
       "Texture.ssj3_hurt",
       "Texture.ssj3_blink",
+      "Texture.ssg",
+      "Texture.ssg_shout",
+      "Texture.ssg_hurt",
+      "Texture.ssg_blink",
       "Texture.ssb",
       "Texture.ssb_shout",
       "Texture.ssb_hurt",
@@ -32,6 +36,7 @@
       "Geometry.base",
       "Geometry.ssj",
       "Geometry.ssj3",
+      "Geometry.ssg",
       "Geometry.ssb",
       "Geometry.ui"
      ]
@@ -59,6 +64,10 @@
       "Texture.ssj_shout",
       "Texture.ssj_hurt",
       "Texture.ssj_blink",
+      "Texture.ssg",
+      "Texture.ssg_shout",
+      "Texture.ssg_hurt",
+      "Texture.ssg_blink",
       "Texture.ssb",
       "Texture.ssb_shout",
       "Texture.ssb_hurt",
@@ -73,6 +82,7 @@
      "Array.geos": [
       "Geometry.base",
       "Geometry.ssj",
+      "Geometry.ssg",
       "Geometry.ssb",
       "Geometry.ue"
      ]
@@ -467,6 +477,10 @@
       "Texture.shikai_shout",
       "Texture.shikai_hurt",
       "Texture.shikai_blink",
+      "Texture.fullbring",
+      "Texture.fullbring_shout",
+      "Texture.fullbring_hurt",
+      "Texture.fullbring_blink",
       "Texture.bankai",
       "Texture.bankai_shout",
       "Texture.bankai_hurt",
@@ -475,18 +489,29 @@
       "Texture.hollow_shout",
       "Texture.hollow_hurt",
       "Texture.hollow_blink",
+      "Texture.vasto",
+      "Texture.vasto_shout",
+      "Texture.vasto_hurt",
+      "Texture.vasto_blink",
       "Texture.mugetsu",
       "Texture.mugetsu_shout",
       "Texture.mugetsu_hurt",
-      "Texture.mugetsu_blink"
+      "Texture.mugetsu_blink",
+      "Texture.true",
+      "Texture.true_shout",
+      "Texture.true_hurt",
+      "Texture.true_blink"
      ]
     },
     "geometries": {
      "Array.geos": [
       "Geometry.shikai",
+      "Geometry.fullbring",
       "Geometry.bankai",
       "Geometry.hollow",
-      "Geometry.mugetsu"
+      "Geometry.vasto",
+      "Geometry.mugetsu",
+      "Geometry.true"
      ]
     }
    },

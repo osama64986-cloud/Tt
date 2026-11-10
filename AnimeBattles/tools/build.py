@@ -150,17 +150,17 @@ def validate_json():
 FIGHTERS = {
     "goku": {
         "hp": 1000,
-        "forms": [(14, 0.33), (20, 0.36), (27, 0.38), (40, 0.42), (55, 0.46)],
-        "tex": ["base", "ssj", "ssj3", "ssb", "ui"],
-        "geo": ["base", "ssj", "ssj3", "ssb", "ui"],
+        "forms": [(14, 0.33), (20, 0.36), (27, 0.38), (34, 0.4), (42, 0.42), (58, 0.46)],
+        "tex": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
+        "geo": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
         "egg": ("#f6801a", "#223aaa"),
     },
     "vegeta": {
         "scale": 0.94,  # canon: noticeably shorter than Goku
         "hp": 950,
-        "forms": [(13, 0.33), (19, 0.36), (37, 0.41), (50, 0.43)],
-        "tex": ["base", "ssj", "ssb", "ue"],
-        "geo": ["base", "ssj", "ssb", "ue"],
+        "forms": [(13, 0.33), (19, 0.36), (31, 0.39), (40, 0.41), (52, 0.43)],
+        "tex": ["base", "ssj", "ssg", "ssb", "ue"],
+        "geo": ["base", "ssj", "ssg", "ssb", "ue"],
         "egg": ("#223496", "#eeeee4"),
     },
     "gojo": {
@@ -196,8 +196,9 @@ FIGHTERS.update({
                      "geo": ["hokage", "link", "baryon"], "egg": ("#ff8a1e", "#f6f6f2")},
     "sasuke": {"hp": 600, "forms": [(18, 0.4), (26, 0.42)], "tex": ["sharingan", "susanoo"], "geo": ["sharingan", "susanoo"],
                "egg": ("#eeeef2", "#5a3a8a")},
-    "ichigo": {"hp": 1100, "forms": [(24, 0.38), (34, 0.44), (44, 0.44), (60, 0.46)], "tex": ["shikai", "bankai", "hollow", "mugetsu"],
-               "geo": ["shikai", "bankai", "hollow", "mugetsu"], "egg": ("#1e1e24", "#ff8428")},
+    "ichigo": {"hp": 1100, "forms": [(24, 0.38), (30, 0.42), (34, 0.44), (44, 0.44), (52, 0.46), (60, 0.46), (68, 0.47)],
+               "tex": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
+               "geo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"], "egg": ("#1e1e24", "#ff8428")},
     "tanjiro": {"hp": 420, "forms": [(11, 0.38), (16, 0.4)], "tex": ["water", "mark"], "geo": ["water", "mark"],
                 "egg": ("#287a5a", "#18181c")},
     "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],

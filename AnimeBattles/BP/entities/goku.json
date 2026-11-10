@@ -10,7 +10,7 @@
      "type": "int",
      "range": [
       0,
-      4
+      5
      ],
      "default": 0,
      "client_sync": true
@@ -119,15 +119,23 @@
    },
    "ab:form_3": {
     "minecraft:attack": {
-     "damage": 40
+     "damage": 34
+    },
+    "minecraft:movement": {
+     "value": 0.4
+    }
+   },
+   "ab:form_4": {
+    "minecraft:attack": {
+     "damage": 42
     },
     "minecraft:movement": {
      "value": 0.42
     }
    },
-   "ab:form_4": {
+   "ab:form_5": {
     "minecraft:attack": {
-     "damage": 55
+     "damage": 58
     },
     "minecraft:movement": {
      "value": 0.46
@@ -236,7 +244,8 @@
         "ab:form_1",
         "ab:form_2",
         "ab:form_3",
-        "ab:form_4"
+        "ab:form_4",
+        "ab:form_5"
        ]
       }
      },
@@ -263,7 +272,8 @@
         "ab:form_1",
         "ab:form_2",
         "ab:form_3",
-        "ab:form_4"
+        "ab:form_4",
+        "ab:form_5"
        ]
       }
      },
@@ -290,7 +300,8 @@
         "ab:form_1",
         "ab:form_2",
         "ab:form_3",
-        "ab:form_4"
+        "ab:form_4",
+        "ab:form_5"
        ]
       }
      },
@@ -317,7 +328,8 @@
         "ab:form_1",
         "ab:form_2",
         "ab:form_3",
-        "ab:form_4"
+        "ab:form_4",
+        "ab:form_5"
        ]
       }
      },
@@ -344,7 +356,8 @@
         "ab:form_1",
         "ab:form_2",
         "ab:form_3",
-        "ab:form_4"
+        "ab:form_4",
+        "ab:form_5"
        ]
       }
      },
@@ -358,6 +371,34 @@
      {
       "set_property": {
        "ab:form": 4
+      }
+     }
+    ]
+   },
+   "ab:form_5": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2",
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_5"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 5
       }
      }
     ]

@@ -369,7 +369,7 @@ const COUNTER_BEAM = { "ab:goku": ["§b§lKAMEHAMEHA!", C.kameBlue], "ab:vegeta"
 function counterBeam(d, src) {
   const cb = COUNTER_BEAM[d.typeId];
   if (!cb || !alive(d) || !alive(src) || d.hasTag("ab_clone")) return;
-  if (d.typeId === "ab:ichigo" && formOf(d) !== 2) return;  // Cero needs the Hollow mask
+  if (d.typeId === "ab:ichigo" && formOf(d) !== 3 && formOf(d) !== 4) return;  // Cero needs the Hollow mask
   const ds = state(d);
   if (now() < ds.busyUntil || now() < (ds.cd.counterBeam ?? 0) || ds.energy < 150 || Math.random() > 0.5) return;
   ds.cd.counterBeam = now() + 400;
@@ -532,7 +532,7 @@ function transform(e, s, to, label, color, extraSound) {
   const dim = e.dimension;
   const def = FIGHTERS[e.typeId];
   busy(s, 32);
-  const calm = e.typeId === "ab:goku" && to === 4;  // Ultra Instinct awakens in silence: no yell, no crouch
+  const calm = e.typeId === "ab:goku" && to === 5;  // Ultra Instinct awakens in silence: no yell, no crouch
   if (e.typeId === "ab:frieza" && to === 1) {  // Golden Frieza is born inside a cocoon of golden light
     const cocoon = spawnVfx(dim, 1, V.up(e.location, 1.1), { slot: 9, size: 1.7, life: 34 });
     later(30, () => killVfx(cocoon));
@@ -544,7 +544,7 @@ function transform(e, s, to, label, color, extraSound) {
   setPose(e, e.typeId === "ab:luffy" ? (to === 1 ? 30 : to === 6 ? 27 : 25)
     : e.typeId === "ab:zoro" ? 32      // ties the bandana on
     : e.typeId === "ab:gojo" ? 25      // pulls the blindfold off
-    : (e.typeId === "ab:ichigo" && to === 2) ? 25   // drags the Hollow mask down over his face
+    : (e.typeId === "ab:ichigo" && to === 3) ? 25   // drags the Hollow mask down over his face
     : (e.typeId === "ab:naruto_teen" || (e.typeId === "ab:naruto_war" && to === 2)) ? 35   // still, hands in a seal, gathering nature energy
     : calm ? 0
     : 22);
@@ -581,17 +581,18 @@ function aura(e, s, def) {
 // ------------------------------------------------------------------ characters
 const GOKU = {
   name: "Goku", color: "§6", energy: 1000, regen: 15, energyName: "§bKI",
-  dodge: (e, s) => (formOf(e) === 4 ? 0.6 : 0.1),
+  dodge: (e, s) => (formOf(e) === 5 ? 0.6 : 0.1),
   forms: [
     { label: "Base", power: 150 },
-    { label: "Super Saiyan", power: 200, aura: C.gold },
-    { label: "Super Saiyan 3", power: 260, aura: C.gold },
-    { label: "Super Saiyan Blue", power: 330, aura: C.ssbBlue },
-    { label: "Ultra Instinct", power: 430, aura: C.silver },
+    { label: "Super Saiyan", power: 220, aura: C.gold },
+    { label: "Super Saiyan 3", power: 300, aura: C.gold },
+    { label: "Super Saiyan God", power: 420, aura: C.red },
+    { label: "Super Saiyan Blue", power: 560, aura: C.ssbBlue },
+    { label: "Ultra Instinct", power: 850, aura: C.silver },
   ],
-  thresholds: [0.9, 0.7, 0.5, 0.3],
+  thresholds: [0.9, 0.75, 0.6, 0.45, 0.3],
   transformCd: 80,
-  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
+  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.power", "beacon.activate"],
   abilities: [
     {
       id: "ki", label: "Ki Blast", cd: 60, cost: 40, min: 3, max: 32, weight: 3,
@@ -660,12 +661,12 @@ const GOKU = {
     },
     {
       id: "kaioken", label: "Kaioken", cd: 900, cost: 120, min: 0, max: 48, weight: 2,
-      cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 3) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
+      cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 4) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
       run(e, s) {
         busy(s, 10); s.kaiokenUntil = now() + 240;
         burst(e.dimension, V.up(e.location, 1), C.kaioken, 40, 5, 0.5, 0.7);
         sound(e.dimension, "mob.enderdragon.growl", e.location, 1, 1.4);
-        announce(e, formOf(e) === 3 ? "§9Super Saiyan Blue §c§lKaioken!" : "§c§lKaioken!");
+        announce(e, formOf(e) === 4 ? "§9Super Saiyan Blue §c§lKaioken!" : "§c§lKaioken!");
       },
     },
     {
@@ -735,16 +736,17 @@ const GOKU = {
 const VEGETA = {
   name: "Vegeta", color: "§9", energy: 1000, regen: 14, energyName: "§bKI",
   dodge: () => 0.08,
-  ego: 3,
+  ego: 4,
   forms: [
     { label: "Base", power: 140 },
-    { label: "Super Saiyan", power: 190, aura: C.gold },
-    { label: "Super Saiyan Blue", power: 310, aura: C.ssbBlue },
-    { label: "Ultra Ego", power: 360, aura: C.ego },
+    { label: "Super Saiyan", power: 210, aura: C.gold },
+    { label: "Super Saiyan God", power: 400, aura: C.red },
+    { label: "Super Saiyan Blue", power: 520, aura: C.ssbBlue },
+    { label: "Ultra Ego", power: 680, aura: C.ego },
   ],
-  thresholds: [0.85, 0.6, 0.35],
+  thresholds: [0.85, 0.7, 0.5, 0.35],
   transformCd: 80,
-  formSound: [null, "mob.enderdragon.growl", "beacon.power", "mob.wither.spawn"],
+  formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.power", "mob.wither.spawn"],
   abilities: [
     {
       id: "barrage", label: "Ki Barrage", cd: 80, cost: 60, min: 3, max: 32, weight: 3,
@@ -817,7 +819,7 @@ const VEGETA = {
     },
     {
       id: "hakai", label: "Hakai", cd: 700, cost: 450, min: 2, max: 12, weight: 4,
-      cond: (e) => formOf(e) === 3,
+      cond: (e) => formOf(e) === 4,
       run(e, s, t) {
         busy(s, 24); face(e, aim(t)); setPose(e, 4);
         announce(e, "§5§lHakai!");
@@ -1668,7 +1670,7 @@ const FRIEZA = {
   dodge: () => 0.12,
   forms: [
     { label: "Final Form", power: 180 },
-    { label: "Golden Frieza", power: 320, aura: C.gold },
+    { label: "Golden Frieza", power: 480, aura: C.gold },
   ],
   thresholds: [0.6], transformCd: 100,
   formSound: [null, "beacon.power"],
@@ -2156,41 +2158,93 @@ const SASUKE = {
 };
 
 // ------------------------------------------------------------------ Ichigo Kurosaki (Bleach)
+// Getsuga colour per form: Shikai/Fullbring blue, Bankai black-red, Hollow/Vasto red, Mugetsu black, True Bankai blue-white
+const ICH_GETSUGA = [C.kameBlue, C.kameBlue, C.haki, C.red, C.red, C.black, C.bigBang];
 const ICHIGO = {
   name: "Ichigo", color: "§6", energy: 1600, regen: 28, energyName: "§bREIATSU",
-  dodge: (e) => (formOf(e) >= 1 ? 0.15 : 0.12),  // Bankai compresses all that power into speed
+  dodge: (e) => [0.12, 0.14, 0.15, 0.15, 0.17, 0.15, 0.16][formOf(e)] ?? 0.12,  // Bankai/Sonido speed
   forms: [
     { label: "Shikai — Zangetsu", power: 90 },
+    { label: "Complete Fullbring", power: 125, aura: C.white },
     { label: "Bankai — Tensa Zangetsu", power: 150, aura: C.black },
     { label: "Hollow Mask", power: 200, aura: C.red },
-    { label: "Final Getsuga Tensho (Mugetsu)", power: 270, aura: C.black },
+    { label: "Vasto Lorde", power: 250, aura: C.haki },
+    { label: "Final Getsuga Tensho (Mugetsu)", power: 300, aura: C.black },
+    { label: "True Bankai — Zangetsu", power: 360, aura: C.bigBang },
   ],
-  thresholds: [0.75, 0.55, 0.35], transformCd: 80, formSound: [null, "mob.wither.spawn", "mob.enderdragon.growl", "mob.wither.spawn"],
+  thresholds: [0.85, 0.72, 0.6, 0.48, 0.36, 0.25], transformCd: 80,
+  formSound: [null, "beacon.activate", "mob.wither.spawn", "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.wither.spawn", "beacon.power"],
   abilities: [
-    { id: "getsuga", label: "Getsuga Tensho", cd: 110, cost: 70, min: 0, max: 30, weight: 5,
+    { id: "getsuga", label: "Getsuga Tensho", cd: 110, cost: 70, min: 0, max: 30, weight: 5, cond: G(0, 1, 2, 3, 6),
       run(e, s, t) {
-        busy(s, 14); setPose(e, 19); announce(e, "§b§lGetsuga... TENSHO!");
-        const col = formOf(e) ? C.haki : C.kameBlue;
-        flyingSlash(e, t, { color: col, dmg: 30 * powerOf(e) / 100, range: 28, roll: 20, carve: true, size: 1.6 + formOf(e) * 0.3 });
+        busy(s, 14); setPose(e, 19); announce(e, formOf(e) === 3 ? "§4§lGetsuga... TENSHO! §7(the mask's red reiatsu)" : "§b§lGetsuga... TENSHO!");
+        const f = formOf(e), col = ICH_GETSUGA[f];
+        flyingSlash(e, t, { color: col, dmg: 30 * powerOf(e) / 100, range: 28, roll: 20, carve: true, size: 1.6 + f * 0.2 });
+        if (f >= 2) flyingSlash(e, t, { color: C.white, dmg: 0, range: 28, roll: 20, size: 1.1 + f * 0.15 });  // the bright edge
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "jujisho", label: "Getsuga Jujisho", cd: 220, cost: 130, min: 0, max: 28, weight: 4, cond: G(1, 2, 3),
+    { id: "clothswing", label: "Zangetsu: Cloth Swing", cd: 150, cost: 60, min: 0, max: 5, weight: 4, cond: G(0),
       run(e, s, t) {
-        busy(s, 16); setPose(e, 1); announce(e, "§4§lGetsuga Jujisho!");
-        for (const roll of [45, -45]) flyingSlash(e, t, { color: C.haki, dmg: 28 * powerOf(e) / 100, range: 28, roll, carve: true, size: 1.8 });
-        later(10, () => { if (e.isValid) setPose(e, 0); });
+        busy(s, 18); setPose(e, 24); announce(e, "§f§lZangetsu! §7— swung round by its cloth");
+        const dim = e.dimension, hit = new Set();
+        every(3, 5, (i) => {
+          if (!e.isValid) return false;
+          ring(dim, V.up(e.location, 1), 3.6, C.white, 22, 0.4);
+          const v = slashVfx(dim, V.up(e.location, 1), { x: Math.cos(i * 1.3), y: 0, z: Math.sin(i * 1.3) }, C.kameBlue, 1.8, 90);
+          later(3, () => killVfx(v));
+          if (i === 2) hitArea(e, V.up(e.location, 1), 4.2, 26 * powerOf(e) / 100, hit, { knock: 1.6, lift: 0.4 });
+        });
+        later(16, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "shunpo", label: "Flash Step", cd: 160, cost: 90, min: 0, max: 20, weight: 4, cond: G(1, 2, 3),
+    { id: "bringer", label: "Bringer Light", cd: 140, cost: 80, min: 0, max: 22, weight: 5, cond: G(1),
       run(e, s, t) {
-        busy(s, 20); announce(e, "§f§lBankai speed!");
+        busy(s, 20); announce(e, "§f§lFullbring: Bringer Light!");
         every(4, 4, (i) => {
           if (!alive(t) || !e.isValid) return false;
+          fx(e.dimension, "streak", V.up(e.location, 1), C.white, 1.4, 0.4, { count: 12, speed: 8 });
           afterimage(e); teleportNear(e, t, i % 2 === 0, 1.4); setPose(e, i % 2 ? 28 : 19);
-          slashMarks(e, t, C.haki, 2, 6 * powerOf(e) / 100);
+          slashMarks(e, t, C.kameBlue, 2, 6 * powerOf(e) / 100);
           if (i === 3) setPose(e, 0);
         });
       } },
-    { id: "cero", label: "Cero", cd: 260, cost: 180, min: 0, max: 40, weight: 5, cond: G(2),
+    { id: "fbgetsuga", label: "Fullbring Getsuga Tensho", cd: 200, cost: 120, min: 0, max: 30, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 18); setPose(e, 1); announce(e, "§b§lFullbring... §f§lGetsuga Tensho!");
+        flyingSlash(e, t, { color: C.kameBlue, dmg: 40 * powerOf(e) / 100, range: 30, roll: 0, carve: true, size: 2.4 });
+        flyingSlash(e, t, { color: C.white, dmg: 0, range: 30, roll: 0, size: 1.5 });
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "jujisho", label: "Getsuga Jujisho", cd: 220, cost: 130, min: 0, max: 28, weight: 4, cond: G(2, 3, 6),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 1); announce(e, "§4§lGetsuga Jujisho!");
+        const col = ICH_GETSUGA[formOf(e)];
+        for (const roll of [45, -45]) flyingSlash(e, t, { color: col, dmg: 28 * powerOf(e) / 100, range: 28, roll, carve: true, size: 1.8 });
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "kuroi", label: "Kuroi Getsuga", cd: 300, cost: 180, min: 0, max: 34, weight: 5, cond: G(2, 3),
+      run(e, s, t) {
+        busy(s, 22); setPose(e, 22); announce(e, "§0§lKuroi... §4§lGetsuga! §7— the black moon fang");
+        every(2, 5, () => { if (e.isValid) fx(e.dimension, "aura", e.location, C.black, 1.6, 0.6, { count: 14, speed: 2.5 }); });
+        later(10, () => {
+          if (!e.isValid) return;
+          setPose(e, 19);
+          flyingSlash(e, t, { color: C.black, dmg: 48 * powerOf(e) / 100, range: 34, roll: 10, carve: true, size: 3.0 });
+          flyingSlash(e, t, { color: C.haki, dmg: 0, range: 34, roll: 10, size: 3.4 });
+          shake(e.dimension, e.location, 0.3, 0.3);
+          later(10, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "shunpo", label: "Flash Step", cd: 160, cost: 90, min: 0, max: 20, weight: 4, cond: G(2, 3, 6),
+      run(e, s, t) {
+        busy(s, 20); announce(e, "§f§lFlash Step!");
+        every(4, 4, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.4); setPose(e, i % 2 ? 28 : 19);
+          slashMarks(e, t, formOf(e) === 6 ? C.bigBang : C.haki, 2, 6 * powerOf(e) / 100);
+          if (i === 3) setPose(e, 0);
+        });
+      } },
+    { id: "cero", label: "Cero", cd: 260, cost: 180, min: 0, max: 40, weight: 5, cond: G(3),
       run(e, s, t) {
         busy(s, 26); face(e, aim(t)); announce(e, "§4§lCero!");
         chargeOrb(e, t, 12, C.red, 0.3, 1.2, 4);
@@ -2200,16 +2254,75 @@ const ICHIGO = {
           later(14, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
-    { id: "mugetsu", label: "Mugetsu", cd: 900, cost: 700, min: 0, max: 40, weight: 7, cond: G(3),
+    { id: "regen", label: "Instant Regeneration", cd: 600, cost: 120, min: 0, max: 60, weight: 8, cond: (e, s, c) => (formOf(e) === 3 || formOf(e) === 4) && c.hp < 0.5,
+      run(e, s) {
+        busy(s, 12); setPose(e, 22); announce(e, "§4§l(the Hollow's flesh knits back together)");
+        const h = health(e);
+        if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.12));
+        fx(e.dimension, "aura", e.location, C.white, 1.2, 0.8, { count: 22, speed: 2 });
+        burst(e.dimension, V.up(e.location, 1), C.red, 14, 2, 0.3, 0.4);
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "sonido", label: "Sonido Claws", cd: 140, cost: 80, min: 0, max: 22, weight: 5, cond: G(4),
+      run(e, s, t) {
+        busy(s, 22); announce(e, "§4§l(Sonido — he is simply there)");
+        every(4, 5, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.2); setPose(e, i % 2 ? 34 : 9);
+          slashMarks(e, t, C.haki, 1, 9 * powerOf(e) / 100);
+          fx(t.dimension, "shock_v", aim(t), C.red, 2, 0.3);
+          if (i === 4) setPose(e, 0);
+        });
+      } },
+    { id: "hornCero", label: "Cero (Vasto Lorde)", cd: 320, cost: 220, min: 0, max: 44, weight: 6, cond: G(4),
+      run(e, s, t) {
+        busy(s, 30); face(e, aim(t)); announce(e, "§0§lCero... §4§lfrom between the horns");
+        chargeOrb(e, t, 16, C.haki, 0.4, 1.8, 2);
+        every(2, 8, () => { if (e.isValid) fx(e.dimension, "orb", V.up(e.location, 2.4), C.black, 1.4, 0.2); });
+        later(16, () => {
+          if (!e.isValid) return;
+          beam(e, alive(t) ? t : e, { color: C.haki, width: 2.2, length: 46, dmg: 110 * powerOf(e) / 100, carve: 2, blast: 5, ticks: 7, pitch: 0.6 });
+          later(16, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "mugetsu", label: "Mugetsu", cd: 900, cost: 700, min: 0, max: 40, weight: 7, cond: G(5),
       run(e, s, t) {
         busy(s, 40); setPose(e, 23); announce(e, "§0§lFinal Getsuga Tensho... §4§lMUGETSU");
         const dim = e.dimension;
-        every(2, 10, (i) => { if (e.isValid) fx(dim, "aura", e.location, C.black, 2, 0.8, { count: 18, speed: 3 }); });
+        every(2, 10, () => { if (e.isValid) fx(dim, "aura", e.location, C.black, 2, 0.8, { count: 18, speed: 3 }); });
         later(20, () => {
           if (!e.isValid) return;
           setPose(e, 19);
           beam(e, alive(t) ? t : e, { color: C.black, width: 3.2, length: 48, dmg: 200 * powerOf(e) / 100, carve: 3, blast: 7, ticks: 10, pitch: 0.5 });
           later(20, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "barehand", label: "One Hand", cd: 150, cost: 60, min: 0, max: 18, weight: 5, cond: G(5),
+      run(e, s, t) {  // Final Getsuga Ichigo stops the blade with a bare hand, then one blow ends it
+        busy(s, 18); announce(e, "§0§l(he catches it bare-handed)");
+        afterimage(e); teleportNear(e, t, false, 1.3); setPose(e, 13);
+        if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 10); }
+        later(8, () => {
+          if (!e.isValid || !alive(t)) return;
+          setPose(e, 5);
+          deal(e, t, 50 * powerOf(e) / 100);
+          fx(t.dimension, "shock", t.location, C.black, 6, 0.4); fx(t.dimension, "flash", aim(t), C.white, 3, 0.2);
+          try { t.applyKnockback({ x: 0, z: 0 }, 0.8); } catch (err) { /* ignore */ }
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "trueGetsuga", label: "Getsuga Tensho — True Bankai", cd: 260, cost: 200, min: 0, max: 40, weight: 6, cond: G(6),
+      run(e, s, t) {
+        busy(s, 24); setPose(e, 22); announce(e, "§b§lZangetsu... §f§lGETSUGA TENSHO! §7— both blades at once");
+        every(2, 5, () => { if (e.isValid) fx(e.dimension, "aura", e.location, C.bigBang, 1.8, 0.6, { count: 14, speed: 3 }); });
+        later(10, () => {
+          if (!e.isValid) return;
+          setPose(e, 1);
+          flyingSlash(e, t, { color: C.bigBang, dmg: 70 * powerOf(e) / 100, range: 40, roll: 0, carve: true, size: 3.6 });
+          flyingSlash(e, t, { color: C.white, dmg: 0, range: 40, roll: 0, size: 2.4 });
+          flyingSlash(e, t, { color: C.black, dmg: 20 * powerOf(e) / 100, range: 34, roll: 90, size: 1.8 });  // the short blade's black fang
+          shake(e.dimension, e.location, 0.4, 0.4);
+          later(12, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
   ],
@@ -2305,15 +2418,17 @@ const TANJIRO = {
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
 // what each fighter shouts as the transformation lands (by target form)
 const TRANSFORM_LINES = {
-  "ab:ichigo": [null, "§f§lBAN... §4§lKAI! §f§lTensa Zangetsu!", "§4§l(the Hollow mask slams over his face)", "§0§lThis is the Final Getsuga Tensho... §4§lMUGETSU."],
+  "ab:ichigo": [null, "§f§lFullbring! §7— the badge burns white", "§f§lBAN... §4§lKAI! §f§lTensa Zangetsu!", "§4§l(the Hollow mask slams over his face)",
+    "§4§l(a roar that shakes the sky) §f§lVasto Lorde!", "§0§lThis is the Final Getsuga Tensho... §4§lMUGETSU.", "§b§lBankai! §f§lZangetsu — §7both of you are my power."],
   "ab:naruto_kid": [null, "§4§l(the Nine-Tails' red chakra boils over)"],
   "ab:naruto_teen": [null, "§6§lSage Mode! §7— nature energy, gathered"],
   "ab:naruto_war": [null, "§6§lLet's go, Kurama!", "§e§lSix Paths Sage Mode!"],
   "ab:naruto_adult": [null, "§6§lKurama, let's do this!", "§4§lBaryon Mode! §7— it's burning our lives away"],
   "ab:sasuke": [null, "§c§lMangekyo Sharingan... §5§lSusanoo!"],
   "ab:tanjiro": [null, "§6§lSun Breathing! §7— the mark blazes on his forehead"],
-  "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
-  "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
+  "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
+    "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
+  "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
   "ab:frieza": [null, "§6§lThis is Golden Frieza!"],
   "ab:zoro": [null, "§0§lI am... §4§lthe King of Hell."],
 };
@@ -2750,7 +2865,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       ev.damage = over;
       system.run(() => { if (v.isValid) { burst(v.dimension, V.up(v.location, 1), C.blue, 30, 4); announce(v, "§cGojo's Infinity was overwhelmed!"); } });
     }
-    if (now() >= s.busyUntil || formOf(v) === 4) {
+    if (now() >= s.busyUntil || (v.typeId === "ab:goku" && formOf(v) === 5)) {
       const chance = def.dodge(v, s);
       if (chance > 0 && Math.random() < chance) {
         ev.cancel = true;
@@ -2772,7 +2887,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
 });
 function dodgeFx(v, src) {
   if (!v.isValid) return;
-  const ui = v.typeId === "ab:goku" && formOf(v) === 4;
+  const ui = v.typeId === "ab:goku" && formOf(v) === 5;
   const color = ui ? C.silver : C.white;
   fx(v.dimension, "aura", v.location, color, 1, 0.4, { count: 12 * fxLevel(), speed: 0 });
   const from = src && src.isValid ? src.location : V.add(v.location, { x: 1, y: 0, z: 0 });

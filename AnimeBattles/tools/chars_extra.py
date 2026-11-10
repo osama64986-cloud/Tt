@@ -130,6 +130,7 @@ M.FACE32.update({
     "ichigo": dict(eye="narrow", brow="sharp", mouth="corner"),
     "ichigo_hollow": dict(eye="narrow", brow="sharp", mouth="none", marks=["hollow_mask"]),
     "ichigo_mugetsu": dict(eye="narrow", brow="flat", mouth="neutral"),
+    "ichigo_vasto": dict(eye="narrow", brow="sharp", mouth="none", marks=["vasto_mask"]),
     "tanjiro": dict(eye="anime", brow="angled", mouth="smile", marks=["tanjiro_scar"]),
     "tanjiro_mark": dict(eye="anime", brow="sharp", mouth="neutral", marks=["tanjiro_mark"]),
 })
@@ -183,6 +184,22 @@ def face32(px, W, H, spec, hair, iris, skin):
             put(x, y, (10, 6, 8))
         for x, y in ((10, 19), (11, 19), (20, 19), (21, 19)):
             put(x, y, (250, 200, 40))
+    if "vasto_mask" in marks:  # Vasto Lorde: all-white mask, black stripes over the brow and down from the eyes, bared teeth
+        B = (14, 12, 16)
+        for y in range(0, 16):
+            for x in (15, 16):
+                put(x, y, B)
+        for y in range(4, 12):
+            put(13 - (y - 4) // 3, y, B); put(18 + (y - 4) // 3, y, B)
+        for cx in (10, 21):
+            for y in range(16, 22):
+                for x in range(cx - 3, cx + 3):
+                    put(x, y, B)
+            put(cx - 1, 18, (250, 200, 40)); put(cx, 18, (250, 200, 40)); put(cx - 1, 19, (250, 200, 40)); put(cx, 19, (250, 200, 40))
+            for y in range(22, 31):
+                put(cx - 2 + (1 if cx > 16 else -1) * ((y - 22) // 4), y, B)
+        for x in range(9, 23):
+            put(x, 26, B if x % 2 else (250, 250, 244)); put(x, 27, (40, 30, 30)); put(x, 28, B if x % 2 == 0 else (250, 250, 244))
     if "tanjiro_scar" in marks or "tanjiro_mark" in marks:  # the flame scar on the left forehead
         big = "tanjiro_mark" in marks
         col = (170, 40, 40) if big else (150, 70, 60)
@@ -381,16 +398,78 @@ def sasuke(m, form):
 
 # ------------------------------------------------------------------ Ichigo (Bleach)
 ICH_HAIR = (255, 132, 40)
-ZANGETSU = dict(wrap=(236, 236, 236), diamond=(30, 30, 36), tsuba="round", metal=(40, 40, 46),
-                blade=(200, 206, 218), edge=(246, 248, 255), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
+SHIHAK = (30, 30, 36)
+MASK_W = (238, 236, 228)
+FUR = (196, 44, 40)
 TENSA = dict(wrap=(30, 30, 36), diamond=(120, 20, 24), tsuba="cross", metal=(40, 40, 46),
              blade=(28, 28, 34), edge=(150, 150, 170), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
+FULLBRING = dict(wrap=(30, 30, 36), diamond=(236, 236, 236), tsuba="cross", metal=(236, 236, 236),
+                 blade=(232, 232, 236), edge=(40, 40, 46), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
+
+
+def ichigo_hair(m, col):
+    """Messy orange spikes in every direction, bangs falling over the scowl."""
+    shell(m, col, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(col)
+    spikes = [([0, 32.0, -1.8], [0.0, 1, -0.35], 4.6, 3.0), ([2.4, 31.8, -2.2], [0.7, 1, -0.4], 4.8, 2.8),
+              ([-2.4, 31.8, -2.2], [-0.7, 1, -0.4], 4.8, 2.8), ([3.6, 31.2, 0.2], [1, 0.8, 0.0], 5.0, 2.8),
+              ([-3.6, 31.2, 0.2], [-1, 0.8, 0.0], 5.0, 2.8), ([1.6, 32.0, 1.4], [0.4, 1, 0.5], 4.6, 2.8),
+              ([-1.6, 32.0, 1.4], [-0.4, 1, 0.5], 4.6, 2.8), ([0, 31.4, 3.4], [0, 0.6, 1], 4.8, 3.0),
+              ([4.2, 29.6, -1.8], [1, -0.4, -0.3], 3.6, 2.2), ([-4.2, 29.6, -1.8], [-1, -0.4, -0.3], 3.6, 2.2),
+              ([4.2, 29.0, 1.4], [1, -0.2, 0.5], 4.2, 2.4), ([-4.2, 29.0, 1.4], [-1, -0.2, 0.5], 4.2, 2.4),
+              ([2.4, 29.4, 4.2], [0.5, -0.3, 1], 4.4, 2.6), ([-2.4, 29.4, 4.2], [-0.5, -0.3, 1], 4.4, 2.6),
+              ([0, 27.6, 4.2], [0, -0.7, 1], 4.0, 2.6), ([3.6, 27.4, 3.6], [0.6, -0.8, 0.6], 3.6, 2.0),
+              ([-3.6, 27.4, 3.6], [-0.6, -0.8, 0.6], 3.6, 2.0),
+              # bangs, and two spikes jutting forward over them
+              ([-2.9, 31.6, -4.2], [-0.35, -1, -0.45], 3.4, 2.4), ([-0.9, 31.8, -4.3], [-0.05, -1, -0.4], 3.8, 2.2),
+              ([1.2, 31.8, -4.3], [0.15, -1, -0.45], 3.2, 2.2), ([3.0, 31.6, -4.2], [0.4, -1, -0.45], 3.0, 2.2),
+              ([1.8, 32.2, -3.8], [0.3, 0.6, -1], 3.6, 2.4), ([-1.6, 32.2, -3.8], [-0.4, 0.5, -1], 3.4, 2.4)]
+    for base, d, ln, w in spikes:
+        m.strand(base, d, ln, w, hp, bone="hair", segs=3, thick=0.75)
+
+
+def long_hair(m, col, back_len=15, z=4.0, front=True, bone="hair"):
+    """Waist-long hair (Vasto Lorde orange, Mugetsu black)."""
+    hp = M.hair_paint(col)
+    for x in (-3.2, -1.6, 0, 1.6, 3.2):
+        m.strand([x, 30.6, z], [x * 0.04, -1, 0.18], back_len - abs(x) * 0.6, 2.8, hp, bone=bone, segs=3, thick=0.6)
+    for s in (1, -1):
+        m.strand([s * 4.2, 30.4, 1.6], [s * 0.15, -1, 0.3], back_len * 0.7, 2.4, hp, bone=bone, segs=3, thick=0.6)
+        if front:
+            m.strand([s * 3.8, 31.2, -3.6], [s * 0.12, -1, -0.15], 7, 2.0, hp, bone=bone, segs=3, thick=0.6)
+
+
+def cleaver(m, bone, cx, cy, L=17.0, W=3.8, blade=(212, 216, 228), edge=(246, 248, 255), spine=(36, 36, 42),
+            core=None, grip=(236, 236, 236), chain=False, cloth=True):
+    """Zangetsu's Shikai: a huge guardless cleaver, the hilt in line with its black spine, the edge below.
+    With `core` it is the True Bankai blade: silver edges round a black core and a long chain."""
+    m.box(bone, [cx - 0.45, cy - 0.45, -2.0], [0.9, 0.9, 4.8], M.wrap_paint(grip, dark(grip, 0.55) if grip[0] > 120 else (120, 20, 24)))
+    top = cy + 0.7
+    ex = [region((0, 0, 1, 0.14), spine, faces=("east", "west")), region((0, 0.84, 1, 1), edge, faces=("east", "west"))]
+    if core:
+        ex.append(region((0.04, 0.3, 0.92, 0.62), core, faces=("east", "west")))
+    paint = layered(blade, ex)
+    m.box(bone, [cx - 0.4, top - W, -2.0 - L], [0.8, W, L], paint)
+    for k, f in enumerate((0.72, 0.46, 0.22)):  # the slanted cut of the tip, edge side longest
+        m.box(bone, [cx - 0.38, top - W, -2.0 - L - (k + 1) * 1.0], [0.76, W * f, 1.0],
+              layered(blade, [region((0, 0.7, 1, 1), edge, faces=("east", "west"))]))
+    if cloth:  # the long white cloth trailing from the hilt
+        m.strand([cx, cy, 2.6], [0, -0.35, 1], 8, 1.0, solid((236, 236, 236)), bone=bone, segs=3, thick=0.4)
+    if chain:
+        for i in range(9):
+            m.box(bone, [cx - 0.3, cy - 0.3 - i * 0.7, 2.8 + i * 0.35], [0.6, 0.6, 0.6], solid((60, 60, 70) if i % 2 else (110, 110, 124)))
+
+
+def tensa_chain(m, bone, x, y, z):
+    for i in range(6):
+        m.box(bone, [x - 0.3, y - i * 0.6, z + i * 0.18], [0.6, 0.6, 0.6], solid((60, 60, 70) if i % 2 else (110, 110, 124)))
 
 
 def ichigo(m, form):
-    shihak = (30, 30, 36)
-    mugetsu = form == "mugetsu"
-    hair = (20, 18, 24) if mugetsu else ICH_HAIR
+    hair = ICH_HAIR
+    key = {"shikai": "ichigo", "fullbring": "ichigo", "bankai": "ichigo", "hollow": "ichigo_hollow", "vasto": "ichigo_vasto",
+           "mugetsu": "ichigo_mugetsu", "true": "ichigo"}[form]
+    iris = {"mugetsu": (200, 20, 30), "vasto": (250, 200, 40)}.get(form, (130, 76, 34))
 
     def kosode(face, px, w, h, base):
         if face == "north":  # white under-kimono showing in a V
@@ -398,32 +477,122 @@ def ichigo(m, form):
                 half = int((h * 0.5 - y) / (h * 0.5) * w * 0.2)
                 for x in range(w // 2 - half - 1, w // 2 + half + 2):
                     _put(px, w, h, x, y, WHITE if abs(x - w // 2) > half - 1 else SKIN)
-    key = {"shikai": "ichigo", "bankai": "ichigo", "hollow": "ichigo_hollow", "mugetsu": "ichigo_mugetsu"}[form]
-    iris = (200, 20, 30) if mugetsu else (130, 76, 34)
-    base_body(m, layered(shihak, [kosode] if not mugetsu else []), arm_paint(shihak, sleeve_to=0.86),
-              leg_paint(shihak, WHITE, toes=False), head_paint(hair, iris, True, key))
-    m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.4, 5.2], solid(WHITE if not mugetsu else shihak))              # sash
-    if form == "shikai":  # the cleaver Zangetsu: a huge flat blade, no guard
-        m.box("rightArm", [5.2, 12.4, -15.0], [1.6, 3.6, 14.0], layered((210, 214, 226), [region((0, 0, 1, 0.2), (40, 40, 46), faces=("east", "west"))]))
-        m.box("rightArm", [5.6, 12.8, -1.0], [0.8, 0.8, 3.2], solid((236, 236, 236)))
-        m.box("body", [-4.0, 15.0, -2.7], [8.0, 0.8, 0.4], solid((200, 30, 30)), rot=[0, 0, -38], pivot=[0, 18, -2.7])  # the strap
-    else:  # Tensa Zangetsu: the black bankai katana and the long torn black coat
+
+    def tatters(face, px, w, h, base):  # torn hem
+        if face in SIDES:
+            for x in range(w):
+                for y in range(h - 1 - (x * 7 % 5), h):
+                    if (x // 2) % 2 == 0:
+                        px[x, y] = (0, 0, 0, 0)
+
+    hakama = layered(SHIHAK, [region((0, 0.92, 1, 1), WHITE)])
+    if form in ("shikai", "bankai", "hollow"):
+        base_body(m, layered(SHIHAK, [kosode]), arm_paint(SHIHAK, sleeve_to=0.86), leg_paint(SHIHAK, WHITE, toes=False),
+                  head_paint(hair, iris, True, key))
+        m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.4, 5.2], solid(WHITE))                                       # white sash
+        both_legs(m, [-0.6, 1.6, -2.6], [4.9, 10.4, 5.2], layered(SHIHAK, [tatters]))                           # wide hakama
+    if form == "shikai":
+        cleaver(m, "rightArm", 6.0, 12.2)
+        m.box("body", [-4.0, 15.0, -2.7], [8.0, 0.8, 0.4], solid((200, 30, 30)), rot=[0, 0, -38], pivot=[0, 18, -2.7])  # the red strap
+        m.box("body", [-4.0, 15.0, 2.3], [8.0, 0.8, 0.4], solid((200, 30, 30)), rot=[0, 0, 38], pivot=[0, 18, 2.3])
+    elif form in ("bankai", "hollow"):  # Tensa Zangetsu and the long, torn black coat with its red lining
         M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 15, TENSA)
-        coat = layered(shihak, [region((0, 0, 1, 1), (150, 20, 26), faces=("north",))])
-        m.box("body", [-4.6, 1.0, 2.2], [9.2, 23.0, 0.5], layered(shihak, [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h - 6, h) for x in range(w) if (x // 3) % 2 == 0] if f in SIDES else None]))
-        for x0 in (-4.6, 1.8):
-            m.box("body", [x0, 1.0, -2.7], [2.8, 23.0, 0.5], coat if x0 > 0 else solid(shihak))
-    shell(m, hair, hairline=30.6, sideburn=False, teeth=0.8)
-    hp = M.hair_paint(hair)
-    if mugetsu:  # Final Getsuga Tensho: long black hair down to the waist, bandages
-        for x in (-2.8, -1, 1, 2.8):
-            m.strand([x, 31.0, 3.6], [0, -1, 0.3], 14, 2.4, hp, bone="hair", segs=3, thick=0.7)
-        both_arms(m, [3.8, 14.0, -2.2], [4.4, 6.0, 4.4], layered((26, 24, 30), [lines((SIDES, [[(0, y / 6), (1, y / 6 + 0.1)] for y in range(6)]), (60, 56, 66))]))
-    else:  # messy orange spikes in every direction
-        for x, z, lean in ((0, -2.2, 0), (2.2, -1.4, 0.5), (-2.2, -1.4, -0.5), (3.0, 1.0, 0.9), (-3.0, 1.0, -0.9), (1.4, 2.6, 0.4), (-1.4, 2.6, -0.4), (0, 0.4, 0.1)):
-            m.strand([x, 32.0, z], [lean, 1.0, z * 0.25], 3.8, 2.8, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.05, -0.08, z * 0.05))
-        for x, tilt in ((-2.4, -0.2), (0, 0.05), (2.4, 0.2)):
-            m.strand([x, 31.4, -4.1], [tilt, -0.6, -0.55], 3.0, 2.2, hp, bone="hair", segs=3, thick=0.7)
+        tensa_chain(m, "rightArm", 6.0, 11.7, 2.0)
+        lining = (150, 20, 26)
+
+        def edge(side):
+            def f(face, px, w, h, base):
+                if face == "south":
+                    for y in range(h):
+                        for x in range(w):
+                            _put(px, w, h, x, y, lining)
+                if face == "north":
+                    for y in range(h):
+                        _put(px, w, h, (w - 1) if side > 0 else 0, y, lining)
+            return f
+        m.box("body", [-4.6, 1.0, 2.2], [9.2, 23.0, 0.5], layered(SHIHAK, [tatters, lambda f, px, w, h, b: [_put(px, w, h, x, y, lining) for y in range(h) for x in range(w)] if f == "north" else None]))
+        m.box("body", [-4.7, 1.0, -2.75], [2.8, 23.0, 0.5], layered(SHIHAK, [edge(1), tatters]))
+        m.box("body", [1.9, 1.0, -2.75], [2.8, 23.0, 0.5], layered(SHIHAK, [edge(-1), tatters]))
+        m.box("body", [-4.7, 1.0, -2.75], [0.5, 23.0, 5.45], layered(SHIHAK, [tatters]))
+        m.box("body", [4.2, 1.0, -2.75], [0.5, 23.0, 5.45], layered(SHIHAK, [tatters]))
+        both_arms(m, [3.5, 12.0, -2.5], [5.0, 2.4, 5.0], layered(SHIHAK, [region((0, 0.82, 1, 1), lining)]))   # flared cuffs
+        m.box("leftArm", [-8.2, 11.6, -2.2], [4.4, 1.6, 4.4], solid((24, 24, 28)))                              # black glove
+    elif form == "fullbring":  # Complete Fullbring: the white suit with black stripes, the skull-hilted blade
+        def stripes(face, px, w, h, base):
+            if face == "north":
+                for y in range(h):
+                    off = int(abs(y - h * 0.3) * 0.12)
+                    for x in (int(w * 0.28) - off, int(w * 0.28) - off + 1, int(w * 0.72) + off, int(w * 0.72) + off - 1):
+                        _put(px, w, h, x, y, BLACK)
+                for x in range(w // 2 - 1, w // 2 + 1):
+                    for y in range(int(h * 0.15), h):
+                        _put(px, w, h, x, y, (200, 200, 204))
+        base_body(m, layered(MASK_W, [stripes]), layered(MASK_W, [region((0.4, 0, 0.6, 0.9), BLACK, faces=("north", "south", "east", "west"))]),
+                  layered(BLACK, [region((0, 0, 0.35, 0.8), MASK_W), region((0, 0.85, 1, 1), MASK_W)]), head_paint(hair, iris, True, key))
+        m.box("body", [-4.4, 22.4, -2.6], [8.8, 2.4, 5.2], layered(MASK_W, [region((0.35, 0, 0.65, 1), BLACK, faces=("north",))]))  # high collar
+        m.box("body", [-4.6, 3.0, 2.2], [9.2, 9.6, 0.5], layered(MASK_W, [region((0.45, 0, 0.55, 1), BLACK)]))  # coat tails
+        both_arms(m, [3.4, 19.4, -2.6], [5.2, 4.8, 5.2], layered(MASK_W, [region((0, 0.8, 1, 1), BLACK)]))     # shoulder plates
+        M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 11, FULLBRING)
+    elif form == "vasto":  # Vasto Lorde: white skin, black markings, the hole in his chest, red fur, horns, long orange hair
+        def markings(face, px, w, h, base):
+            if face == "north":
+                for x in range(w):  # collar-bone bands
+                    y = int(h * 0.12 + abs(x - w / 2) * 0.35)
+                    _put(px, w, h, x, y, BLACK); _put(px, w, h, x, y + 1, BLACK)
+                cx, cy, r = w / 2, h * 0.3, w * 0.13
+                for y in range(h):
+                    for x in range(w):
+                        d = math.hypot(x - cx, y - cy)
+                        if d < r:
+                            px[x, y] = (0, 0, 0, 0) if d < r * 0.55 else (220, 120, 40, 255)
+                for y in range(int(h * 0.5), int(h * 0.85), 3):  # abs
+                    for x in range(int(w * 0.3), int(w * 0.7)):
+                        _put(px, w, h, x, y, (196, 194, 188))
+                for y in range(int(h * 0.45), h):
+                    _put(px, w, h, w // 2, y, (196, 194, 188))
+            if face == "south":
+                for x in range(w):
+                    _put(px, w, h, x, int(h * 0.2 + abs(x - w / 2) * 0.3), BLACK)
+        arm = layered(MASK_W, [region((0, 0.12, 1, 0.2), BLACK), region((0, 0.3, 1, 0.36), BLACK)])
+        base_body(m, layered(MASK_W, [markings]), arm, layered(SHIHAK, [region((0, 0.9, 1, 1), MASK_W)]),
+                  skin_swap(head_paint(MASK_W, iris, False, key), MASK_W))
+        both_legs(m, [-0.6, 1.6, -2.6], [4.9, 10.4, 5.2], layered(SHIHAK, [tatters]))                           # torn hakama
+        m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.4, 5.2], solid(WHITE))                                       # white sash and its knot
+        m.box("body", [-1.0, 8.4, -3.2], [2.0, 3.6, 0.6], solid(WHITE))
+        fur = layered(FUR, [lambda f, px, w, h, b: [_put(px, w, h, x, y, dark(FUR, 0.75)) for y in range(h) for x in range(w) if (x * 5 + y * 3) % 7 == 0]])
+        m.box("body", [-5.0, 22.4, -2.9], [10.0, 2.8, 5.8], fur)                                                 # fur collar
+        for s in (1, -1):
+            m.strand([s * 3.4, 24.0, -2.4], [s * 0.6, 1, -0.4], 3.2, 2.6, fur, bone="body", segs=2, thick=0.7)
+            m.strand([s * 3.4, 24.0, 2.0], [s * 0.6, 1, 0.4], 3.2, 2.6, fur, bone="body", segs=2, thick=0.7)
+        both_arms(m, [3.3, 11.6, -2.7], [5.4, 3.4, 5.4], fur)                                                     # fur cuffs
+        for s in (1, -1):  # horns: out from the temples, curving forward
+            m.strand([s * 4.0, 30.4, -1.0], [s * 1, 0.55, -0.1], 7.5, 2.0, layered(MASK_W, [region((0, 0, 1, 0.25), BLACK)]),
+                     bone="head", segs=3, thick=0.9, bend=(-s * 0.12, 0.05, -0.45))
+        m.box("hair", [-4.3, 28.6, -4.3], [8.6, 3.6, 8.6], layered(MASK_W, [region((0.42, 0, 0.58, 1), BLACK, faces=("north", "up"))]))  # mask crown
+        long_hair(m, ICH_HAIR, back_len=17, front=False)
+        return
+    elif form == "mugetsu":  # Final Getsuga Tensho: long black hair, black wrappings, red eyes
+        hair = (22, 20, 26)
+        wraps = layered((26, 24, 30), [lines((SIDES, [[(0, y / 7), (1, y / 7 + 0.12)] for y in range(7)]), (60, 56, 66))])
+        base_body(m, wraps, layered((26, 24, 30), [lines((SIDES, [[(0, y / 6), (1, y / 6 + 0.1)] for y in range(6)]), (60, 56, 66))]),
+                  layered(SHIHAK, [region((0, 0.92, 1, 1), (26, 24, 30))]), head_paint(hair, iris, True, key))
+        both_legs(m, [-0.6, 1.6, -2.6], [4.9, 10.4, 5.2], layered(SHIHAK, [tatters]))
+        for i in range(5):  # loose wrappings floating off the right arm
+            m.strand([6.0, 13.0 + i * 2.0, 2.2], [0.4, -0.3, 1], 4.0, 0.9, solid((40, 36, 46)), bone="rightArm", segs=2, thick=0.4)
+        shell(m, hair, hairline=30.6, sideburn=False, teeth=0.8)
+        long_hair(m, hair, back_len=16)
+        return
+    elif form == "true":  # True Bankai: sleeveless black top, torn white hakama, the great cleaver and the short black blade
+        base_body(m, layered(SHIHAK, [lambda f, px, w, h, b: [_put(px, w, h, x, y, WHITE) for y in range(int(h * 0.3)) for x in range(w // 2 - (int(h * 0.3) - y) // 2, w // 2 + (int(h * 0.3) - y) // 2 + 1)] if f == "north" else None]),
+                  layered(SKIN, [region((0, 0, 1, 0.2), SHIHAK), region((0, 0.72, 1, 1), (24, 24, 28))]),
+                  layered(WHITE, [lines((SIDES, [[(0.3, 0), (0.25, 0.9)], [(0.7, 0.1), (0.75, 1)]]), (40, 40, 46)), region((0, 0.9, 1, 1), (40, 40, 46))]),
+                  head_paint(hair, iris, True, key))
+        both_legs(m, [-0.7, 1.0, -2.7], [5.1, 11.0, 5.4], layered(WHITE, [tatters, lines((SIDES, [[(0.3, 0), (0.2, 1)], [(0.75, 0), (0.8, 1)]]), (40, 40, 46))]))
+        m.box("body", [-4.5, 11.6, -2.6], [9.0, 1.4, 5.2], solid(SHIHAK))
+        cleaver(m, "rightArm", 6.0, 12.2, L=19, W=4.2, blade=(196, 200, 214), edge=(244, 246, 255), spine=(196, 200, 214),
+                core=(26, 26, 32), grip=(40, 30, 34), chain=True, cloth=False)
+        M.katana2(m, "leftArm", (-6, 12.2, -1.2), (0, 0.1, -1), 8, TENSA)
+    ichigo_hair(m, hair)
 
 
 # ------------------------------------------------------------------ Tanjiro (Demon Slayer)
@@ -462,7 +631,7 @@ FORMS = {
     "naruto_war": ["kcm", "kurama", "spsm"],
     "naruto_adult": ["hokage", "link", "baryon"],
     "sasuke": ["sharingan", "susanoo"],
-    "ichigo": ["shikai", "bankai", "hollow", "mugetsu"],
+    "ichigo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
     "tanjiro": ["water", "mark"],
 }
 

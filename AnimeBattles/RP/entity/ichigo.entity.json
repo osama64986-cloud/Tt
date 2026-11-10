@@ -11,6 +11,10 @@
     "shikai_shout": "textures/entity/ichigo/shikai_shout",
     "shikai_hurt": "textures/entity/ichigo/shikai_hurt",
     "shikai_blink": "textures/entity/ichigo/shikai_blink",
+    "fullbring": "textures/entity/ichigo/fullbring",
+    "fullbring_shout": "textures/entity/ichigo/fullbring_shout",
+    "fullbring_hurt": "textures/entity/ichigo/fullbring_hurt",
+    "fullbring_blink": "textures/entity/ichigo/fullbring_blink",
     "bankai": "textures/entity/ichigo/bankai",
     "bankai_shout": "textures/entity/ichigo/bankai_shout",
     "bankai_hurt": "textures/entity/ichigo/bankai_hurt",
@@ -19,16 +23,27 @@
     "hollow_shout": "textures/entity/ichigo/hollow_shout",
     "hollow_hurt": "textures/entity/ichigo/hollow_hurt",
     "hollow_blink": "textures/entity/ichigo/hollow_blink",
+    "vasto": "textures/entity/ichigo/vasto",
+    "vasto_shout": "textures/entity/ichigo/vasto_shout",
+    "vasto_hurt": "textures/entity/ichigo/vasto_hurt",
+    "vasto_blink": "textures/entity/ichigo/vasto_blink",
     "mugetsu": "textures/entity/ichigo/mugetsu",
     "mugetsu_shout": "textures/entity/ichigo/mugetsu_shout",
     "mugetsu_hurt": "textures/entity/ichigo/mugetsu_hurt",
-    "mugetsu_blink": "textures/entity/ichigo/mugetsu_blink"
+    "mugetsu_blink": "textures/entity/ichigo/mugetsu_blink",
+    "true": "textures/entity/ichigo/true",
+    "true_shout": "textures/entity/ichigo/true_shout",
+    "true_hurt": "textures/entity/ichigo/true_hurt",
+    "true_blink": "textures/entity/ichigo/true_blink"
    },
    "geometry": {
     "shikai": "geometry.ab.ichigo_shikai",
+    "fullbring": "geometry.ab.ichigo_fullbring",
     "bankai": "geometry.ab.ichigo_bankai",
     "hollow": "geometry.ab.ichigo_hollow",
-    "mugetsu": "geometry.ab.ichigo_mugetsu"
+    "vasto": "geometry.ab.ichigo_vasto",
+    "mugetsu": "geometry.ab.ichigo_mugetsu",
+    "true": "geometry.ab.ichigo_true"
    },
    "animations": {
     "look": "animation.ab.look_at_target",

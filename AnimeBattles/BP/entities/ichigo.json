@@ -10,7 +10,7 @@
      "type": "int",
      "range": [
       0,
-      3
+      6
      ],
      "default": 0,
      "client_sync": true
@@ -103,15 +103,15 @@
    },
    "ab:form_1": {
     "minecraft:attack": {
-     "damage": 34
+     "damage": 30
     },
     "minecraft:movement": {
-     "value": 0.44
+     "value": 0.42
     }
    },
    "ab:form_2": {
     "minecraft:attack": {
-     "damage": 44
+     "damage": 34
     },
     "minecraft:movement": {
      "value": 0.44
@@ -119,10 +119,34 @@
    },
    "ab:form_3": {
     "minecraft:attack": {
+     "damage": 44
+    },
+    "minecraft:movement": {
+     "value": 0.44
+    }
+   },
+   "ab:form_4": {
+    "minecraft:attack": {
+     "damage": 52
+    },
+    "minecraft:movement": {
+     "value": 0.46
+    }
+   },
+   "ab:form_5": {
+    "minecraft:attack": {
      "damage": 60
     },
     "minecraft:movement": {
      "value": 0.46
+    }
+   },
+   "ab:form_6": {
+    "minecraft:attack": {
+     "damage": 68
+    },
+    "minecraft:movement": {
+     "value": 0.47
     }
    }
   },
@@ -227,7 +251,10 @@
         "ab:form_0",
         "ab:form_1",
         "ab:form_2",
-        "ab:form_3"
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
        ]
       }
      },
@@ -253,7 +280,10 @@
         "ab:form_0",
         "ab:form_1",
         "ab:form_2",
-        "ab:form_3"
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
        ]
       }
      },
@@ -279,7 +309,10 @@
         "ab:form_0",
         "ab:form_1",
         "ab:form_2",
-        "ab:form_3"
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
        ]
       }
      },
@@ -305,7 +338,10 @@
         "ab:form_0",
         "ab:form_1",
         "ab:form_2",
-        "ab:form_3"
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
        ]
       }
      },
@@ -319,6 +355,93 @@
      {
       "set_property": {
        "ab:form": 3
+      }
+     }
+    ]
+   },
+   "ab:form_4": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2",
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_4"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 4
+      }
+     }
+    ]
+   },
+   "ab:form_5": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2",
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_5"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 5
+      }
+     }
+    ]
+   },
+   "ab:form_6": {
+    "sequence": [
+     {
+      "remove": {
+       "component_groups": [
+        "ab:form_0",
+        "ab:form_1",
+        "ab:form_2",
+        "ab:form_3",
+        "ab:form_4",
+        "ab:form_5",
+        "ab:form_6"
+       ]
+      }
+     },
+     {
+      "add": {
+       "component_groups": [
+        "ab:form_6"
+       ]
+      }
+     },
+     {
+      "set_property": {
+       "ab:form": 6
       }
      }
     ]
