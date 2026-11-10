@@ -4025,6 +4025,21 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
                 put(x, y, ink)
     if not mouth:
         return
+    if expr == "shout" and "sukuna_face" in marks:  # Sukuna's maniacal grin: wide, fangs bared
+        for y in range(24, 30):
+            for x in range(9, 23):
+                put(x, y, ms[2])
+        rows = {24: (11, 20), 25: (10, 21), 26: (10, 21), 27: (11, 20), 28: (13, 18)}
+        for y, (a, b) in rows.items():
+            for x in range(a, b + 1):
+                edge = x in (a, b) or y in (24, 28)
+                put(x, y, ink if edge else (white if y == 25 else (70, 14, 22)))
+        put(9, 24, ink); put(22, 24, ink); put(8, 23, ink); put(23, 23, ink)  # corners pulled up
+        for x in (12, 19):
+            put(x, 26, white)  # fangs
+        for x in range(13, 19, 2):
+            put(x, 25, (190, 190, 196))
+        return
     if expr == "shout" and mouth_type == "corner":  # Vegeta yells through clenched teeth
         for y in range(24, 30):
             for x in range(10, 22):
