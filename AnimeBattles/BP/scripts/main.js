@@ -1698,7 +1698,46 @@ const cloneJutsu = (n, say = "§6§lShadow Clone Jutsu!") => ({
     later(14, () => { if (e.isValid) setPose(e, 0); });
   },
 });
+// Valley of the End: Sasuke meets a Rasengan with a Chidori; the two collide halfway and the stronger pushes through.
+function rasenganVsChidori(n, sk, o) {
+  const ns = state(n), ss = state(sk);
+  busy(ns, 30); busy(ss, 30);
+  announce(n, "§b§lRASENGAN! §f§l— §b§lCHIDORI!");
+  chargeOrb(n, sk, 12, C.blue, 0.3, o.size, 36);
+  chargeOrb(sk, n, 12, C.kameBlue, 0.4, 1.1, 4);
+  later(12, () => {
+    if (!alive(n) || !alive(sk)) return;
+    const a = n.location, b = sk.location;
+    const mid = V.add(a, V.mul(V.sub(b, a), 0.5));
+    try { n.teleport(V.add(a, V.mul(V.sub(b, a), 0.38)), { facingLocation: aim(sk) }); } catch (err) { /* ignore */ }
+    try { sk.teleport(V.add(b, V.mul(V.sub(a, b), 0.38)), { facingLocation: aim(n) }); } catch (err) { /* ignore */ }
+    setPose(n, 5); setPose(sk, 5);
+    const dim = n.dimension, c = V.up(mid, 1.2);
+    every(2, 8, (i) => {
+      fx(dim, "flash", c, C.white, 3 + i * 0.4, 0.2);
+      fx(dim, "orb", V.add(c, { x: -0.6, y: 0, z: 0 }), C.blue, 2.2, 0.2);
+      fx(dim, "orb", V.add(c, { x: 0.6, y: 0, z: 0 }), C.kameBlue, 2.2, 0.2);
+      fx(dim, "streak", c, C.white, 1.8, 0.3, { count: 10, speed: 10 });
+      if (i % 2 === 0) shake(dim, c, 0.35, 0.2);
+    });
+    later(16, () => {
+      const winner = powerOf(n) >= powerOf(sk) ? n : sk;
+      const loser = winner === n ? sk : n;
+      if (winner.isValid) explosion(winner, c, { radius: 3.5, dmg: 34 * powerOf(winner) / 100, color: winner === n ? C.blue : C.kameBlue, knock: 2.5, carve: 1 });
+      if (alive(loser)) deal(winner, loser, 10 * powerOf(winner) / 100);
+      for (const f of [n, sk]) if (f.isValid) later(6, () => setPose(f, 0));
+    });
+  });
+}
 function rasengan(e, s, t, o) {
+  if (t.typeId === "ab:sasuke" && !t.hasTag("ab_clone") && !e.hasTag("ab_clone")) {
+    const ts = state(t);
+    if (now() >= ts.busyUntil && ts.energy >= 90 && Math.random() < 0.6) {
+      ts.energy -= 90;
+      rasenganVsChidori(e, t, o);
+      return;
+    }
+  }
   busy(s, 26); face(e, aim(t)); announce(e, o.say);
   chargeOrb(e, t, 12, o.color, 0.3, o.size, 36);
   later(12, () => {
