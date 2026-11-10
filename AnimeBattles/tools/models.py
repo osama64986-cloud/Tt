@@ -4002,16 +4002,19 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
     def P(x, y, c):
         for mirror in sides:
             put(31 - x if mirror else x, y, c)
+    lid = (238, 238, 246) if eye_type == "big" else ink  # Gojo's lashes are white
     if expr == "blink" and eye_type != "band":
         for x in range(6, 14):  # relaxed closed lids with lashes
-            P(x, 20 if 7 <= x <= 12 else 19, ink)
-        P(5, 19, ink); P(13, 19, ink)
+            P(x, 20 if 7 <= x <= 12 else 19, lid)
+            if eye_type == "big":
+                P(x, 21 if 7 <= x <= 12 else 20, sr[0])  # lid crease so the white lashes read on the skin
+        P(5, 19, lid); P(13, 19, lid)
         for x in (7, 9, 11):
             P(x, 21, sr[1])
     if expr == "hurt" and eye_type != "band":
         for x, y in ((6, 16), (7, 17), (8, 17), (9, 18), (10, 18), (11, 19), (12, 19), (11, 20), (10, 20),
                      (9, 21), (8, 21), (7, 22), (6, 22)):
-            P(x, y, ink)  # squeezed shut: > <
+            P(x, y, ink if eye_type != "big" else sr[0])  # squeezed shut: > <
         for x in range(5, 13):
             P(x, 14 if x > 7 else 15, dark(skin, 0.55))  # knitted brow
     if expr == "shout" and eye_type == "g5":  # Gear 5 toon mode: the eyes pop out of his head
