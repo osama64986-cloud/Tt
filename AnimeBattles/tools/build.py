@@ -324,9 +324,12 @@ def extra_animations():
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},
         "hover": {"root": {"position": [0, "2.2 + math.sin(query.life_time * 110.0) * 0.6", 0]},
                    "rightLeg": {"rotation": [6, 0, 0]}, "leftLeg": {"rotation": [-4, 0, 0]}},
+        # Gear 5 toon wobble: squash and stretch like rubber
+        "toon": {"body": {"scale": ["1 + math.sin(query.life_time * 300.0) * 0.04", "1 - math.sin(query.life_time * 300.0) * 0.05", 1]},
+                 "head": {"scale": ["1 - math.sin(query.life_time * 300.0) * 0.03", "1 + math.sin(query.life_time * 300.0) * 0.04", 1]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
-    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover"}  # layered on walk/look, never replacing them
+    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover", "toon"}  # layered on walk/look, never replacing them
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": k not in additive, "bones": v} for k, v in A.items()}
     # strikes with motion: chamber -> snap out (slight overshoot) -> hold, replayed every time the pose is set
     def strike(bones, length=0.14):
@@ -413,7 +416,7 @@ def extra_animations():
 
 IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
 CHAR_ANIMS = {
-    "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3")],
+    "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3"), ("toon", "animation.ab.toon", "query.property('ab:form') == 6")],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2")],
     "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("hover", "animation.ab.hover", "query.property('ab:pose') != 24"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],

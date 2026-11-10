@@ -4014,6 +4014,15 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
             P(x, y, ink)  # squeezed shut: > <
         for x in range(5, 13):
             P(x, 14 if x > 7 else 15, dark(skin, 0.55))  # knitted brow
+    if expr == "shout" and eye_type == "g5":  # Gear 5 toon mode: the eyes pop out of his head
+        for cx in (9.5, 21.5):
+            for y in range(12, 24):
+                for x in range(3, 29):
+                    d = ((x + 0.5 - cx - 0.5) ** 2 + (y + 0.5 - 18) ** 2) ** 0.5
+                    if d < 5.2:
+                        put(x, y, ink if d > 4.3 else white)
+            for x, y in ((int(cx), 18), (int(cx) + 1, 18), (int(cx), 19), (int(cx) + 1, 19)):
+                put(x, y, ink)
     if not mouth:
         return
     if expr == "shout":

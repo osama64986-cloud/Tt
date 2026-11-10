@@ -1899,6 +1899,26 @@
      ]
     }
    }
+  },
+  "animation.ab.toon": {
+   "loop": true,
+   "override_previous_animation": false,
+   "bones": {
+    "body": {
+     "scale": [
+      "1 + math.sin(query.life_time * 300.0) * 0.04",
+      "1 - math.sin(query.life_time * 300.0) * 0.05",
+      1
+     ]
+    },
+    "head": {
+     "scale": [
+      "1 - math.sin(query.life_time * 300.0) * 0.03",
+      "1 + math.sin(query.life_time * 300.0) * 0.04",
+      1
+     ]
+    }
+   }
   }
  }
 }

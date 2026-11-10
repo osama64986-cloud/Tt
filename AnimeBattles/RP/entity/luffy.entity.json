@@ -83,7 +83,8 @@
     "dodge": "animation.ab.dodge",
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
-    "bounce": "animation.ab.bounce"
+    "bounce": "animation.ab.bounce",
+    "toon": "animation.ab.toon"
    },
    "scripts": {
     "animate": [
@@ -194,6 +195,9 @@
      },
      {
       "bounce": "query.property('ab:form') == 3"
+     },
+     {
+      "toon": "query.property('ab:form') == 6"
      }
     ]
    },
