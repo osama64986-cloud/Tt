@@ -151,30 +151,29 @@ def _toward(h, target, amt):
     return (h + d * amt) % 1.0
 
 
-def make_ramp(base, steps=5, contrast=0.30, warm=0.10, grey=False):
-    """Our house ramp: shadows drift cool and saturated, lights drift warm and
-    pale.  `base` is the middle tone.  With grey=True hue is left untouched
-    (needed for biome-tinted textures)."""
+def make_ramp(base, steps=5, contrast=0.30, warm=0.10, grey=False, sat=1.22):
+    """Our house ramp (v2): calm value steps, rich colour, almost no hue drift.
+    `base` is the middle tone.  Shadows gain a little saturation, lights lose a
+    little, and the whole material is a touch more saturated than its base.
+    With grey=True hue and saturation are untouched (biome-tinted textures)."""
     h, s, v = colorsys.rgb_to_hsv(base[0] / 255, base[1] / 255, base[2] / 255)
+    c = contrast * 0.6
+    coloured = (not grey) and s >= 0.04
+    if coloured:                      # enrich muted colours most, vivid ones barely
+        s = min(1.0, s * (1 + (sat - 1) * (1 - 0.75 * s)))
     out = []
     for i in range(steps):
         t = (i / (steps - 1)) * 2 - 1 if steps > 1 else 0.0  # -1 .. 1
-        vv = v * (1 + contrast * t) if t < 0 else v + (1 - v) * min(1.0, contrast * 1.15 * t) * 0.9
-        if grey or s < 0.02:
-            if grey:
-                out.append(_clip8(tuple(x * 255 for x in colorsys.hsv_to_rgb(h, s, vv))))
-            else:  # neutral greys still get a faint cool/warm split
-                tint = (-0.035 * t, 0.0, 0.035 * t) if t < 0 else (0.02 * t, 0.012 * t, -0.02 * t)
-                out.append(_clip8(((vv - tint[0] if t < 0 else vv + tint[0]) * 255,
-                                   (vv + tint[1]) * 255,
-                                   (vv + (-tint[2] if t < 0 else tint[2])) * 255)))
+        vv = v * (1 + c * t) if t < 0 else v + min(1 - v, v * c * 0.9) * t
+        if not coloured:
+            out.append(_clip8(tuple(x * 255 for x in colorsys.hsv_to_rgb(h, s, vv))))
             continue
         if t < 0:
-            hh = _toward(h, 0.68, warm * -t)
-            ss = min(1.0, s * (1 + 0.28 * -t))
+            hh = _toward(h, 0.68, warm * 0.18 * -t)
+            ss = min(1.0, s * (1 + 0.12 * -t))
         else:
-            hh = _toward(h, 0.13, warm * t)
-            ss = s * (1 - 0.30 * t)
+            hh = _toward(h, 0.13, warm * 0.18 * t)
+            ss = s * (1 - 0.14 * t)
         out.append(_clip8(tuple(x * 255 for x in colorsys.hsv_to_rgb(hh, ss, vv))))
     return out
 
@@ -199,13 +198,40 @@ def vramp(name, steps=5, grey=False, contrast=None, warm=0.10):
 
 
 def paint(val, ramp, dither=0.0):
-    """Map a 0..1 field onto a colour ramp (hard pixel-art steps)."""
+    """Map a 0..1 field onto a colour ramp (hard pixel-art steps).
+    `dither` is accepted for compatibility but ignored: the v2 style uses
+    clean clusters, never checkerboard dithering."""
     n = len(ramp)
-    v = np.clip(val, 0, 0.9999) * n
-    if dither:
-        v = v + (bayer(val.shape[1], val.shape[0]) - 0.5) * dither
-    idx = np.clip(np.floor(v), 0, n - 1).astype(int)
+    idx = np.clip(np.floor(np.clip(val, 0, 0.9999) * n), 0, n - 1).astype(int)
     return np.array(ramp, dtype=np.uint8)[idx]
+
+
+def paint_idx(idx, ramp):
+    """Paint from an integer tone map (0 = darkest)."""
+    return np.array(ramp, dtype=np.uint8)[np.clip(idx, 0, len(ramp) - 1)]
+
+
+def dashes(r, idx, hgt, count, tone, length=(3, 7), thick=0.35, vertical=False, lift=0.0, wobble=0.25):
+    """Soft lens-shaped strokes of a single tone: the basic mark of the v2
+    style.  Tile-wrapped.  `lift` raises (+) or sinks (-) the height map."""
+    h, w = idx.shape
+    for _ in range(count):
+        x, y = int(r.integers(w)), int(r.integers(h))
+        ln = int(r.integers(length[0], length[1] + 1))
+        fat = r.random() < thick
+        for i in range(ln):
+            if r.random() < wobble and 0 < i < ln - 1:
+                if vertical:
+                    x += int(r.choice([-1, 1]))
+                else:
+                    y += int(r.choice([-1, 1]))
+            px, py = ((x, y + i) if vertical else (x + i, y))
+            idx[py % h, px % w] = tone
+            hgt[py % h, px % w] += lift
+            if fat and 0 < i < ln - 1:
+                qx, qy = ((px + 1, py) if vertical else (px, py + 1))
+                idx[qy % h, qx % w] = tone
+                hgt[qy % h, qx % w] += lift
 
 
 # ----------------------------------------------------------------------- texture

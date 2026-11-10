@@ -23,7 +23,7 @@ GEMS = {
     "diamond":  dict(ramp=[(24, 120, 128), (48, 176, 180), (96, 220, 216), (160, 244, 236), (228, 255, 250)], shape="shard", metal=0, rough=40),
     "emerald":  dict(ramp=[(8, 96, 44), (16, 148, 62), (36, 200, 88), (104, 236, 136), (196, 255, 208)], shape="crystal", metal=0, rough=45),
 }
-ORE_COUNT = {"coal": 7, "iron": 7, "copper": 7, "gold": 7, "redstone": 9, "lapis": 9, "diamond": 6, "emerald": 6}
+ORE_COUNT = {"coal": 6, "iron": 6, "copper": 6, "gold": 6, "redstone": 7, "lapis": 7, "diamond": 5, "emerald": 5}
 
 
 def build(out, flip, variations):

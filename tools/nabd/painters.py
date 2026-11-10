@@ -1,7 +1,7 @@
 """Material painters.  Each returns a core.Tex painted from scratch."""
 import numpy as np
 
-from .core import (N, Tex, bayer, cell_edges, emboss, fbm, make_ramp, mix, norm01, paint,
+from .core import (N, Tex, bayer, cell_edges, dashes, emboss, fbm, make_ramp, mix, norm01, paint, paint_idx,
                    rng_of, shift, value_noise, voronoi, white)
 
 
@@ -37,56 +37,80 @@ def _speckle(r, density, w=N, h=N):
 # ------------------------------------------------------------------------- rock
 def rock(name, ramp, style="smooth", rough=195, cracks=3, speck=None, speck_ramp=None, bump=1.0,
          seed=None):
+    """Natural rock, v2: a flat mid tone carrying soft strokes one step lighter
+    or darker.  Calm on purpose - the eye should read the material, not noise."""
     r = rng_of(seed or name)
-    if style == "smooth":            # soft blotches + a few hairline cracks
-        hgt = fbm(r, ((3, 1.0), (5, 0.55), (8, 0.25)))
-    elif style == "strata":          # horizontal layers (deepslate, tuff, sandstone)
-        hgt = fbm(r, ((2, 0.5), (8, 1.0), (16, 0.35)), sx=4)
-    elif style == "pillars":         # vertical flow (basalt, dripstone)
-        hgt = fbm(r, ((2, 0.5), (8, 1.0), (16, 0.35)), sy=4)
-    elif style == "grain":           # coarse crystalline rock
-        hgt = fbm(r, ((4, 1.0), (8, 0.8), (16, 0.5)))
-    elif style == "fine":            # sand-like: calm dunes, sparse grains
-        hgt = fbm(r, ((2, 1.0), (4, 0.5)), sx=2)
+    mid = len(ramp) // 2
+    idx = np.full((N, N), mid)
+    hgt = np.full((N, N), 0.5)
+    if style == "smooth":            # stone: scattered horizontal lenses
+        dashes(r, idx, hgt, 7, mid - 1, (3, 7), lift=-0.12)
+        dashes(r, idx, hgt, 6, mid + 1, (3, 6), lift=0.12)
+    elif style == "strata":          # deepslate, tuff, sandstone: long layers
+        dashes(r, idx, hgt, 9, mid - 1, (5, 11), thick=0.5, lift=-0.14, wobble=0.15)
+        dashes(r, idx, hgt, 7, mid + 1, (4, 9), thick=0.3, lift=0.14, wobble=0.15)
+    elif style == "pillars":         # basalt, dripstone: vertical flow
+        dashes(r, idx, hgt, 9, mid - 1, (5, 11), thick=0.5, vertical=True, lift=-0.14, wobble=0.15)
+        dashes(r, idx, hgt, 7, mid + 1, (4, 9), thick=0.3, vertical=True, lift=0.14, wobble=0.15)
+    elif style == "grain":           # granite & friends: soft blotches
+        g = fbm(r, ((3, 1.0), (5, 0.6)))
+        idx = np.where(g > 0.64, mid + 1, np.where(g < 0.36, mid - 1, mid))
+        hgt = 0.35 + g * 0.3
+    elif style == "fine":            # sand, snow: faint ripples and a few grains
+        for y0 in (int(r.integers(0, 4)) + k for k in (0, 5, 10)):
+            y = y0
+            for x in range(N):
+                if r.random() < 0.3:
+                    y += int(r.choice([-1, 1]))
+                if (x + y0) % 7 < 5:
+                    idx[y % N, x] = mid + 1
+                    hgt[y % N, x] += 0.1
+                    if (x + y0) % 7 in (1, 2, 3):
+                        idx[(y + 1) % N, x] = mid - 1
+                        hgt[(y + 1) % N, x] -= 0.1
     else:
         raise ValueError(style)
-    tone = _lit(hgt, 0.8)
-    if style == "fine":
-        tone = 0.5 + (hgt - 0.5) * 0.5
-    crack = _strokes(r, cracks, (2, 4)) if cracks else np.zeros((N, N), bool)
-    hgt = np.where(crack, hgt * 0.35, hgt)
-    tone = np.where(crack, 0.04, tone)
-    under = np.roll(crack, 1, 0) & ~crack      # lit lip under each crack
-    tone = np.where(under, np.minimum(1, tone + 0.22), tone)
-    rgb = paint(tone, ramp, dither=0.0 if style == "fine" else 0.6)
+    if cracks:                       # short hairline cracks, one step darker than the dark strokes
+        crack = _strokes(r, cracks, (2, 4))
+        idx = np.where(crack, max(0, mid - 2), idx)
+        hgt = np.where(crack, 0.2, hgt)
+    rgb = paint_idx(idx, ramp)
     if speck:
-        sp = _speckle(r, speck) & ~crack
-        sr = speck_ramp or ramp
+        sp = _speckle(r, speck)
+        sr = [mix(c, ramp[mid], 0.5) for c in speck_ramp] if speck_ramp else \
+             [ramp[max(0, mid - 1)], ramp[min(len(ramp) - 1, mid + 1)]]    # grains stay close to the body tone
         pick = r.integers(0, len(sr), (N, N))
         rgb = np.where(sp[..., None], np.array(sr, np.uint8)[pick], rgb)
-        hgt = np.where(sp, np.clip(hgt + 0.12, 0, 1), hgt)
-    return Tex(rgb, hgt, rough=rough, bump=bump)
+        hgt = np.where(sp, np.clip(hgt + 0.08, 0, 1), hgt)
+    return Tex(rgb, np.clip(hgt, 0, 1), rough=rough, bump=bump)
 
 
 def cells(name, ramp, count=8, gap=None, rough=200, vary=0.28, dome=0.55, bump=1.25, tints=None,
           seed=None, moss=None):
-    """Cobble / gravel / raw-ore style: rounded stones separated by dark seams."""
+    """Cobble / gravel / nuggets, v2: flat-toned stones with a one-step rim
+    light on the top-left and soft seams (never black)."""
     r = rng_of(seed or name)
     ids, f1, f2, pts = voronoi(r, count)
     edge = cell_edges(ids)
     nc = len(pts)
-    off = (r.random(nc) - 0.5) * 2 * vary
-    d = norm01(f2 - f1)                       # 0 at seams, 1 in cell centres
-    hgt = np.clip(0.35 + dome * np.sqrt(d) + off[ids] * 0.5, 0, 1)
-    hgt = np.where(edge, 0.05, hgt)
-    tone = np.clip(0.5 + off[ids] + emboss(hgt, 0.75) + (fbm(r, ((8, 1.0),)) - 0.5) * 0.18, 0.12, 1)
-    tone = np.where(edge, 0.0, tone)
-    rgb = paint(tone, ramp, dither=0.35)
-    if tints:                                  # some stones use another ramp
+    n = len(ramp)
+    lo, hi = 2, n - 2                                   # stone body tones
+    tone_of = r.integers(lo, hi + 1, nc)
+    if vary < 0.25:
+        tone_of = np.clip(tone_of, lo, max(lo, hi - 1))
+    idx = tone_of[ids]
+    rim = (ids != np.roll(ids, 1, 1)) | (ids != np.roll(ids, 1, 0))   # top / left border of each stone
+    idx = np.where(rim & ~edge, np.minimum(idx + 1, n - 1), idx)
+    idx = np.where(edge, 1 if count < 14 else 0, idx)
+    idx = np.where(edge & (np.roll(edge, 1, 0) | np.roll(edge, 1, 1)) & (r.random((N, N)) < 0.5), 0, idx)
+    d = norm01(f2 - f1)
+    hgt = np.where(edge, 0.12, np.clip(0.5 + dome * 0.5 * np.sqrt(d) + (tone_of[ids] - lo) * 0.05, 0, 1))
+    rgb = paint_idx(idx, ramp)
+    if tints:
         which = r.integers(0, len(tints) + 1, nc)
         for i, tr in enumerate(tints):
             m = (which[ids] == i + 1) & ~edge
-            rgb = np.where(m[..., None], paint(tone, tr, dither=0.35), rgb)
+            rgb = np.where(m[..., None], paint_idx(idx, tr), rgb)
     if gap is not None:
         rgb = np.where(edge[..., None], np.array(gap, np.uint8), rgb)
     t = Tex(rgb, hgt, rough=rough, bump=bump)
@@ -96,12 +120,18 @@ def cells(name, ramp, count=8, gap=None, rough=200, vary=0.28, dome=0.55, bump=1
 
 
 def add_moss(t, name, moss_ramp, amount=0.42):
+    """Moss creeping along the seams and low spots."""
     r = rng_of(name + ":moss")
-    field = fbm(r, ((3, 1.0), (6, 0.6)))
+    field = fbm(r, ((3, 1.0), (5, 0.6)))
     low = 1 - norm01(t.height)
-    m = (field * 0.6 + low * 0.4) > (1 - amount)
-    tone = np.clip(0.45 + emboss(field, 1.2) + (white(r) - 0.5) * 0.25, 0, 1)
-    t.rgb = np.where(m[..., None], paint(tone, moss_ramp), t.rgb)
+    m = (field * 0.55 + low * 0.45) > (1 - amount * 0.9)
+    mid = len(moss_ramp) // 2
+    idx = np.full((N, N), mid)
+    top = m & ~np.roll(m, 1, 0)
+    bot = m & ~np.roll(m, -1, 0)
+    idx = np.where(top, mid + 1, idx)
+    idx = np.where(bot, mid - 1, idx)
+    t.rgb = np.where(m[..., None], paint_idx(idx, moss_ramp), t.rgb)
     t.height = np.where(m, np.clip(t.height + 0.18, 0, 1), t.height)
     return t
 
@@ -187,42 +217,47 @@ def slab_face(name, ramp, border=1, rough=150, bump=0.9, inset=None, vary=0.1, s
 # ------------------------------------------------------------------------- soil
 def soil(name, ramp, pebbles=5, pebble_ramp=None, rough=215, clump=((3, 1.0), (6, 0.8), (12, 0.4)),
          bump=1.0, seed=None, dither=0.7):
+    """Earth, v2: big soft clods drawn with broken one-step outlines, a few
+    lighter crumbs and the odd pebble."""
     r = rng_of(seed or name)
-    hgt = fbm(r, clump)
-    tone = _lit(hgt, 1.0)
-    rgb = paint(tone, ramp, dither=dither)
+    mid = len(ramp) // 2
+    ids, f1, f2, pts = voronoi(r, 7)
+    edge = cell_edges(ids) & (fbm(r, ((4, 1.0),)) > 0.3)      # outlines fade in and out
+    idx = np.full((N, N), mid)
+    patch = fbm(r, clump[:2])
+    idx = np.where(patch > 0.68, mid + 1, idx)
+    idx = np.where(edge, mid - 1, idx)
+    hgt = np.where(edge, 0.3, 0.5 + (patch - 0.5) * 0.3)
+    deep = edge & (r.random((N, N)) < 0.18)
+    idx = np.where(deep, max(0, mid - 2), idx)
+    rgb = paint_idx(idx, ramp)
     pr = pebble_ramp or ramp
     for _ in range(pebbles):
         x, y = int(r.integers(N)), int(r.integers(N))
-        big = r.random() < 0.5
-        rgb[y, x] = pr[-1]
-        hgt[y, x] = 0.95
-        if big:
-            rgb[y, (x + 1) % N] = pr[-2]
-            hgt[y, (x + 1) % N] = 0.9
-        rgb[(y + 1) % N, x] = pr[0]
-        if big:
-            rgb[(y + 1) % N, (x + 1) % N] = pr[0]
-    return Tex(rgb, hgt, rough=rough, bump=bump)
+        rgb[y, x] = pr[-2]
+        hgt[y, x] = 0.9
+        if r.random() < 0.5:
+            rgb[y, (x + 1) % N] = pr[len(pr) // 2]
+            hgt[y, (x + 1) % N] = 0.85
+        rgb[(y + 1) % N, x] = ramp[max(0, mid - 2)]
+    return Tex(rgb, np.clip(hgt, 0, 1), rough=rough, bump=bump)
 
 
 def turf(name, ramp, rough=225, sss=0, blades=26, seed=None, bump=0.9):
-    """Short grass seen from above: tufts made of little 2-3px blade strokes."""
+    """Lawn seen from above, v2: soft two-tone mottling with little upright
+    blade ticks (light tip, dark root)."""
     r = rng_of(seed or name)
-    base = fbm(r, ((2, 1.0), (4, 0.6)))
-    hgt = 0.25 + base * 0.2
-    tone = 0.3 + base * 0.22
+    mid = len(ramp) // 2
+    g = fbm(r, ((3, 1.0), (6, 0.5)))
+    idx = np.where(g > 0.6, mid + 1, np.where(g < 0.34, mid - 1, mid))
+    hgt = 0.35 + g * 0.25
     for _ in range(blades):
         x, y = int(r.integers(N)), int(r.integers(N))
-        ln = int(r.integers(2, 4))
-        lean = int(r.choice([-1, 0, 0, 1]))
-        for i in range(ln):
-            yy, xx = (y - i) % N, (x + (lean if i == ln - 1 else 0)) % N
-            v = 0.46 + 0.24 * i + (r.random() - 0.5) * 0.08
-            if v > tone[yy, xx]:
-                tone[yy, xx] = v
-                hgt[yy, xx] = 0.5 + 0.2 * i
-    return Tex(paint(np.clip(tone, 0, 1), ramp, dither=0.3), hgt, rough=rough, sss=sss, bump=bump)
+        idx[y, x] = min(len(ramp) - 1, mid + 2 if r.random() < 0.45 else mid + 1)
+        hgt[y, x] = 0.85
+        idx[(y + 1) % N, x] = mid - 1 if r.random() < 0.7 else max(0, mid - 2)
+        hgt[(y + 1) % N, x] = 0.3
+    return Tex(paint_idx(idx, ramp), hgt, rough=rough, sss=sss, bump=bump)
 
 
 def fringe_mask(name, depth=3, extra=2, seed=None):
@@ -253,36 +288,36 @@ def top_over(name, base, top, depth=3, extra=2, lip=True, seed=None):
 
 # ------------------------------------------------------------------------- wood
 def planks(name, ramp, boards=4, rough=205, seed=None, bump=1.1, nails=True, vertical=False):
+    """Boards, v2: flat warm wood, a few long grain strokes, soft seams."""
     r = rng_of(seed or name)
+    mid = len(ramp) // 2
     bh = N // boards
-    grain = fbm(r, ((2, 0.5), (16, 1.0)), sx=5)
-    tone = np.zeros((N, N))
-    hgt = np.zeros((N, N))
+    idx = np.full((N, N), mid)
+    hgt = np.full((N, N), 0.7)
     for b in range(boards):
         y0 = b * bh
-        o = (r.random() - 0.5) * 0.24
-        joint = int(r.integers(2, N - 2)) if boards > 1 else -1
-        for y in range(y0, y0 + bh):
-            for x in range(N):
-                if y == y0 + bh - 1:           # seam under each board
-                    tone[y, x], hgt[y, x] = 0.0, 0.1
-                    continue
-                v = 0.55 + o + (grain[y, x] - 0.5) * 0.42
-                if y == y0:
-                    v += 0.12
-                if x == joint:
-                    tone[y, x], hgt[y, x] = 0.05, 0.15
-                    continue
-                if x == (joint + 1) % N:
-                    v += 0.1
-                tone[y, x] = v
-                hgt[y, x] = 0.7 + o * 0.3 + (grain[y, x] - 0.5) * 0.12
-        if nails and joint >= 0 and bh >= 3:
-            yy = y0 + (bh - 1) // 2
-            for nx in ((joint - 2) % N, (joint + 2) % N):
-                tone[yy, nx] = 0.1
-                hgt[yy, nx] = 0.5
-    t = Tex(paint(np.clip(tone, 0, 1), ramp), hgt, rough=rough, bump=bump)
+        tone = mid + int(r.choice([0, 0, 1, -1])) if boards > 1 else mid
+        tone = int(np.clip(tone, 1, len(ramp) - 2))
+        body = bh - 1
+        idx[y0:y0 + body] = tone
+        for _ in range(2 if body >= 3 else 1):            # grain
+            y = y0 + int(r.integers(0, max(1, body)))
+            x = int(r.integers(N))
+            for i in range(int(r.integers(4, 10))):
+                idx[y, (x + i) % N] = tone - 1 if r.random() < 0.8 else tone + 1
+        if body >= 2:
+            idx[y0] = np.where(idx[y0] == tone, min(len(ramp) - 1, tone + 1), idx[y0])    # lit top edge
+        idx[y0 + bh - 1] = 0 if bh > 2 else 1               # seam
+        hgt[y0 + bh - 1] = 0.15
+        if boards > 1:
+            j = int(r.integers(1, N - 1))
+            idx[y0:y0 + body, j] = 1
+            hgt[y0:y0 + body, j] = 0.2
+            if nails and body >= 3:
+                yy_ = y0 + body // 2
+                for nx in ((j - 2) % N, (j + 2) % N):
+                    idx[yy_, nx] = 1
+    t = Tex(paint_idx(idx, ramp), hgt, rough=rough, bump=bump)
     if vertical:
         t.rgb = np.ascontiguousarray(np.transpose(t.rgb, (1, 0, 2)))
         t.height = t.height.T.copy()
@@ -290,16 +325,16 @@ def planks(name, ramp, boards=4, rough=205, seed=None, bump=1.1, nails=True, ver
 
 
 def bark(name, ramp, rough=220, seed=None, bump=1.5, ridges=8, horizontal_marks=0, mark_color=None):
-    """Log side: vertical ridges that wander, with deep furrows."""
+    """Log side, v2: flat bark with long vertical ridges (light) and furrows
+    (dark) - no speckle."""
     r = rng_of(seed or name)
-    hgt = fbm(r, ((ridges, 1.0), (16, 0.35)), sy=5)
-    warp = (value_noise(r, 2, 4) * 3).astype(int)
-    yy, xx = np.mgrid[0:N, 0:N]
-    hgt = hgt[yy, (xx + warp) % N]
-    tone = np.clip(hgt * 0.75 + 0.12 + emboss(hgt, 0.9), 0, 1)
-    furrow = hgt < 0.24
-    tone = np.where(furrow, 0.0, tone)
-    rgb = paint(tone, ramp, dither=0.3)
+    mid = len(ramp) // 2
+    idx = np.full((N, N), mid)
+    hgt = np.full((N, N), 0.5)
+    dashes(r, idx, hgt, ridges + 2, mid - 1, (5, 11), thick=0.45, vertical=True, lift=-0.15, wobble=0.2)
+    dashes(r, idx, hgt, ridges, mid + 1, (4, 9), thick=0.25, vertical=True, lift=0.18, wobble=0.2)
+    dashes(r, idx, hgt, max(2, ridges // 2), max(0, mid - 2), (3, 7), thick=0.0, vertical=True, lift=-0.3, wobble=0.15)
+    rgb = paint_idx(idx, ramp)
     if horizontal_marks:                      # birch-like dashes
         mc = np.array(mark_color, np.uint8)
         for _ in range(horizontal_marks):
@@ -307,7 +342,7 @@ def bark(name, ramp, rough=220, seed=None, bump=1.5, ridges=8, horizontal_marks=
             for i in range(int(r.integers(2, 5))):
                 rgb[y, (x + i) % N] = mc[int(r.integers(len(mc)))]
                 hgt[y, (x + i) % N] = 0.2
-    return Tex(rgb, hgt, rough=rough, bump=bump)
+    return Tex(rgb, np.clip(hgt, 0, 1), rough=rough, bump=bump)
 
 
 def log_top(name, wood_ramp, bark_ramp, rough=210, seed=None, bump=1.1, rings=True):
@@ -333,25 +368,26 @@ def log_top(name, wood_ramp, bark_ramp, rough=210, seed=None, bump=1.1, rings=Tr
 
 
 def stripped(name, ramp, rough=200, seed=None, bump=0.8):
+    """Peeled log: clean pale wood with a few long vertical grain lines."""
     r = rng_of(seed or name)
-    g = fbm(r, ((8, 1.0), (16, 0.5)), sy=6)
-    warp = (value_noise(r, 2, 3) * 2).astype(int)
-    yy, xx = np.mgrid[0:N, 0:N]
-    g = g[yy, (xx + warp) % N]
-    tone = np.clip(0.2 + g * 0.6 + emboss(g, 0.5), 0, 1)
-    return Tex(paint(tone, ramp, dither=0.25), 0.5 + g * 0.3, rough=rough, bump=bump)
+    mid = len(ramp) // 2
+    idx = np.full((N, N), mid)
+    hgt = np.full((N, N), 0.55)
+    dashes(r, idx, hgt, 6, mid - 1, (6, 13), thick=0.2, vertical=True, lift=-0.08, wobble=0.1)
+    dashes(r, idx, hgt, 5, mid + 1, (5, 11), thick=0.2, vertical=True, lift=0.08, wobble=0.1)
+    return Tex(paint_idx(idx, ramp), hgt, rough=rough, bump=bump)
 
 
 # ------------------------------------------------------------------------- ores
 ORE_SHAPES = {
     # each: list of pixel-offset blobs; drawn as lit, outlined gems
-    "chunk":   [[(0, 0), (1, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1)], [(0, 0), (1, 0), (0, 1)]],
-    "fleck":   [[(0, 1), (1, 0), (2, 0), (1, 1)], [(0, 0), (1, 0), (1, 1), (2, 1)], [(0, 0), (1, 0)]],
-    "nugget":  [[(0, 0), (1, 0), (0, 1), (1, 1)], [(0, 0), (1, 0), (2, 0), (1, 1), (2, 1)], [(0, 0), (0, 1)]],
-    "shard":   [[(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(1, 0), (0, 1), (1, 1), (1, 2)], [(0, 0), (1, 1)]],
-    "crystal": [[(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (1, 3)], [(0, 0), (0, 1), (0, 2), (1, 1)], [(0, 0), (0, 1)]],
-    "dots":    [[(0, 0), (2, 1), (1, 2)], [(0, 0), (1, 1)], [(0, 0), (2, 0), (1, 1)], [(0, 0)]],
-    "clump":   [[(0, 0), (1, 0), (2, 1), (0, 1), (1, 2)], [(1, 0), (0, 1), (1, 1), (2, 2)], [(0, 0), (1, 1)]],
+    "chunk":   [[(1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (3, 1), (1, 2), (2, 2)], [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(0, 0), (1, 0), (0, 1), (1, 1)]],
+    "fleck":   [[(2, 0), (3, 0), (1, 1), (2, 1), (0, 2), (1, 2)], [(0, 0), (1, 0), (1, 1), (2, 1), (2, 2)], [(0, 0), (1, 0), (1, 1)]],
+    "nugget":  [[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(0, 0), (1, 0), (0, 1), (1, 1)], [(0, 0), (1, 0), (2, 0), (1, 1)]],
+    "shard":   [[(2, 0), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2), (3, 2), (1, 3), (2, 3)], [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(1, 0), (0, 1), (1, 1)]],
+    "crystal": [[(1, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (1, 4)], [(0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (0, 3)], [(0, 0), (0, 1), (1, 1)]],
+    "dots":    [[(0, 0), (1, 0), (2, 1), (3, 1), (1, 2), (0, 3)], [(0, 0), (1, 1), (2, 1), (1, 2)], [(0, 0), (1, 0), (1, 1)]],
+    "clump":   [[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (3, 1), (1, 2), (2, 2)], [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(0, 0), (1, 0), (1, 1)]],
 }
 
 
@@ -481,25 +517,37 @@ def glass(name, frame, glint, body=None, body_alpha=0, frame_alpha=255, seed=Non
 
 # ----------------------------------------------------------------------- foliage
 def leaves(name, ramp, density=0.74, seed=None, count=30, sss=140, rough=205, needles=False):
-    """Clustered leaflets with see-through gaps. Works for tinted greys too."""
+    """Foliage, v2: a shaded canopy built from many small leaflets (dark base,
+    mid body, light tip towards the top-left) with small see-through gaps.
+    Works for biome-tinted greys too."""
     r = rng_of(seed or name)
-    ids, f1, f2, pts = voronoi(r, count, min_dist=0.62 * np.sqrt(N * N / count))
-    if needles:                                # conifers: cells stretched into short vertical strokes
-        yy, xx = np.mgrid[0:N, 0:N]
-        ids = ids[(yy // 2 * 2 + (xx % 2)) % N, xx]
-        f1 = f1[(yy // 2 * 2) % N, xx]
-        f2 = f2[(yy // 2 * 2) % N, xx]
-    nc = len(pts)
-    keep = r.random(nc) < density
-    off = r.random(nc)
-    d = norm01(f2 - f1)
-    hgt = np.clip(0.3 + off[ids] * 0.5 + d * 0.25, 0, 1)
-    tone = np.clip(0.18 + off[ids] * 0.62 + emboss(hgt, 0.9), 0, 1)
-    edge = cell_edges(ids)
-    tone = np.where(edge, tone * 0.45, tone)
-    alpha = np.where(keep[ids], 255, 0).astype(np.uint8)
-    rgb = paint(tone, ramp)
-    return Tex(rgb, hgt, alpha=alpha, rough=rough, sss=sss, bump=1.2)
+    mid = len(ramp) // 2
+    idx = np.full((N, N), mid - 1)
+    hgt = np.full((N, N), 0.35)
+    n_leaf = int(count * 1.5)
+    for _ in range(n_leaf):
+        x, y = int(r.integers(N)), int(r.integers(N))
+        if needles:                              # conifer: short upright needles
+            pts = [(0, 0, mid + 1), (0, 1, mid), (0, 2, mid - 1)]
+        else:                                    # broadleaf: tiny diamond
+            pts = [(0, 0, mid + 1), (1, 0, mid), (0, 1, mid), (1, 1, mid - 1)]
+            if r.random() < 0.4:
+                pts[0] = (0, 0, min(len(ramp) - 1, mid + 2))
+        for dx, dy, tone in pts:
+            idx[(y + dy) % N, (x + dx) % N] = tone
+            hgt[(y + dy) % N, (x + dx) % N] = 0.3 + 0.15 * tone
+    idx = np.clip(idx, 0, len(ramp) - 1)
+    # gaps: small clusters, never large holes
+    alpha = np.full((N, N), 255, np.uint8)
+    holes = int((1 - density) * 26)
+    for _ in range(holes):
+        x, y = int(r.integers(N)), int(r.integers(N))
+        for dx, dy in ((0, 0), (1, 0), (0, 1))[: int(r.integers(1, 4))]:
+            alpha[(y + dy) % N, (x + dx) % N] = 0
+    gap = alpha == 0
+    under = np.roll(gap, 1, 0) & ~gap           # leaf right below a gap sits in shade
+    idx = np.where(under, np.maximum(idx - 1, 0), idx)
+    return Tex(paint_idx(idx, ramp), hgt, alpha=alpha, rough=rough, sss=sss, bump=1.2)
 
 
 def blades(name, ramp, count=9, height=(6, 14), seed=None, sss=150, base_y=N - 1, spread=6.5, w=N, h=N,

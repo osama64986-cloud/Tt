@@ -104,7 +104,7 @@ def build(out, flip, variations):
     crust = make_ramp((70, 34, 30), 5, 0.4)
     for f in range(n):
         t = P.cells("magma", crust, 8, vary=0.25, dome=0.5)
-        seam = t.height < 0.1
+        seam = t.height < 0.2
         glow = [(190, 60, 10), (240, 120, 20), (255, 190, 60)]
         r = rng_of("magma")
         fld = fbm(r, ((4, 1.0), (8, 0.5)))
