@@ -43,6 +43,8 @@ for root, _, files in os.walk(bdir):
             "mean": px.mean(0).round().astype(int).tolist(),
             "ramp": ramp,
         })
+        if rel in ("end_rod", "endframe_eye"):          # UV layout only: 1 = pixel used by the model
+            e["mask"] = ["".join("1" if v > 0 else "0" for v in row) for row in al]
         m = os.path.join(root, stem + "_mers.tga")
         if os.path.exists(m):
             mm = np.array(Image.open(m).convert("RGBA")).reshape(-1, 4).mean(0)
