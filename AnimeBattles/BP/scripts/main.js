@@ -1549,6 +1549,7 @@ const MOVES = {
   cut_r: { pose: 19, t: 3, dmg: 8, kb: 0.3, arc: "right", sword: true },
   cut_l: { pose: 28, t: 3, dmg: 8, kb: 0.3, arc: "left", sword: true },
   cut_x: { pose: 1, t: 5, dmg: 15, kb: 0.4, strong: true, arc: "front", sword: true },
+  chop: { pose: 19, t: 3, dmg: 8, kb: 0.3, arc: "right", sword: true },  // Sukuna's knife-hand: the cut flies off the palm
   tail: { pose: 33, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },  // Frieza's tail lash
   blink: { tp: "behind", t: 3 },
   blinkfront: { tp: "front", t: 3 },
@@ -1558,8 +1559,8 @@ const COMBOS = {
   "ab:vegeta": [["jab_l", "jab_r", "rush", "kick_l", "kiburst"], ["jab_r", "jab_l", "jab_r", "kick_r", "axe", "kiburst"], ["rush", "axe", "kick_r"]],
   "ab:gojo": [["jab_r", "jab_l", "blink", "kick_l", "blinkfront", "rush", "axe"], ["rush", "blink", "kick_r", "blink", "axe"], ["jab_l", "jab_r", "jab_l", "blink", "kick_l"]],
   "ab:yuji": [["jab_r", "jab_l", "kick", "jab_r"], ["jab_l", "jab_r", "kick_r"], ["rush", "kick_l"]],
-  "ab:yuji_final": [["jab_r", "jab_l", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "jab_l", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
-  "ab:sukuna": [["jab_r", "kick_l", "rush", "upper"], ["jab_l", "jab_r", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
+  "ab:yuji_final": [["jab_r", "chop", "rush", "kick_l", "upper"], ["jab_l", "jab_r", "chop", "kick_r", "axe"], ["rush", "rush", "kick_r"]],
+  "ab:sukuna": [["chop", "kick_l", "rush", "upper"], ["jab_l", "chop", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
   "ab:zoro": [["cut_r", "cut_l", "cut_r", "kick_r", "cut_x"], ["cut_l", "cut_r", "cut_l", "kick_l", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
