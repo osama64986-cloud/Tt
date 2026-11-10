@@ -899,6 +899,28 @@ const GOJO = {
       },
     },
     {
+      // Shinjuku: the full incantation doubles the output — Hollow Purple at 200%
+      id: "purple200", label: "Hollow Purple 200%", cd: 1400, cost: 900, min: 5, max: 60, weight: 4, technique: true,
+      cond: (e) => formOf(e) === 1,
+      run(e, s, t) {
+        const dim = e.dimension;
+        busy(s, 64); face(e, aim(t)); setPose(e, 26); slow(e, 60, 8);
+        ["§d§oNine ropes, polarized light...", "§d§o...crow and declaration...", "§d§o...between front and back.", "§5§lHollow Technique: Purple §d§l(200%)"]
+          .forEach((txt, i) => later(i * 12, () => { if (e.isValid) announce(e, txt); }));
+        chargeOrb(e, t, 44, C.purple, 0.4, 3.2, 4);
+        later(48, () => {
+          if (!e.isValid) return;
+          const tt = alive(t) ? t : e;
+          const { pos, dir } = handPos(e, tt);
+          sound(dim, "mob.warden.sonic_boom", pos, 3, 0.5);
+          shake(dim, pos, 0.7, 0.7);
+          projectile(e, pos, dir, { speed: 0.8, maxDist: 70, radius: 4.5, size: 9, color: C.purple, core: C.white, slot: 6,
+            pierce: true, carve: 5, dmg: 380 * powerOf(e) / 100 });
+          later(14, () => { if (e.isValid) setPose(e, 0); });
+        });
+      },
+    },
+    {
       id: "purple", label: "Hollow Purple", cd: 700, cost: 600, min: 5, max: 60, weight: 5, technique: true,
       cond: () => true,
       run(e, s, t) {
@@ -1477,9 +1499,9 @@ const ZORO = {
         later(2, () => {
           if (!alive(t) || !e.isValid) return;
           setPose(e, 19);
-          slashMarks(e, t, C.haki, 3, 22 * powerOf(e) / 100);
+          slashMarks(e, t, C.haki, 3, 15 * powerOf(e) / 100);
           fx(t.dimension, "aura", t.location, C.fire, 1.6, 0.7, { count: 18, speed: 2.5 });   // the slashes leave dark flames behind
-          every(8, 4, () => { if (alive(t)) { deal(e, t, 5 * powerOf(e) / 100); fx(t.dimension, "orb_solid", V.up(t.location, 1.2), C.haki, 1.2, 0.5); } });
+          every(8, 4, () => { if (alive(t)) { deal(e, t, 3 * powerOf(e) / 100); fx(t.dimension, "orb_solid", V.up(t.location, 1.2), C.haki, 1.2, 0.5); } });
           later(10, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
@@ -2302,7 +2324,7 @@ function updateFighter(e, tick) {
       (threatened || (tick - s.combatSince > 40 && ctx.hp < def.thresholds[form]))) {
     let next = def.nextForm ? def.nextForm(form) : form + 1;
     if (threatened) {
-      const need = Math.max(ctx.tPower, tMax) * 1.12;
+      const need = Math.max(ctx.tPower, tMax) * 1.2;
       const match = def.forms.findIndex((f, i) => i > form && f.power >= need);
       next = match >= 0 ? match : def.forms.length - 1;
     }
