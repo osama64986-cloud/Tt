@@ -2084,7 +2084,8 @@ world.afterEvents.entityDie.subscribe((ev) => {
         const vp = VICTORY[k.typeId] ?? 3;
         busy(ks, 22);
         setPose(k, vp);
-        if (vp !== 31 && vp !== 0 && vp !== 26) setExpr(k, 1, 22);  // the cool ones keep a straight, smug face
+        // the cool ones keep a straight, smug face; Frieza crosses his arms but laughs ("Ohohoho")
+        if (!(vp === 0 || vp === 26 || (vp === 31 && k.typeId !== "ab:frieza"))) setExpr(k, 1, 22);
         later(22, () => { if (k.isValid && formOf(k) >= 0) setPose(k, 0); });
       }
     }
