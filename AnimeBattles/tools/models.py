@@ -3992,7 +3992,7 @@ def _expr_put(px, W, H):
     return put
 
 
-def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mouth=True, mouth_skin=None):
+def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mouth=True, mouth_skin=None, mouth_type=""):
     put = _expr_put(px, W, H)
     sr = ramp(skin)
     ms = ramp(mouth_skin) if mouth_skin else sr
@@ -4024,6 +4024,19 @@ def draw_expr(px, W, H, expr, skin, marks=(), eye_type="", left_only=False, mout
             for x, y in ((int(cx), 18), (int(cx) + 1, 18), (int(cx), 19), (int(cx) + 1, 19)):
                 put(x, y, ink)
     if not mouth:
+        return
+    if expr == "shout" and mouth_type == "corner":  # Vegeta yells through clenched teeth
+        for y in range(24, 30):
+            for x in range(10, 22):
+                put(x, y, ms[2])
+        for x in range(11, 21):
+            put(x, 24, ink); put(x, 29, ink)
+            for y in (25, 26, 27, 28):
+                put(x, y, white if y in (25, 28) else ((150, 30, 40) if y == 26 else (120, 24, 34)))
+        for y in range(25, 29):
+            put(10, y, ink); put(21, y, ink)
+        for x in (13, 15, 17, 19):
+            put(x, 25, (170, 170, 178)); put(x, 28, (170, 170, 178))
         return
     if expr == "shout":
         for y in range(24, 31):
@@ -4075,7 +4088,7 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
                 put(x, 24, ramp(skin)[2]); put(31 - x, 24, ramp(skin)[2])
         masked = any(m in marks for m in ("mask", "heian_mask"))
         draw_expr(px, W, H, expr if (closed or expr == "shout") else ("mouth_" + expr), skin, marks, eye,
-                  left_only="zoro_eye" in marks, mouth=not masked)
+                  left_only="zoro_eye" in marks, mouth=not masked, mouth_type=spec.get("mouth", ""))
 
 
 def frieza_head_x(skin, golden):
