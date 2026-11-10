@@ -13,7 +13,8 @@
     "gamabunta": "textures/entity/summon/gamabunta",
     "susanoo_ribs": "textures/entity/summon/susanoo_ribs",
     "susanoo_armour": "textures/entity/summon/susanoo_armour",
-    "muzan_infant": "textures/entity/summon/muzan_infant"
+    "muzan_infant": "textures/entity/summon/muzan_infant",
+    "mahoraga": "textures/entity/summon/mahoraga"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -21,7 +22,8 @@
     "gamabunta": "geometry.ab.summon_gamabunta",
     "susanoo_ribs": "geometry.ab.summon_susanoo_ribs",
     "susanoo_armour": "geometry.ab.summon_susanoo_armour",
-    "muzan_infant": "geometry.ab.summon_muzan_infant"
+    "muzan_infant": "geometry.ab.summon_muzan_infant",
+    "mahoraga": "geometry.ab.summon_mahoraga"
    },
    "animations": {
     "base": "animation.ab.summon_base",
@@ -29,7 +31,10 @@
     "tails": "animation.ab.summon_tails",
     "swing": "animation.ab.summon_swing",
     "aim": "animation.ab.summon_aim",
-    "leap": "animation.ab.summon_leap"
+    "leap": "animation.ab.summon_leap",
+    "bite": "animation.ab.summon_bite",
+    "swipe": "animation.ab.summon_swipe",
+    "spin": "animation.ab.summon_spin"
    },
    "scripts": {
     "animate": [
@@ -48,15 +53,24 @@
      },
      {
       "leap": "query.property('ab:pose') == 3"
+     },
+     {
+      "bite": "query.property('ab:pose') == 4"
+     },
+     {
+      "swipe": "query.property('ab:pose') == 5"
+     },
+     {
+      "spin": "query.property('ab:pose') == 6"
      }
     ]
    },
    "render_controllers": [
     {
-     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5"
+     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5 && query.property('ab:kind') != 6"
     },
     {
-     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5"
+     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5 || query.property('ab:kind') == 6"
     }
    ]
   }

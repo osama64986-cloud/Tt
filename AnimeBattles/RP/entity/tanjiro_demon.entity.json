@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:tanjiro_demon",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "feral": "textures/entity/tanjiro_demon/feral",

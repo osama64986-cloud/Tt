@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:naruto_kid",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "base": "textures/entity/naruto_kid/base",
@@ -64,6 +65,8 @@
     "seal": "animation.ab.seal",
     "rasengan": "animation.ab.rasengan",
     "nrun": "animation.ab.nrun",
+    "beast_run": "animation.ab.beast_run",
+    "beast_idle": "animation.ab.beast_idle",
     "knees": "animation.ab.knees",
     "cape_sway": "animation.ab.cape_sway",
     "tail_sway": "animation.ab.tail_sway"
@@ -191,7 +194,13 @@
       "rasengan": "query.property('ab:pose') == 36"
      },
      {
-      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"
+      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0 && query.property('ab:form') == 0"
+     },
+     {
+      "beast_run": "query.modified_move_speed > 0.3 && query.property('ab:pose') == 0 && query.property('ab:form') == 1"
+     },
+     {
+      "beast_idle": "query.modified_move_speed <= 0.3 && query.property('ab:pose') == 0 && query.property('ab:form') == 1"
      },
      {
       "knees": "1.0"

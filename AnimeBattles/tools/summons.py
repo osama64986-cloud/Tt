@@ -13,7 +13,7 @@ PUR, PUR_D, PUR_L = (146, 78, 228), (86, 40, 160), (222, 196, 255)
 
 def _bones(pivots):
     parents = {"body": "root", "head": "body", "rightArm": "body", "leftArm": "body",
-               "rightWing": "body", "leftWing": "body", "tails": "body"}
+               "rightWing": "body", "leftWing": "body", "tails": "body", "jaw": "head", "wheel": "head"}
     return S.bones_from(pivots, parents)
 
 
@@ -140,7 +140,7 @@ def susanoo_ribs():
 def kurama():
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 36, -16], "rightArm": [10, 30, -12], "leftArm": [-10, 30, -12],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 24, 14]})
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 24, 14], "jaw": [0, 33.6, -22]})
     G, D, INK = (255, 178, 38), (228, 112, 22), (40, 18, 10)
     fur = chakra(G, 215, (255, 236, 150))
     deep = chakra(D, 220, (255, 200, 90))
@@ -154,13 +154,26 @@ def kurama():
     for s in (1, -1):  # fur tufts on the cheeks
         for k in range(2):
             blade(m, "head", [s * 7.5, 36 - k * 2.4, -20 + k], [s * 1, -0.35, 0.3], 6, 3.4, 1.6, deep)
-    tube(m, "head", [[0, 36.8, -26], [0, 35.8, -31], [0, 34.8, -35]], [4.6, 3.4, 2.4], fur, flat=0.85)   # muzzle
-    box_at(m, "head", [0, 35.6, -36.3], [3, 2.2, 2], ink)                                            # nose
-    tube(m, "head", [[0, 32.6, -24], [0, 32.1, -33]], [3.4, 2], deep, flat=0.8)                      # lower jaw
-    box_at(m, "head", [0, 33.6, -30], [7, 0.6, 9], ink)                                              # mouth line
+    tooth = smooth((250, 246, 232))
+    gum, tongue = smooth((120, 20, 26)), smooth((214, 70, 84))
+    blob(m, "head", [0, 36.6, -30], [4.4, 2.6, 6.2], fur, slices=5, axis="z")                       # upper jaw / muzzle
+    blob(m, "head", [0, 37.6, -27], [3.6, 1.8, 4.0], fur, slices=3, axis="z")                       # bridge of the nose
+    box_at(m, "head", [0, 36.4, -36.4], [3.2, 2.2, 1.8], ink)                                        # nose
+    blob(m, "head", [0, 34.6, -29], [3.6, 0.5, 5.4], gum, slices=2, axis="z")                       # roof of the mouth
+    for side in (1, -1):  # upper teeth following the curve of the muzzle, long fangs at the front
+        for k in range(6):
+            z = -34.6 + k * 1.7
+            x = side * (1.3 + k * 0.42)
+            L = 2.2 if k == 1 else 1.3
+            S.blade(m, "head", [x, 34.6, z], [0, -1, 0], L, 0.8, 0.7, tooth)
+    blob(m, "jaw", [0, 32.4, -28.4], [3.5, 1.1, 5.6], deep, slices=4, axis="z")                    # lower jaw
+    blob(m, "jaw", [0, 33.0, -28.4], [2.6, 0.45, 4.4], tongue, slices=2, axis="z")                 # tongue
+    for side in (1, -1):
+        for k in range(5):
+            z = -33.4 + k * 1.7
+            x = side * (1.2 + k * 0.4)
+            S.blade(m, "jaw", [x, 33.1, z], [0, 1, 0], 1.6 if k == 0 else 1.1, 0.75, 0.65, tooth)
     for s in (1, -1):
-        for z in (-29, -32):
-            box_at(m, "head", [s * 1.9, 32.9, z], [0.8, 1.7, 0.8], alpha(smooth((250, 246, 232)), 255))   # fangs
         box_at(m, "head", [s * 4.3, 39.6, -27.1], [3.8, 2.1, 0.8], alpha(smooth((214, 28, 20)), 250))        # red eyes
         box_at(m, "head", [s * 4.3, 39.6, -27.6], [0.7, 2.1, 0.4], ink)                                    # slit pupils
         blade(m, "head", [s * 2.4, 41.8, -26.6], [s * 1, 0.45, 0.2], 6.5, 0.9, 0.6, ink, taper=False)    # brow markings
@@ -193,14 +206,15 @@ def kurama():
 def gamabunta():
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 16, 0], "head": [0, 26, -10], "rightArm": [14, 16, -14], "leftArm": [-14, 16, -14],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 16, 14]})
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 16, 14], "jaw": [0, 21.4, -8]})
     SK, BELLY, VEST = (188, 80, 46), (234, 200, 146), (62, 58, 146)
     skin = flesh(SK)
     darker = flesh(dark(SK, 0.8))
     blob(m, "body", [0, 18, 4], [20, 13, 18], skin, slices=7)                                      # body
     blob(m, "body", [0, 12.5, -8], [15, 8, 8], smooth(BELLY), slices=4)                           # pale belly
     blob(m, "head", [0, 25, -14], [19, 8, 12], skin, slices=7, axis="x")                           # wide flat head
-    blob(m, "head", [0, 19.6, -17.5], [13, 2.6, 7], smooth(BELLY), slices=3, axis="x")            # chin
+    blob(m, "jaw", [0, 19.6, -17.5], [13, 2.6, 7], smooth(BELLY), slices=3, axis="x")             # chin / lower jaw
+    blob(m, "jaw", [0, 21.0, -18], [11, 0.6, 6], smooth((214, 96, 110)), slices=2, axis="x")      # pink inside of the mouth
     curve_tube(m, "head", [[-16, 22.4, -14], [-10, 21.6, -22], [0, 21.2, -25.8], [10, 21.6, -22], [16, 22.4, -14]], 0.8, 0.8,
                smooth((96, 28, 22)), n=2, knuckles=False)                                         # the long mouth
     for s in (1, -1):  # bulging eyes with a black bar pupil and heavy brows
@@ -232,8 +246,11 @@ def gamabunta():
         tube(m, "body", [[s * 18, 2.2, 8], [s * 20.5, 1.4, -2]], [3.2, 2.5], skin)
         for k in (-1, 0, 1):
             tube(m, "body", [[s * 20.5, 1.2, -2], [s * (20.5 + k * 2.4), 0.9, -7]], [1.2, 0.9], skin)
-    tube(m, "body", [[21.5, 17, 10], [23.5, 12, -6]], [1.3, 1.2], smooth((80, 50, 30)))          # the dosu at his side
-    box_at(m, "body", [21.3, 17.6, 11.6], [3.6, 1.2, 3.6], smooth((200, 170, 90)))
+    # the dosu, drawn and held forward in his right hand
+    tube(m, "rightArm", [[16, 3.2, -24], [16, 3.6, -28]], [1.2, 1.2], smooth((80, 50, 30)))         # hilt
+    box_at(m, "rightArm", [16, 3.6, -28.6], [4.2, 1.2, 1.0], smooth((200, 170, 90)))              # guard
+    S.blade(m, "rightArm", [16, 3.7, -29], [0, 0.18, -1], 26, 3.2, 0.7, smooth((214, 220, 230)), width_dir=[0, 1, 0])
+    tube(m, "body", [[21.5, 17, 10], [23.5, 12, -6]], [1.3, 1.2], smooth((80, 50, 30)))          # its sheath at his side
     return m
 
 
@@ -241,7 +258,7 @@ def gamabunta():
 def muzan_infant():
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 18, 0], "head": [0, 30, -6], "rightArm": [11, 26, -4], "leftArm": [-11, 26, -4],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 16, 8]})
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 16, 8], "jaw": [0, 31, -6]})
     SKIN_P, VEIN = (234, 198, 188), (176, 26, 40)
     skin = smooth(SKIN_P)
     vein = smooth(VEIN)
@@ -255,9 +272,12 @@ def muzan_infant():
         box_at(m, "head", [s * 4.2, 36.6, -13.7], [3.4, 1.8, 0.8], smooth((214, 20, 30)))       # red eyes, cat pupils
         box_at(m, "head", [s * 4.2, 36.6, -14.2], [0.6, 1.8, 0.4], smooth((10, 6, 8)))
         tube(m, "head", [[s * 7, 40, -11], [s * 8.5, 35, -12], [s * 7.5, 30, -12]], [0.45, 0.4, 0.35], vein, knuckles=False)  # veins over the face
-    box_at(m, "head", [0, 30.8, -13.6], [7.4, 1.8, 0.6], smooth((60, 6, 14)))                    # the fanged mouth
+    box_at(m, "head", [0, 31.2, -12.8], [7.4, 1.4, 2.0], smooth((60, 6, 14)))                    # the mouth
     for x in range(-3, 4):
-        box_at(m, "head", [x * 1.05, 31.6 - (x % 2) * 0.9, -14], [0.6, 1.0, 0.4], smooth((250, 246, 236)))
+        S.blade(m, "head", [x * 1.05, 31.8, -13.4], [0, -1, 0], 1.1, 0.6, 0.5, smooth((250, 246, 236)))
+    blob(m, "jaw", [0, 29.4, -9], [7.5, 1.6, 4.6], skin, slices=2, axis="x")                      # lower jaw
+    for x in range(-3, 4):
+        S.blade(m, "jaw", [x * 1.05, 30.4, -12.6], [0, 1, 0], 0.9, 0.6, 0.5, smooth((250, 246, 236)))
     for i in range(14):  # pulsing blood vessels over the body
         a = i * 2.2
         y0 = 8 + (i * 5 % 22)
@@ -274,6 +294,47 @@ def muzan_infant():
     return m
 
 
+# ------------------------------------------------------------------ Mahoraga (Ten Shadows, Sukuna)
+def mahoraga():
+    """Eight-Handled Sword Divergent Sila Divine General Mahoraga: a towering white figure, the Sword of
+    Extermination on its right arm, wing-like folds round its head, the eight-handled wheel above it."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 40, 0], "rightArm": [9, 36, 0], "leftArm": [-9, 36, 0],
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 40, -2], "wheel": [0, 53, 1.5]})
+    SK, CL, DK, GOLD = smooth((234, 230, 222)), smooth((204, 200, 190)), smooth((62, 60, 72)), smooth((176, 146, 86))
+    for s_ in (1, -1):  # legs and feet
+        tube(m, "body", [[s_ * 4, 24, 0], [s_ * 4.6, 12, -0.6], [s_ * 4.6, 2.2, 0]], [3.1, 2.7, 2.3], SK)
+        box_at(m, "body", [s_ * 4.6, 1.0, -1.4], [4.2, 2.0, 6.2], SK)
+    frustum(m, "body", [0, 13, 0], 13, (7.6, 5.6), (6.2, 4.6), CL, slices=4)                      # the white wrap round its hips
+    blob(m, "body", [0, 26.5, 0], [6.2, 4.0, 4.3], SK, slices=4)                                  # abdomen
+    blob(m, "body", [0, 32.5, 0], [8.2, 6.0, 5.2], SK, slices=6)                                  # chest
+    for k in range(3):
+        box_at(m, "body", [0, 24.5 + k * 2.2, -4.1], [5.0, 0.4, 0.6], smooth((210, 206, 198)))     # abdominal lines
+    tube(m, "body", [[0, 37.5, 0], [0, 40, -0.2]], [2.6, 2.4], SK)                                 # neck
+    blob(m, "head", [0, 42.8, 0], [3.7, 4.2, 3.9], SK, slices=5)
+    for s_ in (1, -1):  # the wing-like folds round its head (it has no visible eyes)
+        for k in range(2):
+            blade(m, "head", [s_ * 3.0, 43.5 + k * 2.0, 0.5], [s_ * 1, 0.55 - k * 0.2, 0.25], 6.5 - k, 2.8, 0.7, SK, width_dir=[0, 1, 0])
+    box_at(m, "head", [0, 41.2, -3.8], [3.2, 0.5, 0.5], DK)                                       # mouth
+    # the eight-handled wheel: a rim, eight spokes and eight handles, spinning above its head
+    pts = [[math.cos(a) * 6, 53 + math.sin(a) * 6, 1.5] for a in [i * math.pi / 8 for i in range(17)]]
+    tube(m, "wheel", pts, [0.7] * len(pts), GOLD, knuckles=False)
+    for i in range(8):
+        a = i * math.pi / 4
+        d = [math.cos(a), math.sin(a), 0]
+        tube(m, "wheel", [[0, 53, 1.5], [d[0] * 6, 53 + d[1] * 6, 1.5]], [0.45, 0.45], GOLD, knuckles=False)
+        tube(m, "wheel", [[d[0] * 6, 53 + d[1] * 6, 1.5], [d[0] * 8.5, 53 + d[1] * 8.5, 1.5]], [0.6, 0.35], GOLD)
+    box_at(m, "wheel", [0, 53, 1.5], [1.8, 1.8, 1.8], GOLD, rot=[0, 0, 45])
+    for s_, bone in ((1, "rightArm"), (-1, "leftArm")):  # massive arms
+        blob(m, bone, [s_ * 9, 36, 0], [3.3, 3.3, 3.3], SK, slices=3)
+        tube(m, bone, [[s_ * 9.4, 35, 0], [s_ * 11, 28, -1], [s_ * 11, 21, -3]], [2.8, 2.4, 2.1], SK)
+        blob(m, bone, [s_ * 11, 19.6, -3.6], [2.3, 2.3, 2.3], SK, slices=3)
+    # the Sword of Extermination grows from the right forearm, blade forward
+    box_at(m, "rightArm", [11, 22, -4.2], [3.6, 3.0, 2.4], DK)
+    blade(m, "rightArm", [11, 21.6, -5.2], [0, -0.25, -1], 24, 3.4, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
+    return m
+
+
 SUMMONS = [("susanoo", susanoo_perfect), ("kurama", kurama), ("gamabunta", gamabunta),
-           ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant)]
-SOLID = {"gamabunta", "muzan_infant"}   # opaque flesh; the rest are glowing chakra
+           ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga)]
+SOLID = {"gamabunta", "muzan_infant", "mahoraga"}   # opaque flesh; the rest are glowing chakra

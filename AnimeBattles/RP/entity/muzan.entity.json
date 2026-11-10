@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:muzan",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "disguise": "textures/entity/muzan/disguise",

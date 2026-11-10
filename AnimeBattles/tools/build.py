@@ -191,7 +191,7 @@ FIGHTERS.update({
              "scale": 1.03},
     "naruto_kid": {"hp": 350, "forms": [(8, 0.36), (12, 0.42)], "tex": ["base", "cloak"], "geo": ["base", "cloak"],
                    "egg": ("#ff8a1e", "#2a40a0"), "scale": 0.8},
-    "naruto_teen": {"hp": 600, "forms": [(12, 0.38), (17, 0.42), (20, 0.41), (25, 0.43)], "tex": ["base", "v2", "sage", "eight"], "geo": ["base", "v2", "sage", "eight"],
+    "naruto_teen": {"hp": 600, "forms": [(12, 0.38), (15, 0.41), (17, 0.42), (20, 0.41), (25, 0.43)], "tex": ["base", "v1", "v2", "sage", "eight"], "geo": ["base", "v1", "v2", "sage", "eight"],
                     "egg": ("#ff8a1e", "#26262e")},
     "naruto_war": {"hp": 950, "forms": [(28, 0.4), (34, 0.42), (38, 0.43), (46, 0.45)], "tex": ["kcm", "kurama", "sagekurama", "spsm"], "geo": ["kcm", "kurama", "sagekurama", "spsm"],
                    "egg": ("#ffce40", "#1c1410")},
@@ -499,9 +499,14 @@ IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && q
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3"), ("toon", "animation.ab.toon", "query.property('ab:form') == 6"), ("happy_bounce", "animation.ab.happy_bounce", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
-    "naruto_kid": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+    "naruto_kid": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0 && query.property('ab:form') == 0"),
+                ("beast_run", "animation.ab.beast_run", "query.modified_move_speed > 0.3 && query.property('ab:pose') == 0 && query.property('ab:form') == 1"),
+                ("beast_idle", "animation.ab.beast_idle", "query.modified_move_speed <= 0.3 && query.property('ab:pose') == 0 && query.property('ab:form') == 1"),
                 ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0"), ("tail_sway", "animation.ab.tail_sway", "query.property('ab:form') == 1")],
-    "naruto_teen": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+    "naruto_teen": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0 && !(query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"),
+                ("beast_run", "animation.ab.beast_run", "query.modified_move_speed > 0.3 && query.property('ab:pose') == 0 && (query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"),
+                ("beast_idle", "animation.ab.beast_idle", "query.modified_move_speed <= 0.3 && query.property('ab:pose') == 0 && (query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"),
+                ("jaw", "animation.ab.jaw", "1.0"),
                 ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0")],
     "naruto_war": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
                 ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0"), ("orbs_spin", "animation.ab.orbs_spin", "query.property('ab:form') == 3"),
@@ -540,7 +545,7 @@ def _client_entity(name, cfg, textures, geometry):
         "minecraft:client_entity": {
             "description": {
                 "identifier": f"ab:{name}",
-                "materials": {"default": "entity_alphatest"},
+                "materials": {"default": "entity_alphatest", "shroud": "entity_alphablend"},
                 "textures": textures,
                 "geometry": geometry,
                 "animations": {
@@ -586,7 +591,7 @@ def render_controllers():
                 "geometries": {"Array.geos": [f"Geometry.{g}" for g in cfg["geo"]]},
             },
             "geometry": "Array.geos[query.property('ab:form')]",
-            "materials": [{"*": "Material.default"}],
+            "materials": [{"*": "Material.default"}, {"shroud*": "Material.shroud"}],
             "textures": ["Array.skins[query.property('ab:form') * 4 + " + EXPR_MOLANG + "]"],
         }
     return out
@@ -599,6 +604,15 @@ def build_entities():
     rush_joints = extra.pop("_joints_rush")
     an["animations"].update(extra)
     an["animations"]["animation.ab.rush"]["bones"].update(rush_joints)
+    D = "query.modified_distance_moved * 38.17"
+    an["animations"]["animation.ab.beast_run"] = {"loop": True, "override_previous_animation": True, "bones": {
+        "body": {"rotation": [40, 0, 0]}, "head": {"rotation": [-34, 0, 0]},
+        "rightArm": {"rotation": [f"-52 + math.sin({D}) * 42", 0, -6]}, "leftArm": {"rotation": [f"-52 - math.sin({D}) * 42", 0, 6]}}}
+    an["animations"]["animation.ab.beast_idle"] = {"loop": True, "override_previous_animation": True, "bones": {
+        "body": {"rotation": ["20 + math.sin(query.life_time * 200.0) * 2", 0, 0]}, "head": {"rotation": [-16, 0, 0]},
+        "rightArm": {"rotation": [-32, 8, -8]}, "leftArm": {"rotation": [-32, -8, 8]}}}
+    an["animations"]["animation.ab.jaw"] = {"loop": True, "override_previous_animation": False, "bones": {
+        "jaw": {"rotation": ["query.property('ab:expr') == 1 ? 34 : 12", 0, 0]}}}
     json.dump(an, open(an_path, "w"), indent=1)
     for name, cfg in FIGHTERS.items():
         with open(os.path.join(BP, "entities", f"{name}.json"), "w") as f:
@@ -857,7 +871,7 @@ def build_summons():
                 "properties": {
                     "ab:kind": {"type": "int", "range": [0, len(names) - 1], "default": 0, "client_sync": True},
                     "ab:size": {"type": "float", "range": [0, 8], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 6], "default": 0, "client_sync": True},
                 },
             },
             "components": {
@@ -884,10 +898,12 @@ def build_summons():
                 "textures": {n: f"textures/entity/summon/{n}" for n in names},
                 "geometry": {n: f"geometry.ab.summon_{n}" for n in names},
                 "animations": {"base": "animation.ab.summon_base", "wings": "animation.ab.summon_wings", "tails": "animation.ab.summon_tails",
-                               "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap"},
+                               "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap",
+                               "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin"},
                 "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
-                                        {"leap": "query.property('ab:pose') == 3"}]},
+                                        {"leap": "query.property('ab:pose') == 3"}, {"bite": "query.property('ab:pose') == 4"},
+                                        {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}]},
                 "render_controllers": [{"controller.render.ab.summon_glow": " && ".join(f"{K} != {i}" for i, n in enumerate(names) if n in summons.SOLID)},
                                        {"controller.render.ab.summon_solid": " || ".join(f"{K} == {i}" for i, n in enumerate(names) if n in summons.SOLID)}],
             }
@@ -912,7 +928,9 @@ def build_summons():
         "body": {"position": [0, "math.sin(query.life_time * 120.0) * 0.6", 0]},
         "head": {"rotation": ["math.sin(query.life_time * 70.0) * 2", "math.sin(query.life_time * 45.0) * 4", 0]},
         "rightArm": {"rotation": ["math.sin(query.life_time * 90.0) * 3", 0, 0]},
-        "leftArm": {"rotation": ["-math.sin(query.life_time * 90.0) * 3", 0, 0]}}}
+        "leftArm": {"rotation": ["-math.sin(query.life_time * 90.0) * 3", 0, 0]},
+        "jaw": {"rotation": ["6 + math.sin(query.life_time * 60.0) * 3", 0, 0]},
+        "wheel": {"rotation": [0, 0, "query.life_time * 30.0"]}}}
     an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
         "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
         "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}
@@ -921,7 +939,19 @@ def build_summons():
     an["animations"]["animation.ab.summon_swing"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {
         "rightArm": {"rotation": {"0.0": [-150, 0, 0], "0.3": [-170, 0, 0], "0.45": [20, 0, 0], "0.6": [10, 0, 0]}},
         "body": {"rotation": {"0.0": [-8, 0, 0], "0.45": [12, 0, 0]}}}}
+    an["animations"]["animation.ab.summon_bite"] = {"loop": "hold_on_last_frame", "animation_length": 0.7, "bones": {
+        "head": {"rotation": {"0.0": [-20, 0, 0], "0.3": [-25, 0, 0], "0.45": [14, 0, 0], "0.7": [4, 0, 0]}},
+        "jaw": {"rotation": {"0.0": [8, 0, 0], "0.3": [42, 0, 0], "0.45": [2, 0, 0], "0.7": [10, 0, 0]}},
+        "body": {"rotation": {"0.0": [-4, 0, 0], "0.45": [10, 0, 0], "0.7": [4, 0, 0]}}}}
+    an["animations"]["animation.ab.summon_swipe"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {
+        "leftArm": {"rotation": {"0.0": [-60, 0, -30], "0.25": [-110, 0, -50], "0.45": [-40, 0, 45], "0.6": [-20, 0, 20]}},
+        "body": {"rotation": {"0.0": [0, -10, 0], "0.45": [0, 22, 0], "0.6": [0, 10, 0]}},
+        "jaw": {"rotation": [20, 0, 0]}}}
+    an["animations"]["animation.ab.summon_spin"] = {"loop": "hold_on_last_frame", "animation_length": 0.8, "bones": {
+        "root": {"rotation": {"0.0": [0, 0, 0], "0.8": [0, 360, 0]}},
+        "tails": {"rotation": {"0.0": [0, 0, 0], "0.4": [20, 0, 0], "0.8": [0, 0, 0]}}}}
     an["animations"]["animation.ab.summon_aim"] = {"loop": "hold_on_last_frame", "animation_length": 0.4, "bones": {
+        "jaw": {"rotation": {"0.0": [5, 0, 0], "0.4": [38, 0, 0]}},
         "head": {"rotation": {"0.0": [0, 0, 0], "0.4": [-25, 0, 0]}},
         "rightArm": {"rotation": {"0.0": [0, 0, 0], "0.4": [-85, 0, 0]}}, "leftArm": {"rotation": {"0.0": [0, 0, 0], "0.4": [-85, 0, 0]}}}}
     an["animations"]["animation.ab.summon_leap"] = {"loop": "hold_on_last_frame", "animation_length": 0.8, "bones": {

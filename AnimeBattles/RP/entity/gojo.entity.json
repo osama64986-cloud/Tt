@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:gojo",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "blindfold": "textures/entity/gojo/blindfold",

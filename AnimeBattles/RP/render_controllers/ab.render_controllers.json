@@ -46,6 +46,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -92,6 +95,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -123,6 +129,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -149,6 +158,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -175,6 +187,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -211,6 +226,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -267,6 +285,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -298,6 +319,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -329,6 +353,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -343,6 +370,10 @@
       "Texture.base_shout",
       "Texture.base_hurt",
       "Texture.base_blink",
+      "Texture.v1",
+      "Texture.v1_shout",
+      "Texture.v1_hurt",
+      "Texture.v1_blink",
       "Texture.v2",
       "Texture.v2_shout",
       "Texture.v2_hurt",
@@ -360,6 +391,7 @@
     "geometries": {
      "Array.geos": [
       "Geometry.base",
+      "Geometry.v1",
       "Geometry.v2",
       "Geometry.sage",
       "Geometry.eight"
@@ -370,6 +402,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -411,6 +446,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -452,6 +490,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -488,6 +529,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -524,6 +568,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -560,6 +607,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -591,6 +641,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -647,6 +700,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -678,6 +734,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -709,6 +768,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -745,6 +807,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -776,6 +841,9 @@
    "materials": [
     {
      "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
     }
    ],
    "textures": [
@@ -836,7 +904,8 @@
       "Texture.gamabunta",
       "Texture.susanoo_ribs",
       "Texture.susanoo_armour",
-      "Texture.muzan_infant"
+      "Texture.muzan_infant",
+      "Texture.mahoraga"
      ]
     },
     "geometries": {
@@ -846,7 +915,8 @@
       "Geometry.gamabunta",
       "Geometry.susanoo_ribs",
       "Geometry.susanoo_armour",
-      "Geometry.muzan_infant"
+      "Geometry.muzan_infant",
+      "Geometry.mahoraga"
      ]
     }
    },
@@ -869,7 +939,8 @@
       "Texture.gamabunta",
       "Texture.susanoo_ribs",
       "Texture.susanoo_armour",
-      "Texture.muzan_infant"
+      "Texture.muzan_infant",
+      "Texture.mahoraga"
      ]
     },
     "geometries": {
@@ -879,7 +950,8 @@
       "Geometry.gamabunta",
       "Geometry.susanoo_ribs",
       "Geometry.susanoo_armour",
-      "Geometry.muzan_infant"
+      "Geometry.muzan_infant",
+      "Geometry.mahoraga"
      ]
     }
    },

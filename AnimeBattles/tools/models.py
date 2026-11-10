@@ -1890,6 +1890,16 @@ FORMS.update({
     "luffy": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
 })
 BONES.append({"name": "hat", "parent": "head", "pivot": [0, 24, 0]})
+# translucent chakra shrouds (rendered with a blended material) and a jaw that can open
+BONES.extend([
+    {"name": "shroud", "parent": "body", "pivot": [0, 24, 0]},
+    {"name": "shroudHead", "parent": "head", "pivot": [0, 24, 0]},
+    {"name": "shroudRightArm", "parent": "rightArm", "pivot": [-5, 22, 0]},
+    {"name": "shroudLeftArm", "parent": "leftArm", "pivot": [5, 22, 0]},
+    {"name": "shroudRightLeg", "parent": "rightLeg", "pivot": [-1.9, 12, 0]},
+    {"name": "shroudLeftLeg", "parent": "leftLeg", "pivot": [1.9, 12, 0]},
+    {"name": "jaw", "parent": "head", "pivot": [0, 26.2, -2.0]},
+])
 
 
 # ==================================================================================

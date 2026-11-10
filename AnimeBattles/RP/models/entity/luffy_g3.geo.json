@@ -1657,6 +1657,69 @@
        ]
       }
      ]
+    },
+    {
+     "name": "shroud",
+     "parent": "body",
+     "pivot": [
+      0,
+      24,
+      0
+     ]
+    },
+    {
+     "name": "shroudHead",
+     "parent": "head",
+     "pivot": [
+      0,
+      24,
+      0
+     ]
+    },
+    {
+     "name": "shroudRightArm",
+     "parent": "rightArm",
+     "pivot": [
+      -5,
+      22,
+      0
+     ]
+    },
+    {
+     "name": "shroudLeftArm",
+     "parent": "leftArm",
+     "pivot": [
+      5,
+      22,
+      0
+     ]
+    },
+    {
+     "name": "shroudRightLeg",
+     "parent": "rightLeg",
+     "pivot": [
+      -1.9,
+      12,
+      0
+     ]
+    },
+    {
+     "name": "shroudLeftLeg",
+     "parent": "leftLeg",
+     "pivot": [
+      1.9,
+      12,
+      0
+     ]
+    },
+    {
+     "name": "jaw",
+     "parent": "head",
+     "pivot": [
+      0,
+      26.2,
+      -2.0
+     ]
     }
    ]
   }

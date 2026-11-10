@@ -4,13 +4,18 @@
   "description": {
    "identifier": "ab:naruto_teen",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "base": "textures/entity/naruto_teen/base",
     "base_shout": "textures/entity/naruto_teen/base_shout",
     "base_hurt": "textures/entity/naruto_teen/base_hurt",
     "base_blink": "textures/entity/naruto_teen/base_blink",
+    "v1": "textures/entity/naruto_teen/v1",
+    "v1_shout": "textures/entity/naruto_teen/v1_shout",
+    "v1_hurt": "textures/entity/naruto_teen/v1_hurt",
+    "v1_blink": "textures/entity/naruto_teen/v1_blink",
     "v2": "textures/entity/naruto_teen/v2",
     "v2_shout": "textures/entity/naruto_teen/v2_shout",
     "v2_hurt": "textures/entity/naruto_teen/v2_hurt",
@@ -26,6 +31,7 @@
    },
    "geometry": {
     "base": "geometry.ab.naruto_teen_base",
+    "v1": "geometry.ab.naruto_teen_v1",
     "v2": "geometry.ab.naruto_teen_v2",
     "sage": "geometry.ab.naruto_teen_sage",
     "eight": "geometry.ab.naruto_teen_eight"
@@ -74,6 +80,9 @@
     "seal": "animation.ab.seal",
     "rasengan": "animation.ab.rasengan",
     "nrun": "animation.ab.nrun",
+    "beast_run": "animation.ab.beast_run",
+    "beast_idle": "animation.ab.beast_idle",
+    "jaw": "animation.ab.jaw",
     "knees": "animation.ab.knees",
     "cape_sway": "animation.ab.cape_sway"
    },
@@ -200,7 +209,16 @@
       "rasengan": "query.property('ab:pose') == 36"
      },
      {
-      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"
+      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0 && !(query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"
+     },
+     {
+      "beast_run": "query.modified_move_speed > 0.3 && query.property('ab:pose') == 0 && (query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"
+     },
+     {
+      "beast_idle": "query.modified_move_speed <= 0.3 && query.property('ab:pose') == 0 && (query.property('ab:form') == 1 || query.property('ab:form') == 2 || query.property('ab:form') == 4)"
+     },
+     {
+      "jaw": "1.0"
      },
      {
       "knees": "1.0"

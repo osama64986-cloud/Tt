@@ -2419,6 +2419,20 @@
       0,
       0
      ]
+    },
+    "jaw": {
+     "rotation": [
+      "6 + math.sin(query.life_time * 60.0) * 3",
+      0,
+      0
+     ]
+    },
+    "wheel": {
+     "rotation": [
+      0,
+      0,
+      "query.life_time * 30.0"
+     ]
     }
    }
   },
@@ -2501,6 +2515,20 @@
    "loop": "hold_on_last_frame",
    "animation_length": 0.4,
    "bones": {
+    "jaw": {
+     "rotation": {
+      "0.0": [
+       5,
+       0,
+       0
+      ],
+      "0.4": [
+       38,
+       0,
+       0
+      ]
+     }
+    },
     "head": {
      "rotation": {
       "0.0": [
@@ -2582,6 +2610,255 @@
       ],
       "0.7": [
        5,
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "animation.ab.beast_run": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "body": {
+     "rotation": [
+      40,
+      0,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -34,
+      0,
+      0
+     ]
+    },
+    "rightArm": {
+     "rotation": [
+      "-52 + math.sin(query.modified_distance_moved * 38.17) * 42",
+      0,
+      -6
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      "-52 - math.sin(query.modified_distance_moved * 38.17) * 42",
+      0,
+      6
+     ]
+    }
+   }
+  },
+  "animation.ab.beast_idle": {
+   "loop": true,
+   "override_previous_animation": true,
+   "bones": {
+    "body": {
+     "rotation": [
+      "20 + math.sin(query.life_time * 200.0) * 2",
+      0,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -16,
+      0,
+      0
+     ]
+    },
+    "rightArm": {
+     "rotation": [
+      -32,
+      8,
+      -8
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      -32,
+      -8,
+      8
+     ]
+    }
+   }
+  },
+  "animation.ab.jaw": {
+   "loop": true,
+   "override_previous_animation": false,
+   "bones": {
+    "jaw": {
+     "rotation": [
+      "query.property('ab:expr') == 1 ? 34 : 12",
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_bite": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.7,
+   "bones": {
+    "head": {
+     "rotation": {
+      "0.0": [
+       -20,
+       0,
+       0
+      ],
+      "0.3": [
+       -25,
+       0,
+       0
+      ],
+      "0.45": [
+       14,
+       0,
+       0
+      ],
+      "0.7": [
+       4,
+       0,
+       0
+      ]
+     }
+    },
+    "jaw": {
+     "rotation": {
+      "0.0": [
+       8,
+       0,
+       0
+      ],
+      "0.3": [
+       42,
+       0,
+       0
+      ],
+      "0.45": [
+       2,
+       0,
+       0
+      ],
+      "0.7": [
+       10,
+       0,
+       0
+      ]
+     }
+    },
+    "body": {
+     "rotation": {
+      "0.0": [
+       -4,
+       0,
+       0
+      ],
+      "0.45": [
+       10,
+       0,
+       0
+      ],
+      "0.7": [
+       4,
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "animation.ab.summon_swipe": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.6,
+   "bones": {
+    "leftArm": {
+     "rotation": {
+      "0.0": [
+       -60,
+       0,
+       -30
+      ],
+      "0.25": [
+       -110,
+       0,
+       -50
+      ],
+      "0.45": [
+       -40,
+       0,
+       45
+      ],
+      "0.6": [
+       -20,
+       0,
+       20
+      ]
+     }
+    },
+    "body": {
+     "rotation": {
+      "0.0": [
+       0,
+       -10,
+       0
+      ],
+      "0.45": [
+       0,
+       22,
+       0
+      ],
+      "0.6": [
+       0,
+       10,
+       0
+      ]
+     }
+    },
+    "jaw": {
+     "rotation": [
+      20,
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_spin": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.8,
+   "bones": {
+    "root": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.8": [
+       0,
+       360,
+       0
+      ]
+     }
+    },
+    "tails": {
+     "rotation": {
+      "0.0": [
+       0,
+       0,
+       0
+      ],
+      "0.4": [
+       20,
+       0,
+       0
+      ],
+      "0.8": [
+       0,
        0,
        0
       ]

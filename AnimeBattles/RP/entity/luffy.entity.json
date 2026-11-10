@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:luffy",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "base": "textures/entity/luffy/base",

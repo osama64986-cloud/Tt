@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:sasuke_adult",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "adult": "textures/entity/sasuke_adult/adult",

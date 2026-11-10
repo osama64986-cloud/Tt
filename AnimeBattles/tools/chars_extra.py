@@ -121,7 +121,8 @@ def leg_paint(col, shoe, band=None, shoe_from=0.86, toes=True, toe=None):
 M.FACE32.update({
     "naruto": dict(eye="anime", brow="angled", mouth="smile", marks=["whiskers"]),
     "naruto_kid": dict(eye="anime", brow="angled", mouth="big_grin", marks=["whiskers"]),
-    "naruto_fox": dict(eye="narrow", brow="sharp", mouth="clench", marks=["whiskers", "fox"]),
+    "naruto_fox": dict(eye="narrow", brow="sharp", mouth="clench", marks=["whiskers", "fox", "slit_eyes", "fangs"]),
+    "naruto_baryon": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["whiskers", "fox", "slit_eyes", "baryon_eyes"]),
     "naruto_sage": dict(eye="anime", brow="angled", mouth="neutral", marks=["whiskers", "sage"]),
     "naruto_kcm": dict(eye="narrow", brow="angled", mouth="smile", marks=["whiskers", "fox"]),
     "naruto_spsm": dict(eye="anime", brow="angled", mouth="neutral", marks=["whiskers", "fox", "sage"]),
@@ -228,6 +229,9 @@ def face32(px, W, H, spec, hair, iris, skin):
         put(21, 19, (60, 40, 90)); put(22, 20, (60, 40, 90))
         for x, y in ((19, 18), (24, 18), (19, 21), (24, 21), (21, 17), (22, 22)):
             put(x, y, (10, 6, 8))
+    if "baryon_eyes" in marks:  # black pigment round the eyes, sweeping up toward the fox-ear tufts
+        for x, y in ((5, 15), (6, 14), (7, 13), (8, 13), (26, 15), (25, 14), (24, 13), (23, 13), (4, 16), (27, 16)):
+            put(x, y, (16, 12, 14))
     if "slit_eyes" in marks and open_eyes:  # demon eyes: cat-like vertical slits
         for cx in (10, 21):
             for y in range(17, 23):
@@ -355,6 +359,52 @@ def gold_body(m, key, iris, hair_style="war", band=True, coat=False, orbs=False)
             m.box("body", [math.cos(a) * 6.2 - 0.9, 20 + math.sin(a) * 6 - 0.9, 3.6], [1.8, 1.8, 1.8], solid((18, 16, 22)))
 
 
+def v1_shroud(m, tails, kid=False):
+    """Version 1: a translucent red shroud of the Nine-Tails' chakra over his whole body (he stays visible inside),
+    boiling with bubbles, with chakra fox ears, claws and 1-3 tails. Lives on the blended "shroud" bones."""
+    C1 = SC.swatch((236, 72, 30), 118)
+    C2 = SC.swatch((255, 132, 60), 150)
+    EDGE = SC.swatch((200, 34, 18), 140)
+    m.box("shroudHead", [-4.7, 23.6, -4.7], [9.4, 9.0, 9.4], SC.swatch((236, 72, 30), 92))
+    m.box("shroud", [-4.7, 11.6, -2.7], [9.4, 12.8, 5.4], C1)
+    for bone, x0 in (("shroudRightArm", 3.5), ("shroudLeftArm", -8.5)):
+        m.box(bone, [x0, 11.0, -2.5], [5.0, 13.2, 5.0], C1)
+        cx = x0 + 2.5
+        for k in (-1, 0, 1):  # chakra claws
+            SC.blade(m, bone, [cx + k * 1.2, 11.2, -2.2], [0, -0.6, -1], 1.8, 0.6, 0.45, EDGE)
+    for bone, x0 in (("shroudRightLeg", -0.5), ("shroudLeftLeg", -4.5)):
+        m.box(bone, [x0, -0.3, -2.7], [5.0, 12.6, 5.4], C1)
+    for s_ in (1, -1):  # fox ears of chakra
+        SC.curve_tube(m, "shroudHead", [[s_ * 2.6, 32.4, -0.6], [s_ * 3.2, 35.2, -0.3], [s_ * 3.5, 37.6, 0.3]], 1.6, 0.3, C1, n=2, flat=0.45, width=[1, 0, 0])
+    for i in range(30):  # bubbles boiling along the shroud
+        a = i * 2.39996
+        bone, cx, cy, h, rx, rz = [("shroud", 0, 18, 12, 4.8, 2.8), ("shroudHead", 0, 28, 8, 4.8, 4.8), ("shroudRightArm", 6, 17.5, 12, 2.6, 2.6),
+                                   ("shroudLeftArm", -6, 17.5, 12, 2.6, 2.6), ("shroudRightLeg", 2, 6, 12, 2.6, 2.8), ("shroudLeftLeg", -2, 6, 12, 2.6, 2.8)][i % 6]
+        y = cy + ((i * 7) % 11 - 5) / 10 * h
+        r = 0.8 + (i % 3) * 0.35
+        SC.obox(m, bone, [cx + math.cos(a) * rx, y, math.sin(a) * rz], [r, r, r], C2, (0, 1, 0), 45 * (i % 2))
+    n = tails
+    for k in range(n):  # tails of chakra swaying up behind him
+        a = math.radians(0 if n == 1 else -40 + 80 * k / (n - 1))
+        L = 0.85 if kid else 1.0
+        SC.curve_tube(m, "shroud", [[math.sin(a) * 1.0, 12.8, 2.8], [math.sin(a) * 3 * L, 14, 6.5 * L], [math.sin(a) * 5 * L, 18.5 * L + 2, 9 * L],
+                                    [math.sin(a) * 6 * L, 23 * L + 2, 8 * L], [math.sin(a) * 5.5 * L, 26 * L + 2, 5 * L]], 2.0, 0.7, [C1, C2], n=2)
+
+
+def fox_jaw(m, R, D, W, glow, head_y=28.2, snout_z=-3.6):
+    """The V2 snout as an upper jaw with jagged white teeth, and a lower jaw on the "jaw" bone (it drops open on a
+    roar), white light glowing inside the mouth."""
+    SC.blob(m, "head", [0, 26.9, snout_z], [2.3, 1.3, 1.9], R, slices=3, axis="z")                     # upper jaw / snout
+    SC.obox(m, "head", [0, 27.2, snout_z - 1.95], [1.2, 0.9, 0.6], D)                                   # nose
+    for k in range(-3, 4):  # upper teeth along the snout's edge
+        SC.blade(m, "head", [k * 0.55, 25.9, snout_z - 1.0 + abs(k) * 0.35], [0, -1, 0], 0.7, 0.45, 0.35, W)
+    SC.obox(m, "head", [0, 25.7, snout_z + 0.2], [3.2, 0.3, 2.8], glow)                                  # light inside the mouth
+    SC.obox(m, "head", [0, 25.6, snout_z + 1.0], [3.0, 1.4, 0.3], glow)                                  # ...glowing at the back of it
+    SC.blob(m, "jaw", [0, 25.1, snout_z + 0.4], [2.1, 0.75, 1.7], D, slices=2, axis="z")                # lower jaw
+    for k in range(-3, 4):  # lower teeth
+        SC.blade(m, "jaw", [k * 0.55, 25.6, snout_z - 0.7 + abs(k) * 0.35], [0, 1, 0], 0.6, 0.45, 0.35, W)
+
+
 def v2_fox(m, eight):
     """Version 2: Naruto's whole body sealed inside a shroud of dark-red chakra shaped like a small fox — round head,
     ears, white ringed eyes and a jagged white mouth, clawed hands and feet, bubbles boiling off it, four tails.
@@ -364,15 +414,11 @@ def v2_fox(m, eight):
     W, BONE = SC.swatch((250, 246, 236)), SC.swatch((236, 226, 208))
     # head
     SC.blob(m, "head", [0, 28.2, 0.1], [4.3, 4.0, 4.2], R, slices=6)
-    SC.blob(m, "head", [0, 26.7, -3.6], [2.3, 1.5, 1.9], R, slices=3, axis="z")                     # snout
-    SC.blob(m, "head", [0, 25.5, -2.4], [2.7, 0.9, 2.3], D, slices=2)                               # jaw
+    fox_jaw(m, R, D, W, SC.swatch((255, 250, 230)))
     for s_ in (1, -1):
         SC.curve_tube(m, "head", [[s_ * 2.3, 31.2, -0.2], [s_ * 3.0, 34.0, 0.2], [s_ * 3.3, 36.4, 0.9]], 1.5, 0.25, R, n=2, flat=0.45, width=[1, 0, 0])
         SC.obox(m, "head", [s_ * 1.75, 29.1, -4.5], [2.2, 1.4, 0.8], W)                                # white, pupil-less eyes
         SC.obox(m, "head", [s_ * 3.0, 29.6, -4.15], [1.0, 0.6, 0.8], W)                               # slanting outer corners
-    SC.obox(m, "head", [0, 25.7, -5.15], [3.6, 0.45, 0.6], W)                                         # the jagged white mouth on the snout
-    for k in range(-3, 4):
-        SC.obox(m, "head", [k * 0.5, 25.7 + (0.35 if k % 2 else -0.35), -5.2], [0.35, 0.55, 0.5], W)
     # body
     SC.blob(m, "body", [0, 18.6, 0.3], [4.3, 6.0, 2.9], R, slices=6)
     SC.blob(m, "body", [0, 22.0, 0.1], [5.0, 2.3, 2.8], R, slices=3)
@@ -428,38 +474,25 @@ def naruto(m, char, form):
         m.box("body", [-3.4, 22.6, -2.5], [6.8, 1.8, 5.0], solid(WHITE))                                     # white collar
         naruto_hair(m, N_HAIR, "kid")
         headband(m, NAVY)
-        if form == "cloak":  # Version 1: red chakra boiling over his whole body, fox ears of chakra and one tail
-            red = (226, 66, 34)
-            Rb, Rd = SC.swatch(red), SC.swatch((176, 30, 20))
-            def bubbles(bone, cx, y0, y1, rx, rz, n, seed):
-                for i in range(n):
-                    a = (i + seed) * 2.39996
-                    y = y0 + (y1 - y0) * ((i * 7 + seed) % n) / n
-                    r = 0.7 + (i % 3) * 0.3
-                    SC.obox(m, bone, [cx + math.cos(a) * rx, y, math.sin(a) * rz], [r, r, r], Rb if i % 3 else Rd, (0, 1, 0), 45 * (i % 2))
-            bubbles("body", 0, 12.5, 24, 4.5, 2.6, 26, 1)
-            for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
-                bubbles(arm, s_ * 6, 12, 23, 2.3, 2.3, 12, 3 if s_ > 0 else 5)
-            for s_, leg in ((1, "rightLeg"), (-1, "leftLeg")):
-                bubbles(leg, s_ * 2, 0.5, 12, 2.3, 2.3, 12, 7 if s_ > 0 else 9)
-            for s in (1, -1):
-                SC.curve_tube(m, "hair", [[s * 2.4, 31.8, -0.5], [s * 3.0, 34.0, -0.3], [s * 3.3, 36.0, 0.2]], 1.3, 0.25, Rb, n=2, flat=0.45, width=[1, 0, 0])
-            SC.curve_tube(m, "body", [[0, 12.6, 2.4], [0, 13.5, 6], [0, 17, 9.5], [0, 22, 10.5], [0, 26, 8.5]], 1.9, 0.7,
-                          [SC.smooth(red), SC.smooth(dark(red, 0.85))], n=2)
+        if form == "cloak":  # Version 1: the translucent red shroud of the Nine-Tails' chakra, one tail
+            v1_shroud(m, 1, kid=True)
         return
     if char == "naruto_teen" and form in ("v2", "eight"):  # Version 2 (four tails) / Eight-Tails: a fox of boiling chakra
         v2_fox(m, form == "eight")
         return
     if char == "naruto_teen":
         sage = form == "sage"
-        key = "naruto_sage" if sage else "naruto"
-        iris = (246, 206, 46) if sage else (46, 120, 230)
+        v1 = form == "v1"
+        key = "naruto_sage" if sage else "naruto_fox" if v1 else "naruto"
+        iris = (246, 206, 46) if sage else (210, 30, 30) if v1 else (46, 120, 230)
         torso = layered(ORANGE, [region((0, 0, 1, 0.45), BLACK), zipper((200, 200, 206)), spiral(N_RED, cy=0.7)])
         base_body(m, torso, arm_paint(ORANGE, top=(BLACK, 0.3)), leg_paint(ORANGE, BLACK, band=(WHITE, 0.78, 0.84)),
                   head_paint(N_HAIR, iris, True, key))
         m.box("body", [-2.2, 22.8, -2.4], [4.4, 2.0, 4.8], layered(BLACK, [zipper((200, 200, 206))]))      # high collar
         naruto_hair(m, N_HAIR, "teen")
         headband(m, BLACK, tails=True)
+        if v1:  # Version 1, three tails
+            v1_shroud(m, 3)
         if sage:  # the red Sage cloak with black flames, and the big scroll on his back
             red = (200, 42, 40)
             hem = region((0, 0.8, 1, 1), BLACK)
@@ -475,7 +508,7 @@ def naruto(m, char, form):
     iris = (255, 90, 40) if baryon else (246, 206, 46) if form == "sage" else (46, 120, 230)
     torso = layered(ORANGE, [zipper((40, 40, 46)), region((0, 0.82, 1, 0.88), BLACK), region((0, 0.92, 1, 0.98), BLACK)])
     base_body(m, torso, arm_paint(ORANGE, cuff=BLACK), leg_paint(BLACK, (28, 28, 34), band=((70, 70, 80), 0.6, 0.7)),
-              head_paint(N_HAIR, iris, True, key if not baryon else "naruto_kcm"))
+              head_paint(N_HAIR, iris, True, key if not baryon else "naruto_baryon"))
     m.box("body", [-2.2, 22.9, -2.3], [4.4, 1.6, 4.6], solid(BLACK))
     naruto_hair(m, N_HAIR, "adult")
     if not baryon:  # the white Hokage cloak with its red lining and the kanji down the back
@@ -495,15 +528,36 @@ def naruto(m, char, form):
         m.box("body", [-5.0, 22.4, -2.6], [10.0, 2.0, 5.2], solid(WHITE))
         for x0 in (8.0, -8.6):
             m.box("body", [x0, 5.0, -1.8], [0.6, 18.4, 4.0], solid(WHITE))
-    else:  # Baryon Mode: a red chakra hood and cloak, horn-like flames
-        red, deep = (214, 34, 40), (150, 14, 24)
-        m.box("head", [-4.5, 27.0, -1.0], [9.0, 6.0, 5.6], layered(red, [region((0, 0.8, 1, 1), deep)]))
-        m.box("body", [-5.0, 2.0, 2.2], [10.0, 22.4, 0.5], layered(red, [region((0, 0.8, 1, 1), deep)]))
-        m.box("body", [-5.0, 22.2, -2.6], [10.0, 2.2, 5.2], solid(red))
-        for s in (1, -1):
-            m.strand([s * 1.8, 32.8, -0.4], [s * 0.2, 1, 0.05], 10, 2.6, solid(red), bone="hair", segs=3, thick=0.6)
-            m.strand([s * 4.6, 23.0, 1.8], [s * 0.45, 1, 0.3], 10, 3.0, solid(red), bone="body", segs=3, thick=0.5)
-            m.strand([s * 4.6, 17.0, 2.2], [s * 0.8, 0.7, 0.4], 8.5, 2.8, solid(red), bone="body", segs=3, thick=0.5)
+    else:  # Baryon Mode: spikier hair with fox-ear tufts, a chakra cape with a black swirl on the chest,
+        # four tails flowing from the back of the cape and five more from its hem, each with a black line down the middle
+        cape, ink = SC.swatch((236, 88, 34)), SC.swatch((20, 14, 14))
+        hp = M.hair_paint(N_HAIR)
+        for s_ in (1, -1):
+            m.strand([s_ * 3.0, 31.6, -0.4], [s_ * 0.45, 1, 0.05], 6.5, 3.0, hp, bone="hair", segs=3, thick=0.8)
+        for y0, r0, r1 in ((18.5, (5.6, 3.4), (4.6, 3.0)),):                 # the capelet over his shoulders
+            for i in range(3):
+                t = i / 3
+                rx, rz = r0[0] + (r1[0] - r0[0]) * t, r0[1] + (r1[1] - r0[1]) * t
+                for sp in (0, 30, 60):
+                    SC.obox(m, "body", [0, y0 + i * 1.9, 0], [2 * rx * 0.95, 2.0, 2 * rz * 0.95], cape, (0, 1, 0), sp)
+        def swirl(face, px, w, h, base):
+            if face == "north":
+                cx, cy = w / 2, h / 2
+                for i in range(90):
+                    a = i / 90 * math.pi * 4
+                    rr = min(w, h) * 0.42 * i / 90
+                    _put(px, w, h, int(cx + math.cos(a) * rr), int(cy + math.sin(a) * rr), (20, 14, 14))
+        m.box("body", [-2.4, 17.6, -3.85], [4.8, 4.8, 0.5], layered((236, 88, 34), [swirl]))
+        def tail(base_, ctrl):
+            pts = SC.curve_tube(m, "body", [base_] + ctrl, 1.5, 0.55, cape, n=2)
+            for p in pts[1:-1]:
+                SC.obox(m, "body", p, [0.5, 0.5, 0.5], ink, (0, 1, 0), 45)
+        for k in range(4):  # four from the back of the cape
+            a = math.radians(-45 + 30 * k)
+            tail([math.sin(a) * 1.5, 21, 2.8], [[math.sin(a) * 5, 23, 6], [math.sin(a) * 8, 26, 7.5], [math.sin(a) * 9, 29, 6]])
+        for k in range(5):  # five from the hem
+            a = math.radians(-60 + 30 * k)
+            tail([math.sin(a) * 2, 12.6, 2.6], [[math.sin(a) * 5, 11, 6], [math.sin(a) * 8, 9, 8.5], [math.sin(a) * 9.5, 8, 11]])
 
 
 # ------------------------------------------------------------------ Sasuke (Part I, Shippuden, War, Adult)
@@ -1097,7 +1151,7 @@ def muzan(m, form):
 
 FORMS = {
     "naruto_kid": ["base", "cloak"],
-    "naruto_teen": ["base", "v2", "sage", "eight"],
+    "naruto_teen": ["base", "v1", "v2", "sage", "eight"],
     "naruto_war": ["kcm", "kurama", "sagekurama", "spsm"],
     "naruto_adult": ["hokage", "sage", "link", "baryon"],
     "sasuke_kid": ["sharingan", "cs1", "cs2"],

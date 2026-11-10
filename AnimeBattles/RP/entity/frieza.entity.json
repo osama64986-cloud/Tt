@@ -4,7 +4,8 @@
   "description": {
    "identifier": "ab:frieza",
    "materials": {
-    "default": "entity_alphatest"
+    "default": "entity_alphatest",
+    "shroud": "entity_alphablend"
    },
    "textures": {
     "final": "textures/entity/frieza/final",
