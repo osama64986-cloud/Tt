@@ -1707,6 +1707,10 @@ function updateFighter(e, tick) {
     s.expr = 0;
     try { e.setProperty("ab:expr", 0); } catch (e2) { /* ignore */ }
   }
+  if (!s.expr && tick % 70 === 0 && team) {  // worn out: below 20% health the fighter winces and staggers now and then
+    const hh = health(e);
+    if (hh && hh.currentValue < hh.effectiveMax * 0.2) setExpr(e, 2, 10);
+  }
 
   if (!team) return;
   if (tick < s.stunUntil) {
