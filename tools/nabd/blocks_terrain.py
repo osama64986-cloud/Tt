@@ -167,10 +167,10 @@ def build(out, flip, variations):
     out["grass_carried"] = P.turf("grass_top", g_green, sss=60)
 
     dirt = out["dirt"]
-    side = P.top_over("grass_side", dirt, P.turf("grass_side_fr", g_grey), depth=3, extra=2)
+    side = P.top_over("grass_side", dirt, P.turf("grass_side_fr", g_grey), depth=6, extra=1)
     side.alpha = np.where(side.mask, 255, 0).astype(np.uint8)      # alpha marks the tinted part
     out["grass_side"] = side
-    out["grass_side_carried"] = P.top_over("grass_side", dirt, P.turf("grass_side_fr", g_green), depth=3, extra=2)
+    out["grass_side_carried"] = P.top_over("grass_side", dirt, P.turf("grass_side_fr", g_green), depth=6, extra=1)
 
     snow_r = make_ramp((236, 244, 250), 5, 0.09, warm=0.03)
     snow = P.rock("snow", snow_r, "fine", cracks=0, rough=150, bump=0.5)

@@ -58,5 +58,11 @@
     "atlas_tile": "deepslate_emerald_ore",
     "ticks_per_frame": 5,
     "blend_frames": false
+  },
+  {
+    "flipbook_texture": "textures/blocks/nabd/nether_gold_ore_shimmer",
+    "atlas_tile": "nether_gold_ore",
+    "ticks_per_frame": 5,
+    "blend_frames": false
   }
 ]

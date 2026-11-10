@@ -578,7 +578,7 @@ def build(out, flip, variations):
     silk = [(206, 210, 218), (236, 240, 246), (255, 255, 255)]
     spokes = (xx == yy) | (xx == 15 - yy) | (xx == 7) | (yy == 8)
     man = np.abs(xx - 7) + np.abs(yy - 8)
-    rings = (man == 4) | (man == 8)
+    rings = (man == 6) & ~((xx == 7) | (yy == 8))
     wb.rgb = np.where(rings[..., None], np.array(silk[0], np.uint8), wb.rgb)
     wb.rgb = np.where(spokes[..., None], np.array(silk[1], np.uint8), wb.rgb)
     wb.rgb = np.where((spokes & rings)[..., None], np.array(silk[2], np.uint8), wb.rgb)

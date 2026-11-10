@@ -24,8 +24,9 @@ from nabd import core  # noqa: E402
 from nabd import blocks_terrain  # noqa: E402
 
 from nabd import blocks_wood, blocks_build, blocks_plants, blocks_village  # noqa: E402
+from nabd import blocks_nether_end, blocks_more  # noqa: E402
 
-EXTRA = [blocks_wood, blocks_build, blocks_plants, blocks_village]
+EXTRA = [blocks_wood, blocks_build, blocks_plants, blocks_village, blocks_nether_end, blocks_more]
 
 PACK = os.path.join(ROOT, "pack")
 SRC = os.path.join(ROOT, "pack_src")
