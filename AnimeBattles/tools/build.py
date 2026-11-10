@@ -159,7 +159,7 @@ FIGHTERS = {
 
 FIGHTERS.update({
     "yuji": {"hp": 300, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
-    "yuji_final": {"hp": 650, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
+    "yuji_final": {"hp": 700, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
     "sukuna": {"hp": 650, "forms": [(18, 0.37), (24, 0.39), (30, 0.4)], "tex": ["yuji", "megumi", "heian"], "geo": ["yuji", "megumi", "heian"],
                "egg": ("#10080c", "#e28c96"), "form_scale": [1.0, 1.0, 1.15]},
     "luffy": {"hp": 950, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
