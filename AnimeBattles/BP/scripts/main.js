@@ -552,7 +552,9 @@ const GOKU = {
       run(e, s, t) {
         busy(s, 52); face(e, aim(t));
         sound(e.dimension, "beacon.activate", e.location, 1.5, 1.4);
-        announce(e, "§bKa... me... ha... me...");
+        // the chant, one syllable at a time while the ki ball grows in his cupped hands
+        ["§bKa...", "§bKa... me...", "§bKa... me... ha...", "§bKa... me... ha... me..."].forEach((txt, i) =>
+          later(i * 7, () => { if (e.isValid) announce(e, txt); }));
         chargeOrb(e, t, 30, C.kameBlue, 0.3, 1.4, 2);
         later(30, () => {
           if (!e.isValid) return;
@@ -684,12 +686,13 @@ const VEGETA = {
       id: "galick", label: "Galick Gun", cd: 220, cost: 210, min: 5, max: 45, weight: 4,
       run(e, s, t) {
         busy(s, 44); face(e, aim(t));
-        announce(e, "§d§lGalick Gun!");
+        announce(e, "§dGalick...");
         chargeOrb(e, t, 22, C.galick, 0.3, 1.2, 2);
         later(22, () => {
           if (!e.isValid) return;
           if (alive(t)) face(e, aim(t));
           setPose(e, 1);
+          announce(e, "§d§lGUN!! FIRE!!");
           beam(e, alive(t) ? t : e, { color: C.galick, width: 1.1 + 0.2 * formOf(e), dmg: 62 * powerOf(e) / 100, carve: 1, blast: 3 });
           later(18, () => setPose(e, 0));
         });
