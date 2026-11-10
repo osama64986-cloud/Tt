@@ -1397,7 +1397,7 @@ const ZORO = {
       } },
     { id: "shishi", label: "Shishi Sonson", cd: 160, cost: 70, min: 0, max: 10, weight: 4,
       run(e, s, t) {
-        busy(s, 12); announce(e, "§a§lShishi Sonson!"); setPose(e, 6); afterimage(e);
+        busy(s, 12); announce(e, "§a§lShishi Sonson!"); setPose(e, 19); afterimage(e);
         teleportNear(e, t, true, 2);
         later(1, () => {
           if (!alive(t)) return;
@@ -1420,19 +1420,19 @@ const ZORO = {
         });
         later(16, () => {
           if (!e.isValid || !alive(t)) return;
-          afterimage(e); teleportNear(e, t, true, 2); setPose(e, 8);
+          afterimage(e); teleportNear(e, t, true, 2); setPose(e, 1);
           slashMarks(e, t, C.zoro, 9, 10 * powerOf(e) / 100);
           later(16, () => setPose(e, 0));
         });
       } },
     { id: "sanzen", label: "Three Thousand Worlds", cd: 500, cost: 350, min: 0, max: 20, weight: 6, cond: (e) => formOf(e) === 1,
       run(e, s, t) {
-        busy(s, 26); setPose(e, 14); announce(e, "§0§lKing of Hell — §4§lSanzen Sekai!");
+        busy(s, 26); setPose(e, 1); announce(e, "§0§lKing of Hell — §4§lSanzen Sekai!");
         const dim = e.dimension;
         later(10, () => {
           if (!e.isValid || !alive(t)) return;
           const dir = V.norm(V.sub(aim(t), aim(e)));
-          afterimage(e); teleportNear(e, t, true, 2.2);
+          afterimage(e); teleportNear(e, t, true, 2.2); setPose(e, 19);  // the cut lands as he dashes through
           for (let k = -2; k <= 2; k++) { const v = slashVfx(dim, V.add(aim(t), V.mul(dir, k * 1.2)), dir, C.haki, 2.6, 30 + k * 25); later(8, () => killVfx(v)); }
           deal(e, t, 120 * powerOf(e) / 100);
           fx(dim, "flash", aim(t), C.white, 5, 0.25);
@@ -1486,7 +1486,7 @@ const FRIEZA = {
       } },
     { id: "saucer", label: "Death Saucer", cd: 220, cost: 120, min: 0, max: 30, weight: 3,
       run(e, s, t) {
-        busy(s, 14); setPose(e, 3); announce(e, "§d§lDeath Saucer!");
+        busy(s, 14); setPose(e, 23); announce(e, "§d§lDeath Saucer!");
         later(6, () => { if (!e.isValid) return; setPose(e, 4);
           flyingSlash(e, t, { color: C.death, dmg: 40 * powerOf(e) / 100, range: 30, roll: 0, size: 1.3, carve: true });
           later(4, () => { if (e.isValid) flyingSlash(e, t, { color: C.death, dmg: 40 * powerOf(e) / 100, range: 30, roll: 0, size: 1.3 }); setPose(e, 0); }); });
