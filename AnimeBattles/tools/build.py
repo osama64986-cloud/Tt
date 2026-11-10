@@ -161,7 +161,7 @@ FIGHTERS.update({
     "yuji": {"hp": 300, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
     "yuji_final": {"hp": 650, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
     "sukuna": {"hp": 650, "forms": [(18, 0.37), (24, 0.39), (30, 0.4)], "tex": ["yuji", "megumi", "heian"], "geo": ["yuji", "megumi", "heian"],
-               "egg": ("#10080c", "#e28c96")},
+               "egg": ("#10080c", "#e28c96"), "form_scale": [1.0, 1.0, 1.15]},
     "luffy": {"hp": 950, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
               "tex": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"], "geo": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
               "egg": ("#ce2226", "#eece68"), "gigant": True},
@@ -215,6 +215,10 @@ def behavior_entity(name, cfg):
             {"set_property": {"ab:form": i}},
         ]}
     comps_scale = {"minecraft:scale": {"value": cfg.get("scale", 1.0)}}
+    if cfg.get("form_scale"):  # size changes with the form (Heian Sukuna towers over Yuji's body)
+        for i, sc in enumerate(cfg["form_scale"]):
+            groups[f"ab:form_{i}"]["minecraft:scale"] = {"value": sc}
+        comps_scale = {}
     if cfg.get("gigant"):
         groups["ab:normal_size"] = {"minecraft:scale": {"value": 1.0}}
         groups["ab:gigant"] = {"minecraft:scale": {"value": 2.4}}
