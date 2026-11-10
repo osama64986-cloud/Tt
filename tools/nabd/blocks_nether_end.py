@@ -199,28 +199,24 @@ def build(out, flip, variations):
     # scrap-metal bands on the side and a bold square spiral on top
     body = [(40, 24, 20), (58, 36, 30), (80, 52, 44), (104, 70, 58), (130, 92, 78)]
     plate = [(124, 88, 76), (168, 128, 112), (204, 168, 152), (236, 208, 194)]
-    # side: four stacked scrap plates of uneven height, each with a lit top
-    # edge, a dark underside, a staggered seam and one pale rivet
-    idx = np.zeros((N, N), int)
-    hgt = np.zeros((N, N))
-    met = np.zeros((N, N))
-    rgb = np.zeros((N, N, 3), np.uint8)
-    y = 0
-    for k, (hh, seam, tone) in enumerate(((4, 5, 1), (5, 11, 0), (3, 3, 1), (4, 9, 0))):
-        pal = [body[1 + tone], body[2 + tone], plate[tone], plate[1 + tone]]     # underside, body, face, lit edge
-        for dy in range(hh):
-            row = y + dy
-            c = pal[3] if dy == 0 else (pal[0] if dy == hh - 1 else (pal[2] if dy == 1 else pal[1]))
-            rgb[row, :] = c
-            hgt[row, :] = 0.2 if dy == hh - 1 else (1.0 if dy == 0 else 0.7)
-            met[row, :] = 0 if dy == hh - 1 else 150
-        rgb[y:y + hh - 1, seam] = body[0]
-        hgt[y:y + hh - 1, seam] = 0.15
-        rv = (seam + 5) % N
-        rgb[y + 1, rv] = plate[3]
-        rgb[y + 2, rv] = body[0]
-        y += hh
-    t = Tex(rgb, hgt, rough=np.where(met > 0, 90, 170), metal=met, bump=1.3)
+    # side: the familiar idea (dark crust streaked with pale layers), drawn our
+    # way - a calm brown face with a few long pale streaks, each with a soft
+    # shadow underneath, and two darker grooves
+    idx = np.full((N, N), 2)
+    hgt = np.full((N, N), 0.5)
+    r = rng_of("ancient_debris_side")
+    dashes(r, idx, hgt, 3, 1, (4, 8), thick=0.0, lift=-0.15, wobble=0.1)
+    streak = np.zeros((N, N), bool)
+    for (y, x0, ln) in ((2, 1, 9), (5, 8, 7), (8, 2, 6), (10, 9, 6), (13, 4, 9)):
+        for i in range(ln):
+            streak[y + (1 if (i > ln // 2 and ln > 6) else 0), (x0 + i) % N] = True
+    under = np.roll(streak, 1, 0) & ~streak
+    rgb = paint_idx(idx, body)
+    rgb = np.where(under[..., None], np.array(body[0], np.uint8), rgb)
+    rgb = np.where(streak[..., None], np.array(plate[2], np.uint8), rgb)
+    rgb = np.where((streak & ~np.roll(streak, 1, 1))[..., None], np.array(plate[3], np.uint8), rgb)
+    hgt = np.where(streak, 0.9, np.where(under, 0.25, hgt))
+    t = Tex(rgb, hgt, rough=np.where(streak, 100, 170), metal=np.where(streak, 140, 0), bump=1.2)
     out["ancient_debris_side"] = t
     tp = P.rock("ancient_debris_top", body, "smooth", cracks=0, rough=170)
     met = np.zeros((N, N))

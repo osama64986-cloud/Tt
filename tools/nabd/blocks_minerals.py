@@ -66,21 +66,18 @@ def build(out, flip, variations):
         hgt[y0 + 3, x0:x0 + 11] = 0.3
     out["gold_block"] = finish(idx, hgt, r, 250, 50)
 
-    # diamond: one big brilliant-cut gem, four facets and a sparkle
-    r = vramp("diamond_block", 5, contrast=0.4)
+    # diamond: a calm polished plate - raised inner panel, one soft diagonal
+    # sheen and a single small sparkle
+    r = vramp("diamond_block", 5, contrast=0.3)
     idx, hgt = framed(r)
-    up, lf = (yy - 7.5) < -(np.abs(xx - 7.5)), (xx - 7.5) < -(np.abs(yy - 7.5))
-    dn, rt = (yy - 7.5) > (np.abs(xx - 7.5)), (xx - 7.5) > (np.abs(yy - 7.5))
-    for m, tone in ((up, 4), (lf, 3), (rt, 2), (dn, 1)):
-        idx = np.where(INNER & m, tone, idx)
-    diag = INNER & ((xx == yy) | (xx == 15 - yy))
-    idx = np.where(diag, 2, idx)
-    table = (np.abs(xx - 7.5) < 2.6) & (np.abs(yy - 7.5) < 2.6)
-    idx = np.where(table, 3, idx)
-    idx = np.where(table & ((yy == 5) | (xx == 5)), 4, idx)
-    hgt = np.where(table, 1.0, hgt)
-    spark = [(4, 3, (255, 255, 255)), (3, 4, (255, 255, 255)), (5, 4, (255, 255, 255)), (4, 5, (255, 255, 255)), (4, 4, (255, 255, 255))]
-    out["diamond_block"] = finish(idx, hgt, r, 60, 25, extra=spark)
+    panel = (xx >= 3) & (xx <= 12) & (yy >= 3) & (yy <= 12)
+    idx = np.where(panel & ((yy == 3) | (xx == 3)), 3, idx)
+    idx = np.where(panel & ((yy == 12) | (xx == 12)), 1, idx)
+    sheen = panel & ~((yy == 3) | (xx == 3) | (yy == 12) | (xx == 12)) & (((xx + yy) == 13) | ((xx + yy) == 14))
+    idx = np.where(sheen, 3, idx)
+    idx = np.where(panel & ((xx + yy) == 17) & (xx > 4) & (xx < 12) & (yy > 4) & (yy < 12), 3, idx)
+    hgt = np.where(panel, 0.8, hgt)
+    out["diamond_block"] = finish(idx, hgt, r, 60, 25, extra=[(5, 5, (255, 255, 255)), (6, 5, r[4]), (5, 6, r[4])])
 
     # emerald: step cut - nested rectangles
     r = vramp("emerald_block", 5, contrast=0.42)
@@ -97,14 +94,13 @@ def build(out, flip, variations):
     idx[7, 7] = idx[7, 8] = 4
     out["emerald_block"] = finish(idx, hgt, r, 60, 30)
 
-    # lapis: deep blue stone with pale veins and gold flecks
-    r = vramp("lapis_block", 5, contrast=0.4)
+    # lapis: deep blue stone with soft paler veins (no flecks)
+    r = vramp("lapis_block", 5, contrast=0.36)
     idx, hgt = framed(r)
     g = fbm(rng_of("lapis_block"), ((3, 1.0), (5, 0.6)))
     idx = np.where(INNER & (g > 0.66), 3, idx)
     idx = np.where(INNER & (g < 0.3), 1, idx)
-    fleck = [(4, 5), (10, 4), (7, 9), (11, 11), (4, 11)]
-    out["lapis_block"] = finish(idx, hgt, r, 0, 120, extra=[(x, y, (250, 214, 90)) for x, y in fleck])
+    out["lapis_block"] = finish(idx, hgt, r, 0, 120)
 
     # redstone: glowing circuit cross with a bright core
     r = vramp("redstone_block", 5, contrast=0.42)
@@ -162,17 +158,21 @@ def build(out, flip, variations):
             t.rgb = np.where((pm & ~np.roll(pm, 1, 0))[..., None], np.array(pr[3], np.uint8), t.rgb)
         out[stage] = t
 
-    # amethyst: a cluster of slanted crystal facets
+    # amethyst: easy on the eye - a flat purple face with a handful of
+    # small crystal facets (lit corner, shaded corner), low contrast
     for nm in ("amethyst_block", "budding_amethyst"):
         if nm not in STATS:
             continue
-        r = vramp(nm, 5, contrast=0.4)
-        band = ((xx + yy * 2) // 5) % 4
-        idx = np.array([1, 3, 2, 4])[band]
-        idx = np.where((xx + yy * 2) % 5 == 0, 0, idx)
-        t = Tex(paint_idx(idx, r), np.array([0.4, 0.7, 0.55, 0.9])[band], metal=30, rough=40, bump=1.2)
+        r = vramp(nm, 5, contrast=0.26)
+        idx = np.full((N, N), 2)
+        hgt = np.full((N, N), 0.5)
+        for (x, y) in ((2, 2), (9, 1), (13, 6), (5, 7), (1, 11), (9, 11), (13, 13)):
+            for dx, dy, tone in ((1, 0, 3), (0, 1, 3), (1, 1, 2), (2, 1, 1), (1, 2, 1)):
+                idx[(y + dy) % N, (x + dx) % N] = tone
+                hgt[(y + dy) % N, (x + dx) % N] = 0.8
+        t = Tex(paint_idx(idx, r), hgt, metal=30, rough=40, bump=1.0)
         if nm == "budding_amethyst":
-            for (x, y) in ((4, 4), (11, 5), (6, 11), (12, 12)):
+            for (x, y) in ((4, 4), (11, 9)):
                 for dx, dy, v in ((0, 0, 0), (1, 0, 1), (0, 1, 1), (-1, 0, 4), (0, -1, 4)):
                     t.rgb[y + dy, x + dx] = r[v]
         out[nm] = t

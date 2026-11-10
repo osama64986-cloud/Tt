@@ -51,3 +51,47 @@ def build(out, flip, variations):
     base = 0.5 + 0.27 * np.sin(2 * np.pi * a) + 0.23 * np.sin(2 * np.pi * b * 2)
     fr = [frame(tones(np.roll(base, f * (w // n), axis=0))) for f in range(n)]
     out["lava_flow"] = stack_frames(fr)
+
+
+# ------------------------------------------------------------------- water
+def water(name, grey):
+    """Gentle cartoon ripples: three close tones drifting in a seamless loop.
+    Brightness and alpha match what the game expects so biome tinting and
+    transparency behave exactly as before."""
+    st = STATS[name]
+    w, h = st["size"]
+    n = h // w
+    lo, mid, hi = (st["ramp"][0], st["ramp"][2], st["ramp"][4])
+    ramp = [tuple(lo), tuple(mid), tuple(hi)]
+    alpha = st["alpha"][0]
+    r = rng_of("water:" + str(w))
+    flow = "flow" in name
+    a = fbm(r, ((2, 1.0), (4, 0.6)), w=w, h=w, sy=2.0 if flow else 1.0, sx=1.0 if flow else 2.0)
+    b = fbm(r, ((3, 1.0), (5, 0.5)), w=w, h=w, sy=2.0 if flow else 1.0, sx=1.0 if flow else 2.0)
+    base = 0.5 + 0.27 * np.sin(2 * np.pi * a) + 0.23 * np.sin(2 * np.pi * b * 2)
+    fr = []
+    for f in range(n):
+        if flow:
+            fld = np.roll(base, int(round(f * w / n)), axis=0)
+        else:
+            ph = f / n
+            fld = 0.5 + 0.27 * np.sin(2 * np.pi * (a + ph)) + 0.23 * np.sin(2 * np.pi * (b * 2 - ph))
+        idx = np.where(fld > 0.72, 2, np.where(fld < 0.3, 0, 1))
+        t = Tex(paint_idx(idx, ramp), 0.4 + idx * 0.1, alpha=np.full((w, w), alpha, np.uint8), rough=20, bump=0.4)
+        fr.append(t)
+    return stack_frames(fr) if n > 1 else fr[0]
+
+
+_lava_build = build
+
+
+def build(out, flip, variations):          # noqa: F811  (lava first, then water)
+    _lava_build(out, flip, variations)
+    for name in ("water_still_grey", "water_flow_grey", "water_still", "water_flow", "cauldron_water"):
+        if name in STATS:
+            out[name] = water(name, "grey" in name or "cauldron" in name)
+    for name, src in (("water_placeholder", "water_still"), ("cauldron_water_placeholder", "cauldron_water")):
+        if name in STATS and src in out:
+            t = out[src]
+            ph = Tex(t.rgb[:16].copy(), t.height[:16].copy(), alpha=np.full((16, 16), STATS[name]["alpha"][0], np.uint8), rough=20, bump=0.4)
+            out[name] = ph

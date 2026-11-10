@@ -51,3 +51,24 @@ for root, _, files in os.walk(bdir):
             e["mers"] = mm.round().astype(int).tolist()
 json.dump(out, open(os.path.join(os.path.dirname(__file__), "nabd", "vanilla_stats.json"), "w"), indent=0, sort_keys=True)
 print(len(out), "entries")
+
+# ---- items: only neutral facts (extension, size, mean colour, alpha levels). No masks:
+# item sprites are free drawings, so ours are drawn from scratch.
+idir = os.path.join(src, "textures", "items")
+items = {}
+for root, _, files in os.walk(idir):
+    for f in sorted(files):
+        stem, ext = os.path.splitext(f)
+        if ext not in (".png", ".tga") or stem.endswith(("_mers", "_mer")):
+            continue
+        rel = os.path.relpath(os.path.join(root, stem), idir).replace(os.sep, "/")
+        im = Image.open(os.path.join(root, f))
+        a = np.array(im.convert("RGBA")).astype(float)
+        al = a[..., 3]
+        px = a[..., :3][al > 0] if (al > 0).any() else a[..., :3].reshape(-1, 3)
+        e = items.setdefault(rel, {"ext": []})
+        e["ext"].append(ext[1:])
+        e.update({"size": list(im.size), "mean": px.mean(0).round().astype(int).tolist(),
+                  "alpha": sorted(set(int(v) for v in np.unique(al)))[:4]})
+json.dump(items, open(os.path.join(os.path.dirname(__file__), "nabd", "vanilla_item_stats.json"), "w"), indent=0, sort_keys=True)
+print(len(items), "item entries")

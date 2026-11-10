@@ -1,0 +1,16531 @@
+{
+"acacia_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+117,
+72,
+35
+],
+"size": [
+16,
+16
+]
+},
+"acacia_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+76,
+45
+],
+"size": [
+16,
+16
+]
+},
+"amethyst_shard": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+147,
+113,
+192
+],
+"size": [
+16,
+16
+]
+},
+"angler_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+62,
+50
+],
+"size": [
+16,
+16
+]
+},
+"apple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+176,
+29,
+31
+],
+"size": [
+16,
+16
+]
+},
+"apple_golden": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+189,
+140,
+41
+],
+"size": [
+16,
+16
+]
+},
+"archer_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"armadillo_scute": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+94,
+92
+],
+"size": [
+16,
+16
+]
+},
+"armor_stand": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+114,
+93,
+61
+],
+"size": [
+16,
+16
+]
+},
+"arms_up_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"arrow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+115,
+100
+],
+"size": [
+16,
+16
+]
+},
+"bamboo": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+124,
+32
+],
+"size": [
+16,
+16
+]
+},
+"bamboo_chest_raft": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+93,
+43
+],
+"size": [
+16,
+16
+]
+},
+"bamboo_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+171,
+79
+],
+"size": [
+16,
+16
+]
+},
+"bamboo_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+162,
+146,
+76
+],
+"size": [
+16,
+16
+]
+},
+"bamboo_raft": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+127,
+62
+],
+"size": [
+16,
+16
+]
+},
+"bamboo_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+174,
+156,
+73
+],
+"size": [
+16,
+16
+]
+},
+"banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+196,
+188,
+170
+],
+"size": [
+16,
+16
+]
+},
+"bed_black": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+62,
+57,
+56
+],
+"size": [
+16,
+16
+]
+},
+"bed_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+88,
+127
+],
+"size": [
+16,
+16
+]
+},
+"bed_brown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+86,
+60
+],
+"size": [
+16,
+16
+]
+},
+"bed_cyan": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+59,
+115,
+114
+],
+"size": [
+16,
+16
+]
+},
+"bed_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+93,
+96,
+91
+],
+"size": [
+16,
+16
+]
+},
+"bed_green": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+99,
+53
+],
+"size": [
+16,
+16
+]
+},
+"bed_light_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+74,
+117,
+144
+],
+"size": [
+16,
+16
+]
+},
+"bed_lime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+130,
+61
+],
+"size": [
+16,
+16
+]
+},
+"bed_magenta": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+141,
+79,
+126
+],
+"size": [
+16,
+16
+]
+},
+"bed_orange": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+175,
+102,
+54
+],
+"size": [
+16,
+16
+]
+},
+"bed_pink": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+169,
+100,
+112
+],
+"size": [
+16,
+16
+]
+},
+"bed_purple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+117,
+72,
+135
+],
+"size": [
+16,
+16
+]
+},
+"bed_red": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+135,
+64,
+60
+],
+"size": [
+16,
+16
+]
+},
+"bed_silver": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+117,
+108
+],
+"size": [
+16,
+16
+]
+},
+"bed_white": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+153,
+148,
+142
+],
+"size": [
+16,
+16
+]
+},
+"bed_yellow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+180,
+139,
+48
+],
+"size": [
+16,
+16
+]
+},
+"beef_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+54,
+38
+],
+"size": [
+16,
+16
+]
+},
+"beef_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+183,
+60,
+52
+],
+"size": [
+16,
+16
+]
+},
+"beetroot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+137,
+44,
+42
+],
+"size": [
+16,
+16
+]
+},
+"beetroot_soup": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+41,
+14
+],
+"size": [
+16,
+16
+]
+},
+"birch_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+114,
+71
+],
+"size": [
+16,
+16
+]
+},
+"birch_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+133,
+93
+],
+"size": [
+16,
+16
+]
+},
+"black_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+34,
+32,
+45
+],
+"size": [
+16,
+16
+]
+},
+"blade_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+62,
+51
+],
+"size": [
+16,
+16
+]
+},
+"blaze_powder": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+192,
+113,
+19
+],
+"size": [
+16,
+16
+]
+},
+"blaze_rod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+196,
+135,
+26
+],
+"size": [
+16,
+16
+]
+},
+"blue_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+78,
+148
+],
+"size": [
+16,
+16
+]
+},
+"blue_egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+172,
+154
+],
+"size": [
+16,
+16
+]
+},
+"boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+53,
+20
+],
+"size": [
+16,
+16
+]
+},
+"boat_acacia": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+69,
+38
+],
+"size": [
+16,
+16
+]
+},
+"boat_birch": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+141,
+98
+],
+"size": [
+16,
+16
+]
+},
+"boat_dark_oak": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+42,
+20
+],
+"size": [
+16,
+16
+]
+},
+"boat_darkoak": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+44,
+20
+],
+"size": [
+16,
+16
+]
+},
+"boat_jungle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+83,
+58
+],
+"size": [
+16,
+16
+]
+},
+"boat_oak": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+100,
+63
+],
+"size": [
+16,
+16
+]
+},
+"boat_spruce": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+68,
+40
+],
+"size": [
+16,
+16
+]
+},
+"bolt_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+99,
+77
+],
+"size": [
+16,
+16
+]
+},
+"bone": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+204,
+203,
+183
+],
+"size": [
+16,
+16
+]
+},
+"book_enchanted": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+67,
+41
+],
+"size": [
+16,
+16
+]
+},
+"book_normal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+90,
+71,
+41
+],
+"size": [
+16,
+16
+]
+},
+"book_portfolio": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+115,
+97,
+78
+],
+"size": [
+16,
+16
+]
+},
+"book_writable": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+93,
+84
+],
+"size": [
+16,
+16
+]
+},
+"book_written": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+55,
+42
+],
+"size": [
+16,
+16
+]
+},
+"bordure_indented_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+172,
+155
+],
+"size": [
+16,
+16
+]
+},
+"bow_pulling_0": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+85,
+70,
+41
+],
+"size": [
+16,
+16
+]
+},
+"bow_pulling_1": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+70,
+42
+],
+"size": [
+16,
+16
+]
+},
+"bow_pulling_2": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+70,
+42
+],
+"size": [
+16,
+16
+]
+},
+"bow_standby": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+66,
+40
+],
+"size": [
+16,
+16
+]
+},
+"bowl": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+48,
+9
+],
+"size": [
+16,
+16
+]
+},
+"bread": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+138,
+101,
+30
+],
+"size": [
+16,
+16
+]
+},
+"breeze_rod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+121,
+169
+],
+"size": [
+16,
+16
+]
+},
+"brewer_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"brewing_stand": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+105,
+80
+],
+"size": [
+16,
+16
+]
+},
+"brick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+134,
+66,
+47
+],
+"size": [
+16,
+16
+]
+},
+"broken_elytra": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+96,
+107
+],
+"size": [
+16,
+16
+]
+},
+"brown_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+76,
+42
+],
+"size": [
+16,
+16
+]
+},
+"brown_egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+90,
+69
+],
+"size": [
+16,
+16
+]
+},
+"brush": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+166,
+126,
+98
+],
+"size": [
+16,
+16
+]
+},
+"bucket_axolotl": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+162,
+131,
+157
+],
+"size": [
+16,
+16
+]
+},
+"bucket_cod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+125,
+125
+],
+"size": [
+16,
+16
+]
+},
+"bucket_empty": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+119,
+119
+],
+"size": [
+16,
+16
+]
+},
+"bucket_lava": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+128,
+111
+],
+"size": [
+16,
+16
+]
+},
+"bucket_milk": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+139,
+141,
+142
+],
+"size": [
+16,
+16
+]
+},
+"bucket_powder_snow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+160,
+161
+],
+"size": [
+16,
+16
+]
+},
+"bucket_pufferfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+134,
+119
+],
+"size": [
+16,
+16
+]
+},
+"bucket_salmon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+114,
+122
+],
+"size": [
+16,
+16
+]
+},
+"bucket_sulfur_cube": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+149,
+131
+],
+"size": [
+16,
+16
+]
+},
+"bucket_tadpole": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+119,
+117
+],
+"size": [
+16,
+16
+]
+},
+"bucket_tropical": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+139,
+120,
+119
+],
+"size": [
+16,
+16
+]
+},
+"bucket_water": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+118,
+138
+],
+"size": [
+16,
+16
+]
+},
+"bundle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+73,
+41
+],
+"size": [
+16,
+16
+]
+},
+"bundle_black": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+54,
+49,
+63
+],
+"size": [
+16,
+16
+]
+},
+"bundle_black_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+43,
+39,
+53
+],
+"size": [
+16,
+16
+]
+},
+"bundle_black_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+29,
+27,
+42
+],
+"size": [
+16,
+16
+]
+},
+"bundle_black_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+50,
+45,
+58
+],
+"size": [
+16,
+16
+]
+},
+"bundle_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+94,
+166
+],
+"size": [
+16,
+16
+]
+},
+"bundle_blue_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+64,
+82,
+156
+],
+"size": [
+16,
+16
+]
+},
+"bundle_blue_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+71,
+151
+],
+"size": [
+16,
+16
+]
+},
+"bundle_blue_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+88,
+159
+],
+"size": [
+16,
+16
+]
+},
+"bundle_brown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+109,
+68
+],
+"size": [
+16,
+16
+]
+},
+"bundle_brown_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+145,
+94,
+55
+],
+"size": [
+16,
+16
+]
+},
+"bundle_brown_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+80,
+45
+],
+"size": [
+16,
+16
+]
+},
+"bundle_brown_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+101,
+60
+],
+"size": [
+16,
+16
+]
+},
+"bundle_cyan": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+30,
+141,
+137
+],
+"size": [
+16,
+16
+]
+},
+"bundle_cyan_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+125,
+122
+],
+"size": [
+16,
+16
+]
+},
+"bundle_cyan_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+15,
+111,
+111
+],
+"size": [
+16,
+16
+]
+},
+"bundle_cyan_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+30,
+132,
+128
+],
+"size": [
+16,
+16
+]
+},
+"bundle_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+105,
+104
+],
+"size": [
+16,
+16
+]
+},
+"bundle_gray_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+95,
+95
+],
+"size": [
+16,
+16
+]
+},
+"bundle_gray_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+85,
+87
+],
+"size": [
+16,
+16
+]
+},
+"bundle_gray_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+89,
+100,
+99
+],
+"size": [
+16,
+16
+]
+},
+"bundle_green": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+124,
+26
+],
+"size": [
+16,
+16
+]
+},
+"bundle_green_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+84,
+107,
+23
+],
+"size": [
+16,
+16
+]
+},
+"bundle_green_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+69,
+92,
+18
+],
+"size": [
+16,
+16
+]
+},
+"bundle_green_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+115,
+25
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+58,
+140,
+182
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_blue_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+45,
+126,
+172
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_blue_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+31,
+115,
+166
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_blue_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+53,
+132,
+175
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+135,
+130,
+119
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_gray_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+116,
+106
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_gray_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+103,
+96
+],
+"size": [
+16,
+16
+]
+},
+"bundle_light_gray_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+122,
+111
+],
+"size": [
+16,
+16
+]
+},
+"bundle_lime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+173,
+42
+],
+"size": [
+16,
+16
+]
+},
+"bundle_lime_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+157,
+31
+],
+"size": [
+16,
+16
+]
+},
+"bundle_lime_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+143,
+20
+],
+"size": [
+16,
+16
+]
+},
+"bundle_lime_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+163,
+37
+],
+"size": [
+16,
+16
+]
+},
+"bundle_magenta": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+167,
+62,
+148
+],
+"size": [
+16,
+16
+]
+},
+"bundle_magenta_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+50,
+137
+],
+"size": [
+16,
+16
+]
+},
+"bundle_magenta_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+38,
+130
+],
+"size": [
+16,
+16
+]
+},
+"bundle_magenta_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+159,
+57,
+140
+],
+"size": [
+16,
+16
+]
+},
+"bundle_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+78,
+45
+],
+"size": [
+16,
+16
+]
+},
+"bundle_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+66,
+37
+],
+"size": [
+16,
+16
+]
+},
+"bundle_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+84,
+49
+],
+"size": [
+16,
+16
+]
+},
+"bundle_orange": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+204,
+113,
+31
+],
+"size": [
+16,
+16
+]
+},
+"bundle_orange_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+97,
+19
+],
+"size": [
+16,
+16
+]
+},
+"bundle_orange_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+83,
+8
+],
+"size": [
+16,
+16
+]
+},
+"bundle_orange_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+196,
+104,
+25
+],
+"size": [
+16,
+16
+]
+},
+"bundle_pink": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+215,
+122,
+148
+],
+"size": [
+16,
+16
+]
+},
+"bundle_pink_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+203,
+103,
+134
+],
+"size": [
+16,
+16
+]
+},
+"bundle_pink_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+193,
+88,
+125
+],
+"size": [
+16,
+16
+]
+},
+"bundle_pink_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+207,
+112,
+139
+],
+"size": [
+16,
+16
+]
+},
+"bundle_purple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+45,
+169
+],
+"size": [
+16,
+16
+]
+},
+"bundle_purple_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+112,
+37,
+159
+],
+"size": [
+16,
+16
+]
+},
+"bundle_purple_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+28,
+153
+],
+"size": [
+16,
+16
+]
+},
+"bundle_purple_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+42,
+162
+],
+"size": [
+16,
+16
+]
+},
+"bundle_red": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+50,
+40
+],
+"size": [
+16,
+16
+]
+},
+"bundle_red_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+41,
+34
+],
+"size": [
+16,
+16
+]
+},
+"bundle_red_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+139,
+30,
+27
+],
+"size": [
+16,
+16
+]
+},
+"bundle_red_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+162,
+47,
+38
+],
+"size": [
+16,
+16
+]
+},
+"bundle_white": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+189,
+194,
+190
+],
+"size": [
+16,
+16
+]
+},
+"bundle_white_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+180,
+177
+],
+"size": [
+16,
+16
+]
+},
+"bundle_white_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+171,
+171
+],
+"size": [
+16,
+16
+]
+},
+"bundle_white_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+178,
+185,
+180
+],
+"size": [
+16,
+16
+]
+},
+"bundle_yellow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+205,
+150,
+39
+],
+"size": [
+16,
+16
+]
+},
+"bundle_yellow_open": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+193,
+131,
+29
+],
+"size": [
+16,
+16
+]
+},
+"bundle_yellow_open_back": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+115,
+19
+],
+"size": [
+16,
+16
+]
+},
+"bundle_yellow_open_front": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+198,
+140,
+34
+],
+"size": [
+16,
+16
+]
+},
+"burn_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+61,
+50
+],
+"size": [
+16,
+16
+]
+},
+"bush": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+57,
+89,
+49
+],
+"size": [
+16,
+16
+]
+},
+"cake": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+207,
+168,
+144
+],
+"size": [
+16,
+16
+]
+},
+"campfire": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+149,
+106,
+50
+],
+"size": [
+16,
+16
+]
+},
+"candles/black_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+44,
+42,
+66
+],
+"size": [
+16,
+16
+]
+},
+"candles/blue_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+59,
+82,
+164
+],
+"size": [
+16,
+16
+]
+},
+"candles/brown_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+76,
+46
+],
+"size": [
+16,
+16
+]
+},
+"candles/candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+217,
+188,
+131
+],
+"size": [
+16,
+16
+]
+},
+"candles/cyan_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+17,
+131,
+132
+],
+"size": [
+16,
+16
+]
+},
+"candles/gray_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+97,
+102
+],
+"size": [
+16,
+16
+]
+},
+"candles/green_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+80,
+106,
+22
+],
+"size": [
+16,
+16
+]
+},
+"candles/light_blue_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+142,
+197
+],
+"size": [
+16,
+16
+]
+},
+"candles/light_gray_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+127,
+119
+],
+"size": [
+16,
+16
+]
+},
+"candles/lime_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+176,
+31
+],
+"size": [
+16,
+16
+]
+},
+"candles/magenta_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+162,
+50,
+153
+],
+"size": [
+16,
+16
+]
+},
+"candles/orange_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+218,
+108,
+19
+],
+"size": [
+16,
+16
+]
+},
+"candles/pink_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+212,
+112,
+149
+],
+"size": [
+16,
+16
+]
+},
+"candles/purple_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+35,
+163
+],
+"size": [
+16,
+16
+]
+},
+"candles/red_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+159,
+42,
+38
+],
+"size": [
+16,
+16
+]
+},
+"candles/white_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+210,
+218,
+219
+],
+"size": [
+16,
+16
+]
+},
+"candles/yellow_candle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+210,
+169,
+56
+],
+"size": [
+16,
+16
+]
+},
+"carrot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+113,
+19
+],
+"size": [
+16,
+16
+]
+},
+"carrot_golden": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+143,
+101,
+27
+],
+"size": [
+16,
+16
+]
+},
+"carrot_on_a_stick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+74,
+42
+],
+"size": [
+16,
+16
+]
+},
+"cauldron": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+60,
+60,
+63
+],
+"size": [
+16,
+16
+]
+},
+"chain": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+50,
+56,
+73
+],
+"size": [
+16,
+16
+]
+},
+"chainmail_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+98,
+98
+],
+"size": [
+16,
+16
+]
+},
+"chainmail_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+124,
+124
+],
+"size": [
+16,
+16
+]
+},
+"chainmail_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+92,
+92
+],
+"size": [
+16,
+16
+]
+},
+"chainmail_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+104,
+104
+],
+"size": [
+16,
+16
+]
+},
+"chalkboard_large": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+69,
+58
+],
+"size": [
+16,
+16
+]
+},
+"chalkboard_medium": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+69,
+63,
+48
+],
+"size": [
+16,
+16
+]
+},
+"chalkboard_small": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+67,
+59,
+44
+],
+"size": [
+16,
+16
+]
+},
+"charcoal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+40,
+35,
+27
+],
+"size": [
+16,
+16
+]
+},
+"cherry_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+209,
+149,
+146
+],
+"size": [
+16,
+16
+]
+},
+"cherry_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+163,
+118,
+98
+],
+"size": [
+16,
+16
+]
+},
+"cherry_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+222,
+167,
+161
+],
+"size": [
+16,
+16
+]
+},
+"cherry_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+184,
+123,
+126
+],
+"size": [
+16,
+16
+]
+},
+"cherry_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+194,
+141,
+139
+],
+"size": [
+16,
+16
+]
+},
+"chicken_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+177,
+112,
+75
+],
+"size": [
+16,
+16
+]
+},
+"chicken_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+206,
+157,
+140
+],
+"size": [
+16,
+16
+]
+},
+"chorus_fruit": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+93,
+125
+],
+"size": [
+16,
+16
+]
+},
+"chorus_fruit_popped": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+81,
+122
+],
+"size": [
+16,
+16
+]
+},
+"clay_ball": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+122,
+139
+],
+"size": [
+16,
+16
+]
+},
+"clock_item": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+178,
+143,
+64
+],
+"size": [
+16,
+16
+]
+},
+"coal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+36,
+34,
+37
+],
+"size": [
+16,
+16
+]
+},
+"coast_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+104,
+111
+],
+"size": [
+16,
+16
+]
+},
+"comparator": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+82,
+70
+],
+"size": [
+16,
+16
+]
+},
+"compass_atlas": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+79,
+79
+],
+"size": [
+16,
+512
+]
+},
+"compass_item": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+78,
+78
+],
+"size": [
+16,
+16
+]
+},
+"cookie": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+112,
+57
+],
+"size": [
+16,
+16
+]
+},
+"copper_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+71,
+43
+],
+"size": [
+16,
+16
+]
+},
+"copper_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+68,
+47
+],
+"size": [
+16,
+16
+]
+},
+"copper_chain": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+81,
+56
+],
+"size": [
+16,
+16
+]
+},
+"copper_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+161,
+84,
+59
+],
+"size": [
+16,
+16
+]
+},
+"copper_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+106,
+78
+],
+"size": [
+16,
+16
+]
+},
+"copper_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+62,
+42
+],
+"size": [
+16,
+16
+]
+},
+"copper_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+64,
+35
+],
+"size": [
+16,
+16
+]
+},
+"copper_horse_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+127,
+98
+],
+"size": [
+16,
+16
+]
+},
+"copper_ingot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+93,
+63
+],
+"size": [
+16,
+16
+]
+},
+"copper_lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+130,
+91
+],
+"size": [
+16,
+16
+]
+},
+"copper_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+135,
+69,
+47
+],
+"size": [
+16,
+16
+]
+},
+"copper_nugget": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+175,
+90,
+62
+],
+"size": [
+16,
+16
+]
+},
+"copper_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+64,
+37
+],
+"size": [
+16,
+16
+]
+},
+"copper_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+76,
+48
+],
+"size": [
+16,
+16
+]
+},
+"copper_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+77,
+59
+],
+"size": [
+16,
+16
+]
+},
+"creeper_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+172,
+154
+],
+"size": [
+16,
+16
+]
+},
+"crimson_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+58,
+82
+],
+"size": [
+16,
+16
+]
+},
+"crimson_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+52,
+73
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_arrow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+69,
+43
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_firework": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+93,
+60,
+47
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_pulling_0": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+82,
+56,
+32
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_pulling_1": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+58,
+34
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_pulling_2": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+84,
+59,
+36
+],
+"size": [
+16,
+16
+]
+},
+"crossbow_standby": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+55,
+30
+],
+"size": [
+16,
+16
+]
+},
+"cyan_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+24,
+125,
+130
+],
+"size": [
+16,
+16
+]
+},
+"danger_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+61,
+50
+],
+"size": [
+16,
+16
+]
+},
+"dark_oak_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+56,
+24
+],
+"size": [
+16,
+16
+]
+},
+"dark_oak_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+79,
+58,
+36
+],
+"size": [
+16,
+16
+]
+},
+"diamond": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+85,
+190,
+181
+],
+"size": [
+16,
+16
+]
+},
+"diamond_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+49,
+97,
+72
+],
+"size": [
+16,
+16
+]
+},
+"diamond_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+128,
+117
+],
+"size": [
+16,
+16
+]
+},
+"diamond_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+57,
+167,
+153
+],
+"size": [
+16,
+16
+]
+},
+"diamond_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+35,
+117,
+107
+],
+"size": [
+16,
+16
+]
+},
+"diamond_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+80,
+52
+],
+"size": [
+16,
+16
+]
+},
+"diamond_horse_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+196,
+153
+],
+"size": [
+16,
+16
+]
+},
+"diamond_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+135,
+124
+],
+"size": [
+16,
+16
+]
+},
+"diamond_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+47,
+84,
+60
+],
+"size": [
+16,
+16
+]
+},
+"diamond_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+102,
+75
+],
+"size": [
+16,
+16
+]
+},
+"diamond_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+39,
+108,
+92
+],
+"size": [
+16,
+16
+]
+},
+"disc_fragment_5": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+44,
+59,
+63
+],
+"size": [
+16,
+16
+]
+},
+"door_acacia": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+163,
+95,
+61
+],
+"size": [
+16,
+16
+]
+},
+"door_birch": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+208,
+200,
+162
+],
+"size": [
+16,
+16
+]
+},
+"door_dark_oak": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+47,
+23
+],
+"size": [
+16,
+16
+]
+},
+"door_iron": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+185,
+185
+],
+"size": [
+16,
+16
+]
+},
+"door_jungle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+113,
+80
+],
+"size": [
+16,
+16
+]
+},
+"door_spruce": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+81,
+53
+],
+"size": [
+16,
+16
+]
+},
+"door_wood": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+117,
+71
+],
+"size": [
+16,
+16
+]
+},
+"dragon_fireball": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+173,
+94,
+192
+],
+"size": [
+16,
+16
+]
+},
+"dragons_breath": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+160,
+190
+],
+"size": [
+16,
+16
+]
+},
+"dried_kelp": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+50,
+45,
+36
+],
+"size": [
+16,
+16
+]
+},
+"dune_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+181,
+139
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_black": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+67,
+84
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_black_new": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+53,
+44,
+53
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+83,
+168
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_blue_new": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+54,
+78,
+133
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_brown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+52,
+28
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_brown_new": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+77,
+51
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_cyan": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+61,
+105,
+120
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_glow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+44,
+110,
+106
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+90,
+85
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_green": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+75,
+93,
+26
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_light_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+120,
+155
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_lime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+139,
+41
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_magenta": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+160,
+94,
+151
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_orange": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+177,
+112,
+41
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_pink": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+124,
+149
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_purple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+75,
+150
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_red": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+166,
+64,
+66
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_silver": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+120,
+124
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_white": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+159,
+158,
+180
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_white_new": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+148,
+159
+],
+"size": [
+16,
+16
+]
+},
+"dye_powder_yellow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+174,
+153,
+59
+],
+"size": [
+16,
+16
+]
+},
+"echo_shard": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+10,
+52,
+61
+],
+"size": [
+16,
+16
+]
+},
+"egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+171,
+158,
+120
+],
+"size": [
+16,
+16
+]
+},
+"egg_agent": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+103,
+94
+],
+"size": [
+16,
+16
+]
+},
+"egg_bat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+38,
+31,
+25
+],
+"size": [
+16,
+16
+]
+},
+"egg_bee": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+96,
+36
+],
+"size": [
+16,
+16
+]
+},
+"egg_blaze": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+138,
+30
+],
+"size": [
+16,
+16
+]
+},
+"egg_cat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+168,
+130,
+89
+],
+"size": [
+16,
+16
+]
+},
+"egg_cave_spider": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+45,
+33,
+38
+],
+"size": [
+16,
+16
+]
+},
+"egg_chicken": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+72,
+72
+],
+"size": [
+16,
+16
+]
+},
+"egg_clownfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+167,
+105,
+65
+],
+"size": [
+16,
+16
+]
+},
+"egg_cod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+121,
+80
+],
+"size": [
+16,
+16
+]
+},
+"egg_cow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+62,
+55
+],
+"size": [
+16,
+16
+]
+},
+"egg_creeper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+6,
+75,
+5
+],
+"size": [
+16,
+16
+]
+},
+"egg_dolphin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+85,
+93
+],
+"size": [
+16,
+16
+]
+},
+"egg_donkey": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+58,
+49
+],
+"size": [
+16,
+16
+]
+},
+"egg_drowned": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+145,
+120
+],
+"size": [
+16,
+16
+]
+},
+"egg_elderguardian": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+119,
+118
+],
+"size": [
+16,
+16
+]
+},
+"egg_enderman": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+15,
+15,
+15
+],
+"size": [
+16,
+16
+]
+},
+"egg_endermite": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+36,
+36,
+36
+],
+"size": [
+16,
+16
+]
+},
+"egg_evoker": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+74,
+76,
+76
+],
+"size": [
+16,
+16
+]
+},
+"egg_fish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+121,
+80
+],
+"size": [
+16,
+16
+]
+},
+"egg_fox": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+143,
+106,
+79
+],
+"size": [
+16,
+16
+]
+},
+"egg_ghast": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+156,
+156
+],
+"size": [
+16,
+16
+]
+},
+"egg_glow_squid": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+36,
+97,
+84
+],
+"size": [
+16,
+16
+]
+},
+"egg_guardian": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+97,
+87,
+62
+],
+"size": [
+16,
+16
+]
+},
+"egg_horse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+124,
+56
+],
+"size": [
+16,
+16
+]
+},
+"egg_husk": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+103,
+78
+],
+"size": [
+16,
+16
+]
+},
+"egg_lava_slime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+82,
+59,
+0
+],
+"size": [
+16,
+16
+]
+},
+"egg_llama": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+93,
+71
+],
+"size": [
+16,
+16
+]
+},
+"egg_mask": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+188,
+60,
+0
+],
+"size": [
+16,
+16
+]
+},
+"egg_mule": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+31,
+13,
+7
+],
+"size": [
+16,
+16
+]
+},
+"egg_mushroomcow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+115,
+50,
+50
+],
+"size": [
+16,
+16
+]
+},
+"egg_npc": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+84,
+75
+],
+"size": [
+16,
+16
+]
+},
+"egg_null": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+174,
+174,
+174
+],
+"size": [
+16,
+16
+]
+},
+"egg_ocelot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+115,
+68
+],
+"size": [
+16,
+16
+]
+},
+"egg_panda": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+91,
+93
+],
+"size": [
+16,
+16
+]
+},
+"egg_parrot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+65,
+75,
+5
+],
+"size": [
+16,
+16
+]
+},
+"egg_phantom": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+62,
+96,
+62
+],
+"size": [
+16,
+16
+]
+},
+"egg_pig": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+159,
+97,
+95
+],
+"size": [
+16,
+16
+]
+},
+"egg_pigzombie": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+92,
+75
+],
+"size": [
+16,
+16
+]
+},
+"egg_pillager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+72,
+57,
+60
+],
+"size": [
+16,
+16
+]
+},
+"egg_polarbear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+143,
+143,
+142
+],
+"size": [
+16,
+16
+]
+},
+"egg_pufferfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+125,
+57
+],
+"size": [
+16,
+16
+]
+},
+"egg_rabbit": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+59,
+40
+],
+"size": [
+16,
+16
+]
+},
+"egg_ravager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+74,
+71,
+67
+],
+"size": [
+16,
+16
+]
+},
+"egg_salmon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+75,
+38,
+34
+],
+"size": [
+16,
+16
+]
+},
+"egg_sheep": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+163,
+146,
+146
+],
+"size": [
+16,
+16
+]
+},
+"egg_shulker": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+84,
+59,
+86
+],
+"size": [
+16,
+16
+]
+},
+"egg_silverfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+61,
+61,
+61
+],
+"size": [
+16,
+16
+]
+},
+"egg_skeleton": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+104,
+104
+],
+"size": [
+16,
+16
+]
+},
+"egg_skeletonhorse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+100,
+86
+],
+"size": [
+16,
+16
+]
+},
+"egg_slime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+116,
+54
+],
+"size": [
+16,
+16
+]
+},
+"egg_spider": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+63,
+23,
+21
+],
+"size": [
+16,
+16
+]
+},
+"egg_squid": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+41,
+58,
+70
+],
+"size": [
+16,
+16
+]
+},
+"egg_stray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+95,
+107,
+108
+],
+"size": [
+16,
+16
+]
+},
+"egg_turtle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+144,
+144
+],
+"size": [
+16,
+16
+]
+},
+"egg_vex": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+119,
+129
+],
+"size": [
+16,
+16
+]
+},
+"egg_villager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+59,
+50
+],
+"size": [
+16,
+16
+]
+},
+"egg_vindicator": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+76,
+91,
+92
+],
+"size": [
+16,
+16
+]
+},
+"egg_wanderingtrader": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+87,
+70
+],
+"size": [
+16,
+16
+]
+},
+"egg_witch": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+37,
+15
+],
+"size": [
+16,
+16
+]
+},
+"egg_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+26,
+27,
+27
+],
+"size": [
+16,
+16
+]
+},
+"egg_wolf": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+144,
+135,
+130
+],
+"size": [
+16,
+16
+]
+},
+"egg_zombie": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+28,
+115,
+102
+],
+"size": [
+16,
+16
+]
+},
+"egg_zombiehorse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+51,
+90,
+56
+],
+"size": [
+16,
+16
+]
+},
+"egg_zombievillager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+67,
+63,
+46
+],
+"size": [
+16,
+16
+]
+},
+"elytra": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+95,
+95,
+103
+],
+"size": [
+16,
+16
+]
+},
+"emerald": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+45,
+167,
+79
+],
+"size": [
+16,
+16
+]
+},
+"empty_armor_slot_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+32,
+34
+],
+"size": [
+16,
+16
+]
+},
+"empty_armor_slot_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+32,
+34
+],
+"size": [
+16,
+16
+]
+},
+"empty_armor_slot_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+32,
+34
+],
+"size": [
+16,
+16
+]
+},
+"empty_armor_slot_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+32,
+34
+],
+"size": [
+16,
+16
+]
+},
+"empty_armor_slot_shield": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+25,
+32,
+34
+],
+"size": [
+16,
+16
+]
+},
+"end_crystal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+146,
+194
+],
+"size": [
+16,
+16
+]
+},
+"ender_eye": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+120,
+88
+],
+"size": [
+16,
+16
+]
+},
+"ender_pearl": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+21,
+89,
+77
+],
+"size": [
+16,
+16
+]
+},
+"experience_bottle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+163,
+67
+],
+"size": [
+16,
+16
+]
+},
+"explorer_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+58,
+47
+],
+"size": [
+16,
+16
+]
+},
+"exposed_copper_chain": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+102,
+83
+],
+"size": [
+16,
+16
+]
+},
+"exposed_copper_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+119,
+101
+],
+"size": [
+16,
+16
+]
+},
+"exposed_copper_lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+150,
+116
+],
+"size": [
+16,
+16
+]
+},
+"eye_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+192,
+143
+],
+"size": [
+16,
+16
+]
+},
+"feather": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+207,
+207,
+207
+],
+"size": [
+16,
+16
+]
+},
+"field_masoned_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+183,
+174,
+157
+],
+"size": [
+16,
+16
+]
+},
+"fireball": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+66,
+41
+],
+"size": [
+16,
+16
+]
+},
+"firefly_bush": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+87,
+47
+],
+"size": [
+16,
+16
+]
+},
+"fireworks": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+158,
+83,
+82
+],
+"size": [
+16,
+16
+]
+},
+"fireworks_charge": {
+"alpha": [
+0,
+4,
+255
+],
+"ext": [
+"tga"
+],
+"mean": [
+116,
+116,
+116
+],
+"size": [
+16,
+16
+]
+},
+"fish_clownfish_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+201,
+108,
+61
+],
+"size": [
+16,
+16
+]
+},
+"fish_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+153,
+119
+],
+"size": [
+16,
+16
+]
+},
+"fish_pufferfish_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+154,
+82
+],
+"size": [
+16,
+16
+]
+},
+"fish_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+166,
+130,
+92
+],
+"size": [
+16,
+16
+]
+},
+"fish_salmon_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+83,
+56
+],
+"size": [
+16,
+16
+]
+},
+"fish_salmon_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+73,
+65
+],
+"size": [
+16,
+16
+]
+},
+"fishing_rod_cast": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+79,
+66,
+44
+],
+"size": [
+16,
+16
+]
+},
+"fishing_rod_uncast": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+89,
+79,
+61
+],
+"size": [
+16,
+16
+]
+},
+"flint": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+51,
+50,
+50
+],
+"size": [
+16,
+16
+]
+},
+"flint_and_steel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+65,
+65,
+65
+],
+"size": [
+16,
+16
+]
+},
+"flow_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+114,
+135,
+181
+],
+"size": [
+16,
+16
+]
+},
+"flow_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+177,
+166,
+148
+],
+"size": [
+16,
+16
+]
+},
+"flow_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+58,
+48
+],
+"size": [
+16,
+16
+]
+},
+"flower_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+173,
+161,
+143
+],
+"size": [
+16,
+16
+]
+},
+"flower_pot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+55,
+43
+],
+"size": [
+16,
+16
+]
+},
+"friend_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+59,
+48
+],
+"size": [
+16,
+16
+]
+},
+"ghast_tear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+155,
+155
+],
+"size": [
+16,
+16
+]
+},
+"globe_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+176,
+166,
+148
+],
+"size": [
+16,
+16
+]
+},
+"glow_berries": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+159,
+117,
+42
+],
+"size": [
+16,
+16
+]
+},
+"glow_item_frame": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+175,
+139,
+86
+],
+"size": [
+16,
+16
+]
+},
+"glowstone_dust": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+180,
+125,
+68
+],
+"size": [
+16,
+16
+]
+},
+"goat_horn": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+78,
+76,
+73
+],
+"size": [
+16,
+16
+]
+},
+"gold_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+131,
+105,
+30
+],
+"size": [
+16,
+16
+]
+},
+"gold_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+158,
+135,
+44
+],
+"size": [
+16,
+16
+]
+},
+"gold_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+170,
+57
+],
+"size": [
+16,
+16
+]
+},
+"gold_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+125,
+38
+],
+"size": [
+16,
+16
+]
+},
+"gold_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+88,
+28
+],
+"size": [
+16,
+16
+]
+},
+"gold_horse_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+129,
+37
+],
+"size": [
+16,
+16
+]
+},
+"gold_ingot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+220,
+179,
+67
+],
+"size": [
+16,
+16
+]
+},
+"gold_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+139,
+43
+],
+"size": [
+16,
+16
+]
+},
+"gold_nugget": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+186,
+152,
+65
+],
+"size": [
+16,
+16
+]
+},
+"gold_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+115,
+92,
+28
+],
+"size": [
+16,
+16
+]
+},
+"gold_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+112,
+40
+],
+"size": [
+16,
+16
+]
+},
+"gold_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+128,
+57
+],
+"size": [
+16,
+16
+]
+},
+"gray_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+80,
+90,
+94
+],
+"size": [
+16,
+16
+]
+},
+"green_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+98,
+28
+],
+"size": [
+16,
+16
+]
+},
+"gunpowder": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+83,
+83
+],
+"size": [
+16,
+16
+]
+},
+"guster_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+176,
+159
+],
+"size": [
+16,
+16
+]
+},
+"guster_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"hanging_roots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+167,
+120,
+99
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_black": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+72,
+58
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+81,
+79
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_brown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+85,
+59
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_cyan": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+91,
+76
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+83,
+67
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_green": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+86,
+54
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_light_blue": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+91,
+86
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_light_gray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+89,
+72
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_lime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+95,
+58
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_magenta": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+78,
+79
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_orange": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+85,
+54
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_pink": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+85,
+75
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_purple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+114,
+75,
+82
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_red": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+73,
+57
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_white": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+98,
+82
+],
+"size": [
+16,
+16
+]
+},
+"harness/harness_yellow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+95,
+56
+],
+"size": [
+16,
+16
+]
+},
+"heart_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+57,
+47
+],
+"size": [
+16,
+16
+]
+},
+"heartbreak_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+59,
+48
+],
+"size": [
+16,
+16
+]
+},
+"heartofthesea_closed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+22,
+101,
+131
+],
+"size": [
+16,
+16
+]
+},
+"hoglin_meat_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+54,
+38
+],
+"size": [
+16,
+16
+]
+},
+"hoglin_meat_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+183,
+60,
+52
+],
+"size": [
+16,
+16
+]
+},
+"honey_bottle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+187,
+153,
+114
+],
+"size": [
+16,
+16
+]
+},
+"honeycomb": {
+"alpha": [
+0,
+2,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+232,
+151,
+36
+],
+"size": [
+16,
+16
+]
+},
+"hopper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+67,
+68,
+67
+],
+"size": [
+16,
+16
+]
+},
+"host_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+84,
+71,
+62
+],
+"size": [
+16,
+16
+]
+},
+"howl_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+61,
+50
+],
+"size": [
+16,
+16
+]
+},
+"iron_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+101,
+86
+],
+"size": [
+16,
+16
+]
+},
+"iron_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+101,
+101
+],
+"size": [
+16,
+16
+]
+},
+"iron_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+134,
+134,
+134
+],
+"size": [
+16,
+16
+]
+},
+"iron_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+91,
+91
+],
+"size": [
+16,
+16
+]
+},
+"iron_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+81,
+63
+],
+"size": [
+16,
+16
+]
+},
+"iron_horse_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+92,
+92
+],
+"size": [
+16,
+16
+]
+},
+"iron_ingot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+156,
+156
+],
+"size": [
+16,
+16
+]
+},
+"iron_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+105,
+105
+],
+"size": [
+16,
+16
+]
+},
+"iron_nugget": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+141,
+149
+],
+"size": [
+16,
+16
+]
+},
+"iron_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+85,
+69
+],
+"size": [
+16,
+16
+]
+},
+"iron_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+115,
+106,
+89
+],
+"size": [
+16,
+16
+]
+},
+"iron_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+104,
+101
+],
+"size": [
+16,
+16
+]
+},
+"item_frame": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+151,
+116,
+73
+],
+"size": [
+16,
+16
+]
+},
+"jungle_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+81,
+48
+],
+"size": [
+16,
+16
+]
+},
+"jungle_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+93,
+67
+],
+"size": [
+16,
+16
+]
+},
+"kelp": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+128,
+40
+],
+"size": [
+16,
+16
+]
+},
+"lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+147,
+114,
+83
+],
+"size": [
+16,
+16
+]
+},
+"lead": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+134,
+80,
+44
+],
+"size": [
+16,
+16
+]
+},
+"leaf_litter": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+88,
+60
+],
+"size": [
+16,
+16
+]
+},
+"leather": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+66,
+39
+],
+"size": [
+16,
+16
+]
+},
+"leather_boots": {
+"alpha": [
+0,
+3,
+255
+],
+"ext": [
+"tga"
+],
+"mean": [
+102,
+91,
+84
+],
+"size": [
+16,
+16
+]
+},
+"leather_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+135,
+135,
+135
+],
+"size": [
+16,
+16
+]
+},
+"leather_helmet": {
+"alpha": [
+0,
+3,
+255
+],
+"ext": [
+"tga"
+],
+"mean": [
+83,
+77,
+73
+],
+"size": [
+16,
+16
+]
+},
+"leather_horse_armor": {
+"alpha": [
+0,
+3,
+29,
+30
+],
+"ext": [
+"tga"
+],
+"mean": [
+135,
+117,
+103
+],
+"size": [
+16,
+16
+]
+},
+"leather_leggings": {
+"alpha": [
+0,
+3,
+255
+],
+"ext": [
+"tga"
+],
+"mean": [
+103,
+97,
+93
+],
+"size": [
+16,
+16
+]
+},
+"lever": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+89,
+64
+],
+"size": [
+16,
+16
+]
+},
+"light_block_0": {
+"alpha": [
+0,
+150,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+151,
+146,
+149
+],
+"size": [
+32,
+32
+]
+},
+"light_block_1": {
+"alpha": [
+0,
+4,
+8,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+189,
+176,
+153
+],
+"size": [
+32,
+32
+]
+},
+"light_block_10": {
+"alpha": [
+0,
+70,
+103,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+214,
+188,
+128
+],
+"size": [
+32,
+32
+]
+},
+"light_block_11": {
+"alpha": [
+0,
+70,
+115,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+218,
+191,
+128
+],
+"size": [
+32,
+32
+]
+},
+"light_block_12": {
+"alpha": [
+0,
+93,
+132,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+214,
+188,
+127
+],
+"size": [
+32,
+32
+]
+},
+"light_block_13": {
+"alpha": [
+0,
+94,
+133,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+222,
+193,
+123
+],
+"size": [
+32,
+32
+]
+},
+"light_block_14": {
+"alpha": [
+0,
+96,
+146,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+222,
+193,
+123
+],
+"size": [
+32,
+32
+]
+},
+"light_block_15": {
+"alpha": [
+0,
+117,
+150,
+161
+],
+"ext": [
+"png"
+],
+"mean": [
+219,
+190,
+123
+],
+"size": [
+32,
+32
+]
+},
+"light_block_2": {
+"alpha": [
+0,
+14,
+23,
+46
+],
+"ext": [
+"png"
+],
+"mean": [
+199,
+182,
+145
+],
+"size": [
+32,
+32
+]
+},
+"light_block_3": {
+"alpha": [
+0,
+25,
+42,
+84
+],
+"ext": [
+"png"
+],
+"mean": [
+208,
+187,
+138
+],
+"size": [
+32,
+32
+]
+},
+"light_block_4": {
+"alpha": [
+0,
+25,
+38,
+65
+],
+"ext": [
+"png"
+],
+"mean": [
+214,
+191,
+136
+],
+"size": [
+32,
+32
+]
+},
+"light_block_5": {
+"alpha": [
+0,
+25,
+38,
+70
+],
+"ext": [
+"png"
+],
+"mean": [
+213,
+190,
+137
+],
+"size": [
+32,
+32
+]
+},
+"light_block_6": {
+"alpha": [
+0,
+25,
+51,
+90
+],
+"ext": [
+"png"
+],
+"mean": [
+215,
+192,
+137
+],
+"size": [
+32,
+32
+]
+},
+"light_block_7": {
+"alpha": [
+0,
+48,
+71,
+123
+],
+"ext": [
+"png"
+],
+"mean": [
+220,
+195,
+132
+],
+"size": [
+32,
+32
+]
+},
+"light_block_8": {
+"alpha": [
+0,
+48,
+85,
+139
+],
+"ext": [
+"png"
+],
+"mean": [
+219,
+194,
+132
+],
+"size": [
+32,
+32
+]
+},
+"light_block_9": {
+"alpha": [
+0,
+70,
+103,
+150
+],
+"ext": [
+"png"
+],
+"mean": [
+220,
+194,
+133
+],
+"size": [
+32,
+32
+]
+},
+"light_blue_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+44,
+128,
+178
+],
+"size": [
+16,
+16
+]
+},
+"light_gray_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+126,
+122
+],
+"size": [
+16,
+16
+]
+},
+"lime_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+149,
+41
+],
+"size": [
+16,
+16
+]
+},
+"lodestonecompass_atlas": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+79,
+79
+],
+"size": [
+16,
+512
+]
+},
+"lodestonecompass_item": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+78,
+78
+],
+"size": [
+16,
+16
+]
+},
+"mace": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+88,
+105
+],
+"size": [
+16,
+16
+]
+},
+"magenta_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+60,
+146
+],
+"size": [
+16,
+16
+]
+},
+"magma_cream": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+136,
+57
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+41,
+37
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+55,
+34
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+112,
+50,
+46
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+52,
+48
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_propagule": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+176,
+84
+],
+"size": [
+16,
+16
+]
+},
+"mangrove_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+48,
+41
+],
+"size": [
+16,
+16
+]
+},
+"map_abandoned_campsite": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+183,
+167,
+138
+],
+"size": [
+16,
+16
+]
+},
+"map_ancient_city": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+137,
+113
+],
+"size": [
+16,
+16
+]
+},
+"map_desert_pyramid": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+169,
+151,
+120
+],
+"size": [
+16,
+16
+]
+},
+"map_desert_village": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+172,
+155,
+122
+],
+"size": [
+16,
+16
+]
+},
+"map_empty": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+217,
+200,
+167
+],
+"size": [
+16,
+16
+]
+},
+"map_filled": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+140,
+113
+],
+"size": [
+16,
+16
+]
+},
+"map_jungle_temple": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+172,
+157,
+129
+],
+"size": [
+16,
+16
+]
+},
+"map_locked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+153,
+141
+],
+"size": [
+16,
+16
+]
+},
+"map_mansion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+139,
+112
+],
+"size": [
+16,
+16
+]
+},
+"map_mineshaft": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+168,
+152,
+124
+],
+"size": [
+16,
+16
+]
+},
+"map_monument": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+163,
+155,
+127
+],
+"size": [
+16,
+16
+]
+},
+"map_nautilus": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+194,
+170,
+138
+],
+"size": [
+16,
+16
+]
+},
+"map_plains_village": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+175,
+157,
+126
+],
+"size": [
+16,
+16
+]
+},
+"map_savanna_village": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+176,
+155,
+125
+],
+"size": [
+16,
+16
+]
+},
+"map_snowy_village": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+167,
+140
+],
+"size": [
+16,
+16
+]
+},
+"map_swamp_hut": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+168,
+151,
+120
+],
+"size": [
+16,
+16
+]
+},
+"map_taiga_village": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+169,
+152,
+124
+],
+"size": [
+16,
+16
+]
+},
+"map_trial_chambers": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+173,
+155,
+127
+],
+"size": [
+16,
+16
+]
+},
+"map_warm_ocean_ruins": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+174,
+157,
+125
+],
+"size": [
+16,
+16
+]
+},
+"melon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+90,
+45
+],
+"size": [
+16,
+16
+]
+},
+"melon_speckled": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+185,
+108,
+52
+],
+"size": [
+16,
+16
+]
+},
+"minecart_chest": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+89,
+68
+],
+"size": [
+16,
+16
+]
+},
+"minecart_command_block": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+94,
+82
+],
+"size": [
+16,
+16
+]
+},
+"minecart_furnace": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+84,
+86,
+86
+],
+"size": [
+16,
+16
+]
+},
+"minecart_hopper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+84,
+85
+],
+"size": [
+16,
+16
+]
+},
+"minecart_normal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+77,
+81
+],
+"size": [
+16,
+16
+]
+},
+"minecart_tnt": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+77,
+69
+],
+"size": [
+16,
+16
+]
+},
+"miner_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+61,
+50
+],
+"size": [
+16,
+16
+]
+},
+"mojang_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+178,
+167,
+150
+],
+"size": [
+16,
+16
+]
+},
+"mourner_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+58,
+47
+],
+"size": [
+16,
+16
+]
+},
+"mushroom_stew": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+73,
+39
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_bounce": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+104,
+88
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_creator": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+136,
+107
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_creator_music_box": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+102,
+72
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_lava_chicken": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+70,
+69
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_precipice": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+107,
+98
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_relic": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+75,
+68
+],
+"size": [
+16,
+16
+]
+},
+"music_disc_tears": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+171,
+174,
+174
+],
+"size": [
+16,
+16
+]
+},
+"mutton_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+70,
+53
+],
+"size": [
+16,
+16
+]
+},
+"mutton_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+63,
+56
+],
+"size": [
+16,
+16
+]
+},
+"name_tag": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+166,
+155,
+127
+],
+"size": [
+16,
+16
+]
+},
+"nautilus": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+163,
+134,
+113
+],
+"size": [
+16,
+16
+]
+},
+"nautilus_armor/copper_nautilus_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+198,
+112,
+85
+],
+"size": [
+16,
+16
+]
+},
+"nautilus_armor/diamond_nautilus_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+184,
+173
+],
+"size": [
+16,
+16
+]
+},
+"nautilus_armor/gold_nautilus_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+202,
+156,
+44
+],
+"size": [
+16,
+16
+]
+},
+"nautilus_armor/iron_nautilus_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+112,
+112,
+112
+],
+"size": [
+16,
+16
+]
+},
+"nautilus_armor/netherite_nautilus_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+43,
+48
+],
+"size": [
+16,
+16
+]
+},
+"nether_sprouts": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+20,
+151,
+133
+],
+"size": [
+16,
+16
+]
+},
+"nether_star": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+174,
+158
+],
+"size": [
+16,
+16
+]
+},
+"nether_wart": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+29,
+36
+],
+"size": [
+16,
+16
+]
+},
+"netherbrick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+62,
+32,
+37
+],
+"size": [
+16,
+16
+]
+},
+"netherite_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+48,
+53
+],
+"size": [
+16,
+16
+]
+},
+"netherite_boots": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+50,
+44,
+45
+],
+"size": [
+16,
+16
+]
+},
+"netherite_chestplate": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+58,
+51,
+54
+],
+"size": [
+16,
+16
+]
+},
+"netherite_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+46,
+48
+],
+"size": [
+16,
+16
+]
+},
+"netherite_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+64,
+48,
+52
+],
+"size": [
+16,
+16
+]
+},
+"netherite_horse_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+67,
+51
+],
+"size": [
+16,
+16
+]
+},
+"netherite_ingot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+63,
+57,
+59
+],
+"size": [
+16,
+16
+]
+},
+"netherite_leggings": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+46,
+48
+],
+"size": [
+16,
+16
+]
+},
+"netherite_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+46,
+52
+],
+"size": [
+16,
+16
+]
+},
+"netherite_scrap": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+50,
+42
+],
+"size": [
+16,
+16
+]
+},
+"netherite_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+52,
+58
+],
+"size": [
+16,
+16
+]
+},
+"netherite_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+50,
+59
+],
+"size": [
+16,
+16
+]
+},
+"netherite_upgrade_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+58,
+59
+],
+"size": [
+16,
+16
+]
+},
+"oak_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+115,
+90,
+51
+],
+"size": [
+16,
+16
+]
+},
+"oak_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+139,
+114,
+72
+],
+"size": [
+16,
+16
+]
+},
+"ominous_bottle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+79,
+93
+],
+"size": [
+16,
+16
+]
+},
+"ominous_trial_key": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+75,
+89,
+80
+],
+"size": [
+16,
+16
+]
+},
+"orange_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+212,
+105,
+32
+],
+"size": [
+16,
+16
+]
+},
+"oxidized_copper_chain": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+62,
+117,
+98
+],
+"size": [
+16,
+16
+]
+},
+"oxidized_copper_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+78,
+148,
+120
+],
+"size": [
+16,
+16
+]
+},
+"oxidized_copper_lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+93,
+154,
+118
+],
+"size": [
+16,
+16
+]
+},
+"painting": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+147,
+131,
+111
+],
+"size": [
+16,
+16
+]
+},
+"pale_oak_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+141,
+141
+],
+"size": [
+16,
+16
+]
+},
+"pale_oak_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+116,
+100
+],
+"size": [
+16,
+16
+]
+},
+"pale_oak_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+180,
+179
+],
+"size": [
+16,
+16
+]
+},
+"pale_oak_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+188,
+179,
+178
+],
+"size": [
+16,
+16
+]
+},
+"pale_oak_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+192,
+181,
+180
+],
+"size": [
+16,
+16
+]
+},
+"paper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+214,
+214,
+210
+],
+"size": [
+16,
+16
+]
+},
+"phantom_membrane": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+161,
+146,
+140
+],
+"size": [
+16,
+16
+]
+},
+"piglin_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+182,
+172,
+155
+],
+"size": [
+16,
+16
+]
+},
+"pink_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+201,
+98,
+129
+],
+"size": [
+16,
+16
+]
+},
+"pink_petals": {
+"alpha": [
+0,
+10,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+228,
+177,
+187
+],
+"size": [
+16,
+16
+]
+},
+"pitcher_pod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+68,
+52
+],
+"size": [
+16,
+16
+]
+},
+"plenty_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+58,
+48
+],
+"size": [
+16,
+16
+]
+},
+"poplar_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+101,
+97
+],
+"size": [
+16,
+16
+]
+},
+"poplar_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+91,
+70
+],
+"size": [
+16,
+16
+]
+},
+"poplar_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+128,
+119
+],
+"size": [
+16,
+16
+]
+},
+"poplar_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+119,
+113
+],
+"size": [
+16,
+16
+]
+},
+"poplar_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+131,
+117,
+109
+],
+"size": [
+16,
+16
+]
+},
+"porkchop_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+174,
+151,
+101
+],
+"size": [
+16,
+16
+]
+},
+"porkchop_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+209,
+113,
+113
+],
+"size": [
+16,
+16
+]
+},
+"potato": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+129,
+51
+],
+"size": [
+16,
+16
+]
+},
+"potato_baked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+176,
+129,
+46
+],
+"size": [
+16,
+16
+]
+},
+"potato_poisonous": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+141,
+131,
+54
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_absorption": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+129,
+178
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_blindness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+113,
+126
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_confusion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+106,
+140
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_damageBoost": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+147,
+106
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_digSlowdown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+122,
+117
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_digSpeed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+171,
+137
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_drinkable": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+118,
+160
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_empty": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+149,
+163,
+187
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_fireResistance": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+134,
+106
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_harm": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+131,
+120,
+135
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_heal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+102,
+116
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_healthBoost": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+177,
+149,
+122
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_hunger": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+146,
+144
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_infested": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+134,
+145
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_invisibility": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+160,
+174
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_jump": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+162,
+142
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_levitation": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+156,
+132
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+110,
+158
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_damageBoost": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+144,
+93
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_empty": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+145,
+164,
+193
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_fireResistance": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+129,
+93
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_harm": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+112,
+128
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_heal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+151,
+91,
+105
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_infested": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+130,
+139
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_invisibility": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+151,
+160,
+174
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_jump": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+153,
+163,
+136
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_luck": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+142,
+95
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_moveSlowdown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+137,
+166
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_moveSpeed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+156,
+177
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_nightVision": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+134,
+163,
+127
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_oozing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+163,
+146
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_poison": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+114,
+133,
+126
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_regeneration": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+137,
+109,
+149
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_slowFall": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+151,
+148,
+154
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_turtleMaster": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+122,
+168
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_waterBreathing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+151,
+156
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_weakness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+94,
+105,
+117
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_weaving": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+114,
+123
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_windCharged": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+145,
+176
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_lingering_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+112,
+122
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_moveSlowdown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+140,
+168
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_moveSpeed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+156,
+176
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_nightVision": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+138,
+162,
+134
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_oozing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+162,
+151
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_poison": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+137,
+133
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_regeneration": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+141,
+117,
+153
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_resistance": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+134,
+106
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_saturation": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+102,
+116
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_slowFall": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+150,
+157
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+111,
+150
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_absorption": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+123,
+168
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_blindness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+106,
+115
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_confusion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+98,
+129
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_damageBoost": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+157,
+141,
+94
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_digSlowdown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+115,
+105
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_digSpeed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+173,
+166,
+126
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_fireResistance": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+157,
+128,
+94
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_harm": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+113,
+124
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_heal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+95,
+104
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_healthBoost": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+180,
+143,
+111
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_hunger": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+139,
+133
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_infested": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+128,
+134
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_invisibility": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+154,
+163
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_jump": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+156,
+132
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_levitation": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+156,
+132
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_moveSlowdown": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+134,
+157
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_moveSpeed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+151,
+166
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_nightVision": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+156,
+123
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_oozing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+156,
+140
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_poison": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+130,
+122
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_regeneration": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+143,
+110,
+142
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_resistance": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+157,
+128,
+94
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_saturation": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+95,
+104
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_slowFall": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+143,
+147
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_turtleMaster": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+121,
+159
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_waterBreathing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+146,
+148
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_weakness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+106,
+115
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_weaving": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+119,
+114,
+120
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_windCharged": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+138,
+141,
+166
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_splash_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+112,
+119
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_turtleMaster": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+128,
+169
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_waterBreathing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+152,
+159
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_weakness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+113,
+126
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_weaving": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+121,
+131
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_windCharged": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+136,
+147,
+176
+],
+"size": [
+16,
+16
+]
+},
+"potion_bottle_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+117,
+119,
+130
+],
+"size": [
+16,
+16
+]
+},
+"potion_overlay": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+212,
+212,
+212
+],
+"size": [
+16,
+16
+]
+},
+"prismarine_crystals": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+141,
+175,
+163
+],
+"size": [
+16,
+16
+]
+},
+"prismarine_shard": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+109,
+164,
+146
+],
+"size": [
+16,
+16
+]
+},
+"prize_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"pumpkin_pie": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+201,
+140,
+78
+],
+"size": [
+16,
+16
+]
+},
+"purple_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+52,
+169
+],
+"size": [
+16,
+16
+]
+},
+"quartz": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+186,
+173,
+161
+],
+"size": [
+16,
+16
+]
+},
+"quiver": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+74,
+55
+],
+"size": [
+16,
+16
+]
+},
+"rabbit_cooked": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+170,
+115,
+81
+],
+"size": [
+16,
+16
+]
+},
+"rabbit_foot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+129,
+88
+],
+"size": [
+16,
+16
+]
+},
+"rabbit_hide": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+111,
+74
+],
+"size": [
+16,
+16
+]
+},
+"rabbit_raw": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+208,
+161,
+145
+],
+"size": [
+16,
+16
+]
+},
+"rabbit_stew": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+127,
+77,
+31
+],
+"size": [
+16,
+16
+]
+},
+"raiser_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+75,
+66
+],
+"size": [
+16,
+16
+]
+},
+"raw_copper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+137,
+96,
+70
+],
+"size": [
+16,
+16
+]
+},
+"raw_gold": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+210,
+159,
+49
+],
+"size": [
+16,
+16
+]
+},
+"raw_iron": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+133,
+112
+],
+"size": [
+16,
+16
+]
+},
+"record_11": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+48,
+48,
+48
+],
+"size": [
+16,
+16
+]
+},
+"record_13": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+67,
+58
+],
+"size": [
+16,
+16
+]
+},
+"record_5": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+48,
+65,
+70
+],
+"size": [
+16,
+16
+]
+},
+"record_blocks": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+54,
+52
+],
+"size": [
+16,
+16
+]
+},
+"record_cat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+66,
+47
+],
+"size": [
+16,
+16
+]
+},
+"record_chirp": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+62,
+47,
+47
+],
+"size": [
+16,
+16
+]
+},
+"record_far": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+68,
+52
+],
+"size": [
+16,
+16
+]
+},
+"record_mall": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+58,
+55,
+68
+],
+"size": [
+16,
+16
+]
+},
+"record_mellohi": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+65,
+55,
+68
+],
+"size": [
+16,
+16
+]
+},
+"record_otherside": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+52,
+61,
+58
+],
+"size": [
+16,
+16
+]
+},
+"record_pigstep": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+54,
+41
+],
+"size": [
+16,
+16
+]
+},
+"record_stal": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+47,
+47,
+47
+],
+"size": [
+16,
+16
+]
+},
+"record_strad": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+68,
+68
+],
+"size": [
+16,
+16
+]
+},
+"record_wait": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+59,
+65
+],
+"size": [
+16,
+16
+]
+},
+"record_ward": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+53,
+60,
+50
+],
+"size": [
+16,
+16
+]
+},
+"recovery_compass_atlas": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+55,
+80,
+82
+],
+"size": [
+16,
+512
+]
+},
+"recovery_compass_item": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+55,
+80,
+81
+],
+"size": [
+16,
+16
+]
+},
+"red_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+154,
+41,
+42
+],
+"size": [
+16,
+16
+]
+},
+"redstone_dust": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+5,
+0
+],
+"size": [
+16,
+16
+]
+},
+"reeds": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+146,
+35
+],
+"size": [
+16,
+16
+]
+},
+"repeater": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+125,
+91,
+80
+],
+"size": [
+16,
+16
+]
+},
+"resin_brick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+198,
+92,
+23
+],
+"size": [
+16,
+16
+]
+},
+"resin_clump": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+198,
+88,
+20
+],
+"size": [
+16,
+16
+]
+},
+"rib_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+48,
+42,
+51
+],
+"size": [
+16,
+16
+]
+},
+"rotten_flesh": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+123,
+60,
+29
+],
+"size": [
+16,
+16
+]
+},
+"ruby": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+139,
+30,
+43
+],
+"size": [
+16,
+16
+]
+},
+"saddle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+143,
+69,
+33
+],
+"size": [
+16,
+16
+]
+},
+"scrape_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+61,
+50
+],
+"size": [
+16,
+16
+]
+},
+"sea_pickle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+101,
+112,
+56
+],
+"size": [
+16,
+16
+]
+},
+"seeds_beetroot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+135,
+110,
+72
+],
+"size": [
+16,
+16
+]
+},
+"seeds_melon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+57,
+48,
+24
+],
+"size": [
+16,
+16
+]
+},
+"seeds_pumpkin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+202,
+200,
+147
+],
+"size": [
+16,
+16
+]
+},
+"seeds_wheat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+61,
+134,
+28
+],
+"size": [
+16,
+16
+]
+},
+"sentry_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+80,
+91,
+90
+],
+"size": [
+16,
+16
+]
+},
+"shaper_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+85,
+73,
+63
+],
+"size": [
+16,
+16
+]
+},
+"sheaf_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+58,
+48
+],
+"size": [
+16,
+16
+]
+},
+"shears": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+141,
+113,
+107
+],
+"size": [
+16,
+16
+]
+},
+"shelter_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+60,
+49
+],
+"size": [
+16,
+16
+]
+},
+"shulker_shell": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+112,
+75,
+118
+],
+"size": [
+16,
+16
+]
+},
+"sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+144,
+115,
+68
+],
+"size": [
+16,
+16
+]
+},
+"sign_acacia": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+133,
+77,
+44
+],
+"size": [
+16,
+16
+]
+},
+"sign_birch": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+160,
+145,
+103
+],
+"size": [
+16,
+16
+]
+},
+"sign_crimson": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+45,
+66
+],
+"size": [
+16,
+16
+]
+},
+"sign_darkoak": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+57,
+30
+],
+"size": [
+16,
+16
+]
+},
+"sign_jungle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+92,
+58
+],
+"size": [
+16,
+16
+]
+},
+"sign_spruce": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+67,
+36
+],
+"size": [
+16,
+16
+]
+},
+"sign_warped": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+42,
+103,
+102
+],
+"size": [
+16,
+16
+]
+},
+"silence_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+50,
+72,
+76
+],
+"size": [
+16,
+16
+]
+},
+"skull_banner_pattern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+175,
+164,
+146
+],
+"size": [
+16,
+16
+]
+},
+"skull_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+59,
+48
+],
+"size": [
+16,
+16
+]
+},
+"slimeball": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+100,
+156,
+92
+],
+"size": [
+16,
+16
+]
+},
+"sniffer_egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+75,
+71
+],
+"size": [
+16,
+16
+]
+},
+"snort_pottery_sherd": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+58,
+48
+],
+"size": [
+16,
+16
+]
+},
+"snout_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+56,
+61,
+69
+],
+"size": [
+16,
+16
+]
+},
+"snowball": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+199,
+222,
+222
+],
+"size": [
+16,
+16
+]
+},
+"soul_campfire": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+132,
+113
+],
+"size": [
+16,
+16
+]
+},
+"soul_lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+127,
+141
+],
+"size": [
+16,
+16
+]
+},
+"spawn_egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+188,
+188,
+188
+],
+"size": [
+16,
+16
+]
+},
+"spawn_egg_overlay": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+152,
+152
+],
+"size": [
+16,
+16
+]
+},
+"spawn_egg_sulfur_cube": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+206,
+192,
+143
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_agent": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+130,
+115,
+105
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_allay": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+176,
+213
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_armadillo": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+83,
+82
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_axolotl": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+204,
+108,
+162
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_bat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+32,
+26,
+26
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_bee": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+173,
+135,
+77
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_blaze": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+111,
+24
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_bogged": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+113,
+104,
+74
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_breeze": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+133,
+173
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_camel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+196,
+146,
+68
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_camel_husk": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+61,
+53,
+42
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_cat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+108,
+111
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_cave_spider": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+18,
+38,
+35
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_chicken": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+176,
+156,
+147
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_cod": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+121,
+111,
+104
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_copper_golem": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+155,
+79,
+55
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_cow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+86,
+81
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_creaking": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+95,
+89
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_creeper": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+60,
+134,
+59
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_dolphin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+144,
+172
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_donkey": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+102,
+90,
+79
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_drowned": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+72,
+108,
+71
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_elder_guardian": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+116,
+122
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_ender_dragon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+32,
+28,
+33
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_enderman": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+30,
+76
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_endermite": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+82,
+27,
+104
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_evoker": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+92,
+84
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_fox": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+169,
+113,
+76
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_frog": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+160,
+96,
+59
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_ghast": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+196,
+190,
+190
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_glow_squid": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+41,
+119,
+123
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_goat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+168,
+157,
+144
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_guardian": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+93,
+98,
+90
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_happy_ghast": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+195,
+190,
+190
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_hoglin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+172,
+118,
+87
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_horse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+93,
+61,
+28
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_husk": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+101,
+71
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_iron_golem": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+135,
+109
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_llama": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+199,
+175,
+135
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_magma_cube": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+82,
+29,
+10
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_mooshroom": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+74,
+76
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_mule": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+66,
+41,
+30
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_nautilus": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+105,
+99
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_ocelot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+204,
+163,
+101
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_panda": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+99,
+102
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_parched": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+120,
+110,
+87
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_parrot": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+61,
+58
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_phantom": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+97,
+99,
+112
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_pig": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+210,
+115,
+112
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_piglin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+108,
+75
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_piglin_brute": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+162,
+107,
+74
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_pillager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+91,
+91
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_polar_bear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+190,
+187,
+184
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_pufferfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+152,
+142,
+94
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_rabbit": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+94,
+67
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_ravager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+89,
+86
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_salmon": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+94,
+91
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_sheep": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+180,
+166,
+158
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_shulker": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+126,
+96,
+119
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_silverfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+96,
+97
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_skeleton": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+145,
+145,
+145
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_skeleton_horse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+156,
+155,
+155
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_slime": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+90,
+149,
+74
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_sniffer": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+72,
+35
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_snow_golem": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+160,
+128,
+86
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_spider": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+51,
+44,
+38
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_squid": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+68,
+89,
+113
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_stray": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+95,
+114,
+115
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_strider": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+67,
+64
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_sulfur_cube": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+206,
+192,
+143
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_tadpole": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+61,
+56,
+54
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_trader_llama": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+177,
+151,
+114
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_tropicalfish": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+113,
+104
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_turtle": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+71,
+128,
+65
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_vex": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+118,
+138,
+157
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_villager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+81,
+65
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_vindicator": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+81,
+88,
+88
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_wandering_trader": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+60,
+43
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_warden": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+39,
+75,
+79
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_witch": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+68,
+64
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+45,
+45,
+45
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_wither_skeleton": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+35,
+35,
+35
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_wolf": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+145,
+138,
+134
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zoglin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+166,
+121,
+112
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zombie": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+58,
+104,
+86
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zombie_horse": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+44,
+57,
+32
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zombie_nautilus": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+119,
+98
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zombie_villager": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+87,
+47
+],
+"size": [
+16,
+16
+]
+},
+"spawn_eggs/spawn_egg_zombified_piglin": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+115,
+106
+],
+"size": [
+16,
+16
+]
+},
+"spear/copper_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+132,
+78,
+53
+],
+"size": [
+16,
+16
+]
+},
+"spear/diamond_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+112,
+90
+],
+"size": [
+16,
+16
+]
+},
+"spear/gold_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+116,
+48
+],
+"size": [
+16,
+16
+]
+},
+"spear/iron_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+92,
+80
+],
+"size": [
+16,
+16
+]
+},
+"spear/netherite_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+67,
+49,
+55
+],
+"size": [
+16,
+16
+]
+},
+"spear/stone_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+92,
+79,
+66
+],
+"size": [
+16,
+16
+]
+},
+"spear/wood_spear": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+79,
+55,
+21
+],
+"size": [
+16,
+16
+]
+},
+"spider_eye": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+98,
+18,
+40
+],
+"size": [
+16,
+16
+]
+},
+"spider_eye_fermented": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+16,
+39
+],
+"size": [
+16,
+16
+]
+},
+"spire_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+113,
+160
+],
+"size": [
+16,
+16
+]
+},
+"spruce_chest_boat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+96,
+70,
+35
+],
+"size": [
+16,
+16
+]
+},
+"spruce_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+95,
+73,
+46
+],
+"size": [
+16,
+16
+]
+},
+"spyglass": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+144,
+111,
+68
+],
+"size": [
+16,
+16
+]
+},
+"stick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+76,
+57,
+22
+],
+"size": [
+16,
+16
+]
+},
+"stone_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+78,
+63
+],
+"size": [
+16,
+16
+]
+},
+"stone_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+78,
+68,
+51
+],
+"size": [
+16,
+16
+]
+},
+"stone_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+78,
+69,
+53
+],
+"size": [
+16,
+16
+]
+},
+"stone_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+89,
+80,
+63
+],
+"size": [
+16,
+16
+]
+},
+"stone_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+85,
+82
+],
+"size": [
+16,
+16
+]
+},
+"straw_bed": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+153,
+122,
+28
+],
+"size": [
+16,
+16
+]
+},
+"string": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+144,
+154,
+155
+],
+"size": [
+16,
+16
+]
+},
+"sugar": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+197,
+197,
+207
+],
+"size": [
+16,
+16
+]
+},
+"suspicious_stew": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+86,
+47
+],
+"size": [
+16,
+16
+]
+},
+"sweet_berries": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+87,
+35,
+29
+],
+"size": [
+16,
+16
+]
+},
+"tide_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+90,
+168,
+156
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+146,
+139,
+127
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_base": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+103,
+79
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_fireres": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+104,
+45
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_harm": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+116,
+86,
+76
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_head": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+172,
+172,
+172
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_healing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+64,
+51
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_infested": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+107,
+108,
+86
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_invisibility": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+142,
+135,
+123
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_leaping": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+144,
+138,
+84
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_luck": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+88,
+117,
+42
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_nightvision": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+124,
+138,
+74
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_oozing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+111,
+138,
+94
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_poison": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+104,
+107,
+73
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_regen": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+128,
+83,
+98
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_slow": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+105,
+111,
+116
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_slowfalling": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+150,
+131,
+108
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_strength": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+145,
+119,
+39
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_swift": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+75,
+132,
+126
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_turtlemaster": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+106,
+96,
+118
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_waterbreathing": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+110,
+126,
+105
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_weakness": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+78,
+64
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_weaving": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+87,
+70
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_windCharged": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+120,
+126
+],
+"size": [
+16,
+16
+]
+},
+"tipped_arrow_wither": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+91,
+77,
+61
+],
+"size": [
+16,
+16
+]
+},
+"torchflower_seeds": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+117,
+70
+],
+"size": [
+16,
+16
+]
+},
+"totem": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+179,
+141,
+76
+],
+"size": [
+16,
+16
+]
+},
+"trial_key": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+114,
+81,
+66
+],
+"size": [
+16,
+16
+]
+},
+"trident": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+122,
+148,
+141
+],
+"size": [
+16,
+16
+]
+},
+"turtle_egg": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+164,
+170,
+136
+],
+"size": [
+16,
+16
+]
+},
+"turtle_helmet": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+38,
+111,
+50
+],
+"size": [
+16,
+16
+]
+},
+"turtle_shell_piece": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+53,
+148,
+68
+],
+"size": [
+16,
+16
+]
+},
+"vex_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+79,
+97,
+97
+],
+"size": [
+16,
+16
+]
+},
+"villagebell": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+193,
+153,
+64
+],
+"size": [
+16,
+16
+]
+},
+"ward_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+65,
+87,
+91
+],
+"size": [
+16,
+16
+]
+},
+"warped_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+47,
+136,
+131
+],
+"size": [
+16,
+16
+]
+},
+"warped_fungus_on_a_stick": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+82,
+82,
+59
+],
+"size": [
+16,
+16
+]
+},
+"warped_hanging_sign": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+46,
+103,
+99
+],
+"size": [
+16,
+16
+]
+},
+"watch_atlas": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+169,
+132,
+55
+],
+"size": [
+16,
+1024
+]
+},
+"wayfinder_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+86,
+78,
+70
+],
+"size": [
+16,
+16
+]
+},
+"weathered_copper_chain": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+74,
+109,
+91
+],
+"size": [
+16,
+16
+]
+},
+"weathered_copper_door": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+108,
+142,
+98
+],
+"size": [
+16,
+16
+]
+},
+"weathered_copper_lantern": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+103,
+146,
+110
+],
+"size": [
+16,
+16
+]
+},
+"wheat": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+140,
+122,
+67
+],
+"size": [
+16,
+16
+]
+},
+"white_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+181,
+181,
+181
+],
+"size": [
+16,
+16
+]
+},
+"wild_armor_trim_smithing_template": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+99,
+118,
+106
+],
+"size": [
+16,
+16
+]
+},
+"wildflowers": {
+"alpha": [
+0,
+10,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+208,
+203,
+121
+],
+"size": [
+16,
+16
+]
+},
+"wind_charge": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+191,
+198,
+218
+],
+"size": [
+16,
+16
+]
+},
+"wolf_armor": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+138,
+85,
+81
+],
+"size": [
+16,
+16
+]
+},
+"wolf_armor_dyed": {
+"alpha": [
+0,
+3,
+255
+],
+"ext": [
+"tga"
+],
+"mean": [
+159,
+128,
+125
+],
+"size": [
+16,
+16
+]
+},
+"wood_axe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+79,
+59,
+23
+],
+"size": [
+16,
+16
+]
+},
+"wood_hoe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+75,
+56,
+22
+],
+"size": [
+16,
+16
+]
+},
+"wood_pickaxe": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+73,
+55,
+21
+],
+"size": [
+16,
+16
+]
+},
+"wood_shovel": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+83,
+62,
+24
+],
+"size": [
+16,
+16
+]
+},
+"wood_sword": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+70,
+53,
+20
+],
+"size": [
+16,
+16
+]
+},
+"yellow_cushion": {
+"alpha": [
+0,
+255
+],
+"ext": [
+"png"
+],
+"mean": [
+217,
+163,
+33
+],
+"size": [
+16,
+16
+]
+}
+}
