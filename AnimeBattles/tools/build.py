@@ -249,7 +249,7 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 34], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 40], "default": 0, "client_sync": True},
                     "ab:expr": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
                     "ab:stance": {"type": "bool", "default": False, "client_sync": True},
                 },
@@ -284,7 +284,7 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip", "scratch"]  # poses 13..34
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip", "scratch", "seal", "rasengan"]  # poses 13..36
 
 
 def extra_animations():
@@ -337,6 +337,17 @@ def extra_animations():
         "tie_bandana": {"rightArm": {"rotation": [-165, -32, 0]}, "leftArm": {"rotation": [-165, 32, 0]}, "head": {"rotation": [10, 0, 0]}},
         # Goku after a win: hand to the back of his head, laughing
         "scratch": {"rightArm": {"rotation": [-168, "-24 + math.sin(query.life_time * 900.0) * 5", 0]}, "head": {"rotation": [-6, 0, -8]}},
+        # style-2 (jointed) poses — Naruto
+        "seal": {"rightArm": {"rotation": [-38, -36, 0]}, "rightForearm": {"rotation": [-82, 0, 0]},
+                 "leftArm": {"rotation": [-38, 36, 0]}, "leftForearm": {"rotation": [-82, 0, 0]}, "head": {"rotation": [6, 0, 0]}},
+        "rasengan": {"rightArm": {"rotation": [-78, -12, 0]}, "rightForearm": {"rotation": [-10, 0, 0]},
+                     "leftArm": {"rotation": [-60, 34, 0]}, "leftForearm": {"rotation": [-42, 0, 0]}, "body": {"rotation": [0, -15, 0]}},
+        "nrun": {"rightArm": {"rotation": [64, 0, -8]}, "leftArm": {"rotation": [64, 0, 8]}, "rightForearm": {"rotation": [14, 0, 0]},
+                 "leftForearm": {"rotation": [14, 0, 0]}, "body": {"rotation": [28, 0, 0]}, "head": {"rotation": [-24, 0, 0]}},
+        "knees": {"rightShin": {"rotation": ["math.max(0, math.sin(query.modified_distance_moved * 38.17) * 70.0 * query.modified_move_speed)", 0, 0]},
+                  "leftShin": {"rotation": ["math.max(0, -math.sin(query.modified_distance_moved * 38.17) * 70.0 * query.modified_move_speed)", 0, 0]}},
+        "cape_sway": {"cape": {"rotation": ["6 + math.sin(query.life_time * 150.0) * 3 + query.modified_move_speed * 45", 0, 0]}},
+        "orbs_spin": {"orbs": {"rotation": [0, 0, "query.life_time * 40.0"]}},
         # signature idles out of combat
         "arms_crossed": {"rightArm": {"rotation": [-60, -50, 0]}, "leftArm": {"rotation": [-52, 50, 0]}, "head": {"rotation": [-4, 0, 0]}},
         "cool_idle": {"head": {"rotation": [-6, 0, 10]}, "rightArm": {"rotation": [6, 0, 4]}, "leftArm": {"rotation": [6, 0, -4]}},
@@ -353,7 +364,8 @@ def extra_animations():
                          "head": {"rotation": [-4, 0, -8]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
-    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover", "toon", "happy_bounce", "head_scratch"}  # layered on walk/look, never replacing them
+    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover", "toon", "happy_bounce", "head_scratch",
+                "knees", "cape_sway", "orbs_spin"}  # layered on walk/look, never replacing them
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": k not in additive, "bones": v} for k, v in A.items()}
     # strikes with motion: chamber -> snap out (slight overshoot) -> hold, replayed every time the pose is set
     def strike(bones, length=0.14):
@@ -431,6 +443,8 @@ def extra_animations():
         "root": {"rotation": {"0.0": [0, 0, 0], "0.1": [0, 150, 0], "0.2": [0, 180, 0]}},
         "tail": {"rotation": {"0.0": [10, -40, 0], "0.1": [45, 60, 0], "0.2": [35, 40, 0]}},
         "rightArm": {"rotation": [-20, 0, 40]}, "leftArm": {"rotation": [-20, 0, -40]}}, 0.2)
+    def joints(name, bones):
+        out[f"animation.ab.{name}"]["bones"].update(bones)
     out["animation.ab.upper"] = strike({
         "rightArm": {"rotation": {"0.0": [-15, 0, -10], "0.08": [-176, 0, -10], "0.16": [-168, 0, -10]}},
         "leftArm": {"rotation": [-30, 0, 20]},
@@ -440,6 +454,17 @@ def extra_animations():
     out["animation.ab.arms2"] = {"loop": True, "bones": {
         "rightArm2": {"rotation": ["math.sin(query.life_time * 120.0) * 12.0 - 10.0", 0, 0]},
         "leftArm2": {"rotation": ["-math.sin(query.life_time * 120.0) * 12.0 - 10.0", 0, 0]}}}
+    joints("stance", {"rightForearm": {"rotation": [-82, 0, 0]}, "leftForearm": {"rotation": [-48, 0, 0]}})
+    joints("jab_r", {"rightForearm": {"rotation": {"0.0": [-110, 0, 0], "0.06": [0, 0, 0]}}, "leftForearm": {"rotation": [-70, 0, 0]}})
+    joints("jab_l", {"leftForearm": {"rotation": {"0.0": [-110, 0, 0], "0.06": [0, 0, 0]}}, "rightForearm": {"rotation": [-70, 0, 0]}})
+    joints("kick", {"rightShin": {"rotation": {"0.0": [85, 0, 0], "0.07": [0, 0, 0]}}})
+    joints("round", {"rightShin": {"rotation": {"0.0": [75, 0, 0], "0.08": [5, 0, 0]}}})
+    joints("elbow", {"leftShin": {"rotation": {"0.0": [75, 0, 0], "0.08": [5, 0, 0]}}})
+    joints("upper", {"rightForearm": {"rotation": {"0.0": [-100, 0, 0], "0.08": [-25, 0, 0]}}})
+    joints("powerup", {"rightForearm": {"rotation": [-30, 0, 0]}, "leftForearm": {"rotation": [-30, 0, 0]}})
+    joints("flinch", {"rightForearm": {"rotation": [-35, 0, 0]}, "leftForearm": {"rotation": [-35, 0, 0]}})
+    out["_joints_rush"] = {"rightForearm": {"rotation": ["-60 + math.sin(query.life_time * 2200.0) * 55", 0, 0]},
+                           "leftForearm": {"rotation": ["-60 - math.sin(query.life_time * 2200.0) * 55", 0, 0]}}
     return out
 
 
@@ -447,6 +472,15 @@ IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && q
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3"), ("toon", "animation.ab.toon", "query.property('ab:form') == 6"), ("happy_bounce", "animation.ab.happy_bounce", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "naruto_kid": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+                ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0"), ("tail_sway", "animation.ab.tail_sway", "query.property('ab:form') == 1")],
+    "naruto_teen": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+                ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0")],
+    "naruto_war": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+                ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0"), ("orbs_spin", "animation.ab.orbs_spin", "query.property('ab:form') == 2"),
+                   ("hover", "animation.ab.hover", "query.property('ab:form') == 2")],
+    "naruto_adult": [("nrun", "animation.ab.nrun", "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"),
+                ("knees", "animation.ab.knees", "1.0"), ("cape_sway", "animation.ab.cape_sway", "1.0")],
     "goku": [("head_scratch", "animation.ab.head_scratch", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("hover", "animation.ab.hover", "query.property('ab:pose') != 24"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
@@ -530,7 +564,10 @@ def render_controllers():
 def build_entities():
     an_path = os.path.join(RP, "animations", "ab.animation.json")
     an = json.load(open(an_path))
-    an["animations"].update(extra_animations())
+    extra = extra_animations()
+    rush_joints = extra.pop("_joints_rush")
+    an["animations"].update(extra)
+    an["animations"]["animation.ab.rush"]["bones"].update(rush_joints)
     json.dump(an, open(an_path, "w"), indent=1)
     for name, cfg in FIGHTERS.items():
         with open(os.path.join(BP, "entities", f"{name}.json"), "w") as f:

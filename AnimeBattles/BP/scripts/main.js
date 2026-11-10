@@ -495,6 +495,7 @@ function transform(e, s, to, label, color, extraSound) {
   setPose(e, e.typeId === "ab:luffy" ? (to === 1 ? 30 : to === 6 ? 27 : 25)
     : e.typeId === "ab:zoro" ? 32      // ties the bandana on
     : e.typeId === "ab:gojo" ? 25      // pulls the blindfold off
+    : (e.typeId === "ab:naruto_teen" || (e.typeId === "ab:naruto_war" && to === 2)) ? 35   // still, hands in a seal, gathering nature energy
     : calm ? 0
     : 22);
   slow(e, 30, 8);
@@ -1534,8 +1535,291 @@ const FRIEZA = {
   ],
 };
 
+
+// ------------------------------------------------------------------ Naruto (style 2: four ages)
+function poof(e) {
+  if (!e || !e.isValid) return;
+  try {
+    burst(e.dimension, V.up(e.location, 1), C.white, 18, 2.5, 0.6, 0.6);
+    fx(e.dimension, "aura", e.location, C.white, 1.4, 0.7, { count: 14 * fxLevel(), speed: 1.5 });
+    sound(e.dimension, "random.pop", e.location, 1, 0.8);
+  } catch (err) { /* ignore */ }
+  try { e.remove(); } catch (err) { /* ignore */ }
+}
+// Shadow Clone Jutsu: real fighters on the same team that vanish in smoke at the first hit.
+function shadowClones(e, s, n, life = 220) {
+  const team = teamOf(e);
+  if (!team) return 0;
+  s.clones = (s.clones ?? []).filter((c) => c.isValid);
+  let made = 0;
+  for (let i = 0; i < n && s.clones.length < 3; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const pos = V.add(e.location, { x: Math.cos(a) * 1.8, y: 0, z: Math.sin(a) * 1.8 });
+    let c;
+    try { c = e.dimension.spawnEntity(e.typeId, pos); } catch (err) { break; }
+    try {
+      c.addTag("ab_clone");
+      const cs = state(c);
+      cs.cloneUntil = now() + life; cs.owner = e.id;
+      setTeam(c, team);
+      const f = formOf(e);
+      if (f) c.triggerEvent(`ab:form_${f}`);
+    } catch (err) { /* ignore */ }
+    burst(e.dimension, V.up(pos, 1), C.white, 14, 2, 0.6, 0.6);
+    s.clones.push(c);
+    made++;
+  }
+  return made;
+}
+const cloneJutsu = (n, say = "§6§lShadow Clone Jutsu!") => ({
+  id: "clones", label: "Shadow Clone Jutsu", cd: 360, cost: 120, min: 0, max: 30, weight: 3,
+  run(e, s) {
+    busy(s, 14); setPose(e, 35); announce(e, say);
+    later(6, () => { if (e.isValid) shadowClones(e, s, n); });
+    later(14, () => { if (e.isValid) setPose(e, 0); });
+  },
+});
+function rasengan(e, s, t, o) {
+  busy(s, 26); face(e, aim(t)); announce(e, o.say);
+  chargeOrb(e, t, 12, o.color, 0.3, o.size, 36);
+  later(12, () => {
+    if (!e.isValid) return;
+    if (!alive(t)) { setPose(e, 0); return; }
+    afterimage(e); teleportNear(e, t, false, 1.3); face(e, aim(t)); setPose(e, 5);
+    const c = aim(t), dim = e.dimension, pw = powerOf(e) / 100;
+    deal(e, t, o.dmg * pw);
+    const n = V.norm(V.sub(t.location, e.location));
+    try { t.applyKnockback({ x: n.x * (o.knock ?? 2.5), z: n.z * (o.knock ?? 2.5) }, 0.45); } catch (err) { /* ignore */ }
+    for (let k = 0; k < 28; k++) {  // the spiralling sphere grinding in
+      const a = (k / 28) * Math.PI * 4, r = 0.25 + k * 0.05 * o.size;
+      fx(dim, "orb", V.add(c, { x: Math.cos(a) * r, y: Math.sin(a * 0.5) * 0.35, z: Math.sin(a) * r }), o.color, 0.5, 0.4);
+    }
+    explosion(e, c, { radius: o.radius ?? 2, dmg: o.dmg * 0.25 * pw, color: o.color, knock: 1.5, carve: o.carve ?? 0 });
+    later(8, () => { if (e.isValid) setPose(e, 0); });
+  });
+}
+function rasenshuriken(e, s, t, o) {
+  busy(s, 34); announce(e, o.say); setPose(e, 23); slow(e, 30, 6);
+  const dim = e.dimension;
+  const orb = spawnVfx(dim, 1, V.up(e.location, 3.3), { slot: 10, size: 0.3, life: 40 });
+  every(1, 18, (i) => {
+    if (!e.isValid) { killVfx(orb); return false; }
+    const c = V.up(e.location, 3.3);
+    try { if (orb && orb.isValid) orb.teleport(c); } catch (err) { /* ignore */ }
+    vset(orb, "ab:size", 0.3 + i * 0.05 * o.size);
+    for (let k = 0; k < 4; k++) {  // the four screaming wind blades
+      const a = i * 0.8 + (k * Math.PI) / 2, r = 0.9 + o.size * 0.5;
+      fx(dim, "streak", V.add(c, { x: Math.cos(a) * r, y: 0, z: Math.sin(a) * r }), C.white, 0.7, 0.2);
+    }
+    if (i === 17) killVfx(orb);
+  });
+  later(18, () => {
+    if (!e.isValid) return;
+    setPose(e, 4);
+    const start = V.up(e.location, 3.3), pw = powerOf(e) / 100;
+    const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
+    projectile(e, start, V.norm(V.sub(tgt, start)), {
+      speed: 0.9, maxDist: 45, radius: 1.6, size: 1.8 * o.size, color: C.white, slot: 10, trail: true,
+      homing: alive(t) ? t : undefined, homingStrength: 0.08,
+      explode: { radius: o.radius, dmg: o.dmg * pw, color: C.white, carve: o.carve ?? 1, knock: 2 },
+      onEnd: (pos) => {  // the wind sphere keeps slicing for a moment
+        const dome = spawnVfx(dim, 1, pos, { slot: 10, size: o.radius * 0.5, life: 30 });
+        every(4, 5, () => {
+          hitArea(e, pos, o.radius, o.dmg * 0.08 * pw, new Set(), { knock: 0.2 });
+          fx(dim, "streak", pos, C.white, 2, 0.3, { count: 10, speed: 9 });
+        });
+        later(22, () => fadeVfx(dome, o.radius * 0.5, 6));
+      },
+    });
+    later(10, () => { if (e.isValid) setPose(e, 0); });
+  });
+}
+function bijuudama(e, s, t, o) {
+  busy(s, 44); face(e, aim(t)); announce(e, "§5§lTailed Beast Bomb!");
+  chargeOrb(e, t, 26, C.hakai, 0.4, o.size ?? 3, 1);
+  later(26, () => {
+    if (!e.isValid) return;
+    const { pos } = handPos(e, alive(t) ? t : e);
+    const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 12));
+    projectile(e, pos, V.norm(V.sub(tgt, pos)), {
+      speed: 0.8, maxDist: 50, radius: 2.2, size: (o.size ?? 3) * 1.4, color: C.hakai, slot: 7,
+      homing: alive(t) ? t : undefined, homingStrength: 0.05,
+      explode: { radius: o.radius ?? 7, dmg: o.dmg * powerOf(e) / 100, color: C.hakai, carve: 3, knock: 3 },
+    });
+    later(10, () => { if (e.isValid) setPose(e, 0); });
+  });
+}
+function rasenganAbility(id, label, o, cond) {
+  return { id, label, cd: o.cd ?? 160, cost: o.cost ?? 90, min: 0, max: 30, weight: o.weight ?? 4, cond,
+    run(e, s, t) { rasengan(e, s, t, o); } };
+}
+function shurikenAbility(id, label, o, cond) {
+  return { id, label, cd: o.cd ?? 300, cost: o.cost ?? 220, min: 0, max: 45, weight: o.weight ?? 4, cond,
+    run(e, s, t) { rasenshuriken(e, s, t, o); } };
+}
+const chakraArms = (color, cond) => ({
+  id: "arms", label: "Chakra Arms", cd: 160, cost: 100, min: 0, max: 12, weight: 3, cond,
+  run(e, s, t) {
+    busy(s, 18); announce(e, "§6§lChakra Arms!"); afterimage(e); teleportNear(e, t, false, 2.2);
+    punches(e, t, 6, 7 * powerOf(e) / 100, color);
+    slashMarks(e, t, color, 3, 5 * powerOf(e) / 100);
+  },
+});
+
+const NARUTO_KID = {
+  name: "Naruto", color: "§6", energy: 600, regen: 12, energyName: "§6CHAKRA",
+  dodge: () => 0.08,
+  forms: [{ label: "Genin (Part I)", power: 25 }, { label: "Nine-Tails Cloak", power: 45, aura: C.fire }],
+  thresholds: [0.6], transformCd: 100, formSound: [null, "mob.enderdragon.growl"],
+  abilities: [
+    cloneJutsu(2),
+    { id: "rendan", label: "Uzumaki Barrage", cd: 220, cost: 90, min: 0, max: 10, weight: 4,
+      run(e, s, t) {
+        busy(s, 30); announce(e, "§6§lU! ZU! MA! KI! — Naruto Uzumaki Barrage!");
+        shadowClones(e, s, 2, 100);
+        later(4, () => {
+          if (!alive(t) || !e.isValid) return;
+          teleportNear(e, t, false, 1.2); setPose(e, 7);
+          deal(e, t, 10 * powerOf(e) / 100);
+          try { t.applyKnockback({ x: 0, z: 0 }, 1.1); } catch (err) { /* ignore */ }
+          burst(e.dimension, aim(t), C.white, 12, 3, 0.4, 0.4);
+        });
+        later(14, () => {
+          if (!alive(t) || !e.isValid) return;
+          try { e.teleport(V.up(t.location, 3), { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+          setPose(e, 10);
+          deal(e, t, 16 * powerOf(e) / 100);
+          try { t.applyKnockback({ x: 0, z: 0 }, -1.6); } catch (err) { /* ignore */ }
+          fx(e.dimension, "shock", t.location, C.white, 4, 0.4);
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 0.8, dmg: 28, radius: 1.6 }),
+    { id: "claw", label: "Chakra Claw", cd: 120, cost: 60, min: 0, max: 8, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 12); announce(e, "§c§lThe Nine-Tails' claw!"); afterimage(e); teleportNear(e, t, false, 1.6);
+        slashMarks(e, t, C.fire, 3, 9 * powerOf(e) / 100);
+      } },
+    { id: "roar", label: "Nine-Tails Roar", cd: 260, cost: 120, min: 0, max: 8, weight: 3, cond: G(1),
+      run(e, s, t) {
+        busy(s, 16); setPose(e, 22); announce(e, "§4§lRAAAAGH!");
+        const dim = e.dimension;
+        fx(dim, "shock", e.location, C.fire, 8, 0.5); ring(dim, V.up(e.location, 0.2), 4, C.fire, 28, 0.5);
+        sound(dim, "mob.enderdragon.growl", e.location, 1.4, 1.3);
+        hitArea(e, V.up(e.location, 1), 4.5, 14 * powerOf(e) / 100, new Set(), { knock: 2.5, lift: 0.4 });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
+  ],
+};
+
+const NARUTO_TEEN = {
+  name: "Naruto", color: "§6", energy: 900, regen: 16, energyName: "§6CHAKRA",
+  dodge: () => 0.1,
+  forms: [{ label: "Shippuden", power: 50 }, { label: "Sage Mode", power: 85, aura: C.kiYellow }],
+  thresholds: [0.6], transformCd: 100, formSound: [null, "beacon.power"],
+  abilities: [
+    cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
+    rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 1.0, dmg: 34, radius: 2 }),
+    rasenganAbility("odama", "Big Ball Rasengan", { say: "§b§lBig Ball Rasengan!", color: C.blue, size: 1.8, dmg: 52, radius: 3.4, carve: 1, cd: 260, cost: 160 }),
+    shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lSage Art: Rasenshuriken!", size: 1.0, dmg: 80, radius: 4.5, carve: 1 }, G(1)),
+    { id: "kumite", label: "Frog Kumite", cd: 140, cost: 70, min: 0, max: 10, weight: 4, cond: G(1),
+      run(e, s, t) {
+        busy(s, 16); announce(e, "§e§lSage Art: Frog Kumite!"); afterimage(e); teleportNear(e, t, false, 1.6);
+        punches(e, t, 5, 8 * powerOf(e) / 100, C.kiYellow);
+        later(6, () => { if (alive(t)) hitArea(e, aim(t), 2.6, 8 * powerOf(e) / 100, new Set(), { knock: 1.8, lift: 0.3 }); });
+      } },
+  ],
+};
+
+const NARUTO_WAR = {
+  name: "Naruto", color: "§e", energy: 1500, regen: 26, energyName: "§6CHAKRA",
+  dodge: () => 0.14,
+  forms: [
+    { label: "Nine-Tails Chakra Mode", power: 120, aura: C.gold },
+    { label: "Kurama Mode", power: 150, aura: C.gold },
+    { label: "Six Paths Sage Mode", power: 182, aura: C.gold },
+  ],
+  thresholds: [0.7, 0.5], transformCd: 80, formSound: [null, "mob.enderdragon.growl", "beacon.power"],
+  abilities: [
+    cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
+    rasenganAbility("rasengan", "Flash Rasengan", { say: "§e§lRasengan!", color: C.blue, size: 1.4, dmg: 40, radius: 2.6, cd: 140 }),
+    shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lRasenshuriken!", size: 1.2, dmg: 70, radius: 5, carve: 2 }),
+    chakraArms(C.gold),
+    { id: "bijuu", label: "Tailed Beast Bomb", cd: 520, cost: 380, min: 0, max: 45, weight: 5, cond: G(1, 2),
+      run(e, s, t) { bijuudama(e, s, t, { size: 3, radius: 7, dmg: 150 }); } },
+    { id: "kclaw", label: "Kurama's Claws", cd: 200, cost: 120, min: 0, max: 12, weight: 4, cond: G(1, 2),
+      run(e, s, t) {
+        busy(s, 16); announce(e, "§6§lKurama, lend me your power!"); afterimage(e); teleportNear(e, t, false, 2);
+        slashMarks(e, t, C.gold, 5, 14 * powerOf(e) / 100);
+        fx(e.dimension, "shock", t.location, C.gold, 6, 0.4);
+      } },
+    { id: "gudo", label: "Truth-Seeking Balls", cd: 260, cost: 200, min: 0, max: 40, weight: 4, cond: G(2),
+      run(e, s, t) {
+        busy(s, 24); setPose(e, 4); announce(e, "§0§lTruth-Seeking Balls!");
+        every(3, 6, (i) => {
+          if (!e.isValid || !alive(t)) return false;
+          const start = V.add(V.up(e.location, 2.2), { x: Math.cos(i * 1.1) * 1.3, y: Math.sin(i * 1.7) * 0.6, z: Math.sin(i * 1.1) * 1.3 });
+          projectile(e, start, V.norm(V.sub(aim(t), start)), { speed: 1.1, maxDist: 40, radius: 1, size: 0.9, color: C.black, slot: 13, solid: true,
+            homing: t, homingStrength: 0.12, explode: { radius: 1.6, dmg: 18 * powerOf(e) / 100, color: C.black, knock: 1 } });
+        });
+        later(20, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    shurikenAbility("ultra", "Six Paths Ultra Big Ball Rasenshuriken",
+      { say: "§e§lSix Paths: Ultra Big Ball Rasenshuriken!", size: 2.6, dmg: 170, radius: 9, carve: 3, cd: 600, cost: 450, weight: 6 }, G(2)),
+  ],
+};
+
+const NARUTO_ADULT = {
+  name: "Naruto", color: "§6", energy: 1600, regen: 28, energyName: "§6CHAKRA",
+  dodge: () => 0.14,
+  forms: [
+    { label: "Seventh Hokage", power: 125 },
+    { label: "Kurama Link Mode", power: 165, aura: C.gold },
+    { label: "Baryon Mode", power: 230, aura: C.blood },
+  ],
+  thresholds: [0.7, 0.4], transformCd: 80, formSound: [null, "mob.enderdragon.growl", "mob.wither.spawn"],
+  abilities: [
+    cloneJutsu(3, "§6§lMulti Shadow Clone Jutsu!"),
+    rasenganAbility("rasengan", "Rasengan", { say: "§b§lRasengan!", color: C.blue, size: 1.4, dmg: 42, radius: 2.6, cd: 140 }),
+    shurikenAbility("shuriken", "Rasenshuriken", { say: "§f§lRasenshuriken!", size: 1.4, dmg: 85, radius: 5.5, carve: 2 }),
+    chakraArms(C.gold, G(1)),
+    { id: "bijuu", label: "Tailed Beast Bomb", cd: 520, cost: 380, min: 0, max: 45, weight: 5, cond: G(1),
+      run(e, s, t) { bijuudama(e, s, t, { size: 3.2, radius: 7.5, dmg: 160 }); } },
+    { id: "baryon", label: "Baryon Punch", cd: 180, cost: 140, min: 0, max: 14, weight: 6, cond: G(2),
+      run(e, s, t) {
+        busy(s, 22); announce(e, "§c§lBaryon Mode: every blow burns away the enemy's life!");
+        afterimage(e); teleportNear(e, t, true, 1.3);
+        every(3, 5, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          face(e, aim(t)); setPose(e, i % 2 ? 6 : 5);
+          deal(e, t, 14 * powerOf(e) / 100);
+          fx(t.dimension, "orb", aim(t), C.blood, 1.6, 0.3);
+          burst(t.dimension, aim(t), C.blood, 12, 3, 0.4, 0.4);
+          if (i === 4) setPose(e, 0);
+        });
+        every(10, 6, () => {  // the drained life keeps burning
+          if (!alive(t)) return false;
+          deal(e, t, 4 * powerOf(e) / 100);
+          fx(t.dimension, "aura", t.location, C.blood, 1, 0.5, { count: 6, speed: 1 });
+        });
+      } },
+    { id: "baryonrush", label: "Baryon Rush", cd: 240, cost: 160, min: 0, max: 20, weight: 4, cond: G(2),
+      run(e, s, t) {
+        busy(s, 26); announce(e, "§4§lBaryon Mode!");
+        every(4, 6, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.3); setPose(e, [5, 7, 6, 9, 5, 10][i]);
+          deal(e, t, 11 * powerOf(e) / 100);
+          fx(t.dimension, "shock_v", aim(t), C.blood, 3, 0.3);
+          if (i === 5) { shake(t.dimension, aim(t), 0.4, 0.4); setPose(e, 0); }
+        });
+      } },
+  ],
+};
+
 const KI_CHARGERS = new Set(["ab:goku", "ab:vegeta", "ab:frieza"]);
-const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA };
+const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
+  "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT };
 
 // ------------------------------------------------------------------ melee combos
 // Varied chains (jabs, kicks, roundhouse, knee, elbow, uppercut, rush barrage). Gojo blinks behind his target.
@@ -1567,13 +1851,18 @@ const COMBOS = {
   "ab:sukuna": [["chop", "kick_l", "rush", "upper"], ["jab_l", "chop", "kick_r", "axe"], ["rush", "kick_l", "kick_r"]],
   "ab:luffy": [["jab_r", "jab_l", "sgatling", "swhip"], ["jab_l", "spistol", "kick_r", "axe"], ["sgatling", "kick_l", "spistol"]],
   "ab:zoro": [["cut_r", "cut_l", "cut_r", "kick_r", "cut_x"], ["cut_l", "cut_r", "cut_l", "kick_l", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
+  "ab:naruto_kid": [["jab_r", "jab_l", "kick", "upper"], ["jab_l", "jab_r", "blink", "axe"], ["kick_r", "jab_r", "jab_l", "kick_l"]],
+  "ab:naruto_teen": [["jab_r", "jab_l", "kick_r", "upper"], ["rush", "kick_l", "blink", "axe"], ["jab_l", "jab_r", "kick", "kick_r"]],
+  "ab:naruto_war": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_l", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
+  "ab:naruto_adult": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_r", "kick_l", "upper", "axe"], ["rush", "jab_l", "kick_r", "kiburst"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
 MOVES.spistol = { pose: 13, t: 5, dmg: 12, kb: 1.4, strong: true, arc: "punch" };
 MOVES.sgatling = { pose: 14, t: 16, dmg: 3, hits: 8, kb: 0.1, arc: "punch" };
 MOVES.swhip = { pose: 17, t: 6, dmg: 15, kb: 2, lift: 0.3, strong: true, arc: "right" };
 const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "ab:sukuna": 0.2 };
-const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death };
+const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death,
+  "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -1696,6 +1985,7 @@ function comboStep(e, t, mv, last) {
 function updateFighter(e, tick) {
   const def = FIGHTERS[e.typeId];
   const s = state(e);
+  if (s.cloneUntil && tick >= s.cloneUntil) { poof(e); return; }
   s.energy = Math.min(def.energy, s.energy + def.regen / 4);
   const team = teamOf(e);
 
@@ -1739,11 +2029,11 @@ function updateFighter(e, tick) {
   const tMax = tdef ? Math.max(...tdef.forms.map((f) => f.power)) * (tdef.ego ? 1.1 : 1) : ctx.tPower;
   const threatened = Math.max(ctx.tPower, tMax) > ctx.power * 0.95;
   // Transform first, even mid-combo, when the opponent is stronger (or when badly hurt).
-  if (form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick >= s.transformUntil &&
+  if (!s.cloneUntil && form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.nextTransform && tick >= s.transformUntil &&
       (threatened || (tick - s.combatSince > 40 && ctx.hp < def.thresholds[form]))) {
     let next = def.nextForm ? def.nextForm(form) : form + 1;
     if (threatened) {
-      const need = Math.max(ctx.tPower, tMax);
+      const need = Math.max(ctx.tPower, tMax) * 1.12;
       const match = def.forms.findIndex((f, i) => i > form && f.power >= need);
       next = match >= 0 ? match : def.forms.length - 1;
     }
@@ -1771,7 +2061,7 @@ function updateFighter(e, tick) {
     combo(e, s, target);
     return;
   }
-  if (Math.random() > 0.45) return;
+  if (s.cloneUntil || Math.random() > 0.45) return;  // shadow clones only brawl
   const burnt = tick < s.burnoutUntil;
   // Abilities are free to use at any range; close-range ones dash in first.
   const ok = def.abilities.filter((a) => (s.cd[a.id] ?? 0) <= tick && s.energy >= a.cost &&
@@ -1902,6 +2192,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     }
     const def = FIGHTERS[v.typeId];
     if (!def || cause === EntityDamageCause.fall) return;
+    if (v.hasTag("ab_clone")) { ev.cancel = true; system.run(() => poof(v)); return; }  // a shadow clone: one hit and it's smoke
     const s = state(v);
     const attackerP = src && src.isValid && isFighter(src) ? powerOf(src) : 0;
     const defenderP = powerOf(v);
@@ -2075,6 +2366,8 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const def = FIGHTERS[e.typeId];
     if (def && teamOf(e)) announce(e, `${teamLabel(teamOf(e))}${def.color}§l${def.name} §r§fhas been defeated!`);
     if (def) { try { e.setProperty("ab:expr", 2); e.setProperty("ab:pose", 0); } catch (err) { /* ignore */ } }  // falls with a pained face
+    const ds = states.get(e.id);
+    if (ds && ds.clones) for (const c of ds.clones) poof(c);  // the original falls: every clone vanishes
     states.delete(e.id);
     // victory: the fighter who landed the last blow raises a fist with a shout
     const k = ev.damageSource && ev.damageSource.damagingEntity;
@@ -2096,13 +2389,13 @@ world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntit
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
 const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
-  "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1 };
+  "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35 };
 world.afterEvents.entitySpawn.subscribe((ev) => {
   try {
     const e = ev.entity;
     if (!e || ENTRANCE[e.typeId] === undefined) return;
     later(4, () => {
-      if (!e.isValid) return;
+      if (!e.isValid || e.hasTag("ab_clone")) return;
       const s = state(e);
       busy(s, 30);
       setPose(e, ENTRANCE[e.typeId]);
@@ -2121,7 +2414,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     if (!ev.initialSpawn || p.getDynamicProperty("ab:kit")) return;
     p.setDynamicProperty("ab:kit", true);
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
     p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");

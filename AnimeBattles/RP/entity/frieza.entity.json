@@ -61,6 +61,8 @@
     "tie_bandana": "animation.ab.tie_bandana",
     "tail_whip": "animation.ab.tail_whip",
     "scratch": "animation.ab.scratch",
+    "seal": "animation.ab.seal",
+    "rasengan": "animation.ab.rasengan",
     "tail_sway": "animation.ab.tail_sway",
     "hover": "animation.ab.hover",
     "arms_crossed": "animation.ab.arms_crossed"
@@ -180,6 +182,12 @@
      },
      {
       "scratch": "query.property('ab:pose') == 34"
+     },
+     {
+      "seal": "query.property('ab:pose') == 35"
+     },
+     {
+      "rasengan": "query.property('ab:pose') == 36"
      },
      {
       "tail_sway": "1.0"

@@ -60,7 +60,13 @@
     "cross": "animation.ab.cross",
     "tie_bandana": "animation.ab.tie_bandana",
     "tail_whip": "animation.ab.tail_whip",
-    "scratch": "animation.ab.scratch"
+    "scratch": "animation.ab.scratch",
+    "seal": "animation.ab.seal",
+    "rasengan": "animation.ab.rasengan",
+    "nrun": "animation.ab.nrun",
+    "knees": "animation.ab.knees",
+    "cape_sway": "animation.ab.cape_sway",
+    "tail_sway": "animation.ab.tail_sway"
    },
    "scripts": {
     "animate": [
@@ -177,6 +183,24 @@
      },
      {
       "scratch": "query.property('ab:pose') == 34"
+     },
+     {
+      "seal": "query.property('ab:pose') == 35"
+     },
+     {
+      "rasengan": "query.property('ab:pose') == 36"
+     },
+     {
+      "nrun": "query.modified_move_speed > 0.45 && query.property('ab:pose') == 0"
+     },
+     {
+      "knees": "1.0"
+     },
+     {
+      "cape_sway": "1.0"
+     },
+     {
+      "tail_sway": "query.property('ab:form') == 1"
      }
     ]
    },

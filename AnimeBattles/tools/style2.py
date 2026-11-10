@@ -506,8 +506,11 @@ def spike(m, base, d, length, width, col, thick=None, bone="hair"):
     b = list(base)
     m.box(bone, [b[0] - width / 2, b[1], b[2] - t / 2], [width, L1, t], paint, rot=rot, pivot=[round(v, 3) for v in b])
     p2 = [b[i] + d[i] * L1 * 0.9 for i in range(3)]
-    w2 = max(0.5, width * 0.5)
-    m.box(bone, [p2[0] - w2 / 2, p2[1], p2[2] - t * 0.4], [w2, L2, t * 0.8], paint, rot=rot, pivot=[round(v, 3) for v in p2])
+    w2 = max(0.5, width * 0.55)
+    m.box(bone, [p2[0] - w2 / 2, p2[1], p2[2] - t * 0.4], [w2, L2 * 0.8, t * 0.8], paint, rot=rot, pivot=[round(v, 3) for v in p2])
+    p3 = [p2[i] + d[i] * L2 * 0.7 for i in range(3)]           # the point
+    w3 = max(0.375, width * 0.22)
+    m.box(bone, [p3[0] - w3 / 2, p3[1], p3[2] - t * 0.25], [w3, L2 * 0.6, max(0.375, t * 0.5)], paint, rot=rot, pivot=[round(v, 3) for v in p3])
 
 
 def hair_strands(m, col, style):
