@@ -332,9 +332,12 @@ def extra_animations():
         # Luffy, base form: can't keep still, a light springy bounce on his sandals
         "happy_bounce": {"root": {"position": [0, "math.abs(math.sin(query.life_time * 200.0)) * 0.7", 0]},
                          "head": {"rotation": [0, 0, "math.sin(query.life_time * 100.0) * 4"]}},
+        # base Goku off duty: scratching the back of his head with a grin
+        "head_scratch": {"rightArm": {"rotation": [-168, "-24 + math.sin(query.life_time * 900.0) * 5", 0]},
+                         "head": {"rotation": [-4, 0, -8]}},
         "tail_sway": {"tail": {"rotation": ["math.sin(query.life_time * 120.0) * 6", "math.sin(query.life_time * 80.0) * 18", 0]}},
     }
-    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover", "toon", "happy_bounce"}  # layered on walk/look, never replacing them
+    additive = {"stance", "flinch", "arms_crossed", "cool_idle", "tail_sway", "hover", "toon", "happy_bounce", "head_scratch"}  # layered on walk/look, never replacing them
     out = {f"animation.ab.{k}": {"loop": True, "override_previous_animation": k not in additive, "bones": v} for k, v in A.items()}
     # strikes with motion: chamber -> snap out (slight overshoot) -> hold, replayed every time the pose is set
     def strike(bones, length=0.14):
@@ -423,6 +426,7 @@ IDLE_COND = "!query.property('ab:stance') && query.property('ab:pose') == 0 && q
 CHAR_ANIMS = {
     "luffy": [("bounce", "animation.ab.bounce", "query.property('ab:form') == 3"), ("toon", "animation.ab.toon", "query.property('ab:form') == 6"), ("happy_bounce", "animation.ab.happy_bounce", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "sukuna": [("arms2", "animation.ab.arms2", "query.property('ab:form') == 2"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "goku": [("head_scratch", "animation.ab.head_scratch", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("hover", "animation.ab.hover", "query.property('ab:pose') != 24"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "gojo": [("cool_idle", "animation.ab.cool_idle", IDLE_COND)],

@@ -73,7 +73,8 @@
     "dodge": "animation.ab.dodge",
     "pump": "animation.ab.pump",
     "cross": "animation.ab.cross",
-    "tie_bandana": "animation.ab.tie_bandana"
+    "tie_bandana": "animation.ab.tie_bandana",
+    "head_scratch": "animation.ab.head_scratch"
    },
    "scripts": {
     "animate": [
@@ -184,6 +185,9 @@
      },
      {
       "tie_bandana": "query.property('ab:pose') == 32"
+     },
+     {
+      "head_scratch": "query.property('ab:form') == 0 && !query.property('ab:stance') && query.property('ab:pose') == 0 && query.modified_move_speed < 0.1 && variable.attack_time <= 0.0"
      }
     ]
    },
