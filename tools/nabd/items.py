@@ -589,8 +589,165 @@ def build_extra(out):
     for x in (4, 8, 11):
         for y in range(2, 14):
             g[y][x], g[y][x + 1] = "C", "C"
+    build_last(out)
     put("reeds", render(g, {"C": R((150, 200, 90), 0.36)}, extra=[(4, 5, (90, 140, 50)), (5, 5, (90, 140, 50)), (8, 8, (90, 140, 50)),
                                                                  (9, 8, (90, 140, 50)), (11, 4, (90, 140, 50)), (12, 4, (90, 140, 50)), (4, 10, (90, 140, 50)), (5, 10, (90, 140, 50))]))
+
+
+def canvas():
+    return [["."] * N for _ in range(N)]
+
+
+def line(g, x0, y0, x1, y1, ch):
+    n = max(abs(x1 - x0), abs(y1 - y0), 1)
+    for i in range(n + 1):
+        x, y = int(round(x0 + (x1 - x0) * i / n)), int(round(y0 + (y1 - y0) * i / n))
+        if 0 <= x < N and 0 <= y < N:
+            g[y][x] = ch
+    return g
+
+
+def rows_of(g):
+    return ["".join(r) for r in g]
+
+
+def from_block(name, tint_col=None):
+    """Item icons that are simply the block's own sprite reuse our block art."""
+    base = os.path.join(os.path.dirname(os.path.dirname(HERE)), "pack", "textures", "blocks", name)
+    for ext in (".tga", ".png"):
+        if os.path.exists(base + ext):
+            from PIL import Image
+            a = np.array(Image.open(base + ext).convert("RGBA"))[:N, :N]
+            rgb = a[..., :3].astype(float)
+            if tint_col is not None:
+                rgb = rgb * np.array(tint_col) / 255.0
+            return Tex(rgb.astype(np.uint8), None, alpha=a[..., 3], rough=200)
+    return None
+
+
+def build_last(out):
+    def put(name, tex):
+        if tex is not None and name in ISTATS and ISTATS[name]["size"] == [16, 16]:
+            out[name] = tex
+    glass, cork = R((196, 214, 226), 0.3), R((170, 124, 76))
+    # ---- the newer per-creature spawn eggs
+    for name in ISTATS:
+        if name.startswith("spawn_eggs/") or name in ("spawn_egg", "spawn_egg_sulfur_cube"):
+            base = tint(name, ds=0.18, dv=0.1)
+            spot, pale = shift(base, dv=-0.28, ds=0.1), shift(base, dv=0.2, ds=-0.2)
+            k = sum(map(ord, name)) % 3                      # three spot patterns so they are not all alike
+            spots = (((6, 5), (7, 5), (9, 7), (5, 8), (6, 8), (8, 10), (9, 10)), ((5, 6), (8, 5), (9, 5), (7, 8), (10, 8), (6, 10)),
+                     ((6, 4), (9, 6), (10, 6), (5, 9), (8, 9), (7, 11)))[k]
+            put(name, exact(X_EGG, {"M": R(base, 0.34)}, extra=[(x, y, spot) for (x, y) in spots] + [(5, 4, pale)]))
+    # ---- candles, bundles, harnesses: one drawing, sixteen colours
+    wax = dict(DYES)
+    wax["light_gray"] = DYES["silver"]
+    for dye, col in wax.items():
+        put(f"candles/{dye}_candle", exact(X_CANDLE, {"M": R(col, 0.34), "A": R((40, 36, 40), 0.4)}))
+        put(f"bundle_{dye}", exact(X_BUNDLE, {"M": R(col, 0.36), "A": R((226, 214, 190), 0.2)}))
+        put(f"harness/harness_{dye}", exact(X_SADDLE, {"M": R(col, 0.36), "A": IRON}))
+    put("candles/candle", exact(X_CANDLE, {"M": R((236, 204, 150), 0.3), "A": R((40, 36, 40), 0.4)}))
+    put("bundle", exact(X_BUNDLE, {"M": R((150, 84, 44)), "A": R((226, 214, 190), 0.2)}))
+    # ---- spears and the trident
+    for m, ramp in (("wood", WOOD), ("stone", STONE), ("iron", IRON), ("gold", GOLD), ("diamond", DIAMOND), ("netherite", NETHERITE),
+                    ("copper", COPPER)):
+        put(f"spear/{m}_spear", exact(X_SPEAR, {"M": ramp, "V": STICK, "A": R((96, 60, 36))}, metal={"M": 200}))
+    g = canvas()
+    for i in range(7):
+        g[13 - i][2 + i], g[13 - i][3 + i] = "4", "2"
+    for (x, y) in ((9, 6), (10, 5), (11, 4), (12, 3), (13, 2)):
+        g[y][x] = "5" if y < 4 else "4"
+    line(g, 8, 4, 11, 1, "4")
+    line(g, 11, 8, 14, 5, "3")
+    line(g, 8, 5, 10, 7, "3")
+    put("trident", exact(rows_of(g), {"M": R((70, 190, 170), 0.4)}, metal={"M": 160}))
+    # ---- crossbow: stock, limbs and a string that pulls back
+    def crossbow(pull, load=None):
+        g = canvas()
+        for i in range(10):
+            g[13 - i][2 + i], g[13 - i][3 + i] = "x", "w"
+        for k in range(-4, 5):
+            g[6 + k][9 + k] = "y" if abs(k) < 4 else "x"
+        nx, ny = 8 - pull, 7 + pull
+        line(g, 5, 2, nx, ny, "c")
+        line(g, 13, 10, nx, ny, "c")
+        if load:
+            line(g, nx + 1, ny - 1, 12, 3, "x")
+            g[2][13], g[3][13], g[2][12] = load, load, load
+        return rows_of(g)
+    limb = {"V": WOOD, "A": R((226, 226, 230), 0.14), "M": STONE, "P": R((220, 50, 50))}
+    put("crossbow_standby", exact(crossbow(0), limb))
+    for k in range(3):
+        put(f"crossbow_pulling_{k}", exact(crossbow(k + 1), limb))
+    put("crossbow_arrow", exact(crossbow(3, "4"), limb))
+    put("crossbow_firework", exact(crossbow(3, "S"), limb))
+    # ---- buckets with a passenger
+    for name, col in (("bucket_cod", (150, 130, 110)), ("bucket_salmon", (214, 90, 80)), ("bucket_pufferfish", (240, 204, 60)),
+                      ("bucket_tropical", (244, 130, 40)), ("bucket_axolotl", (250, 160, 190)), ("bucket_tadpole", (96, 70, 50)),
+                      ("bucket_sulfur_cube", (214, 220, 80))):
+        dk = shift(col, dv=-0.25)
+        ex = [(6, 4, col), (7, 4, col), (8, 4, col), (9, 4, dk), (7, 3, col), (8, 3, shift(col, dv=0.15)), (10, 3, dk), (10, 5, dk), (6, 3, (20, 20, 26))]
+        put(name, exact(X_BUCKET, {"M": IRON, "P": WATER}, metal={"M": 220}, extra=ex))
+    # ---- chains
+    for name, ramp in (("chain", R((70, 76, 96), 0.5)), ("copper_chain", COPPER), ("exposed_copper_chain", R((176, 124, 104), 0.36)),
+                       ("weathered_copper_chain", R((110, 160, 120), 0.36)), ("oxidized_copper_chain", R((84, 170, 140), 0.36))):
+        g = canvas()
+        for (cx, cy) in ((4, 11), (7, 8), (10, 5)):
+            for (dx, dy, t) in ((0, -1, "5"), (-1, 0, "4"), (1, 0, "2"), (0, 1, "1"), (-1, -1, "4"), (1, 1, "1")):
+                g[cy + dy][cx + dx] = t
+        g[3][12], g[2][13], g[12][2] = "3", "4", "2"
+        put(name, exact(rows_of(g), {"M": ramp}, metal={"M": 200}))
+    # ---- redstone bits and furniture
+    red = R((230, 40, 30))
+    put("lever", exact(X_LEVER, {"M": STONE, "V": STICK}))
+    put("repeater", exact(X_REPEATER, {"M": STONE, "A": red, "V": STICK}, emis={"A": 120}))
+    put("comparator", exact(X_COMPARATOR, {"M": STONE, "A": red, "V": STICK, "P": QUARTZ}, emis={"A": 120}))
+    put("hopper", exact(X_HOPPER, {"M": R((84, 86, 96), 0.5)}, metal={"M": 200}))
+    put("cauldron", exact(X_CAULDRON, {"M": R((84, 86, 96), 0.5), "P": R((36, 38, 48), 0.3)}, metal={"M": 200}))
+    put("brewing_stand", exact(X_STAND, {"M": STONE, "A": R((250, 196, 50)), "P": glass}, emis={"A": 160}))
+    put("flower_pot", exact(X_POT, {"M": R((176, 90, 60), 0.36)}))
+    put("campfire", exact(X_CAMPFIRE, {"V": WOOD, "A": R((255, 150, 30))}, emis={"A": 220}))
+    put("soul_campfire", exact(X_CAMPFIRE, {"V": WOOD, "A": R((70, 210, 230))}, emis={"A": 220}))
+    put("armor_stand", exact(X_ARMORSTAND, {"V": WOOD, "M": STONE}))
+    put("villagebell", exact(X_BELL, {"M": GOLD, "V": WOOD}, metal={"M": 220}))
+    put("fireworks", exact(X_ROCKET, {"M": R((220, 50, 50)), "P": R((244, 244, 246), 0.12), "V": STICK}))
+    put("fireworks_charge", exact(X_BALL, {"M": R(tuple(ISTATS["fireworks_charge"]["mean"]) if "fireworks_charge" in ISTATS else (120, 120, 120), 0.36, )}))
+    for name, col, glow in (("trial_key", (226, 150, 70), 0), ("ominous_trial_key", (60, 150, 190), 60)):
+        put(name, exact(X_KEY, {"M": R(col)}, metal={"M": 200}, emis={"M": glow}))
+    put("end_crystal", exact(X_GEM, {"M": R((240, 120, 230))}, emis={"M": 160}, extra=[(5, 4, (255, 255, 255))]))
+    put("dragon_fireball", exact(X_BALL, {"M": R((170, 60, 220))}, emis={"M": 140}, extra=[(5, 5, (255, 220, 255))]))
+    put("spider_eye_fermented", exact(X_BALL, {"M": R((150, 80, 70))}, extra=[(7, 6, (40, 20, 20)), (8, 6, (40, 20, 20)), (7, 7, (40, 20, 20)), (9, 9, (200, 180, 120))]))
+    put("melon_speckled", exact(X_MELON, {"M": R((232, 64, 64), 0.3), "A": GREEN}, metal={"M": 80},
+                                extra=[(x, y, (255, 226, 90)) for (x, y) in ((5, 6), (8, 7), (10, 6), (6, 8), (9, 8))]))
+    put("rabbit_foot", exact(X_DRUM, {"M": R((214, 180, 130), 0.3), "P": R((240, 232, 214), 0.2)}))
+    put("goat_horn", exact(X_SHARD, {"M": R((214, 196, 160), 0.34)}, extra=[(8, 6, (120, 96, 70)), (6, 8, (120, 96, 70)), (10, 4, (120, 96, 70))]))
+    put("brush", exact(X_SHOVEL, {"M": R((226, 200, 150), 0.3), "V": STICK, "A": COPPER}))
+    put("spyglass", exact([""] * 3 + ["." * (14 - y) + "543" for y in range(3, 13)], {"M": R((214, 150, 70))}, metal={"M": 200},
+                          extra=[(12, 3, (150, 220, 250)), (13, 3, (220, 245, 255))]))
+    put("disc_fragment_5", exact([r[:8] for r in X_DISC], {"M": R((58, 56, 66), 0.6), "P": R((60, 200, 170))}))
+    put("sniffer_egg", exact(X_EGG, {"M": R((170, 70, 60), 0.36)}, extra=[(x, y, (70, 130, 80)) for (x, y) in ((6, 5), (7, 6), (9, 8), (5, 9), (8, 10))]))
+    put("turtle_egg", exact(X_EGG, {"M": R((236, 236, 220), 0.2)}, extra=[(x, y, (120, 190, 170)) for (x, y) in ((6, 5), (9, 7), (6, 9))]))
+    put("dried_kelp", exact(X_INGOT, {"M": R((60, 84, 50), 0.44)}))
+    put("book_portfolio", exact(X_BOOK, {"M": R((60, 110, 190)), "A": PAPER}))
+    for name in ("chalkboard_small", "chalkboard_medium", "chalkboard_large"):
+        put(name, exact(X_FRAME, {"V": WOOD, "P": R((50, 110, 80), 0.3)}))
+    put("wolf_armor", exact(X_BARD, {"M": R((190, 130, 90), 0.36)}))
+    for m, ramp in (("copper", COPPER), ("diamond", DIAMOND), ("gold", GOLD), ("iron", IRON), ("netherite", NETHERITE)):
+        put(f"nautilus_armor/{m}_nautilus_armor", exact(X_BARD, {"M": ramp}, metal={"M": 200}))
+    # ---- rods with something on the end
+    for name, col in (("fishing_rod_cast", None), ("carrot_on_a_stick", (240, 130, 30)), ("warped_fungus_on_a_stick", (40, 170, 150))):
+        g = [list(("." * (15 - y) + "xw").ljust(N, ".")) if 3 <= y <= 13 else list("." * N) for y in range(N)]
+        for y in range(4, 8):
+            g[y][13] = "c"
+        ex = [] if col is None else [(12, 8, col), (13, 8, shift(col, dv=-0.2)), (12, 9, col), (13, 9, shift(col, dv=-0.2)), (13, 10, shift(col, dv=-0.3)),
+                                     (12, 7, (80, 170, 60))]
+        put(name, exact(rows_of(g), {"V": STICK, "A": R((226, 226, 230), 0.14)}, extra=ex))
+    # ---- icons that are just the block's own sprite
+    green = (120, 200, 90)
+    for name, tc in (("hanging_roots", None), ("bush", green), ("firefly_bush", None), ("resin_clump", None), ("nether_sprouts", None),
+                     ("mangrove_propagule", None), ("sea_pickle", None), ("kelp", None)):
+        src = {"kelp": "kelp_top"}.get(name, name)
+        put(name, from_block(src, tc))
 
 
 # ------------------------------------------------------------------ pixel maps
@@ -713,3 +870,30 @@ X_TABLET = ["", "", "...4444444443...", "...4333333332...", "...43SSSSSS32...", 
             "...43SSSSSS32...", "...4333333332...", "...4332222332...", "...4333333332...", "...2222222221..."]
 X_SHERD = ["", "", "", "....4444443.....", "...443333332....", "..44333333332...", "..43333333321...", "..43333333321...",
            "...3333333321...", "...33333333221..", "....3322222211..", "......222111...."]
+X_CANDLE = ["", "", "", "", ".......a", ".......a", "......5443", "......4332", "......4332", "......4332", "......4332", "......4332",
+            "......4332", "......3221"]
+X_BUNDLE = ["", "", "......cddc", ".....dccccd", "......b33b", ".....543332", "....54333332", "...5433333332", "...4333333332",
+            "...4333333322", "...3333333221", "....33322221", "......2211"]
+X_SPEAR = ["", "............54", "...........543", "..........4432", "..........a32", ".........xw", "........xw", ".......xw",
+           "......xw", ".....xw", "....xw", "...xw", "..xw", ".xv"]
+X_LEVER = ["", "", "", ".........xy", "........xw", ".......xw", "......xw", ".....xw", "...4444443", "..433333332", "..333333322",
+           "...2222221"]
+X_REPEATER = ["", "", "", "", "", "", "", "....e.....e", "....w.....w", "..444444444443", "..433333333332", "..222222222221"]
+X_COMPARATOR = ["", "", "", "", "", "", "", "....e..S..e", "....w..R..w", "..444444444443", "..433333333332", "..222222222221"]
+X_HOPPER = ["", "", "", "..444444444443", "..433333333332", "...4333333332", "....43333332", "....43333332", ".....433332",
+            "......4332", "......3221", ".......21"]
+X_CAULDRON = ["", "", "", "", "..444444444443", "..4RRRRRRRRRR2", "..433333333332", "..433333333332", "..433333333332",
+              "..333333333322", "..21..2222..21", "..21........21"]
+X_STAND = ["", "", ".......dc", ".......dc", ".......dc", "....S..dc..S", "...STS.dc.STS", "...SRS.dc.SRS", "....R..dc..R", ".......dc",
+           "..44444dc44443", "..333333333332", "...2222222221"]
+X_POT = ["", "", "", "", "", "", "..444444444443", "..433333333332", "...4333333332", "...4333333332", "....33333322", "....22222221"]
+X_CAMPFIRE = ["", "", ".......e", "......ede", "......dedc", ".....cdeedc", ".....cddddc", "......cccc", "..yyyyyyyyyyyx",
+              "..xxxxxxxxxxxw", "..wwvwwwwvwwwv"]
+X_ARMORSTAND = ["", "......yyyx", "......yxxw", "......xwww", "...yyyyyyyyyx", ".......xw", ".......xw", ".......xw", ".......xw",
+                ".......xw", ".....yyyyyx", ".....x...w", ".....x...w", "...4444444443"]
+X_BELL = ["", "", "......xxxx", ".......44", "......5443", ".....544332", ".....443332", "....54333322", "....44333322",
+          "...4433333221", "...2222222221", ".......21"]
+X_ROCKET = ["", ".......54", "......5443", "......4332", "......TSSR", "......4332", "......4332", "......TSSR", "......3221", ".......xw",
+            ".......xw", ".......xw", ".......xv"]
+X_KEY = ["", "", "", "...4443", "..43..32", "..4....2", "..43..32", "...4332", ".....43", "......43", ".......43", "........432",
+         ".........3.2"]
