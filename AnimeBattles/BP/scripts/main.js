@@ -4212,6 +4212,7 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const ds = states.get(e.id);
     if (ds && ds.clones) for (const c of ds.clones) poof(c);  // the original falls: every clone vanishes
     states.delete(e.id);
+    if (def && teamOf(e)) later(10, () => checkWinner(e.dimension, teamOf(e)));
     // victory: the fighter who landed the last blow raises a fist with a shout
     const k = ev.damageSource && ev.damageSource.damagingEntity;
     if (k && k.isValid && FIGHTERS[k.typeId] && k.id !== e.id) {
@@ -4228,6 +4229,40 @@ world.afterEvents.entityDie.subscribe((ev) => {
   } catch (err) { /* ignore */ }
 });
 world.afterEvents.entityRemove.subscribe((ev) => { states.delete(ev.removedEntityId); });
+// Victory screen: when one side has no fighters left standing, the winners' names and forms fill the screen.
+function checkWinner(dim, losingTeam) {
+  try {
+    const left = (tag) => dim.getEntities({ tags: [tag], families: [FIGHTER_FAMILY] }).filter((x) => alive(x) && !x.hasTag("ab_clone"));
+    if (left(losingTeam).length) return;
+    const winTeam = losingTeam === RED ? BLUE : RED;
+    const winners = left(winTeam);
+    if (!winners.length) return;
+    const w = winners[0], wd = FIGHTERS[w.typeId];
+    const title = `${teamLabel(winTeam)}${wd.color}§l${wd.name} WINS!`;
+    const sub = `§7${wd.forms[clamp(formOf(w), 0, wd.forms.length - 1)].label}${winners.length > 1 ? ` §8+${winners.length - 1}` : ""}`;
+    for (const p of world.getPlayers()) {
+      try { p.onScreenDisplay.setTitle(title, { subtitle: sub, fadeInDuration: 5, stayDuration: 60, fadeOutDuration: 15 }); } catch (err) { /* ignore */ }
+      sound(p.dimension, "random.levelup", p.location, 1, 1);
+    }
+    fx(dim, "flash", V.up(w.location, 2), wd.forms[clamp(formOf(w), 0, wd.forms.length - 1)].aura ?? C.gold, 6, 0.6);
+    ring(dim, V.up(w.location, 0.2), 4, C.gold, 40, 0.6);
+  } catch (err) { /* ignore */ }
+}
+// Instant battles from chat: /scriptevent ab:vs goku vegeta  — or /scriptevent ab:random
+function startBattle(p, a, b) {
+  const ida = "ab:" + a, idb = "ab:" + b;
+  if (!FIGHTERS[ida] || !FIGHTERS[idb]) { p.sendMessage(`§c[Anime Battles] unknown fighter. Names: ${Object.keys(FIGHTERS).map((k) => k.slice(3)).join(", ")}`); return; }
+  const d = V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
+  const mid = V.add(p.location, V.mul(d, 14));
+  const side = sideOf(d);
+  for (const [id, team, off] of [[ida, RED, -7], [idb, BLUE, 7]]) {
+    try {
+      const f = p.dimension.spawnEntity(id, V.add(mid, V.mul(side, off)));
+      later(25, () => { if (f.isValid) setTeam(f, team); });
+    } catch (err) { warn("vs", err); }
+  }
+  p.sendMessage(`§6[Anime Battles] §c${FIGHTERS[ida].name} §fvs §9${FIGHTERS[idb].name}§f — fight!`);
+}
 
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
 const ENTRANCE_LINES = {
@@ -4285,6 +4320,14 @@ function giveKit(p) {
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   if (ev.id === "ab:griefing") world.setDynamicProperty("ab:griefing", ev.message.trim() !== "off");
   if (ev.id === "ab:fx") world.setDynamicProperty("ab:fx", ev.message.trim() === "low" ? 0.5 : 1);
+  if (ev.id === "ab:vs" || ev.id === "ab:random") {
+    const p = ev.sourceEntity && ev.sourceEntity.typeId === "minecraft:player" ? ev.sourceEntity : world.getPlayers()[0];
+    if (!p) return;
+    const ids = Object.keys(FIGHTERS).map((k) => k.slice(3));
+    let [a, b] = ev.message.trim().toLowerCase().split(/\s+/);
+    if (ev.id === "ab:random" || !a || !b) { a = ids[Math.floor(Math.random() * ids.length)]; do { b = ids[Math.floor(Math.random() * ids.length)]; } while (b === a); }
+    startBattle(p, a, b);
+  }
   if (ev.id === "ab:kit") {  // every stick and spawn egg again: /scriptevent ab:kit
     for (const p of world.getPlayers()) giveKit(p);
   }
