@@ -6,6 +6,7 @@ bottom-right) and wraps the whole sprite in a soft dark outline.  The game
 uses this same picture for the inventory icon and for the item held in the
 hand, so both always match.
 """
+import colorsys
 import json
 import os
 
@@ -19,7 +20,61 @@ ISTATS = json.load(open(os.path.join(HERE, "vanilla_item_stats.json")))
 
 
 def R(c, contrast=0.42, **kw):
-    return make_ramp(c, 5, contrast, **kw)
+    """Item ramp, six tones (0 = deepest shadow ... 5 = specular glint).
+    Shadows slide towards violet and gain saturation, lights slide towards
+    warm yellow and wash out: the classic hand-pixelled look."""
+    h, sat, v = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
+    k = contrast / 0.42
+    grey = sat < 0.08
+    if not grey:
+        sat = min(1.0, sat * 1.12)
+    out = []
+    for vm, sm, cool, warm in ((1 - 0.60 * k, 1.18, 0.070, 0), (1 - 0.40 * k, 1.12, 0.040, 0), (1 - 0.20 * k, 1.05, 0.018, 0),
+                               (1.0, 1.0, 0, 0), (None, 0.70, 0, 0.030), (None, 0.28, 0, 0.050)):
+        if vm is None:
+            vv = v + (1 - v) * (0.45 if sm > 0.5 else 0.86)
+        else:
+            vv = max(0.04, v * max(0.12, vm))
+        hh, ss = h, sat * sm
+        if grey:
+            if cool:
+                hh, ss = 0.66, sat + (0.12 if cool > 0.05 else 0.08 if cool > 0.03 else 0.04)
+            elif warm:
+                hh, ss = 0.12, sat + 0.02
+        elif cool:
+            d = ((0.72 - h + 0.5) % 1.0) - 0.5
+            hh = (h + max(-cool, min(cool, d))) % 1.0
+        elif warm:
+            d = ((0.14 - h + 0.5) % 1.0) - 0.5
+            hh = (h + max(-warm, min(warm, d))) % 1.0
+        r_, g_, b_ = colorsys.hsv_to_rgb(hh, min(1.0, ss), min(1.0, vv))
+        out.append((int(round(r_ * 255)), int(round(g_ * 255)), int(round(b_ * 255))))
+    return out
+
+
+def _outline(rgb, alpha, hgt, base):
+    """Soft cartoon outline.  `base` holds each pixel's darkest material tone.
+    The outline is lighter where it faces the light (top / left) and deep on
+    the shadow side, so sprites look rounded instead of stamped."""
+    solid = alpha > 0
+    deep = (base * 0.50 + np.array((14, 10, 22)) * 0.50).astype(np.uint8)
+    soft = (base * 0.80 + np.array((14, 10, 22)) * 0.20).astype(np.uint8)
+    for dy, dx, col in ((-1, 0, soft), (0, -1, soft), (1, 0, deep), (0, 1, deep)):
+        nb = np.roll(np.roll(solid, dy, 0), dx, 1)
+        nd = np.roll(np.roll(col, dy, 0), dx, 1)
+        edge = nb & ~solid & (alpha == 0)
+        if dy == 1:
+            edge[0, :] = False
+        if dy == -1:
+            edge[-1, :] = False
+        if dx == 1:
+            edge[:, 0] = False
+        if dx == -1:
+            edge[:, -1] = False
+        rgb = np.where(edge[..., None], nd, rgb)
+        alpha = np.where(edge, 255, alpha)
+        hgt = np.where(edge, 0.3, hgt)
+    return rgb, alpha, hgt
 
 
 WOOD, STICK = R((156, 112, 62)), R((128, 92, 52))
@@ -87,8 +142,8 @@ def render(g, pal, speck=None, seed="", extra=None, emis=None, metal=None):
         if speck and ch in speck:
             flip = (r.random((N, N)) < speck[ch]) & (idx == 2)
             idx = np.where(flip, np.where(r.random((N, N)) < 0.5, 1, 3), idx)
-        rgb = np.where(m[..., None], np.array(ramp, np.uint8)[idx], rgb)
-        dark = np.where(m[..., None], np.array(mix(ramp[0], (20, 16, 26), 0.5), np.uint8), dark)
+        rgb = np.where(m[..., None], np.array(ramp, np.uint8)[np.array([1, 2, 3, 4, 5])[idx]], rgb)   # 3 = base tone
+        dark = np.where(m[..., None], np.array(ramp[0], np.uint8), dark)
         alpha = np.where(m, 255, alpha)
         hgt = np.where(m, 0.45 + idx * 0.12, hgt)
         if emis and ch in emis:
@@ -96,22 +151,7 @@ def render(g, pal, speck=None, seed="", extra=None, emis=None, metal=None):
         if metal and ch in metal:
             mt = np.where(m, metal[ch], mt)
     # outline: empty pixels touching the sprite take a darkened neighbour colour
-    solid = alpha > 0
-    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-        nb = np.roll(np.roll(solid, dy, 0), dx, 1)
-        nd = np.roll(np.roll(dark, dy, 0), dx, 1)
-        edge = nb & ~solid & (alpha == 0)
-        if dy == 1:
-            edge[0, :] = False
-        if dy == -1:
-            edge[-1, :] = False
-        if dx == 1:
-            edge[:, 0] = False
-        if dx == -1:
-            edge[:, -1] = False
-        rgb = np.where(edge[..., None], nd, rgb)
-        alpha = np.where(edge, 255, alpha)
-        hgt = np.where(edge, 0.3, hgt)
+    rgb, alpha, hgt = _outline(rgb, alpha, hgt, dark)
     if extra:
         for (x, y, c) in extra:
             rgb[y, x] = c
@@ -138,11 +178,11 @@ def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
                 continue
             if ch.isdigit():
                 grp, tone = "M", int(ch)
-            elif ch in "abcde":
+            elif ch in "abcdef":
                 grp, tone = "A", ord(ch) - 97
             elif ch in "vwxyz":
-                grp, tone = "V", ord(ch) - 118
-            elif ch in "PQRST":                              # a second body colour (belly, filling, pages...)
+                grp, tone = "V", ord(ch) - 117                # v = 1 ... z = 5: handles stay warm, never black
+            elif ch in "PQRSTU":                             # a second body colour (belly, filling, pages...)
                 grp, tone = "P", ord(ch) - 80
             else:
                 raise ValueError(f"bad sprite character {ch!r}")
@@ -150,29 +190,14 @@ def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
             if checker and grp == "M" and (x + y) % 2 == 0 and 0 < tone:
                 tone -= 1                                    # chain links
             rgb[y, x] = ramp[tone]
-            dark[y, x] = mix(ramp[0], (20, 16, 26), 0.5)
+            dark[y, x] = ramp[0]
             alpha[y, x] = 255
-            hgt[y, x] = 0.45 + tone * 0.12
+            hgt[y, x] = 0.4 + tone * 0.11
             if metal and grp in metal:
                 mt[y, x] = metal[grp]
             if emis and grp in emis:
                 em[y, x] = emis[grp]
-    solid = alpha > 0
-    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-        nb = np.roll(np.roll(solid, dy, 0), dx, 1)
-        nd = np.roll(np.roll(dark, dy, 0), dx, 1)
-        edge = nb & ~solid & (alpha == 0)
-        if dy == 1:
-            edge[0, :] = False
-        if dy == -1:
-            edge[-1, :] = False
-        if dx == 1:
-            edge[:, 0] = False
-        if dx == -1:
-            edge[:, -1] = False
-        rgb = np.where(edge[..., None], nd, rgb)
-        alpha = np.where(edge, 255, alpha)
-        hgt = np.where(edge, 0.3, hgt)
+    rgb, alpha, hgt = _outline(rgb, alpha, hgt, dark)
     if extra:
         for (x, y, c) in extra:
             rgb[y, x] = c
@@ -184,31 +209,15 @@ def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
 
 # Weapons, tools and armour are placed pixel by pixel: a lit edge, a body
 # tone and a shaded edge on every blade and plate, seams and belts on armour.
-X_SWORD = ["", ".............43.", "............431.", "...........431..", "..........431...", ".........431....", "........431.....",
-           ".......431......", "..dc..431.......", "...dc431........", "....dcb.........", "...xwdcb........", "..xw..dc........",
-           ".cb.............", ".ba............."]
-X_PICK = ["", ".....4444443....", "...4433333332...", "..43.....32221..", "..3.......xw21..", ".........xw.21..", "........xw..21..",
-          ".......xw...11..", "......xw....10..", ".....xw.....0...", "....xw..........", "...xw...........", "..xw............",
-          ".xw.............", ".w.............."]
-X_AXE = ["", ".............xw.", ".........443xw..", ".......4433xw...", ".....44333xw2...", "....44333xw21...", "....4333xw1.....",
-         "....433xw.......", "....32xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............",
-         ".xw............."]            # crescent blade hugging the haft, small poll behind, haft tip showing above
-X_SHOVEL = ["", "...........443..", "..........44332.", ".........443321.", ".........43321..", "........x3321...", ".......xw21.....",
-            "......xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............", ".xw.............",
-            ".w.............."]
-X_HOE = ["", "......4444443...", "......33333321..", "......31...xw...", "......1...xw....", ".........xw.....", "........xw......",
-         ".......xw.......", "......xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............",
-         ".xw.............", ".w.............."]
-X_HELMET = ["", "", ".....444444.....", "...4443333332...", "..443333333321..", "..433333333321..", "..abbbbbbbbbba..",
-            "..432.3221.321..", "..432..31..321..", "..432..21..321..", "..322......221..", "..21........10.."]
-X_CHEST = ["", "..443......443..", ".44332....44332.", ".433332aa433321.", ".43333bbbb33321.", ".43214333321321.", ".32114333321211.",
-           "....43333321....", "....42222221....", "....43333321....", "....43333321....", "....42222221....", "....abbbbbba....",
-           ".....322221....."]
-X_LEGS = ["", "...abbbbbbbba...", "...4333cc3321...", "...4333333321...", "...4333223321...", "...4332..4321...", "...4332..4321...",
-          "...4332..4321...", "...4222..4221...", "...4332..4321...", "...4332..4321...", "...4332..4321...", "...3321..3321...",
-          "...2211..2210..."]
-X_BOOTS = ["", "", "", "", "...abb....abb...", "...432....432...", "...432....432...", "...432....432...", "...432....432...",
-           "..4332....4332..", ".43322....43322.", ".00000....00000."]
+X_SWORD = ["", ".............43.", "............531.", "...........431..", "..........431...", ".........531....", "........431.....", "..e....431......", "..dc..531.......", "...dc431........", "....Scb.........", "...ywdcb........", "..xv..dcb.......", ".dc....b........", ".cb............."]
+X_PICK = ["", ".....5444443....", "...5433333332...", "..53.....32221..", "..2.......ba21..", ".........xw.21..", "........yw..21..", ".......xw...11..", "......xw....10..", ".....yw.....0...", "....xw..........", "...xw...........", "..yw............", ".xv.............", ".v.............."]
+X_AXE = ["", ".............xw.", ".........553xw..", ".......5443ba...", ".....54333xw2...", "....54332xw21...", "....5432xw1.....", "....432yw.......", "....31xw........", ".....xw.........", "....yw..........", "...xw...........", "..xw............", ".xv............."]
+X_SHOVEL = ["", "...........543..", "..........54332.", ".........543321.", ".........43321..", "........b3321...", ".......xa21.....", "......yw........", ".....xw.........", "....xw..........", "...yw...........", "..xw............", ".xv.............", ".v.............."]
+X_HOE = ["", "......5444443...", "......43333321..", "......31...ba...", "......1...xw....", ".........yw.....", "........xw......", ".......xw.......", "......yw........", ".....xw.........", "....xw..........", "...yw...........", "..xw............", ".xv.............", ".v.............."]
+X_HELMET = ["", ".......54.......", ".....554444.....", "...5544333332...", "..544333333221..", "..543333333321..", "..cdedddddedcb..", "..532.4321.321..", "..432..31..321..", "..432..21..321..", "..322......221..", "..21........10.."]
+X_CHEST = ["", "..554......544..", ".54332....54332.", ".543332cc433321.", ".43333cddc33321.", ".43214433331321.", ".32114333321211.", "....54333321....", "....42222221....", "....54333321....", "....43333321....", "....42222221....", "....bccddccb....", ".....322221....."]
+X_LEGS = ["", "...bccccccccb...", "...5433dd3321...", "...5433333321...", "...4333223321...", "...5432..4321...", "...4332..4321...", "...4332..4321...", "...4222..4221...", "...5432..4321...", "...4332..4321...", "...4332..4321...", "...3321..3321...", "...2211..2210..."]
+X_BOOTS = ["", "", "", "", "...bcc....bcc...", "...542....542...", "...432....432...", "...432....432...", "...432....432...", "..5432....5432..", ".54322....54322.", ".00000....00000."]
 
 
 # ---------------------------------------------------------------- shapes
@@ -280,7 +289,10 @@ def build(out):
     # ------------------------------------------------------------ tools
     for m, ramp in mats.items():
         mt = {"M": metal_of.get(m, 0), "A": metal_of.get(m, 0)}
-        grp = {"M": ramp, "V": STICK, "A": STICK if m in ("wood", "stone") else R(shift(ramp[1], dv=-0.08), 0.4)}
+        trim = R((120, 84, 50)) if m in ("wood", "stone") else R((200, 150, 60) if m in ("iron", "diamond", "netherite") else shift(ramp[1], dv=-0.08), 0.4)
+        gem = {"wood": (120, 84, 50), "stone": (120, 120, 130), "iron": (220, 50, 60), "gold": (226, 40, 70), "diamond": (250, 250, 255),
+               "netherite": (220, 60, 50), "copper": (60, 200, 150)}[m]
+        grp = {"M": ramp, "V": STICK, "A": trim, "P": R(gem)}
         for part, rows in (("pickaxe", X_PICK), ("axe", X_AXE), ("shovel", X_SHOVEL), ("hoe", X_HOE), ("sword", X_SWORD)):
             put(f"{m}_{part}", exact(rows, grp, metal=mt))
     # ------------------------------------------------------------ armour
@@ -422,27 +434,106 @@ def build(out):
     put("nether_star", exact(X_STAR, {"M": R((244, 244, 226), 0.2)}, emis={"M": 200}))
     put("ghast_tear", exact(X_TEAR, {"M": R((220, 240, 244), 0.2)}, extra=[(6, 6, white)]))
     put("totem", exact(X_TOTEM, {"M": GOLD, "A": EMERALD}, metal={"M": 200}))
+    build_more(out)
+
+
+def tint(name, ds=0.22, dv=0.06):
+    """A lively version of the colour the game uses for this item."""
+    return shift(tuple(ISTATS[name]["mean"]), ds=ds, dv=dv)
+
+
+def hue_of(name):
+    """Stable colour picked from a name (labels on music discs)."""
+    h = (sum(ord(c) * (i + 3) for i, c in enumerate(name)) % 360) / 360.0
+    r_, g_, b_ = colorsys.hsv_to_rgb(h, 0.7, 0.95)
+    return (int(r_ * 255), int(g_ * 255), int(b_ * 255))
+
+
+def build_more(out):
+    """Families that share one drawing and differ by colour."""
+    def put(name, tex):
+        if name in ISTATS and ISTATS[name]["size"] == [16, 16]:
+            out[name] = tex
+    glass = R((196, 214, 226), 0.3)
+    cork = R((170, 124, 76))
+    # ---- potions: three bottle shapes, liquid coloured per effect
+    for name in ISTATS:
+        if not name.startswith("potion_bottle_"):
+            continue
+        empty = name.endswith("empty")
+        liquid = R((214, 232, 240), 0.2) if empty else R(tint(name, ds=0.3), 0.36)
+        rows = X_SPLASH if "splash" in name else X_LINGER if "lingering" in name else X_BOTTLE
+        put(name, exact(rows, {"M": liquid, "A": glass, "V": cork}, emis={"M": 0 if empty else 30}))
+    for name, col, glow in (("honey_bottle", (240, 160, 30), 0), ("experience_bottle", (170, 240, 60), 140),
+                            ("dragons_breath", (230, 110, 210), 100), ("ominous_bottle", (50, 70, 130), 0)):
+        put(name, exact(X_BOTTLE, {"M": R(col), "A": glass, "V": cork}, emis={"M": glow}))
+    # ---- spawn eggs: one egg, two colours per creature
+    for name in ISTATS:
+        if name.startswith("egg_") and name not in ("egg_template", "egg_null", "egg_mask"):
+            base = tint(name, ds=0.18, dv=0.1)
+            spot, pale = shift(base, dv=-0.28, ds=0.1), shift(base, dv=0.2, ds=-0.2)
+            ex = [(x, y, spot) for (x, y) in ((6, 5), (7, 5), (9, 7), (5, 8), (6, 8), (8, 10), (9, 10))] + [(5, 4, pale)]
+            put(name, exact(X_EGG, {"M": R(base, 0.34)}, extra=ex))
+    # ---- wood families: boats, signs, doors
+    for name in ISTATS:
+        if "boat" in name or name.endswith("_raft"):
+            wood = R(tint(name, ds=0.12, dv=0.08))
+            rows = X_BOAT_CHEST if "chest" in name else X_BOAT
+            put(name, exact(rows, {"M": wood, "P": R((170, 120, 60)), "A": IRON}))
+        elif name.endswith("hanging_sign"):
+            put(name, exact(X_HANG, {"M": R(tint(name, ds=0.12, dv=0.08)), "A": R((96, 100, 112), 0.4)}))
+        elif name == "sign" or name.startswith("sign_") or name.endswith("_sign"):
+            put(name, exact(X_SIGN, {"M": R(tint(name, ds=0.12, dv=0.1)), "V": STICK}))
+        elif (name.startswith("door_") or name.endswith("_door")) and "trap" not in name:
+            metal = "iron" in name or "copper" in name
+            put(name, exact(X_DOOR, {"M": R(tint(name, ds=0.12, dv=0.08)), "P": R((150, 200, 230), 0.3), "A": GOLD},
+                            metal={"M": 200} if metal else None))
+    # ---- minecarts
+    for name, load in (("minecart_normal", None), ("minecart_chest", (170, 120, 60)), ("minecart_furnace", (130, 130, 136)),
+                       ("minecart_hopper", (80, 80, 90)), ("minecart_tnt", (214, 50, 40)), ("minecart_command_block", (214, 140, 90))):
+        rows = X_CART if load is None else X_CART_LOAD
+        put(name, exact(rows, {"M": IRON, "A": R((60, 60, 70), 0.5), "P": R(load or (0, 0, 0))}, metal={"M": 220}))
+    # ---- music discs
+    vinyl = R((58, 56, 66), 0.6)
+    for name in ISTATS:
+        if name.startswith("record_") or name.startswith("music_disc_"):
+            put(name, exact(X_DISC, {"M": vinyl, "P": R(hue_of(name))}))
+    # ---- bow being drawn: the string pulls back and the arrow slides with it
+    for k in range(3):
+        rows = [list(r.ljust(N, ".")) for r in X_BOW] + [list("." * N)] * 2
+        for y in range(1, 14):
+            if rows[y][9] == "a":
+                rows[y][9] = "."
+        for y in range(1, 14):
+            x = 9 + int(round((k + 1) * 1.3 * (1 - abs(y - 7) / 6.0)))
+            rows[y][min(14, x)] = "a"
+        nock = min(14, 9 + int(round((k + 1) * 1.3)))
+        for x in range(1, nock):
+            rows[7][x] = "x" if rows[7][x] in ".xwy" else rows[7][x]
+        rows[7][1], rows[6][2], rows[8][2] = "4", "3", "3"
+        put(f"bow_pulling_{k}", exact(["".join(r) for r in rows], {"V": WOOD, "A": R((230, 230, 224), 0.12), "M": STONE}))
+    put("shears", exact(X_SHEARS, {"M": IRON, "A": R((90, 90, 100), 0.4), "P": R((200, 50, 50))}, metal={"M": 220}))
+    rod = [list(("." * (15 - y) + "xw").ljust(N, ".")) if 3 <= y <= 13 else list("." * N) for y in range(N)]
+    for y in range(4, 10):
+        rod[y][13] = "c"
+    rod[10][12], rod[10][13], rod[9][11] = "b", "c", "b"
+    put("fishing_rod_uncast", exact(["".join(r) for r in rod], {"V": STICK, "A": R((226, 226, 230), 0.14)}))
 
 
 # ------------------------------------------------------------------ pixel maps
-X_INGOT = ["", "", "", "", "", ".....444444444", "....4333333331", "...43333333321", "...2222222221", "...111111110"]
-X_NUGGET = ["", "", "", "", "", "", "......443", ".....44332", ".....433321", "......3221", ".......21"]
-X_GEM = ["", "", "", "....44443333", "...4443333322", "..443333333221", "...3333332221", "....33322211", ".....332211", "......3211",
-         ".......21"]
-X_EMERALD = ["", "", ".....444443", "....44333332", "...4333333321", "...4343333221", "...4343333221", "...4343333221", "...4343333221",
-             "...4332222221", "....33222211", ".....222211"]
-X_SHARD = ["", "...........43", "..........4432", ".........44332", "........443321", ".......443321", "......443321", ".....443321",
-           "....443321", "...443321", "...33221", "....221"]
+X_INGOT = ["", "", "", "", "", ".....445544444", "....4335533331", "...43333333321", "...2222222221", "...111111110"]
+X_NUGGET = ["", "", "", "", "", "", "......543", ".....54332", ".....433321", "......3221", ".......21"]
+X_GEM = ["", "", "", "....55443333", "...5544333322", "..544323333221", "...3332332221", "....33323211", ".....332211", "......3211", ".......21"]
+X_EMERALD = ["", "", ".....554443", "....54333332", "...5433333321", "...4354333221", "...4343333221", "...4343333221", "...4343333221", "...4332222221", "....33222211", ".....222211"]
+X_SHARD = ["", "...........53", "..........5432", ".........54332", "........543321", ".......543321", "......443321", ".....543321", "....443321", "...443321", "...33221", "....221"]
 X_FLINT = ["", "", "", "......443", ".....44332", "....4433321", "...44333321", "...43333321", "....3332221", ".....22211", "......211"]
 X_LUMP = ["", "", "", "......44443", "....44333332", "...4433233332", "..44333333321", "..43323333321", "..33333332221", "...332222211",
           ".....222111"]
 X_HIDE = ["", "", "..44......44", "..4333..33332", "...433333332", "...433333332", "..4333333332", "..4333333332", "...333333321",
           "...332..2221", "..332....221", "..22......11"]
 X_PILE = ["", "", "", "", "", "", "", "", ".......43", ".....443332", "...4433333321", "..443333333221", "..222222222211"]
-X_BALL = ["", "", "", "......4443", "....44433332", "...4443333332", "...4433333322", "...4333333322", "...3333333221", "...3333332221",
-          "....33222211", "......2211"]
-X_EGG = ["", "", "......443", ".....44332", "....4433332", "....4333332", "...443333322", "...433333322", "...433333221", "...333332221",
-         "....3322221", ".....22211"]
+X_BALL = ["", "", "", "......5543", "....55433332", "...5543333332", "...4433333322", "...4333333322", "...3333333221", "...3333332221", "....33222211", "......2211"]
+X_EGG = ["", "", "......543", ".....54332", "....5433332", "....4333332", "...443333322", "...433333322", "...433333221", "...333332221", "....3322221", ".....22211"]
 X_BONE = ["", "", "............44", "..........4432", "..........432", ".........43", "........43", ".......43", "......43", ".....43",
           "....43", "...43", ".4432", ".322"]
 X_ARROW = ["", "...........443", "..........x432", ".........x..2", "........x", ".......x", "......x", ".....x", "....x", "...x",
@@ -485,6 +576,31 @@ X_STAR = ["", ".......43", ".......43", "......4432", "......4332", "....4443332
           "......3221", "......3221", ".......21", ".......21"]
 X_TEAR = ["", "", ".......4", "......443", "......433", ".....44332", "....4433332", "....4333332", "....3333322", "....3333221",
           ".....32221", "......211"]
-# a small winged idol: square head with gem eyes, outstretched wings, belted body, two feet
-X_TOTEM = ["", "......4443", ".....443332", ".....4c33c2", ".....433332", "......3112", "..44.433332.43", "..433333333321",
-           "...2243333221", ".....433332", ".....43bb32", ".....433332", "......3222", "......21.21"]
+# a small winged idol: broad head with gem eyes and a grin, feathered wings,
+# a jewel on the chest, a belt and two feet
+X_TOTEM = ["", ".....544443.....", "....54433332....", "....4ec33ec2....", "....43322332....", "....43100132....", ".....332222.....",
+           ".54..433332..54.", ".443343dd323322.", "..32.433332.21..", ".....433332.....", ".....bccccb.....", ".....433332.....",
+           "......3222......", ".....32..21....."]
+X_BOTTLE = ["", ".......xw", ".......xw", "......cddb", ".......dc", ".......dc", "......d44c", "....dd5443cc", "...d55443332c",
+            "...d54433332b", "...d44333332b", "...c43333322b", "....c333222b", "......bbbb"]
+X_SPLASH = ["", "......xyyw", ".......xw", "......cddb", ".......dc", "......d44c", ".....d5443c", ".....d44332c", "....d5443332c",
+            "....d4433332b", "...d544333322b", "...d443333222b", "...cbbbbbbbbbb"]
+X_LINGER = ["", "....e.....e", ".......xw.e", "......cddb", "......d44c", ".....d5443c", ".....d54332c", ".....d44332c", ".....d43332b",
+            ".....d43332b", ".....c43322b", ".....c33222b", "......bbbb"]
+X_BOAT = ["", "", "", "", "", "", ".4............4.", ".43..........32.", ".43333333333332.", "..333333333322..", "...2222222221...",
+          "....11111110...."]
+X_BOAT_CHEST = ["", "", "", "", ".....TTTTTS", ".....TSeeSR", ".4...TSSSSR...4.", ".43..SRRRRQ..32.", ".43333333333332.",
+                "..333333333322..", "...2222222221...", "....11111110...."]
+X_SIGN = ["", "", "..444444444443", "..433333333332", "..432222222232", "..433333333332", "..432222223332", "..433333333332",
+          "..222222222221", ".......xw", ".......xw", ".......xw", ".......xw", ".......xv"]
+X_HANG = ["", "...b......b", "...c......c", "...b......b", "..444444444443", "..433333333332", "..432222222232", "..433333333332",
+          "..432222223332", "..433333333332", "..222222222221"]
+X_DOOR = ["", "....44444443", "....43333332", "....4RR3RR32", "....4RR3RR32", "....43333332", "....4RR3RR32", "....4RR3RR32",
+          "....43333332", "....432232e2", "....43222232", "....43222232", "....43222232", "....43333332", "....22222221"]
+X_CART = ["", "", "", "", "", "", "", "..444444444443", "..433333333332", "...3333333332", "...2222222221", "....ba....ba"]
+X_CART_LOAD = ["", "", "", ".....TTTTTS", ".....TSSSSR", ".....TSSSSR", ".....SRRRRQ", "..444444444443", "..433333333332",
+               "...3333333332", "...2222222221", "....ba....ba"]
+X_DISC = ["", "", "......2222", "....22333322", "...2343333332", "..234333333331", "..2333TSSR3331", "..2333S00R3331", "..2333S00R3331",
+          "..2333RRRQ3331", "..233333333431", "...2333333331", "....11333311", "......1111"]
+X_SHEARS = ["", "...5.......5", "...45.....54", "....43...34", ".....43.34", "......4334", ".......bb", ".....SR..SR", "...S..R.S..R",
+            "...S..R.S..R", "....RR...RR"]

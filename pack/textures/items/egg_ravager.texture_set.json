@@ -1,0 +1,8 @@
+{
+  "format_version": "1.21.30",
+  "minecraft:texture_set": {
+    "color": "egg_ravager",
+    "metalness_emissive_roughness_subsurface": "egg_ravager_mers",
+    "heightmap": "egg_ravager_heightmap"
+  }
+}
