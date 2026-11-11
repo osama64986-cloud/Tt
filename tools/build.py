@@ -167,6 +167,19 @@ def make_icon(out, size=256):
     return Image.fromarray(bg, "RGBA")
 
 
+def calibrate(tex, target, strength=0.65):
+    """Pull an item's average colour towards the colour players know for it
+    (only the average colour is used - no pixels)."""
+    a = tex.alpha > 0
+    if not a.any():
+        return
+    rgb = tex.rgb.astype(float)
+    mean = rgb[a].mean(0)
+    gain = np.clip((np.array(target, float) + 8) / (mean + 8), 0.55, 1.8)
+    gain = 1 + (gain - 1) * strength
+    tex.rgb = np.where(a[..., None], np.clip(rgb * gain, 0, 255), rgb).astype(np.uint8)
+
+
 def validate(out):
     """Fails the build on anything the game would reject or mis-size."""
     problems = []
@@ -213,6 +226,12 @@ def main():
         write_tex(name, tex)
     item_out = {}
     items.build(item_out)
+    # dyeable items (leather armour, dyed wolf armour, firework star) are
+    # coloured by the game at run time from a grey base: leave them to the game
+    for name in [n for n in item_out if "tga" in items.ISTATS[n]["ext"]]:
+        del item_out[name]
+    for name, tex in item_out.items():
+        calibrate(tex, items.ISTATS[name]["mean"])
     for name, tex in item_out.items():
         st = items.ISTATS[name]
         if [tex.w, tex.h] != st["size"]:
@@ -225,6 +244,15 @@ def main():
                   open(os.path.join(tdir, "terrain_texture.json"), "w"), indent=2)
     if fb:
         json.dump(fb, open(os.path.join(tdir, "flipbook_textures.json"), "w"), indent=2)
+    # items live in a subpack so players can pick ours or the game's own
+    src_items = os.path.join(PACK, "textures", "items")
+    if os.path.isdir(src_items):
+        dst = os.path.join(PACK, "subpacks", "nabd_items", "textures", "items")
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.move(src_items, dst)
+        keep = os.path.join(PACK, "subpacks", "game_items")
+        os.makedirs(keep, exist_ok=True)
+        open(os.path.join(keep, "README.txt"), "w").write("Empty on purpose: with this option the game shows its own item icons.\n")
     make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
     validate(out)
     print(f"{len(out)} block textures, {len(item_out)} item textures, {len(variations)} variation groups, {len(fb)} flipbooks")

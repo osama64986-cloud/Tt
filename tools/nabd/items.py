@@ -26,13 +26,12 @@ def R(c, contrast=0.42, **kw):
     h, sat, v = colorsys.rgb_to_hsv(c[0] / 255, c[1] / 255, c[2] / 255)
     k = contrast / 0.42
     grey = sat < 0.08
-    if not grey:
-        sat = min(1.0, sat * 1.12)
+    # (classic look: keep the material's own saturation)
     out = []
-    for vm, sm, cool, warm in ((1 - 0.60 * k, 1.18, 0.070, 0), (1 - 0.40 * k, 1.12, 0.040, 0), (1 - 0.20 * k, 1.05, 0.018, 0),
-                               (1.0, 1.0, 0, 0), (None, 0.70, 0, 0.030), (None, 0.28, 0, 0.050)):
+    for vm, sm, cool, warm in ((1 - 0.55 * k, 1.08, 0.025, 0), (1 - 0.37 * k, 1.05, 0.015, 0), (1 - 0.18 * k, 1.02, 0.006, 0),
+                               (1.0, 1.0, 0, 0), (None, 0.80, 0, 0.012), (None, 0.45, 0, 0.020)):
         if vm is None:
-            vv = v + (1 - v) * (0.45 if sm > 0.5 else 0.86)
+            vv = v + (1 - v) * (0.38 if sm > 0.6 else 0.66)
         else:
             vv = max(0.04, v * max(0.12, vm))
         hh, ss = h, sat * sm
@@ -57,8 +56,8 @@ def _outline(rgb, alpha, hgt, base):
     The outline is lighter where it faces the light (top / left) and deep on
     the shadow side, so sprites look rounded instead of stamped."""
     solid = alpha > 0
-    deep = (base * 0.50 + np.array((14, 10, 22)) * 0.50).astype(np.uint8)
-    soft = (base * 0.80 + np.array((14, 10, 22)) * 0.20).astype(np.uint8)
+    deep = (base * 0.55).astype(np.uint8)
+    soft = (base * 0.72).astype(np.uint8)
     for dy, dx, col in ((-1, 0, soft), (0, -1, soft), (1, 0, deep), (0, 1, deep)):
         nb = np.roll(np.roll(solid, dy, 0), dx, 1)
         nd = np.roll(np.roll(col, dy, 0), dx, 1)

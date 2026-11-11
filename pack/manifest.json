@@ -4,18 +4,46 @@
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "1cfe1b24-c8dd-428f-8ad8-ea5fde34153d",
-    "version": [0, 1, 0],
-    "min_engine_version": [1, 21, 120]
+    "version": [
+      0,
+      1,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      120
+    ]
   },
   "modules": [
     {
       "type": "resources",
       "uuid": "26fcbd58-13fa-43a9-82d4-31c53c5d0bde",
-      "version": [0, 1, 0]
+      "version": [
+        0,
+        1,
+        0
+      ]
     }
   ],
-  "capabilities": ["pbr"],
+  "capabilities": [
+    "pbr"
+  ],
   "metadata": {
-    "authors": ["Nabd"]
-  }
+    "authors": [
+      "Nabd"
+    ]
+  },
+  "subpacks": [
+    {
+      "folder_name": "nabd_items",
+      "name": "Nabd items / أيتمات نبض",
+      "memory_tier": 0
+    },
+    {
+      "folder_name": "game_items",
+      "name": "Game items / أيتمات اللعبة",
+      "memory_tier": 0
+    }
+  ]
 }
