@@ -709,6 +709,89 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.broly": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.wrath",
+      "Texture.wrath_shout",
+      "Texture.wrath_hurt",
+      "Texture.wrath_blink",
+      "Texture.ssj",
+      "Texture.ssj_shout",
+      "Texture.ssj_hurt",
+      "Texture.ssj_blink",
+      "Texture.lssj",
+      "Texture.lssj_shout",
+      "Texture.lssj_hurt",
+      "Texture.lssj_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.wrath",
+      "Geometry.ssj",
+      "Geometry.lssj"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.madara": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.edo",
+      "Texture.edo_shout",
+      "Texture.edo_hurt",
+      "Texture.edo_blink",
+      "Texture.susanoo",
+      "Texture.susanoo_shout",
+      "Texture.susanoo_hurt",
+      "Texture.susanoo_blink",
+      "Texture.sixpaths",
+      "Texture.sixpaths_shout",
+      "Texture.sixpaths_hurt",
+      "Texture.sixpaths_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.edo",
+      "Geometry.susanoo",
+      "Geometry.sixpaths"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.tanjiro_demon": {
    "arrays": {
     "textures": {
@@ -905,7 +988,8 @@
       "Texture.susanoo_ribs",
       "Texture.susanoo_armour",
       "Texture.muzan_infant",
-      "Texture.mahoraga"
+      "Texture.mahoraga",
+      "Texture.susanoo_madara"
      ]
     },
     "geometries": {
@@ -916,7 +1000,8 @@
       "Geometry.susanoo_ribs",
       "Geometry.susanoo_armour",
       "Geometry.muzan_infant",
-      "Geometry.mahoraga"
+      "Geometry.mahoraga",
+      "Geometry.susanoo_madara"
      ]
     }
    },
@@ -940,7 +1025,8 @@
       "Texture.susanoo_ribs",
       "Texture.susanoo_armour",
       "Texture.muzan_infant",
-      "Texture.mahoraga"
+      "Texture.mahoraga",
+      "Texture.susanoo_madara"
      ]
     },
     "geometries": {
@@ -951,7 +1037,8 @@
       "Geometry.susanoo_ribs",
       "Geometry.susanoo_armour",
       "Geometry.muzan_infant",
-      "Geometry.mahoraga"
+      "Geometry.mahoraga",
+      "Geometry.susanoo_madara"
      ]
     }
    },

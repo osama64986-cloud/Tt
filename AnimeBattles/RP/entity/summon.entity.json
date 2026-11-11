@@ -14,7 +14,8 @@
     "susanoo_ribs": "textures/entity/summon/susanoo_ribs",
     "susanoo_armour": "textures/entity/summon/susanoo_armour",
     "muzan_infant": "textures/entity/summon/muzan_infant",
-    "mahoraga": "textures/entity/summon/mahoraga"
+    "mahoraga": "textures/entity/summon/mahoraga",
+    "susanoo_madara": "textures/entity/summon/susanoo_madara"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -23,7 +24,8 @@
     "susanoo_ribs": "geometry.ab.summon_susanoo_ribs",
     "susanoo_armour": "geometry.ab.summon_susanoo_armour",
     "muzan_infant": "geometry.ab.summon_muzan_infant",
-    "mahoraga": "geometry.ab.summon_mahoraga"
+    "mahoraga": "geometry.ab.summon_mahoraga",
+    "susanoo_madara": "geometry.ab.summon_susanoo_madara"
    },
    "animations": {
     "base": "animation.ab.summon_base",

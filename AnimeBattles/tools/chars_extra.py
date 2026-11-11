@@ -148,6 +148,11 @@ M.FACE32.update({
     "tanjiro_demon": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark"]),
     "tanjiro_demon_sun": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark", "temple_mark"]),
     "muzan": dict(eye="narrow", brow="flat", mouth="neutral", marks=["slit_eyes"]),
+    "broly": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar"]),
+    "broly_wrath": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar", "glow_eyes"]),
+    "broly_lssj": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar", "blank_eyes"]),
+    "madara_edo": dict(eye="narrow", brow="flat", mouth="smirk", marks=["edo_cracks", "rinnegan_both"]),
+    "madara_sixpaths": dict(eye="narrow", brow="flat", mouth="smirk", marks=["rinnegan_both", "third_eye"]),
     "muzan_final": dict(eye="narrow", brow="sharp", mouth="clench", marks=["slit_eyes", "fangs", "brow_scales", "face_veins"]),
 })
 
@@ -232,6 +237,33 @@ def face32(px, W, H, spec, hair, iris, skin):
     if "baryon_eyes" in marks:  # black pigment round the eyes, sweeping up toward the fox-ear tufts
         for x, y in ((5, 15), (6, 14), (7, 13), (8, 13), (26, 15), (25, 14), (24, 13), (23, 13), (4, 16), (27, 16)):
             put(x, y, (16, 12, 14))
+    if "cheek_scar" in marks:  # Broly's scar across his left cheek
+        for i in range(6):
+            put(22 + i, 21 + i // 2, (150, 90, 70))
+    if "glow_eyes" in marks and open_eyes:  # Wrathful: eyes burning red
+        for cx in (10, 21):
+            for y in range(18, 22):
+                for x in range(cx - 1, cx + 3):
+                    put(x, y, (230, 40, 30))
+    if "blank_eyes" in marks and open_eyes:  # Legendary Super Saiyan: blank white eyes, no pupils
+        for cx in (10, 21):
+            for y in range(17, 22):
+                for x in range(cx - 2, cx + 4):
+                    put(x, y, (246, 250, 240))
+    if "edo_cracks" in marks:  # Reanimation: grey sclerae, cracks running down the face
+        for x, y in ((4, 14), (5, 16), (4, 18), (6, 20), (27, 15), (26, 17), (27, 19), (25, 21), (5, 24), (26, 25)):
+            put(x, y, (120, 110, 110))
+    if "rinnegan_both" in marks and open_eyes:  # the Rinnegan in both eyes (grey sclera round them)
+        for cx in (10, 21):
+            for y in range(17, 23):
+                for x in range(cx - 2, cx + 4):
+                    d = math.hypot(x - cx - 0.5, y - 19.5)
+                    put(x, y, (120, 96, 170) if 1.2 < d < 1.9 or d > 2.7 else (196, 178, 232))
+            put(cx, 19, (60, 40, 90)); put(cx + 1, 20, (60, 40, 90))
+    if "third_eye" in marks:  # the Rinne Sharingan on his forehead
+        for y in range(10, 14):
+            for x in range(14, 18):
+                put(x, y, (200, 20, 30) if (x - 15.5) ** 2 + (y - 11.5) ** 2 > 0.8 else (20, 6, 8))
     if "slit_eyes" in marks and open_eyes:  # demon eyes: cat-like vertical slits
         for cx in (10, 21):
             for y in range(17, 23):
@@ -1149,6 +1181,141 @@ def muzan(m, form):
         SC.blade(m, "body", pts[-1], SC.sub(pts[-1], pts[-2]), 2.4, 1.1, 0.5, bone_c)
 
 
+# ------------------------------------------------------------------ Broly (Dragon Ball Super)
+BROLY_SKIN = (196, 138, 94)
+
+
+def broly(m, form):
+    """Tan, hugely muscled; scar across his left cheek and an X-scar over his left pectoral; purple skin-tight
+    trousers, white boots striped green at the toes, a green fur pelt round his waist flowing down his back, black
+    wristbands; wild overgrown hair to his upper back — green-gold and spikier as he powers up."""
+    key = {"base": "broly", "wrath": "broly_wrath", "ssj": "broly_lssj", "lssj": "broly_lssj"}[form]
+    hair = {"base": (24, 22, 30), "wrath": (24, 22, 30), "ssj": (246, 222, 70), "lssj": (196, 232, 92)}[form]
+    iris = {"base": (30, 26, 30), "wrath": (230, 40, 30), "ssj": (60, 180, 120), "lssj": (246, 250, 240)}[form]
+    sk = BROLY_SKIN
+
+    def chest(face, px, w, h, base):
+        if face == "north":
+            ln = dark(sk, 0.78)
+            for x in range(w):
+                _put(px, w, h, x, int(h * 0.36), ln)               # pecs
+            for y in range(int(h * 0.4), int(h * 0.9)):
+                _put(px, w, h, w // 2, y, ln)                     # abs
+            for y in (int(h * 0.55), int(h * 0.7)):
+                for x in range(int(w * 0.3), int(w * 0.7)):
+                    _put(px, w, h, x, y, ln)
+            for i in range(int(w * 0.35)):                          # the X scar over his left pectoral
+                _put(px, w, h, int(w * 0.58) + i, int(h * 0.1) + i, (150, 90, 70))
+                _put(px, w, h, int(w * 0.92) - i, int(h * 0.1) + i, (150, 90, 70))
+    base_body(m, layered(sk, [chest]), layered(sk, [region((0, 0.78, 1, 0.9), (20, 18, 22))]),
+              layered((108, 58, 150), [region((0, 0.8, 1, 1), (240, 240, 236)), region((0, 0.95, 1, 1), (60, 180, 90), faces=("north",))]),
+              skin_swap(head_paint(hair, iris, True, key), sk))
+    musc = layered(sk, [lines((("north", "east", "west"), [[(0.5, 0.15), (0.5, 0.85)]]), dark(sk, 0.82))])
+    for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # bulging deltoids and biceps
+        x0 = 3.5 if s_ > 0 else -8.5
+        m.box(arm, [x0, 19.4, -2.5], [5.0, 4.8, 5.0], musc)
+        m.box(arm, [x0 + 0.15, 15.2, -2.6], [4.7, 4.4, 4.9], musc)
+        m.box(arm, [x0 + 0.1, 12.2, -2.4], [4.8, 1.6, 4.8], solid((20, 18, 22)))                          # wristband
+    m.box("body", [-4.2, 18.6, -2.7], [8.4, 4.4, 0.8], layered(sk, [lines((("north",), [[(0.5, 0), (0.5, 1)]]), dark(sk, 0.78))]))  # pectorals
+    fur, fur2 = SC.swatch((96, 140, 70)), SC.swatch((70, 110, 52))
+    for k in range(18):  # the green fur pelt round his waist
+        a = 2 * math.pi * k / 18
+        SC.blade(m, "body", [math.cos(a) * 4.4, 13.4, math.sin(a) * 2.6], [math.cos(a) * 0.35, -1, math.sin(a) * 0.35], 3.6, 1.8, 0.7,
+                 fur if k % 2 else fur2, width_dir=[-math.sin(a), 0, math.cos(a)])
+    SC.curve_tube(m, "body", [[0, 12.5, 2.8], [0, 9, 4.2], [0, 4, 4.6], [0, 0.6, 4.4]], 2.6, 1.6, [fur, fur2], n=2, flat=0.45, width=[1, 0, 0])  # flowing down behind
+    # hair: overgrown, spiky, down to the upper back
+    shell(m, hair, hairline=30.8, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(hair)
+    wild = 1.25 if form in ("ssj", "lssj") else (1.12 if form == "wrath" else 1.0)
+    for x, z, lean in ((0, -2.0, 0), (2.4, -1.4, 0.6), (-2.4, -1.4, -0.6), (3.4, 1.2, 1.0), (-3.4, 1.2, -1.0), (1.4, 2.6, 0.4), (-1.4, 2.6, -0.4)):
+        m.strand([x, 32.0, z], [lean, 1.0 if form in ("ssj", "lssj") else 0.7, z * 0.3 + 0.3], 4.2 * wild, 2.8, hp, bone="hair", segs=3, thick=0.75)
+    for x in (-3.0, -1.5, 0, 1.5, 3.0):  # long spikes falling to the upper back
+        m.strand([x, 30.5, 3.8], [x * 0.12, -0.8, 0.6], 7.5 * wild, 2.6, hp, bone="hair", segs=3, thick=0.7)
+    for x, tilt in ((-2.6, -0.3), (-0.8, -0.05), (1.0, 0.1), (2.8, 0.35)):
+        m.strand([x, 31.6, -4.1], [tilt, -0.6, -0.5], 3.0, 2.2, hp, bone="hair", segs=3, thick=0.7)
+
+
+# ------------------------------------------------------------------ Madara Uchiha
+MAD_HAIR = (30, 32, 50)
+
+
+def madara(m, form):
+    """Reanimated Madara: grey sclerae with cracks, the Rinnegan, waist-long spiky hair with bangs over his right eye,
+    crimson plate armour over a dark blue outfit, bandaged shins, the war fan (gunbai) with its chain.
+    Six Paths (Ten-Tails jinchuriki): white hair, pale grey skin, a white chakra robe with six black magatama below
+    the neck, a horn on the left of his forehead, the Rinne Sharingan as a third eye, the black staff and the
+    Truth-Seeking Balls."""
+    six = form == "sixpaths"
+    hair = (238, 236, 232) if six else MAD_HAIR
+    skin = (224, 218, 214) if six else SKIN
+    key = "madara_sixpaths" if six else "madara_edo"
+    head = head_paint(hair, (196, 178, 232), True, key)
+    if six:
+        head = skin_swap(head, skin)
+    if not six:
+        armour, plate = (150, 28, 30), (110, 18, 22)
+        blue = (40, 44, 80)
+
+        def plates(face, px, w, h, base):
+            for y in range(0, h, max(2, h // 6)):
+                for x in range(w):
+                    _put(px, w, h, x, y, plate)
+        base_body(m, layered(armour, [plates]), layered(blue, [region((0, 0.86, 1, 1), skin)]),
+                  layered(blue, [region((0, 0.55, 1, 0.86), (232, 230, 224)), region((0, 0.86, 1, 1), (40, 34, 30))]), head)
+        for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # layered shoulder plates
+            for k in range(3):
+                m.box(arm, [s_ * 6 - 2.8, 21.4 - k * 1.6, -2.8], [5.6, 1.8, 5.6], layered(armour, [region((0, 0.7, 1, 1), plate)]),
+                      rot=[0, 0, s_ * (12 + k * 6)], pivot=[s_ * 6, 22, 0])
+        for k in range(5):  # the armoured skirt of plates
+            a = math.radians(-60 + 30 * k)
+            m.box("body", [math.sin(a) * 3.2 - 1.4, 6.0, -2.8 + (1 - math.cos(a)) * 2.5], [2.8, 6.6, 0.6], layered(armour, [plates]))
+        m.box("body", [-4.6, 6.0, 2.3], [9.2, 6.6, 0.6], layered(armour, [plates]))
+        m.box("body", [-4.6, 11.4, -2.7], [9.2, 1.4, 5.4], solid((150, 110, 70)))                  # obi
+        # the gunbai war fan in his right hand, with its black chain
+        gun, ink = SC.swatch((196, 110, 52)), SC.swatch((20, 18, 22))
+        SC.tube(m, "rightArm", [[6, 11.5, -1.0], [6, 11.6, -6.5]], [0.45, 0.45], SC.swatch((60, 40, 30)), knuckles=False)
+        SC.blob(m, "rightArm", [6, 11.8, -10.0], [0.45, 3.6, 3.6], gun, slices=4, axis="z")
+        SC.blob(m, "rightArm", [5.5, 11.8, -10.0], [0.2, 1.2, 1.2], ink, slices=2, axis="z")
+        for i in range(8):
+            SC.obox(m, "rightArm", [6.3, 11.0 - i * 0.6, -1.2 + i * 0.5], [0.5, 0.5, 0.5], ink, (0, 1, 0), 45)
+        # the kama (sickle) across his back
+        SC.tube(m, "body", [[-3.6, 9.5, 2.9], [3.2, 21, 2.9]], [0.35, 0.35], SC.swatch((60, 40, 30)), knuckles=False)
+        SC.blade(m, "body", [3.2, 21, 2.9], [-1, 0.25, 0], 4.2, 1.2, 0.35, SC.swatch((200, 206, 216)), width_dir=[0, 1, 0])
+    else:
+        robe = (240, 238, 232)
+
+        def magatama(face, px, w, h, base):
+            if face == "north":
+                for k in range(6):
+                    a = math.pi * (0.12 + 0.76 * k / 5)
+                    cx, cy = w / 2 + math.cos(a) * w * 0.36, h * 0.06 + math.sin(a) * h * 0.18
+                    for dx in (-1, 0, 1):
+                        for dy in (-1, 0, 1):
+                            _put(px, w, h, int(cx) + dx, int(cy) + dy, (16, 14, 18))
+        base_body(m, layered(robe, [magatama, region((0.47, 0.25, 0.53, 1), (200, 198, 194), faces=("north",))]),
+                  layered(robe, [region((0, 0.86, 1, 1), skin)]), layered((32, 30, 36), [region((0, 0.86, 1, 1), skin)]), head)
+        m.box("body", [-4.8, 4.0, 2.2], [9.6, 20.2, 0.5], layered(robe, [lambda f, px, w, h, b: [_put(px, w, h, x, y, (40, 38, 44)) for y in range(h)
+                                                                                                    for x in range(w) if f == "north" and (x - w / 2) ** 2 + (y - h * 0.3) ** 2 < (w * 0.18) ** 2]]))  # Hagoromo's pattern on the back
+        horn = SC.swatch((236, 232, 226))
+        SC.curve_tube(m, "head", [[-2.6, 30.2, -4.2], [-3.6, 32.6, -4.4], [-3.4, 35.0, -3.6]], 0.9, 0.2, horn, n=2)       # the horn on the left
+        SC.curve_tube(m, "head", [[2.0, 30.4, -4.3], [3.2, 31.2, -4.4], [4.0, 32.4, -4.0]], 0.6, 0.2, horn, n=2)         # the upward curve on the right
+        SC.tube(m, "rightArm", [[6, 2, -2.5], [6, 26, -2.5]], [0.45, 0.45], SC.swatch((20, 18, 22)), knuckles=False)  # the black staff
+        SC.blob(m, "rightArm", [6, 26.6, -2.5], [1.4, 1.4, 1.4], SC.swatch((20, 18, 22)), slices=3)
+        for i in range(9):  # Truth-Seeking Balls hovering behind him
+            a = math.pi * (0.1 + 0.8 * i / 8)
+            SC.blob(m, "body", [math.cos(a) * 6.4, 19 + math.sin(a) * 6.2, 4.2], [0.95, 0.95, 0.95], SC.swatch((18, 16, 22)), slices=2)
+    # hair: waist-long and spiky, bangs over his right eye
+    shell(m, hair, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(hair)
+    for x in (-3.4, -2.0, -0.7, 0.7, 2.0, 3.4):
+        m.strand([x, 30.8, 3.8], [x * 0.06, -1, 0.35], 15 - abs(x) * 0.8, 3.0, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.02, 0, 0.06))
+    for x, z, lean in ((0, -1.6, 0), (2.2, -0.8, 0.5), (-2.2, -0.8, -0.5), (3.2, 1.6, 0.9), (-3.2, 1.6, -0.9)):
+        m.strand([x, 32.0, z], [lean, 0.7, z * 0.3 + 0.4], 4.4, 2.8, hp, bone="hair", segs=3, thick=0.75)
+    for s_ in (1, -1):
+        m.strand([s_ * 4.0, 30.6, -2.6], [s_ * 0.2, -1, -0.1], 9, 2.4, hp, bone="hair", segs=3, thick=0.7)      # long side bangs
+    m.strand([2.0, 31.8, -4.4], [0.1, -1, -0.3], 6.0, 3.2, hp, bone="hair", segs=3, thick=0.6)                    # covering his right eye
+
+
 FORMS = {
     "naruto_kid": ["base", "cloak"],
     "naruto_teen": ["base", "v1", "v2", "sage", "eight"],
@@ -1162,6 +1329,8 @@ FORMS = {
     "tanjiro": ["water", "hinokami", "mark"],
     "tanjiro_demon": ["feral", "sun"],
     "muzan": ["disguise", "final"],
+    "broly": ["base", "wrath", "ssj", "lssj"],
+    "madara": ["edo", "susanoo", "sixpaths"],
 }
 
 
@@ -1179,6 +1348,10 @@ def build(char, form):
         tanjiro_demon(m, form)
     elif char == "muzan":
         muzan(m, form)
+    elif char == "broly":
+        broly(m, form)
+    elif char == "madara":
+        madara(m, "edo" if form == "susanoo" else form)
     if char in ("naruto_kid", "sasuke_kid"):  # kid proportions: a bigger head on the small body
         f, P = 1.15, (0.0, 24.0, 0.0)
         for c in m.cubes:

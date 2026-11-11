@@ -43,3 +43,7 @@ item.spawn_egg.entity.ab:tanjiro_demon.name=Spawn Tanjiro (Demon)
 entity.ab:muzan.name=Muzan Kibutsuji
 item.spawn_egg.entity.ab:muzan.name=Spawn Muzan Kibutsuji
 entity.ab:summon.name=Summon
+entity.ab:broly.name=Broly
+item.spawn_egg.entity.ab:broly.name=Spawn Broly
+entity.ab:madara.name=Madara Uchiha
+item.spawn_egg.entity.ab:madara.name=Spawn Madara Uchiha

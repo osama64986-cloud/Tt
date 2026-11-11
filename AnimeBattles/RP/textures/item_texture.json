@@ -70,6 +70,12 @@
   },
   "ab_egg_muzan": {
    "textures": "textures/items/egg_muzan"
+  },
+  "ab_egg_broly": {
+   "textures": "textures/items/egg_broly"
+  },
+  "ab_egg_madara": {
+   "textures": "textures/items/egg_madara"
   }
  }
 }

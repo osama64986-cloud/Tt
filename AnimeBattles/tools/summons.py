@@ -63,6 +63,17 @@ def _susanoo_upper(m, dy, sword=True):
         blade(m, "rightArm", [15.5, 22.9 + dy, -10.2], [0, 0.12, -1], 48, 5.2, 1.1, glow)
 
 
+def susanoo_madara():
+    """Madara's Perfect Susanoo: the same giant, in deep blue."""
+    global PUR, PUR_D, PUR_L
+    old = (PUR, PUR_D, PUR_L)
+    PUR, PUR_D, PUR_L = (60, 90, 220), (30, 44, 140), (170, 196, 255)
+    try:
+        return susanoo_perfect()
+    finally:
+        PUR, PUR_D, PUR_L = old
+
+
 def susanoo_perfect():
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 30, 0], "head": [0, 52, 0], "rightArm": [14, 47, 0], "leftArm": [-14, 47, 0],
@@ -336,5 +347,6 @@ def mahoraga():
 
 
 SUMMONS = [("susanoo", susanoo_perfect), ("kurama", kurama), ("gamabunta", gamabunta),
-           ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga)]
+           ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
+           ("susanoo_madara", susanoo_madara)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga"}   # opaque flesh; the rest are glowing chakra
