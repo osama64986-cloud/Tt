@@ -123,8 +123,8 @@ def render(g, pal, speck=None, seed="", extra=None, emis=None, metal=None):
 
 def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
     """Hand-placed pixels.  Characters: 0-4 = main material tones (dark to
-    light), a-e = trim tones, v-z = handle tones, '.' = empty.  A soft dark
-    outline is added around the finished sprite."""
+    light), a-e = trim tones, v-z = handle tones, P-T = a second body colour,
+    '.' = empty.  A soft dark outline is added around the finished sprite."""
     rows = [r.ljust(N, ".")[:N] for r in rows] + ["." * N] * (N - len(rows))
     rgb = np.zeros((N, N, 3), np.uint8)
     alpha = np.zeros((N, N), np.uint8)
@@ -136,7 +136,16 @@ def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
         for x, ch in enumerate(row):
             if ch == ".":
                 continue
-            grp, tone = ("M", int(ch)) if ch.isdigit() else (("A", ord(ch) - 97) if ch in "abcde" else ("V", ord(ch) - 118))
+            if ch.isdigit():
+                grp, tone = "M", int(ch)
+            elif ch in "abcde":
+                grp, tone = "A", ord(ch) - 97
+            elif ch in "vwxyz":
+                grp, tone = "V", ord(ch) - 118
+            elif ch in "PQRST":                              # a second body colour (belly, filling, pages...)
+                grp, tone = "P", ord(ch) - 80
+            else:
+                raise ValueError(f"bad sprite character {ch!r}")
             ramp = groups[grp]
             if checker and grp == "M" and (x + y) % 2 == 0 and 0 < tone:
                 tone -= 1                                    # chain links
@@ -286,33 +295,32 @@ def build(out):
     put("turtle_helmet", exact(X_HELMET, {"M": R((70, 160, 70)), "A": R((40, 110, 60))}))
     # ------------------------------------------------------- ingots & co
     for name, ramp, m in (("iron_ingot", IRON, 220), ("gold_ingot", GOLD, 240), ("copper_ingot", COPPER, 210),
-                          ("netherite_ingot", NETHERITE, 220)):
-        put(name, render(centred(INGOT), {"I": ramp}, metal={"I": m}))
-    for name, ramp in (("brick", R((180, 90, 70), 0.3)), ("netherbrick", R((70, 30, 36), 0.4)), ("resin_brick", R((226, 110, 40), 0.3))):
-        put(name, render(centred(BRICK), {"I": ramp}))
+                          ("netherite_ingot", NETHERITE, 220), ("brick", R((180, 90, 70), 0.3), 0),
+                          ("netherbrick", R((90, 40, 46), 0.4), 0), ("resin_brick", R((226, 110, 40), 0.3), 0)):
+        put(name, exact(X_INGOT, {"M": ramp}, metal={"M": m}))
     for name, ramp, m in (("iron_nugget", IRON, 220), ("gold_nugget", GOLD, 240), ("copper_nugget", COPPER, 210)):
-        put(name, render(centred(NUGGET), {"N": ramp}, metal={"N": m}))
-    spark = [(5, 5, (255, 255, 255))]
-    put("diamond", render(centred(GEM), {"D": DIAMOND}, extra=spark))
-    put("ruby", render(centred(GEM), {"D": R((226, 40, 70))}, extra=spark))
-    put("emerald", render(centred(HEX), {"E": EMERALD}, extra=[(5, 5, (236, 255, 240))]))
-    put("quartz", render(centred(SHARD), {"S": QUARTZ}))
-    put("amethyst_shard", render(centred(SHARD), {"S": AMETHYST}))
-    put("echo_shard", render(centred(SHARD), {"S": ECHO}, extra=[(8, 7, (70, 220, 230))], emis={"S": 30}))
-    put("prismarine_shard", render(centred(SHARD), {"S": PRISM}))
-    put("flint", render(centred(SHARD), {"S": R((70, 70, 78), 0.5)}))
-    put("prismarine_crystals", render(centred(PILE, y0=7), {"D": R((190, 236, 226), 0.3)}, extra=[(7, 5, (255, 255, 255)), (10, 6, (255, 255, 255))]))
-    for name, ramp, sp in (("coal", COAL, 0.3), ("charcoal", R((64, 52, 44), 0.55), 0.3), ("netherite_scrap", R((96, 70, 62), 0.5), 0.35),
-                           ("raw_iron", R((214, 176, 150), 0.34), 0.4), ("raw_gold", R((244, 190, 60), 0.36), 0.4),
-                           ("raw_copper", R((214, 120, 84), 0.36), 0.4), ("clay_ball", R((160, 166, 180), 0.2), 0.1),
-                           ("leather", LEATHER, 0.2), ("rotten_flesh", R((170, 90, 60), 0.4), 0.4)):
-        put(name, render(centred(LUMP), {"C": ramp}, speck={"C": sp}, seed=name))
+        put(name, exact(X_NUGGET, {"M": ramp}, metal={"M": m}))
+    white = (255, 255, 255)
+    put("diamond", exact(X_GEM, {"M": DIAMOND}, extra=[(5, 4, white)]))
+    put("ruby", exact(X_GEM, {"M": R((226, 40, 70))}, extra=[(5, 4, white)]))
+    put("emerald", exact(X_EMERALD, {"M": EMERALD}, extra=[(5, 4, (236, 255, 240))]))
+    for name, ramp, glow in (("quartz", QUARTZ, 0), ("amethyst_shard", AMETHYST, 0), ("echo_shard", ECHO, 40), ("prismarine_shard", PRISM, 0)):
+        put(name, exact(X_SHARD, {"M": ramp}, emis={"M": glow}))
+    put("flint", exact(X_FLINT, {"M": R((76, 76, 86), 0.5)}))
+    put("prismarine_crystals", exact(X_PILE, {"M": R((190, 236, 226), 0.3)}, extra=[(6, 6, white), (10, 5, white)]))
+    for name, ramp, specks in (("coal", COAL, None), ("charcoal", R((70, 56, 46), 0.55), None), ("netherite_scrap", R((96, 70, 62), 0.5), (206, 170, 150)),
+                               ("raw_iron", R((190, 150, 130), 0.34), (236, 204, 180)), ("raw_gold", R((224, 164, 40), 0.36), (255, 236, 130)),
+                               ("raw_copper", R((196, 104, 70), 0.36), (120, 200, 160)), ("clay_ball", R((160, 166, 180), 0.2), None),
+                               ("dye_powder_blue", LAPIS, (130, 170, 255))):
+        ex = [(x, y, specks) for (x, y) in ((6, 5), (10, 6), (5, 8), (9, 9))] if specks else None
+        put(name, exact(X_LUMP, {"M": ramp}, extra=ex))
+    put("leather", exact(X_HIDE, {"M": LEATHER}))
+    put("rabbit_hide", exact(X_HIDE, {"M": R((196, 160, 120), 0.3)}))
+    put("rotten_flesh", exact(X_STEAK, {"M": R((170, 90, 60), 0.4), "P": R((110, 130, 70), 0.3)}))
     for name, ramp, glow in (("redstone_dust", REDSTONE, 40), ("glowstone_dust", R((250, 210, 90)), 120), ("gunpowder", R((110, 110, 116), 0.4), 0),
                              ("sugar", R((244, 244, 246), 0.12), 0), ("blaze_powder", R((250, 160, 30)), 100)):
-        put(name, render(centred(PILE, y0=7), {"D": ramp}, speck={"D": 0.35}, seed=name, emis={"D": glow},
-                         extra=[(6, 5, ramp[4]), (10, 4, ramp[3])]))
-    put("dye_powder_blue", render(centred(LUMP), {"C": LAPIS}, speck={"C": 0.3}, seed="lapis"))     # lapis lazuli
-    for name, col in DYES.items():
+        put(name, exact(X_PILE, {"M": ramp}, emis={"M": glow}, extra=[(6, 6, ramp[4]), (10, 5, ramp[3]), (8, 4, ramp[4])]))
+    for name, col in DYES.items():                           # dyes stay as they were
         g = disc(grid(), "D", 7.5, 8.5, 4.6)
         t = render(g, {"D": R(col, 0.36)}, extra=[(6, 6, R(col, 0.36)[4])])
         if name != "blue":
@@ -322,89 +330,74 @@ def build(out):
     # ------------------------------------------------------- balls & rods
     for name, col, glow in (("slimeball", (120, 200, 90), 0), ("snowball", (240, 246, 250), 0), ("ender_pearl", (30, 110, 100), 0),
                             ("magma_cream", (230, 150, 50), 60), ("fireball", (230, 90, 30), 150), ("heartofthesea_closed", (40, 130, 200), 60),
-                            ("wind_charge", (190, 210, 240), 0), ("egg", (236, 220, 190), 0), ("blue_egg", (130, 190, 220), 0),
-                            ("brown_egg", (176, 124, 90), 0)):
-        egg = name.endswith("egg")
-        g = disc(grid(), "D", 7.5, 8.0, 4.8 if not egg else 4.2, squash=1.0 if not egg else 1.3)
-        put(name, render(g, {"D": R(col, 0.36)}, extra=[(6, 5, (255, 255, 255))], emis={"D": glow}))
-    g = disc(grid(), "D", 7.5, 8.0, 4.8)
-    g = disc(g, "P", 7.5, 8.0, 2.0)
-    put("ender_eye", render(g, {"D": R((60, 170, 110)), "P": R((20, 50, 40), 0.5)}, extra=[(7, 7, (190, 255, 210))]))
-    for name, ramp, glow in (("stick", STICK, 0), ("blaze_rod", R((250, 190, 40)), 120), ("breeze_rod", R((170, 190, 236), 0.3), 40),
-                             ("bone", BONE, 0)):
-        g = diag(grid(), "S", 2, 13, 11)
-        if name == "bone":
-            stamp(g, ["BB", "BB"], 1, 13)
-            stamp(g, ["BB", "BB"], 12, 2)
-        put(name, render(g, {"S": ramp, "B": ramp}, emis={"S": glow}))
-    g = diag(grid(), "S", 2, 13, 10, thick=1)
-    stamp(g, ["HHH", ".HH", "..H"], 11, 1)
-    stamp(g, ["F.", "FF", ".F"], 1, 12)
-    put("arrow", render(g, {"S": STICK, "H": STONE, "F": R((236, 236, 240), 0.14)}))
-    put("bow_standby", render(centred(BOW), {"W": WOOD, "S": R((230, 230, 224), 0.12)}))
+                            ("wind_charge", (190, 210, 240), 0)):
+        put(name, exact(X_BALL, {"M": R(col, 0.36)}, extra=[(5, 5, white)], emis={"M": glow}))
+    for name, col in (("egg", (236, 220, 190)), ("blue_egg", (130, 190, 220)), ("brown_egg", (176, 124, 90))):
+        put(name, exact(X_EGG, {"M": R(col, 0.3)}, extra=[(5, 5, white)]))
+    put("ender_eye", exact(X_BALL, {"M": R((60, 170, 110))},
+                           extra=[(7, y, (16, 40, 34)) for y in (5, 6, 7, 8, 9)] + [(8, y, (30, 70, 56)) for y in (6, 7, 8)] + [(5, 5, (200, 255, 220))]))
+    rod = [""] * 3 + ["." * (15 - y) + "43" for y in range(3, 14)]
+    stick = [""] * 3 + ["." * (15 - y) + "xw" for y in range(3, 14)]
+    put("stick", exact(stick, {"V": STICK}))
+    put("blaze_rod", exact(rod, {"M": R((250, 190, 40))}, emis={"M": 120}))
+    put("breeze_rod", exact(rod, {"M": R((170, 190, 236), 0.3)}, emis={"M": 40}))
+    put("bone", exact(X_BONE, {"M": BONE}))
+    put("arrow", exact(X_ARROW, {"M": STONE, "V": STICK, "A": R((236, 236, 240), 0.14)}))
+    put("bow_standby", exact(X_BOW, {"V": WOOD, "A": R((230, 230, 224), 0.12)}))
     # ------------------------------------------------------------ misc
-    for name, fill in (("bucket_empty", None), ("bucket_water", WATER), ("bucket_lava", LAVA), ("bucket_milk", MILK),
-                       ("bucket_powder_snow", R((246, 250, 254), 0.08))):
-        pal = {"H": IRON, "W": fill or R((120, 124, 132), 0.3)}
-        put(name, render(centred(BUCKET), pal, metal={"H": 220}, emis={"W": 180 if name == "bucket_lava" else 0}))
-    put("book_normal", render(centred(BOOK), {"C": R((150, 80, 44)), "P": PAPER}))
-    put("book_writable", render(centred(BOOK), {"C": R((150, 80, 44)), "P": PAPER}, extra=[(11, 4, (40, 40, 60)), (12, 3, (236, 236, 240))]))
-    put("book_written", render(centred(BOOK), {"C": R((120, 50, 130)), "P": PAPER}, extra=[(6, 7, (250, 214, 90)), (7, 7, (250, 214, 90))]))
-    put("book_enchanted", render(centred(BOOK), {"C": R((120, 50, 160)), "P": PAPER}, emis={"C": 60}, extra=[(6, 7, (150, 240, 255)), (7, 8, (150, 240, 255))]))
-    g = centred(["...PPPPPPPPP....", "...PPPPPPPPPP...", "..PPPPPPPPPPP...", "..PPPPPPPPPPP...", "..PPPPPPPPPPP...", "..PPPPPPPPPP....",
-                 "...PPPPPPPPP...."])
-    put("paper", render(g, {"P": PAPER}))
-    put("map_empty", render(g, {"P": R((226, 208, 170), 0.16)}))
-    g = centred(["..HHHHHHHHHHHH..", "...HHHHHHHHHH...", "....HHHHHHHH....", ".....HHHHHH....."], y0=7)
-    put("bowl", render(g, {"H": WOOD}))
+    for name, fill, glow in (("bucket_empty", R((70, 74, 84), 0.3), 0), ("bucket_water", WATER, 0), ("bucket_lava", LAVA, 180),
+                             ("bucket_milk", MILK, 0), ("bucket_powder_snow", R((246, 250, 254), 0.08), 0)):
+        put(name, exact(X_BUCKET, {"M": IRON, "P": fill}, metal={"M": 220}, emis={"P": glow}))
+    for name, cover, ex, glow in (("book_normal", (150, 80, 44), None, 0), ("book_writable", (150, 80, 44), [(8, 6, (236, 236, 240)), (9, 5, (236, 236, 240)), (7, 7, (40, 40, 60))], 0),
+                                  ("book_written", (120, 50, 130), [(6, 6, (250, 214, 90)), (7, 6, (250, 214, 90)), (6, 7, (250, 214, 90)), (7, 7, (250, 214, 90))], 0),
+                                  ("book_enchanted", (120, 50, 160), [(6, 6, (150, 240, 255)), (8, 7, (150, 240, 255)), (7, 8, (150, 240, 255))], 60)):
+        put(name, exact(X_BOOK, {"M": R(cover), "A": PAPER}, extra=ex, emis={"M": glow}))
+    put("paper", exact(X_PAPER, {"M": PAPER}))
+    put("map_empty", exact(X_PAPER, {"M": R((226, 208, 170), 0.16)}))
+    put("bowl", exact(X_BOWL, {"M": WOOD, "P": R((96, 64, 36), 0.3)}))
     for name, col in (("mushroom_stew", (190, 150, 120)), ("beetroot_soup", (180, 40, 60)), ("rabbit_stew", (200, 140, 80)),
                       ("suspicious_stew", (150, 190, 110))):
-        gg = [row[:] for row in g]
-        stamp(gg, ["..WWWWWWWWWWWW.."], 0, 6)
-        put(name, render(gg, {"H": WOOD, "W": R(col, 0.24)}))
-    g = centred(["...SS....SS.....", "..S..S..S..S....", ".S....SS....S...", "..S........S....", "...S......S.....", "....SS..SS......",
-                 "......SS........"])
-    put("string", render(g, {"S": R((236, 236, 232), 0.12)}))
-    g = diag(grid(), "F", 3, 13, 9, thick=3)
-    stamp(g, ["FF", "FFF", ".FF"], 11, 2)
-    put("feather", render(g, {"F": R((240, 240, 244), 0.14)}, extra=[(3, 13, (150, 150, 156)), (4, 12, (150, 150, 156))]))
+        put(name, exact(X_BOWL, {"M": WOOD, "P": R(col, 0.24)}))
+    put("string", exact(X_STRING, {"M": R((236, 236, 232), 0.14)}))
+    put("feather", exact(X_FEATHER, {"M": R((240, 240, 244), 0.14), "A": R((150, 150, 160), 0.2)}))
     # ------------------------------------------------------------ food
-    def fruit(col, leaf=True, glow=0):
+    def fruit(col, glow=0):                                  # the apple stays as it was
         g = disc(grid(), "A", 7.5, 9.0, 4.8)
         stamp(g, ["T", "T"], 7, 2)
-        if leaf:
-            stamp(g, ["LL", "LL."], 8, 2)
+        stamp(g, ["LL", "LL."], 8, 2)
         return render(g, {"A": R(col, 0.36), "T": STICK, "L": GREEN}, extra=[(5, 7, (255, 255, 255))], emis={"A": glow})
     put("apple", fruit((214, 40, 40)))
     put("apple_golden", fruit((250, 206, 56), glow=40))
-    g = centred(["....BBBBBBBB....", "..BBBBBBBBBBBB..", ".BBBBBBBBBBBBBB.", ".BBBBBBBBBBBBBB.", "..BBBBBBBBBBBB..", "...BBBBBBBBBB..."])
-    put("bread", render(g, {"B": BREAD}, extra=[(5, 6, BREAD[0]), (8, 6, BREAD[0]), (11, 6, BREAD[0])]))
+    put("bread", exact(X_BREAD, {"M": BREAD}))
     for name, col in (("potato", (200, 160, 90)), ("potato_baked", (214, 150, 70)), ("potato_poisonous", (170, 180, 90))):
-        g = disc(grid(), "A", 7.5, 8.5, 4.6, squash=0.78)
-        put(name, render(g, {"A": R(col, 0.3)}, speck={"A": 0.2}, seed=name))
-    for name, col in (("carrot", (240, 130, 30)), ("carrot_golden", (250, 206, 56))):
-        g = diag(grid(), "C", 2, 13, 8, thick=3)
-        stamp(g, ["L.L", ".LL", "LL."], 10, 2)
-        put(name, render(g, {"C": R(col, 0.36), "L": GREEN}))
-    g = diag(grid(), "C", 3, 12, 6, thick=3)
-    stamp(g, ["L.L", ".LL", "LL."], 9, 4)
-    put("beetroot", render(disc(g, "C", 6, 10, 3), {"C": R((170, 30, 60)), "L": GREEN}))
-    for raw, cooked in (("beef_raw", "beef_cooked"), ("porkchop_raw", "porkchop_cooked"), ("mutton_raw", "mutton_cooked"),
-                        ("hoglin_meat_raw", "hoglin_meat_cooked")):
-        put(raw, render(centred(STEAK), {"M": MEAT_RAW, "F": R((250, 220, 214), 0.12)}))
-        put(cooked, render(centred(STEAK), {"M": MEAT_COOKED, "F": R((220, 170, 110), 0.2)}))
-    for raw, cooked in (("chicken_raw", "chicken_cooked"), ("rabbit_raw", "rabbit_cooked")):
-        put(raw, render(centred(DRUM), {"M": R((240, 190, 170), 0.24), "B": BONE}))
-        put(cooked, render(centred(DRUM), {"M": R((196, 130, 60), 0.34), "B": BONE}))
-    for name, col in (("fish_raw", (110, 150, 170)), ("fish_cooked", (190, 150, 110)), ("fish_salmon_raw", (226, 110, 90)),
-                      ("fish_salmon_cooked", (220, 150, 110)), ("fish_clownfish_raw", (240, 130, 40)), ("fish_pufferfish_raw", (240, 210, 70))):
-        put(name, render(centred(FISH), {"F": R(col, 0.34), "E": R((30, 30, 36), 0.4)}))
-    g = disc(grid(), "A", 7.5, 8.0, 5.0)
-    put("cookie", render(g, {"A": R((200, 140, 70), 0.3)}, extra=[(5, 6, (80, 50, 30)), (9, 7, (80, 50, 30)), (7, 10, (80, 50, 30)), (10, 10, (80, 50, 30))]))
-    g = centred(["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", "...RRRRRRRRRR...", "....RRRRRRRR....", ".....GGGGGG....."], y0=6)
-    put("melon", render(g, {"R": R((230, 60, 60), 0.3), "G": GREEN}, extra=[(5, 7, (40, 30, 30)), (8, 8, (40, 30, 30)), (10, 7, (40, 30, 30))]))
-    g = centred(["..CCCCCCCCCCCC..", "..CCCCCCCCCCCC..", "..PPPPPPPPPPPP..", "..PPPPPPPPPPPP..", "...PPPPPPPPPP..."], y0=6)
-    put("pumpkin_pie", render(g, {"C": R((230, 150, 50), 0.3), "P": BREAD}))
+        put(name, exact(X_POTATO, {"M": R(col, 0.3)}))
+    put("carrot", exact(X_CARROT, {"M": R((240, 130, 30), 0.36), "A": GREEN}))
+    put("carrot_golden", exact(X_CARROT, {"M": GOLD, "A": GREEN}, metal={"M": 120}))
+    put("beetroot", exact(X_BEET, {"M": R((170, 30, 60)), "A": GREEN}))
+    fat, fat_c = R((250, 226, 220), 0.12), R((226, 180, 120), 0.2)
+    put("beef_raw", exact(X_STEAK, {"M": R((214, 70, 70), 0.34), "P": fat}))
+    put("beef_cooked", exact(X_STEAK, {"M": R((150, 84, 50), 0.4), "P": fat_c}))
+    put("hoglin_meat_raw", exact(X_STEAK, {"M": R((190, 60, 90), 0.34), "P": fat}))
+    put("hoglin_meat_cooked", exact(X_STEAK, {"M": R((140, 76, 60), 0.4), "P": fat_c}))
+    put("porkchop_raw", exact(X_CHOP, {"M": R((240, 150, 150), 0.3), "P": fat, "A": BONE}))
+    put("porkchop_cooked", exact(X_CHOP, {"M": R((196, 140, 90), 0.34), "P": fat_c, "A": BONE}))
+    put("mutton_raw", exact(X_SLICE, {"M": R((226, 96, 96), 0.34), "A": BONE}))
+    put("mutton_cooked", exact(X_SLICE, {"M": R((160, 96, 60), 0.4), "A": BONE}))
+    put("chicken_raw", exact(X_DRUM, {"M": R((244, 196, 176), 0.24), "A": BONE}))
+    put("chicken_cooked", exact(X_DRUM, {"M": R((204, 136, 60), 0.36), "A": BONE}))
+    put("rabbit_raw", exact(X_DRUM, {"M": R((236, 170, 160), 0.26), "A": BONE}))
+    put("rabbit_cooked", exact(X_DRUM, {"M": R((184, 124, 76), 0.36), "A": BONE}))
+    eye = R((30, 30, 36), 0.4)
+    for name, col, belly in (("fish_raw", (96, 140, 170), (214, 226, 230)), ("fish_cooked", (176, 140, 104), (236, 226, 204)),
+                             ("fish_salmon_raw", (220, 96, 80), (244, 200, 186)), ("fish_salmon_cooked", (214, 140, 100), (240, 214, 190))):
+        put(name, exact(X_FISH, {"M": R(col, 0.36), "P": R(belly, 0.14), "A": eye}, extra=[(11, 5, (255, 255, 255))]))
+    stripes = [(x, y, (250, 250, 250)) for x in (5, 9) for y in (6, 7, 8)]
+    put("fish_clownfish_raw", exact(X_FISH, {"M": R((244, 130, 40), 0.36), "P": R((250, 190, 120), 0.2), "A": eye},
+                                    extra=stripes + [(11, 5, (255, 255, 255))]))
+    put("fish_pufferfish_raw", exact(X_PUFFER, {"M": R((240, 204, 60), 0.36), "P": R((250, 240, 200), 0.12), "A": eye}))
+    put("cookie", exact(X_BALL, {"M": R((204, 144, 72), 0.3)}, extra=[(6, 6, (84, 52, 30)), (9, 7, (84, 52, 30)), (7, 9, (84, 52, 30)), (10, 9, (84, 52, 30)), (5, 8, (84, 52, 30))]))
+    put("melon", exact(X_MELON, {"M": R((232, 64, 64), 0.3), "A": GREEN}, extra=[(5, 6, (44, 30, 30)), (8, 7, (44, 30, 30)), (10, 6, (44, 30, 30))]))
+    put("pumpkin_pie", exact(X_PIE, {"M": R((232, 140, 40), 0.3), "A": BREAD}))
     g = grid()
     for x in (3, 6, 9, 12):
         for k in range(9):
@@ -422,13 +415,76 @@ def build(out):
     stamp(g, ["T", "T", "T"], 8, 3)
     put("sweet_berries", render(g, {"A": R((200, 30, 50)), "T": GREEN}))
     put("glow_berries", render(g, {"A": R((250, 180, 50)), "T": GREEN}, emis={"A": 160}))
-    g = disc(grid(), "A", 7.5, 8, 4.4)
-    put("chorus_fruit", render(g, {"A": R((150, 110, 170), 0.34)}, speck={"A": 0.25}, seed="chorus"))
-    put("chorus_fruit_popped", render(g, {"A": R((190, 150, 210), 0.3)}, speck={"A": 0.4}, seed="chorus_pop"))
-    put("spider_eye", render(disc(disc(grid(), "A", 7.5, 8, 4.4), "P", 7.5, 8, 1.8), {"A": R((170, 30, 50)), "P": R((40, 10, 20), 0.5)}))
-    put("honeycomb", render(centred(BRICK), {"I": R((240, 170, 40), 0.34)}, extra=[(5, 7, (190, 110, 20)), (8, 8, (190, 110, 20)), (10, 7, (190, 110, 20))]))
-    put("nether_star", render(centred(GEM), {"D": R((240, 240, 220), 0.2)}, emis={"D": 200}, extra=[(7, 6, (255, 255, 255))]))
-    put("ghast_tear", render(disc(grid(), "D", 7.5, 9.0, 3.6, squash=1.3), {"D": R((220, 240, 244), 0.2)}, extra=[(6, 7, (255, 255, 255))]))
-    put("totem", render(centred(["......GGGG......", ".....GGGGGG.....", ".....GEGGEG.....", "..GG.GGGGGG.GG..", "..GGGGGGGGGGGG..", ".....GGGGGG.....",
-                                  ".....GGGGGG.....", ".....GGGGGG.....", "......GGGG......", "......G..G......"]),
-                        {"G": GOLD, "E": EMERALD}, metal={"G": 200}))
+    put("chorus_fruit", exact(X_BALL, {"M": R((150, 110, 170), 0.34)}, extra=[(6, 7, (214, 190, 226)), (9, 6, (214, 190, 226)), (8, 9, (110, 70, 130))]))
+    put("chorus_fruit_popped", exact(X_BALL, {"M": R((196, 156, 214), 0.3)}, extra=[(6, 7, (240, 226, 246)), (9, 6, (240, 226, 246)), (7, 9, (240, 226, 246))]))
+    put("spider_eye", exact(X_BALL, {"M": R((170, 30, 50))}, extra=[(7, 6, (30, 8, 16)), (8, 6, (30, 8, 16)), (7, 7, (30, 8, 16)), (8, 7, (30, 8, 16)), (5, 5, (255, 190, 190))]))
+    put("honeycomb", exact(X_INGOT, {"M": R((240, 170, 40), 0.34)}, extra=[(6, 6, (190, 110, 20)), (9, 6, (190, 110, 20)), (7, 7, (190, 110, 20))]))
+    put("nether_star", exact(X_STAR, {"M": R((244, 244, 226), 0.2)}, emis={"M": 200}))
+    put("ghast_tear", exact(X_TEAR, {"M": R((220, 240, 244), 0.2)}, extra=[(6, 6, white)]))
+    put("totem", exact(X_TOTEM, {"M": GOLD, "A": EMERALD}, metal={"M": 200}))
+
+
+# ------------------------------------------------------------------ pixel maps
+X_INGOT = ["", "", "", "", "", ".....444444444", "....4333333331", "...43333333321", "...2222222221", "...111111110"]
+X_NUGGET = ["", "", "", "", "", "", "......443", ".....44332", ".....433321", "......3221", ".......21"]
+X_GEM = ["", "", "", "....44443333", "...4443333322", "..443333333221", "...3333332221", "....33322211", ".....332211", "......3211",
+         ".......21"]
+X_EMERALD = ["", "", ".....444443", "....44333332", "...4333333321", "...4343333221", "...4343333221", "...4343333221", "...4343333221",
+             "...4332222221", "....33222211", ".....222211"]
+X_SHARD = ["", "...........43", "..........4432", ".........44332", "........443321", ".......443321", "......443321", ".....443321",
+           "....443321", "...443321", "...33221", "....221"]
+X_FLINT = ["", "", "", "......443", ".....44332", "....4433321", "...44333321", "...43333321", "....3332221", ".....22211", "......211"]
+X_LUMP = ["", "", "", "......44443", "....44333332", "...4433233332", "..44333333321", "..43323333321", "..33333332221", "...332222211",
+          ".....222111"]
+X_HIDE = ["", "", "..44......44", "..4333..33332", "...433333332", "...433333332", "..4333333332", "..4333333332", "...333333321",
+          "...332..2221", "..332....221", "..22......11"]
+X_PILE = ["", "", "", "", "", "", "", "", ".......43", ".....443332", "...4433333321", "..443333333221", "..222222222211"]
+X_BALL = ["", "", "", "......4443", "....44433332", "...4443333332", "...4433333322", "...4333333322", "...3333333221", "...3333332221",
+          "....33222211", "......2211"]
+X_EGG = ["", "", "......443", ".....44332", "....4433332", "....4333332", "...443333322", "...433333322", "...433333221", "...333332221",
+         "....3322221", ".....22211"]
+X_BONE = ["", "", "............44", "..........4432", "..........432", ".........43", "........43", ".......43", "......43", ".....43",
+          "....43", "...43", ".4432", ".322"]
+X_ARROW = ["", "...........443", "..........x432", ".........x..2", "........x", ".......x", "......x", ".....x", "....x", "...x",
+           "..x", ".ccx", "..dc", "...d"]
+X_BOW = ["", "......xxwa", "....xxw..a", "...xw....a", "..xw.....a", "..xw.....a", "..yw.....a", "..yw.....a", "..yw.....a", "..xw.....a",
+         "..xw.....a", "...xw....a", "....xxw..a", "......xxwa"]
+X_BUCKET = ["", "", "", "....44444444", "...4RRRRRRRR2", "...4433333322", "....43333332", "....43333332", "....43333321",
+            ".....3333321", ".....3322221", "......22211"]
+X_BOOK = ["", "", "...444444444", "..2433333333d", "..2433333333d", "..2433333333d", "..2433333333d", "..2433333333d", "..2433333333d",
+          "..2433333332d", "..2dddddddddc", "...2222222221"]
+X_PAPER = ["", "", "....44444444", "...4433333332", "...4322222232", "...4333333332", "...4322222232", "...4333333332", "...4322223332",
+           "...4333333332", "...4333333321", "....3333322"]
+X_BOWL = ["", "", "", "", "", "", "..444444444443", "..4RRRRRRRRRR2", "...4333333332", "....33333321", ".....332221", "......2211"]
+X_STRING = ["", "", "", "", ".....4444", "...44....33", "..4...44...3", "..4..4..3..2", "..3...33...2", "...33....22", ".....2222..1",
+            "..........21", "............1"]
+X_FEATHER = ["", "...........443", ".........44332", "........44332b", ".......4433b2", "......443b32", ".....443b322", "....443b322",
+             "....43b322", "...43b22", "...3b2", "..b", ".b"]
+X_BREAD = ["", "", "", "", "", "....44444444", "..443333333332", ".44331331331332", ".43333333333322", ".33333333333221", "..222222222211"]
+X_POTATO = ["", "", "", "", ".....44443", "...4433333332", "..443323333332", "..433333332332", "..333233333321", "...3333333221",
+            ".....222211"]
+X_CARROT = ["", "..........c.d", "...........dc", "..........443", ".........4332", "........4332", ".......4332", "......4332",
+            ".....4332", "....432", "...432", "..32", "..2"]
+X_BEET = ["", "......c..d", ".......cdc", "........b", "......4443", ".....443332", "....44333332", "....43333332", "....33333321",
+          ".....333221", ".......21", "........1"]
+X_STEAK = ["", "", "", "", ".....RRRRRR", "...RR333333RR", "..R3333333333R", "..333323333332", "..333333323332", "..233333333321",
+           "...2233333221", ".....222211"]
+X_CHOP = ["", "", "", "......RRRRR", "....RR33333R", "...R33333333R", "..cR333333332", "..cb33333332", "..cb2333332", "..cbb22222",
+          "...cbbb", "....ccb"]
+X_SLICE = ["", "", "", ".....444433", "...4433333332", "..433333333332", "..4333bccb3332", "..3333caac3331", "..3333bccb3321",
+           "..233333333321", "...2233333221", ".....222211"]
+X_DRUM = ["", ".........4443", ".......44333332", "......4333333332", "......4333333332", "......3333333321", "......333333321",
+          ".....c33333221", "....cb.2222", "...cb", "..cb", ".ccb", ".b.b"]
+X_FISH = ["", "", "", "........443", "......443333", ".4..4433333332", ".4333333333a32", "..2RRRRRRRRRR1", ".322RRRRRRRR1",
+          ".2..22222221", "......2211"]
+X_PUFFER = ["", "", ".......4", "....4.4443.3", ".....443333", "..4.44333a32.2", "....43333332", "...3RRRRRRRR1", "....2RRRRRR1",
+            "..2..222211..1", "....2..1...1"]
+X_MELON = ["", "", "", "", "", "..444444444443", "..433333333332", "...3333333332", "....33333322", "....dccccccb", ".....bbbbba"]
+X_PIE = ["", "", "", "", "", "", "..dddddddddddc", "..c3d3d3d3d3db", "..c3333333333b", "...cbbbbbbbba", "....aaaaaaaa"]
+X_STAR = ["", ".......43", ".......43", "......4432", "......4332", "....44433322", ".44443333332221", ".33333333322211", "....33322211",
+          "......3221", "......3221", ".......21", ".......21"]
+X_TEAR = ["", "", ".......4", "......443", "......433", ".....44332", "....4433332", "....4333332", "....3333322", "....3333221",
+          ".....32221", "......211"]
+# a small winged idol: square head with gem eyes, outstretched wings, belted body, two feet
+X_TOTEM = ["", "......4443", ".....443332", ".....4c33c2", ".....433332", "......3112", "..44.433332.43", "..433333333321",
+           "...2243333221", ".....433332", ".....43bb32", ".....433332", "......3222", "......21.21"]
