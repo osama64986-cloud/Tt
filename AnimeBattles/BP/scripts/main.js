@@ -362,7 +362,7 @@ function hitArea(src, center, radius, dmg, hitSet, opt = {}) {
     deal(src, o, dmg, opt.sureHit);
     if (opt.knock) {
       const d = V.norm(V.sub(o.location, center));
-      try { o.applyKnockback({ x: d.x * opt.knock, z: d.z * opt.knock }, opt.lift ?? 0.4); } catch (e) { /* ignore */ }
+      try { o.applyKnockback({ x: d.x * opt.knock, z: d.z * opt.knock }, lowLift(opt.lift ?? 0.4)); } catch (e) { /* ignore */ }
     }
     n++;
   }
@@ -729,7 +729,7 @@ const SIG = {
         deal(e, t, (i === n - 1 ? (o.finisher ?? o.dmg * 2.5) : o.dmg) * powerOf(e) / 100);
         fx(t.dimension, "shock_v", aim(t), o.color, 2.2 + (i === n - 1 ? 2 : 0), 0.3);
         burst(t.dimension, aim(t), o.color, 12, 3, 0.4, 0.4);
-        if (i === n - 1) { if (o.slam) { try { t.applyKnockback({ x: 0, z: 0 }, -1.6); } catch (err) { /* ignore */ } fx(t.dimension, "shock", t.location, o.color, 6, 0.4); }
+        if (i === n - 1) { if (o.slam) { try { t.applyKnockback({ x: 0, z: 0 }, lowLift(-1.6)); } catch (err) { /* ignore */ } fx(t.dimension, "shock", t.location, o.color, 6, 0.4); }
           later(6, () => { if (e.isValid) setPose(e, 0); }); }
       });
     } }),
@@ -1167,7 +1167,7 @@ const GOJO = {
         const ball = spawnVfx(dim, 1, c, { slot: 5, size: 1.2, life: 40 });
         every(2, 12, () => {
           let list = []; try { list = dim.getEntities({ location: c, maxDistance: 12 }); } catch (err) { /* ignore */ }
-          for (const x of list) if (canHit(e, teamOf(e), x)) { const d = V.norm(V.sub(c, x.location)); try { x.applyKnockback({ x: d.x * 1.0, z: d.z * 1.0 }, 0.2); } catch (err) { /* ignore */ } }
+          for (const x of list) if (canHit(e, teamOf(e), x)) { const d = V.norm(V.sub(c, x.location)); try { x.applyKnockback({ x: d.x * 1.0, z: d.z * 1.0 }, lowLift(0.2)); } catch (err) { /* ignore */ } }
           implode(dim, c, C.blue, 6, 14);
         });
         later(24, () => { killVfx(ball); explosion(e, c, { radius: 4, dmg: 60 * powerOf(e) / 100, color: C.blue, knock: 0.5, carve: 2 }); setPose(e, 0); });
@@ -1202,7 +1202,7 @@ const GOJO = {
             if (!canHit(e, team, o)) continue;
             const d = V.sub(center, o.location);
             const n = V.norm(d);
-            try { o.applyKnockback({ x: n.x * 0.6, z: n.z * 0.6 }, clamp(n.y * 0.4, 0, 0.3)); } catch (err) { /* ignore */ }
+            try { o.applyKnockback({ x: n.x * 0.6, z: n.z * 0.6 }, lowLift(clamp(n.y * 0.4, 0, 0.3))); } catch (err) { /* ignore */ }
             if (i % 2 === 0) deal(e, o, 5 * powerOf(e) / 100);
           }
           if (i === 19) burst(dim, center, C.blue, 30, -3, 0.4, 0.5);
@@ -1442,7 +1442,7 @@ const yujiCommon = (bf) => ({
       fx(e.dimension, "streak", c, hitBF ? C.red : C.ce, 1.8, 0.4, { count: hitBF ? 22 : 10, speed: 12 });
       fx(e.dimension, "streak", c, C.black, 1.6, 0.4, { count: hitBF ? 16 : 6, speed: 9 });
       if (hitBF) { fx(e.dimension, "shock_v", c, C.red, 5, 0.35); shake(e.dimension, c, 0.3, 0.3); announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX"); }
-      try { const n = V.norm(V.sub(t.location, e.location)); t.applyKnockback({ x: n.x * 2.2, z: n.z * 2.2 }, 0.35); } catch (err) { /* ignore */ }
+      try { const n = V.norm(V.sub(t.location, e.location)); t.applyKnockback({ x: n.x * 2.2, z: n.z * 2.2 }, lowLift(0.35)); } catch (err) { /* ignore */ }
       setPose(e, 0);
     });
   },
@@ -1777,7 +1777,7 @@ const LUFFY = {
     { id: "bound", label: "Bound", cd: 120, cost: 60, min: 3, max: 18, weight: 3, cond: G(3),
       run(e, s, t) {  // bouncing leap and slam
         busy(s, 16); afterimage(e);
-        try { e.applyKnockback({ x: 0, z: 0 }, 1.2); } catch (err) { /* ignore */ }
+        try { e.applyKnockback({ x: 0, z: 0 }, lowLift(1.2)); } catch (err) { /* ignore */ }
         later(10, () => { if (!alive(t) || !e.isValid) return; teleportNear(e, t, false, 1.5); explosion(e, t.location, { radius: 3, dmg: 30 * powerOf(e) / 100, color: C.haki, slot: 13, knock: 2.2 }); });
       } },
     { id: "cobra", label: "King Cobra", cd: 220, cost: 180, min: 2, max: 14, weight: 5, cond: G(4),
@@ -1819,7 +1819,7 @@ const LUFFY = {
         fx(dim, "shock", e.location, C.nika, 24, 1.1);
         let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 12 }); } catch (err) { /* ignore */ }
         for (const o of list) if (canHit(e, teamOf(e), o)) {
-          try { o.applyKnockback({ x: 0, z: 0 }, 1.6); } catch (err) { /* ignore */ }
+          try { o.applyKnockback({ x: 0, z: 0 }, lowLift(1.6)); } catch (err) { /* ignore */ }
           deal(e, o, 25 * powerOf(e) / 100);
           for (let k = 0; k < 4; k++) fx(dim, "flash", V.up(o.location, 2.4 + k * 0.4), C.nika, 0.8, 0.5);
         }
@@ -1857,7 +1857,7 @@ const ZORO = {
         afterimage(e); teleportNear(e, t, false, 1.4); setPose(e, 9);
         const v = slashVfx(e.dimension, aim(t), { x: 0, y: 1, z: 0 }, C.fire, 2, 90); later(5, () => killVfx(v));
         deal(e, t, 30 * powerOf(e) / 100);
-        try { t.applyKnockback({ x: 0, z: 0 }, 1.0); } catch (err) { /* ignore */ }
+        try { t.applyKnockback({ x: 0, z: 0 }, lowLift(1.0)); } catch (err) { /* ignore */ }
         every(8, 6, () => { if (!alive(t)) return false; deal(e, t, 3 * powerOf(e) / 100); fx(t.dimension, "aura", t.location, C.fire, 1, 0.5, { count: 8, speed: 1.4 }); });
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
@@ -1896,7 +1896,7 @@ const ZORO = {
           }
           fx(dim, "aura", e.location, C.zoro, 1, 0.5, { count: 10, speed: 3 });
           let list = []; try { list = dim.getEntities({ location: c, maxDistance: 5 }); } catch (err) { /* ignore */ }
-          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 4 * powerOf(e) / 100); try { o.applyKnockback({ x: 0, z: 0 }, 0.35); } catch (err) { /* ignore */ } }
+          for (const o of list) if (canHit(e, teamOf(e), o)) { deal(e, o, 4 * powerOf(e) / 100); try { o.applyKnockback({ x: 0, z: 0 }, lowLift(0.35)); } catch (err) { /* ignore */ } }
           if (i === 10) setPose(e, 0);
         });
       } },
@@ -2056,11 +2056,11 @@ const FRIEZA = {
     { id: "telekinesis", label: "Telekinesis", cd: 260, cost: 140, min: 0, max: 30, weight: 3,
       run(e, s, t) {
         busy(s, 22); setPose(e, 4); announce(e, "§5Frieza lifts his enemy with telekinesis");
-        try { t.applyKnockback({ x: 0, z: 0 }, 1.4); } catch (err) { /* ignore */ }
+        try { t.applyKnockback({ x: 0, z: 0 }, lowLift(1.4)); } catch (err) { /* ignore */ }
         every(2, 6, () => { if (alive(t)) fx(t.dimension, "orb", aim(t), C.death, 1.2, 0.3); });
         later(14, () => {
           if (!alive(t)) return;
-          try { t.applyKnockback({ x: 0, z: 0 }, -2); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: 0, z: 0 }, lowLift(-2)); } catch (err) { /* ignore */ }
           deal(e, t, 40 * powerOf(e) / 100);
           fx(t.dimension, "shock", t.location, C.death, 6, 0.5);
           setPose(e, 0);
@@ -2168,7 +2168,7 @@ function rasengan(e, s, t, o) {
     const c = aim(t), dim = e.dimension, pw = powerOf(e) / 100;
     deal(e, t, o.dmg * pw);
     const n = V.norm(V.sub(t.location, e.location));
-    try { t.applyKnockback({ x: n.x * (o.knock ?? 2.5), z: n.z * (o.knock ?? 2.5) }, 0.45); } catch (err) { /* ignore */ }
+    try { t.applyKnockback({ x: n.x * (o.knock ?? 2.5), z: n.z * (o.knock ?? 2.5) }, lowLift(0.45)); } catch (err) { /* ignore */ }
     for (let k = 0; k < 28; k++) {  // the spiralling sphere grinding in
       const a = (k / 28) * Math.PI * 4, r = 0.25 + k * 0.05 * o.size;
       fx(dim, "orb", V.add(c, { x: Math.cos(a) * r, y: Math.sin(a * 0.5) * 0.35, z: Math.sin(a) * r }), o.color, 0.5, 0.4);
@@ -2344,7 +2344,7 @@ const NARUTO_KID = {
           if (!alive(t) || !e.isValid) return;
           teleportNear(e, t, false, 1.2); setPose(e, 7);
           deal(e, t, 10 * powerOf(e) / 100);
-          try { t.applyKnockback({ x: 0, z: 0 }, 1.1); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: 0, z: 0 }, lowLift(1.1)); } catch (err) { /* ignore */ }
           burst(e.dimension, aim(t), C.white, 12, 3, 0.4, 0.4);
         });
         later(14, () => {
@@ -2352,7 +2352,7 @@ const NARUTO_KID = {
           try { e.teleport(V.up(t.location, 3), { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
           setPose(e, 10);
           deal(e, t, 16 * powerOf(e) / 100);
-          try { t.applyKnockback({ x: 0, z: 0 }, -1.6); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: 0, z: 0 }, lowLift(-1.6)); } catch (err) { /* ignore */ }
           fx(e.dimension, "shock", t.location, C.white, 4, 0.4);
           later(8, () => { if (e.isValid) setPose(e, 0); });
         });
@@ -2596,7 +2596,7 @@ const SAS = {
       busy(s, 22); announce(e, "§9§lLion Combo! §7— the move he copied from Lee");
       afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 9);
       deal(e, t, 8 * powerOf(e) / 100);
-      try { t.applyKnockback({ x: 0, z: 0 }, 1.1); } catch (err) { /* ignore */ }
+      try { t.applyKnockback({ x: 0, z: 0 }, lowLift(1.1)); } catch (err) { /* ignore */ }
       later(8, () => {  // shadow of the leaf: behind him in the air, then the crushing heel
         if (!e.isValid || !alive(t)) return;
         try { e.teleport(V.up(t.location, 1.6), { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
@@ -2604,7 +2604,7 @@ const SAS = {
         later(4, () => {
           if (!e.isValid || !alive(t)) return;
           setPose(e, 10); deal(e, t, 18 * powerOf(e) / 100);
-          try { t.applyKnockback({ x: 0, z: 0 }, -1.6); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: 0, z: 0 }, lowLift(-1.6)); } catch (err) { /* ignore */ }
           fx(t.dimension, "shock", t.location, C.white, 5, 0.4);
           later(8, () => { if (e.isValid) setPose(e, 0); });
         });
@@ -2994,7 +2994,7 @@ const ICHIGO = {
           setPose(e, 5);
           deal(e, t, 50 * powerOf(e) / 100);
           fx(t.dimension, "shock", t.location, C.black, 6, 0.4); fx(t.dimension, "flash", aim(t), C.white, 3, 0.2);
-          try { t.applyKnockback({ x: 0, z: 0 }, 0.8); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: 0, z: 0 }, lowLift(0.8)); } catch (err) { /* ignore */ }
           later(8, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
@@ -3039,7 +3039,7 @@ const TANJIRO = {
         afterimage(e); teleportNear(e, t, false, 1.5); setPose(e, 24);
         for (let k = 0; k < 4; k++) { const v = slashVfx(e.dimension, aim(t), { x: 0, y: 1, z: 0 }, C.kameBlue, 1.4, k * 45); later(5, () => killVfx(v)); }
         deal(e, t, 24 * powerOf(e) / 100);
-        try { t.applyKnockback({ x: 0, z: 0 }, 0.9); } catch (err) { /* ignore */ }
+        try { t.applyKnockback({ x: 0, z: 0 }, lowLift(0.9)); } catch (err) { /* ignore */ }
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
     { id: "flux", label: "Constant Flux", cd: 260, cost: 140, min: 0, max: 20, weight: 5, cond: G(0),
@@ -3372,7 +3372,7 @@ const MUZAN = {
         every(2, 6, () => {
           if (!alive(t) || !e.isValid) return false;
           const d = V.norm(V.sub(e.location, t.location));
-          try { t.applyKnockback({ x: d.x * 1.2, z: d.z * 1.2 }, 0.1); } catch (err) { /* ignore */ }
+          try { t.applyKnockback({ x: d.x * 1.2, z: d.z * 1.2 }, lowLift(0.1)); } catch (err) { /* ignore */ }
           implode(dim, V.up(e.location, 1), C.blood, 4, 10);
         });
         later(12, () => { if (e.isValid && alive(t)) { slashMarks(e, t, C.blood, 4, 7 * powerOf(e) / 100); } });
@@ -3587,8 +3587,8 @@ function comboStep(e, t, mv, last) {
         sound(e.dimension, "random.anvil_land", c, 0.6, 1.6);
         announce(e, "§f§lBlade lock!");
         const n2 = V.norm(V.sub(t.location, e.location));
-        try { e.applyKnockback({ x: -n2.x * 0.8, z: -n2.z * 0.8 }, 0.15); } catch (err) { /* ignore */ }
-        try { t.applyKnockback({ x: n2.x * 0.8, z: n2.z * 0.8 }, 0.15); } catch (err) { /* ignore */ }
+        try { e.applyKnockback({ x: -n2.x * 0.8, z: -n2.z * 0.8 }, lowLift(0.15)); } catch (err) { /* ignore */ }
+        try { t.applyKnockback({ x: n2.x * 0.8, z: n2.z * 0.8 }, lowLift(0.15)); } catch (err) { /* ignore */ }
       }
       if (mv.sword) {  // a visible blade streak across the target for every sword cut
         const sd = V.norm(V.sub(aim(t), aim(e)));
@@ -3601,7 +3601,7 @@ function comboStep(e, t, mv, last) {
       impact(e, t, mv.strong || last, color, mv);
       const n = V.norm(V.sub(t.location, e.location));
       const kb = mv.kb * (last ? 1.8 : 1);
-      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, Math.max(0, mv.lift ?? 0.08)); } catch (err) { /* ignore */ }
+      try { t.applyKnockback({ x: n.x * kb, z: n.z * kb }, lowLift(Math.max(0, mv.lift ?? 0.08))); } catch (err) { /* ignore */ }
       if (isFighter(t) && !last) { const ts = state(t); ts.stunUntil = Math.max(ts.stunUntil, now() + 6); }
       if (last && Math.random() < (BLACK_FLASH[e.typeId] ?? 0)) {
         deal(e, t, 35 * pw);
@@ -3915,24 +3915,32 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
   } catch (e) { warn("hurt", e); }
 });
 const TOUGHNESS = 4;
-// Launch: ~7 blocks through the air, a white trail behind, a shockwave of dust where they crash down.
+// Launch: a heavy blow drives the target back about seven blocks ALONG THE GROUND (no flying): fast at first,
+// then slowing, dust ploughed up behind, a dust shockwave where it stops (or where it hits a wall).
+const DUST = { red: 0.6, green: 0.55, blue: 0.48 };
+function lowLift(v) { return Math.min(v, 0.12); }
 function launch(src, v, strength = 1) {
   if (!alive(v) || !src || !src.isValid) return;
   const d = V.norm({ x: v.location.x - src.location.x, y: 0, z: v.location.z - src.location.z });
-  const k = 0.9 * strength;
-  try { v.applyImpulse({ x: d.x * k, y: 0.42, z: d.z * k }); } catch (e) {
-    try { v.applyKnockback({ x: d.x * 2.6 * strength, z: d.z * 2.6 * strength }, 0.45); } catch (e2) { /* ignore */ }
-  }
+  const total = 7 * clamp(strength, 0.85, 1.2), steps = 8, tri = (steps * (steps + 1)) / 2;
   const dim = v.dimension;
   fx(dim, "shock_v", aim(v), C.white, 2.4, 0.3);
   sound(dim, "random.explode", v.location, 0.5, 1.6);
-  every(1, 12, (i) => {
+  if (isFighter(v)) { const vs = state(v); vs.stunUntil = Math.max(vs.stunUntil, now() + 12); }
+  every(1, steps, (i) => {
     if (!alive(v)) return false;
-    fx(dim, "streak", aim(v), C.white, 0.8, 0.3, { count: 3, speed: 2 });
-    fx(dim, "orb", aim(v), C.white, 0.5, 0.35);
-    if (i === 11) { fx(dim, "shock", v.location, { red: 0.55, green: 0.5, blue: 0.45 }, 4, 0.5); burst(dim, v.location, { red: 0.6, green: 0.55, blue: 0.5 }, 16, 3, 0.4, 0.5); }
+    const next = V.add(v.location, V.mul(d, (total * (steps - i)) / tri));
+    let ok = false;
+    try { ok = v.tryTeleport(next, { checkForBlocks: true, keepVelocity: false }); } catch (e) { ok = false; }
+    fx(dim, "aura", v.location, DUST, 0.9, 0.6, { count: 5 * fxLevel(), speed: 1 });
+    fx(dim, "streak", aim(v), C.white, 0.7, 0.25, { count: 2, speed: 2 });
+    if (!ok || i === steps - 1) {
+      fx(dim, "shock", v.location, DUST, 4, 0.5);
+      burst(dim, V.up(v.location, 0.3), DUST, 16, 3, 0.4, 0.5);
+      if (!ok) sound(dim, "random.anvil_land", v.location, 0.4, 0.6);
+      return false;
+    }
   });
-  if (isFighter(v)) { const vs = state(v); vs.stunUntil = Math.max(vs.stunUntil, now() + 10); }
 }
 function dodgeFx(v, src) {
   if (!v.isValid) return;
