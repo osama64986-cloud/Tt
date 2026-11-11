@@ -306,11 +306,13 @@ def build(out):
     put("turtle_helmet", exact(X_HELMET, {"M": R((70, 160, 70)), "A": R((40, 110, 60))}))
     # ------------------------------------------------------- ingots & co
     for name, ramp, m in (("iron_ingot", IRON, 220), ("gold_ingot", GOLD, 240), ("copper_ingot", COPPER, 210),
-                          ("netherite_ingot", NETHERITE, 220), ("brick", R((180, 90, 70), 0.3), 0),
+                          ("netherite_ingot", NETHERITE, 220)):
+        put(name, exact(INGOTS[name], {"M": ramp}, metal={"M": m}))
+    for name, ramp, m in (("brick", R((180, 90, 70), 0.3), 0),
                           ("netherbrick", R((90, 40, 46), 0.4), 0), ("resin_brick", R((226, 110, 40), 0.3), 0)):
         put(name, exact(X_INGOT, {"M": ramp}, metal={"M": m}))
     for name, ramp, m in (("iron_nugget", IRON, 220), ("gold_nugget", GOLD, 240), ("copper_nugget", COPPER, 210)):
-        put(name, exact(X_NUGGET, {"M": ramp}, metal={"M": m}))
+        put(name, exact(NUGGETS[name], {"M": ramp}, metal={"M": m}))
     white = (255, 255, 255)
     put("diamond", exact(X_GEM, {"M": DIAMOND}, extra=[(5, 4, white)]))
     put("ruby", exact(X_GEM, {"M": R((226, 40, 70))}, extra=[(5, 4, white)]))
@@ -385,20 +387,20 @@ def build(out):
     put("carrot", exact(X_CARROT, {"M": R((240, 130, 30), 0.36), "A": GREEN}))
     put("carrot_golden", exact(X_CARROT, {"M": GOLD, "A": GREEN}, metal={"M": 120}))
     put("beetroot", exact(X_BEET, {"M": R((170, 30, 60)), "A": GREEN}))
-    # meats: each cut has its own unmistakable shape
-    bone, fat, crisp = R((240, 232, 214), 0.2), R((250, 226, 214), 0.16), R((236, 190, 130), 0.24)
-    put("beef_raw", exact(X_STEAK, {"M": R((214, 60, 64), 0.36), "P": fat}))                 # T-bone steak
-    put("beef_cooked", exact(X_STEAK, {"M": R((150, 80, 46), 0.42), "P": crisp}))
-    put("porkchop_raw", exact(X_CHOP, {"M": R((244, 150, 150), 0.3), "P": fat}))             # chop with a rib bone
+    # meats: one cut per animal, so you know where it came from at a glance
+    bone, fat, crisp = R((240, 232, 214), 0.2), R((250, 236, 226), 0.14), R((214, 170, 120), 0.24)
+    put("beef_raw", exact(X_STEAK, {"M": R((200, 50, 56), 0.36), "P": fat}))                 # cow: marbled steak
+    put("beef_cooked", exact(X_STEAK, {"M": R((140, 76, 44), 0.42), "P": crisp}))
+    put("porkchop_raw", exact(X_CHOP, {"M": R((244, 150, 150), 0.3), "P": fat}))             # pig: chop with bone and fat band
     put("porkchop_cooked", exact(X_CHOP, {"M": R((204, 144, 88), 0.36), "P": crisp}))
-    put("mutton_raw", exact(X_RACK, {"M": R((226, 90, 92), 0.36), "P": bone}))               # rack of ribs
+    put("mutton_raw", exact(X_RACK, {"M": R((226, 90, 92), 0.36), "P": bone}))               # sheep: rack of ribs
     put("mutton_cooked", exact(X_RACK, {"M": R((158, 92, 56), 0.42), "P": bone}))
-    put("chicken_raw", exact(X_CHICKEN, {"M": R((246, 200, 180), 0.24), "P": bone}))         # whole bird, legs up
-    put("chicken_cooked", exact(X_CHICKEN, {"M": R((214, 140, 56), 0.38), "P": bone}))
-    put("rabbit_raw", exact(X_DRUM, {"M": R((236, 166, 156), 0.28), "P": bone}))             # single leg
-    put("rabbit_cooked", exact(X_DRUM, {"M": R((186, 122, 72), 0.38), "P": bone}))
-    put("hoglin_meat_raw", exact(X_LEG, {"M": R((196, 64, 96), 0.36), "P": fat}))            # big haunch with a fat streak
-    put("hoglin_meat_cooked", exact(X_LEG, {"M": R((144, 76, 60), 0.42), "P": crisp}))
+    put("chicken_raw", exact(X_DRUM, {"M": R((246, 200, 180), 0.24), "P": bone}))            # chicken: round drumstick
+    put("chicken_cooked", exact(X_DRUM, {"M": R((214, 140, 56), 0.38), "P": bone}))
+    put("rabbit_raw", exact(X_HIND, {"M": R((236, 166, 156), 0.28), "P": bone}))             # rabbit: slim hind leg
+    put("rabbit_cooked", exact(X_HIND, {"M": R((186, 122, 72), 0.38), "P": bone}))
+    put("hoglin_meat_raw", exact(X_SLAB, {"M": R((180, 56, 90), 0.36), "P": bone}))          # hoglin: big slab, bone ring
+    put("hoglin_meat_cooked", exact(X_SLAB, {"M": R((140, 72, 58), 0.42), "P": bone}))
     eye = R((30, 30, 36), 0.4)
     for name, col, belly in (("fish_raw", (96, 140, 170), (214, 226, 230)), ("fish_cooked", (176, 140, 104), (236, 226, 204)),
                              ("fish_salmon_raw", (220, 96, 80), (244, 200, 186)), ("fish_salmon_cooked", (214, 140, 100), (240, 214, 190))):
@@ -894,3 +896,143 @@ X_ROCKET = ["", ".......54", "......5443", "......4332", "......TSSR", "......43
             ".......xw", ".......xw", ".......xv"]
 X_KEY = ["", "", "", "...4443", "..43..32", "..4....2", "..43..32", "...4332", ".....43", "......43", ".......43", "........432",
          ".........3.2"]
+
+
+# ---------------------------------------------------------------- v2 shapes
+
+
+def _blank():
+    return [["."] * N for _ in range(N)]
+
+
+def _out(g):
+    return ["".join(r) for r in g]
+
+
+def handle(g, top_y=2, bottom_y=14, bind=()):
+    # diagonal haft: pair (x, x+1) with x = 15 - y
+    for y in range(top_y, bottom_y + 1):
+        x = 15 - y
+        g[y][x] = "x" if (y % 3) else "y"
+        if x + 1 < N:
+            g[y][x + 1] = "w"
+    for y in bind:
+        x = 15 - y
+        g[y][x], g[y][x + 1] = "b", "a"
+    g[bottom_y][15 - bottom_y] = "v"
+
+
+def axe():
+    g = _blank()
+    handle(g, 3, 14, bind=(4,))
+    rows = {1: (7, 10), 2: (5, 12), 3: (4, 11), 4: (3, 10), 5: (3, 9), 6: (4, 8), 7: (5, 7)}
+    for y, (x0, x1) in rows.items():
+        for x in range(x0, x1 + 1):
+            if g[y][x] != ".":
+                continue
+            if x == x0:
+                t = "5" if y <= 4 else "4"          # bright cutting edge
+            elif x == x0 + 1:
+                t = "4" if y <= 4 else "3"
+            elif y == 1 or y == 2:
+                t = "4"
+            elif y >= 6:
+                t = "2"
+            elif x >= x1 - 1:
+                t = "2"
+            else:
+                t = "3"
+            g[y][x] = t
+    g[7][7], g[6][8] = "1", "1"
+    return _out(g)
+
+
+def diamond():          # brilliant cut: flat crown on top, V pavilion to a point
+    return ["", "", "", "....45555443....", "...4555444433...", "..454444333332..", "..333333332221..", "...3332322221...",
+            "....33222211....", ".....332211.....", "......3211......", ".......21.......", ""]
+
+
+def emerald():          # tall step-cut crystal
+    return ["", ".......54.......", "......5443......", ".....544332.....", ".....543332.....", ".....543332.....", ".....543332.....",
+            ".....543332.....", ".....543332.....", ".....543332.....", ".....443322.....", "......3322......", ".......21......."]
+
+
+def iron_ingot():       # long thin bar, seen from above at an angle
+    return ["", "", "", "", "", "", ".......5555554..", ".....554444443..", "...55444444432..", "..443333333322..", "..3333333322....",
+            "..22222221......"]
+
+
+def gold_ingot():       # chunky bullion bar, wide base, stamped panel on top
+    return ["", "", "", "", "", ".....55555543...", "....5444444432..", "...5445555443...", "..544433334432..", "..443333333321..",
+            "..433333333221..", "..222222222211.."]
+
+
+def copper_ingot():     # rounded bar with dents
+    return ["", "", "", "", "", "", "......544443....", "....5444434432..", "...54433433332..", "...43333333321..", "....3332333221..",
+            "......222211...."]
+
+
+def netherite_ingot():  # heavy dark bar with a raised ridge
+    return ["", "", "", "", "", ".....44444443...", "....4555555543..", "...433333333332.", "...444444444432.", "...333333333322.",
+            "...222222222221.", "...111111111110."]
+
+
+def iron_nugget():      # two small pebbles
+    return ["", "", "", "", "", "", ".....54.........", "....5443........", "....4332..543...", ".....321.54432..", "........43321...",
+            ".........221...."]
+
+
+def gold_nugget():      # one round shiny nugget
+    return ["", "", "", "", "", "", "......5543......", ".....544433.....", ".....4543332....", ".....4433322....", "......33221.....",
+            ".......221......"]
+
+
+def copper_nugget():    # angular chip
+    return ["", "", "", "", "", "", ".......54.......", "......5443......", ".....54333......", "....5433322.....", ".....33221......",
+            "......221......."]
+
+
+# meats --------------------------------------------------------------
+# beef: thick steak, marbled with white streaks, fat rim along the top edge
+def steak():
+    return ["", "", "", ".....PPPPP......", "...PP4444PPP....", "..P44333444PP...", "..43335P33344P..", "..4333355333432.",
+            "..3335333353332.", "..33333355333321", "...33333333321..", "....222222211...", "......1111......"]
+
+
+# pork: chop with a curved bone handle on the left and a thick fat band
+def chop():
+    return ["", "", "......PPPPPP....", "....PP444444P...", "...P4433333342..", "..TP43333333332.", "..TP43333333332.", ".TSP33333333322.",
+            ".TS.P333333322..", ".TS..PP22222....", ".SS....PPP......", "..R.............", ""]
+
+
+# mutton: rack of ribs, three bone tips sticking up
+def rack():
+    return ["", "", "...T...T...T....", "...S...S...S....", "...S...S...S....", "..44444444444...", ".4433333333332..", ".4333333333332..",
+            ".3333333333322..", ".3333333333221..", "..22222222221...", "...111111111....", ""]
+
+
+# chicken: big round drumstick, knuckle bone at the end
+def drumstick():
+    return ["", "......54443.....", ".....5443332....", "....544333332...", "....443333332...", "....433333322...", "....33333322....",
+            ".....3332221....", "......T221......", ".....TS.........", "....TS..........", "...TTS..........", "...SS...........", ""]
+
+
+# rabbit: small, slim hind leg - long and narrow, little bone
+def hind_leg():
+    return ["", "", ".........544....", "........5433....", ".......54332....", ".......43332....", "......43332.....", "......3332......",
+            ".....3322.......", "....T221........", "...TS...........", "..TS............", "..S.............", ""]
+
+
+# hoglin: big slab with a round bone cross-section in the middle
+def slab():
+    return ["", "", "", "...4444444443...", "..443333333332..", ".44333TTT333332.", ".4333TSSST33332.", ".4333TS.ST33322.",
+            ".3333TSSST33322.", ".33333TTT333221.", "..333333333221..", "...2222222221...", "....11111111...."]
+
+
+
+X_AXE = axe()
+X_GEM = diamond()
+X_EMERALD = emerald()
+INGOTS = {"iron_ingot": iron_ingot(), "gold_ingot": gold_ingot(), "copper_ingot": copper_ingot(), "netherite_ingot": netherite_ingot()}
+NUGGETS = {"iron_nugget": iron_nugget(), "gold_nugget": gold_nugget(), "copper_nugget": copper_nugget()}
+X_STEAK, X_CHOP, X_RACK, X_DRUM, X_HIND, X_SLAB = steak(), chop(), rack(), drumstick(), hind_leg(), slab()
