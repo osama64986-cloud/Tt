@@ -121,6 +121,87 @@ def render(g, pal, speck=None, seed="", extra=None, emis=None, metal=None):
     return t
 
 
+def exact(rows, groups, checker=False, extra=None, metal=None, emis=None):
+    """Hand-placed pixels.  Characters: 0-4 = main material tones (dark to
+    light), a-e = trim tones, v-z = handle tones, '.' = empty.  A soft dark
+    outline is added around the finished sprite."""
+    rows = [r.ljust(N, ".")[:N] for r in rows] + ["." * N] * (N - len(rows))
+    rgb = np.zeros((N, N, 3), np.uint8)
+    alpha = np.zeros((N, N), np.uint8)
+    hgt = np.zeros((N, N))
+    em = np.zeros((N, N))
+    mt = np.zeros((N, N))
+    dark = np.zeros((N, N, 3), np.uint8)
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch == ".":
+                continue
+            grp, tone = ("M", int(ch)) if ch.isdigit() else (("A", ord(ch) - 97) if ch in "abcde" else ("V", ord(ch) - 118))
+            ramp = groups[grp]
+            if checker and grp == "M" and (x + y) % 2 == 0 and 0 < tone:
+                tone -= 1                                    # chain links
+            rgb[y, x] = ramp[tone]
+            dark[y, x] = mix(ramp[0], (20, 16, 26), 0.5)
+            alpha[y, x] = 255
+            hgt[y, x] = 0.45 + tone * 0.12
+            if metal and grp in metal:
+                mt[y, x] = metal[grp]
+            if emis and grp in emis:
+                em[y, x] = emis[grp]
+    solid = alpha > 0
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        nb = np.roll(np.roll(solid, dy, 0), dx, 1)
+        nd = np.roll(np.roll(dark, dy, 0), dx, 1)
+        edge = nb & ~solid & (alpha == 0)
+        if dy == 1:
+            edge[0, :] = False
+        if dy == -1:
+            edge[-1, :] = False
+        if dx == 1:
+            edge[:, 0] = False
+        if dx == -1:
+            edge[:, -1] = False
+        rgb = np.where(edge[..., None], nd, rgb)
+        alpha = np.where(edge, 255, alpha)
+        hgt = np.where(edge, 0.3, hgt)
+    if extra:
+        for (x, y, c) in extra:
+            rgb[y, x] = c
+            alpha[y, x] = 255
+    t = Tex(rgb, hgt, alpha=alpha, rough=np.where(mt > 0, 80, 190), metal=mt, bump=0.8)
+    t.emis = em
+    return t
+
+
+# Weapons, tools and armour are placed pixel by pixel: a lit edge, a body
+# tone and a shaded edge on every blade and plate, seams and belts on armour.
+X_SWORD = ["", ".............43.", "............431.", "...........431..", "..........431...", ".........431....", "........431.....",
+           ".......431......", "..dc..431.......", "...dc431........", "....dcb.........", "...xwdcb........", "..xw..dc........",
+           ".cb.............", ".ba............."]
+X_PICK = ["", ".....4444443....", "...4433333332...", "..43.....32221..", "..3.......xw21..", ".........xw.21..", "........xw..21..",
+          ".......xw...11..", "......xw....10..", ".....xw.....0...", "....xw..........", "...xw...........", "..xw............",
+          ".xw.............", ".w.............."]
+X_AXE = ["", ".............xw.", ".........443xw..", ".......4433xw...", ".....44333xw2...", "....44333xw21...", "....4333xw1.....",
+         "....433xw.......", "....32xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............",
+         ".xw............."]            # crescent blade hugging the haft, small poll behind, haft tip showing above
+X_SHOVEL = ["", "...........443..", "..........44332.", ".........443321.", ".........43321..", "........x3321...", ".......xw21.....",
+            "......xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............", ".xw.............",
+            ".w.............."]
+X_HOE = ["", "......4444443...", "......33333321..", "......31...xw...", "......1...xw....", ".........xw.....", "........xw......",
+         ".......xw.......", "......xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............",
+         ".xw.............", ".w.............."]
+X_HELMET = ["", "", ".....444444.....", "...4443333332...", "..443333333321..", "..433333333321..", "..abbbbbbbbbba..",
+            "..432.3221.321..", "..432..31..321..", "..432..21..321..", "..322......221..", "..21........10.."]
+X_CHEST = ["", "..443......443..", ".44332....44332.", ".433332aa433321.", ".43333bbbb33321.", ".43214333321321.", ".32114333321211.",
+           "....43333321....", "....42222221....", "....43333321....", "....43333321....", "....42222221....", "....abbbbbba....",
+           ".....322221....."]
+X_LEGS = ["", "...abbbbbbbba...", "...4333cc3321...", "...4333333321...", "...4333223321...", "...4332..4321...", "...4332..4321...",
+          "...4332..4321...", "...4222..4221...", "...4332..4321...", "...4332..4321...", "...4332..4321...", "...3321..3321...",
+          "...2211..2210..."]
+X_BOOTS = ["", "", "", "", "...abb....abb...", "...432....432...", "...432....432...", "...432....432...", "...432....432...",
+           "..4332....4332..", ".43322....43322.", ".00000....00000."]
+
+
 # ---------------------------------------------------------------- shapes
 PICK = [".HHHHHHH...", "HHHHHHHHH..", "HH.....HHH.", "H.......HHH", ".........HH", ".........HH", "..........H"]
 AXE = [".HHH....", "HHHHH...", "HHHHHH..", ".HHHHHH.", "..HHHHHH", "...HHHH.", "....HH.."]       # broad wedge blade across the haft
@@ -189,21 +270,20 @@ def build(out):
     metal_of = {"iron": 220, "gold": 240, "netherite": 220, "copper": 210, "diamond": 60}
     # ------------------------------------------------------------ tools
     for m, ramp in mats.items():
-        mt = {"H": metal_of.get(m, 0), "B": metal_of.get(m, 0)}
-        put(f"{m}_pickaxe", render(tool(PICK, 3, 1), {"S": STICK, "H": ramp}, metal=mt))
-        put(f"{m}_axe", render(tool(AXE, 6, 1), {"S": STICK, "H": ramp}, metal=mt))
-        put(f"{m}_shovel", render(tool(SHOVEL, 9, 1), {"S": STICK, "H": ramp}, metal=mt))
-        put(f"{m}_hoe", render(tool(HOE, 7, 2), {"S": STICK, "H": ramp}, metal=mt))
-        guard = STICK if m in ("wood", "stone") else R(shift(ramp[1], dv=-0.1), 0.4)
-        put(f"{m}_sword", render(centred(SWORD, y0=1), {"B": ramp, "G": guard, "S": STICK, "P": guard}, metal=mt))
+        mt = {"M": metal_of.get(m, 0), "A": metal_of.get(m, 0)}
+        grp = {"M": ramp, "V": STICK, "A": STICK if m in ("wood", "stone") else R(shift(ramp[1], dv=-0.08), 0.4)}
+        for part, rows in (("pickaxe", X_PICK), ("axe", X_AXE), ("shovel", X_SHOVEL), ("hoe", X_HOE), ("sword", X_SWORD)):
+            put(f"{m}_{part}", exact(rows, grp, metal=mt))
     # ------------------------------------------------------------ armour
+    trims = {"leather": R((96, 56, 30)), "chainmail": R((96, 100, 110), 0.36), "iron": R((150, 156, 168), 0.3),
+             "gold": R((214, 130, 30)), "diamond": R((40, 150, 160)), "netherite": R((190, 150, 70), 0.36),
+             "copper": R((150, 80, 52), 0.36)}
     for m, ramp in {"leather": LEATHER, "chainmail": CHAIN, "iron": IRON, "gold": GOLD, "diamond": DIAMOND,
                     "netherite": NETHERITE, "copper": COPPER}.items():
-        mt = {"H": metal_of.get(m, 150 if m == "chainmail" else 0)}
-        sp = {"H": 0.3} if m == "chainmail" else None
-        for part, rows in (("helmet", HELMET), ("chestplate", CHEST), ("leggings", LEGS), ("boots", BOOTS)):
-            put(f"{m}_{part}", render(centred(rows), {"H": ramp}, speck=sp, seed=m + part, metal=mt))
-    put("turtle_helmet", render(centred(HELMET), {"H": R((70, 160, 70))}, speck={"H": 0.25}, seed="turtle"))
+        mt = {"M": metal_of.get(m, 150 if m == "chainmail" else 0)}
+        for part, rows in (("helmet", X_HELMET), ("chestplate", X_CHEST), ("leggings", X_LEGS), ("boots", X_BOOTS)):
+            put(f"{m}_{part}", exact(rows, {"M": ramp, "A": trims[m]}, checker=(m == "chainmail"), metal=mt))
+    put("turtle_helmet", exact(X_HELMET, {"M": R((70, 160, 70)), "A": R((40, 110, 60))}))
     # ------------------------------------------------------- ingots & co
     for name, ramp, m in (("iron_ingot", IRON, 220), ("gold_ingot", GOLD, 240), ("copper_ingot", COPPER, 210),
                           ("netherite_ingot", NETHERITE, 220)):
