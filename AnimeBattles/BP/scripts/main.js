@@ -3338,7 +3338,7 @@ const MUZAN = {
         later(4, () => {
           if (!e.isValid || !alive(t)) return;
           deal(e, t, 30 * powerOf(e) / 100);
-          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 50));
+          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + 25));
           sphereFx(e.dimension, aim(t), 1.4, C.blood, 20, 0.6, "orb", 0.4);
           sound(e.dimension, "mob.ravager.bite", t.location, 1.4, 0.7);
           later(8, () => { if (e.isValid) setPose(e, 0); });
@@ -3391,7 +3391,7 @@ const MUZAN = {
           later(8, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
-    regenAbility("Regeneration (five brains, seven hearts)", "§4§l(his flesh knits back — five brains, seven hearts)", 0.09),
+    regenAbility("Regeneration (five brains, seven hearts)", "§4§l(his flesh knits back — five brains, seven hearts)", 0.06, null, 800),
     { id: "infant", label: "Giant Infant Form", cd: 2000, cost: 0, min: 0, max: 20, weight: 10, cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.3,
       run(e, s, t) {  // at the very end, to hide from the dawn, he swells into a gigantic infant of flesh
         busy(s, 40); setPose(e, 22); announce(e, "§4§lMuzan swells into a GIANT INFANT of flesh! §7— he will not die");
@@ -3403,7 +3403,7 @@ const MUZAN = {
           const c = alive(t) ? t.location : e.location;
           fx(dim, "shock", c, C.blood, 12, 0.6); shake(dim, c, 0.7, 0.6);
           hitArea(e, V.up(c, 1), 7, 60 * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.8 });
-          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.08));
+          const h = health(e); if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.05));
           later(10, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
