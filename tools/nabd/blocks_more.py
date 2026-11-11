@@ -272,13 +272,20 @@ def build(out, flip, variations):
     for kind in ("ochre", "verdant", "pearlescent"):
         if f"{kind}_froglight_side" not in STATS:
             continue
-        r = vramp(f"{kind}_froglight_side", 6, contrast=0.2)
-        s = P.cells(f"{kind}_froglight", r, 7, dome=0.5)
-        s.emis, s.rough = 210, 100
-        out[f"{kind}_froglight_side"] = s
-        tp = P.slab_face(f"{kind}_froglight_top", vramp(f"{kind}_froglight_top", 5, contrast=0.2), border=2, inset=5, vary=0.08)
-        tp.emis, tp.rough = 220, 100
-        out[f"{kind}_froglight_top"] = tp
+        for part in ("side", "top"):
+            nm = f"{kind}_froglight_{part}"
+            r = make_ramp(shift(vbase(nm), dv=-0.1, ds=0.12), 5, 0.6)       # enough contrast to read the lamp shape
+            d = np.maximum(np.abs(xx - 7.5), np.abs(yy - 7.5))        # soft square glow, brightest in the middle
+            idx = np.where(d < 3, 4, np.where(d < 5.5, 3, 2))
+            idx = np.where(d > 6.6, 1, idx)                               # darker rim
+            idx = np.where(((xx == 0) | (xx == 15)) & ((yy == 0) | (yy == 15)), 0, idx)
+            if part == "top":                                             # the top carries a ring
+                idx = np.where((d > 3.6) & (d < 4.6), 2, idx)
+            else:                                                         # the sides carry two light bands
+                idx = np.where(((yy == 4) | (yy == 11)) & (d < 6.6), np.minimum(idx + 1, 4), idx)
+            t = Tex(paint_idx(idx, r), 0.5 + idx * 0.08, rough=100, bump=0.5)
+            t.emis = np.where(d > 6.6, 120, 220)
+            out[nm] = t
     if "beacon" in STATS:
         b = P.glass("beacon", [(120, 190, 200), (170, 230, 236), (230, 250, 252)], (255, 255, 255), body=(150, 232, 226),
                     body_alpha=255, frame_alpha=255)

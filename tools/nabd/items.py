@@ -328,7 +328,7 @@ def build(out):
         put(name, exact(X_LUMP, {"M": ramp}, extra=ex))
     put("leather", exact(X_HIDE, {"M": LEATHER}))
     put("rabbit_hide", exact(X_HIDE, {"M": R((196, 160, 120), 0.3)}))
-    put("rotten_flesh", exact(X_STEAK, {"M": R((170, 90, 60), 0.4), "P": R((110, 130, 70), 0.3)}))
+    put("rotten_flesh", exact(X_ROTTEN, {"M": R((176, 92, 60), 0.4), "P": R((110, 140, 70), 0.34)}))
     for name, ramp, glow in (("redstone_dust", REDSTONE, 40), ("glowstone_dust", R((250, 210, 90)), 120), ("gunpowder", R((110, 110, 116), 0.4), 0),
                              ("sugar", R((244, 244, 246), 0.12), 0), ("blaze_powder", R((250, 160, 30)), 100)):
         put(name, exact(X_PILE, {"M": ramp}, emis={"M": glow}, extra=[(6, 6, ramp[4]), (10, 5, ramp[3]), (8, 4, ramp[4])]))
@@ -386,19 +386,20 @@ def build(out):
     put("carrot", exact(X_CARROT, {"M": R((240, 130, 30), 0.36), "A": GREEN}))
     put("carrot_golden", exact(X_CARROT, {"M": GOLD, "A": GREEN}, metal={"M": 120}))
     put("beetroot", exact(X_BEET, {"M": R((170, 30, 60)), "A": GREEN}))
-    fat, fat_c = R((250, 226, 220), 0.12), R((226, 180, 120), 0.2)
-    put("beef_raw", exact(X_STEAK, {"M": R((214, 70, 70), 0.34), "P": fat}))
-    put("beef_cooked", exact(X_STEAK, {"M": R((150, 84, 50), 0.4), "P": fat_c}))
-    put("hoglin_meat_raw", exact(X_STEAK, {"M": R((190, 60, 90), 0.34), "P": fat}))
-    put("hoglin_meat_cooked", exact(X_STEAK, {"M": R((140, 76, 60), 0.4), "P": fat_c}))
-    put("porkchop_raw", exact(X_CHOP, {"M": R((240, 150, 150), 0.3), "P": fat, "A": BONE}))
-    put("porkchop_cooked", exact(X_CHOP, {"M": R((196, 140, 90), 0.34), "P": fat_c, "A": BONE}))
-    put("mutton_raw", exact(X_SLICE, {"M": R((226, 96, 96), 0.34), "A": BONE}))
-    put("mutton_cooked", exact(X_SLICE, {"M": R((160, 96, 60), 0.4), "A": BONE}))
-    put("chicken_raw", exact(X_DRUM, {"M": R((244, 196, 176), 0.24), "A": BONE}))
-    put("chicken_cooked", exact(X_DRUM, {"M": R((204, 136, 60), 0.36), "A": BONE}))
-    put("rabbit_raw", exact(X_DRUM, {"M": R((236, 170, 160), 0.26), "A": BONE}))
-    put("rabbit_cooked", exact(X_DRUM, {"M": R((184, 124, 76), 0.36), "A": BONE}))
+    # meats: each cut has its own unmistakable shape
+    bone, fat, crisp = R((240, 232, 214), 0.2), R((250, 226, 214), 0.16), R((236, 190, 130), 0.24)
+    put("beef_raw", exact(X_STEAK, {"M": R((214, 60, 64), 0.36), "P": fat}))                 # T-bone steak
+    put("beef_cooked", exact(X_STEAK, {"M": R((150, 80, 46), 0.42), "P": crisp}))
+    put("porkchop_raw", exact(X_CHOP, {"M": R((244, 150, 150), 0.3), "P": fat}))             # chop with a rib bone
+    put("porkchop_cooked", exact(X_CHOP, {"M": R((204, 144, 88), 0.36), "P": crisp}))
+    put("mutton_raw", exact(X_RACK, {"M": R((226, 90, 92), 0.36), "P": bone}))               # rack of ribs
+    put("mutton_cooked", exact(X_RACK, {"M": R((158, 92, 56), 0.42), "P": bone}))
+    put("chicken_raw", exact(X_CHICKEN, {"M": R((246, 200, 180), 0.24), "P": bone}))         # whole bird, legs up
+    put("chicken_cooked", exact(X_CHICKEN, {"M": R((214, 140, 56), 0.38), "P": bone}))
+    put("rabbit_raw", exact(X_DRUM, {"M": R((236, 166, 156), 0.28), "P": bone}))             # single leg
+    put("rabbit_cooked", exact(X_DRUM, {"M": R((186, 122, 72), 0.38), "P": bone}))
+    put("hoglin_meat_raw", exact(X_LEG, {"M": R((196, 64, 96), 0.36), "P": fat}))            # big haunch with a fat streak
+    put("hoglin_meat_cooked", exact(X_LEG, {"M": R((144, 76, 60), 0.42), "P": crisp}))
     eye = R((30, 30, 36), 0.4)
     for name, col, belly in (("fish_raw", (96, 140, 170), (214, 226, 230)), ("fish_cooked", (176, 140, 104), (236, 226, 204)),
                              ("fish_salmon_raw", (220, 96, 80), (244, 200, 186)), ("fish_salmon_cooked", (214, 140, 100), (240, 214, 190))):
@@ -518,6 +519,78 @@ def build_more(out):
         rod[y][13] = "c"
     rod[10][12], rod[10][13], rod[9][11] = "b", "c", "b"
     put("fishing_rod_uncast", exact(["".join(r) for r in rod], {"V": STICK, "A": R((226, 226, 230), 0.14)}))
+    build_extra(out)
+
+
+def mirror(left):
+    """Build a symmetric sprite from its left half (8 columns)."""
+    return [(r.ljust(8, ".")[:8]) + (r.ljust(8, ".")[:8])[::-1] for r in left]
+
+
+def build_extra(out):
+    def put(name, tex):
+        if name in ISTATS and ISTATS[name]["size"] == [16, 16]:
+            out[name] = tex
+    face = R((240, 236, 222), 0.14)
+    put("compass_item", exact(X_COMPASS, {"M": R((150, 150, 160), 0.4), "P": face, "A": R((220, 40, 40))}, metal={"M": 200}))
+    put("clock_item", exact(X_CLOCK, {"M": GOLD, "P": face, "A": R((50, 50, 60), 0.5)}, metal={"M": 220}))
+    put("lodestonecompass_item", exact(X_COMPASS, {"M": R((110, 96, 150), 0.4), "P": face, "A": R((60, 200, 220))}, metal={"M": 200}))
+    put("recovery_compass_item", exact(X_COMPASS, {"M": R((20, 90, 110), 0.5), "P": R((40, 60, 70), 0.3), "A": R((90, 230, 240))}, emis={"A": 150}))
+    for name in ISTATS:                                                   # tipped arrows: the head takes the effect colour
+        if name == "tipped_arrow" or (name.startswith("tipped_arrow_") and name not in ("tipped_arrow_base", "tipped_arrow_head")):
+            put(name, exact(X_ARROW, {"M": R(tint(name, ds=0.35, dv=0.12)), "V": STICK, "A": R((236, 236, 240), 0.14)}))
+    for dye, col in DYES.items():
+        put(f"bed_{dye}", exact(X_BED, {"M": R(col, 0.36), "P": R((240, 240, 236), 0.12), "V": WOOD}))
+        put(f"{dye}_cushion", exact(X_CUSHION, {"M": R(col, 0.36)}))
+    put("light_gray_cushion", exact(X_CUSHION, {"M": R(DYES["silver"], 0.36)}))
+    for m, ramp in (("iron", IRON), ("gold", GOLD), ("diamond", DIAMOND), ("leather", LEATHER), ("copper", COPPER), ("netherite", NETHERITE)):
+        put(f"{m}_horse_armor", exact(X_BARD, {"M": ramp}, metal={"M": 200 if m != "leather" else 0}))
+    put("saddle", exact(X_SADDLE, {"M": R((150, 84, 44)), "A": IRON}))
+    put("lead", exact(X_STRING, {"M": R((176, 140, 90), 0.34)}))
+    put("name_tag", exact(X_TAG, {"M": PAPER}))
+    put("flint_and_steel", exact(X_FLINTSTEEL, {"M": IRON, "P": R((70, 70, 80), 0.5)}, metal={"M": 220}))
+    put("mace", exact(X_MACE, {"M": R((120, 124, 136), 0.44), "V": STICK}, metal={"M": 220}))
+    put("elytra", exact(mirror(X_WING), {"M": R((150, 140, 176), 0.36)}))
+    put("broken_elytra", exact(mirror(X_WING), {"M": R((120, 112, 130), 0.36)}, extra=[(4, 8, (30, 26, 40)), (5, 9, (30, 26, 40)), (11, 7, (30, 26, 40))]))
+    put("phantom_membrane", exact(mirror(X_WING), {"M": R((200, 190, 160), 0.3)}))
+    put("shulker_shell", exact(X_SHELL, {"M": R((150, 104, 150), 0.34)}))
+    put("armadillo_scute", exact(X_EMERALD, {"M": R((190, 110, 90), 0.34)}))
+    put("turtle_shell_piece", exact(X_EMERALD, {"M": R((70, 170, 80), 0.36)}))
+    put("nautilus", exact(X_BALL, {"M": R((226, 200, 170), 0.3)}, extra=[(7, 7, (150, 90, 60)), (8, 7, (150, 90, 60)), (9, 8, (150, 90, 60)),
+                                                                       (8, 9, (150, 90, 60)), (6, 8, (150, 90, 60)), (7, 6, (190, 120, 80))]))
+    put("cake", exact(X_CAKE, {"M": R((176, 112, 64), 0.34), "P": R((252, 244, 240), 0.1), "A": R((214, 44, 50))}))
+    for name, glow in (("lantern", (255, 190, 70)), ("soul_lantern", (90, 220, 236)), ("copper_lantern", (120, 236, 160)),
+                       ("exposed_copper_lantern", (120, 236, 160)), ("weathered_copper_lantern", (120, 236, 160)),
+                       ("oxidized_copper_lantern", (120, 236, 160))):
+        frame_c = (70, 72, 84) if "copper" not in name else tint(name, ds=0.1)
+        put(name, exact(X_LANTERN, {"M": R(frame_c, 0.44), "P": R(glow, 0.3), "A": R((96, 100, 112), 0.4)}, emis={"P": 220}, metal={"M": 180}))
+    put("painting", exact(X_PAINTING, {"V": WOOD, "P": R((150, 200, 240), 0.2), "A": GREEN}))
+    put("item_frame", exact(X_FRAME, {"V": WOOD, "P": R((170, 120, 70), 0.24)}))
+    put("glow_item_frame", exact(X_FRAME, {"V": R((190, 170, 90)), "P": R((200, 170, 90), 0.24)}, emis={"V": 80}))
+    stone = R((130, 134, 146), 0.36)
+    marks = {0: [(6, 5), (7, 6), (8, 7), (9, 8), (9, 5), (6, 8)], 1: [(6, 5), (7, 5), (8, 5), (9, 5), (6, 8), (7, 8), (8, 8), (9, 8), (6, 6), (9, 7)],
+             2: [(7, 5), (6, 6), (8, 6), (7, 7), (9, 7), (8, 8)], 3: [(6, 5), (9, 5), (7, 6), (8, 7), (6, 8), (9, 8), (7, 7)]}
+    for name in ISTATS:
+        k = sum(map(ord, name)) % 4
+        if name.endswith("smithing_template"):                            # carved tablet, emblem coloured per pattern
+            put(name, exact(X_TABLET, {"M": stone, "P": R(hue_of(name), 0.3)}))
+        elif name.endswith("pottery_sherd"):                              # clay fragment, one of four scratched motifs
+            put(name, exact(X_SHERD, {"M": R((180, 100, 70), 0.34)}, extra=[(x, y, (96, 46, 30)) for (x, y) in marks[k]]))
+        elif name.endswith("banner_pattern") or name == "banner_pattern":
+            col = hue_of(name)
+            put(name, exact(X_PAPER, {"M": PAPER}, extra=[(x, y, col) for x in (6, 7, 8, 9) for y in (5, 6, 7, 8)] + [(7, 6, (255, 255, 255))]))
+        elif name.startswith("map_") and name not in ("map_empty",):
+            col = hue_of(name) if name not in ("map_filled", "map_locked") else (70, 150, 80)
+            ex = [(x, y, (110, 170, 90)) for (x, y) in ((5, 5), (6, 5), (6, 6), (9, 8), (10, 8), (9, 9), (7, 9))] + \
+                 [(x, y, (90, 150, 220)) for (x, y) in ((9, 5), (10, 5), (10, 6), (5, 9))] + [(8, 7, col), (8, 6, col)]
+            put(name, exact(X_PAPER, {"M": R((226, 208, 170), 0.16)}, extra=ex))
+    put("nether_wart", render(disc(disc(disc(grid(), "A", 5, 10, 2.2), "A", 10, 10, 2.2), "A", 7.5, 6, 2.4), {"A": R((180, 26, 36))}))
+    g = grid()
+    for x in (4, 8, 11):
+        for y in range(2, 14):
+            g[y][x], g[y][x + 1] = "C", "C"
+    put("reeds", render(g, {"C": R((150, 200, 90), 0.36)}, extra=[(4, 5, (90, 140, 50)), (5, 5, (90, 140, 50)), (8, 8, (90, 140, 50)),
+                                                                 (9, 8, (90, 140, 50)), (11, 4, (90, 140, 50)), (12, 4, (90, 140, 50)), (4, 10, (90, 140, 50)), (5, 10, (90, 140, 50))]))
 
 
 # ------------------------------------------------------------------ pixel maps
@@ -558,14 +631,18 @@ X_CARROT = ["", "..........c.d", "...........dc", "..........443", ".........433
             ".....4332", "....432", "...432", "..32", "..2"]
 X_BEET = ["", "......c..d", ".......cdc", "........b", "......4443", ".....443332", "....44333332", "....43333332", "....33333321",
           ".....333221", ".......21", "........1"]
-X_STEAK = ["", "", "", "", ".....RRRRRR", "...RR333333RR", "..R3333333333R", "..333323333332", "..333333323332", "..233333333321",
-           "...2233333221", ".....222211"]
-X_CHOP = ["", "", "", "......RRRRR", "....RR33333R", "...R33333333R", "..cR333333332", "..cb33333332", "..cb2333332", "..cbb22222",
-          "...cbbb", "....ccb"]
-X_SLICE = ["", "", "", ".....444433", "...4433333332", "..433333333332", "..4333bccb3332", "..3333caac3331", "..3333bccb3321",
-           "..233333333321", "...2233333221", ".....222211"]
-X_DRUM = ["", ".........4443", ".......44333332", "......4333333332", "......4333333332", "......3333333321", "......333333321",
-          ".....c33333221", "....cb.2222", "...cb", "..cb", ".ccb", ".b.b"]
+X_STEAK = ["", "", "", "....RSSSSSSR....", "..RS44444444SR..", "..S4433333334S..", "..R43TTTTT333R..", "..R4322T22333R..", "..R3333T33332R..", "..Q3333T33322Q..", "...Q33333322Q...", "....Q222221Q....", "......QQQQ......"]
+X_CHOP = ["", "", "......RSSSR.....", "....RS44444SR...", "...T444333334S..", "..TT4333333334S.", "..TS4333333333S.", "..TS3333333332R.", "..TR3333333322R.", "..TTR33333222R..", ".TT.RR222222R...", ".ST...RRRRRR....", ".SS............."]
+X_RACK = ["", "", "....T...T...T...", "....S...S...S...", "....T...T...T...", "...4TSSSTSSST2..", "..5443333333332.", "..4333333333332.",
+          "..4333333333322.", "..3333333333221.", "...33322222221..", ".....2222211...."]
+X_CHICKEN = ["", "", "", "..TS........ST..", "...44......44...", "....43....34....", "....44333344....", "...4433333332...",
+             "..443333333332..", ".34333333333323.", "..433333333322..", "..333333333221..", "...3322222211...", ".....222211....."]
+X_LEG = ["", ".........44443..", ".......44433332.", "......443333332.", ".....4433333332.", ".....433SS33332.", ".....4333SS3322.",
+         ".....3333333322.", "......333333221.", ".....T2222222...", "....TS.221......", "...TS...........", "..TS............",
+         ".TTS............", ".ST............."]
+X_ROTTEN = ["", "", "", ".....443........", "...4433332.44...", "..443R33333332..", "..4333333RR332..", "...33.3333R3321.", "..433333333332..",
+            "..33R333.33322..", "...2222232221...", ".....21..211...."]
+X_DRUM = ["", ".........5444...", ".......54433332.", "......543333332.", "......433333332.", "......433333322.", "......33333322..", ".....T3333222...", "....TS.2222.....", "...TS...........", "..TS............", ".TTS............", ".ST............."]
 X_FISH = ["", "", "", "........443", "......443333", ".4..4433333332", ".4333333333a32", "..2RRRRRRRRRR1", ".322RRRRRRRR1",
           ".2..22222221", "......2211"]
 X_PUFFER = ["", "", ".......4", "....4.4443.3", ".....443333", "..4.44333a32.2", "....43333332", "...3RRRRRRRR1", "....2RRRRRR1",
@@ -604,3 +681,35 @@ X_DISC = ["", "", "......2222", "....22333322", "...2343333332", "..234333333331
           "..2333RRRQ3331", "..233333333431", "...2333333331", "....11333311", "......1111"]
 X_SHEARS = ["", "...5.......5", "...45.....54", "....43...34", ".....43.34", "......4334", ".......bb", ".....SR..SR", "...S..R.S..R",
             "...S..R.S..R", "....RR...RR"]
+X_COMPASS = ["", "", "......4444......", "....44333322....", "...43RRRRRR21...", "..43RRRcRRRR21..", "..43RRRbRRRR21..", "..43RRRSRRRR21..",
+             "..43RRRQRRRR21..", "..43RRRQRRRR21..", "...43RRRRRR21...", "....33222211....", "......1111......"]
+X_CLOCK = ["", "", "......4444......", "....44333322....", "...43RRRRRR21...", "..43RRRaRRRR21..", "..43RRRaRRRR21..", "..43RRRaaaRR21..",
+           "..43RRRRRRRR21..", "..43RRRRRRRR21..", "...43RRRRRR21...", "....33222211....", "......1111......"]
+X_BED = ["", "", "", "", "", "", "..SSS444444444..", "..SRR4333333332.", "..RRQ3333333322.", "..xxxxxxxxxxxxw.", "..xw.........xw.",
+         "..xv.........xv."]
+X_CUSHION = ["", "", "", "", "", "....44444444....", "..544333333332..", ".54333333333332.", ".43333333333322.", ".33333333333221.",
+             "..222222222211.."]
+X_BARD = ["", "", "", "", "..44............", "..4344444444....", "..433333333332..", "..433333333332..", "...33333333322..",
+          "...3322..33221..", "...322....221...", "...21......11..."]
+X_SADDLE = ["", "", "", "", "....44444444....", "...4433333332...", "..443333333332..", "..43322..22332..", "..432......232..",
+            "..32........21..", "..a..........a..", ".bcb........bcb."]
+X_TAG = ["", "", "", "", "", "....444444444...", "...43333333332..", "..43.333333332..", "...43333333332..", "....222222221..."]
+X_FLINTSTEEL = ["", "", "", "..54443.........", "..4...32........", "..4....2........", "..43...2........", "...3221.........",
+                "........TTS.....", ".......TSSRR....", ".......SSRRQ....", "........RRQ....."]
+X_MACE = ["", "........54443...", "........43332...", "........43332...", "........43322...", "........32221...", ".......xw.......",
+          "......xw........", ".....xw.........", "....xw..........", "...xw...........", "..xw............", ".xv............."]
+X_WING = ["", "", "....443.", "...4433.", "..44333.", "..43332.", ".443332.", ".43332..", ".4332...", ".332....", ".32.....", ".2......"]
+X_SHELL = ["", "", "", "", ".....444443.....", "...4433333332...", "..443333333332..", "..433333333332..", "..333333333322..",
+           "..222222222221.."]
+X_CAKE = ["", "", "", "", "", "...SSSSSSSSSS...", "..STTTcTTcTTTS..", "..SSRSSRSSRSSR..", "..433333333332..", "..4cccccccccc2..",
+          "..433333333332..", "..222222222221.."]
+X_LANTERN = ["", ".......aa.......", ".......aa.......", ".....444443.....", "....43333332....", "....3STTTTS2....", "....3TUUTTS2....",
+             "....3TUTTTS2....", "....3TTTTSS2....", "....3STTSSR2....", "....43333332....", ".....222221....."]
+X_PAINTING = ["", "", "", "..xxxxxxxxxxxw..", "..xTTTTTTTTTTw..", "..xTTTTTUUTTTw..", "..xTTTTTUUTTTw..", "..xTTccTTTTTTw..",
+              "..xTccccTTccTw..", "..xccccccccccw..", "..xbbbbbbbbbbw..", "..wwwwwwwwwwwv.."]
+X_FRAME = ["", "", "", "..yyyyyyyyyyyx..", "..yRRRRRRRRRRx..", "..yRSSSSSSSRRx..", "..yRSSSSSSSRRx..", "..yRSSSSSSSRRx..",
+           "..yRSSSSSSSRRx..", "..yRRRRRRRRRQx..", "..yRRRRRRRRQQx..", "..xxxxxxxxxxxw.."]
+X_TABLET = ["", "", "...4444444443...", "...4333333332...", "...43SSSSSS32...", "...43SRRRRS32...", "...43SRSSRS32...", "...43SRRRRS32...",
+            "...43SSSSSS32...", "...4333333332...", "...4332222332...", "...4333333332...", "...2222222221..."]
+X_SHERD = ["", "", "", "....4444443.....", "...443333332....", "..44333333332...", "..43333333321...", "..43333333321...",
+           "...3333333321...", "...33333333221..", "....3322222211..", "......222111...."]

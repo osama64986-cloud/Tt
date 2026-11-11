@@ -314,7 +314,7 @@ def build(out, flip, variations):
         "hopper_top": dict(ramp=DARK_IRON, metal=210, rough=100),
         "grindstone_pivot": dict(ramp=oak), "grindstone_round": dict(ramp=stone), "grindstone_side": dict(ramp=stone),
         "chain1": dict(ramp=DARK_IRON, metal=220, rough=90), "chain2": dict(ramp=DARK_IRON, metal=220, rough=90),
-        "lever": dict(ramp=oak), "flower_pot": dict(), "brewing_stand": dict(),
+        "lever": dict(ramp=oak), "flower_pot": dict(),
         "trip_wire": dict(), "trip_wire_source": dict(), "heavy_core": dict(metal=200, rough=80),
         "sea_pickle": dict(sss=80), "compost": dict(), "compost_ready": dict(),
         "decorated_pot_side": dict(), "decorated_pot_base": dict(),
@@ -356,6 +356,15 @@ def build(out, flip, variations):
                     t.rgb = np.where(core[..., None], np.array(cols[1], np.uint8), t.rgb)
                     t.emis = np.where(core, 220, 0)
             out[nm] = t
+    if "brewing_stand" in STATS:                       # blaze rod in the middle, stone arms either side
+        t = shaded("brewing_stand", make_ramp((120, 122, 132), 5, 0.44), rough=160)
+        rod = t.mask & ((xx == 7) | (xx == 8))
+        rodr = make_ramp((250, 196, 50), 5, 0.36)
+        t.rgb = np.where(rod[..., None], np.where((xx == 7)[..., None], np.array(rodr[4], np.uint8), np.array(rodr[2], np.uint8)), t.rgb)
+        ring = rod & (yy % 4 == 1)                      # darker bands down the rod
+        t.rgb = np.where(ring[..., None], np.array(rodr[1], np.uint8), t.rgb)
+        t.emis = np.where(rod, 210, 0)
+        out["brewing_stand"] = t
     for nm in ("redstone_dust_cross", "redstone_dust_line"):             # tinted by signal strength in game
         if nm in STATS:
             out[nm] = shaded(nm, vramp(nm, 5, grey=True, contrast=0.3))

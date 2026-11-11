@@ -24,9 +24,9 @@ SRC = sys.argv[1]
 OUT = os.path.join(ROOT, "pack_src")
 
 # ------------------------------------------------------------------- haze
-HAZE = {"fog_start": 0.74, "fog_end": 1.0, "fog_color": "#C3E2FF", "render_distance_type": "render"}   # barely-there haze
+HAZE = {"fog_start": 0.38, "fog_end": 1.0, "fog_color": "#C3E2FF", "render_distance_type": "render"}   # soft, clearly visible distance haze
 VOLUME = {                                   # Vibrant Visuals: thin ground mist that fades with height
-    "density": {"air": {"max_density": 0.014, "zero_density_height": 150.0, "max_density_height": 62.0}},
+    "density": {"air": {"max_density": 0.03, "zero_density_height": 150.0, "max_density_height": 62.0}},
     "media_coefficients": {"air": {"scattering": [0.045, 0.05, 0.06], "absorption": [0.0, 0.0, 0.0]}},
     "henyey_greenstein_g": {"air": {"henyey_greenstein_g": 0.5}},
 }
