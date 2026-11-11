@@ -98,13 +98,13 @@ def door(key, ramp, style, holes):
             window(x0, y0, x0 + 1, y0 + 1)
         frame_panel(lo, ramp, 3, 3, 12, 6)
         frame_panel(lo, ramp, 3, 9, 12, 12)
-    elif style == "slats":
-        for y in (2, 5, 8, 11):
-            window(3, y, 12, y)
-        for y in (3, 7, 11):
-            lo.rgb[y, 2:14] = ramp[0]
-            lo.rgb[y + 1, 2:14] = ramp[4]
-            lo.height[y, 2:14] = 0.2
+    elif style == "slats":                     # upright bars, as these doors have in the game
+        for x in (3, 6, 9, 12):
+            window(x, 2, x, 12)
+        for x in (4, 8, 12):
+            lo.rgb[2:13, x] = ramp[0]
+            lo.rgb[2:13, x - 1] = ramp[4]
+            lo.height[2:13, x] = 0.2
     elif style == "arch":
         frame_panel(up, ramp, 3, 3, 12, 15)
         up.rgb[3, 3] = up.rgb[3, 12] = ramp[2]
@@ -391,8 +391,8 @@ def build(out, flip, variations):
 
     def lo_front(s):
         s.rgb[3:13, 2:14] = dark[0]
-        for x in range(3, 13, 2):
-            s.rgb[3:13, x] = [(226, 220, 204), (196, 188, 170)][(x // 2) % 2]
+        for y in range(4, 13, 2):                 # the warp runs sideways across the frame
+            s.rgb[y, 3:13] = [(226, 220, 204), (196, 188, 170)][(y // 2) % 2]
         for y in (9, 10, 11):
             s.rgb[y, 3:9] = [(190, 60, 60), (70, 110, 180), (224, 190, 70)][y - 9]
         s.height[3:13, 2:14] = 0.3

@@ -167,7 +167,7 @@ def build(out, flip, variations):
                 t.rgb[(4 + i) if up else (11 - i), x] = IRON[4 if x < 8 else 2]
         t.rgb[8:12, 7:9] = IRON[3]
         return t
-    out["observer_side"] = arrow(body.copy())
+    out["observer_side"] = body.copy()                 # the arrow belongs on the top face only
     out["observer_top"] = arrow(P.slab_face("observer_top", vramp("observer_top", 5, contrast=0.36), border=1, vary=0.14))
     fr = body.copy()
     for x0 in (3, 10):
@@ -225,7 +225,7 @@ def build(out, flip, variations):
         out[nm] = t
     out["dried_kelp_top"] = P.cells("dried_kelp_top", vramp("dried_kelp_top", 6, contrast=0.4), 9, dome=0.3)
     comp = vramp("composter_side", 5, contrast=0.3)
-    cs = P.planks("composter_side", comp, boards=4, nails=False, vertical=True)
+    cs = P.planks("composter_side", comp, boards=4, nails=False)            # boards lie flat, as in the game
     for y0 in (0, 14):
         cs.rgb[y0] = comp[4]
         cs.rgb[y0 + 1] = comp[0]

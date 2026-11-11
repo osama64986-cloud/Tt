@@ -633,8 +633,8 @@ def build(out, flip, variations):
         if nm in STATS:
             s = Sprite()
             g = make_ramp((70, 140, 50), 5, 0.42)
-            s.stem(7, 0, 15, ramp=g[:4], thick=True)
-            for k in ((3, 9, 13) if not top else (5, 11)):
+            s.stem(7, 0 if not top else 7, 15, ramp=g[:4], thick=True)       # the flower head sits on the upper half
+            for k in ((3, 9, 13) if not top else (10, 13)):
                 s.leaf(7, k, -1, g, ln=4)
                 s.leaf(8, k + 1, 1, g, ln=4)
             out[nm] = s.tex()
@@ -678,3 +678,62 @@ def build(out, flip, variations):
             for d in (-1, 1):
                 s.leaf(7 if d < 0 else 8, 3 if hang else 6, d, g, ln=3)
             out[nm] = s.tex()
+
+
+def turn(t):
+    """Quarter-turn a texture so its grain runs the other way."""
+    t.rgb = np.ascontiguousarray(np.transpose(t.rgb, (1, 0, 2)))
+    t.height = t.height.T.copy()
+    for k in ("metal", "emis", "rough", "sss"):
+        v = getattr(t, k)
+        if not np.isscalar(v):
+            setattr(t, k, np.asarray(v).T.copy())
+    return t
+
+
+_build_rest = build
+
+
+def build(out, flip, variations):          # noqa: F811
+    """Everything above, then the direction fixes found by tools/check_orientation.py."""
+    _build_rest(out, flip, variations)
+    for nm in ("farmland_dry", "farmland_wet", "dried_kelp_side_a", "dried_kelp_side_b", "log_jungle"):
+        if nm in out:
+            out[nm] = turn(out[nm].copy())
+    out.pop("mangrove_propagule_hanging", None)          # tied to its model layout: keep the game's
+    # sculk catalyst: pale bone block with sculk creeping down from the top
+    if "sculk_catalyst_side" in STATS:
+        sk = make_ramp((16, 40, 50), 5, 0.6)
+        bone = P.rock("catalyst_bone", make_ramp((226, 220, 200), 5, 0.24), "smooth", cracks=2, rough=170)
+        dark = P.rock("catalyst_sculk", sk, "grain", cracks=0, rough=120)
+        side = P.top_over("sculk_catalyst_side", bone, dark, depth=6, extra=2)
+        glow = [(20, 110, 130), (60, 200, 220), (190, 250, 250)]
+        r = rng_of("catalyst_dots")
+        emis = np.zeros((N, N))
+        for _ in range(5):
+            x, y = int(r.integers(1, 15)), int(r.integers(1, 5))
+            side.rgb[y, x] = glow[1]
+            emis[y, x] = 200
+        side.emis = emis
+        out["sculk_catalyst_side"] = side
+        out["sculk_catalyst_bottom"] = bone
+        top = dark.copy()
+        emis = np.zeros((N, N))
+        for _ in range(7):
+            x, y = int(r.integers(1, 15)), int(r.integers(1, 15))
+            top.rgb[y, x] = glow[1]
+            emis[y, x] = 200
+        top.emis = emis
+        out["sculk_catalyst_top"] = top
+        for nm, src in (("sculk_catalyst_side_bloom", side), ("sculk_catalyst_top_bloom", top)):
+            if nm in STATS:
+                n = frames_of(nm)
+                fr = []
+                for f in range(n):
+                    t = src.copy()
+                    lvl = [0, 1, 2, 1][f % 4]
+                    lit = plane(src.emis) > 0
+                    t.rgb = np.where(lit[..., None], np.array(glow[lvl], np.uint8), t.rgb)
+                    t.emis = np.where(lit, 150 + 50 * lvl, 0)
+                    fr.append(t)
+                out[nm] = stack_frames(fr)

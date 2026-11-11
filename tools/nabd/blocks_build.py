@@ -195,10 +195,9 @@ def build(out, flip, variations):
         out["bamboo_planks"] = P.planks("bamboo_planks", bp, boards=8, nails=False)
         bb = vramp("bamboo_block", 5, contrast=0.26)
         t = P.stripped("bamboo_block", bb)
-        for y0 in (4, 12):
-            t.rgb[y0] = bb[0]
-            t.rgb[(y0 + 1) % N] = bb[4]
-            t.height[y0] = 0.2
+        for y0 in (4, 12):                      # faint joints: the canes must read as upright
+            t.rgb[y0, ::2] = bb[1]
+            t.height[y0, ::2] = 0.35
         out["bamboo_block"] = t
         t = P.stripped("stripped_bamboo_block", vramp("stripped_bamboo_block", 5, contrast=0.2))
         out["stripped_bamboo_block"] = t
