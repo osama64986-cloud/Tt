@@ -152,7 +152,7 @@ def validate_json():
 # spawn egg colours. Numbers follow the agreed power order: Goku > Vegeta > Gojo.
 FIGHTERS = {
     "goku": {
-        "hp": 1800,
+        "hp": 1000,
         "forms": [(14, 0.33), (20, 0.36), (27, 0.38), (34, 0.4), (42, 0.42), (58, 0.46)],
         "tex": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
         "geo": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
@@ -160,14 +160,14 @@ FIGHTERS = {
     },
     "vegeta": {
         "scale": 0.94,  # canon: noticeably shorter than Goku
-        "hp": 1700,
+        "hp": 1000,
         "forms": [(13, 0.33), (19, 0.36), (31, 0.39), (40, 0.41), (52, 0.43)],
         "tex": ["base", "ssj", "ssg", "ssb", "ue"],
         "geo": ["base", "ssj", "ssg", "ssb", "ue"],
         "egg": ("#223496", "#eeeee4"),
     },
     "gojo": {
-        "hp": 600,
+        "hp": 1000,
         "forms": [(10, 0.32), (13, 0.34)],
         "tex": ["blindfold", "eyes"],
         "geo": ["blindfold", "eyes"],
@@ -177,42 +177,42 @@ FIGHTERS = {
 }
 
 FIGHTERS.update({
-    "yuji": {"hp": 300, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
-    "yuji_final": {"hp": 760, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
-    "sukuna": {"hp": 650, "forms": [(18, 0.37), (24, 0.39), (30, 0.4)], "tex": ["yuji", "megumi", "heian"], "geo": ["yuji", "megumi", "heian"],
+    "yuji": {"hp": 1000, "forms": [(8, 0.35)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#ee9696")},
+    "yuji_final": {"hp": 1000, "forms": [(20, 0.39)], "tex": ["base"], "geo": ["base"], "egg": ("#1e2238", "#c41e28")},
+    "sukuna": {"hp": 1000, "forms": [(18, 0.37), (24, 0.39), (30, 0.4)], "tex": ["yuji", "megumi", "heian"], "geo": ["yuji", "megumi", "heian"],
                "egg": ("#10080c", "#e28c96"), "form_scale": [1.0, 1.0, 1.15]},
-    "luffy": {"hp": 950, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
+    "luffy": {"hp": 1000, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
               "tex": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"], "geo": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
               "egg": ("#ce2226", "#eece68"), "gigant": True},
 })
 
 FIGHTERS.update({
-    "zoro": {"hp": 700, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c"),
+    "zoro": {"hp": 1000, "forms": [(22, 0.37), (34, 0.39)], "tex": ["base", "king"], "geo": ["base", "king"], "egg": ("#3a5c40", "#78b05c"),
              "scale": 1.03},
-    "naruto_kid": {"hp": 350, "forms": [(8, 0.36), (12, 0.42)], "tex": ["base", "cloak"], "geo": ["base", "cloak"],
+    "naruto_kid": {"hp": 1000, "forms": [(8, 0.36), (12, 0.42)], "tex": ["base", "cloak"], "geo": ["base", "cloak"],
                    "egg": ("#ff8a1e", "#2a40a0"), "scale": 0.8},
-    "naruto_teen": {"hp": 600, "forms": [(12, 0.38), (15, 0.41), (17, 0.42), (20, 0.41), (25, 0.43)], "tex": ["base", "v1", "v2", "sage", "eight"], "geo": ["base", "v1", "v2", "sage", "eight"],
+    "naruto_teen": {"hp": 1000, "forms": [(12, 0.38), (15, 0.41), (17, 0.42), (20, 0.41), (25, 0.43)], "tex": ["base", "v1", "v2", "sage", "eight"], "geo": ["base", "v1", "v2", "sage", "eight"],
                     "egg": ("#ff8a1e", "#26262e")},
-    "naruto_war": {"hp": 950, "forms": [(28, 0.4), (34, 0.42), (38, 0.43), (46, 0.45)], "tex": ["kcm", "kurama", "sagekurama", "spsm"], "geo": ["kcm", "kurama", "sagekurama", "spsm"],
+    "naruto_war": {"hp": 1000, "forms": [(28, 0.4), (34, 0.42), (38, 0.43), (46, 0.45)], "tex": ["kcm", "kurama", "sagekurama", "spsm"], "geo": ["kcm", "kurama", "sagekurama", "spsm"],
                    "egg": ("#ffce40", "#1c1410")},
     "naruto_adult": {"hp": 1000, "forms": [(28, 0.38), (34, 0.4), (40, 0.42), (56, 0.46)], "tex": ["hokage", "sage", "link", "baryon"],
                      "geo": ["hokage", "sage", "link", "baryon"], "egg": ("#ff8a1e", "#f6f6f2")},
-    "sasuke_kid": {"hp": 360, "forms": [(9, 0.37), (11, 0.4), (14, 0.42)], "tex": ["sharingan", "cs1", "cs2"], "geo": ["sharingan", "cs1", "cs2"],
+    "sasuke_kid": {"hp": 1000, "forms": [(9, 0.37), (11, 0.4), (14, 0.42)], "tex": ["sharingan", "cs1", "cs2"], "geo": ["sharingan", "cs1", "cs2"],
                    "egg": ("#2c3e8a", "#e2e2d8"), "scale": 0.8},
-    "sasuke": {"hp": 600, "forms": [(18, 0.4), (21, 0.42), (26, 0.42)], "tex": ["sharingan", "cs2", "susanoo"], "geo": ["sharingan", "cs2", "susanoo"],
+    "sasuke": {"hp": 1000, "forms": [(18, 0.4), (21, 0.42), (26, 0.42)], "tex": ["sharingan", "cs2", "susanoo"], "geo": ["sharingan", "cs2", "susanoo"],
                "egg": ("#eeeef2", "#5a3a8a")},
-    "sasuke_war": {"hp": 950, "forms": [(30, 0.41), (36, 0.42), (44, 0.44)], "tex": ["ems", "perfect", "rinnegan"], "geo": ["ems", "perfect", "rinnegan"],
+    "sasuke_war": {"hp": 1000, "forms": [(30, 0.41), (36, 0.42), (44, 0.44)], "tex": ["ems", "perfect", "rinnegan"], "geo": ["ems", "perfect", "rinnegan"],
                    "egg": ("#c4c6ce", "#9650de")},
     "sasuke_adult": {"hp": 1000, "forms": [(32, 0.42), (40, 0.43)], "tex": ["adult", "adult_sus"], "geo": ["adult", "adult_sus"],
                      "egg": ("#1e1e26", "#9696cc"), "scale": 1.04},
-    "ichigo": {"hp": 1100, "forms": [(24, 0.38), (30, 0.42), (34, 0.44), (44, 0.44), (52, 0.46), (60, 0.46), (68, 0.47)],
+    "ichigo": {"hp": 1000, "forms": [(24, 0.38), (30, 0.42), (34, 0.44), (44, 0.44), (52, 0.46), (60, 0.46), (68, 0.47)],
                "tex": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
                "geo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"], "egg": ("#1e1e24", "#ff8428")},
-    "tanjiro_demon": {"hp": 700, "forms": [(14, 0.42), (18, 0.44)], "tex": ["feral", "sun"], "geo": ["feral", "sun"], "egg": ("#56282e", "#d62840")},
-    "muzan": {"hp": 820, "forms": [(16, 0.4), (22, 0.43)], "tex": ["disguise", "final"], "geo": ["disguise", "final"], "egg": ("#1e1c22", "#eceae4"), "scale": 1.06},
-    "tanjiro": {"hp": 440, "forms": [(11, 0.38), (13, 0.4), (16, 0.42)], "tex": ["water", "hinokami", "mark"], "geo": ["water", "hinokami", "mark"],
+    "tanjiro_demon": {"hp": 1000, "forms": [(14, 0.42), (18, 0.44)], "tex": ["feral", "sun"], "geo": ["feral", "sun"], "egg": ("#56282e", "#d62840")},
+    "muzan": {"hp": 1000, "forms": [(16, 0.4), (22, 0.43)], "tex": ["disguise", "final"], "geo": ["disguise", "final"], "egg": ("#1e1c22", "#eceae4"), "scale": 1.06},
+    "tanjiro": {"hp": 1000, "forms": [(11, 0.38), (13, 0.4), (16, 0.42)], "tex": ["water", "hinokami", "mark"], "geo": ["water", "hinokami", "mark"],
                 "egg": ("#287a5a", "#18181c")},
-    "frieza": {"hp": 1500, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
+    "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })
 
