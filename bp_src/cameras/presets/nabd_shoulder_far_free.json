@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.0",
+  "minecraft:camera_preset": {
+    "identifier": "nabd:shoulder_far_free",
+    "inherit_from": "minecraft:follow_orbit",
+    "radius": 4.8,
+    "view_offset": [
+      0.75,
+      0.2
+    ],
+    "entity_offset": [
+      0.0,
+      0.55,
+      0.0
+    ],
+    "control_scheme": "camera_relative",
+    "player_effects": true
+  }
+}

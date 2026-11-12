@@ -310,7 +310,7 @@ def main():
                     p = os.path.join(d, f)
                     z.write(p, os.path.relpath(p, PACK))
         print("wrote", zp, round(os.path.getsize(zp) / 1e6, 2), "MB")
-        # night-sight behavior pack, and one .mcaddon that installs both packs
+        # extras behavior pack (night sight + shoulder camera), and one .mcaddon that installs both packs
         bp_src = os.path.join(ROOT, "bp_src")
         bp = os.path.join(DIST, "_bp")
         if os.path.isdir(bp_src):
@@ -319,14 +319,14 @@ def main():
             shutil.copytree(bp_src, bp)
             stamp_version(os.path.join(bp, "manifest.json"))
             shutil.copy(os.path.join(PACK, "pack_icon.png"), os.path.join(bp, "pack_icon.png"))
-            bz = os.path.join(DIST, "Nabd_NightSight.mcpack")
+            bz = os.path.join(DIST, "Nabd_Extras.mcpack")
             with zipfile.ZipFile(bz, "w", zipfile.ZIP_DEFLATED) as z:
                 for d, _, fs in os.walk(bp):
                     for f in sorted(fs):
                         z.write(os.path.join(d, f), os.path.relpath(os.path.join(d, f), bp))
             az = os.path.join(DIST, "Nabd.mcaddon")
             with zipfile.ZipFile(az, "w", zipfile.ZIP_DEFLATED) as z:
-                for root_dir, prefix in ((PACK, "Nabd"), (bp, "Nabd_NightSight")):
+                for root_dir, prefix in ((PACK, "Nabd"), (bp, "Nabd_Extras")):
                     for d, _, fs in os.walk(root_dir):
                         for f in sorted(fs):
                             z.write(os.path.join(d, f), os.path.join(prefix, os.path.relpath(os.path.join(d, f), root_dir)))
