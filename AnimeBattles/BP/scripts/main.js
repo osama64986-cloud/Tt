@@ -3415,8 +3415,9 @@ const BG = C.zoro;  // Broly's green ki
 const BROLY = {
   name: "Broly", color: "§a", energy: 2200, regen: 40, energyName: "§aKI",
   dodge: (e) => (formOf(e) >= 2 ? 0.1 : 0.06),
+  ego: 3, egoMax: 0.24,  // the angrier he gets, the stronger: every blow he takes feeds his rage (+24% at most)
   forms: [{ label: "Base", power: 160 }, { label: "Wrathful", power: 300, aura: C.red },
-    { label: "Super Saiyan", power: 470, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 630, aura: BG }],
+    { label: "Super Saiyan", power: 470, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 640, aura: BG }],
   thresholds: [0.85, 0.65, 0.45], transformCd: 120, formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.wither.spawn"],
   abilities: [
     SIG.wave("roar", "Gigantic Roar", { say: "§a§lRAAAAAAAGH! §7— the roar alone flattens the ground", color: BG, radius: 7, dmg: 18, cd: 220 }),
@@ -3908,7 +3909,7 @@ function updateTag(e) {
     const form = def.forms[clamp(formOf(e), 0, def.forms.length - 1)].label;
     let extra = "";
     if (s.kaiokenUntil > now()) extra += " §c[Kaioken]";
-    if (s.ego > 0.01) extra += ` §5[Ego +${Math.round(s.ego * 100)}%]`;
+    if (s.ego > 0.01) extra += e.typeId === "ab:broly" ? ` §a[Rage +${Math.round(s.ego * 100)}%]` : ` §5[Ego +${Math.round(s.ego * 100)}%]`;
     if (e.hasTag("ab_infinity")) extra += " §b[Infinity]";
     if (s.burnoutUntil > now()) extra += " §7[Burnout]";
     if (s.stunUntil > now()) extra += " §f[Stunned]";
@@ -3982,6 +3983,17 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
     }
     ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
+    if (attackerP > 0 && src && src.isValid) {  // the hit counter, shown to nearby players
+      const as = state(src);
+      as.hits = now() - (as.lastHit ?? 0) < 40 ? (as.hits ?? 0) + 1 : 1;
+      as.lastHit = now();
+      if (as.hits >= 3) {
+        const ad = FIGHTERS[src.typeId], n = as.hits;
+        system.run(() => { try {
+          for (const p of src.dimension.getPlayers({ location: src.location, maxDistance: 48 })) p.onScreenDisplay.setActionBar(`${ad.color}§l${ad.name}  §f§l${n} HIT COMBO${n >= 10 ? "!!" : "!"}`);
+        } catch (err) { /* ignore */ } });
+      }
+    }
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
       system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
@@ -4033,7 +4045,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
         system.run(() => launch(src, v, strength));
       }
     }
-    if (def.ego && formOf(v) === def.ego) s.ego = Math.min(0.1, s.ego + ev.damage / 500);
+    if (def.ego && formOf(v) === def.ego) s.ego = Math.min(def.egoMax ?? 0.1, s.ego + ev.damage / (def.egoMax ? 260 : 500));
     if (v.typeId === "ab:luffy" && formOf(v) === 5) ev.damage *= 0.5;  // Tankman: rubber fat absorbs blows
     if (v.typeId === "ab:sukuna" && formOf(v) >= 1 && src && src.isValid && !(attackerP > defenderP)) {  // Mahoraga's wheel adapts to each attacker
       s.adapt = s.adapt ?? {};

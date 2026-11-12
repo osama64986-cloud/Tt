@@ -209,7 +209,7 @@ FIGHTERS.update({
                "tex": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"],
                "geo": ["shikai", "fullbring", "bankai", "hollow", "vasto", "mugetsu", "true"], "egg": ("#1e1e24", "#ff8428")},
     "broly": {"hp": 1000, "forms": [(18, 0.4), (28, 0.42), (40, 0.44), (54, 0.45)], "tex": ["base", "wrath", "ssj", "lssj"], "geo": ["base", "wrath", "ssj", "lssj"],
-              "egg": ("#6c3a96", "#6ab446"), "scale": 1.14, "form_scale": [1, 1.04, 1.08, 1.2]},
+              "egg": ("#6c3a96", "#6ab446"), "scale": 1.14, "form_scale": [1, 1.05, 1.1, 1.3]},
     "madara": {"hp": 1000, "forms": [(30, 0.42), (36, 0.43), (46, 0.45)], "tex": ["edo", "susanoo", "sixpaths"], "geo": ["edo", "susanoo", "sixpaths"],
                "egg": ("#96201e", "#2a2c40")},
     "tanjiro_demon": {"hp": 1000, "forms": [(14, 0.42), (18, 0.44)], "tex": ["feral", "sun"], "geo": ["feral", "sun"], "egg": ("#56282e", "#d62840")},

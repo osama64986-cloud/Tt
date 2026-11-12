@@ -148,11 +148,12 @@ M.FACE32.update({
     "tanjiro_demon": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark"]),
     "tanjiro_demon_sun": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark", "temple_mark"]),
     "muzan": dict(eye="narrow", brow="flat", mouth="neutral", marks=["slit_eyes"]),
-    "broly": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar"]),
-    "broly_wrath": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar", "glow_eyes"]),
-    "broly_lssj": dict(eye="narrow", brow="sharp", mouth="clench", marks=["cheek_scar", "blank_eyes"]),
-    "madara_edo": dict(eye="narrow", brow="flat", mouth="smirk", marks=["edo_cracks", "rinnegan_both"]),
-    "madara_sixpaths": dict(eye="narrow", brow="flat", mouth="smirk", marks=["rinnegan_both", "third_eye"]),
+    "broly": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar"]),
+    "broly_wrath": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "glow_eyes", "veins"]),
+    "broly_ssj": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "veins"]),
+    "broly_lssj": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "blank_eyes", "veins"]),
+    "madara_edo": dict(eye="narrow", brow="flat", mouth="smirk", marks=["madara_face", "edo_cracks", "rinnegan_both"]),
+    "madara_sixpaths": dict(eye="narrow", brow="flat", mouth="smirk", marks=["madara_face", "rinnegan_both", "third_eye"]),
     "muzan_final": dict(eye="narrow", brow="sharp", mouth="clench", marks=["slit_eyes", "fangs", "brow_scales", "face_veins"]),
 })
 
@@ -237,6 +238,34 @@ def face32(px, W, H, spec, hair, iris, skin):
     if "baryon_eyes" in marks:  # black pigment round the eyes, sweeping up toward the fox-ear tufts
         for x, y in ((5, 15), (6, 14), (7, 13), (8, 13), (26, 15), (25, 14), (24, 13), (23, 13), (4, 16), (27, 16)):
             put(x, y, (16, 12, 14))
+    if "broly_face" in marks:  # heavy brow ridge, deep-set fierce eyes, broad nose, thick jaw, a snarl of bared teeth
+        sh = (150, 98, 64)
+        for x in range(5, 27):
+            put(x, 15, sh)                                    # brow-ridge shadow
+        for i in range(6):                                    # thick brows slanting down to the nose
+            for t in (0, 1):
+                put(7 + i, 13 + i // 2 + t, (20, 16, 18)); put(24 - i, 13 + i // 2 + t, (20, 16, 18))
+        for y in range(19, 24):                               # broad nose
+            put(15, y, sh); put(17, y, sh)
+        put(14, 23, sh); put(18, 23, sh)
+        for y in range(21, 30):                               # cheekbones and jaw
+            put(3, y, sh); put(28, y, sh)
+        for x in range(4, 28):
+            put(x, 30, sh)
+        if M.EXPR != "blink":
+            for x in range(11, 21):                           # the snarl: bared teeth in a dark mouth
+                put(x, 25, (60, 20, 18)); put(x, 28, (60, 20, 18))
+                put(x, 26, (246, 242, 230)); put(x, 27, (226, 222, 210) if x % 2 else (246, 242, 230))
+            put(10, 26, (60, 20, 18)); put(21, 26, (60, 20, 18)); put(10, 27, (60, 20, 18)); put(21, 27, (60, 20, 18))
+    if "veins" in marks:  # veins standing out on his temples
+        for x, y in ((3, 10), (4, 11), (4, 12), (5, 13), (28, 10), (27, 11), (27, 12), (26, 13)):
+            put(x, y, (150, 70, 50))
+    if "madara_face" in marks:  # the creases under his eyes, a sharp jaw
+        for cx in (10, 21):
+            for x in range(cx - 2, cx + 3):
+                put(x, 23 + (1 if x in (cx - 2, cx + 2) else 0), (176, 140, 120))
+        for y in range(24, 30):
+            put(4 + (y - 24) // 2, y, (200, 166, 146)); put(27 - (y - 24) // 2, y, (200, 166, 146))
     if "cheek_scar" in marks:  # Broly's scar across his left cheek
         for i in range(6):
             put(22 + i, 21 + i // 2, (150, 90, 70))
@@ -250,16 +279,26 @@ def face32(px, W, H, spec, hair, iris, skin):
             for y in range(17, 22):
                 for x in range(cx - 2, cx + 4):
                     put(x, y, (246, 250, 240))
-    if "edo_cracks" in marks:  # Reanimation: grey sclerae, cracks running down the face
-        for x, y in ((4, 14), (5, 16), (4, 18), (6, 20), (27, 15), (26, 17), (27, 19), (25, 21), (5, 24), (26, 25)):
-            put(x, y, (120, 110, 110))
-    if "rinnegan_both" in marks and open_eyes:  # the Rinnegan in both eyes (grey sclera round them)
+    if "edo_cracks" in marks:  # Reanimation: cracks running down from the eyes and across the face
+        for pts in (((7, 22), (6, 23), (6, 24), (5, 25), (5, 26), (4, 27)), ((24, 22), (25, 23), (25, 24), (26, 25), (27, 26)),
+                    ((12, 9), (11, 10), (11, 11), (10, 12)), ((22, 9), (23, 10), (22, 11))):
+            for x, y in pts:
+                put(x, y, (110, 96, 92))
+    if "rinnegan_both" in marks and open_eyes:  # the Rinnegan in both eyes: pale lavender, clear dark rings, grey sclera
         for cx in (10, 21):
-            for y in range(17, 23):
-                for x in range(cx - 2, cx + 4):
+            for y in range(16, 24):
+                for x in range(cx - 3, cx + 5):
                     d = math.hypot(x - cx - 0.5, y - 19.5)
-                    put(x, y, (120, 96, 170) if 1.2 < d < 1.9 or d > 2.7 else (196, 178, 232))
-            put(cx, 19, (60, 40, 90)); put(cx + 1, 20, (60, 40, 90))
+                    if d > 3.4:
+                        continue
+                    if d > 2.9:
+                        c = (150, 146, 150) if "edo_cracks" in marks else (236, 234, 240)
+                    elif 2.2 < d <= 2.9 or 0.9 < d <= 1.5:
+                        c = (82, 56, 128)
+                    else:
+                        c = (206, 190, 238)
+                    put(x, y, c)
+            put(cx, 19, (40, 24, 60)); put(cx + 1, 19, (40, 24, 60)); put(cx, 20, (40, 24, 60)); put(cx + 1, 20, (40, 24, 60))
     if "third_eye" in marks:  # the Rinne Sharingan on his forehead
         for y in range(10, 14):
             for x in range(14, 18):
@@ -1189,7 +1228,7 @@ def broly(m, form):
     """Tan, hugely muscled; scar across his left cheek and an X-scar over his left pectoral; purple skin-tight
     trousers, white boots striped green at the toes, a green fur pelt round his waist flowing down his back, black
     wristbands; wild overgrown hair to his upper back — green-gold and spikier as he powers up."""
-    key = {"base": "broly", "wrath": "broly_wrath", "ssj": "broly_lssj", "lssj": "broly_lssj"}[form]
+    key = {"base": "broly", "wrath": "broly_wrath", "ssj": "broly_ssj", "lssj": "broly_lssj"}[form]
     hair = {"base": (24, 22, 30), "wrath": (24, 22, 30), "ssj": (246, 222, 70), "lssj": (196, 232, 92)}[form]
     iris = {"base": (30, 26, 30), "wrath": (230, 40, 30), "ssj": (60, 180, 120), "lssj": (246, 250, 240)}[form]
     sk = BROLY_SKIN
@@ -1217,6 +1256,11 @@ def broly(m, form):
         m.box(arm, [x0 + 0.15, 15.2, -2.6], [4.7, 4.4, 4.9], musc)
         m.box(arm, [x0 + 0.1, 12.2, -2.4], [4.8, 1.6, 4.8], solid((20, 18, 22)))                          # wristband
     m.box("body", [-4.2, 18.6, -2.7], [8.4, 4.4, 0.8], layered(sk, [lines((("north",), [[(0.5, 0), (0.5, 1)]]), dark(sk, 0.78))]))  # pectorals
+    m.box("body", [-3.0, 23.6, -1.6], [6.0, 1.6, 3.6], musc)                                                   # thick neck / traps
+    if form == "lssj":  # Full Power: the body swells even further — wider chest, heavier shoulders
+        m.box("body", [-4.8, 14.5, -2.9], [9.6, 9.6, 5.8], layered(sk, [lines((("north",), [[(0.5, 0.05), (0.5, 0.95)], [(0.2, 0.32), (0.8, 0.32)]]), dark(sk, 0.78))]))
+        for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
+            m.box(arm, [3.2 if s_ > 0 else -8.8, 20.0, -2.8], [5.6, 4.6, 5.6], musc)
     fur, fur2 = SC.swatch((96, 140, 70)), SC.swatch((70, 110, 52))
     for k in range(18):  # the green fur pelt round his waist
         a = 2 * math.pi * k / 18
@@ -1309,8 +1353,11 @@ def madara(m, form):
     hp = M.hair_paint(hair)
     for x in (-3.4, -2.0, -0.7, 0.7, 2.0, 3.4):
         m.strand([x, 30.8, 3.8], [x * 0.06, -1, 0.35], 15 - abs(x) * 0.8, 3.0, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.02, 0, 0.06))
-    for x, z, lean in ((0, -1.6, 0), (2.2, -0.8, 0.5), (-2.2, -0.8, -0.5), (3.2, 1.6, 0.9), (-3.2, 1.6, -0.9)):
-        m.strand([x, 32.0, z], [lean, 0.7, z * 0.3 + 0.4], 4.4, 2.8, hp, bone="hair", segs=3, thick=0.75)
+    for x, z, lean in ((0, -1.6, 0), (2.2, -0.8, 0.5), (-2.2, -0.8, -0.5), (3.2, 1.6, 0.9), (-3.2, 1.6, -0.9), (1.2, 2.6, 0.3), (-1.2, 2.6, -0.3)):
+        m.strand([x, 32.0, z], [lean, 0.7, z * 0.3 + 0.4], 5.2, 3.0, hp, bone="hair", segs=3, thick=0.75)
+    for k in range(9):  # the wild mane: spikes thrusting back and out all down his back
+        a = math.radians(-70 + 140 * k / 8)
+        m.strand([math.sin(a) * 3.6, 29 - abs(math.sin(a)) * 2, 3.4], [math.sin(a) * 0.9, -0.15, 1], 6.5 - abs(k - 4) * 0.4, 2.6, hp, bone="hair", segs=3, thick=0.7)
     for s_ in (1, -1):
         m.strand([s_ * 4.0, 30.6, -2.6], [s_ * 0.2, -1, -0.1], 9, 2.4, hp, bone="hair", segs=3, thick=0.7)      # long side bangs
     m.strand([2.0, 31.8, -4.4], [0.1, -1, -0.3], 6.0, 3.2, hp, bone="hair", segs=3, thick=0.6)                    # covering his right eye
@@ -1334,6 +1381,22 @@ FORMS = {
 }
 
 
+def _scaled_paint(paint, size):
+    """Paint a face at its ORIGINAL size, then enlarge the finished picture — drawing pixel by pixel straight onto the
+    enlarged face left unpainted rows and columns (a grid of squares across the kids' faces)."""
+    if getattr(paint, "swatch", None):
+        return paint
+
+    def p(face, img):
+        w, h = img.size
+        k = 1.15
+        ow, oh = max(1, round(w / k)), max(1, round(h / k))
+        tmp = M.Image.new("RGBA", (ow, oh), (0, 0, 0, 0))
+        paint(face, tmp)
+        img.paste(tmp.resize((w, h), M.Image.NEAREST), (0, 0))
+    return p
+
+
 def build(char, form):
     m = M.Model()
     if char.startswith("naruto"):
@@ -1355,7 +1418,8 @@ def build(char, form):
     if char in ("naruto_kid", "sasuke_kid"):  # kid proportions: a bigger head on the small body
         f, P = 1.15, (0.0, 24.0, 0.0)
         for c in m.cubes:
-            if c["bone"] in ("head", "hair", "hat"):
+            if c["bone"] in ("head", "hair", "hat", "shroudHead", "jaw"):
+                c["paint"] = _scaled_paint(c["paint"], c["size"])
                 c["frm"] = [P[i] + (c["frm"][i] - P[i]) * f for i in range(3)]
                 c["size"] = [round(v * f * 4) / 4 for v in c["size"]]
                 if c["pivot"]:
