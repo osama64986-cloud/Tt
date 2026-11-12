@@ -280,11 +280,9 @@ function setExpr(e, v, ticks) {
     try { e.setProperty("ab:expr", v); } catch (e2) { /* ignore */ }
   }
 }
-function announce(e, text) {
+function announce(e, text) {  // the fighter shouts (face only) — no text is ever shown on screen
+  void text;
   setExpr(e, 1, 30);
-  for (const p of nearbyPlayers(e.dimension, e.location)) {
-    try { p.onScreenDisplay.setActionBar(text); } catch (e2) { /* ignore */ }
-  }
 }
 function prettyType(id) {
   return id.replace(/^.*:/, "").split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
@@ -3827,6 +3825,9 @@ function updateFighter(e, tick) {
   // Up close they still fight with their powers: a combo only some of the time, techniques the rest.
   if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < (s.cloneUntil ? 0.7 : 0.32)) {
     s.cd.combo = tick + 50 + Math.floor(Math.random() * 40);
+    const tst = isFighter(target) ? state(target) : undefined;
+    if (tst && !s.cloneUntil && now() < tst.busyUntil && (tst.lastCombo ?? 0) > now() - 6 && Math.random() < 0.5) { fistClash(e, target); return; }
+    s.lastCombo = now();
     combo(e, s, target);
     return;
   }
@@ -3913,9 +3914,10 @@ function updateTag(e) {
     if (e.hasTag("ab_infinity")) extra += " §b[Infinity]";
     if (s.burnoutUntil > now()) extra += " §7[Burnout]";
     if (s.stunUntil > now()) extra += " §f[Stunned]";
-    text = `${teamLabel(team)}${def.color}§l${def.name}§r §7(${form})${extra}\n${bar(pct)} §f${hp}§7/${max}\n${def.energyName} ${ebar(s.energy / def.energy)} §f${Math.max(0, Math.floor(s.energy))}`;
+    void form; void extra;
+    text = `${team === RED ? "§c" : team === BLUE ? "§9" : "§7"}▌${bar(pct)}`;
   } else if (team) {
-    text = `${teamLabel(team)}§f${prettyType(e.typeId)}\n${bar(pct)} §f${hp}§7/${max}`;
+    text = `${team === RED ? "§c" : "§9"}▌${bar(pct)}`;
   } else return;
   if (e.nameTag !== text) e.nameTag = text;
 }
@@ -3983,17 +3985,6 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
     }
     ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
-    if (attackerP > 0 && src && src.isValid) {  // the hit counter, shown to nearby players
-      const as = state(src);
-      as.hits = now() - (as.lastHit ?? 0) < 40 ? (as.hits ?? 0) + 1 : 1;
-      as.lastHit = now();
-      if (as.hits >= 3) {
-        const ad = FIGHTERS[src.typeId], n = as.hits;
-        system.run(() => { try {
-          for (const p of src.dimension.getPlayers({ location: src.location, maxDistance: 48 })) p.onScreenDisplay.setActionBar(`${ad.color}§l${ad.name}  §f§l${n} HIT COMBO${n >= 10 ? "!!" : "!"}`);
-        } catch (err) { /* ignore */ } });
-      }
-    }
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
       system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
@@ -4026,6 +4017,13 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       s.infinityBrokenUntil = now() + 120;
       ev.damage = over;
       system.run(() => { if (v.isValid) { burst(v.dimension, V.up(v.location, 1), C.blue, 30, 4); announce(v, "§cGojo's Infinity was overwhelmed!"); } });
+    }
+    // Guard (Dragon Ball: Re style): arms crossed, the blow mostly absorbed — unless the attacker is far stronger.
+    if (now() >= s.busyUntil && attackerP > 0 && now() >= (s.guardCd ?? 0) && Math.random() < 0.18 + (hpPct(v) < 0.4 ? 0.1 : 0)) {
+      s.guardCd = now() + 50;
+      const broken = attackerP > defenderP * 1.3;
+      ev.damage *= broken ? 0.8 : 0.35;
+      system.run(() => guardFx(v, src, broken));
     }
     if (now() >= s.busyUntil || (v.typeId === "ab:goku" && formOf(v) === 5)) {
       const chance = def.dodge(v, s);
@@ -4066,9 +4064,17 @@ function launch(src, v, strength = 1) {
   const d = V.norm({ x: v.location.x - src.location.x, y: 0, z: v.location.z - src.location.z });
   const total = 7 * clamp(strength, 0.85, 1.2), steps = 8, tri = (steps * (steps + 1)) / 2;
   const dim = v.dimension;
+  impactFrame(src, v);
   fx(dim, "shock_v", aim(v), C.white, 2.4, 0.3);
   sound(dim, "random.explode", v.location, 0.5, 1.6);
   if (isFighter(v)) { const vs = state(v); vs.stunUntil = Math.max(vs.stunUntil, now() + 12); }
+  if (isFighter(src) && Math.random() < 0.35) later(9, () => {  // vanish chase: reappear where they land and keep going
+    if (!alive(v) || !alive(src) || now() < state(src).busyUntil) return;
+    afterimage(src); teleportNear(src, v, Math.random() < 0.5, 1.4); face(src, aim(v)); setPose(src, [7, 10, 9][Math.floor(Math.random() * 3)]);
+    deal(src, v, 10 * powerOf(src) / 100);
+    fx(dim, "shock_v", aim(v), C.white, 2.2, 0.25);
+    later(6, () => { if (src.isValid) setPose(src, 0); });
+  });
   every(1, steps, (i) => {
     if (!alive(v)) return false;
     const next = V.add(v.location, V.mul(d, (total * (steps - i)) / tri));
@@ -4081,6 +4087,46 @@ function launch(src, v, strength = 1) {
       burst(dim, V.up(v.location, 0.3), DUST, 16, 3, 0.4, 0.5);
       if (!ok) sound(dim, "random.anvil_land", v.location, 0.4, 0.6);
       return false;
+    }
+  });
+}
+function guardFx(v, src, broken) {
+  if (!v.isValid) return;
+  const s = state(v);
+  busy(s, 8); setPose(v, 31);
+  const c = V.up(v.location, 1.2);
+  if (broken) {  // guard break: the arms are knocked apart, a burst of shards, a long stagger
+    burst(v.dimension, c, C.white, 26, 5, 0.4, 0.5); fx(v.dimension, "shock_v", c, C.white, 3, 0.3);
+    sound(v.dimension, "random.break", v.location, 1, 0.6);
+    s.stunUntil = Math.max(s.stunUntil, now() + 16);
+  } else {
+    fx(v.dimension, "streak", c, C.kiYellow, 1, 0.25, { count: 8, speed: 6 }); ring(v.dimension, c, 0.9, C.white, 12, 0.25);
+    sound(v.dimension, "random.anvil_land", v.location, 0.5, 1.8);
+  }
+  later(8, () => { if (v.isValid) setPose(v, 0); });
+}
+// Impact frame: on a heavy hit both fighters freeze for an instant, a white flash, the screen shakes.
+function impactFrame(src, v) {
+  for (const x of [src, v]) { if (alive(x)) { slow(x, 4, 10); if (isFighter(x)) busy(state(x), Math.max(0, state(x).busyUntil - now()) + 3); } }
+  if (!alive(v)) return;
+  const c = aim(v);
+  fx(v.dimension, "flash", c, C.white, 5, 0.12); sphereFx(v.dimension, c, 1.2, C.white, 14, 0.5, "orb", 0.2);
+  shake(v.dimension, v.location, 0.35, 0.25);
+}
+// Fist clash: two fighters swinging at the same instant meet in the middle — a shockwave, both slide back.
+function fistClash(a, b) {
+  const c = V.add(aim(a), V.mul(V.sub(aim(b), aim(a)), 0.5));
+  const dim = a.dimension;
+  for (const x of [a, b]) { setPose(x, 5); busy(state(x), 12); }
+  fx(dim, "flash", c, C.white, 4, 0.15); fx(dim, "shock_v", c, C.kiYellow, 4, 0.3); fx(dim, "shock", V.up(c, -1), C.white, 7, 0.4);
+  burst(dim, c, C.white, 30, 6, 0.4, 0.5); shake(dim, c, 0.45, 0.35);
+  sound(dim, "random.explode", c, 0.8, 1.4);
+  later(3, () => {
+    for (const [x, y] of [[a, b], [b, a]]) {
+      if (!alive(x) || !alive(y)) continue;
+      const d = V.norm({ x: x.location.x - y.location.x, y: 0, z: x.location.z - y.location.z });
+      try { x.tryTeleport(V.add(x.location, V.mul(d, 2.5)), { checkForBlocks: true, facingLocation: aim(y) }); } catch (err) { /* ignore */ }
+      setPose(x, 0);
     }
   });
 }
@@ -4105,6 +4151,16 @@ function dodgeFx(v, src) {
     return;
   }
   const s = state(v);
+  if (src && src.isValid && alive(src) && Math.random() < 0.45) {  // Perfect Counter: vanish behind the attacker and strike
+    later(3, () => {
+      if (!v.isValid || !alive(src)) return;
+      afterimage(v); teleportNear(v, src, true, 1.3); face(v, aim(src)); setPose(v, Math.random() < 0.5 ? 5 : 8);
+      deal(v, src, 14 * powerOf(v) / 100);
+      fx(v.dimension, "flash", aim(src), C.white, 2, 0.15);
+      later(6, () => { if (v.isValid) setPose(v, 0); });
+    });
+    return;
+  }
   if (now() >= s.busyUntil) {  // visible sway, only when not in the middle of a technique
     setPose(v, 29);
     later(6, () => { if (v.isValid && now() >= state(v).busyUntil) setPose(v, 0); });
@@ -4250,10 +4306,9 @@ function checkWinner(dim, losingTeam) {
     const winners = left(winTeam);
     if (!winners.length) return;
     const w = winners[0], wd = FIGHTERS[w.typeId];
-    const title = `${teamLabel(winTeam)}${wd.color}§l${wd.name} WINS!`;
-    const sub = `§7${wd.forms[clamp(formOf(w), 0, wd.forms.length - 1)].label}${winners.length > 1 ? ` §8+${winners.length - 1}` : ""}`;
+    const title = winTeam === RED ? "§c§lRED TEAM WINS!" : "§9§lBLUE TEAM WINS!";
     for (const p of world.getPlayers()) {
-      try { p.onScreenDisplay.setTitle(title, { subtitle: sub, fadeInDuration: 5, stayDuration: 60, fadeOutDuration: 15 }); } catch (err) { /* ignore */ }
+      try { p.onScreenDisplay.setTitle(title, { fadeInDuration: 5, stayDuration: 60, fadeOutDuration: 15 }); } catch (err) { /* ignore */ }
       sound(p.dimension, "random.levelup", p.location, 1, 1);
     }
     fx(dim, "flash", V.up(w.location, 2), wd.forms[clamp(formOf(w), 0, wd.forms.length - 1)].aura ?? C.gold, 6, 0.6);
@@ -4273,7 +4328,7 @@ function startBattle(p, a, b) {
       later(25, () => { if (f.isValid) setTeam(f, team); });
     } catch (err) { warn("vs", err); }
   }
-  p.sendMessage(`§6[Anime Battles] §c${FIGHTERS[ida].name} §fvs §9${FIGHTERS[idb].name}§f — fight!`);
+
 }
 
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
@@ -4327,7 +4382,6 @@ function giveKit(p) {
     for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg", "ab:broly_spawn_egg", "ab:madara_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
-    p.sendMessage("§6[Anime Battles] §fTeam Stick: hit = §cRED§f, next hit = §9BLUE§f. Sneak+use = reset.\n§4Kill Stick§f: hit = instant kill. Use = block damage on/off. Sneak+use = effects low/full.");
 }
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   if (ev.id === "ab:griefing") world.setDynamicProperty("ab:griefing", ev.message.trim() !== "off");
