@@ -437,7 +437,7 @@ def build(out):
     put("honeycomb", exact(X_INGOT, {"M": R((240, 170, 40), 0.34)}, extra=[(6, 6, (190, 110, 20)), (9, 6, (190, 110, 20)), (7, 7, (190, 110, 20))]))
     put("nether_star", exact(X_STAR, {"M": R((244, 244, 226), 0.2)}, emis={"M": 200}))
     put("ghast_tear", exact(X_TEAR, {"M": R((220, 240, 244), 0.2)}, extra=[(6, 6, white)]))
-    put("totem", exact(X_TOTEM, {"M": GOLD, "A": EMERALD}, metal={"M": 200}))
+    put("totem", exact(X_TOTEM, {"M": GOLD, "A": EMERALD, "P": R((150, 90, 30))}, metal={"M": 200}))
     build_more(out)
 
 
@@ -1067,3 +1067,56 @@ NUGGETS = {"iron_nugget": iron_nugget(), "gold_nugget": gold_nugget(), "copper_n
 X_STEAK, X_CHOP, X_RACK, X_DRUM, X_HIND, X_SLAB = steak(), chop(), rack(), drumstick(), hind_leg(), slab()
 X_HORN = ["", "", "..........54....", ".........5443...", "........54332...", "...4....4332....", "..443..4332.....", "..43334332......", "...3333322......", "....22221.......", "......1.........", ""]
 X_CLUSTER = ["", "", "........5.......", "....5..543......", "...54..433..5...", "...43.4433.54...", "..443.4332.43...", "..432.4332443...", "..3324332243....", "...3222222322...", "....22222211....", "......1111......", ""]
+
+
+# ---------------------------------------------------------------- v3: spear and totem
+
+
+def _spear():
+    """Diagonal spear: a long wooden haft and a broad leaf-shaped head with a
+    raised centre ridge, a wrapped collar where they meet and a capped butt."""
+    g = [["."] * N for _ in range(N)]
+    for y in range(N):
+        for x in range(N):
+            along = (x - y) / 2.0                     # 7.5 at the top-right tip, -7.5 at the bottom-left
+            perp = (x + y - 15) / 2.0                 # 0 on the haft line, - towards the top-left (lit side)
+            tip = 7.5 - along
+            if 0 <= tip <= 6.2:                       # head: a pointed leaf
+                width = min(tip * 0.62, (6.2 - tip) * 0.9 + 0.3, 1.9)
+                if abs(perp) <= width + 0.01:
+                    if abs(perp) < 0.3:
+                        t = "5" if tip < 3.5 else "4"         # bright centre ridge
+                    elif perp < 0:
+                        t = "4" if perp > -1.2 else "3"       # lit half
+                    else:
+                        t = "2" if perp < 1.2 else "1"        # shaded half
+                    g[y][x] = t
+            elif 6.2 < tip <= 7.3 and -0.1 <= perp <= 0.6:   # wrapped collar
+                g[y][x] = "b" if perp < 0.25 else "a"
+            elif tip > 7.3 and -0.1 <= perp <= 0.6:          # haft
+                g[y][x] = ("y" if int(tip) % 3 == 0 else "x") if perp < 0.25 else "w"
+    g[14][0] = "c"
+    return ["".join(r) for r in g]
+
+
+X_TOTEM = [
+    "................",
+    "......5544......",
+    ".....544443.....",
+    ".....4ec4ec.....",
+    ".....443332.....",
+    ".....43RR32.....",
+    "......3322......",
+    ".55444443333322.",
+    "..44..4432..21..",
+    "......4dd2......",
+    "......4332......",
+    "......SSSS......",
+    ".....443322.....",
+    ".....432.221....",
+    ".....32...21....",
+    "................",
+]
+assert all(len(r) == N for r in X_TOTEM)
+
+X_SPEAR = _spear()
