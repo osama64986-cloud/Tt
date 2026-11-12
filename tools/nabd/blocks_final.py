@@ -189,3 +189,104 @@ def build(out, flip, variations):
         t.rgb[ring] = (220, 40, 40)
         t.alpha[ring] = 255
         out["barrier"] = t
+
+
+# ------------------------------------------------------------------ lanterns
+# The lantern model reads four regions from its texture: cap (rows 0-1,
+# x1-4), side (rows 2-8, x0-5), top/bottom (rows 9-14, x0-5) and the hanger
+# (x11-13).  Each region is drawn on its own: dark metal frame, glowing glass.
+def lantern_frame(frame_ramp, glow, level):
+    rgb = np.zeros((N, N, 3), np.uint8)
+    al = np.zeros((N, N), np.uint8)
+    emis = np.zeros((N, N))
+    hgt = np.zeros((N, N))
+
+    def px(x, y, c, e=0, h=0.6):
+        rgb[y, x] = c
+        al[y, x] = 255
+        emis[y, x] = e
+        hgt[y, x] = h
+    fr = frame_ramp
+    for x in range(1, 5):                                  # cap
+        px(x, 0, fr[4] if x < 4 else fr[3], h=0.9)
+        px(x, 1, fr[2] if x < 4 else fr[1], h=0.8)
+    for y in range(2, 9):                                  # side: frame and glass
+        for x in range(0, 6):
+            edge = x in (0, 5) or y in (2, 8)
+            if edge:
+                c = fr[3] if (x == 0 or y == 2) else fr[1]
+                px(x, y, c, h=0.9)
+            else:
+                g = glow[min(3, max(0, level + (1 if (x in (2, 3) and y in (4, 5, 6)) else 0) - (1 if y == 7 else 0)))]
+                px(x, y, g, e=230, h=0.5)
+    for y in range(9, 15):                                 # top and bottom plate
+        for x in range(0, 6):
+            ring = x in (0, 5) or y in (9, 14)
+            if ring:
+                px(x, y, fr[3] if (x == 0 or y == 9) else fr[1], h=0.9)
+            elif x in (2, 3) and y in (11, 12):
+                px(x, y, glow[min(3, level + 1)], e=200, h=0.5)         # glow seen through the plate
+            else:
+                px(x, y, fr[2], h=0.7)
+    for (x, y) in ((11, 1), (12, 1), (13, 1), (11, 2), (13, 2), (11, 3), (13, 3), (11, 4), (12, 4), (13, 4),
+                   (11, 6), (13, 6), (11, 7), (12, 7), (13, 7), (11, 10), (12, 10), (13, 10), (11, 11), (13, 11)):
+        px(x, y, fr[3] if x == 11 else fr[1], h=0.8)       # hanger links
+    t = Tex(rgb, hgt, alpha=al, rough=110, metal=np.where(emis > 0, 0, 200), bump=0.8)
+    t.emis = emis
+    return t
+
+
+_build_final = build
+
+
+def build(out, flip, variations):          # noqa: F811
+    _build_final(out, flip, variations)
+    warm = [(214, 120, 30), (250, 170, 50), (255, 214, 110), (255, 246, 190)]
+    cool = [(30, 130, 150), (70, 200, 220), (150, 240, 245), (225, 255, 255)]
+    green = [(40, 150, 90), (90, 210, 140), (160, 245, 190), (225, 255, 235)]
+    dark = make_ramp((64, 66, 80), 5, 0.5)
+    for nm, glow, metal in [("lantern", warm, dark), ("soul_lantern", cool, dark)] + \
+            [(p + "copper_lantern", green, vramp("copper_block" if p == "" else p + "copper", 5, contrast=0.36))
+             for p in ("", "exposed_", "weathered_", "oxidized_")]:
+        if nm in STATS:
+            n = STATS[nm]["size"][1] // N
+            out[nm] = stack_frames([lantern_frame(metal, glow, [1, 2, 1, 0][f % 4]) for f in range(n)])
+
+    # shelves: upper half is the plank top, lower half the shelf front with two recessed slots
+    woods = {"oak": "planks_oak", "spruce": "planks_spruce", "birch": "planks_birch", "jungle": "planks_jungle",
+             "acacia": "planks_acacia", "dark_oak": "planks_big_oak", "cherry": "cherry_planks", "mangrove": "mangrove_planks",
+             "pale_oak": "pale_oak_planks", "poplar": "poplar_planks", "bamboo": "bamboo_planks",
+             "crimson": "huge_fungus/crimson_planks", "warped": "huge_fungus/warped_planks"}
+    for w, pl in woods.items():
+        nm = f"{w}_shelf"
+        if nm not in STATS or pl not in STATS:
+            continue
+        ramp = vramp(pl, 5, contrast=0.3)
+        a = P.planks(nm + "_a", ramp, boards=4, nails=False)
+        b = P.planks(nm + "_b", ramp, boards=4, nails=False)
+        top = np.hstack([a.rgb, b.rgb])
+        front = np.hstack([b.rgb, a.rgb]).copy()
+        hf = np.full((16, 32), 0.7)
+        for y0, y1 in ((0, 6), (8, 14)):                  # two recessed slots
+            front[y0:y1 + 1, 1:31] = (np.array(ramp[0]) * 0.55).astype(np.uint8)
+            front[y0, 1:31] = (np.array(ramp[0]) * 0.4).astype(np.uint8)       # shadow under the lip
+            hf[y0:y1 + 1, 1:31] = 0.1
+            front[y1 + 1, :] = ramp[4]                                         # lit shelf lip
+            hf[y1 + 1, :] = 1.0
+        for x in (0, 31):
+            front[:, x] = ramp[1]
+        rgb = np.vstack([top, front])
+        hgt = np.vstack([np.hstack([a.height, b.height]), hf])
+        out[nm] = Tex(rgb, hgt, rough=205)
+
+    # pitcher crop: veined teal leaves; flowering stages carry a pink-violet bloom
+    for nm in [k for k in STATS if k.startswith("pitcher_crop")]:
+        t = shaded(nm, make_ramp((70, 150, 150), 5, 0.42), sss=100)
+        h, w = t.mask.shape
+        Y, X = np.mgrid[0:h, 0:w]
+        vein = t.mask & (t.idx == 2) & ((X + Y) % 4 == 0)
+        t.rgb = np.where(vein[..., None], np.array((44, 104, 104), np.uint8), t.rgb)
+        if "top" in nm or "stage_4" in nm or "stage_3" in nm:
+            bloom = t.mask & (Y < h // 2) & ((X * 3 + Y) % 5 == 0)
+            t.rgb = np.where(bloom[..., None], np.array((190, 110, 220), np.uint8), t.rgb)
+        out[nm] = t

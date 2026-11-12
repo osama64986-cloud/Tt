@@ -617,6 +617,7 @@ def build_extra(out):
             g[y][x], g[y][x + 1] = "C", "C"
     build_last(out)
     build_animated(out)
+    build_layers(out)
     put("reeds", render(g, {"C": R((150, 200, 90), 0.36)}, extra=[(4, 5, (90, 140, 50)), (5, 5, (90, 140, 50)), (8, 8, (90, 140, 50)),
                                                                  (9, 8, (90, 140, 50)), (11, 4, (90, 140, 50)), (12, 4, (90, 140, 50)), (4, 10, (90, 140, 50)), (5, 10, (90, 140, 50))]))
 
@@ -1196,3 +1197,33 @@ def build_animated(out):
         out["recovery_compass_atlas"] = t
     if "watch_atlas" in ISTATS:
         out["watch_atlas"] = clock_frames(ISTATS["watch_atlas"]["size"][1] // 16)
+
+
+# ---------------------------------------------------------------- layered UI icons
+def from_mask(name, ramp, metal=None):
+    """Paint an icon inside the layout the game composes it from."""
+    from .blocks_rest import shade_mask
+    m = np.array([[c == "1" for c in row] for row in ISTATS[name]["mask"]])
+    idx = np.clip(shade_mask(m) + 1, 0, 5)
+    rgb = np.where(m[..., None], np.array(ramp, np.uint8)[idx], 0).astype(np.uint8)
+    t = Tex(rgb, np.where(m, 0.4 + idx * 0.1, 0.0), alpha=np.where(m, 255, 0).astype(np.uint8), rough=200, bump=0.7)
+    if metal:
+        t.metal = np.where(m, metal, 0)
+    return t
+
+
+def build_layers(out):
+    wax = dict(DYES)
+    wax["light_gray"] = DYES["silver"]
+    for name in ISTATS:
+        if "mask" not in ISTATS[name]:
+            continue
+        if name.startswith("bundle"):
+            dye = name[len("bundle_"):].split("_open")[0] if name.startswith("bundle_") and not name.startswith("bundle_open") else None
+            col = wax.get(dye, (150, 84, 44)) if dye else (150, 84, 44)
+            ramp = R(col, 0.36)
+            if name.endswith("_open_back"):
+                ramp = R(shift(col, dv=-0.25), 0.4)              # inside of the bag, in shadow
+            out[name] = from_mask(name, ramp)
+        elif name.startswith("empty_armor_slot"):
+            out[name] = from_mask(name, R((150, 150, 160), 0.3))

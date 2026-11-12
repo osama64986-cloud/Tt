@@ -70,6 +70,8 @@ for root, _, files in os.walk(idir):
         e["ext"].append(ext[1:])
         sat = px.max(1) - px.min(1) if len(px) else np.zeros(0)
         dom = px[sat >= np.percentile(sat, 60)].mean(0) if len(px) else np.zeros(3)
+        if (al == 0).any() and (al > 0).any() and ("_open" in stem or stem.startswith("empty_armor_slot")):
+            e["mask"] = ["".join("1" if v > 0 else "0" for v in row) for row in al]
         e.update({"size": list(im.size), "mean": px.mean(0).round().astype(int).tolist(),
                   "dom": dom.round().astype(int).tolist(),
                   "alpha": sorted(set(int(v) for v in np.unique(al)))[:4]})
