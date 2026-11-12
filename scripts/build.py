@@ -95,7 +95,7 @@ def item_page(m, site, base, stats):
     shots = [s for s in (safe_url(x) for x in m.get("screenshots") or []) if s]
     video = m.get("video") if re.fullmatch(r"[\w-]{11}", str(m.get("video") or "")) else ""
     sha = m.get("sha256") if re.fullmatch(r"[0-9a-f]{64}", str(m.get("sha256") or "")) else ""
-    site_name = site.get("name") or "عالم المودات"
+    site_name = site.get("name") or "نبض"
     rows = [("النوع", t_label), ("النسخة", EDITIONS.get(m.get("edition"), "")), ("المحمّل / الصيغة", m.get("loader")),
             ("إصدارات ماين كرافت", "، ".join(versions)), ("إصدار الملف", m.get("version")), ("الحجم", m.get("size")),
             ("التحميلات", fmt_num(downloads) if downloads else ""), ("تاريخ النشر", m.get("date")),

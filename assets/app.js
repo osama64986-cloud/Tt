@@ -49,7 +49,7 @@
     if (s.name) {
       $("#siteName").textContent = s.name;
       $("#footerName").textContent = s.name;
-      document.title = `${s.name} — Minecraft`;
+      document.title = `${s.name} — مودات وإضافات ماين كرافت`;
     }
     if (s.tagline) $("#tagline").textContent = s.tagline;
     if (s.about) $("#aboutText").textContent = s.about;

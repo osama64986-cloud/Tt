@@ -397,3 +397,48 @@ a.shot { display: block; }
 .mc-btn-green, .tab.active, .guide-tabs button.active { background: #3e7b22; }
 /* Reserve room for the install guide so the page doesn't jump while it loads */
 .item-page .guide { min-height: 280px; }
+
+/* ---------- NABD brand: night sky + floating grass block ---------- */
+:root { --night-top: #34477a; --night-bottom: #1c2747; }
+.hero { background: radial-gradient(ellipse at 50% 35%, #3d5288 0%, var(--night-top) 35%, var(--night-bottom) 100%); }
+.stars { position: absolute; inset: 0; }
+.stars::before, .stars::after { content: ""; position: absolute; width: 3px; height: 3px; background: #fff; opacity: .8; }
+.s1::before { top: 12%; left: 8%;  box-shadow: 140px 40px #fff, 320px -10px #cfe3ff, 520px 70px #fff, 760px 20px #fff, 980px 90px #cfe3ff, 1180px 30px #fff, 60px 200px #cfe3ff, 900px 240px #fff; }
+.s1::after  { top: 30%; left: 20%; box-shadow: 230px 60px #fff, 470px -30px #fff, 700px 110px #cfe3ff, 1010px 10px #fff, -120px 150px #fff; }
+.s2::before { top: 20%; left: 15%; width: 2px; height: 2px; box-shadow: 90px 120px #fff, 380px 40px #fff, 610px 180px #fff, 840px 70px #fff, 1100px 160px #fff, 250px 260px #fff; animation: twinkle 3s steps(2) infinite; }
+.s2::after  { top: 8%;  left: 40%; width: 2px; height: 2px; box-shadow: 160px 50px #fff, 420px 150px #fff, -300px 110px #fff, 650px 30px #fff; animation: twinkle 4.2s steps(2) infinite 1s; }
+@keyframes twinkle { 50% { opacity: .2; } }
+.cloud { display: none; }
+
+.logo-img { width: 32px; height: 32px; image-rendering: pixelated; }
+.nav { background: rgba(0, 0, 0, .25); }
+
+.hero-content { padding-top: 24px; }
+.hero-block { position: relative; width: min(260px, 62vw); aspect-ratio: 1; margin: 0 auto 6px; }
+.hero-block canvas { position: relative; z-index: 1; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.hero-block .pulse {
+  position: absolute; inset: 12%; border-radius: 50%; z-index: 0;
+  background: radial-gradient(circle, rgba(134, 201, 79, .45) 0%, rgba(134, 201, 79, .12) 45%, transparent 70%);
+  opacity: 0; transition: opacity .6s;
+}
+.hero-block.ready .pulse { opacity: 1; animation: heartbeat 2.4s ease-in-out infinite; }
+@keyframes heartbeat { 0%, 100% { transform: scale(.9); } 12% { transform: scale(1.08); } 24% { transform: scale(.95); } 36% { transform: scale(1.05); } 60% { transform: scale(.9); } }
+.hero-block .block-shadow {
+  position: absolute; left: 25%; right: 25%; bottom: -4%; height: 9%; border-radius: 50%;
+  background: rgba(0, 0, 0, .35); filter: blur(4px); opacity: 0; transition: opacity .6s;
+}
+.hero-block.ready .block-shadow { opacity: 1; }
+.hero-block.floating canvas { animation: float 4.5s ease-in-out infinite; }
+.hero-block.floating .block-shadow { animation: shadow 4.5s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-16px) rotate(1.5deg); } }
+@keyframes shadow { 0%, 100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.75); opacity: .55; } }
+
+.brand { margin: 0 0 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.brand-ar {
+  font-family: "Cairo", sans-serif; font-weight: 800; font-size: clamp(3rem, 12vw, 5.5rem); line-height: 1;
+  color: #fff; text-shadow: 4px 4px 0 #3e7b22, 8px 8px 0 rgba(0, 0, 0, .35);
+}
+.brand .pixel-title { font-size: clamp(1.3rem, 5vw, 2.2rem); margin: 0; color: #86c94f; text-shadow: 3px 3px 0 #2c4d1a, 6px 6px 0 rgba(0, 0, 0, .3); letter-spacing: 6px; }
+.hero-content p { color: #dfe8ff; }
+.stat { background: rgba(0, 0, 0, .35); }
+@media (prefers-reduced-motion: reduce) { .hero-block canvas, .hero-block .pulse, .hero-block .block-shadow, .s2::before, .s2::after { animation: none !important; } }

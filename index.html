@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>عالم المودات — Minecraft</title>
+  <title>نبض NABD — مودات وإضافات ماين كرافت</title>
   <meta name="description" content="حمّل مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً — جافا وبيدروك">
-  <meta property="og:title" content="عالم المودات — Minecraft">
+  <meta property="og:title" content="نبض NABD — مودات ماين كرافت">
   <meta property="og:description" content="مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً">
   <meta property="og:type" content="website">
-  <meta name="theme-color" content="#5d9c3b">
+  <meta name="theme-color" content="#1c2747">
   <!--HEAD-->
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,9 +21,9 @@
 <body>
   <a class="skip" href="#mods">تخطَّ إلى التحميلات</a>
   <header class="hero">
-    <div class="sky" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <div class="sky" aria-hidden="true"><span class="stars s1"></span><span class="stars s2"></span></div>
     <nav class="nav">
-      <a href="./" class="logo"><span class="logo-block" aria-hidden="true"></span><span id="siteName">عالم المودات</span></a>
+      <a href="./" class="logo"><img class="logo-img" src="assets/favicon.svg" alt="" width="32" height="32"><span id="siteName">نبض</span></a>
       <div class="nav-links">
         <a href="#mods">التحميلات</a>
         <a href="#install">طريقة التثبيت</a>
@@ -33,7 +33,12 @@
       </div>
     </nav>
     <div class="hero-content">
-      <h1 class="pixel-title">MOD<span>WORLD</span></h1>
+      <div class="hero-block" aria-hidden="true">
+        <span class="pulse"></span>
+        <canvas id="heroBlock" width="280" height="280"></canvas>
+        <span class="block-shadow"></span>
+      </div>
+      <h1 class="brand"><span class="brand-ar">نبض</span><span class="pixel-title">NABD</span></h1>
       <p id="tagline">مودات، تكسترات، خرائط وعوالم ماين كرافت</p>
       <div class="stats" id="stats" aria-live="polite"></div>
       <a href="#mods" class="mc-btn mc-btn-green">ابدأ التحميل ⬇</a>
@@ -148,7 +153,7 @@
 
   <footer class="footer">
     <nav class="footer-links" aria-label="كل الأعمال"><!--ITEM_LINKS--></nav>
-    <p>© <span id="year"></span> <span id="footerName">عالم المودات</span> — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
+    <p>© <span id="year"></span> <span id="footerName">نبض</span> — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
   </footer>
 
   <dialog id="modal" class="modal" aria-labelledby="modalTitle">
@@ -157,6 +162,7 @@
   </dialog>
 
   <script src="assets/common.js"></script>
+  <script src="assets/block.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>
