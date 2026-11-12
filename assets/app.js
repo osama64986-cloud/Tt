@@ -1,164 +1,270 @@
 (() => {
-  const TYPES = {
-    mod:     { label: "مود",   icon: "⚒" },
-    texture: { label: "تكستر", icon: "🎨" },
-    map:     { label: "خريطة", icon: "🗺" },
-    world:   { label: "عالم",  icon: "🌍" },
-  };
-
+  const { TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, fmtNum, isRecent } = MC;
   const $ = (s) => document.querySelector(s);
-  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const safeUrl = (u) => (/^(https?:\/\/|\.?\/?[\w\-./%]+$)/i.test(u || "") && !/^javascript:/i.test(u) ? u : "#");
+  const state = { site: {}, mods: [], counts: {}, type: "", edition: "", q: "", version: "", sort: "new" };
 
-  const state = { mods: [], type: "", q: "", version: "", sort: "new" };
+  init();
 
-  fetch("mods.json", { cache: "no-cache" })
-    .then((r) => r.json())
-    .then((data) => {
-      setupSite(data.site || {});
-      state.mods = data.mods || [];
-      buildFilters();
-      render();
-      openFromHash();
-    })
-    .catch(() => {
-      $("#grid").innerHTML = '<p class="empty">تعذر تحميل قائمة المودات. تأكد من ملف mods.json</p>';
-    });
-
-  function setupSite(site) {
-    if (site.name) {
-      $("#siteName").textContent = site.name;
-      $("#footerName").textContent = site.name;
-      document.title = `${site.name} — Minecraft`;
+  async function init() {
+    let data;
+    try {
+      const r = await fetch("mods.json", { cache: "no-cache" });
+      if (!r.ok) throw new Error(r.status);
+      data = await r.json();
+    } catch {
+      $("#grid").innerHTML = "";
+      showEmpty("تعذر تحميل قائمة الأعمال، حاول تحدّث الصفحة.");
+      return;
     }
-    if (site.tagline) $("#tagline").textContent = site.tagline;
-    if (site.author) $("#authorName").textContent = site.author;
-    $("#year").textContent = new Date().getFullYear();
-    const links = [];
-    if (site.youtube) links.push(`<a class="mc-btn" href="${esc(safeUrl(site.youtube))}" target="_blank" rel="noopener">▶ يوتيوب</a>`);
-    if (site.discord) links.push(`<a class="mc-btn" href="${esc(safeUrl(site.discord))}" target="_blank" rel="noopener">💬 ديسكورد</a>`);
-    $("#socials").innerHTML = links.join("");
+    state.site = data.site || {};
+    state.mods = (Array.isArray(data.mods) ? data.mods : []).filter((m) => m && m.id && m.name);
+    setupSite();
+    buildControls();
+    render();
+    openFromHash();
+
+    const repo = MC.repoOf(state.site);
+    if (repo && state.mods.some((m) => (m.releases || []).length)) {
+      state.counts = await MC.downloadCounts(repo);
+      renderStats();
+      render();
+    }
   }
 
-  function buildFilters() {
-    const versions = [...new Set(state.mods.flatMap((m) => m.versions || []))]
-      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-    $("#versionFilter").insertAdjacentHTML("beforeend", versions.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join(""));
+  /* ---------- Site chrome ---------- */
+  function setupSite() {
+    const s = state.site;
+    if (s.name) {
+      $("#siteName").textContent = s.name;
+      $("#footerName").textContent = s.name;
+      document.title = `${s.name} — Minecraft`;
+    }
+    if (s.tagline) $("#tagline").textContent = s.tagline;
+    if (s.about) $("#aboutText").textContent = s.about;
+    $("#year").textContent = new Date().getFullYear();
+    const links = [
+      [s.youtube, "▶ يوتيوب"], [s.discord, "💬 ديسكورد"], [s.tiktok, "🎵 تيك توك"], [s.website, "🌐 موقع آخر"],
+    ].filter(([u]) => /^https:\/\//i.test(u || "") && safeUrl(u));
+    $("#socials").innerHTML = links
+      .map(([u, label]) => `<a class="mc-btn" href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${label}</a>`)
+      .join("");
+    renderStats();
+  }
 
-    const counts = { mod: 0, texture: 0, map: 0, world: 0 };
-    state.mods.forEach((m) => { if (m.type in counts) counts[m.type]++; });
-    $("#stats").innerHTML = Object.entries(counts)
-      .map(([t, n]) => `<div class="stat"><b>${n}</b><span>${TYPES[t].label}</span></div>`).join("");
+  function renderStats() {
+    const total = state.mods.reduce((s, m) => s + MC.downloadsOf(m, state.counts), 0);
+    const items = [[state.mods.length, "عمل منشور"]];
+    const types = new Set(state.mods.map((m) => m.type)).size;
+    if (types) items.push([types, "أقسام"]);
+    if (total) items.push([fmtNum(total), "تحميل"]);
+    $("#stats").innerHTML = items.map(([n, l]) => `<div class="stat"><b>${esc(n)}</b><span>${esc(l)}</span></div>`).join("");
+  }
+
+  function buildControls() {
+    const counts = {};
+    state.mods.forEach((m) => { counts[m.type] = (counts[m.type] || 0) + 1; });
+    const tabs = [`<button class="tab active" role="tab" aria-selected="true" data-type="">الكل <small>${state.mods.length}</small></button>`]
+      .concat(Object.entries(TYPES).filter(([t]) => counts[t])
+        .map(([t, d]) => `<button class="tab" role="tab" aria-selected="false" data-type="${t}">${d.icon} ${d.plural} <small>${counts[t]}</small></button>`));
+    $("#tabs").innerHTML = tabs.join("");
+
+    const versions = [...new Set(state.mods.flatMap((m) => m.versions || []))]
+      .sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+    $("#versionFilter").insertAdjacentHTML("beforeend", versions.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join(""));
 
     $("#tabs").addEventListener("click", (e) => {
       const btn = e.target.closest(".tab");
       if (!btn) return;
-      document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b === btn));
+      document.querySelectorAll(".tab").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+        b.setAttribute("aria-selected", b === btn);
+      });
       state.type = btn.dataset.type;
       render();
     });
-    $("#search").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); render(); });
+    let t;
+    $("#search").addEventListener("input", (e) => {
+      clearTimeout(t);
+      t = setTimeout(() => { state.q = e.target.value.trim().toLowerCase(); render(); }, 120);
+    });
+    $("#editionFilter").addEventListener("change", (e) => { state.edition = e.target.value; render(); });
     $("#versionFilter").addEventListener("change", (e) => { state.version = e.target.value; render(); });
     $("#sortBy").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
   }
 
+  /* ---------- Listing ---------- */
   function filtered() {
+    const dl = (m) => MC.downloadsOf(m, state.counts);
+    const date = (m) => String(m.updated || m.date || "");
     return state.mods
       .filter((m) => !state.type || m.type === state.type)
+      .filter((m) => !state.edition || m.edition === state.edition)
       .filter((m) => !state.version || (m.versions || []).includes(state.version))
       .filter((m) => {
         if (!state.q) return true;
-        const hay = [m.name, m.description, m.loader, ...(m.tags || [])].join(" ").toLowerCase();
-        return hay.includes(state.q);
+        return [m.name, m.description, m.loader, ...(m.tags || []), TYPES[m.type]?.label]
+          .join(" ").toLowerCase().includes(state.q);
       })
-      .sort((a, b) => state.sort === "name"
-        ? a.name.localeCompare(b.name, "ar")
-        : String(b.date || "").localeCompare(String(a.date || "")));
+      .sort((a, b) => {
+        if (state.sort === "name") return a.name.localeCompare(b.name, "ar");
+        if (state.sort === "popular") return dl(b) - dl(a) || date(b).localeCompare(date(a));
+        return (b.featured === true) - (a.featured === true) || date(b).localeCompare(date(a));
+      });
   }
 
-  function thumb(m) {
-    const t = TYPES[m.type] || { label: m.type, icon: "📦" };
-    const style = m.image
-      ? `background-image:url('${esc(safeUrl(m.image))}')`
-      : `background-color:${esc(/^#[0-9a-f]{3,8}$/i.test(m.color || "") ? m.color : "#555")}`;
-    return `<div class="thumb ${m.image ? "" : "generated"}" style="${style}">
-      ${m.image ? "" : `<span>${t.icon}</span>`}
-      <span class="badge">${esc(t.label)}</span>
+  function thumbHtml(m, big = false) {
+    const t = TYPES[m.type] || { label: "", icon: "📦" };
+    const img = safeUrl(m.image);
+    const badges = [`<span class="badge">${esc(t.label)}</span>`];
+    if (isRecent(m.updated || m.date)) badges.push(`<span class="badge badge-new">${m.updated && m.updated !== m.date ? "محدَّث" : "جديد"}</span>`);
+    if (m.featured === true) badges.push(`<span class="badge badge-star">⭐ مميز</span>`);
+    return `<div class="thumb${img ? "" : " generated"}" data-color="${esc(safeColor(m.color))}">
+      ${img ? `<img src="${esc(img)}" alt="" loading="${big ? "eager" : "lazy"}" decoding="async">` : `<span class="thumb-icon">${t.icon}</span>`}
+      <div class="badges">${badges.join("")}</div>
     </div>`;
   }
 
-  function render() {
-    const list = filtered();
-    $("#empty").hidden = list.length > 0;
-    $("#grid").innerHTML = list.map((m) => `
-      <article class="card" tabindex="0" data-id="${esc(m.id)}">
-        ${thumb(m)}
+  function cardHtml(m) {
+    const dl = MC.downloadsOf(m, state.counts);
+    const file = safeUrl(m.file);
+    return `
+      <article class="card" tabindex="0" data-id="${esc(m.id)}" aria-label="${esc(m.name)}">
+        ${thumbHtml(m)}
         <div class="card-body">
           <h3>${esc(m.name)}</h3>
           <p>${esc(m.description)}</p>
           <div class="meta">
+            ${EDITIONS[m.edition] ? `<span class="chip chip-${esc(m.edition)}">${EDITIONS[m.edition]}</span>` : ""}
             ${m.loader ? `<span class="chip">${esc(m.loader)}</span>` : ""}
-            ${(m.versions || []).map((v) => `<span class="chip">${esc(v)}</span>`).join("")}
+            ${(m.versions || []).slice(0, 3).map((v) => `<span class="chip">${esc(v)}</span>`).join("")}
           </div>
         </div>
         <div class="card-foot">
-          <small>${esc(m.size || "")}</small>
-          <a class="mc-btn mc-btn-green" href="${esc(safeUrl(m.file))}" download data-dl>⬇ تحميل</a>
+          <small>${esc(m.size || "")}${dl ? ` · ⬇ ${fmtNum(dl)}` : ""}</small>
+          ${file ? `<a class="mc-btn mc-btn-green" href="${esc(file)}" rel="noopener" data-dl>⬇ تحميل</a>` : ""}
         </div>
-      </article>`).join("");
+      </article>`;
   }
 
-  $("#grid").addEventListener("click", (e) => {
+  function paintColors(root) {
+    root.querySelectorAll(".thumb[data-color]").forEach((el) => { el.style.backgroundColor = el.dataset.color; });
+  }
+
+  function showEmpty(msg) {
+    $("#empty").textContent = msg;
+    $("#empty").hidden = false;
+  }
+
+  function render() {
+    const list = filtered();
+    $("#empty").hidden = true;
+    if (!state.mods.length) showEmpty("قريباً! أول الأعمال في الطريق ⛏");
+    else if (!list.length) showEmpty("ما لقينا شي يطابق بحثك 🧐");
+    $("#grid").innerHTML = list.map(cardHtml).join("");
+    paintColors($("#grid"));
+
+    const feat = state.mods.filter((m) => m.featured === true).slice(0, 1)[0];
+    const fs = $("#featured");
+    fs.hidden = !feat;
+    if (feat && !fs.dataset.done) {
+      fs.dataset.done = "1";
+      fs.innerHTML = `<div class="feature-card" data-id="${esc(feat.id)}" tabindex="0">
+        ${thumbHtml(feat, true)}
+        <div class="feature-body">
+          <span class="kicker">⭐ العمل المميز</span>
+          <h2>${esc(feat.name)}</h2>
+          <p>${esc(feat.description)}</p>
+          <button class="mc-btn mc-btn-gold" type="button">التفاصيل والتحميل</button>
+        </div>
+      </div>`;
+      paintColors(fs);
+    }
+  }
+
+  const openFromEvent = (e) => {
     if (e.target.closest("[data-dl]")) return;
-    const card = e.target.closest(".card");
-    if (card) openModal(card.dataset.id);
-  });
-  $("#grid").addEventListener("keydown", (e) => {
-    const card = e.target.closest(".card");
-    if (card && e.key === "Enter" && e.target === card) openModal(card.dataset.id);
+    const el = e.target.closest("[data-id]");
+    if (el && (e.type === "click" || (e.key === "Enter" && e.target === el))) openModal(el.dataset.id);
+  };
+  ["click", "keydown"].forEach((ev) => {
+    $("#grid").addEventListener(ev, openFromEvent);
+    $("#featured").addEventListener(ev, openFromEvent);
   });
 
+  /* ---------- Details modal ---------- */
   function openModal(id) {
     const m = state.mods.find((x) => x.id === id);
     if (!m) return;
     const t = TYPES[m.type] || { label: m.type };
     const pageUrl = `${location.origin}${location.pathname}#${encodeURIComponent(m.id)}`;
+    const shots = (m.screenshots || []).map(safeUrl).filter(Boolean);
+    const video = ytId(m.video);
+    const file = safeUrl(m.file);
+    const dl = MC.downloadsOf(m, state.counts);
+    const rows = [
+      ["النوع", t.label],
+      ["النسخة", EDITIONS[m.edition]],
+      ["المحمّل / الصيغة", m.loader],
+      ["إصدارات ماين كرافت", (m.versions || []).join("، ")],
+      ["إصدار الملف", m.version],
+      ["الحجم", m.size],
+      ["التحميلات", dl ? fmtNum(dl) : ""],
+      ["تاريخ النشر", m.date],
+      ["آخر تحديث", m.updated && m.updated !== m.date ? m.updated : ""],
+    ].filter(([, v]) => v);
+
     $("#modalBody").innerHTML = `
-      ${thumb(m)}
+      ${thumbHtml(m, true)}
       <div class="modal-content">
-        <h2>${esc(m.name)}</h2>
-        <p>${esc(m.description)}</p>
-        ${m.details ? `<p>${esc(m.details)}</p>` : ""}
-        <table class="info-table">
-          <tr><td>النوع</td><td>${esc(t.label)}</td></tr>
-          ${m.loader ? `<tr><td>المحمّل / الصيغة</td><td>${esc(m.loader)}</td></tr>` : ""}
-          <tr><td>إصدارات ماين كرافت</td><td dir="ltr" style="text-align:right">${esc((m.versions || []).join(", "))}</td></tr>
-          ${m.version ? `<tr><td>إصدار الملف</td><td>${esc(m.version)}</td></tr>` : ""}
-          ${m.size ? `<tr><td>الحجم</td><td>${esc(m.size)}</td></tr>` : ""}
-          ${m.date ? `<tr><td>تاريخ النشر</td><td>${esc(m.date)}</td></tr>` : ""}
-        </table>
+        <h2 id="modalTitle">${esc(m.name)}</h2>
+        <p class="lead">${esc(m.description)}</p>
+        ${m.details ? `<div class="details-text">${esc(m.details).replace(/\n/g, "<br>")}</div>` : ""}
+        ${shots.length ? `<h4>صور</h4><div class="gallery">${shots.map((s, i) =>
+          `<button type="button" class="shot" data-src="${esc(s)}" aria-label="صورة ${i + 1}"><img src="${esc(s)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
+        ${video ? `<h4>فيديو</h4><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${video}" title="فيديو ${esc(m.name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ""}
+        <table class="info-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
         ${(m.tags || []).length ? `<h4>الوسوم</h4><div class="meta">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
-        ${(m.changelog || []).length ? `<h4>سجل التحديثات</h4><ul>${m.changelog.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+        ${(m.changelog || []).length ? `<h4>سجل التحديثات</h4><ul class="changelog">${m.changelog.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
         <div class="actions">
-          <a class="mc-btn mc-btn-green" href="${esc(safeUrl(m.file))}" download>⬇ تحميل ${esc(m.size || "")}</a>
-          <button class="mc-btn mc-btn-gold" id="shareBtn">🔗 نسخ الرابط</button>
+          ${file ? `<a class="mc-btn mc-btn-green" href="${esc(file)}" rel="noopener">⬇ تحميل ${esc(m.size || "")}</a>` : ""}
+          <button class="mc-btn mc-btn-gold" type="button" id="shareBtn">🔗 نسخ الرابط</button>
         </div>
       </div>`;
-    $("#shareBtn").onclick = async (e) => {
+    paintColors($("#modalBody"));
+
+    $("#modalBody").querySelectorAll(".shot").forEach((b) => b.addEventListener("click", () => {
+      const thumb = $("#modalBody .thumb");
+      let img = thumb.querySelector("img");
+      if (!img) {
+        img = document.createElement("img");
+        thumb.prepend(img);
+        thumb.classList.remove("generated");
+        thumb.querySelector(".thumb-icon")?.remove();
+      }
+      img.src = b.dataset.src;
+      thumb.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }));
+    $("#shareBtn").addEventListener("click", async (e) => {
       try { await navigator.clipboard.writeText(pageUrl); e.target.textContent = "✔ تم النسخ"; }
       catch { prompt("انسخ الرابط:", pageUrl); }
-    };
+    });
     history.replaceState(null, "", `#${encodeURIComponent(m.id)}`);
-    $("#modal").showModal();
+    if (!modal.open) modal.showModal();
+    modal.scrollTop = 0;
   }
 
   function openFromHash() {
-    const id = decodeURIComponent(location.hash.slice(1));
+    let id = "";
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch { /* bad hash */ }
     if (id && state.mods.some((m) => m.id === id)) openModal(id);
   }
 
   const modal = $("#modal");
-  $("#closeModal").onclick = () => modal.close();
+  $("#closeModal").addEventListener("click", () => modal.close());
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
-  modal.addEventListener("close", () => history.replaceState(null, "", location.pathname));
+  modal.addEventListener("close", () => {
+    $("#modalBody").innerHTML = ""; // stops any playing video
+    history.replaceState(null, "", location.pathname + location.search);
+  });
+  window.addEventListener("hashchange", openFromHash);
 })();

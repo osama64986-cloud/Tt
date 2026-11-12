@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>لوحة التحكم</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/admin.css">
+</head>
+<body class="admin">
+  <nav class="nav admin-nav">
+    <a href="./" class="logo"><span class="logo-block" aria-hidden="true"></span>لوحة التحكم</a>
+    <div class="nav-links">
+      <a href="./" target="_blank" rel="noopener">عرض الموقع ↗</a>
+      <button class="link-btn" id="logoutBtn" hidden>تسجيل خروج</button>
+    </div>
+  </nav>
+
+  <main class="section">
+    <!-- Login -->
+    <section id="loginView" class="panel narrow" hidden>
+      <h2>🔐 دخول صاحب الموقع</h2>
+      <p class="muted">هذي الصفحة لك أنت بس. الدخول يكون بمفتاح من GitHub، وبدونه ما أحد يقدر يغيّر شي حتى لو فتح الصفحة.</p>
+      <label>المستودع
+        <input id="repoInput" dir="ltr" placeholder="owner/repo" autocomplete="off" spellcheck="false">
+      </label>
+      <label>مفتاح GitHub (Fine-grained token)
+        <input id="tokenInput" type="password" dir="ltr" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+      </label>
+      <label class="check"><input type="checkbox" id="rememberInput"> تذكرني على هذا الجهاز (لا تفعّلها على جهاز غيرك)</label>
+      <button class="mc-btn mc-btn-green" id="loginBtn">دخول</button>
+      <p class="error" id="loginError" role="alert"></p>
+      <details class="help">
+        <summary>كيف أسوي المفتاح؟ (مرة وحدة بس)</summary>
+        <ol>
+          <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">صفحة إنشاء مفتاح جديد</a> في GitHub.</li>
+          <li><b>Token name:</b> اكتب مثلاً <code>admin-site</code>، و<b>Expiration:</b> اختر 90 يوم.</li>
+          <li><b>Repository access:</b> اختر <b>Only select repositories</b> وحدد مستودع الموقع بس.</li>
+          <li><b>Permissions → Repository permissions:</b>
+            <ul>
+              <li><b>Contents</b>: Read and write</li>
+              <li><b>Actions</b>: Read and write</li>
+            </ul>
+          </li>
+          <li>اضغط <b>Generate token</b> وانسخه والصقه هنا.</li>
+        </ol>
+        <p class="muted">⚠️ لا تعطي المفتاح لأي أحد ولا تنشره. إذا تسرب، احذفه من نفس الصفحة في GitHub وسوّ واحد جديد.</p>
+      </details>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashView" hidden>
+      <div class="dash-head">
+        <div>
+          <h2>أهلاً 👋 <span id="whoami"></span></h2>
+          <p class="muted" id="dashSummary"></p>
+        </div>
+        <div class="dash-actions">
+          <button class="mc-btn mc-btn-green" id="newBtn">➕ رفع عمل جديد</button>
+          <button class="mc-btn" id="settingsBtn">⚙ إعدادات الموقع</button>
+          <button class="mc-btn" id="reloadBtn" title="تحديث">⟳</button>
+        </div>
+      </div>
+      <div id="jobs"></div>
+      <div id="itemList" class="item-list"></div>
+    </section>
+  </main>
+
+  <!-- Item editor -->
+  <dialog id="editor" class="modal admin-modal" aria-labelledby="editorTitle">
+    <button class="close" type="button" data-close aria-label="إغلاق">✕</button>
+    <form id="itemForm" class="modal-content" novalidate>
+      <h2 id="editorTitle">رفع عمل جديد</h2>
+      <div class="form-grid">
+        <label class="full">الاسم *<input name="name" maxlength="80" required></label>
+        <label>المعرّف (بالإنجليزي، للرابط) *<input name="id" dir="ltr" maxlength="50" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+        <label>النوع *
+          <select name="type" required></select>
+        </label>
+        <label>النسخة *
+          <select name="edition" required>
+            <option value="java">Java</option>
+            <option value="bedrock">Bedrock</option>
+          </select>
+        </label>
+        <label>المحمّل / الصيغة<input name="loader" maxlength="40" list="loaders" placeholder="Fabric">
+          <datalist id="loaders">
+            <option value="Fabric"><option value="Forge"><option value="NeoForge"><option value="Quilt">
+            <option value="Bedrock Add-on"><option value="Resource Pack"><option value="Behavior Pack">
+            <option value="Iris / OptiFine"><option value="Map"><option value="World">
+          </datalist>
+        </label>
+        <label>إصدارات ماين كرافت * <small>(افصل بفاصلة)</small><input name="versions" dir="ltr" maxlength="200" placeholder="1.21.1, 1.20.1" required></label>
+        <label>إصدار الملف<input name="version" dir="ltr" maxlength="30" placeholder="1.0.0"></label>
+        <label class="full">وصف قصير * <small>(يظهر على البطاقة)</small><input name="description" maxlength="200" required></label>
+        <label class="full">شرح مفصّل<textarea name="details" rows="4" maxlength="4000"></textarea></label>
+        <label>الوسوم <small>(افصل بفاصلة)</small><input name="tags" maxlength="200" placeholder="سحر، أسلحة"></label>
+        <label>رابط فيديو يوتيوب<input name="video" dir="ltr" maxlength="200" placeholder="https://youtu.be/..."></label>
+        <label>لون البطاقة (إذا ما فيه صورة)<input name="color" type="color" value="#5d9c3b"></label>
+        <label class="check"><input type="checkbox" name="featured"> ⭐ عمل مميز (يظهر بالأعلى)</label>
+        <label class="full">ملاحظة التحديث <small>(تنضاف لسجل التحديثات)</small><input name="changelogNote" maxlength="200" placeholder="الإصدار الأول"></label>
+      </div>
+
+      <fieldset class="files">
+        <legend>📦 الملف</legend>
+        <div class="seg">
+          <label><input type="radio" name="source" value="upload" checked> رفع ملف (حتى 95MB)</label>
+          <label><input type="radio" name="source" value="link"> رابط خارجي</label>
+        </div>
+        <div data-source="upload">
+          <input type="file" name="file" accept=".jar,.zip,.mcaddon,.mcpack,.mcworld,.mctemplate,.rar,.7z">
+          <p class="muted" id="fileHint"></p>
+        </div>
+        <div data-source="link" hidden>
+          <input name="externalUrl" dir="ltr" placeholder="https://www.mediafire.com/..." maxlength="500">
+          <input name="externalSize" placeholder="الحجم مثل 150 MB" maxlength="20">
+          <p class="muted">للملفات الأكبر من 95MB: ارفعها على Releases أو MediaFire أو CurseForge والصق الرابط.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="files">
+        <legend>🖼 الصور</legend>
+        <label>صورة الغلاف<input type="file" name="cover" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+        <label>صور إضافية (حتى 6)<input type="file" name="screenshots" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
+        <p class="muted">الصور تنضغط تلقائياً قبل الرفع. إذا اخترت صور جديدة تنحذف القديمة.</p>
+        <div class="previews" id="previews"></div>
+      </fieldset>
+
+      <p class="error" id="formError" role="alert"></p>
+      <div class="actions">
+        <button class="mc-btn mc-btn-green" type="submit" id="saveBtn">💾 نشر</button>
+        <button class="mc-btn" type="button" data-close>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="settings" class="modal admin-modal" aria-labelledby="settingsTitle">
+    <button class="close" type="button" data-close aria-label="إغلاق">✕</button>
+    <form id="settingsForm" class="modal-content" novalidate>
+      <h2 id="settingsTitle">⚙ إعدادات الموقع</h2>
+      <div class="form-grid">
+        <label>اسم الموقع<input name="name" maxlength="60"></label>
+        <label>اسمك<input name="author" maxlength="60"></label>
+        <label class="full">الشعار تحت العنوان<input name="tagline" maxlength="160"></label>
+        <label class="full">نبذة "من أنا"<textarea name="about" rows="3" maxlength="600"></textarea></label>
+        <label>يوتيوب<input name="youtube" dir="ltr" placeholder="https://youtube.com/@..." maxlength="300"></label>
+        <label>ديسكورد<input name="discord" dir="ltr" placeholder="https://discord.gg/..." maxlength="300"></label>
+        <label>تيك توك<input name="tiktok" dir="ltr" placeholder="https://tiktok.com/@..." maxlength="300"></label>
+        <label>موقع آخر<input name="website" dir="ltr" placeholder="https://..." maxlength="300"></label>
+      </div>
+      <p class="error" id="settingsError" role="alert"></p>
+      <div class="actions">
+        <button class="mc-btn mc-btn-green" type="submit">💾 حفظ</button>
+        <button class="mc-btn" type="button" data-close>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="assets/common.js"></script>
+  <script src="assets/admin.js"></script>
+</body>
+</html>

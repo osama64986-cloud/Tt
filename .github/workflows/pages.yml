@@ -3,7 +3,9 @@ name: Deploy site to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore: ["README.md"]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -12,7 +14,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -22,9 +24,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Collect public files only
+        run: |
+          mkdir _site
+          cp -r index.html admin.html 404.html mods.json assets images downloads _site/
+          touch _site/.nojekyll
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

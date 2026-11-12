@@ -3,19 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عالم المودات — Minecraft Mods</title>
-  <meta name="description" content="حمّل مودات وتكسترات وخرائط وعوالم ماين كرافت مجاناً">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2379553a'/><rect width='16' height='5' fill='%235d9c3b'/><rect y='5' x='2' width='3' height='2' fill='%235d9c3b'/><rect y='5' x='9' width='2' height='3' fill='%235d9c3b'/></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>عالم المودات — Minecraft</title>
+  <meta name="description" content="حمّل مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً — جافا وبيدروك">
+  <meta property="og:title" content="عالم المودات — Minecraft">
+  <meta property="og:description" content="مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#5d9c3b">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+  <a class="skip" href="#mods">تخطَّ إلى التحميلات</a>
   <header class="hero">
-    <div class="sky"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <div class="sky" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
     <nav class="nav">
-      <a href="#" class="logo"><span class="logo-block"></span><span id="siteName">عالم المودات</span></a>
+      <a href="./" class="logo"><span class="logo-block" aria-hidden="true"></span><span id="siteName">عالم المودات</span></a>
       <div class="nav-links">
         <a href="#mods">التحميلات</a>
         <a href="#install">طريقة التثبيت</a>
@@ -25,79 +32,84 @@
     <div class="hero-content">
       <h1 class="pixel-title">MOD<span>WORLD</span></h1>
       <p id="tagline">مودات، تكسترات، خرائط وعوالم ماين كرافت</p>
-      <div class="stats" id="stats"></div>
+      <div class="stats" id="stats" aria-live="polite"></div>
       <a href="#mods" class="mc-btn mc-btn-green">ابدأ التحميل ⬇</a>
     </div>
-    <div class="ground"></div>
+    <div class="ground" aria-hidden="true"></div>
   </header>
 
   <main>
+    <section id="featured" class="section featured" hidden></section>
+
     <section id="mods" class="section">
+      <h2 class="section-title">كل الأعمال</h2>
       <div class="toolbar">
-        <input id="search" type="search" placeholder="🔍 ابحث عن مود، تكستر، خريطة...">
+        <input id="search" type="search" placeholder="🔍 ابحث عن مود، تكستر، خريطة..." aria-label="بحث">
+        <select id="editionFilter" aria-label="النسخة">
+          <option value="">جافا + بيدروك</option>
+          <option value="java">Java فقط</option>
+          <option value="bedrock">Bedrock فقط</option>
+        </select>
         <select id="versionFilter" aria-label="الإصدار"><option value="">كل الإصدارات</option></select>
         <select id="sortBy" aria-label="الترتيب">
           <option value="new">الأحدث</option>
+          <option value="popular">الأكثر تحميلاً</option>
           <option value="name">بالاسم</option>
         </select>
       </div>
-      <div class="tabs" id="tabs">
-        <button class="tab active" data-type="">الكل</button>
-        <button class="tab" data-type="mod">⚒ مودات</button>
-        <button class="tab" data-type="texture">🎨 تكسترات</button>
-        <button class="tab" data-type="map">🗺 خرائط</button>
-        <button class="tab" data-type="world">🌍 عوالم</button>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="grid" id="grid" aria-live="polite">
+        <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
       </div>
-      <div class="grid" id="grid"></div>
-      <p class="empty" id="empty" hidden>ما لقينا شي يطابق بحثك 🧐</p>
+      <p class="empty" id="empty" hidden></p>
     </section>
 
     <section id="install" class="section">
       <h2 class="section-title">طريقة التثبيت</h2>
       <div class="install-grid">
-        <div class="panel">
-          <h3>⚒ المودات (.jar)</h3>
+        <details class="panel" open>
+          <summary>⚒ مودات جافا (.jar)</summary>
           <ol>
-            <li>ثبّت <b>Fabric</b> أو <b>Forge</b> حسب ما مكتوب على المود.</li>
+            <li>ثبّت <b>Fabric</b> أو <b>Forge</b> أو <b>NeoForge</b> حسب المكتوب على المود.</li>
             <li>افتح مجلد <code>.minecraft</code> (اضغط <code>Win+R</code> واكتب <code>%appdata%</code>).</li>
-            <li>حط ملف الـ <code>.jar</code> داخل مجلد <code>mods</code>.</li>
+            <li>حط ملف <code>.jar</code> داخل مجلد <code>mods</code>.</li>
             <li>شغّل اللعبة بالبروفايل الصحيح.</li>
           </ol>
-        </div>
-        <div class="panel">
-          <h3>🎨 التكسترات (.zip)</h3>
+        </details>
+        <details class="panel" open>
+          <summary>🧩 إضافات بيدروك (.mcaddon / .mcpack)</summary>
+          <ol>
+            <li>حمّل الملف وافتحه، وماين كرافت يستورده لحاله.</li>
+            <li>عند إنشاء العالم فعّل الحزم من <b>Behavior Packs</b> و<b>Resource Packs</b>.</li>
+            <li>إذا الإضافة تحتاج، فعّل <b>Experiments</b>.</li>
+            <li>على الجوال: افتح الملف من التنزيلات واختر Minecraft.</li>
+          </ol>
+        </details>
+        <details class="panel">
+          <summary>🎨 التكسترات والشيدرات (.zip)</summary>
           <ol>
             <li>لا تفك الضغط عن الملف.</li>
-            <li>حطه داخل مجلد <code>resourcepacks</code>.</li>
-            <li>من داخل اللعبة: Options ← Resource Packs ← فعّلها.</li>
+            <li>التكسترات داخل <code>resourcepacks</code>، والشيدرات داخل <code>shaderpacks</code> (تحتاج Iris أو OptiFine).</li>
+            <li>فعّلها من الإعدادات داخل اللعبة.</li>
           </ol>
-        </div>
-        <div class="panel">
-          <h3>📱 إضافات البيدروك (.mcaddon)</h3>
+        </details>
+        <details class="panel">
+          <summary>🗺 الخرائط والعوالم</summary>
           <ol>
-            <li>حمّل ملف <code>.mcaddon</code> (فيه البيهيفر باك والريسورس باك معاً).</li>
-            <li>افتحه، وماين كرافت راح يستورده لحاله.</li>
-            <li>عند إنشاء العالم فعّل الحزمتين من <b>Behavior Packs</b> و<b>Resource Packs</b>.</li>
-            <li>إذا الإضافة تحتاج، فعّل <b>Experiments</b> من الإعدادات.</li>
+            <li><b>جافا:</b> فك الضغط وانقل المجلد إلى <code>saves</code>.</li>
+            <li><b>بيدروك:</b> افتح ملف <code>.mcworld</code> مباشرة.</li>
+            <li>راح يطلع العالم في قائمة العوالم.</li>
           </ol>
-        </div>
-        <div class="panel">
-          <h3>🗺 الخرائط والعوالم</h3>
-          <ol>
-            <li>فك ضغط الملف.</li>
-            <li>انقل المجلد داخل مجلد <code>saves</code>.</li>
-            <li>راح يطلع العالم في قائمة Singleplayer.</li>
-          </ol>
-        </div>
+        </details>
       </div>
     </section>
 
     <section id="about" class="section">
       <h2 class="section-title">من أنا</h2>
       <div class="panel about">
-        <div class="avatar"></div>
+        <div class="avatar" aria-hidden="true"></div>
         <div>
-          <p>أهلاً! أنا <b id="authorName">Osama</b>، أصنع مودات وتكسترات وخرائط ماين كرافت وأشاركها مجاناً مع الجميع.</p>
+          <p id="aboutText">أهلاً! أصنع مودات وتكسترات وخرائط ماين كرافت وأشاركها مجاناً مع الجميع.</p>
           <p>إذا استخدمت شي من أعمالي في فيديو أو سيرفر، اذكر المصدر 💚</p>
           <div class="socials" id="socials"></div>
         </div>
@@ -106,14 +118,15 @@
   </main>
 
   <footer class="footer">
-    <p>© <span id="year"></span> <span id="footerName">عالم المودات</span> — غير تابع لـ Mojang أو Microsoft.</p>
+    <p>© <span id="year"></span> <span id="footerName">عالم المودات</span> — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
   </footer>
 
-  <dialog id="modal" class="modal">
+  <dialog id="modal" class="modal" aria-labelledby="modalTitle">
     <button class="close" id="closeModal" aria-label="إغلاق">✕</button>
     <div id="modalBody"></div>
   </dialog>
 
+  <script src="assets/common.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>
