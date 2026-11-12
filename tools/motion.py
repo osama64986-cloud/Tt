@@ -11,7 +11,7 @@ move.arms - the first of our animations in the game's list):
   v.nb_gs     ground speed in m/s, smoothed
   v.nb_spr    0..1 sprinting, smoothed
   v.nb_fwd    -1..1 walking direction against the body's facing (-1 = backwards)
-  v.nb_side   0..1 how much of the movement is sideways
+  v.nb_side   0..1 how much of the movement is sideways, v.nb_ss the same with its sign
   v.nb_air    0..1 in the air, smoothed
   v.nb_airt   seconds in the air so far
   v.nb_vy     last vertical speed while in the air (for the landing)
@@ -49,6 +49,8 @@ STATE = "!query.is_in_ui ? { " + "; ".join([
     "t.sd = t.len > 0.004 ? math.abs(t.mx * math.cos(t.yaw) + t.mz * math.sin(t.yaw)) / t.len : (v.nb_side ?? 0.0)",
     "v.nb_fwd = math.lerp(v.nb_fwd ?? 1.0, t.f, math.clamp(t.dt * 9.0, 0.0, 1.0))",
     "v.nb_side = math.lerp(v.nb_side ?? 0.0, t.sd, math.clamp(t.dt * 9.0, 0.0, 1.0))",
+    "t.ss = t.len > 0.004 ? (t.mx * math.cos(t.yaw) + t.mz * math.sin(t.yaw)) / t.len : (v.nb_ss ?? 0.0)",
+    "v.nb_ss = math.lerp(v.nb_ss ?? 0.0, t.ss, math.clamp(t.dt * 7.0, 0.0, 1.0))",
     # air time, take-off leg, landing
     "t.grounded = query.is_on_ground || query.is_in_water || query.is_riding || query.is_gliding || query.is_sleeping || query.is_swimming",
     f"(!t.grounded && (v.nb_airt ?? 0.0) <= 0.0) ? {{ v.nb_lead = {S} >= 0.0 ? 1.0 : -1.0; }}",
@@ -94,112 +96,90 @@ def smooth(k):
     return f"(({k}) * ({k}) * (3.0 - 2.0 * ({k})))"
 
 
-# ---- jump phases (weights, each 0..1, already multiplied by being in the air)
-# 1 launch: the first moment after leaving the ground, legs still pushing, body stretched
-LAUNCH = f"({AIRW} * math.clamp(1.0 - {AT} / 0.12, 0.0, 1.0) * ({VY} > 0.0 ? 1.0 : 0.0))"
-# 3 unfold: on the way down the legs reach for the ground
-UNF = f"math.clamp((-{VY} - 0.5) / 5.0, 0.0, 1.0)"
-# long falls only: arms wheel and legs pedal (a normal jump never gets here)
-FLAIL = f"(math.clamp(({AT} - 0.3) / 0.3, 0.0, 1.0) * math.clamp((-{VY} - 8.0) / 5.0, 0.0, 1.0))"
-# 2 tuck: knees pulled up, eased in over ~0.15 s, gone as the unfold takes over
-TUCK = f"({AIRW} * {smooth(f'math.clamp(({AT} - 0.03) / 0.15, 0.0, 1.0)')} * (1.0 - {UNF}))"
-UNFW = f"({AIRW} * {UNF} * (1.0 - {FLAIL}))"
-FLW = f"({AIRW} * {FLAIL})"
-# 4 landing spring
+# ---- in the air
+# The legs never kick forward.  Jumping on the spot they hang almost straight
+# with one knee slightly bent; jumping on the move they trail behind while the
+# torso leans into the jump, so the whole body makes one leaping arc.  Moving
+# sideways the legs swing out to the side they come from.
+FWD = "(v.nb_fwd ?? 1.0)"
+SS = "(v.nb_ss ?? 0.0)"
+MV = "math.min((v.nb_gs ?? 0.0) / 4.0, 1.0)"
+BREATH = f"math.cos({LIFE} * 245.0)"
+# long falls only: arms open wide and wave a little
+FLAIL = f"(math.clamp(({AT} - 0.35) / 0.35, 0.0, 1.0) * math.clamp((-{VY} - 8.0) / 5.0, 0.0, 1.0))"
+# landing spring
 L = f"(math.clamp(-(v.nb_l ?? 0.0), 0.0, 1.3) * {UI})"
 REB = f"(math.clamp((v.nb_l ?? 0.0), 0.0, 0.5) * {UI})"
 
 
-def mov(standing, moving):
-    return f"math.lerp({standing}, {moving}, {MOV})"
-
-
-def jump(launch, tuck, unfold, flail):
-    return f"({LAUNCH} * ({launch}) + {TUCK} * ({tuck}) + {UNFW} * ({unfold}) + {FLW} * ({flail}))"
+def inair(expr):
+    return f"({AIRW} * ({expr}))"
 
 
 def leg(side):
     """side: +1 left leg, -1 right leg"""
     sw = "" if side > 0 else "-"
     lift = f"math.max(0.0, {sw}{C})"            # this leg is in its swing phase
-    lead = LEADL if side > 0 else LEADR
-    trail = LEADR if side > 0 else LEADL
-    ph = "0.0" if side > 0 else "180.0"
-
-    def lt(a, b):
-        return f"({lead} * {a} + {trail} * {b})"
+    lead = LEADL if side > 0 else LEADR         # the leg that led the take-off keeps its knee a little bent
     # crouched steps are slow but still clearly visible, so they get extra swing
     amp = f"((24.0 + 16.0 * (v.nb_spr ?? 0.0)) * (1.0 - 0.12 * {BACK} / math.max({W}, 0.01)) * (1.0 + 1.1 * math.clamp({CR}, 0.0, 1.0)) * {W})"
-    # The legs have no knee: a bent knee is shown by lifting the leg (shorter) and
-    # bringing it forward, with only a little rotation.
-    jx = jump(
-        "12.0",                                                               # launch: legs straight, pushing down and back
-        mov(lt("-30.0", "-16.0"), f"({lt('-46.0', '30.0')} * {JS})"),        # tuck: both knees up / a running leap
-        mov("-9.0", lt("-24.0", "8.0")),                                      # unfold: reaching for the ground
-        f"(-8.0 + 28.0 * math.sin({LIFE} * 520.0 + {ph}))",                   # long fall: pedalling
-    )
-    jy = jump("0.0", mov(lt("3.6", "2.4"), lt("3.6", "0.4")), mov("0.6", lt("0.8", "0.0")),
-              f"(1.2 * math.max(0.0, math.sin({LIFE} * 520.0 + {ph} + 90.0)))")
-    jz = jump("0.0", mov(lt("-2.6", "-1.4"), lt("-3.0", "0.6")), mov("-0.4", lt("-1.2", "0.0")), "0.0")
-    jspread = jump("0.0", "3.0", "4.0", f"(7.0 + 4.0 * math.sin({LIFE} * 430.0 + {ph}))")
+    back = "46.0" if side > 0 else "40.0"       # the two legs trail by slightly different amounts
+    air_x = inair(f"({lead} * 7.0 + (1.0 - {lead}) * 5.0) - 2.0 * {BREATH} + {FWD} * {back} * {MV}")
+    air_z = inair(f"({side * -4.0} - 34.0 * {SS}) * {MV}")
+    air_y = inair(f"{lead} * 3.0 * (1.0 - 0.5 * {MV}) + (0.5 - 0.5 * {FWD}) * 1.5 * {MV}")
+    air_fz = inair(f"{lead} * -3.0 * (1.0 - 0.5 * {MV}) + {FWD} * -1.5 * {MV}")
     rot_x = (
         f"{'-' if side > 0 else ''}{amp} * {S} * {K}"                     # stride
         f" - 28.0 * {CR}"                                                   # crouch: legs stay upright under the tilted body
-        f" + {jx}"
-        f" - 10.0 * {L}"                                                    # landing: knees forward
+        f" + {air_x}"
+        f" + 10.0 * {L}"                                                    # landing: thighs slope back, feet stay forward
     )
     rot_z = (
         f"{side * -0.1} + {side * -1.0} * ({SIDE} * 9.0 * math.max(0.0, {sw}{S})"  # sidestep: open the moving leg
-        f" + 2.5 * {CR} + {jspread} + 3.0 * {L})"
+        f" + 2.5 * {CR} + 2.0 * {L}) + {air_z}"
     )
-    rot_y = f"{side * -0.1} + {side * -8.0} * {L}"                          # feet turn out as the knees bend
+    rot_y = f"{side * -0.1} + {side * -10.0} * {L}"                         # toes turn out as the knees bend
     pos = [
-        0.0,
-        f"({lift} * (1.3 + 1.6 * (v.nb_spr ?? 0.0)) * {W}) + {jy} + 2.2 * {L}",   # foot lifts in the stride / knee bends
-        f"-{lift} * 1.0 * {K} * {W} + {jz} - 1.6 * {L}",                         # and travels forward with it
+        f"{side * 0.5} * {L}",
+        f"({lift} * (1.3 + 1.6 * (v.nb_spr ?? 0.0)) * {W}) + {air_y} + 0.8 * {L}",
+        f"-{lift} * 1.0 * {K} * {W} + {air_fz} - 2.0 * {L}",
     ]
     return {"rotation": [rot_x, rot_y, rot_z], "position": pos}
 
 
 def arm(side):
     """side: +1 left arm, -1 right arm"""
-    lead = LEADL if side > 0 else LEADR     # the leg on this side led the jump
-    other = LEADR if side > 0 else LEADL
     ph = "0.0" if side > 0 else "180.0"
-
-    def lt(a, b):
-        return f"({lead} * {a} + {other} * {b})"
     amp = f"((20.0 + 30.0 * (v.nb_spr ?? 0.0)) * (1.0 - 0.35 * {BACK} / math.max({W}, 0.01)) * {W})"
     swing = f"math.sin({PHASE} + 12.0)"
-    jx = jump(
-        mov("-78.0", f"({lt('20.0', '-62.0')} * {JS})"),        # launch: arms drive up (running: the opposite arm)
-        mov("-42.0", f"({lt('26.0', '-46.0')} * {JS})"),        # tuck: arms up and forward for balance
-        mov("-20.0", "-14.0"),                                   # unfold: arms come down and open
-        f"(-70.0 + 55.0 * math.sin({LIFE} * 560.0 + {ph}))",     # long fall: wheeling
-    )
-    jout = jump("6.0", mov("16.0", "8.0"), "32.0", f"(50.0 + 18.0 * math.sin({LIFE} * 720.0 + {ph}))")
+    # in the air: arms sweep back with the leap (forward when jumping backwards), open a little
+    air_x = inair(f"-2.0 * {BREATH} + {FWD} * 26.0 * {MV} - {FLAIL} * (40.0 + 30.0 * math.sin({LIFE} * 380.0 + {ph}))")
+    air_out = inair(f"7.0 + {SS} * {side * 7.0} * {MV} + {FLAIL} * (38.0 + 10.0 * math.sin({LIFE} * 500.0 + {ph}))")
     rot_x = (
         f"{'' if side > 0 else '-'}{amp} * {swing} * {K}"                   # opposite to the leg on this side
         f" - 12.0 * {SPR}"                                                  # running: arms carried higher
         f" - 17.0 * {CR}"                                                   # crouch: hands low and ready
         f" + 10.0 * {RISE}"                                                 # standing up: arms swing back a touch
-        f" + {jx}"
-        f" - 24.0 * {L} + 10.0 * {REB}"                                     # landing: arms forward, then a small swing back
+        f" + {air_x}"
+        f" - 20.0 * {L} + 8.0 * {REB}"                                      # landing: arms forward, then a small swing back
     )
-    out = f"(2.0 + 2.0 * {SPR} + {jout} + 12.0 * {L} + 5.0 * {CR})"
+    out = f"(2.0 + 2.0 * {SPR} + {air_out} + 9.0 * {L} + 5.0 * {CR})"
     rot_z = f"{'-' if side > 0 else ''}{out}"
-    rot_y = f"{'' if side > 0 else '-'}math.sin({PHASE}) * 5.0 * {W}"
-    return {"rotation": [rot_x, rot_y, rot_z]}
+    rot_y = f"{'' if side > 0 else '-'}(math.sin({PHASE}) * 5.0 * {W} + {AIRW} * 7.0)"
+    return {"rotation": [rot_x, rot_y, rot_z], "position": [0.0, 0.0, inair(f"{FWD} * 1.25 * {MV}")]}
 
 
 def build():
-    lean = jump("-6.0", mov("6.0", f"(12.0 * {K})"), "4.0", f"(-8.0 + 3.0 * math.sin({LIFE} * 400.0))")
-    waist_rx = f"{UI} * (7.0 * {SPR} - 3.5 * {BACK} - 4.0 * {RISE}) + {lean} + 14.0 * {L} - 3.0 * {REB}"
+    # in the air the torso leans into the leap (back when jumping backwards) and tips to the side it moves to
+    lean = inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0) + math.lerp(-18.0, 34.0, {FWD} * 0.5 + 0.5) * {MV}")
+    tip = inair(f"-9.0 * {SS} * {MV}")
+    waist_rx = f"{UI} * (7.0 * {SPR} - 3.5 * {BACK} - 4.0 * {RISE}) + {lean} + 12.0 * {L} - 3.0 * {REB}"
     waist_ry = f"{UI} * 8.0 * {S} * {K} * {W}"
-    waist_rz = f"{UI} * 2.2 * {C} * {W}"
+    waist_rz = f"{UI} * 2.2 * {C} * {W} + {tip}"
     waist_py = (f"-(0.9 + 0.7 * (v.nb_spr ?? 0.0)) * {S} * {S} * {W}"     # lowest when the feet are apart
                 f" - 4.0 * {L} + 0.8 * {REB}")
-    head_x = f"1.0 * math.cos({PHASE} * 2.0) * {W} + 10.0 * {L} + " + jump("-6.0", "-3.0", "10.0", "12.0")
+    waist_pz = f"1.0 * {L}"
+    head_x = f"1.0 * math.cos({PHASE} * 2.0) * {W} + 12.0 * {L} + " + inair(f"4.0 + 4.0 * {FLAIL}")
     anims = {
         # move.arms is the first of our animations each frame: it also updates the state
         "animation.player.move.arms": {
@@ -215,7 +195,7 @@ def build():
             "bones": {
                 "leftleg": leg(1),
                 "rightleg": leg(-1),
-                "waist": {"rotation": [waist_rx, waist_ry, waist_rz], "position": [0.0, waist_py, 0.0]},
+                "waist": {"rotation": [waist_rx, waist_ry, waist_rz], "position": [0.0, waist_py, waist_pz]},
                 # head stays steady while the torso twists; small nod on landing
                 "head": {"rotation": [head_x,
                                       f"-5.0 * {S} * {K} * {W}", 0.0],
@@ -226,9 +206,9 @@ def build():
                 "root": {"rotation": [f"28.0 * {CR}", 0.0, 0.0],
                          "position": [0.0, f"1.25 * {CR}", f"9.0 * {CR}"],
                          # take-off stretch and landing squash, from the feet
-                         "scale": [f"1.0 - 0.02 * {LAUNCH} + 0.03 * {L} - 0.01 * {REB}",
-                                   f"1.0 + 0.05 * {LAUNCH} - 0.06 * {L} + 0.02 * {REB}",
-                                   f"1.0 - 0.02 * {LAUNCH} + 0.03 * {L} - 0.01 * {REB}"]},
+                         "scale": [f"1.0 + 0.025 * {L} - 0.01 * {REB}",
+                                   f"1.0 - 0.05 * {L} + 0.02 * {REB}",
+                                   f"1.0 + 0.025 * {L} - 0.01 * {REB}"]},
             },
         },
         # the game's own crouch pose snaps on and off; ours lives in move.legs above
