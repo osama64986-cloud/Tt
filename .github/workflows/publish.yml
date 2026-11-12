@@ -1,0 +1,79 @@
+name: Publish from admin panel
+
+# Started by admin.html with the owner's token. Only people with write access
+# to the repository can start a workflow_dispatch run.
+on:
+  workflow_dispatch:
+    inputs:
+      inbox:
+        description: "Inbox branch created by the admin panel (inbox/...)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate input
+        env:
+          INBOX: ${{ inputs.inbox }}
+        run: |
+          if [[ ! "$INBOX" =~ ^inbox/[a-z0-9-]{1,80}$ ]]; then
+            echo "::error::Invalid inbox branch name"; exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Fetch inbox
+        env:
+          INBOX: ${{ inputs.inbox }}
+        run: |
+          git fetch --no-tags --depth=1 origin "refs/heads/${INBOX}:refs/remotes/inbox"
+          mkdir -p "$RUNNER_TEMP/req"
+          # Extract only the inbox/ folder, outside the site checkout.
+          git archive refs/remotes/inbox inbox | tar -x -C "$RUNNER_TEMP/req"
+
+      - name: Apply request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          INBOX_DIR: ${{ runner.temp }}/req/inbox
+        run: python3 scripts/publish.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A mods.json images
+          if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
+          git commit -F .commit-msg
+          for i in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            git pull --rebase origin main
+          done
+          exit 1
+
+      - name: Remove inbox branch
+        if: always()
+        env:
+          INBOX: ${{ inputs.inbox }}
+        run: |
+          if [[ "$INBOX" =~ ^inbox/[a-z0-9-]{1,80}$ ]]; then
+            git push origin --delete "$INBOX" || true
+          fi
+
+  deploy:
+    needs: publish
+    permissions:
+      contents: write
+    uses: ./.github/workflows/pages.yml
