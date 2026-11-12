@@ -327,3 +327,55 @@ details.panel summary::marker { color: var(--gold); }
 .hash { margin-top: 14px; font-size: .85rem; color: var(--muted); }
 .hash summary { cursor: pointer; }
 .hash code { display: block; margin-top: 6px; word-break: break-all; user-select: all; }
+
+/* ---------- Easy-mode helpers ---------- */
+.nav-donate { background: #a93226; padding: 2px 12px; border: 2px solid #000; }
+.how { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding-bottom: 0; }
+.how-step {
+  flex: 1 1 200px; max-width: 280px; text-align: center; padding: 14px 12px;
+  background: var(--panel); border: 3px solid #000; box-shadow: inset 3px 3px 0 var(--border-light);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.how-step b { font-size: 1.15rem; }
+.how-step small { color: var(--muted); }
+.how-num {
+  width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 4px;
+  font-family: "Press Start 2P", monospace; font-size: .9rem; color: #000; background: var(--gold); border: 3px solid #000;
+}
+.how-arrow { font-size: 1.8rem; color: var(--gold); font-weight: 800; }
+.mc-btn-big { display: block; text-align: center; font-size: 1.35rem; padding: 14px 20px; }
+.mc-btn-wa { background: #1f8f4e; }
+.dl-box { background: #10240a; border: 3px solid var(--green); padding: 14px; margin: 14px 0; }
+.dl-box p { margin: 8px 0 0; }
+.fits { font-size: .95rem; }
+.dl-started { color: #7CFC00; font-weight: 800; font-size: 1.05rem; }
+.guide { background: #1f1f1f; border: 3px solid #000; padding: 14px 16px; margin-bottom: 8px; scroll-margin-top: 10px; }
+.guide h3 { margin: 0 0 10px; }
+.guide.flash { animation: flash 1.2s ease 2; }
+@keyframes flash { 50% { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(255, 216, 74, .35); } }
+.guide-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.guide-tabs button { flex: 1; font: inherit; font-weight: 800; padding: 8px; color: #ddd; background: var(--panel-2); border: 3px solid #000; cursor: pointer; }
+.guide-tabs button.active { background: var(--green); color: #fff; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding: 8px 46px 8px 0; min-height: 40px; border-bottom: 1px dashed #444; }
+.steps li:last-child { border-bottom: 0; }
+.steps li::before {
+  content: counter(s); position: absolute; right: 0; top: 6px; width: 32px; height: 32px; display: grid; place-items: center;
+  font-weight: 800; color: #000; background: var(--gold); border: 2px solid #000;
+}
+.muted-note { color: var(--muted); font-size: .9rem; margin: 10px 0 0; }
+.tags { margin-top: 10px; }
+.faq { display: grid; gap: 10px; }
+.faq details p { margin: 6px 0 0; color: #ddd; }
+@media (max-width: 600px) {
+  .how-arrow { transform: rotate(-90deg); }
+  .how-step { max-width: none; }
+  body { font-size: 1.05rem; }
+  .modal-content { padding: 16px; }
+}
+@media (max-width: 600px) {
+  .hero { min-height: 0; }
+  .hero-content { padding: 26px 16px 100px; }
+  .nav-links { gap: 12px; justify-content: center; }
+  .stats { margin-bottom: 18px; }
+}

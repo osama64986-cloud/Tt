@@ -32,7 +32,7 @@ EDITIONS = {"java", "bedrock"}
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HTTPS_RE = re.compile(r"^https://[^\s\"'<>\\`]+$", re.I)
 SITE_FIELDS = {"name": 60, "author": 60, "tagline": 160, "about": 600}
-SITE_LINKS = ("youtube", "discord", "tiktok", "website")
+SITE_LINKS = ("donate", "youtube", "discord", "tiktok", "website")
 MAX_FILE = 100 * 1024 * 1024
 MAX_IMAGE = 5 * 1024 * 1024
 # Only Minecraft content. Executables and scripts are refused even if the token leaks.

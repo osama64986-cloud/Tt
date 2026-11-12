@@ -26,7 +26,9 @@
       <div class="nav-links">
         <a href="#mods">التحميلات</a>
         <a href="#install">طريقة التثبيت</a>
+        <a href="#faq">مساعدة</a>
         <a href="#about">من أنا</a>
+        <a href="#" id="navDonate" class="nav-donate" target="_blank" rel="noopener noreferrer" hidden>❤ ادعمني</a>
       </div>
     </nav>
     <div class="hero-content">
@@ -39,6 +41,14 @@
   </header>
 
   <main>
+    <section class="section how" aria-label="شلون أحمّل">
+      <div class="how-step"><span class="how-num">1</span><b>اختار</b><small>دوّر على المود اللي يعجبك</small></div>
+      <div class="how-arrow" aria-hidden="true">←</div>
+      <div class="how-step"><span class="how-num">2</span><b>اضغط تحميل</b><small>الزر الأخضر الكبير</small></div>
+      <div class="how-arrow" aria-hidden="true">←</div>
+      <div class="how-step"><span class="how-num">3</span><b>اتبع الخطوات</b><small>نشرح لك بالضبط شنو تسوي</small></div>
+    </section>
+
     <section id="featured" class="section featured" hidden></section>
 
     <section id="mods" class="section">
@@ -101,6 +111,24 @@
             <li>راح يطلع العالم في قائمة العوالم.</li>
           </ol>
         </details>
+      </div>
+    </section>
+
+    <section id="faq" class="section">
+      <h2 class="section-title">❓ أسئلة شائعة</h2>
+      <div class="faq">
+        <details class="panel"><summary>شنو الفرق بين Java و Bedrock؟</summary>
+          <p><b>Java</b>: ماين كرافت الكمبيوتر الأصلية (اللانشر الأخضر).<br><b>Bedrock</b>: نسخة الجوال والإكس بوكس والبلايستيشن وماين كرافت ويندوز من المتجر.<br>اختار الفلتر اللي يناسب لعبتك فوق قائمة الأعمال.</p></details>
+        <details class="panel"><summary>ضغطت تحميل وما صار شي!</summary>
+          <p>شيّك على الإشعارات أو مجلد <b>التنزيلات</b>. إذا المتصفح سألك «تحميل؟» اضغط موافق. وإذا ما زال ما يشتغل، جرب متصفح ثاني مثل Chrome.</p></details>
+        <details class="panel"><summary>اللعبة تقول «Import Failed» أو الملف ما ينفتح</summary>
+          <p>تأكد إن الإصدار المكتوب على العمل نفس إصدار لعبتك، وإن الملف كامل التحميل (نفس الحجم). على الآيفون افتح الملف من تطبيق <b>Files</b> واختر <b>Share ← Minecraft</b>.</p></details>
+        <details class="panel"><summary>الإضافة انضافت بس ما تشتغل في العالم</summary>
+          <p>لازم تفعّلها داخل إعدادات العالم من <b>Behavior Packs</b> و<b>Resource Packs</b>، وبعض الإضافات تحتاج تفعيل <b>Experiments</b>.</p></details>
+        <details class="panel"><summary>المود (Java) يسوي كراش للعبة</summary>
+          <p>تأكد إنك مثبت المحمّل الصحيح (Fabric أو Forge، مكتوب على المود)، ونفس الإصدار، وإن المودات اللي يحتاجها موجودة (مثل Fabric API).</p></details>
+        <details class="panel"><summary>هل الملفات آمنة؟</summary>
+          <p>نعم. كل الملفات مرفوعة على GitHub، والموقع ما يقبل غير ملفات ماين كرافت (ما فيه ملفات .exe). ولكل ملف <b>بصمة</b> تقدر تتأكد منها إنه أصلي.</p></details>
       </div>
     </section>
 

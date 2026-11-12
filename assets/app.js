@@ -1,5 +1,5 @@
 (() => {
-  const { TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, fmtNum, isRecent } = MC;
+  const { guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, fmtNum, isRecent } = MC;
   const $ = (s) => document.querySelector(s);
   const state = { site: {}, mods: [], counts: {}, type: "", edition: "", q: "", version: "", sort: "new" };
 
@@ -43,11 +43,16 @@
     if (s.about) $("#aboutText").textContent = s.about;
     $("#year").textContent = new Date().getFullYear();
     const links = [
-      [s.youtube, "▶ يوتيوب"], [s.discord, "💬 ديسكورد"], [s.tiktok, "🎵 تيك توك"], [s.website, "🌐 موقع آخر"],
+      [s.donate, "❤ ادعمني"], [s.youtube, "▶ يوتيوب"], [s.discord, "💬 ديسكورد"], [s.tiktok, "🎵 تيك توك"], [s.website, "🌐 موقع آخر"],
     ].filter(([u]) => /^https:\/\//i.test(u || "") && safeUrl(u));
     $("#socials").innerHTML = links
       .map(([u, label]) => `<a class="mc-btn" href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${label}</a>`)
       .join("");
+    if (/^https:\/\//i.test(s.donate || "") && safeUrl(s.donate)) {
+      const a = $("#navDonate");
+      a.href = safeUrl(s.donate);
+      a.hidden = false;
+    }
     renderStats();
   }
 
@@ -141,7 +146,7 @@
         </div>
         <div class="card-foot">
           <small>${esc(m.size || "")}${dl ? ` · ⬇ ${fmtNum(dl)}` : ""}</small>
-          ${file ? `<a class="mc-btn mc-btn-green" href="${esc(file)}" rel="noopener" data-dl>⬇ تحميل</a>` : ""}
+          ${file ? `<button class="mc-btn mc-btn-green" type="button">⬇ تحميل</button>` : ""}
         </div>
       </article>`;
   }
@@ -213,22 +218,46 @@
       ["آخر تحديث", m.updated && m.updated !== m.date ? m.updated : ""],
     ].filter(([, v]) => v);
 
+    const guide = guideFor(m);
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const startTab = Math.max(0, guide.findIndex((g) => g.label.includes(mobile ? "جوال" : "كمبيوتر")));
+    const fits = [EDITIONS[m.edition], (m.versions || []).join("، ")].filter(Boolean).join(" ");
+    const shareText = encodeURIComponent(`${m.name} — ${pageUrl}`);
+    const donate = /^https:\/\//i.test(state.site.donate || "") ? safeUrl(state.site.donate) : "";
+
     $("#modalBody").innerHTML = `
       ${thumbHtml(m, true)}
       <div class="modal-content">
         <h2 id="modalTitle">${esc(m.name)}</h2>
         <p class="lead">${esc(m.description)}</p>
-        ${m.details ? `<div class="details-text">${esc(m.details).replace(/\n/g, "<br>")}</div>` : ""}
+
+        <div class="dl-box">
+          ${file ? `<a class="mc-btn mc-btn-green mc-btn-big" id="dlBtn" href="${esc(file)}" rel="noopener">⬇ تحميل ${esc(m.size || "")}</a>` : `<p>رابط التحميل غير متوفر حالياً.</p>`}
+          <p class="fits">✔ يشتغل على: <b>${esc(fits)}</b>${m.loader ? ` · يحتاج <b>${esc(m.loader)}</b>` : ""}</p>
+          <p class="dl-started" id="dlStarted" hidden>✔ بدأ التحميل! الحين سوّ الخطوات اللي تحت 👇</p>
+        </div>
+
+        <div class="guide" id="guide">
+          <h3>🛠 شلون أثبّته؟</h3>
+          ${guide.length > 1 ? `<div class="guide-tabs" role="tablist">${guide.map((g, i) =>
+            `<button type="button" role="tab" class="${i === startTab ? "active" : ""}" data-tab="${i}" aria-selected="${i === startTab}">${g.label}</button>`).join("")}</div>` : ""}
+          ${guide.map((g, i) => `<ol class="steps" data-panel="${i}" ${i === startTab ? "" : "hidden"}>${g.steps.map((st) => `<li>${st}</li>`).join("")}</ol>`).join("")}
+          <p class="muted-note">ما زبط؟ شوف <a href="#faq" data-close-modal>الأسئلة الشائعة</a>.</p>
+        </div>
+
+        ${m.details ? `<h4>عن هذا العمل</h4><div class="details-text">${esc(m.details).replace(/\n/g, "<br>")}</div>` : ""}
         ${shots.length ? `<h4>صور</h4><div class="gallery">${shots.map((s, i) =>
           `<button type="button" class="shot" data-src="${esc(s)}" aria-label="صورة ${i + 1}"><img src="${esc(s)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
         ${video ? `<h4>فيديو</h4><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${video}" title="فيديو ${esc(m.name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ""}
+        <h4>معلومات</h4>
         <table class="info-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
-        ${(m.tags || []).length ? `<h4>الوسوم</h4><div class="meta">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
+        ${(m.tags || []).length ? `<div class="meta tags">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
         ${(m.changelog || []).length ? `<h4>سجل التحديثات</h4><ul class="changelog">${m.changelog.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
         ${/^[0-9a-f]{64}$/.test(m.sha256 || "") ? `<details class="hash"><summary>🔒 بصمة الملف (SHA-256) للتأكد إنه أصلي</summary><code dir="ltr">${m.sha256}</code></details>` : ""}
         <div class="actions">
-          ${file ? `<a class="mc-btn mc-btn-green" href="${esc(file)}" rel="noopener">⬇ تحميل ${esc(m.size || "")}</a>` : ""}
+          <a class="mc-btn mc-btn-wa" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener noreferrer">📤 واتساب</a>
           <button class="mc-btn mc-btn-gold" type="button" id="shareBtn">🔗 نسخ الرابط</button>
+          ${donate ? `<a class="mc-btn mc-btn-red" href="${esc(donate)}" target="_blank" rel="noopener noreferrer">❤ ادعمني</a>` : ""}
         </div>
       </div>`;
     paintColors($("#modalBody"));
@@ -245,6 +274,16 @@
       img.src = b.dataset.src;
       thumb.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }));
+    $("#modalBody").querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => {
+      $("#modalBody").querySelectorAll("[data-tab]").forEach((x) => { x.classList.toggle("active", x === b); x.setAttribute("aria-selected", x === b); });
+      $("#modalBody").querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+    }));
+    $("#dlBtn")?.addEventListener("click", () => {
+      $("#dlStarted").hidden = false;
+      $("#guide").classList.add("flash");
+      setTimeout(() => $("#guide").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    });
+    $("#modalBody [data-close-modal]")?.addEventListener("click", () => modal.close());
     $("#shareBtn").addEventListener("click", async (e) => {
       try { await navigator.clipboard.writeText(pageUrl); e.target.textContent = "✔ تم النسخ"; }
       catch { prompt("انسخ الرابط:", pageUrl); }

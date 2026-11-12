@@ -518,7 +518,7 @@
 
   /* ---------- Settings ---------- */
   const sForm = $("#settingsForm");
-  const SITE_FIELDS = ["name", "author", "tagline", "about", "youtube", "discord", "tiktok", "website"];
+  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "website"];
   $("#settingsBtn").addEventListener("click", () => {
     SITE_FIELDS.forEach((k) => { sForm[k].value = data.site[k] || ""; });
     $("#settingsError").textContent = "";
@@ -530,7 +530,7 @@
     const site = {};
     for (const k of SITE_FIELDS) {
       const v = sForm[k].value.trim();
-      if (["youtube", "discord", "tiktok", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
+      if (["donate", "youtube", "discord", "tiktok", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
         $("#settingsError").textContent = "الروابط لازم تبدأ بـ https://";
         return;
       }
