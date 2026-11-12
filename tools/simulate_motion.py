@@ -101,7 +101,7 @@ def simulate(plan=None):
             "body_y_rotation": 0.0, "is_on_ground": float(on_ground), "vertical_speed": st["vy"],
             "is_in_water": 0.0, "is_riding": 0.0, "is_gliding": 0.0, "is_sleeping": 0.0, "is_swimming": 0.0,
             "is_crawling": 0.0, "is_in_ui": 0.0, "modified_distance_moved": st["dist"], "life_time": st["life"],
-            "target_x_rotation": 0.0, "is_first_person": 0.0, "is_local_player": 1.0,
+            "target_x_rotation": 0.0, "is_first_person": 0.0, "is_local_player": 0.0,
         }
         ctx["q"] = q
         ctx["v"].setdefault("attack_time", 0.0)

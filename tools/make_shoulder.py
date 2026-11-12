@@ -35,6 +35,12 @@ SHIFT = f"({ON} ? {SIDE} * query.get_pack_setting('nabd:shoulder_shift') * {PX_P
 
 
 def animation():
+    """Reads the in-game pack settings into variables; the shift itself is drawn by our
+    movement animation (motion.py), which falls back to the defaults if this file is
+    not loaded by a game version."""
+    setv = ("v.nb_sh_on = query.is_pack_setting_enabled('nabd:shoulder') ? 1.0 : 0.0; "
+            "v.nb_sh_side = query.is_pack_setting_selected('nabd:shoulder_side', 'right') ? -1.0 : 1.0; "
+            "v.nb_sh_amt = query.get_pack_setting('nabd:shoulder_shift') / 10.0; return 0.0;")
     j = {
         "format_version": "1.21.130",
         "animations": {
@@ -42,9 +48,7 @@ def animation():
                 "loop": True,
                 "bones": {
                     "waist": {"rotation": [0.0, 0.0, 0.0]},
-                    # sideways in the body's frame (the camera follows the head, which
-                    # never turns far from the body)
-                    "root": {"position": [f"-{SHIFT}", 0.0, 0.0]},
+                    "root": {"position": [setv, 0.0, 0.0]},
                 },
             }
         },

@@ -123,7 +123,7 @@ def leg(side):
     lead = LEADL if side > 0 else LEADR         # the leg that led the take-off keeps its knee a little bent
     # crouched steps are slow but still clearly visible, so they get extra swing
     amp = f"((24.0 + 16.0 * (v.nb_spr ?? 0.0)) * (1.0 - 0.12 * {BACK} / math.max({W}, 0.01)) * (1.0 + 1.1 * math.clamp({CR}, 0.0, 1.0)) * {W})"
-    back = "46.0" if side > 0 else "40.0"       # the two legs trail by slightly different amounts
+    back = "34.0" if side > 0 else "28.0"       # the two legs trail by slightly different amounts
     air_x = inair(f"({lead} * 7.0 + (1.0 - {lead}) * 5.0) - 2.0 * {BREATH} + {FWD} * {back} * {MV}")
     air_z = inair(f"({side * -4.0} - 34.0 * {SS}) * {MV}")
     air_y = inair(f"{lead} * 3.0 * (1.0 - 0.5 * {MV}) + (0.5 - 0.5 * {FWD}) * 1.5 * {MV}")
@@ -153,7 +153,7 @@ def arm(side):
     amp = f"((20.0 + 30.0 * (v.nb_spr ?? 0.0)) * (1.0 - 0.35 * {BACK} / math.max({W}, 0.01)) * {W})"
     swing = f"math.sin({PHASE} + 12.0)"
     # in the air: arms sweep back with the leap (forward when jumping backwards), open a little
-    air_x = inair(f"-2.0 * {BREATH} + {FWD} * 26.0 * {MV} - {FLAIL} * (40.0 + 30.0 * math.sin({LIFE} * 380.0 + {ph}))")
+    air_x = inair(f"-2.0 * {BREATH} + {FWD} * 18.0 * {MV} - {FLAIL} * (40.0 + 30.0 * math.sin({LIFE} * 380.0 + {ph}))")
     air_out = inair(f"7.0 + {SS} * {side * 7.0} * {MV} + {FLAIL} * (38.0 + 10.0 * math.sin({LIFE} * 500.0 + {ph}))")
     rot_x = (
         f"{'' if side > 0 else '-'}{amp} * {swing} * {K}"                   # opposite to the leg on this side
@@ -169,10 +169,19 @@ def arm(side):
     return {"rotation": [rot_x, rot_y, rot_z], "position": [0.0, 0.0, inair(f"{FWD} * 1.25 * {MV}")]}
 
 
+# Shoulder view (third person, your own screen only): the character is drawn to the side so
+# the middle of the screen is free.  Defaults: on, character on the left, 0.8 block.  The
+# in-game pack settings (read in nabd_shoulder.animation.json) can change these through
+# v.nb_sh_on / v.nb_sh_side / v.nb_sh_amt; if that file is not loaded, the defaults apply.
+SHOULDER = ("((query.is_local_player && !query.is_first_person && !query.is_in_ui && (v.nb_sh_on ?? 1.0) > 0.5)"
+            " ? -(v.nb_sh_side ?? 1.0) * (v.nb_sh_amt ?? 0.8) * 17.0667 : 0.0)")
+
+
 def build():
     # in the air the torso leans into the leap (back when jumping backwards) and tips to the side it moves to
-    lean = inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0) + math.lerp(-18.0, 34.0, {FWD} * 0.5 + 0.5) * {MV}")
-    tip = inair(f"-9.0 * {SS} * {MV}")
+    # the torso stays upright in the air (only a slight breath); the legs and arms tell the jump
+    lean = inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0)")
+    tip = "0.0"
     waist_rx = f"{UI} * (7.0 * {SPR} - 3.5 * {BACK} - 4.0 * {RISE}) + {lean} + 12.0 * {L} - 3.0 * {REB}"
     waist_ry = f"{UI} * 8.0 * {S} * {K} * {W}"
     waist_rz = f"{UI} * 2.2 * {C} * {W} + {tip}"
@@ -204,7 +213,7 @@ def build():
                 # crouch: the whole figure tilts forward from the feet with the hips set back
                 # (the same frame the game's camera and hit box expect), blended by the spring
                 "root": {"rotation": [f"28.0 * {CR}", 0.0, 0.0],
-                         "position": [0.0, f"1.25 * {CR}", f"9.0 * {CR}"],
+                         "position": [SHOULDER, f"1.25 * {CR}", f"9.0 * {CR}"],
                          # take-off stretch and landing squash, from the feet
                          "scale": [f"1.0 + 0.025 * {L} - 0.01 * {REB}",
                                    f"1.0 - 0.05 * {L} + 0.02 * {REB}",
