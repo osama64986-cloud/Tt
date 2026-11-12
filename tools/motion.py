@@ -33,6 +33,22 @@ PHASE = "(query.modified_distance_moved * 32.0)"
 S = f"math.sin({PHASE})"
 C = f"math.cos({PHASE})"
 
+# ------------------------------------------------------------------ shoulder view
+# Third person, your own screen only.  The body turns with the camera at the same
+# instant (the game turns the head by query.target_y_rotation relative to the body;
+# giving the body that same turn lines it up exactly), and the side shift is applied
+# to the bones under that turn so the character stays beside the camera with no drift.
+# Defaults: on, character left, 0.8 block; the pack settings (nabd_shoulder file) or
+# the stand-alone Shoulder View pack can change them through v.nb_sh_*.
+SH_ON = ("(query.is_local_player && !query.is_first_person && !query.is_in_ui && !query.is_sleeping"
+         " && (v.nb_sh_on ?? 1.0) > 0.5)")
+SH_TURN = f"({SH_ON} && !query.is_riding)"
+SHIFT_X = f"({SH_ON} ? -(v.nb_sh_side ?? 1.0) * (v.nb_sh_amt ?? 0.8) * 17.0667 : 0.0)"
+TURN_Y = f"({SH_TURN} ? query.target_y_rotation : 0.0)"
+# the body is drawn facing the head when the shoulder view turns it (ours or the stand-alone pack's)
+BODY_YAW = f"(({SH_TURN} || (v.nb_sh_rot ?? 0.0) > 0.5) ? query.head_y_rotation(0) : query.body_y_rotation)"
+
+
 # ------------------------------------------------------------------ state update
 STATE = "!query.is_in_ui ? { " + "; ".join([
     "t.dt = " + DT,
@@ -45,7 +61,7 @@ STATE = "!query.is_in_ui ? { " + "; ".join([
     "v.nb_px = query.position(0)",
     "v.nb_pz = query.position(2)",
     "t.len = math.sqrt(t.mx * t.mx + t.mz * t.mz)",
-    "t.yaw = query.body_y_rotation",
+    "t.yaw = " + BODY_YAW,
     "t.f = t.len > 0.004 ? (-t.mx * math.sin(t.yaw) + t.mz * math.cos(t.yaw)) / t.len : (v.nb_fwd ?? 1.0)",
     "t.sd = t.len > 0.004 ? math.abs(t.mx * math.cos(t.yaw) + t.mz * math.sin(t.yaw)) / t.len : (v.nb_side ?? 0.0)",
     "v.nb_fwd = math.lerp(v.nb_fwd ?? 1.0, t.f, math.clamp(t.dt * 9.0, 0.0, 1.0))",
@@ -149,7 +165,7 @@ def leg(side):
     )
     rot_y = f"{side * -0.1} + {side * -10.0} * {L}"                         # toes turn out as the knees bend
     pos = [
-        f"{side * 0.5} * {L}",
+        f"{side * 0.5} * {L} + {SHIFT_X}",
         f"({lift} * (1.3 + 1.6 * (v.nb_spr ?? 0.0)) * {W}) + {air_y} + 0.8 * {L}",
         f"-{lift} * 1.0 * {K} * {W} + {air_fz} - 2.0 * {L}",
     ]
@@ -176,14 +192,6 @@ def arm(side):
     rot_z = f"{'-' if side > 0 else ''}{out}"
     rot_y = f"{'' if side > 0 else '-'}(math.sin({PHASE}) * 5.0 * {W} + {AIRW} * 7.0)"
     return {"rotation": [rot_x, rot_y, rot_z], "position": [0.0, 0.0, inair(f"{FWD} * 1.25 * {MV}")]}
-
-
-# Shoulder view (third person, your own screen only): the character is drawn to the side so
-# the middle of the screen is free.  Defaults: on, character on the left, 0.8 block.  The
-# in-game pack settings (read in nabd_shoulder.animation.json) can change these through
-# v.nb_sh_on / v.nb_sh_side / v.nb_sh_amt; if that file is not loaded, the defaults apply.
-SHOULDER = ("((query.is_local_player && !query.is_first_person && !query.is_in_ui && (v.nb_sh_on ?? 1.0) > 0.5)"
-            " ? -(v.nb_sh_side ?? 1.0) * (v.nb_sh_amt ?? 0.8) * 17.0667 : 0.0)")
 
 
 def build():
@@ -213,7 +221,7 @@ def build():
             "bones": {
                 "leftleg": leg(1),
                 "rightleg": leg(-1),
-                "waist": {"rotation": [waist_rx, waist_ry, waist_rz], "position": [0.0, waist_py, waist_pz]},
+                "waist": {"rotation": [waist_rx, waist_ry, waist_rz], "position": [SHIFT_X, waist_py, waist_pz]},
                 # head stays steady while the torso twists; small nod on landing
                 "head": {"rotation": [head_x,
                                       f"-5.0 * {S} * {K} * {W}", 0.0],
@@ -221,8 +229,8 @@ def build():
                 "body": {"position": [0.0, f"-2.0 * {CR}", 0.0]},
                 # crouch: the whole figure tilts forward from the feet with the hips set back
                 # (the same frame the game's camera and hit box expect), blended by the spring
-                "root": {"rotation": [f"28.0 * {CR}", 0.0, 0.0],
-                         "position": [SHOULDER, f"1.25 * {CR}", f"9.0 * {CR}"],
+                "root": {"rotation": [f"28.0 * {CR}", TURN_Y, 0.0],
+                         "position": [0.0, f"1.25 * {CR}", f"9.0 * {CR}"],
                          # take-off stretch and landing squash, from the feet
                          "scale": [f"1.0 + 0.025 * {L} - 0.01 * {REB}",
                                    f"1.0 - 0.05 * {L} + 0.02 * {REB}",

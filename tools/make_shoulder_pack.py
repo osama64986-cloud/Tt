@@ -5,7 +5,8 @@ Left / Right / Both (follows the camera) / Off.
 
 The shift rides on "animation.humanoid.base_pose" (the game plays it in third
 person anyway), for your own player only, never in first person or in the
-inventory doll.  It also sets v.nb_sh_on = 0 so the main Nabd pack does not
+inventory doll.  The body turns with the camera at the same instant, so the
+character never lags behind the view.  It also sets v.nb_sh_on = 0 so the main Nabd pack does not
 shift a second time when both packs are active.
 """
 import json
@@ -31,24 +32,38 @@ TURN = ("t.dt = math.clamp(query.delta_time, 0.0, 0.05); "
         "v.nb_yr = math.lerp(v.nb_yr ?? 0.0, t.dy / math.max(t.dt, 0.001), math.clamp(t.dt * 10.0, 0.0, 1.0)); "
         "v.nb_swt = v.nb_yr > 70.0 ? 1.0 : (v.nb_yr < -70.0 ? -1.0 : (v.nb_swt ?? 1.0)); "
         "v.nb_sws = math.lerp(v.nb_sws ?? 1.0, v.nb_swt, math.clamp(t.dt * 6.0, 0.0, 1.0)); ")
-ON = "(query.is_local_player && !query.is_first_person && !query.is_in_ui)"
+ON = "(query.is_local_player && !query.is_first_person && !query.is_in_ui && !query.is_sleeping)"
+TURN_ON = "(query.is_local_player && !query.is_first_person && !query.is_in_ui && !query.is_sleeping && !query.is_riding)"
 
 
 def shift(side_expr):
+    """waist and legs: the side shift (in the turned frame); also tells the main pack
+    not to shift again and that the body is turned"""
+    side = "(v.nb_sws ?? 1.0)" if side_expr == "both" else side_expr
     return (("!query.is_in_ui ? { " + TURN + "}; " if side_expr == "both" else "")
             + "v.nb_sh_on = 0.0; "
-            + f"return {ON} ? -({'(v.nb_sws ?? 1.0)' if side_expr == 'both' else side_expr}) * 0.8 * 17.0667 : 0.0;")
+            + f"v.nb_sh_rot = {TURN_ON} ? 1.0 : 0.0; "
+            + f"return {ON} ? -({side}) * 0.8 * 17.0667 : 0.0;")
+
+
+def leg_shift(side_expr):
+    side = "(v.nb_sws ?? 1.0)" if side_expr == "both" else side_expr
+    return f"{ON} ? -({side}) * 0.8 * 17.0667 : 0.0"
 
 
 def anim(side_expr):
+    # the body turns with the camera at the same instant: the game turns the head by
+    # query.target_y_rotation relative to the body, the body gets the same turn
     return {
         "format_version": "1.8.0",
         "animations": {
             "animation.humanoid.base_pose": {
                 "loop": True,
                 "bones": {
-                    "waist": {"rotation": [0.0, 0.0, 0.0]},
-                    "root": {"position": [shift(side_expr), 0.0, 0.0]},
+                    "root": {"rotation": [0.0, f"{TURN_ON} ? query.target_y_rotation : 0.0", 0.0]},
+                    "waist": {"rotation": [0.0, 0.0, 0.0], "position": [shift(side_expr), 0.0, 0.0]},
+                    "leftleg": {"position": [leg_shift(side_expr), 0.0, 0.0]},
+                    "rightleg": {"position": [leg_shift(side_expr), 0.0, 0.0]},
                 },
             }
         },
