@@ -1,0 +1,338 @@
+<title>معاينة حركات نبض</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@500;700&display=swap">
+<style>
+/* Layout: a stage (the 3D character) beside a control rail; on phones the rail stacks under the stage. */
+:root {
+  --bg: #eef1f0;
+  --surface: #ffffff;
+  --ink: #17201d;
+  --muted: #5d6b66;
+  --line: #d5dcd9;
+  --accent: #1f7a5a;
+  --accent-ink: #ffffff;
+  --stage: #dfe6e3;
+  --grid-a: #9fb0a9;
+  --grid-b: #c4d0cb;
+  --ground: #cdd8d3;
+  --platform: #7fa36c;
+  --font-ui: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-display: "Readex Pro", "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #1a2220; --ink: #e6ece9; --muted: #9aa8a2; --line: #2c3834;
+    --accent: #4cc28f; --accent-ink: #0c1411; --stage: #18201d; --grid-a: #3c4b45; --grid-b: #27322e;
+    --ground: #1f2926; --platform: #4f7344; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #1a2220; --ink: #e6ece9; --muted: #9aa8a2; --line: #2c3834;
+  --accent: #4cc28f; --accent-ink: #0c1411; --stage: #18201d; --grid-a: #3c4b45; --grid-b: #27322e;
+  --ground: #1f2926; --platform: #4f7344; color-scheme: dark;
+}
+html, body { height: auto; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+header { display: grid; gap: 4px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3.2vw, 30px); margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 70ch; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.stage {
+  position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; touch-action: none;
+}
+@media (max-width: 860px) { .stage { aspect-ratio: 1 / 1; } }
+canvas#view { display: block; width: 100%; height: 100%; cursor: grab; }
+canvas#view:active { cursor: grabbing; }
+.badge {
+  position: absolute; inset-inline-start: 12px; top: 12px; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-weight: 600; font-size: 14px;
+}
+.hint { position: absolute; inset-inline-end: 12px; bottom: 10px; color: var(--muted); font-size: 12px; }
+.rail { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.label { font-size: 12px; color: var(--muted); letter-spacing: .02em; font-weight: 600; }
+.clips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+button {
+  font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 10px; cursor: pointer; text-align: center; min-height: 40px;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.desc { margin: 0; color: var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.play { min-width: 92px; font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+</style>
+
+<div class="wrap" dir="rtl" lang="ar">
+  <header>
+    <h1>معاينة حركات نبض</h1>
+    <p class="sub">كل حركة لوحدها. اختار الحركة، بطّئها، أو مشّيها إطار بإطار، واسحب على الشخصية حتى تلف الكاميرا حواليها.</p>
+  </header>
+
+  <div class="layout">
+    <div class="stage" id="stage">
+      <canvas id="view" aria-label="الشخصية تتحرك"></canvas>
+      <div class="badge" id="badge">المشي</div>
+      <div class="hint">اسحب للف · عجلة أو قرصة للتقريب</div>
+    </div>
+
+    <div class="rail">
+      <section class="panel" aria-labelledby="clips-label">
+        <div class="label" id="clips-label">الحركة</div>
+        <div class="clips" id="clips"></div>
+        <p class="desc" id="desc"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="play-label">
+        <div class="label" id="play-label">التشغيل</div>
+        <div class="row">
+          <button class="play" id="play" aria-pressed="true">إيقاف</button>
+          <button id="prev" aria-label="الإطار السابق">◀ إطار</button>
+          <button id="next" aria-label="الإطار التالي">إطار ▶</button>
+        </div>
+        <input type="range" id="scrub" min="0" max="100" value="0" aria-label="موقع الحركة">
+        <div class="time" id="time">0.00 ث</div>
+        <div class="label">السرعة</div>
+        <div class="seg" id="speeds">
+          <button data-speed="0.1">×0.1</button>
+          <button data-speed="0.25">×0.25</button>
+          <button data-speed="0.5">×0.5</button>
+          <button data-speed="1" aria-pressed="true">×1</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="cam-label">
+        <div class="label" id="cam-label">الكاميرا</div>
+        <div class="seg" id="cams">
+          <button data-cam="side" aria-pressed="true">جانب</button>
+          <button data-cam="three">مايل</button>
+          <button data-cam="front">كدام</button>
+          <button data-cam="back">ورا</button>
+        </div>
+      </section>
+
+      <p class="note">هاي محاكاة بنفس الأرقام اللي بالحزمة، على شخصية تجريبية بأبعاد اللاعب نفسها. باللعبة الحركة نفسها، بس على سكنك.</p>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="motion-data">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("motion-data").textContent);
+  D.clips.forEach(function (c) {
+    var bin = atob(c.data), buf = new ArrayBuffer(bin.length), u8 = new Uint8Array(buf);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    c.pts = new Int16Array(buf);
+  });
+  var FACES = [[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
+  var NB = D.colours.length;
+
+  var canvas = document.getElementById("view");
+  var stage = document.getElementById("stage");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.05, 300);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x556670, 0.75));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.75);
+  sun.position.set(-4, 8, 5);
+  scene.add(sun);
+
+  // the character: one mesh per block, vertices rewritten every frame
+  var figure = new THREE.Group();
+  figure.scale.setScalar(1 / 16);
+  scene.add(figure);
+  var meshes = [];
+  for (var b = 0; b < NB; b++) {
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(24 * 3), 3));
+    var idx = [];
+    for (var f = 0; f < 6; f++) { var o = f * 4; idx.push(o, o + 1, o + 2, o, o + 2, o + 3); }
+    g.setIndex(idx);
+    var col = D.colours[b];
+    var m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: new THREE.Color(col[0] / 255, col[1] / 255, col[2] / 255), side: THREE.DoubleSide }));
+    m.frustumCulled = false;
+    figure.add(m);
+    meshes.push(m);
+  }
+
+  var env = new THREE.Group();
+  scene.add(env);
+  function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888"; }
+
+  var clip = D.clips[0], frame = 0, playing = true, speed = 1, clock = 0;
+  var yaw = 90, pitch = 12, dist = 6.0;
+  var target = new THREE.Vector3(), look = new THREE.Vector3();
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function buildEnv() {
+    while (env.children.length) env.remove(env.children[0]);
+    scene.background = new THREE.Color(cssVar("--stage"));
+    var zs = clip.z, zMin = Math.min.apply(null, zs) / 16, zMax = Math.max.apply(null, zs) / 16;
+    var mid = (zMin + zMax) / 2, len = Math.ceil(zMax - zMin) + 16;
+    var ga = new THREE.Color(cssVar("--grid-a")), gb = new THREE.Color(cssVar("--grid-b"));
+    if (clip.ledge !== null && clip.ledge !== undefined) {
+      var edge = clip.ledge / 16;
+      var top = new THREE.GridHelper(40, 40, ga, gb);
+      // upper platform: everything behind the edge (+z side), 5 blocks tall
+      var depth = 20;
+      var plat = new THREE.Mesh(new THREE.BoxGeometry(12, 5, depth), new THREE.MeshLambertMaterial({ color: new THREE.Color(cssVar("--platform")) }));
+      plat.position.set(0, -2.5, edge + depth / 2);
+      env.add(plat);
+      var low = new THREE.GridHelper(60, 60, ga, gb);
+      low.position.set(0, -5, edge - 10);
+      env.add(low);
+    } else {
+      var grid = new THREE.GridHelper(Math.max(30, len), Math.max(30, len), ga, gb);
+      grid.position.set(0, 0, mid);
+      env.add(grid);
+    }
+  }
+
+  function setFrame(n) {
+    frame = ((n % clip.n) + clip.n) % clip.n;
+    var base = frame * NB * 24;
+    for (var b = 0; b < NB; b++) {
+      var pos = meshes[b].geometry.attributes.position.array;
+      var cb = base + b * 24;
+      for (var f = 0; f < 6; f++) {
+        for (var k = 0; k < 4; k++) {
+          var c = FACES[f][k], src = cb + c * 3, dst = (f * 4 + k) * 3;
+          pos[dst] = clip.pts[src] / 10; pos[dst + 1] = clip.pts[src + 1] / 10; pos[dst + 2] = clip.pts[src + 2] / 10;
+        }
+      }
+      meshes[b].geometry.attributes.position.needsUpdate = true;
+      meshes[b].geometry.computeVertexNormals();
+    }
+    target.set(clip.x[frame] / 16, clip.y[frame] / 16 + 0.95, clip.z[frame] / 16);
+    scrub.value = frame;
+    timeEl.textContent = (frame / D.fps).toFixed(2) + " ث";
+  }
+
+  function placeCamera(snap) {
+    if (snap) look.copy(target); else look.lerp(target, 0.25);
+    var y = yaw * Math.PI / 180, p = pitch * Math.PI / 180;
+    camera.position.set(look.x + Math.sin(y) * Math.cos(p) * dist, look.y + Math.sin(p) * dist, look.z + Math.cos(y) * Math.cos(p) * dist);
+    camera.lookAt(look);
+  }
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  // ---------------------------------------------------------------- UI
+  var clipsEl = document.getElementById("clips"), descEl = document.getElementById("desc");
+  var badge = document.getElementById("badge"), scrub = document.getElementById("scrub");
+  var timeEl = document.getElementById("time"), playBtn = document.getElementById("play");
+  D.clips.forEach(function (c) {
+    var bt = document.createElement("button");
+    bt.textContent = c.name;
+    bt.dataset.id = c.id;
+    bt.addEventListener("click", function () { choose(c.id, true); });
+    clipsEl.appendChild(bt);
+  });
+  function choose(id, updateHash) {
+    var c = D.clips.filter(function (x) { return x.id === id; })[0] || D.clips[0];
+    clip = c; clock = 0;
+    Array.prototype.forEach.call(clipsEl.children, function (bt) { bt.setAttribute("aria-pressed", String(bt.dataset.id === c.id)); });
+    descEl.textContent = c.desc; badge.textContent = c.name;
+    scrub.max = c.n - 1;
+    buildEnv();
+    setFrame(0);
+    placeCamera(true);
+    if (updateHash) { try { history.replaceState(null, "", "#" + c.id); } catch (e) { location.hash = c.id; } }
+  }
+  function setPlaying(v) {
+    playing = v;
+    playBtn.textContent = v ? "إيقاف" : "تشغيل";
+    playBtn.setAttribute("aria-pressed", String(v));
+  }
+  playBtn.addEventListener("click", function () { setPlaying(!playing); clock = frame / D.fps; });
+  document.getElementById("prev").addEventListener("click", function () { setPlaying(false); setFrame(frame - 1); });
+  document.getElementById("next").addEventListener("click", function () { setPlaying(false); setFrame(frame + 1); });
+  scrub.addEventListener("input", function () { setPlaying(false); setFrame(parseInt(scrub.value, 10)); });
+  document.querySelectorAll("#speeds button").forEach(function (bt) {
+    bt.addEventListener("click", function () {
+      speed = parseFloat(bt.dataset.speed);
+      document.querySelectorAll("#speeds button").forEach(function (o) { o.setAttribute("aria-pressed", String(o === bt)); });
+    });
+  });
+  var CAMS = { side: [90, 10], three: [140, 16], front: [180, 8], back: [0, 14] };
+  document.querySelectorAll("#cams button").forEach(function (bt) {
+    bt.addEventListener("click", function () {
+      var c = CAMS[bt.dataset.cam]; yaw = c[0]; pitch = c[1];
+      document.querySelectorAll("#cams button").forEach(function (o) { o.setAttribute("aria-pressed", String(o === bt)); });
+    });
+  });
+
+  // drag to orbit, wheel / pinch to zoom
+  var pointers = {}, lastPinch = 0;
+  canvas.addEventListener("pointerdown", function (e) { canvas.setPointerCapture(e.pointerId); pointers[e.pointerId] = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener("pointermove", function (e) {
+    var p = pointers[e.pointerId]; if (!p) return;
+    var ids = Object.keys(pointers);
+    if (ids.length === 2) {
+      var a = pointers[ids[0]], b2 = pointers[ids[1]];
+      p.x = e.clientX; p.y = e.clientY;
+      var d = Math.hypot(a.x - b2.x, a.y - b2.y);
+      if (lastPinch) dist = Math.min(12, Math.max(1.6, dist * lastPinch / d));
+      lastPinch = d; return;
+    }
+    yaw -= (e.clientX - p.x) * 0.4; pitch = Math.min(80, Math.max(-20, pitch + (e.clientY - p.y) * 0.3));
+    p.x = e.clientX; p.y = e.clientY;
+  });
+  function up(e) { delete pointers[e.pointerId]; lastPinch = 0; }
+  canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", up);
+  canvas.addEventListener("wheel", function (e) { e.preventDefault(); dist = Math.min(12, Math.max(1.6, dist * (e.deltaY > 0 ? 1.08 : 0.93))); }, { passive: false });
+
+  // theme changes repaint the stage
+  function retheme() { buildEnv(); }
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  window.addEventListener("resize", resize);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+
+  var last = performance.now();
+  function loop(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) {
+      clock += dt * speed;
+      var n = Math.floor(clock * D.fps);
+      if (n >= clip.n) { clock = 0; n = 0; }
+      if (n !== frame) setFrame(n);
+    }
+    placeCamera(false);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  var start = (location.hash || "").replace("#", "");
+  choose(start || D.clips[0].id, false);
+  if (reduce) setPlaying(false);
+  window.addEventListener("hashchange", function () { choose((location.hash || "").replace("#", ""), false); });
+  requestAnimationFrame(loop);
+})();
+</script>

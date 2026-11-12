@@ -47,22 +47,24 @@ LABELS = ["stand", "walk", "run", "running jump", "walk backwards", "stand", "cr
           "crouch-walk", "stand up while walking", "standing jump", "walk off a ledge", "sidestep"]
 
 
-def segment(t):
-    for i, s in enumerate(PLAN):
+def segment(t, plan=None):
+    plan = plan or PLAN
+    for i, s in enumerate(plan):
         if s[0] <= t < s[1]:
             return i, s
-    return len(PLAN) - 1, PLAN[-1]
+    return len(plan) - 1, plan[-1]
 
 
-def simulate():
+def simulate(plan=None):
+    plan = plan or PLAN
     dt = 1.0 / FPS
     st = {"x": 0.0, "y": 0.0, "z": 0.0, "vx": 0.0, "vz": 0.0, "vy": 0.0, "floor": 0.0, "dist": 0.0, "life": 0.0}
     ctx = {"v": {}, "q": {}}
     frames, last_seg = [], -1
     worst = 0.0
     t = 0.0
-    while t < PLAN[-1][1]:
-        i, (t0, t1, fw, sd, spr, snk, jump, ledge) = segment(t)
+    while t < plan[-1][1]:
+        i, (t0, t1, fw, sd, spr, snk, jump, ledge) = segment(t, plan)
         if i != last_seg:
             if jump and st["y"] <= st["floor"] + 1e-6:
                 st["vy"] = 8.4
@@ -72,6 +74,7 @@ def simulate():
         if st.get("floor_drop_at") and t >= st["floor_drop_at"]:
             st["floor"] = -5.0
             st["floor_drop_at"] = None
+            st["edge_z"] = st["z"]
         on_ground = st["y"] <= st["floor"] + 1e-6
         target = SPRINT if spr else (SNEAK if snk else WALK)
         # body faces +z (yaw 0); forward is +z, the right-hand side is -x
