@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>عالم المودات — Minecraft Mods</title>
+  <meta name="description" content="حمّل مودات وتكسترات وخرائط وعوالم ماين كرافت مجاناً">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2379553a'/><rect width='16' height='5' fill='%235d9c3b'/><rect y='5' x='2' width='3' height='2' fill='%235d9c3b'/><rect y='5' x='9' width='2' height='3' fill='%235d9c3b'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="sky"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span></div>
+    <nav class="nav">
+      <a href="#" class="logo"><span class="logo-block"></span><span id="siteName">عالم المودات</span></a>
+      <div class="nav-links">
+        <a href="#mods">التحميلات</a>
+        <a href="#install">طريقة التثبيت</a>
+        <a href="#about">من أنا</a>
+      </div>
+    </nav>
+    <div class="hero-content">
+      <h1 class="pixel-title">MOD<span>WORLD</span></h1>
+      <p id="tagline">مودات، تكسترات، خرائط وعوالم ماين كرافت</p>
+      <div class="stats" id="stats"></div>
+      <a href="#mods" class="mc-btn mc-btn-green">ابدأ التحميل ⬇</a>
+    </div>
+    <div class="ground"></div>
+  </header>
+
+  <main>
+    <section id="mods" class="section">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="🔍 ابحث عن مود، تكستر، خريطة...">
+        <select id="versionFilter" aria-label="الإصدار"><option value="">كل الإصدارات</option></select>
+        <select id="sortBy" aria-label="الترتيب">
+          <option value="new">الأحدث</option>
+          <option value="name">بالاسم</option>
+        </select>
+      </div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-type="">الكل</button>
+        <button class="tab" data-type="mod">⚒ مودات</button>
+        <button class="tab" data-type="texture">🎨 تكسترات</button>
+        <button class="tab" data-type="map">🗺 خرائط</button>
+        <button class="tab" data-type="world">🌍 عوالم</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="empty" id="empty" hidden>ما لقينا شي يطابق بحثك 🧐</p>
+    </section>
+
+    <section id="install" class="section">
+      <h2 class="section-title">طريقة التثبيت</h2>
+      <div class="install-grid">
+        <div class="panel">
+          <h3>⚒ المودات (.jar)</h3>
+          <ol>
+            <li>ثبّت <b>Fabric</b> أو <b>Forge</b> حسب ما مكتوب على المود.</li>
+            <li>افتح مجلد <code>.minecraft</code> (اضغط <code>Win+R</code> واكتب <code>%appdata%</code>).</li>
+            <li>حط ملف الـ <code>.jar</code> داخل مجلد <code>mods</code>.</li>
+            <li>شغّل اللعبة بالبروفايل الصحيح.</li>
+          </ol>
+        </div>
+        <div class="panel">
+          <h3>🎨 التكسترات (.zip)</h3>
+          <ol>
+            <li>لا تفك الضغط عن الملف.</li>
+            <li>حطه داخل مجلد <code>resourcepacks</code>.</li>
+            <li>من داخل اللعبة: Options ← Resource Packs ← فعّلها.</li>
+          </ol>
+        </div>
+        <div class="panel">
+          <h3>🗺 الخرائط والعوالم</h3>
+          <ol>
+            <li>فك ضغط الملف.</li>
+            <li>انقل المجلد داخل مجلد <code>saves</code>.</li>
+            <li>راح يطلع العالم في قائمة Singleplayer.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <h2 class="section-title">من أنا</h2>
+      <div class="panel about">
+        <div class="avatar"></div>
+        <div>
+          <p>أهلاً! أنا <b id="authorName">Osama</b>، أصنع مودات وتكسترات وخرائط ماين كرافت وأشاركها مجاناً مع الجميع.</p>
+          <p>إذا استخدمت شي من أعمالي في فيديو أو سيرفر، اذكر المصدر 💚</p>
+          <div class="socials" id="socials"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> <span id="footerName">عالم المودات</span> — غير تابع لـ Mojang أو Microsoft.</p>
+  </footer>
+
+  <dialog id="modal" class="modal">
+    <button class="close" id="closeModal" aria-label="إغلاق">✕</button>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
