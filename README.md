@@ -5,7 +5,7 @@
 
 ## التشغيل لأول مرة (مرة وحدة بس)
 1. **ادمج هذا الفرع في `main`.**
-2. في المستودع: **Settings ← Pages ← Source** واختر **GitHub Actions**.
+2. Pages يشتغل من فرع `gh-pages` اللي ينبني تلقائياً (لا تعدّل عليه يدوياً).
 3. في المستودع: **Settings ← Actions ← General ← Workflow permissions** واختر **Read and write permissions** واحفظ.
 4. سوّ مفتاح دخول: [صفحة إنشاء مفتاح](https://github.com/settings/personal-access-tokens/new)
    - Repository access: **Only select repositories** ← هذا المستودع بس.

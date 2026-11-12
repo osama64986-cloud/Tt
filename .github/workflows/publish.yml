@@ -75,7 +75,5 @@ jobs:
   deploy:
     needs: publish
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     uses: ./.github/workflows/pages.yml

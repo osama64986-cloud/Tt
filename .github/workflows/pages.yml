@@ -1,5 +1,7 @@
 name: Deploy site to GitHub Pages
 
+# Builds the public files and force-pushes them as a single commit to the
+# gh-pages branch, which GitHub Pages serves.
 on:
   push:
     branches: [main]
@@ -8,9 +10,7 @@ on:
   workflow_call:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -19,9 +19,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -33,9 +30,14 @@ jobs:
           cp -r index.html admin.html 404.html mods.json assets images downloads _site/
           touch _site/.nojekyll
 
-      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Push to gh-pages
+        run: |
+          auth="$(git config --local --get http.https://github.com/.extraheader)"
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config http.https://github.com/.extraheader "$auth"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7}"
+          git push -f "https://github.com/${GITHUB_REPOSITORY}.git" gh-pages
