@@ -335,12 +335,8 @@ function powerOf(e) {
     p *= 1 + s.ego;
     return p;
   }
-  if (e.typeId === "minecraft:player") return 60 + 18 * playerPowers(e).length;  // stronger with every power learned
   const h = health(e);
   return h ? Math.max(5, Math.sqrt(h.effectiveMax) * 3) : 5;
-}
-function playerPowers(p) {
-  try { return JSON.parse(p.getDynamicProperty("ab:powers") ?? "[]"); } catch (e) { return []; }
 }
 
 // ------------------------------------------------------------------ damage
@@ -4285,17 +4281,6 @@ world.afterEvents.entityDie.subscribe((ev) => {
     if (ds && ds.clones) for (const c of ds.clones) poof(c);  // the original falls: every clone vanishes
     states.delete(e.id);
     if (def && teamOf(e)) later(10, () => checkWinner(e.dimension, teamOf(e)));
-    const killer = ev.damageSource && ev.damageSource.damagingEntity;
-    if (def && !e.hasTag("ab_clone") && killer && killer.typeId === "minecraft:player") dropPower(e, killer);
-    if (def && e.hasTag("ab_boss") && BOSS_NEXT[e.typeId]) {  // boss phases: the next, stronger version steps in
-      const loc = e.location, dim = e.dimension, nxt = BOSS_NEXT[e.typeId];
-      later(30, () => {
-        try {
-          fx(dim, "aura", V.up(loc, 1), C.white, 4, 1.2, { count: 50, speed: 3 }); shake(dim, loc, 0.5, 0.6);
-          const b = dim.spawnEntity(nxt, loc); b.addTag("ab_boss"); later(20, () => { if (b.isValid) setTeam(b, RED); });
-        } catch (err) { warn("boss", err); }
-      });
-    }
     // victory: the fighter who landed the last blow raises a fist with a shout
     const k = ev.damageSource && ev.damageSource.damagingEntity;
     if (k && k.isValid && FIGHTERS[k.typeId] && k.id !== e.id) {
@@ -4329,62 +4314,6 @@ function checkWinner(dim, losingTeam) {
     fx(dim, "flash", V.up(w.location, 2), wd.forms[clamp(formOf(w), 0, wd.forms.length - 1)].aura ?? C.gold, 6, 0.6);
     ring(dim, V.up(w.location, 0.2), 4, C.gold, 40, 0.6);
   } catch (err) { /* ignore */ }
-}
-// ------------------------------------------------------------------ The Anime Universe: beat them, learn their powers
-const BOSS_NEXT = { "ab:naruto_kid": "ab:naruto_teen", "ab:naruto_teen": "ab:naruto_war", "ab:naruto_war": "ab:naruto_adult",
-  "ab:sasuke_kid": "ab:sasuke", "ab:sasuke": "ab:sasuke_war", "ab:sasuke_war": "ab:sasuke_adult", "ab:yuji": "ab:yuji_final",
-  "ab:tanjiro": "ab:tanjiro_demon", "ab:yuji_final": "ab:sukuna" };
-function dropPower(e, p) {
-  const ch = e.typeId.slice(3);
-  try { e.dimension.spawnItem(new ItemStack(`ab:power_${ch}`, 1), V.up(e.location, 0.5)); } catch (err) { warn("drop", err); }
-  const have = playerPowers(p);
-  if (!have.includes(ch)) {  // a new power learned: a column of light, the player grows stronger (no text)
-    have.push(ch);
-    try { p.setDynamicProperty("ab:powers", JSON.stringify(have)); } catch (err) { /* ignore */ }
-    fx(p.dimension, "aura", p.location, C.gold, 2, 1.2, { count: 40, speed: 3 });
-    ring(p.dimension, V.up(p.location, 0.2), 2.5, C.gold, 30, 0.6);
-    sound(p.dimension, "random.totem", p.location, 1, 1.2);
-  }
-}
-function castPower(p, ch) {
-  const def = FIGHTERS["ab:" + ch];
-  if (!def) return;
-  const s = state(p);
-  if (now() < (s.cd.power ?? 0)) return;
-  s.cd.power = now() + 24;
-  let target;
-  try { target = p.getEntitiesFromViewDirection({ maxDistance: 48 }).map((h) => h.entity).find((x) => canHit(p, teamOf(p), x)); } catch (err) { /* ignore */ }
-  if (!target) {  // not aiming at anyone: the nearest thing that can be hit
-    let list = []; try { list = p.dimension.getEntities({ location: p.location, maxDistance: 28 }); } catch (err) { /* ignore */ }
-    let best = 1e9;
-    for (const x of list) {
-      if (!canHit(p, teamOf(p), x) || x.typeId === "minecraft:item") continue;
-      const d = V.dist(p.location, x.location);
-      if (d < best) { best = d; target = x; }
-    }
-  }
-  if (!target) { fx(p.dimension, "streak", V.up(p.location, 1.2), C.white, 1, 0.3, { count: 8, speed: 5 }); return; }
-  s.powerIdx = s.powerIdx ?? {};
-  const list = def.abilities.filter((a) => !a.cond || a.cost < 600);
-  const a = list[(s.powerIdx[ch] = ((s.powerIdx[ch] ?? -1) + 1) % list.length)];
-  try { a.run(p, s, target, { dist: V.dist(p.location, target.location), power: powerOf(p), tPower: powerOf(target), hp: hpPct(p), targetType: target.typeId }); }
-  catch (err) { warn("power " + a.id, err); }
-}
-world.afterEvents.itemUse.subscribe((ev) => {
-  const id = ev.itemStack?.typeId ?? "";
-  if (id.startsWith("ab:power_") && ev.source?.typeId === "minecraft:player") castPower(ev.source, id.slice(9));
-});
-// Boss fight: /scriptevent ab:boss goku — the character comes for YOU; beat it to take its power
-function startBoss(p, name) {
-  const id = "ab:" + name;
-  if (!FIGHTERS[id]) return;
-  const d = V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
-  try {
-    const b = p.dimension.spawnEntity(id, V.add(p.location, V.mul(d, 12)));
-    b.addTag("ab_boss");
-    setTeam(p, BLUE);
-    later(25, () => { if (b.isValid) setTeam(b, RED); });
-  } catch (err) { warn("boss", err); }
 }
 // Instant battles from chat: /scriptevent ab:vs goku vegeta  — or /scriptevent ab:random
 function startBattle(p, a, b) {
@@ -4457,12 +4386,6 @@ function giveKit(p) {
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
   if (ev.id === "ab:griefing") world.setDynamicProperty("ab:griefing", ev.message.trim() !== "off");
   if (ev.id === "ab:fx") world.setDynamicProperty("ab:fx", ev.message.trim() === "low" ? 0.5 : 1);
-  if (ev.id === "ab:boss") {
-    const p = ev.sourceEntity && ev.sourceEntity.typeId === "minecraft:player" ? ev.sourceEntity : world.getPlayers()[0];
-    const ids = Object.keys(FIGHTERS).map((k) => k.slice(3));
-    const name = ev.message.trim().toLowerCase() || ids[Math.floor(Math.random() * ids.length)];
-    if (p) startBoss(p, name);
-  }
   if (ev.id === "ab:vs" || ev.id === "ab:random") {
     const p = ev.sourceEntity && ev.sourceEntity.typeId === "minecraft:player" ? ev.sourceEntity : world.getPlayers()[0];
     if (!p) return;
