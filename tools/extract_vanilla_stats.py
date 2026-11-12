@@ -68,7 +68,10 @@ for root, _, files in os.walk(idir):
         px = a[..., :3][al > 0] if (al > 0).any() else a[..., :3].reshape(-1, 3)
         e = items.setdefault(rel, {"ext": []})
         e["ext"].append(ext[1:])
+        sat = px.max(1) - px.min(1) if len(px) else np.zeros(0)
+        dom = px[sat >= np.percentile(sat, 60)].mean(0) if len(px) else np.zeros(3)
         e.update({"size": list(im.size), "mean": px.mean(0).round().astype(int).tolist(),
+                  "dom": dom.round().astype(int).tolist(),
                   "alpha": sorted(set(int(v) for v in np.unique(al)))[:4]})
 json.dump(items, open(os.path.join(os.path.dirname(__file__), "nabd", "vanilla_item_stats.json"), "w"), indent=0, sort_keys=True)
 print(len(items), "item entries")

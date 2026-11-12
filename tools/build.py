@@ -230,8 +230,10 @@ def main():
     # coloured by the game at run time from a grey base: leave them to the game
     for name in [n for n in item_out if "tga" in items.ISTATS[n]["ext"]]:
         del item_out[name]
+    tools = ("_pickaxe", "_axe", "_shovel", "_hoe", "_sword", "_spear", "_helmet", "_chestplate", "_leggings", "_boots")
     for name, tex in item_out.items():
-        calibrate(tex, items.ISTATS[name]["mean"])
+        if not name.endswith(tools):
+            calibrate(tex, items.ISTATS[name]["mean"])
     for name, tex in item_out.items():
         st = items.ISTATS[name]
         if [tex.w, tex.h] != st["size"]:
