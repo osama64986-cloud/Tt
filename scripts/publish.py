@@ -198,8 +198,9 @@ def upsert(db, meta, log):
         notes = f"{entry['name']} {entry['version']}".strip()
         if meta.get("changelogNote"):
             notes += "\n\n" + text(meta.get("changelogNote"), 200)
-        gh("release", "create", tag, str(staged), "--repo", REPO, "--target", "main",
-           "--title", notes.splitlines()[0][:100], "--notes", notes)
+        # "--flag=value" so user text can never be parsed as another flag.
+        gh("release", "create", tag, str(staged), f"--repo={REPO}", "--target=main",
+           f"--title={notes.splitlines()[0][:100]}", f"--notes={notes}")
         item.update(
             file=f"https://github.com/{REPO}/releases/download/{tag}/{asset}",
             size=human_size(src.stat().st_size),
@@ -263,7 +264,7 @@ def delete(db, meta, log):
     for tag in item.get("releases") or []:
         if re.fullmatch(rf"{re.escape(item_id)}-\d{{14}}", str(tag)):
             try:
-                gh("release", "delete", tag, "--repo", REPO, "--yes", "--cleanup-tag")
+                gh("release", "delete", tag, f"--repo={REPO}", "--yes", "--cleanup-tag")
                 log.append(f"deleted release {tag}")
             except subprocess.CalledProcessError as exc:
                 log.append(f"could not delete release {tag}: {exc.stderr.strip()}")
@@ -284,6 +285,10 @@ def settings(db, meta, log):
         if url and (not HTTPS_RE.fullmatch(url) or len(url) > 300):
             raise Invalid(f"{key} must be an https:// link")
         site[key] = url
+    verify = str(raw.get("googleVerify") or "").strip()
+    if verify and not re.fullmatch(r"[A-Za-z0-9_-]{10,100}", verify):
+        raise Invalid("googleVerify must be the code only (letters, digits, - and _)")
+    site["googleVerify"] = verify
     if REPO:
         site["repo"] = REPO
     log.append("updated site settings")
@@ -308,7 +313,7 @@ def main():
         if REPO and not db["site"].get("repo"):
             db["site"]["repo"] = REPO
         save_db(db)
-    except Invalid as exc:
+    except (Invalid, ValueError) as exc:  # ValueError covers broken JSON
         print(f"::error::Rejected: {exc}")
         sys.exit(1)
     summary = "\n".join(f"- {line}" for line in log)

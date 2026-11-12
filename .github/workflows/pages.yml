@@ -1,11 +1,14 @@
 name: Deploy site to GitHub Pages
 
-# Builds the public files and force-pushes them as a single commit to the
-# gh-pages branch, which GitHub Pages serves.
+# Builds the public site (scripts/build.py) and force-pushes it as a single
+# commit to gh-pages, which GitHub Pages serves. Runs every 6 hours too, so
+# the download counts in stats.json stay fresh.
 on:
   push:
     branches: [main]
     paths-ignore: ["README.md"]
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
   workflow_call:
 
@@ -19,16 +22,17 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: main
 
-      - name: Collect public files only
-        run: |
-          mkdir _site
-          cp -r index.html admin.html 404.html mods.json assets images downloads _site/
-          touch _site/.nojekyll
+      - name: Build site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: python3 scripts/build.py
 
       - name: Push to gh-pages
         run: |

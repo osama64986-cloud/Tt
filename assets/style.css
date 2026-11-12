@@ -379,3 +379,21 @@ details.panel summary::marker { color: var(--gold); }
   .nav-links { gap: 12px; justify-content: center; }
   .stats { margin-bottom: 18px; }
 }
+
+/* ---------- Item pages (m/<id>/) ---------- */
+.item-nav { background: #111; border-bottom: 4px solid var(--green); }
+.item-page { max-width: 860px; padding-top: 24px; }
+.item-article { padding: 0; }
+.item-article .thumb { aspect-ratio: 16 / 9; max-height: 60vh; font-size: 5rem; }
+.item-title { margin: 0 0 6px; font-size: 1.8rem; }
+.h3 { font-size: 1.17rem; margin: 0 0 10px; }
+.h4 { font-size: 1rem; margin: 18px 0 6px; color: var(--gold); }
+a.shot { display: block; }
+.footer-links ul { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; }
+.footer-links a { color: var(--muted); }
+.card h3 a { color: inherit; text-decoration: none; }
+
+/* Readability: white text on a darker green (WCAG contrast) */
+.mc-btn-green, .tab.active, .guide-tabs button.active { background: #3e7b22; }
+/* Reserve room for the install guide so the page doesn't jump while it loads */
+.item-page .guide { min-height: 280px; }

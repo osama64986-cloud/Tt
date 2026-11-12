@@ -275,7 +275,7 @@
   }
 
   async function login(token, repo) {
-    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error("اكتب المستودع بالشكل: اسم-الحساب/اسم-المستودع");
+    if (!/^[\w-][\w.-]*\/[\w-][\w.-]*$/.test(repo)) throw new Error("اكتب المستودع بالشكل: اسم-الحساب/اسم-المستودع");
     if (/^ghp_/.test(token)) throw new Error("هذا مفتاح Classic وصلاحياته على كل حسابك. استخدم Fine-grained (يبدأ بـ github_pat_) ومحدد على هذا المستودع بس.");
     if (!/^github_pat_[A-Za-z0-9_]{20,}$/.test(token)) throw new Error("هذا ما يشبه مفتاح GitHub. لازم يبدأ بـ github_pat_");
     const info = await gh(`/repos/${repo}`, { token });
@@ -518,7 +518,7 @@
 
   /* ---------- Settings ---------- */
   const sForm = $("#settingsForm");
-  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "website"];
+  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "website", "googleVerify"];
   $("#settingsBtn").addEventListener("click", () => {
     SITE_FIELDS.forEach((k) => { sForm[k].value = data.site[k] || ""; });
     $("#settingsError").textContent = "";
@@ -532,6 +532,10 @@
       const v = sForm[k].value.trim();
       if (["donate", "youtube", "discord", "tiktok", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
         $("#settingsError").textContent = "الروابط لازم تبدأ بـ https://";
+        return;
+      }
+      if (k === "googleVerify" && v && !/^[A-Za-z0-9_-]{10,100}$/.test(v)) {
+        $("#settingsError").textContent = "كود Google: الصق الكود بس (اللي بين علامات content=\"...\")، مو السطر كامل.";
         return;
       }
       site[k] = v;

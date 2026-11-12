@@ -23,12 +23,24 @@
     render();
     openFromHash();
 
-    const repo = MC.repoOf(state.site);
-    if (repo && state.mods.some((m) => (m.releases || []).length)) {
-      state.counts = await MC.downloadCounts(repo);
+    if (state.mods.some((m) => (m.releases || []).length)) {
+      state.counts = await loadCounts();
       renderStats();
       render();
     }
+  }
+
+  /** Download counts: the static stats.json made at deploy time, else GitHub's API. */
+  async function loadCounts() {
+    try {
+      const r = await fetch("stats.json", { cache: "no-cache" });
+      if (r.ok) {
+        const j = await r.json();
+        if (j && typeof j.tags === "object" && Object.keys(j.tags).length) return j.tags;
+      }
+    } catch { /* fall back below */ }
+    const repo = MC.repoOf(state.site);
+    return repo ? MC.downloadCounts(repo) : {};
   }
 
   /* ---------- Site chrome ---------- */
@@ -136,7 +148,7 @@
       <article class="card" tabindex="0" data-id="${esc(m.id)}" aria-label="${esc(m.name)}">
         ${thumbHtml(m)}
         <div class="card-body">
-          <h3>${esc(m.name)}</h3>
+          <h3><a href="m/${encodeURIComponent(m.id)}/">${esc(m.name)}</a></h3>
           <p>${esc(m.description)}</p>
           <div class="meta">
             ${EDITIONS[m.edition] ? `<span class="chip chip-${esc(m.edition)}">${EDITIONS[m.edition]}</span>` : ""}
@@ -189,7 +201,10 @@
   const openFromEvent = (e) => {
     if (e.target.closest("[data-dl]")) return;
     const el = e.target.closest("[data-id]");
-    if (el && (e.type === "click" || (e.key === "Enter" && e.target === el))) openModal(el.dataset.id);
+    if (el && (e.type === "click" || (e.key === "Enter" && e.target === el))) {
+      if (e.type === "click" && !(e.ctrlKey || e.metaKey || e.shiftKey)) e.preventDefault(); // links are for search engines / new tabs
+      openModal(el.dataset.id);
+    }
   };
   ["click", "keydown"].forEach((ev) => {
     $("#grid").addEventListener(ev, openFromEvent);
@@ -201,7 +216,7 @@
     const m = state.mods.find((x) => x.id === id);
     if (!m) return;
     const t = TYPES[m.type] || { label: m.type };
-    const pageUrl = `${location.origin}${location.pathname}#${encodeURIComponent(m.id)}`;
+    const pageUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}m/${encodeURIComponent(m.id)}/`;
     const shots = (m.screenshots || []).map(safeUrl).filter(Boolean);
     const video = ytId(m.video);
     const file = safeUrl(m.file);
