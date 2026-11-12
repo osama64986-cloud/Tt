@@ -290,3 +290,47 @@ def build(out, flip, variations):          # noqa: F811
             bloom = t.mask & (Y < h // 2) & ((X * 3 + Y) % 5 == 0)
             t.rgb = np.where(bloom[..., None], np.array((190, 110, 220), np.uint8), t.rgb)
         out[nm] = t
+
+
+_build_final2 = build
+
+
+def build(out, flip, variations):          # noqa: F811
+    _build_final2(out, flip, variations)
+    # 32x32 opaque sheets: shelf mushrooms and the dried ghast's tentacles
+    def sheet32(seed, ramp, count, dome=0.5):
+        a = P.cells(seed + "a", ramp, count, dome=dome)
+        b = P.cells(seed + "b", ramp, count, dome=dome)
+        rgb = np.vstack([np.hstack([a.rgb, b.rgb]), np.hstack([b.rgb, a.rgb])])
+        hgt = np.vstack([np.hstack([a.height, b.height]), np.hstack([b.height, a.height])])
+        return Tex(rgb, hgt, rough=200)
+    for nm, col in (("shelf_mushroom_large", (176, 120, 76)), ("shelf_mushroom_small", (196, 146, 98))):
+        if nm in STATS and STATS[nm]["size"] == [32, 32]:
+            out[nm] = sheet32(nm, make_ramp(col, 6, 0.4), 8)
+    ghost = make_ramp((214, 206, 196), 6, 0.3)
+    for st in range(1, 5):
+        nm = f"dried_ghast_state_{st}_tentacles"
+        if nm in STATS and STATS[nm]["size"] == [32, 32]:
+            t = sheet32(nm, ghost, 6, dome=0.3)
+            for x in range(2, 32, 4):                            # soft vertical folds
+                t.rgb[:, x] = (t.rgb[:, x] * 0.85).astype(np.uint8)
+            out[nm] = t
+    # fireflies: tiny glowing specks that blink in and out
+    if "firefly_bush_firefly" in STATS:
+        w, h = STATS["firefly_bush_firefly"]["size"]
+        n = h // w
+        r = rng_of("fireflies")
+        flies = [(int(r.integers(1, w - 1)), int(r.integers(1, w - 1)), int(r.integers(0, n))) for _ in range(4)]
+        fr = []
+        for f in range(n):
+            rgb = np.zeros((w, w, 3), np.uint8)
+            al = np.zeros((w, w), np.uint8)
+            for (x, y, ph) in flies:
+                lvl = (f - ph) % n
+                if lvl < 4:
+                    rgb[y, x] = [(255, 250, 170), (255, 240, 120), (240, 210, 80), (200, 170, 60)][lvl]
+                    al[y, x] = 255
+            t = Tex(rgb, None, alpha=al, rough=255)
+            t.emis = np.where(al > 0, 255, 0)
+            fr.append(t)
+        out["firefly_bush_firefly"] = stack_frames(fr)
