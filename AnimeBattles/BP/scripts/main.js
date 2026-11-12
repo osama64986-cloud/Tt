@@ -369,17 +369,221 @@ function hitArea(src, center, radius, dmg, hitSet, opt = {}) {
 }
 function carve(dim, center, r, budget = 160) {
   if (!griefing() || r <= 0) return;
+  if (r >= 1.5 && Math.random() < 0.4) rubble(dim, center, Math.round(4 + r * 3), 5 + r);
   const R = Math.ceil(r), r2 = r * r;
   let n = 0;
   for (let x = -R; x <= R; x++) for (let y = -R; y <= R; y++) for (let z = -R; z <= R; z++) {
     if (x * x + y * y + z * z > r2) continue;
     try {
       const b = dim.getBlock({ x: Math.floor(center.x + x), y: Math.floor(center.y + y), z: Math.floor(center.z + z) });
-      if (!b || b.isAir || b.isLiquid || UNBREAKABLE.has(b.typeId)) continue;
+      if (!b || b.isAir || b.isLiquid || UNBREAKABLE.has(b.typeId) || DOME_BLOCKS.has(b.typeId)) continue;
+      if (b.getComponent("minecraft:inventory")) continue;  // never break chests and other containers
+      scar(dim, b);
       b.setType("minecraft:air");
       if (++n >= budget) return;
     } catch (e) { /* unloaded */ }
   }
+}
+// ------------------------------------------------------------------ arena memory (Jujutsu Craft mob-battle style)
+// Fights tear the ground apart (trenches, craters, cut lines); every broken block is remembered and the arena
+// rebuilds itself block by block once the fighting has stopped (or right after a team wins). /scriptevent ab:regen off
+const SCARS = [];
+let lastScar = 0;
+const regenOn = () => setting("ab:regen", true);
+function scar(dim, b) {
+  if (SCARS.length >= 30000) return;
+  SCARS.push({ dim, loc: { x: b.location.x, y: b.location.y, z: b.location.z }, perm: b.permutation });
+  lastScar = now();
+}
+function healArenaSoon(ticks = 60) { lastScar = Math.min(lastScar, now() - 600 + ticks); }
+system.runInterval(() => {
+  if (!SCARS.length || !regenOn()) return;
+  if (now() - lastScar < 600) return;  // only once the ground has been left alone for 30 s (or a team has won)
+  for (let k = 0; k < 48 && SCARS.length; k++) {
+    const sc = SCARS.pop();
+    try {
+      const b = sc.dim.getBlock(sc.loc);
+      if (!b || !b.isAir) continue;  // something else is there now: leave it
+      const c = { x: sc.loc.x + 0.5, y: sc.loc.y + 0.5, z: sc.loc.z + 0.5 };
+      if (sc.dim.getEntities({ location: c, maxDistance: 1.2 }).some((o) => !IGNORE_TYPES.has(o.typeId))) { SCARS.unshift(sc); continue; }
+      b.setPermutation(sc.perm);
+      if (k % 6 === 0) fx(sc.dim, "aura", c, DUST, 0.6, 0.5, { count: 3, speed: 1 });
+    } catch (e) { /* chunk unloaded: drop it */ }
+  }
+}, 1);
+// A trench torn along the ground under a fighter sliding back from a hit.
+function groundTear(dim, loc, r = 1.1) {
+  const g = { x: loc.x, y: Math.floor(loc.y) - 0.5, z: loc.z };
+  if (!solidAt(dim, g)) return;
+  rubble(dim, g, Math.round(5 + r * 6), 4 + r * 2.5);
+  if (r >= 2.2) sound(dim, "ab.boom", g, 1.5, 0.9 + Math.random() * 0.2);
+  carve(dim, g, r, 14);
+}
+// Chunks of the ground thrown up and bouncing back down — textured with the block that broke.
+function rubble(dim, loc, count, speed) {
+  let earthy = false;
+  try { const b = dim.getBlock({ x: Math.floor(loc.x), y: Math.floor(loc.y), z: Math.floor(loc.z) }); earthy = !!b && /dirt|grass|mud|podzol|mycelium|farmland|sand|gravel/.test(b.typeId); } catch (e) { /* ignore */ }
+  const tone = earthy ? { red: 0.95, green: 0.9, blue: 0.85 } : { red: 0.9, green: 0.9, blue: 0.9 };
+  fx(dim, earthy ? "rubble_dirt" : "rubble", V.up(loc, 0.6), tone, 0.32, 1.6, { count: Math.ceil(count * fxLevel()), speed, radius: 0.5 });
+}
+
+// ------------------------------------------------------------------ domain barrier (a real dome of blocks)
+// Like Jujutsu Craft: the barrier closes from the ground up into a full dome that traps both fighters, then
+// shatters when the domain ends or loses a clash. Only air is ever replaced, and it all turns back to air.
+const DOME_BLOCKS = new Set(["minecraft:black_concrete", "minecraft:sea_lantern", "minecraft:obsidian", "minecraft:crying_obsidian",
+  "minecraft:white_concrete", "minecraft:pearlescent_froglight", "minecraft:polished_blackstone", "minecraft:polished_blackstone_bricks",
+  "minecraft:red_nether_brick", "minecraft:nether_wart_block", "minecraft:bone_block"]);
+const DOMES = new Map();
+function buildDome(e, center, R, shell, star, ticks) {
+  const dim = e.dimension;
+  const cells = [];
+  const Ri = Math.ceil(R + 0.5);
+  for (let x = -Ri; x <= Ri; x++) for (let y = -Ri; y <= Ri; y++) for (let z = -Ri; z <= Ri; z++) {
+    const d = Math.sqrt(x * x + y * y + z * z);
+    if (d >= R - 0.5 && d < R + 0.5) cells.push({ x: Math.floor(center.x) + x, y: Math.floor(center.y) + y, z: Math.floor(center.z) + z });
+  }
+  cells.sort((a, b) => a.y - b.y);  // it rises from the ground and seals at the top
+  const rec = { dim, placed: [], open: true };
+  breakDome(e.id, false);
+  sound(dim, "ab.domain", center, 3, 1);
+  DOMES.set(e.id, rec);
+  const slices = 10, per = Math.ceil(cells.length / slices);
+  let bodies = [];
+  try { bodies = dim.getEntities({ location: center, maxDistance: R + 3 }).filter((o) => !IGNORE_TYPES.has(o.typeId)).map((o) => o.location); } catch (err) { /* ignore */ }
+  every(1, slices, (i) => {
+    if (!rec.open) return false;
+    for (const c of cells.slice(i * per, (i + 1) * per)) {
+      if (bodies.some((p) => Math.abs(p.x - c.x - 0.5) < 1.4 && Math.abs(p.z - c.z - 0.5) < 1.4 && c.y >= p.y - 1 && c.y <= p.y + 2.5)) continue;
+      try {
+        const b = dim.getBlock(c);
+        if (!b || !b.isAir) continue;
+        const t = Math.random() < 0.07 ? star : shell;
+        b.setType(t); rec.placed.push({ c, t });
+      } catch (err) { /* unloaded */ }
+    }
+    if (i === slices - 1) {
+      sound(dim, "random.door_close", center, 2, 0.4); sound(dim, "block.end_portal.spawn", center, 1, 0.8);
+      screenFade(dim, center, R + 10, 0.05, 0.25, 0.45, [0, 0, 0]);
+      shake(dim, center, 0.5, 0.5);
+    }
+  });
+  later(ticks, () => breakDome(e.id, true));
+}
+function breakDome(id, shatter) {
+  const rec = DOMES.get(id);
+  if (!rec) return;
+  DOMES.delete(id);
+  rec.open = false;
+  const list = rec.placed;
+  const per = Math.ceil(list.length / 6);
+  every(1, 6, (i) => {
+    for (const { c, t } of list.slice(i * per, (i + 1) * per)) {
+      try {
+        const b = rec.dim.getBlock(c);
+        if (b && b.typeId === t) b.setType("minecraft:air");
+        if (shatter && Math.random() < 0.05) fx(rec.dim, "burst", { x: c.x + 0.5, y: c.y + 0.5, z: c.z + 0.5 }, C.black, 0.4, 0.6, { count: 4, speed: 3, radius: 0.2 });
+      } catch (err) { /* ignore */ }
+    }
+  });
+  if (shatter && list.length) sound(rec.dim, "random.glass", list[Math.floor(list.length / 2)].c, 3, 0.5);
+}
+// Raise a temporary structure (list of {c, t}) from the ground up over `slices` ticks; it crumbles after `ticks`.
+function raise(key, dim, cells, slices, ticks) {
+  breakDome(key, false);
+  const rec = { dim, placed: [], open: true };
+  DOMES.set(key, rec);
+  cells.sort((a, b) => a.c.y - b.c.y);
+  const per = Math.ceil(cells.length / slices);
+  every(1, slices, (i) => {
+    if (!rec.open) return false;
+    let bodies = [];
+    try { bodies = dim.getEntities({ location: cells[0].c, maxDistance: 24 }).filter((o) => !IGNORE_TYPES.has(o.typeId)).map((o) => o.location); } catch (err) { /* ignore */ }
+    for (const { c, t } of cells.slice(i * per, (i + 1) * per)) {
+      if (bodies.some((p) => Math.abs(p.x - c.x - 0.5) < 1.3 && Math.abs(p.z - c.z - 0.5) < 1.3 && c.y >= p.y - 1 && c.y <= p.y + 2.5)) continue;
+      try { const b = dim.getBlock(c); if (b && b.isAir) { b.setType(t); rec.placed.push({ c, t }); } } catch (err) { /* unloaded */ }
+    }
+  });
+  later(ticks, () => breakDome(key, true));
+}
+// Malevolent Shrine: Sukuna's open domain — no barrier, but the shrine itself rises behind him: a blackstone
+// platform heaped with bones, red pillars, a fanged mouth of flesh and a three-tier roof with upturned eaves.
+function shrineCells(e) {
+  const f = V.norm({ x: e.getViewDirection().x, y: 0, z: e.getViewDirection().z });
+  const back = V.mul(f, -1), side = sideOf(f);
+  const o = V.add(e.location, V.mul(back, 4));
+  const y0 = Math.floor(e.location.y);
+  const cells = [], seen = new Set();
+  const put = (u, w, y, t) => {
+    const c = V.add(o, V.add(V.mul(side, u), V.mul(back, w)));
+    const k = { x: Math.floor(c.x), y: y0 + y, z: Math.floor(c.z) };
+    const id = `${k.x},${k.y},${k.z}`;
+    if (seen.has(id)) return;
+    seen.add(id); cells.push({ c: k, t });
+  };
+  const BS = "minecraft:polished_blackstone", BB = "minecraft:polished_blackstone_bricks", RN = "minecraft:red_nether_brick",
+    FL = "minecraft:nether_wart_block", BO = "minecraft:bone_block", BK = "minecraft:black_concrete";
+  // pillars and mouth first so the platform never overwrites them
+  for (const u of [-3, 3]) for (const w of [0, 4]) for (let y = 1; y <= 5; y++) put(u, w, y, RN);
+  for (const u of [-2, 2]) for (let y = 1; y <= 4; y++) put(u, 1, y, FL);
+  for (const u of [-1, 0, 1]) { put(u, 1, 4, u === 0 ? FL : BO); put(u, 1, 1, u === 0 ? BK : BO); }
+  for (const u of [-1, 0, 1]) for (let y = 2; y <= 3; y++) put(u, 1, y, BK);
+  put(-1, 1, 3, BO); put(1, 1, 2, BO);  // fangs
+  for (let u = -2; u <= 2; u++) for (let y = 1; y <= 5; y++) put(u, 4, y, FL);
+  for (let u = -4; u <= 4; u++) for (let w = -1; w <= 5; w++) {
+    put(u, w, 0, (u + w) % 3 === 0 ? BB : BS);
+    if ((Math.abs(u) === 4 || w === -1 || w === 5) && (u * 7 + w * 3) % 3 !== 0) put(u, w, 1, BO);
+  }
+  for (let u = -4; u <= 4; u++) for (let w = -1; w <= 5; w++) put(u, w, 6, BS);
+  for (let u = -3; u <= 3; u++) for (let w = 0; w <= 4; w++) put(u, w, 7, BB);
+  for (let u = -2; u <= 2; u++) for (let w = 1; w <= 3; w++) put(u, w, 8, BS);
+  for (let u = -1; u <= 1; u++) put(u, 2, 9, RN);
+  for (const u of [-5, 5]) for (const w of [-2, 6]) { put(u, w, 6, RN); put(u, w, 7, RN); }  // upturned eaves
+  return cells;
+}
+// Cinematic shot (the "cinematic ultimates" of the Java anime mods): watching players' cameras swing round the
+// fighter for a couple of seconds, then cut back through black. Each player at most once every ~14 s.
+// /scriptevent ab:cinema off
+const cinemaOn = () => setting("ab:cinema", true);
+const camBusy = new Map();
+const xyz = (p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)} ${p.z.toFixed(2)}`;
+function cinematic(focus, ticks = 44, dist = 7) {
+  if (!alive(focus)) return;
+  cinematicAt(focus.dimension, focus.location, ticks, dist);
+}
+function cinematicAt(dim, f, ticks = 44, dist = 7, look = V.up(f, 1.3)) {
+  if (!cinemaOn()) return;
+  let players = [];
+  try { players = dim.getPlayers({ location: f, maxDistance: 48 }); } catch (e) { return; }
+  const ang = Math.random() * Math.PI * 2;
+  const at = (a, r, h) => ({ x: f.x + Math.cos(a) * r, y: f.y + h, z: f.z + Math.sin(a) * r });
+  const p0 = at(ang, dist * 0.7, 0.6), p1 = at(ang + 1.2, dist * 1.3, dist * 0.45);
+  for (const p of players) {
+    if ((camBusy.get(p.id) ?? 0) > now()) continue;
+    camBusy.set(p.id, now() + ticks + 240);
+    try { p.runCommand(`camera @s set minecraft:free pos ${xyz(p0)} facing ${xyz(look)}`); } catch (e) { continue; }
+    later(1, () => { try { if (p.isValid) p.runCommand(`camera @s set minecraft:free ease ${((ticks - 6) / 20).toFixed(2)} in_out_sine pos ${xyz(p1)} facing ${xyz(look)}`); } catch (e) { /* ignore */ } });
+    later(ticks - 4, () => { try { if (p.isValid) p.runCommand("camera @s fade time 0.15 0.1 0.3 color 0 0 0"); } catch (e) { /* ignore */ } });
+    later(ticks, () => { try { if (p.isValid) p.runCommand("camera @s clear"); } catch (e) { /* ignore */ } });
+  }
+}
+// Pull enemies standing at the edge inside the barrier before it closes.
+function drawInside(e, center, R) {
+  let list = [];
+  try { list = e.dimension.getEntities({ location: center, maxDistance: R + 6 }); } catch (err) { return; }
+  for (const o of list) {
+    if (!canHit(e, teamOf(e), o)) continue;
+    const d = { x: o.location.x - center.x, y: 0, z: o.location.z - center.z };
+    const L = Math.hypot(d.x, d.z);
+    if (L < R - 3) continue;
+    const to = V.add({ x: center.x, y: o.location.y, z: center.z }, V.mul(V.norm(d), R - 4));
+    try { o.tryTeleport(to, { checkForBlocks: true }); } catch (err) { /* ignore */ }
+  }
+}
+// A cinematic flash of colour over the screens of players watching nearby (no text).
+function screenFade(dim, loc, r, fin, hold, fout, rgb) {
+  try {
+    dim.runCommand(`camera @a[x=${Math.floor(loc.x)},y=${Math.floor(loc.y)},z=${Math.floor(loc.z)},r=${Math.round(r)}] fade time ${fin} ${hold} ${fout} color ${rgb[0]} ${rgb[1]} ${rgb[2]}`);
+  } catch (e) { /* ignore */ }
 }
 function solidAt(dim, p) {
   try {
@@ -618,6 +822,7 @@ function transform(e, s, to, label, color, extraSound) {
     : calm ? 0
     : 22);
   slow(e, 30, 8);
+  if (to === def.forms.length - 1 && !e.hasTag("ab_clone")) cinematic(e, 34, 5);
   sound(dim, "ambient.weather.thunder", e.location, 1.5, 1.2);
   every(4, 7, (i) => {
     if (!e.isValid) return false;
@@ -625,6 +830,7 @@ function transform(e, s, to, label, color, extraSound) {
     implode(dim, V.up(e.location, 1), color, 4, 10);
     if (i === 6) {
       try { e.triggerEvent(`ab:form_${to}`); } catch (err) { warn("transform", err); }
+      if (!calm) groundTear(dim, e.location, to === def.forms.length - 1 ? 2.8 : 1.8);
       setPose(e, 0);
       burst(dim, V.up(e.location, 1), color, 60, 6, 0.6, 0.9);
       burst(dim, V.up(e.location, 1), C.white, 30, 4, 0.4, 0.6);
@@ -1099,6 +1305,8 @@ function domainClash(a, b) {
   later(32, () => {
     if (!alive(loser)) return;
     state(loser).domainBroken = now() + 200;
+    breakDome(loser.id, true); breakDome(`shrine${loser.id}`, true);
+    screenFade(dim, loser.location, 40, 0.02, 0.05, 0.3, [255, 255, 255]);
     announce(loser, "§c§lThe domain shatters!");
     burst(dim, V.up(loser.location, 2), C.white, 40, 6, 0.4, 0.6);
     sound(dim, "random.glass", loser.location, 2, 0.6);
@@ -1117,6 +1325,9 @@ function domain(e, s) {
   later(20, () => setPose(e, 0));
   const gojoPower = powerOf(e);
   const team = teamOf(e);
+  drawInside(e, center, R);
+  cinematic(e, 40, 6);
+  buildDome(e, center, R + 1, "minecraft:black_concrete", "minecraft:sea_lantern", 124);
   domainOpened(e);
   every(4, 30, (i) => {
     if (!e.isValid || (state(e).domainBroken ?? 0) > now()) return false;
@@ -1434,13 +1645,15 @@ const yujiCommon = (bf) => ({
     if (V.dist(e.location, t.location) > 2.2) teleportNear(e, t, false, 1.3);
     later(3, () => {
       if (!alive(t)) return;
-      const hitBF = Math.random() < bf;
+      const zone = (s.zoneUntil ?? 0) > now();
+      const hitBF = Math.random() < (zone ? Math.min(0.75, bf * 2.2) : bf);
+      if (hitBF) { s.zoneUntil = now() + 200; every(5, 40, () => { if (!alive(e) || (s.zoneUntil ?? 0) < now()) return false; fx(e.dimension, "streak", aim(e), Math.random() < 0.5 ? C.black : C.red, 0.7, 0.25, { count: 3, speed: 4 }); }); }
       deal(e, t, (hitBF ? 2.5 : 1) * 22 * powerOf(e) / 100);
       const c = aim(t);
       fx(e.dimension, "orb_solid", c, C.black, hitBF ? 2.2 : 1, 0.35);
       fx(e.dimension, "streak", c, hitBF ? C.red : C.ce, 1.8, 0.4, { count: hitBF ? 22 : 10, speed: 12 });
       fx(e.dimension, "streak", c, C.black, 1.6, 0.4, { count: hitBF ? 16 : 6, speed: 9 });
-      if (hitBF) { fx(e.dimension, "shock_v", c, C.red, 5, 0.35); shake(e.dimension, c, 0.3, 0.3); announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX"); }
+      if (hitBF) { fx(e.dimension, "shock_v", c, C.red, 5, 0.35); shake(e.dimension, c, 0.3, 0.3); screenFade(e.dimension, c, 30, 0.02, 0.06, 0.2, [70, 0, 0]); sound(e.dimension, "ab.blackflash", c, 2, 0.95 + Math.random() * 0.1); announce(e, "§0§l§kX§r §4§lBlack Flash §0§l§kX"); }
       try { const n = V.norm(V.sub(t.location, e.location)); t.applyKnockback({ x: n.x * 2.2, z: n.z * 2.2 }, lowLift(0.35)); } catch (err) { /* ignore */ }
       setPose(e, 0);
     });
@@ -1566,6 +1779,10 @@ const YUJI_FINAL = {
     run(e, s, t) {
       busy(s, 20); setPose(e, 21); announce(e, "§f§lItadori: Domain Expansion");
       const dim = e.dimension, center = V.up(e.location, 1);
+      drawInside(e, center, 12);
+      cinematic(e, 40, 6);
+      buildDome(e, center, 13, "minecraft:white_concrete", "minecraft:pearlescent_froglight", 104);
+      domainOpened(e);
       fx(dim, "shock", e.location, C.white, 26, 1.2);
       every(4, 25, (i) => {
         if (!e.isValid) return false;
@@ -1696,6 +1913,10 @@ const SUKUNA = {
       sound(dim, "mob.warden.sonic_boom", center, 2, 0.4);
       fx(dim, "shock", e.location, C.blood, R * 2.4, 1.4);
       shake(dim, center, 0.5, 1);
+      raise(`shrine${e.id}`, dim, shrineCells(e), 8, 126);
+      sound(dim, "ab.domain", center, 3, 0.8);
+      cinematic(e, 44, 9);
+      screenFade(dim, center, 40, 0.05, 0.2, 0.5, [90, 0, 0]);
       domainOpened(e);
       every(3, 40, (i) => {
         if (!e.isValid || (state(e).domainBroken ?? 0) > now()) return false;
@@ -3633,7 +3854,11 @@ function combo(e, s, t) {
 
 function afterimage(e) {
   fx(e.dimension, "aura", e.location, C.white, 0.9, 0.35, { count: 10 * fxLevel(), speed: 0 });
+  if ((lastWhoosh.get(e.id) ?? -99) + 8 > now()) return;  // a rush of blinks is one whoosh, not a buzz
+  lastWhoosh.set(e.id, now());
+  sound(e.dimension, "ab.whoosh", e.location, 0.9, 0.9 + Math.random() * 0.3);
 }
+const lastWhoosh = new Map();
 
 // Visual impact: star flash, speed-line streaks, sparks; strong hits add a shockwave ring and camera shake.
 function impact(e, t, strong, color, mv) {
@@ -4082,9 +4307,16 @@ function launch(src, v, strength = 1) {
     try { ok = v.tryTeleport(next, { checkForBlocks: true, keepVelocity: false }); } catch (e) { ok = false; }
     fx(dim, "aura", v.location, DUST, 0.9, 0.6, { count: 5 * fxLevel(), speed: 1 });
     fx(dim, "streak", aim(v), C.white, 0.7, 0.25, { count: 2, speed: 2 });
+    if (i % 2 === 1) groundTear(dim, v.location, 1.0);
     if (!ok || i === steps - 1) {
+      if (!ok) {  // slammed into a wall: the wall caves in around them
+        const wall = V.up(V.add(v.location, V.mul(d, 1.2)), 1);
+        rubble(dim, wall, 14, 6); carve(dim, wall, 1.6, 30);
+        sound(dim, "ab.boom", wall, 1.2, 1.2); shake(dim, wall, 0.4, 0.4);
+      }
       fx(dim, "shock", v.location, DUST, 4, 0.5);
       burst(dim, V.up(v.location, 0.3), DUST, 16, 3, 0.4, 0.5);
+      groundTear(dim, v.location, strength >= 1.1 ? 2.2 : 1.6);
       if (!ok) sound(dim, "random.anvil_land", v.location, 0.4, 0.6);
       return false;
     }
@@ -4111,6 +4343,7 @@ function impactFrame(src, v) {
   if (!alive(v)) return;
   const c = aim(v);
   fx(v.dimension, "flash", c, C.white, 5, 0.12); sphereFx(v.dimension, c, 1.2, C.white, 14, 0.5, "orb", 0.2);
+  sound(v.dimension, "ab.impact", c, 1.4, 0.9 + Math.random() * 0.2);
   shake(v.dimension, v.location, 0.35, 0.25);
 }
 // Fist clash: two fighters swinging at the same instant meet in the middle — a shockwave, both slide back.
@@ -4120,6 +4353,7 @@ function fistClash(a, b) {
   for (const x of [a, b]) { setPose(x, 5); busy(state(x), 12); }
   fx(dim, "flash", c, C.white, 4, 0.15); fx(dim, "shock_v", c, C.kiYellow, 4, 0.3); fx(dim, "shock", V.up(c, -1), C.white, 7, 0.4);
   burst(dim, c, C.white, 30, 6, 0.4, 0.5); shake(dim, c, 0.45, 0.35);
+  sound(dim, "ab.impact", c, 1.6, 0.75);
   sound(dim, "random.explode", c, 0.8, 1.4);
   later(3, () => {
     for (const [x, y] of [[a, b], [b, a]]) {
@@ -4280,6 +4514,14 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const ds = states.get(e.id);
     if (ds && ds.clones) for (const c of ds.clones) poof(c);  // the original falls: every clone vanishes
     states.delete(e.id);
+    if (def && !e.hasTag("ab_clone")) {  // the finishing blow: the fallen fighter is slammed into a crater, their domain breaks
+      const dim = e.dimension, at = e.location;
+      breakDome(e.id, true); breakDome(`shrine${e.id}`, true);
+      groundTear(dim, at, 2.6);
+      fx(dim, "shock", at, DUST, 9, 0.7); fx(dim, "flash", V.up(at, 1), C.white, 6, 0.2);
+      burst(dim, V.up(at, 0.5), DUST, 40, 6, 0.5, 0.8);
+      sound(dim, "ab.boom", at, 2, 0.85); shake(dim, at, 0.6, 0.6);
+    }
     if (def && teamOf(e)) later(10, () => checkWinner(e.dimension, teamOf(e)));
     // victory: the fighter who landed the last blow raises a fist with a shout
     const k = ev.damageSource && ev.damageSource.damagingEntity;
@@ -4306,6 +4548,9 @@ function checkWinner(dim, losingTeam) {
     const winners = left(winTeam);
     if (!winners.length) return;
     const w = winners[0], wd = FIGHTERS[w.typeId];
+    healArenaSoon(80);
+    later(6, () => cinematic(w, 56, 6));
+    screenFade(dim, w.location, 60, 0.05, 0.1, 0.6, [255, 255, 255]);
     const title = winTeam === RED ? "§c§lRED TEAM WINS!" : "§9§lBLUE TEAM WINS!";
     for (const p of world.getPlayers()) {
       try { p.onScreenDisplay.setTitle(title, { fadeInDuration: 5, stayDuration: 60, fadeOutDuration: 15 }); } catch (err) { /* ignore */ }
@@ -4328,7 +4573,38 @@ function startBattle(p, a, b) {
       later(25, () => { if (f.isValid) setTeam(f, team); });
     } catch (err) { warn("vs", err); }
   }
+  later(6, () => cinematicAt(p.dimension, mid, 40, 11, V.up(mid, 1.2)));  // face-off: the camera sweeps past both fighters
 
+}
+
+// Team war (Mob Battle Mod style): two lines of fighters face each other across the field. Fighters are drawn at
+// random, then dealt out strongest-first in a snake draft (1-2-2-1...) so the two sides come out about even.
+function startWar(p, n) {
+  const ids = Object.keys(FIGHTERS);
+  const pick = [];
+  while (pick.length < n * 2 && pick.length < ids.length) {
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    if (!pick.includes(id)) pick.push(id);
+  }
+  const peak = (id) => { const f = FIGHTERS[id].forms; return f[f.length - 1].power * (1 + (FIGHTERS[id].egoMax ?? 0)); };
+  pick.sort((a, b) => peak(b) - peak(a));
+  const red = [], blue = [];
+  pick.forEach((id, i) => ((i % 4 === 0 || i % 4 === 3) ? red : blue).push(id));
+  const d = V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
+  const mid = V.add(p.location, V.mul(d, 18));
+  const side = sideOf(d);
+  later(4, () => cinematicAt(p.dimension, mid, 50, 16, V.up(mid, 1.2)));
+  for (const [list, team, off] of [[red, RED, -10], [blue, BLUE, 10]]) {
+    list.forEach((id, k) => {
+      later(k * 6, () => {
+        try {
+          const at = V.add(V.add(mid, V.mul(side, off)), V.mul(d, (k - (list.length - 1) / 2) * 4));
+          const f = p.dimension.spawnEntity(id, at);
+          later(30, () => { if (f.isValid) setTeam(f, team); });
+        } catch (err) { warn("war", err); }
+      });
+    });
+  }
 }
 
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
@@ -4393,6 +4669,12 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     let [a, b] = ev.message.trim().toLowerCase().split(/\s+/);
     if (ev.id === "ab:random" || !a || !b) { a = ids[Math.floor(Math.random() * ids.length)]; do { b = ids[Math.floor(Math.random() * ids.length)]; } while (b === a); }
     startBattle(p, a, b);
+  }
+  if (ev.id === "ab:regen") world.setDynamicProperty("ab:regen", ev.message.trim() !== "off");
+  if (ev.id === "ab:cinema") world.setDynamicProperty("ab:cinema", ev.message.trim() !== "off");
+  if (ev.id === "ab:war") {  // team war: /scriptevent ab:war 4  (4 against 4, random fighters, fair teams)
+    const p = ev.sourceEntity && ev.sourceEntity.typeId === "minecraft:player" ? ev.sourceEntity : world.getPlayers()[0];
+    if (p) startWar(p, clamp(parseInt(ev.message, 10) || 3, 2, 6));
   }
   if (ev.id === "ab:kit") {  // every stick and spawn egg again: /scriptevent ab:kit
     for (const p of world.getPlayers()) giveKit(p);
