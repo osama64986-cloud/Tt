@@ -1,4 +1,4 @@
-"""Builds "Nabd Shoulder View": a tiny stand-alone resource pack with only the
+"""Builds "Nazra" (نظرة, by Nabd): a tiny stand-alone resource pack with only the
 shoulder view and the third-person crosshair - no textures, no world look, no
 movement changes.  It uses the classic pack slider (works on every version):
 Left / Right / Both (follows the camera) / Off.
@@ -19,8 +19,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_CROSS = os.path.join(ROOT, "pack_src", "textures", "ui", "nabd_cross.png")
 SRC_UI = os.path.join(ROOT, "pack_src", "ui", "hud_crosshair_overlay.json")
 ICON = os.path.join(ROOT, "pack", "pack_icon.png")
-OUT = os.path.join(ROOT, "dist", "_shoulder")
-ZIP = os.path.join(ROOT, "dist", "Nabd_Shoulder.mcpack")
+OUT = os.path.join(ROOT, "dist", "_nazra")
+ZIP = os.path.join(ROOT, "dist", "Nazra.mcpack")
+# Arabic written for the game's text renderer, which neither joins letters nor runs
+# right to left: the joined letter shapes (Unicode presentation forms) in reverse order.
+AR_NAME = "\ufe93\ufeae\ufec8\ufee7"                                   # نظرة
+AR_DESC = "\ufebe\ufe92\ufee7 \ufee6\ufee3 \ufed2\ufe98\ufedc\ufedf\ufe8d \ufe8d\ufeae\ufef4\ufee3\ufe8e\ufedb"  # كاميرا الكتف من نبض
 # fixed ids so the game treats new builds as updates of the same pack
 HEADER_UUID = "6b1f4c52-9a3e-4c7e-8f61-2d4a7b9e1c05"
 MODULE_UUID = "0f7d2e94-3c18-4b6a-9e25-7a1c8d4f6b30"
@@ -70,6 +74,32 @@ def anim(side_expr):
     }
 
 
+def icon():
+    """Original pack icon: a blocky figure to the left and a crosshair in the free middle."""
+    from PIL import Image, ImageDraw
+    n = 32
+    im = Image.new("RGB", (n, n))
+    d = ImageDraw.Draw(im)
+    for y in range(n):                               # dusk sky to deep teal
+        t = y / (n - 1)
+        d.line([(0, y), (n, y)], fill=(int(30 + 20 * t), int(60 + 70 * t), int(96 + 40 * t)))
+    d.rectangle([0, 25, n, n], fill=(58, 112, 70))
+    d.rectangle([0, 25, n, 25], fill=(92, 156, 92))
+    # figure seen from behind, standing to the left
+    d.rectangle([5, 9, 10, 14], fill=(36, 30, 30))       # hair / back of head
+    d.rectangle([4, 15, 11, 21], fill=(232, 128, 44))    # shirt
+    d.rectangle([2, 15, 3, 21], fill=(214, 168, 128))    # arms
+    d.rectangle([12, 15, 13, 21], fill=(214, 168, 128))
+    d.rectangle([5, 22, 10, 27], fill=(52, 92, 64))      # trousers
+    # crosshair in the middle
+    c = 23
+    d.rectangle([c - 1, 10, c + 1, 22], fill=(20, 22, 28))
+    d.rectangle([c - 6, 15, c + 6, 17], fill=(20, 22, 28))
+    d.rectangle([c, 11, c, 21], fill=(255, 255, 255))
+    d.rectangle([c - 5, 16, c + 5, 16], fill=(255, 255, 255))
+    return im.resize((256, 256), Image.NEAREST)
+
+
 def main():
     if os.path.isdir(OUT):
         shutil.rmtree(OUT)
@@ -91,8 +121,8 @@ def main():
     manifest = {
         "format_version": 2,
         "header": {
-            "name": "Nabd Shoulder View",
-            "description": "Third person with your character to the side and a crosshair in the middle. Only the camera view - nothing else changes. Pick Left / Right / Both / Off with the pack slider.",
+            "name": f"Nazra | {AR_NAME}",
+            "description": f"{AR_DESC}\nShoulder view by Nabd: third person with your character to the side and a crosshair in the middle. Nothing else changes. Pick Left / Right / Both / Off with the pack slider.",
             "uuid": HEADER_UUID,
             "version": [1, 0, int(os.environ.get("NABD_BUILD", "1"))],
             "min_engine_version": [1, 21, 0],
@@ -102,8 +132,7 @@ def main():
         "metadata": {"authors": ["Nabd"]},
     }
     json.dump(manifest, open(os.path.join(OUT, "manifest.json"), "w"), indent=2)
-    if os.path.exists(ICON):
-        shutil.copy(ICON, os.path.join(OUT, "pack_icon.png"))
+    icon().save(os.path.join(OUT, "pack_icon.png"))
     with zipfile.ZipFile(ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         for d, _, fs in os.walk(OUT):
             for f in sorted(fs):

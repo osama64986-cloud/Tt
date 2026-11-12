@@ -20,11 +20,11 @@
   "settings": [
     {
       "type": "label",
-      "text": "Shoulder view: in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. 'Both' moves the character to the side you turn away from."
+      "text": "Nazra (shoulder view by Nabd): in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. 'Both' moves the character to the side you turn away from."
     },
     {
       "type": "toggle",
-      "text": "Shoulder view in third person",
+      "text": "Nazra - shoulder view in third person",
       "name": "nabd:shoulder",
       "default": true
     },
