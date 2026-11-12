@@ -185,12 +185,14 @@ def stamp_version(path):
     Without a new number the game refuses to import an update over the old pack."""
     m = json.load(open(path))
     v = [1, 0, build_number()]
+    if m.get("format_version") == 3:      # manifest v3 writes versions as strings
+        v = ".".join(map(str, v))
     m["header"]["version"] = v
     for mod in m.get("modules", []):
         mod["version"] = v
     for dep in m.get("dependencies", []):
         if "uuid" in dep:
-            dep["version"] = v
+            dep["version"] = [1, 0, build_number()]
     json.dump(m, open(path, "w"), indent=2, ensure_ascii=False)
 
 
@@ -288,9 +290,15 @@ def main():
     if os.path.isdir(anim):
         sp = os.path.join(PACK, "subpacks")
         shutil.copytree(os.path.join(sp, "nabd_items"), os.path.join(sp, "nabd_items_anim"))
-        shutil.copytree(anim, os.path.join(sp, "nabd_items_anim", "animations"))
-        shutil.copytree(anim, os.path.join(sp, "game_items_anim", "animations"))
-        shutil.rmtree(anim)
+        # only the player movement animations are optional; the shoulder view
+        # (referenced by the player entity) must always be in the main pack
+        moving = [f for f in os.listdir(anim) if f.startswith("nabd_player")]
+        for dest in ("nabd_items_anim", "game_items_anim"):
+            os.makedirs(os.path.join(sp, dest, "animations"), exist_ok=True)
+            for f in moving:
+                shutil.copy(os.path.join(anim, f), os.path.join(sp, dest, "animations", f))
+        for f in moving:
+            os.remove(os.path.join(anim, f))
     make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
     validate(out)
     print(f"{len(out)} block textures, {len(item_out)} item textures, {len(variations)} variation groups, {len(fb)} flipbooks")

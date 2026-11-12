@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 A = json.load(open(os.path.join(ROOT, "pack_src", "animations", "nabd_player.animation.json")))["animations"]
 FN = {"dsin": lambda d: math.sin(math.radians(d)), "dcos": lambda d: math.cos(math.radians(d)), "abs": abs,
       "clamp": lambda x, a, b: max(a, min(b, x)), "pow": pow, "sqrt": lambda x: math.sqrt(max(0, x)),
-      "lerp": lambda a, b, t: a + (b - a) * t}
+      "lerp": lambda a, b, t: a + (b - a) * t, "max": max, "math_fmod": math.fmod}
 
 
 def ev(expr, env):
@@ -24,7 +24,7 @@ def ev(expr, env):
     for k in sorted(env, key=len, reverse=True):
         e = e.replace(k, f"({env[k]})")
     for a, b in (("math.sin(", "dsin("), ("math.cos(", "dcos("), ("math.abs(", "abs("), ("math.clamp(", "clamp("),
-                 ("math.pow(", "pow("), ("math.sqrt(", "sqrt("), ("math.lerp(", "lerp("), ("&&", " and "), ("||", " or ")):
+                 ("math.pow(", "pow("), ("math.sqrt(", "sqrt("), ("math.lerp(", "lerp("), ("math.max(", "max("), ("math.mod(", "math_fmod("), ("&&", " and "), ("||", " or ")):
         e = e.replace(a, b)
     return eval(e, dict(FN))
 
@@ -36,6 +36,7 @@ BASE = {"query.is_in_water": 0, "query.is_riding": 0, "query.is_gliding": 0, "qu
         "variable.tcos0": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0}
 STATES = {
     "idle": {},
+    "swimming (crawl stroke)": {"query.is_swimming": 1, "query.is_in_water": 1, "query.life_time": 0.4},
     "walk (stride peak)": {"variable.tcos0": 40},
     "sprint": {"variable.tcos0": -57, "query.is_sprinting": 1},
     "jump start": {"variable.tcos0": 20, "query.is_on_ground": 0, "query.vertical_speed": 8.0},
@@ -67,7 +68,7 @@ def main():
             if row:
                 print("  ", an.split("player.")[1].ljust(26), "  ".join(row))
     print("largest rotation seen: %.1f deg" % worst)
-    sys.exit(0 if worst < 170 else 1)   # a sword wind-up lifts the arm overhead (150)
+    sys.exit(0 if worst < 180 else 1)   # sword wind-up (150) and swim reach (175) lift the arm overhead
 
 
 if __name__ == "__main__":

@@ -58,6 +58,21 @@ J2 = ease(f"math.clamp(({P_} - 0.3) / 0.7, 0.0, 1.0)")         # ... and back
 SWING_KEYS = (0.25, 0.48, 0.62)       # wind-up, strike, follow-through; back to rest at 1.0
 
 
+# swimming stroke: u is the place in the stroke (0..1), one stroke every 1.1 s
+def _u(offset):
+    return f"math.mod(query.life_time * 0.9 + {offset}, 1.0)"
+
+
+def SWIM_X(offset):
+    # -175 (reaching forward) -> -5 (at the hip) -> back to -175, smooth all the way
+    return f"math.lerp(0.0, -90.0 - 85.0 * math.cos(({_u(offset)}) * 360.0), variable.swim_amount)"
+
+
+def SWIM_Z(offset, side):
+    # the arm swings out to the side only on the way back over the top
+    return f"math.lerp(0.0, {side} * 70.0 * math.max(0.0, -math.sin(({_u(offset)}) * 360.0)), variable.swim_amount)"
+
+
 def keys(windup, strike, follow):
     """rest -> wind-up -> strike -> follow-through -> rest, eased between keys"""
     t1, t2, t3 = SWING_KEYS
@@ -161,6 +176,27 @@ anims = {
         },
     },
     # --------------------------------------------------------------- swimming
+    # front crawl: each arm reaches far forward, pulls down under the body to
+    # the hip, then swings back over the top out to the side; the arms are half
+    # a stroke apart and the body rolls a little towards the pulling arm
+    "animation.player.swim": {
+        "loop": True,
+        "override_previous_animation": True,
+        "bones": {
+            "rightarm": {"rotation": [SWIM_X("0.0"), 0.0, SWIM_Z("0.0", "1.0")]},
+            "leftarm": {"rotation": [SWIM_X("0.5"), 0.0, SWIM_Z("0.5", "-1.0")]},
+            "body": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 9.0, variable.swim_amount)", 0.0]},
+            "head": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 14.0, variable.swim_amount)", 0.0]},
+        },
+    },
+    "animation.player.swim.no_right_arm": {
+        "loop": True,
+        "override_previous_animation": True,
+        "bones": {
+            "leftarm": {"rotation": [SWIM_X("0.5"), 0.0, SWIM_Z("0.5", "-1.0")]},
+            "body": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 9.0, variable.swim_amount)", 0.0]},
+        },
+    },
     "animation.player.swim.legs": {
         "loop": True,
         "override_previous_animation": True,

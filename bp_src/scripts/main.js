@@ -282,7 +282,7 @@ system.run(() => {
   system.runInterval(() => {
     const tick = system.currentTick;
     for (const player of world.getAllPlayers()) {
-      try { checkGesture(player, tick); } catch {}
+      // (the look-up gesture was removed: the shoulder view now comes from the resource pack settings)
       if (get(player, "nabd:cam") && get(player, "nabd:aim")) {
         try { drawAim(player); } catch {}
       }
