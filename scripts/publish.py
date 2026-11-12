@@ -12,6 +12,7 @@ Env:
   DRY_RUN=1  print gh commands instead of running them (local testing)
 """
 import datetime as dt
+import hashlib
 import json
 import os
 import pathlib
@@ -34,6 +35,9 @@ SITE_FIELDS = {"name": 60, "author": 60, "tagline": 160, "about": 600}
 SITE_LINKS = ("youtube", "discord", "tiktok", "website")
 MAX_FILE = 100 * 1024 * 1024
 MAX_IMAGE = 5 * 1024 * 1024
+# Only Minecraft content. Executables and scripts are refused even if the token leaks.
+ALLOWED_EXT = {"jar", "zip", "mcaddon", "mcpack", "mcworld", "mctemplate", "7z", "rar"}
+ZIP_EXT = {"jar", "zip", "mcaddon", "mcpack", "mcworld", "mctemplate"}
 
 
 class Invalid(Exception):
@@ -171,11 +175,22 @@ def upsert(db, meta, log):
         if not HTTPS_RE.fullmatch(url) or len(url) > 500:
             raise Invalid("external link must be https://")
         item.update(file=url, external=True, size=text(ext.get("size"), 20), updated=today)
+        item.pop("sha256", None)
     elif file_name:
         src = inbox_file(f"files/{pathlib.PurePosixPath(str(file_name)).name}")
         if src.stat().st_size > MAX_FILE:
             raise Invalid("file too large")
         asset = safe_filename(file_name)
+        ext_name = asset.rpartition(".")[2].lower() if "." in asset else ""
+        if ext_name not in ALLOWED_EXT:
+            raise Invalid(f"file type .{ext_name} is not allowed ({', '.join(sorted(ALLOWED_EXT))})")
+        head = src.read_bytes()[:8] if src.stat().st_size else b""
+        if ext_name in ZIP_EXT and not head.startswith(b"PK"):
+            raise Invalid(f".{ext_name} file is not a valid zip archive")
+        digest = hashlib.sha256()
+        with open(src, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                digest.update(chunk)
         staged = INBOX / "upload" / asset
         staged.parent.mkdir(exist_ok=True)
         shutil.copyfile(src, staged)
@@ -190,6 +205,7 @@ def upsert(db, meta, log):
             size=human_size(src.stat().st_size),
             external=False,
             updated=today,
+            sha256=digest.hexdigest(),
         )
         item["releases"] = [tag] + [t for t in item.get("releases", []) if t != tag]
         log.append(f"release {tag} ({asset})")

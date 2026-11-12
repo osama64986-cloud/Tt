@@ -21,13 +21,16 @@
   const API = (LOCAL && localStorage.getItem("mc.apiBase")) || "https://api.github.com";
   const WORKFLOW = "publish.yml";
   const MAX_FILE = 95 * 1024 * 1024;
-  const STORE_KEY = "mc.admin";
+  const STORE_KEY = "mc.admin";      // sessionStorage: this tab only, cleared on close
+  const VAULT_KEY = "mc.admin.vault"; // localStorage: token encrypted with the owner's password
+  const IDLE_MS = 30 * 60 * 1000;     // auto-lock after 30 minutes without activity
 
   let auth = null;      // { token, repo, login }
   let data = { site: {}, mods: [] };
   let counts = {};
   let editing = null;   // id of the item being edited, or null for new
   let busy = false;
+  let tokenExpiry = null;
 
   /* ---------- GitHub API ---------- */
   async function gh(path, { method = "GET", body, raw = false, token = auth?.token } = {}) {
@@ -42,6 +45,8 @@
       },
       body: body ? JSON.stringify(body) : undefined,
     });
+    const exp = res.headers.get("github-authentication-token-expiration");
+    if (exp) tokenExpiry = exp;
     if (!res.ok) {
       let msg = "";
       try { msg = (await res.json()).message || ""; } catch { /* no body */ }
@@ -156,9 +161,10 @@
       await gh(`/repos/${auth.repo}/git/refs`, { method: "POST", body: { ref: `refs/heads/${branch}`, sha: c.sha } });
 
       j.step("تشغيل النشر...", 76);
-      const since = Date.now() - 10000;
+      const runsUrl = `/repos/${auth.repo}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=20`;
+      const before = new Set(((await gh(runsUrl)).workflow_runs || []).map((r) => r.id));
       await gh(`/repos/${auth.repo}/actions/workflows/${WORKFLOW}/dispatches`, { method: "POST", body: { ref: "main", inputs: { inbox: branch } } });
-      const run = await waitForRun(since, j);
+      const run = await waitForRun(runsUrl, before, j);
       if (run.conclusion === "success") {
         j.done("✔ تم النشر! الموقع تحدّث.");
         await loadData();
@@ -172,15 +178,16 @@
     }
   }
 
-  async function waitForRun(since, j) {
+  /** Wait for the run this dispatch started: the oldest run id we had not seen before. */
+  async function waitForRun(runsUrl, before, j) {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     let run = null;
     for (let i = 0; i < 240; i++) { // up to ~20 minutes
       await sleep(i < 3 ? 3000 : 5000);
-      const r = await gh(`/repos/${auth.repo}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=10`);
-      run = (r.workflow_runs || [])
-        .filter((x) => Date.parse(x.created_at) >= since && (!auth.login || x.actor?.login === auth.login))
-        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))[0] || run;
+      const r = await gh(runsUrl);
+      const fresh = (r.workflow_runs || []).filter((x) => !before.has(x.id)).sort((a, b) => a.id - b.id);
+      if (!run) run = fresh[0] || null;
+      else run = fresh.find((x) => x.id === run.id) || run;
       if (!run) { j.step("بانتظار بدء النشر...", 78); continue; }
       if (run.status === "completed") return run;
       j.step(run.status === "queued" ? "في الطابور..." : "ينشر الآن (إنشاء الإصدار وتحديث الموقع)...", run.status === "queued" ? 80 : 88);
@@ -224,53 +231,99 @@
     document.querySelectorAll(".mini[data-color]").forEach((el) => { el.style.backgroundColor = el.dataset.color; });
   }
 
-  /* ---------- Login ---------- */
-  function saveAuth(remember) {
-    const v = JSON.stringify(auth);
-    try {
-      sessionStorage.setItem(STORE_KEY, v);
-      if (remember) localStorage.setItem(STORE_KEY, v); else localStorage.removeItem(STORE_KEY);
-    } catch { /* storage blocked: stays logged in for this page only */ }
-  }
-  function readAuth() {
-    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || localStorage.getItem(STORE_KEY) || "null"); }
-    catch { return null; }
+  /* ---------- Login & encrypted "remember me" ---------- */
+  const enc = new TextEncoder();
+  const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const unb64 = (str) => Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+
+  async function deriveKey(password, salt) {
+    const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" },
+      base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   }
 
-  async function login(token, repo, remember) {
+  async function lockToVault(password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(auth.token));
+    localStorage.setItem(VAULT_KEY, JSON.stringify({ v: 1, repo: auth.repo, login: auth.login, salt: b64(salt), iv: b64(iv), ct: b64(ct) }));
+  }
+
+  async function unlockVault(password) {
+    const vault = readVault();
+    if (!vault) throw new Error("ما فيه مفتاح محفوظ.");
+    try {
+      const key = await deriveKey(password, unb64(vault.salt));
+      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(vault.iv) }, key, unb64(vault.ct));
+      return { token: new TextDecoder().decode(pt), repo: vault.repo, login: vault.login };
+    } catch {
+      throw new Error("كلمة السر غلط.");
+    }
+  }
+
+  function readVault() {
+    try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || "null"); return v?.v === 1 ? v : null; }
+    catch { return null; }
+  }
+  function readSession() {
+    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || "null"); } catch { return null; }
+  }
+  function saveSession() {
+    try { sessionStorage.setItem(STORE_KEY, JSON.stringify(auth)); } catch { /* page-only login */ }
+  }
+
+  async function login(token, repo) {
     if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error("اكتب المستودع بالشكل: اسم-الحساب/اسم-المستودع");
-    if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(token)) throw new Error("هذا ما يشبه مفتاح GitHub. لازم يبدأ بـ github_pat_");
+    if (/^ghp_/.test(token)) throw new Error("هذا مفتاح Classic وصلاحياته على كل حسابك. استخدم Fine-grained (يبدأ بـ github_pat_) ومحدد على هذا المستودع بس.");
+    if (!/^github_pat_[A-Za-z0-9_]{20,}$/.test(token)) throw new Error("هذا ما يشبه مفتاح GitHub. لازم يبدأ بـ github_pat_");
     const info = await gh(`/repos/${repo}`, { token });
     if (!info.permissions?.push) throw new Error("هذا المفتاح ما عنده صلاحية كتابة على المستودع.");
     let me = "";
     try { me = (await gh("/user", { token })).login; } catch { /* fine-grained tokens may not read /user */ }
     auth = { token, repo: info.full_name, login: me };
-    saveAuth(remember);
+    saveSession();
   }
 
-  function showLogin(err = "") {
-    $("#loginView").hidden = false;
-    $("#dashView").hidden = true;
-    $("#logoutBtn").hidden = true;
-    $("#loginError").textContent = err;
+  function show(view, err = "") {
+    ["loginView", "unlockView", "dashView"].forEach((v) => { $(`#${v}`).hidden = v !== view; });
+    $("#logoutBtn").hidden = view !== "dashView";
+    if (view === "loginView") $("#loginError").textContent = err;
+    if (view === "unlockView") { $("#unlockError").textContent = err; $("#unlockInput").value = ""; $("#unlockInput").focus(); }
   }
+  const showLogin = (err) => show(readVault() ? "unlockView" : "loginView", err);
 
   async function showDash() {
-    $("#loginView").hidden = true;
-    $("#dashView").hidden = false;
-    $("#logoutBtn").hidden = false;
+    show("dashView");
     $("#whoami").textContent = auth.login || "";
     $("#tokenInput").value = "";
-    try { await loadData(); }
-    catch (e) {
+    $("#passInput").value = "";
+    try {
+      await loadData();
+      warnExpiry();
+    } catch (e) {
       if (e.status === 401) { logout(); showLogin(e.message); return; }
       $("#itemList").innerHTML = `<p class="error">${esc(e.message)}</p>`;
     }
   }
 
-  function logout() {
+  function warnExpiry() {
+    const t = tokenExpiry ? Date.parse(tokenExpiry.replace(" UTC", "Z").replace(" ", "T")) : NaN;
+    const days = Math.floor((t - Date.now()) / 864e5);
+    const el = $("#tokenWarn");
+    el.hidden = !(days <= 10);
+    if (!el.hidden) el.textContent = `⚠️ مفتاح GitHub ينتهي بعد ${Math.max(0, days)} يوم. سوّ مفتاح جديد قبل ما ينتهي.`;
+  }
+
+  /** Ends the session. The encrypted vault stays unless forget = true. */
+  function logout(forget = false) {
     auth = null;
-    try { sessionStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_KEY); } catch { /* ignore */ }
+    try {
+      sessionStorage.removeItem(STORE_KEY);
+      localStorage.removeItem("mc.admin"); // old unencrypted format from earlier versions
+      if (forget) localStorage.removeItem(VAULT_KEY);
+    } catch { /* ignore */ }
   }
 
   $("#loginBtn").addEventListener("click", async () => {
@@ -278,14 +331,48 @@
     btn.disabled = true;
     $("#loginError").textContent = "";
     try {
-      await login($("#tokenInput").value.trim(), $("#repoInput").value.trim(), $("#rememberInput").checked);
+      const remember = $("#rememberInput").checked;
+      const pass = $("#passInput").value;
+      if (remember && pass.length < 8) throw new Error("اكتب كلمة سر 8 أحرف أو أكثر لقفل المفتاح.");
+      await login($("#tokenInput").value.trim(), $("#repoInput").value.trim());
+      if (remember) await lockToVault(pass); else localStorage.removeItem(VAULT_KEY);
       await showDash();
     } catch (e) {
       $("#loginError").textContent = e.message;
     } finally { btn.disabled = false; }
   });
   $("#tokenInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#loginBtn").click(); });
+  $("#rememberInput").addEventListener("change", (e) => { $("#passWrap").hidden = !e.target.checked; });
   $("#logoutBtn").addEventListener("click", () => { logout(); showLogin(); });
+  $("#unlockBtn").addEventListener("click", async () => {
+    const btn = $("#unlockBtn");
+    btn.disabled = true;
+    try {
+      const a = await unlockVault($("#unlockInput").value);
+      await gh(`/repos/${a.repo}`, { token: a.token }); // still valid?
+      auth = a;
+      saveSession();
+      await showDash();
+    } catch (e) {
+      if (e.status === 401) { logout(true); show("loginView", "المفتاح المحفوظ انتهى أو انحذف. ادخل بمفتاح جديد."); }
+      else $("#unlockError").textContent = e.message;
+    } finally { btn.disabled = false; }
+  });
+  $("#unlockInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#unlockBtn").click(); });
+  $("#forgetBtn").addEventListener("click", () => {
+    if (confirm("راح ينحذف المفتاح المحفوظ من هذا الجهاز. متأكد؟")) { logout(true); show("loginView"); }
+  });
+
+  // Auto-lock when idle.
+  let lastActive = Date.now();
+  ["pointerdown", "keydown", "scroll"].forEach((ev) => addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true }));
+  setInterval(() => {
+    if (auth && !busy && Date.now() - lastActive > IDLE_MS) {
+      logout();
+      document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+      showLogin("انقفلت اللوحة لأنك ما استخدمتها 30 دقيقة.");
+    }
+  }, 30000);
   $("#reloadBtn").addEventListener("click", () => loadData().catch((e) => alert(e.message)));
 
   /* ---------- Editor ---------- */
@@ -463,7 +550,8 @@
     let site = {};
     try { site = (await (await fetch("mods.json", { cache: "no-cache" })).json()).site || {}; } catch { /* ignore */ }
     $("#repoInput").value = MC.repoOf(site);
-    const saved = readAuth();
+    try { localStorage.removeItem("mc.admin"); } catch { /* drop old unencrypted format */ }
+    const saved = readSession();
     if (saved?.token && saved?.repo) { auth = saved; await showDash(); }
     else showLogin();
   })();

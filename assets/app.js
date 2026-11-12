@@ -225,6 +225,7 @@
         <table class="info-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
         ${(m.tags || []).length ? `<h4>الوسوم</h4><div class="meta">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
         ${(m.changelog || []).length ? `<h4>سجل التحديثات</h4><ul class="changelog">${m.changelog.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+        ${/^[0-9a-f]{64}$/.test(m.sha256 || "") ? `<details class="hash"><summary>🔒 بصمة الملف (SHA-256) للتأكد إنه أصلي</summary><code dir="ltr">${m.sha256}</code></details>` : ""}
         <div class="actions">
           ${file ? `<a class="mc-btn mc-btn-green" href="${esc(file)}" rel="noopener">⬇ تحميل ${esc(m.size || "")}</a>` : ""}
           <button class="mc-btn mc-btn-gold" type="button" id="shareBtn">🔗 نسخ الرابط</button>

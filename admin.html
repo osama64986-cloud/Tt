@@ -35,6 +35,9 @@
         <input id="tokenInput" type="password" dir="ltr" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
       </label>
       <label class="check"><input type="checkbox" id="rememberInput"> تذكرني على هذا الجهاز (لا تفعّلها على جهاز غيرك)</label>
+      <label id="passWrap" hidden>كلمة سر لقفل المفتاح على هذا الجهاز <small>(8 أحرف أو أكثر، لا تكون نفس كلمة سر GitHub)</small>
+        <input id="passInput" type="password" autocomplete="new-password" minlength="8">
+      </label>
       <button class="mc-btn mc-btn-green" id="loginBtn">دخول</button>
       <p class="error" id="loginError" role="alert"></p>
       <details class="help">
@@ -55,6 +58,18 @@
       </details>
     </section>
 
+    <!-- Unlock (token saved encrypted on this device) -->
+    <section id="unlockView" class="panel narrow" hidden>
+      <h2>🔒 اللوحة مقفلة</h2>
+      <p class="muted">المفتاح محفوظ على هذا الجهاز بشكل مشفّر. اكتب كلمة السر لفتحه.</p>
+      <label>كلمة السر<input id="unlockInput" type="password" autocomplete="current-password"></label>
+      <div class="actions">
+        <button class="mc-btn mc-btn-green" id="unlockBtn">فتح</button>
+        <button class="mc-btn mc-btn-red" id="forgetBtn">نسيان هذا الجهاز</button>
+      </div>
+      <p class="error" id="unlockError" role="alert"></p>
+    </section>
+
     <!-- Dashboard -->
     <section id="dashView" hidden>
       <div class="dash-head">
@@ -68,6 +83,7 @@
           <button class="mc-btn" id="reloadBtn" title="تحديث">⟳</button>
         </div>
       </div>
+      <p class="error" id="tokenWarn" hidden></p>
       <div id="jobs"></div>
       <div id="itemList" class="item-list"></div>
     </section>
