@@ -24,7 +24,7 @@ SRC = sys.argv[1]
 OUT = os.path.join(ROOT, "pack_src")
 
 # ------------------------------------------------------------------- haze
-HAZE = {"fog_start": 0.38, "fog_end": 1.0, "fog_color": "#C3E2FF", "render_distance_type": "render"}   # soft, clearly visible distance haze
+HAZE = {"fog_start": 0.3, "fog_end": 1.0, "fog_color": "#C3E2FF", "render_distance_type": "render"}   # soft haze, clearly visible in the distance
 VOLUME = {                                   # Vibrant Visuals: thin ground mist that fades with height
     "density": {"air": {"max_density": 0.03, "zero_density_height": 150.0, "max_density_height": 62.0}},
     "media_coefficients": {"air": {"scattering": [0.045, 0.05, 0.06], "absorption": [0.0, 0.0, 0.0]}},
@@ -38,9 +38,12 @@ for f in sorted(os.listdir(fdir)):
     fs = j["minecraft:fog_settings"]
     air = fs.get("distance", {}).get("air")
     is_default = fs["description"]["identifier"] == "minecraft:fog_default"
-    # only touch the plain daylight air fog (the default and the biomes that
-    # repeat it); caves, nether, end, swamps and the pale garden keep theirs
-    if not (is_default or (air and air.get("fog_color", "").upper() == "#ABD2FF")):
+    # every overworld biome gets the haze written into its own file, so it shows
+    # whatever the biome; the Nether, the End (fixed-distance fogs) and the
+    # pale garden / swamp moods keep their own
+    ident = fs["description"]["identifier"]
+    special = any(k in ident for k in ("hell", "crimson", "warped", "soulsand", "basalt", "the_end", "pale_garden", "swamp", "mangrove"))
+    if special or (air and air.get("render_distance_type") == "fixed"):
         continue
     fs.setdefault("distance", {})["air"] = dict(HAZE)
     if is_default:
