@@ -1,14 +1,21 @@
 {
-  "format_version": "1.8.0",
+  "format_version": "1.21.130",
   "animations": {
-    "animation.nabd.shoulder": {
+    "animation.humanoid.base_pose": {
       "loop": true,
       "bones": {
+        "waist": {
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
         "root": {
           "position": [
-            "-variable.nabd_tp_s * math.cos(query.target_y_rotation)",
+            "-((query.is_local_player && !query.is_first_person && !query.is_in_ui && query.is_pack_setting_enabled('nabd:shoulder')) ? (query.is_pack_setting_selected('nabd:shoulder_side', 'right') ? -1.0 : 1.0) * query.get_pack_setting('nabd:shoulder_shift') * 1.7067 : 0.0)",
             0.0,
-            "variable.nabd_tp_s * math.sin(query.target_y_rotation)"
+            0.0
           ]
         }
       }

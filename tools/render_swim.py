@@ -23,8 +23,17 @@ def pose(t):
             q = p.setdefault(bone, [np.zeros(3), np.zeros(3)])
             if "rotation" in ch:
                 q[0] = q[0] + np.array([R.C.ev(v, env) for v in ch["rotation"]])
-    p.setdefault("root", [np.zeros(3), np.zeros(3)])[0] = np.array([-90.0, 0.0, 0.0])
+            if "position" in ch:
+                q[1] = q[1] + np.array([R.C.ev(v, env) for v in ch["position"]])
+    # the swim animation itself lays the body flat (root rotation), as in the game
     return p
+
+
+def fit(boxes, view, size=(360, 260), scale=5.0):
+    """screen centre that puts the figure in the middle of the frame"""
+    pts = np.array([view @ c for corners, _ in boxes for c in corners])
+    mx, my = (pts[:, 0].min() + pts[:, 0].max()) / 2, (pts[:, 1].min() + pts[:, 1].max()) / 2
+    return (size[0] / 2 - mx * scale, size[1] / 2 + my * scale)
 
 
 def main():
@@ -33,8 +42,8 @@ def main():
     for i in range(8):
         t = 3.0 + period * i / 8
         boxes = R.world_boxes(pose(t))
-        side = R.draw(boxes, R.camera(270, 10), size=(360, 260), scale=5.0, centre=(250, 130), label=f"swim side {i + 1}/8")
-        top = R.draw(boxes, R.camera(180, 80), size=(360, 260), scale=5.0, centre=(180, 40), label=f"swim from above {i + 1}/8")
+        side = R.draw(boxes, R.camera(270, 10), size=(360, 260), scale=5.0, centre=fit(boxes, R.camera(270, 10)), label=f"swim side {i + 1}/8")
+        top = R.draw(boxes, R.camera(180, 80), size=(360, 260), scale=5.0, centre=fit(boxes, R.camera(180, 80)), label=f"swim from above {i + 1}/8")
         both = Image.new("RGB", (360, 520))
         both.paste(side, (0, 0)); both.paste(top, (0, 260))
         frames.append(both)

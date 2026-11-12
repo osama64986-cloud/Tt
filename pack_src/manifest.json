@@ -20,7 +20,7 @@
   "settings": [
     {
       "type": "label",
-      "text": "Shoulder view: in third person (back view) your character stands to the side, the camera stays the game's own camera, and a crosshair marks the exact middle - where you hit and click.\n§7كاميرا الكتف: بالمنظور الثالث (من الخلف) الشخصية تتزحزح للجنب والزائد بالنص."
+      "text": "Shoulder view: in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. The game's camera is unchanged.\n§7كاميرا الكتف: بالمنظور الثالث من الخلف الشخصية تتزحزح للجنب والزائد بالنص هو مكان الضربة."
     },
     {
       "type": "toggle",
@@ -52,12 +52,6 @@
       "max": 14,
       "step": 1,
       "default": 8
-    },
-    {
-      "type": "toggle",
-      "text": "Third-person crosshair",
-      "name": "nabd:crosshair",
-      "default": true
     }
   ],
   "subpacks": [

@@ -18,9 +18,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 1 while jumping / falling freely, 0 otherwise
 AIR = "(query.is_on_ground || query.is_in_water || query.is_riding || query.is_gliding || query.is_sleeping ? 0.0 : 1.0)"
 # query.vertical_speed is in metres per second: a jump starts near +8, a long fall goes far below -10
-UP = f"({AIR} * math.clamp(query.vertical_speed / 6.0, 0.0, 1.0))"         # 0..1 while rising
-DOWN = f"({AIR} * math.clamp(-query.vertical_speed / 9.0, 0.0, 1.0))"      # 0..1 while falling
-TOP = f"({AIR} * (1.0 - math.clamp(math.abs(query.vertical_speed) / 3.0, 0.0, 1.0)))"   # near the top of the arc
+UP = f"({AIR} * math.clamp((query.vertical_speed - 2.0) / 5.0, 0.0, 1.0))"   # 0..1 while really rising (not on small steps)
+DOWN = f"({AIR} * math.clamp((-query.vertical_speed - 4.0) / 10.0, 0.0, 1.0))"  # 0..1 only on real drops, not stepping off a slab
+TOP = f"({AIR} * (1.0 - math.clamp(math.abs(query.vertical_speed) / 3.0, 0.0, 1.0)) * 0.6)"   # near the top of the arc
 DRY = "(query.is_swimming ? 0.0 : 1.0)"
 SPRINT = "(query.is_sprinting && query.is_on_ground ? 1.0 : 0.0)"
 STRIDE = "math.abs(variable.tcos0)"
@@ -64,13 +64,23 @@ def _u(offset):
 
 
 def SWIM_X(offset):
-    # -175 (reaching forward) -> -5 (at the hip) -> back to -175, smooth all the way
-    return f"math.lerp(0.0, -90.0 - 85.0 * math.cos(({_u(offset)}) * 360.0), variable.swim_amount)"
+    # one full turn per stroke: reach forward (-180), pull down under the body to
+    # the hip (0), then back over the top of the back to the front (+180 = -180)
+    return f"variable.swim_amount * (-180.0 + 360.0 * ({_u(offset)}))"
 
 
 def SWIM_Z(offset, side):
-    # the arm swings out to the side only on the way back over the top
-    return f"math.lerp(0.0, {side} * 70.0 * math.max(0.0, -math.sin(({_u(offset)}) * 360.0)), variable.swim_amount)"
+    # the arm lifts a little away from the body while it travels over the back
+    return f"variable.swim_amount * {side} * 18.0 * math.max(0.0, -math.sin(({_u(offset)}) * 360.0))"
+
+
+# the game itself does not lay the body flat: the swim animation has to do it,
+# following where the player looks (query.target_x_rotation)
+SWIM_ROOT = {
+    "position": [0.0, "(math.sin(query.target_x_rotation) * 16.5 + 5.0) * variable.swim_amount",
+                 "math.cos(query.target_x_rotation) * 16.5 * variable.swim_amount"],
+    "rotation": ["variable.swim_amount * (90.0 + query.target_x_rotation)", 0.0, 0.0],
+}
 
 
 def keys(windup, strike, follow):
@@ -97,21 +107,21 @@ anims = {
         "loop": True,
         "bones": {
             "leftarm": {"rotation": [
-                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -66.0, 52.0)"
-                f" - {UP} * 38.0 - {DOWN} * 18.0 - {TOP} * 12.0",
+                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 10.0), -50.0, 42.0)"
+                f" - {UP} * 22.0 - {DOWN} * 10.0 - {TOP} * 6.0",
                 0.0,
-                f"-({GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0)"]},
+                f"-({GROUND} * ({STRIDE} * 0.04 + 2.0) + {UP} * 6.0 + {DOWN} * 22.0 + {TOP} * 10.0)"]},
             "rightarm": {"rotation": [
-                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -66.0, 52.0)"
-                f" - {UP} * 30.0 - {DOWN} * 18.0 - {TOP} * 12.0",
+                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 10.0), -50.0, 42.0)"
+                f" - {UP} * 16.0 - {DOWN} * 10.0 - {TOP} * 6.0",
                 0.0,
-                f"{GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0"]},
+                f"{GROUND} * ({STRIDE} * 0.04 + 2.0) + {UP} * 6.0 + {DOWN} * 22.0 + {TOP} * 10.0"]},
             # the torso dips on each footfall, turns against the legs, leans into a run,
             # leans back as the jump starts and forward as you drop
             "waist": {
                 "rotation": [
-                    f"{DRY} * ({GROUND} * (1.5 + {STRIDE} * 0.035 + {SPRINT} * 8.0) - {UP} * 6.0 + {DOWN} * 7.0)",
-                    f"{DRY} * {GROUND} * variable.tcos0 * 0.14",
+                    f"{DRY} * ({GROUND} * (1.5 + {STRIDE} * 0.025 + {SPRINT} * 6.0) - {UP} * 3.0 + {DOWN} * 3.0)",
+                    f"{DRY} * {GROUND} * variable.tcos0 * 0.1",
                     0.0],
                 "position": [0.0, f"{DRY} * {GROUND} * -{STRIDE} * 0.022", 0.0]},
         },
@@ -120,13 +130,13 @@ anims = {
         "loop": True,
         "bones": {
             "leftleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * -(1.4 + {SPRINT} * 0.05), -62.0, 62.0) - {UP} * 42.0 - {DOWN} * 10.0 - {TOP} * 20.0",
+                f"math.clamp({GROUND} * variable.tcos0 * -1.2, -46.0, 46.0) - {UP} * 26.0 - {DOWN} * 6.0 - {TOP} * 10.0",
                 -0.1,
-                f"-0.1 - {DOWN} * 7.0 - {TOP} * 3.0"]},
+                f"-0.1 - {DOWN} * 4.0"]},
             "rightleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * (1.4 + {SPRINT} * 0.05), -62.0, 62.0) + {UP} * 16.0 - {DOWN} * 16.0 - {TOP} * 4.0",
+                f"math.clamp({GROUND} * variable.tcos0 * 1.2, -46.0, 46.0) + {UP} * 8.0 - {DOWN} * 8.0 - {TOP} * 2.0",
                 0.1,
-                f"0.1 + {DOWN} * 7.0 + {TOP} * 3.0"]},
+                f"0.1 + {DOWN} * 4.0"]},
         },
     },
     # ------------------------------------------------------- idle / breathing
@@ -185,8 +195,8 @@ anims = {
         "bones": {
             "rightarm": {"rotation": [SWIM_X("0.0"), 0.0, SWIM_Z("0.0", "1.0")]},
             "leftarm": {"rotation": [SWIM_X("0.5"), 0.0, SWIM_Z("0.5", "-1.0")]},
-            "body": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 9.0, variable.swim_amount)", 0.0]},
-            "head": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 14.0, variable.swim_amount)", 0.0]},
+            "body": {"rotation": [0.0, "math.sin(query.life_time * 324.0) * 8.0 * variable.swim_amount", 0.0]},
+            "root": SWIM_ROOT,
         },
     },
     "animation.player.swim.no_right_arm": {
@@ -194,7 +204,8 @@ anims = {
         "override_previous_animation": True,
         "bones": {
             "leftarm": {"rotation": [SWIM_X("0.5"), 0.0, SWIM_Z("0.5", "-1.0")]},
-            "body": {"rotation": [0.0, "math.lerp(0.0, math.sin(query.life_time * 324.0) * 9.0, variable.swim_amount)", 0.0]},
+            "body": {"rotation": [0.0, "math.sin(query.life_time * 324.0) * 8.0 * variable.swim_amount", 0.0]},
+            "root": SWIM_ROOT,
         },
     },
     "animation.player.swim.legs": {

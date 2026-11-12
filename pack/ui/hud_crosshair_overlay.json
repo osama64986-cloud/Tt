@@ -1,0 +1,27 @@
+{
+  "namespace": "hud_crosshair",
+  "hud_crosshair_screen": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_back",
+        "value": [
+          {
+            "nabd_cross@hud_crosshair.nabd_cross": {}
+          }
+        ]
+      }
+    ]
+  },
+  "nabd_cross": {
+    "type": "image",
+    "texture": "textures/ui/nabd_cross",
+    "size": [
+      9,
+      9
+    ],
+    "anchor_from": "center",
+    "anchor_to": "center",
+    "layer": 3
+  }
+}

@@ -33,7 +33,7 @@ BASE = {"query.is_in_water": 0, "query.is_riding": 0, "query.is_gliding": 0, "qu
         "query.is_swimming": 0, "variable.attack_time": 0, "query.life_time": 3.3, "variable.swim_amount": 1,
         "query.walk_distance": 1.3, "variable.hand_bob": 0.08, "variable.short_arm_offset_left": 0,
         "variable.short_arm_offset_right": 0, "variable.bob_animation": 1, "this": 5,
-        "variable.tcos0": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0}
+        "variable.tcos0": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0, "query.target_x_rotation": 0}
 STATES = {
     "idle": {},
     "swimming (crawl stroke)": {"query.is_swimming": 1, "query.is_in_water": 1, "query.life_time": 0.4},
