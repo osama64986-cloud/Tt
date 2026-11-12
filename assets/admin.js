@@ -518,7 +518,7 @@
 
   /* ---------- Settings ---------- */
   const sForm = $("#settingsForm");
-  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "website", "googleVerify"];
+  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "instagram", "website", "googleVerify"];
   $("#settingsBtn").addEventListener("click", () => {
     SITE_FIELDS.forEach((k) => { sForm[k].value = data.site[k] || ""; });
     $("#settingsError").textContent = "";
@@ -530,7 +530,12 @@
     const site = {};
     for (const k of SITE_FIELDS) {
       const v = sForm[k].value.trim();
-      if (["donate", "youtube", "discord", "tiktok", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
+      const social = MC.SOCIALS.find((p) => p.key === k);
+      if (social && v && !MC.socialUrl(k, v)) {
+        $("#settingsError").textContent = `رابط ${social.label} لازم يكون من ${social.hosts.join(" أو ")} ويبدأ بـ https://`;
+        return;
+      }
+      if (["donate", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
         $("#settingsError").textContent = "الروابط لازم تبدأ بـ https://";
         return;
       }

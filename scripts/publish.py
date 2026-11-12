@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import unicodedata
+import urllib.parse
 
 ROOT = pathlib.Path(os.environ.get("SITE_ROOT", ".")).resolve()
 INBOX = pathlib.Path(os.environ["INBOX_DIR"]).resolve()
@@ -32,7 +33,12 @@ EDITIONS = {"java", "bedrock"}
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HTTPS_RE = re.compile(r"^https://[^\s\"'<>\\`]+$", re.I)
 SITE_FIELDS = {"name": 60, "author": 60, "tagline": 160, "about": 600}
-SITE_LINKS = ("donate", "youtube", "discord", "tiktok", "website")
+SITE_LINKS = ("donate", "youtube", "discord", "tiktok", "instagram", "website")
+# Social links must point at the platform's own domain (blocks look-alike phishing links).
+SOCIAL_HOSTS = {
+    "youtube": ("youtube.com", "youtu.be"), "tiktok": ("tiktok.com",),
+    "instagram": ("instagram.com",), "discord": ("discord.gg", "discord.com"),
+}
 MAX_FILE = 100 * 1024 * 1024
 MAX_IMAGE = 5 * 1024 * 1024
 # Only Minecraft content. Executables and scripts are refused even if the token leaks.
@@ -284,6 +290,10 @@ def settings(db, meta, log):
         url = str(raw.get(key) or "").strip()
         if url and (not HTTPS_RE.fullmatch(url) or len(url) > 300):
             raise Invalid(f"{key} must be an https:// link")
+        if url and key in SOCIAL_HOSTS:
+            host = (urllib.parse.urlsplit(url).hostname or "").lower()
+            if not any(host == h or host.endswith("." + h) for h in SOCIAL_HOSTS[key]):
+                raise Invalid(f"{key} link must be on {' or '.join(SOCIAL_HOSTS[key])}")
         site[key] = url
     verify = str(raw.get("googleVerify") or "").strip()
     if verify and not re.fullmatch(r"[A-Za-z0-9_-]{10,100}", verify):

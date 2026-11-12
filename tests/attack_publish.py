@@ -54,4 +54,11 @@ res.append(run("junk fields neutralised", {"action": "upsert", "id": "x", "isNew
         and m["color"] == "#5d9c3b" and m["versions"] == ["1.21"] and m["featured"] is False and "evil" not in m and "screenshots" not in m))
 res.append(run("flag injection via name", {"action": "upsert", "id": "x", "isNew": True, "entry": {**GOOD, "name": "--repo=evil/x"}, "fileName": "a.jar"}, {"files/a.jar": ZIP},
     expect_fail=False, check=lambda db, out: "--title=--repo=evil/x" in out and " --repo=o/r" in out))
+res.append(run("phishing look-alike youtube", {"action": "settings", "site": {"youtube": "https://youtube.com.evil.example/x"}}))
+res.append(run("phishing instagram path trick", {"action": "settings", "site": {"instagram": "https://evil.example/instagram.com"}}))
+res.append(run("phishing discord userinfo trick", {"action": "settings", "site": {"discord": "https://discord.gg@evil.example/"}}))
+res.append(run("tiktok javascript:", {"action": "settings", "site": {"tiktok": "javascript://tiktok.com/%0aalert(1)"}}))
+res.append(run("real social links accepted", {"action": "settings", "site": {"youtube": "https://www.youtube.com/@nabd", "instagram": "https://instagram.com/nabd",
+    "tiktok": "https://www.tiktok.com/@nabd", "discord": "https://discord.gg/abc"}}, expect_fail=False,
+    check=lambda db, out: db["site"]["instagram"] == "https://instagram.com/nabd" and db["site"]["discord"] == "https://discord.gg/abc"))
 print(f"\n{sum(res)}/{len(res)} attacks blocked")

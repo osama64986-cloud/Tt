@@ -15,7 +15,7 @@ Every change must be checked for security **before** it is pushed:
 
 ## Layout
 - `index.html`, `assets/app.js` public site · `admin.html`, `assets/admin.js` owner panel
-- `assets/common.js` shared escaping, URL checks, install guides · `assets/item.js` item pages
+- `assets/common.js` shared escaping, URL checks, social links (host allowlist), install guides · `assets/item.js` item pages · `assets/block.js` hero block
 - `scripts/publish.py` validates admin requests (runs in Actions) · `scripts/build.py` builds `_site`
 - `.github/workflows/publish.yml` admin uploads → Release + mods.json · `pages.yml` builds and pushes `gh-pages`
 - Deploy target is the `gh-pages` branch (Pages source). Do not edit it by hand.

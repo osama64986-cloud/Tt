@@ -22,7 +22,7 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = pathlib.Path(os.environ.get("OUT", ROOT / "_site")).resolve()
 REPO = os.environ.get("REPO", "")
-PUBLIC = ["index.html", "admin.html", "404.html", "mods.json", "assets", "images", "downloads"]
+PUBLIC = ["index.html", "admin.html", "404.html", "privacy.html", "mods.json", "assets", "images", "downloads"]
 TYPES = {
     "mod": ("مود", "⚒"), "addon": ("إضافة بيدروك", "🧩"), "texture": ("تكستر", "🎨"),
     "shader": ("شيدر", "✨"), "map": ("خريطة", "🗺"), "world": ("عالم", "🌍"),
@@ -53,6 +53,28 @@ def base_url(site):
     if name.lower() == f"{owner.lower()}.github.io":
         return f"https://{owner.lower()}.github.io/"
     return f"https://{owner.lower()}.github.io/{name}/"
+
+
+SOCIALS = [("youtube", "يوتيوب", "▶", ("youtube.com", "youtu.be")), ("tiktok", "تيك توك", "♪", ("tiktok.com",)),
+           ("instagram", "إنستغرام", "◎", ("instagram.com",)), ("discord", "ديسكورد", "💬", ("discord.gg", "discord.com"))]
+
+
+def social_url(site, key):
+    u = safe_url(site.get(key))
+    hosts = next((h for k, _, _, h in SOCIALS if k == key), ())
+    if not u.startswith("https://"):
+        return ""
+    host = (urllib.parse.urlsplit(u).hostname or "").lower()
+    return u if any(host == h or host.endswith("." + h) for h in hosts) else ""
+
+
+def socials_html(site):
+    out = []
+    for key, label, icon, _ in SOCIALS:
+        u = social_url(site, key)
+        out.append(f'<a class="social social-{key}" href="{e(u)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">{icon}</span> {label}</a>'
+                   if u else f'<span class="social social-{key} soon" title="قريباً"><span aria-hidden="true">{icon}</span> {label} <small>قريباً</small></span>')
+    return "".join(out)
 
 
 def fetch_stats():
@@ -87,6 +109,8 @@ def item_page(m, site, base, stats):
     url = f"{base}m/{m['id']}/"
     img = safe_url(m.get("image"))
     img_abs = img if img.startswith("https://") else (base + img if img else "")
+    og_img = img_abs or base + "assets/og.png"
+    report = social_url(site, "discord") or social_url(site, "instagram")
     rel = lambda u: u if u.startswith("https://") else "../../" + u  # noqa: E731
     file = safe_url(m.get("file"))
     color = m.get("color") if re.fullmatch(r"#[0-9a-fA-F]{6}", str(m.get("color") or "")) else "#5d5d5d"
@@ -129,8 +153,8 @@ def item_page(m, site, base, stats):
   <meta property="og:title" content="{e(name)}">
   <meta property="og:description" content="{e(desc)}">
   <meta property="og:url" content="{e(url)}">
-  {f'<meta property="og:image" content="{e(img_abs)}">' if img_abs else ''}
-  <meta name="twitter:card" content="{'summary_large_image' if img_abs else 'summary'}">
+  <meta property="og:image" content="{e(og_img)}">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#5d9c3b">
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -162,6 +186,7 @@ def item_page(m, site, base, stats):
           <h2 class="h3">🛠 شلون أثبّته؟</h2>
           <noscript><p>شوف قسم <a href="../../#install">طريقة التثبيت</a>.</p></noscript>
         </div>
+        {f'<p class="muted-note">الرابط خربان أو فيه مشكلة؟ <a href="{e(report)}" target="_blank" rel="noopener noreferrer">بلّغني</a>.</p>' if report else ''}
         {f'<h2 class="h4">عن هذا العمل</h2><div class="details-text">{details}</div>' if details else ''}
         {('<h2 class="h4">صور</h2><div class="gallery">' + ''.join(f'<a class="shot" href="{e(rel(s))}" target="_blank" rel="noopener"><img src="{e(rel(s))}" alt="{e(name)} صورة {i}" loading="lazy"></a>' for i, s in enumerate(shots, 1)) + '</div>') if shots else ''}
         {f'<h2 class="h4">فيديو</h2><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/{video}" title="فيديو {e(name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' if video else ''}
@@ -177,7 +202,11 @@ def item_page(m, site, base, stats):
       </div>
     </article>
   </main>
-  <footer class="footer"><p>{e(site_name)} — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p></footer>
+  <footer class="footer">
+    <div class="socials footer-socials">{socials_html(site)}</div>
+    <p><a href="../../privacy.html">سياسة الخصوصية</a></p>
+    <p>{e(site_name)} — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
+  </footer>
   <script src="../../assets/common.js"></script>
   <script src="../../assets/item.js"></script>
 </body>
@@ -211,7 +240,8 @@ def main():
 
     # Home page: canonical, optional Search Console tag, and plain links to every item.
     index = (OUT / "index.html").read_text(encoding="utf-8")
-    head = f'<link rel="canonical" href="{e(base)}">\n  <meta property="og:url" content="{e(base)}">'
+    head = (f'<link rel="canonical" href="{e(base)}">\n  <meta property="og:url" content="{e(base)}">'
+            f'\n  <meta property="og:image" content="{e(base)}assets/og.png">\n  <meta name="twitter:card" content="summary_large_image">')
     verify = str(site.get("googleVerify") or "")
     if re.fullmatch(r"[A-Za-z0-9_-]{10,100}", verify):
         head += f'\n  <meta name="google-site-verification" content="{e(verify)}">'
@@ -221,7 +251,7 @@ def main():
     (OUT / "index.html").write_text(index, encoding="utf-8")
 
     today = dt.date.today().isoformat()
-    urls = [(base, today)] + [(f"{base}m/{m['id']}/", str(m.get("updated") or m.get("date") or today)) for m in mods]
+    urls = [(base, today), (base + "privacy.html", today)] + [(f"{base}m/{m['id']}/", str(m.get("updated") or m.get("date") or today)) for m in mods]
     (OUT / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + "".join(f"  <url><loc>{e(u)}</loc><lastmod>{e(d[:10])}</lastmod></url>\n" for u, d in urls)

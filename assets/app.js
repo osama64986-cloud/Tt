@@ -54,12 +54,11 @@
     if (s.tagline) $("#tagline").textContent = s.tagline;
     if (s.about) $("#aboutText").textContent = s.about;
     $("#year").textContent = new Date().getFullYear();
-    const links = [
-      [s.donate, "❤ ادعمني"], [s.youtube, "▶ يوتيوب"], [s.discord, "💬 ديسكورد"], [s.tiktok, "🎵 تيك توك"], [s.website, "🌐 موقع آخر"],
-    ].filter(([u]) => /^https:\/\//i.test(u || "") && safeUrl(u));
-    $("#socials").innerHTML = links
-      .map(([u, label]) => `<a class="mc-btn" href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${label}</a>`)
-      .join("");
+    const extra = [[s.donate, "❤ ادعمني"], [s.website, "🌐 موقع آخر"]]
+      .filter(([u]) => /^https:\/\//i.test(u || "") && safeUrl(u))
+      .map(([u, label]) => `<a class="social" href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    $("#socials").innerHTML = MC.socialsHtml(s) + extra.join("");
+    $("#footerSocials").innerHTML = MC.socialsHtml(s);
     if (/^https:\/\//i.test(s.donate || "") && safeUrl(s.donate)) {
       const a = $("#navDonate");
       a.href = safeUrl(s.donate);
@@ -257,7 +256,7 @@
           ${guide.length > 1 ? `<div class="guide-tabs" role="tablist">${guide.map((g, i) =>
             `<button type="button" role="tab" class="${i === startTab ? "active" : ""}" data-tab="${i}" aria-selected="${i === startTab}">${g.label}</button>`).join("")}</div>` : ""}
           ${guide.map((g, i) => `<ol class="steps" data-panel="${i}" ${i === startTab ? "" : "hidden"}>${g.steps.map((st) => `<li>${st}</li>`).join("")}</ol>`).join("")}
-          <p class="muted-note">ما زبط؟ شوف <a href="#faq" data-close-modal>الأسئلة الشائعة</a>.</p>
+          <p class="muted-note">ما زبط؟ شوف <a href="#faq" data-close-modal>الأسئلة الشائعة</a>.${MC.reportUrl(state.site) ? ` الرابط خربان؟ <a href="${esc(MC.reportUrl(state.site))}" target="_blank" rel="noopener noreferrer">بلّغني</a>.` : ""}</p>
         </div>
 
         ${m.details ? `<h4>عن هذا العمل</h4><div class="details-text">${esc(m.details).replace(/\n/g, "<br>")}</div>` : ""}

@@ -133,7 +133,34 @@ window.MC = (() => {
     }
   }
 
+  /** Social platforms. A link is only used if it is https and on the platform's own domain. */
+  const SOCIALS = [
+    { key: "youtube", label: "يوتيوب", icon: "▶", hosts: ["youtube.com", "youtu.be"] },
+    { key: "tiktok", label: "تيك توك", icon: "♪", hosts: ["tiktok.com"] },
+    { key: "instagram", label: "إنستغرام", icon: "◎", hosts: ["instagram.com"] },
+    { key: "discord", label: "ديسكورد", icon: "💬", hosts: ["discord.gg", "discord.com"] },
+  ];
+  function socialUrl(key, url) {
+    const p = SOCIALS.find((x) => x.key === key);
+    const u = safeUrl(url);
+    if (!p || !/^https:\/\//i.test(u)) return "";
+    let host = "";
+    try { host = new URL(u).hostname.toLowerCase(); } catch { return ""; }
+    return p.hosts.some((h) => host === h || host.endsWith("." + h)) ? u : "";
+  }
+  /** Buttons for every platform; ones without a link show "قريباً". */
+  function socialsHtml(site) {
+    return SOCIALS.map((p) => {
+      const u = socialUrl(p.key, site?.[p.key]);
+      return u
+        ? `<a class="social social-${p.key}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">${p.icon}</span> ${p.label}</a>`
+        : `<span class="social social-${p.key} soon" title="قريباً"><span aria-hidden="true">${p.icon}</span> ${p.label} <small>قريباً</small></span>`;
+    }).join("");
+  }
+  /** Where people can report a broken download: Discord first, then Instagram. */
+  const reportUrl = (site) => socialUrl("discord", site?.discord) || socialUrl("instagram", site?.instagram);
+
   const downloadsOf = (m, counts) => (m.releases || []).reduce((s, t) => s + (counts[t] || 0), 0);
 
-  return { guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
+  return { SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
 })();

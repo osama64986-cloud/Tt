@@ -442,3 +442,24 @@ a.shot { display: block; }
 .hero-content p { color: #dfe8ff; }
 .stat { background: rgba(0, 0, 0, .35); }
 @media (prefers-reduced-motion: reduce) { .hero-block canvas, .hero-block .pulse, .hero-block .block-shadow, .s2::before, .s2::after { animation: none !important; } }
+
+/* ---------- Social buttons (with "قريباً" placeholders) ---------- */
+.socials { display: flex; gap: 8px; flex-wrap: wrap; }
+.footer-socials { justify-content: center; margin-bottom: 14px; }
+.follow { margin: 14px 0 8px; font-size: 1.05rem; }
+.social {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+  font-weight: 800; font-size: .95rem; color: #fff; text-decoration: none;
+  border: 3px solid #000; box-shadow: inset -3px -3px 0 rgba(0,0,0,.3), inset 3px 3px 0 rgba(255,255,255,.25);
+  background: #555;
+}
+a.social:hover { filter: brightness(1.15); }
+.social-youtube { background: #c4302b; }
+.social-tiktok { background: #111; box-shadow: inset -3px -3px 0 #fe2c55, inset 3px 3px 0 #25f4ee; }
+.social-instagram { background: linear-gradient(45deg, #f09433, #dc2743 50%, #bc1888); }
+.social-discord { background: #5865f2; }
+.social.soon { background: #2b2b2b; color: #9a9a9a; border-style: dashed; border-color: #555; box-shadow: none; cursor: default; }
+.social.soon small { background: var(--gold); color: #000; padding: 0 6px; font-size: .75rem; }
+.legal h1 { margin-top: 0; }
+.legal h2 { font-size: 1.15rem; color: var(--gold); margin: 20px 0 6px; }
+.legal { padding: 24px; }
