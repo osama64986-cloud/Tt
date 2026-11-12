@@ -83,7 +83,7 @@ def world_boxes(pose):
         pv = np.array(pivot, float)
         # local transform: translate by animation position, rotate about the pivot
         def local(p, R=R, pv=pv, t=t):
-            return (R @ (p - pv)) + pv + np.array([-t[0], t[1], -t[2]])
+            return (R @ (p - pv)) + pv + np.array([-t[0], t[1], t[2]])
         if parent is None:
             mats[b] = local
         else:

@@ -3,6 +3,7 @@
 player states (tiny Molang -> Python translation) so wrong signs or runaway
 angles show up without launching the game."""
 import json
+import molang  # noqa: E402
 import math
 import os
 import re
@@ -16,29 +17,28 @@ FN = {"dsin": lambda d: math.sin(math.radians(d)), "dcos": lambda d: math.cos(ma
 
 
 def ev(expr, env):
-    if not isinstance(expr, str):
-        return float(expr)
-    e = re.sub(r"\bq\.", "query.", expr)
-    e = re.sub(r"query\.is_item_name_any\([^)]*\)", str(env.get("_sword", 0)), e)
-    e = re.sub(r"\(([^()?]+)\?([^():]+):([^()]+)\)", r"((\2) if (\1) else (\3))", e)   # ternaries first
-    for k in sorted(env, key=len, reverse=True):
-        e = e.replace(k, f"({env[k]})")
-    for a, b in (("math.sin(", "dsin("), ("math.cos(", "dcos("), ("math.abs(", "abs("), ("math.clamp(", "clamp("),
-                 ("math.pow(", "pow("), ("math.sqrt(", "sqrt("), ("math.lerp(", "lerp("), ("math.max(", "max("), ("math.mod(", "math_fmod("), ("&&", " and "), ("||", " or ")):
-        e = e.replace(a, b)
-    return eval(e, dict(FN))
+    """evaluate with the real Molang interpreter (tools/molang.py)"""
+    ctx = env.setdefault("_ctx", {"v": {}, "q": {}})
+    for k, val in env.items():
+        if k.startswith("query."):
+            ctx["q"][k[6:]] = val
+        elif k.startswith("variable."):
+            ctx["v"].setdefault(k[9:], val)
+    ctx["q"]["is_item_name_any"] = lambda *a: float(env.get("_sword", 0))
+    ctx["q"]["position"] = lambda i: 0.0
+    return molang.run(expr, ctx)
 
 
 BASE = {"query.is_in_water": 0, "query.is_riding": 0, "query.is_gliding": 0, "query.is_sleeping": 0,
         "query.is_swimming": 0, "variable.attack_time": 0, "query.life_time": 3.3, "variable.swim_amount": 1,
         "query.walk_distance": 1.3, "variable.hand_bob": 0.08, "variable.short_arm_offset_left": 0,
         "variable.short_arm_offset_right": 0, "variable.bob_animation": 1, "this": 5,
-        "variable.tcos0": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0, "query.target_x_rotation": 0}
+        "variable.tcos0": 0, "query.delta_time": 0.016, "query.ground_speed": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0, "query.target_x_rotation": 0}
 STATES = {
     "idle": {},
     "swimming (crawl stroke)": {"query.is_swimming": 1, "query.is_in_water": 1, "query.life_time": 0.4},
-    "walk (stride peak)": {"variable.tcos0": 40},
-    "sprint": {"variable.tcos0": -57, "query.is_sprinting": 1},
+    "walk (stride peak)": {"variable.tcos0": 40, "query.ground_speed": 4.3, "query.modified_distance_moved": 2.8},
+    "sprint": {"variable.tcos0": -57, "query.is_sprinting": 1, "query.ground_speed": 5.6, "query.modified_distance_moved": 8.4},
     "jump start": {"variable.tcos0": 20, "query.is_on_ground": 0, "query.vertical_speed": 8.0},
     "top of jump": {"query.is_on_ground": 0, "query.vertical_speed": 0.3},
     "falling": {"query.is_on_ground": 0, "query.vertical_speed": -9.0},

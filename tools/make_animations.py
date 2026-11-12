@@ -12,6 +12,10 @@ Conventions measured from the game's skeleton:
 """
 import json
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import motion  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -103,42 +107,7 @@ def pick(sword, punch):
 
 anims = {
     # ------------------------------------------------- walking, running, jumping
-    "animation.player.move.arms": {
-        "loop": True,
-        "bones": {
-            "leftarm": {"rotation": [
-                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 10.0), -50.0, 42.0)"
-                f" - {UP} * 22.0 - {DOWN} * 10.0 - {TOP} * 6.0",
-                0.0,
-                f"-({GROUND} * ({STRIDE} * 0.04 + 2.0) + {UP} * 6.0 + {DOWN} * 22.0 + {TOP} * 10.0)"]},
-            "rightarm": {"rotation": [
-                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 10.0), -50.0, 42.0)"
-                f" - {UP} * 16.0 - {DOWN} * 10.0 - {TOP} * 6.0",
-                0.0,
-                f"{GROUND} * ({STRIDE} * 0.04 + 2.0) + {UP} * 6.0 + {DOWN} * 22.0 + {TOP} * 10.0"]},
-            # the torso dips on each footfall, turns against the legs, leans into a run,
-            # leans back as the jump starts and forward as you drop
-            "waist": {
-                "rotation": [
-                    f"{DRY} * ({GROUND} * (1.5 + {STRIDE} * 0.025 + {SPRINT} * 6.0) - {UP} * 3.0 + {DOWN} * 3.0)",
-                    f"{DRY} * {GROUND} * variable.tcos0 * 0.1",
-                    0.0],
-                "position": [0.0, f"{DRY} * {GROUND} * -{STRIDE} * 0.022", 0.0]},
-        },
-    },
-    "animation.player.move.legs": {
-        "loop": True,
-        "bones": {
-            "leftleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * -1.2, -46.0, 46.0) - {UP} * 26.0 - {DOWN} * 6.0 - {TOP} * 10.0",
-                -0.1,
-                f"-0.1 - {DOWN} * 4.0"]},
-            "rightleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * 1.2, -46.0, 46.0) + {UP} * 8.0 - {DOWN} * 8.0 - {TOP} * 2.0",
-                0.1,
-                f"0.1 + {DOWN} * 4.0"]},
-        },
-    },
+    # walking, running, backwards, jumping, landing and crouching: see motion.py
     # ------------------------------------------------------- idle / breathing
     "animation.player.bob": {
         "loop": True,
@@ -149,22 +118,6 @@ anims = {
                                       "math.cos(query.life_time * 88.0 + 25.0) * 2.3 + 3.1"]},
             "waist": {"rotation": ["math.sin(query.life_time * 88.0) * 0.55", 0.0, 0.0]},
             "head": {"position": [0.0, "math.sin(query.life_time * 88.0 - 30.0) * 0.1", 0.0]},
-        },
-    },
-    # --------------------------------------------------------------- sneaking
-    # body / head / root offsets are what the game's camera and hit box expect;
-    # on top: hands held low and ready, knees apart, a soft sway while creeping
-    "animation.player.sneaking": {
-        "loop": True,
-        "bones": {
-            "body": {"position": [0.0, -2.0, 0.0]},
-            "head": {"position": [0.0, -1.0, 0.0]},
-            "leftarm": {"rotation": ["-20.0 + variable.tcos0 * 0.35", 0.0, "-7.0 - math.abs(variable.tcos0) * 0.05"]},
-            "rightarm": {"rotation": ["-20.0 - variable.tcos0 * 0.35", 0.0, "7.0 + math.abs(variable.tcos0) * 0.05"]},
-            "leftleg": {"rotation": [-28.0, -0.1, -2.5]},
-            "rightleg": {"rotation": [-28.0, 0.1, 2.5]},
-            "waist": {"rotation": [0.0, "variable.tcos0 * 0.1", 0.0]},
-            "root": {"position": [0.0, 1.25, 9.0], "rotation": ["28.0 - this", 0.0, 0.0]},
         },
     },
     # ----------------------------------------------------------------- attack
@@ -265,5 +218,6 @@ anims = {
 
 out = os.path.join(ROOT, "pack_src", "animations", "nabd_player.animation.json")
 os.makedirs(os.path.dirname(out), exist_ok=True)
+anims.update(motion.build())
 json.dump({"format_version": "1.8.0", "animations": anims}, open(out, "w"), indent=2)
 print("wrote", out, len(anims), "animations")
