@@ -259,7 +259,7 @@ def main():
         del item_out[name]
     tools = ("_pickaxe", "_axe", "_shovel", "_hoe", "_sword", "_spear", "_helmet", "_chestplate", "_leggings", "_boots")
     for name, tex in item_out.items():
-        if not name.endswith(tools):
+        if not name.endswith(tools) and not name.endswith("_atlas"):     # animated dials keep their own colours
             calibrate(tex, items.ISTATS[name]["mean"])
     for name, tex in item_out.items():
         st = items.ISTATS[name]

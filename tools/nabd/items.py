@@ -616,6 +616,7 @@ def build_extra(out):
         for y in range(2, 14):
             g[y][x], g[y][x + 1] = "C", "C"
     build_last(out)
+    build_animated(out)
     put("reeds", render(g, {"C": R((150, 200, 90), 0.36)}, extra=[(4, 5, (90, 140, 50)), (5, 5, (90, 140, 50)), (8, 8, (90, 140, 50)),
                                                                  (9, 8, (90, 140, 50)), (11, 4, (90, 140, 50)), (12, 4, (90, 140, 50)), (4, 10, (90, 140, 50)), (5, 10, (90, 140, 50))]))
 
@@ -1120,3 +1121,78 @@ X_TOTEM = [
 assert all(len(r) == N for r in X_TOTEM)
 
 X_SPEAR = _spear()
+
+
+# ---------------------------------------------------------------- animated compass and clock
+def _dial(rim, face):
+    """Round dial: rim ramp, face ramp. Returns (rows-like grid of chars)."""
+    g = [["."] * N for _ in range(N)]
+    for y in range(N):
+        for x in range(N):
+            d = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
+            if d <= 6.6:
+                if d > 5.2:
+                    g[y][x] = "4" if (x + y) < 15 else ("2" if (x + y) > 16 else "3")
+                else:
+                    g[y][x] = "S" if (x + y) < 13 else "R"
+    return g
+
+
+def compass_frames(rim, face, needle, tail, frames=32, start=180.0):
+    import math
+    from .core import stack_frames
+    out = []
+    for f in range(frames):
+        ang = math.radians((start + f * 360.0 / frames) % 360)        # 0 = up, clockwise
+        g = _dial(rim, face)
+        dx, dy = math.sin(ang), -math.cos(ang)
+        for k in range(1, 5):                                          # needle point
+            x, y = int(round(7.5 + dx * k)), int(round(7.5 + dy * k))
+            g[y][x] = "e" if k > 1 else "d"
+        for k in range(1, 4):                                          # tail
+            x, y = int(round(7.5 - dx * k)), int(round(7.5 - dy * k))
+            g[y][x] = "x"
+        g[7][7], g[8][8] = "0", "0"
+        out.append(exact(["".join(r) for r in g], {"M": rim, "P": face, "A": needle, "V": tail}, metal={"M": 200}))
+    return stack_frames(out)
+
+
+def clock_frames(frames=64):
+    import math
+    from .core import stack_frames
+    sky, night, sun, moon = R((90, 170, 240), 0.3), R((24, 34, 80), 0.4), (255, 230, 90), (236, 240, 250)
+    out = []
+    for f in range(frames):
+        day_dir = f * 360.0 / frames                                   # where the daylight half faces (0 = up)
+        g = _dial(GOLD, sky)
+        extra = []
+        for y in range(N):
+            for x in range(N):
+                d = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
+                if d <= 5.2:
+                    a = math.degrees(math.atan2(x - 7.5, -(y - 7.5))) % 360
+                    diff = abs(((a - day_dir + 180) % 360) - 180)
+                    if diff > 90:
+                        extra.append((x, y, night[2] if (x + y) < 15 else night[1]))
+        r = math.radians(day_dir)
+        sx, sy = int(round(7.5 + math.sin(r) * 3.2)), int(round(7.5 - math.cos(r) * 3.2))
+        mx, my = int(round(7.5 - math.sin(r) * 3.2)), int(round(7.5 + math.cos(r) * 3.2))
+        extra += [(sx, sy, sun), (mx, my, moon)]
+        extra += [(7, 1, (60, 40, 20)), (8, 1, (60, 40, 20))]          # fixed pointer at the top
+        out.append(exact(["".join(r_) for r_ in g], {"M": GOLD, "P": sky}, metal={"M": 220}, extra=extra))
+    return stack_frames(out)
+
+
+def build_animated(out):
+    face = R((240, 236, 222), 0.14)
+    red, grey = R((220, 40, 40)), R((120, 124, 132), 0.4)
+    if "compass_atlas" in ISTATS:
+        out["compass_atlas"] = compass_frames(R((150, 150, 160), 0.4), face, red, grey)
+    if "lodestonecompass_atlas" in ISTATS:
+        out["lodestonecompass_atlas"] = compass_frames(R((110, 96, 150), 0.4), face, R((60, 200, 220)), grey)
+    if "recovery_compass_atlas" in ISTATS:
+        t = compass_frames(R((20, 90, 110), 0.5), R((40, 60, 70), 0.3), R((90, 230, 240)), R((30, 60, 70), 0.4))
+        t.emis = np.where(t.alpha > 0, 30, 0)
+        out["recovery_compass_atlas"] = t
+    if "watch_atlas" in ISTATS:
+        out["watch_atlas"] = clock_frames(ISTATS["watch_atlas"]["size"][1] // 16)
