@@ -17,39 +17,54 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 1 while jumping / falling freely, 0 otherwise
 AIR = "(query.is_on_ground || query.is_in_water || query.is_riding || query.is_gliding || query.is_sleeping ? 0.0 : 1.0)"
-RISE = "math.clamp(query.vertical_speed * 60.0, -14.0, 26.0)"       # + going up, - falling
-FALL = "math.clamp(-query.vertical_speed * 55.0, 0.0, 46.0)"       # how hard we are dropping
+# query.vertical_speed is in metres per second: a jump starts near +8, a long fall goes far below -10
+UP = f"({AIR} * math.clamp(query.vertical_speed / 6.0, 0.0, 1.0))"         # 0..1 while rising
+DOWN = f"({AIR} * math.clamp(-query.vertical_speed / 9.0, 0.0, 1.0))"      # 0..1 while falling
+TOP = f"({AIR} * (1.0 - math.clamp(math.abs(query.vertical_speed) / 3.0, 0.0, 1.0)))"   # near the top of the arc
 DRY = "(query.is_swimming ? 0.0 : 1.0)"
 SPRINT = "(query.is_sprinting && query.is_on_ground ? 1.0 : 0.0)"
 STRIDE = "math.abs(variable.tcos0)"
 T = "variable.attack_time"
 SWING = "math.sin((1.0 - math.pow(1.0 - variable.attack_time, 3.0)) * 180.0)"
 ARC = "math.sin(variable.attack_time * 180.0)"
+GROUND = f"(1.0 - {AIR})"
 
 anims = {
-    # ---------------------------------------------------------------- walking
+    # ------------------------------------------------- walking, running, jumping
     "animation.player.move.arms": {
         "loop": True,
         "bones": {
             "leftarm": {"rotation": [
-                f"variable.tcos0 * 1.12 - {SPRINT} * 12.0 + {AIR} * {RISE} * 0.5",
+                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -78.0, 70.0)"
+                f" - {UP} * 38.0 - {DOWN} * 18.0 - {TOP} * 12.0",
                 0.0,
-                f"-({STRIDE} * 0.07 + {AIR} * {FALL})"]},
+                f"-({GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0)"]},
             "rightarm": {"rotation": [
-                f"-variable.tcos0 * 1.12 - {SPRINT} * 12.0 + {AIR} * {RISE} * 0.5",
+                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -78.0, 70.0)"
+                f" - {UP} * 30.0 - {DOWN} * 18.0 - {TOP} * 12.0",
                 0.0,
-                f"{STRIDE} * 0.07 + {AIR} * {FALL}"]},
-            # the torso counters the legs and dips a little on every footfall
+                f"{GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0"]},
+            # the torso dips on each footfall, turns against the legs, leans into a run,
+            # leans back as the jump starts and forward as you drop
             "waist": {
-                "rotation": [f"{DRY} * ({SPRINT} * 5.0 + {STRIDE} * 0.03)", f"{DRY} * variable.tcos0 * 0.13", 0.0],
-                "position": [0.0, f"{DRY} * -{STRIDE} * 0.011", 0.0]},
+                "rotation": [
+                    f"{DRY} * ({GROUND} * (1.5 + {STRIDE} * 0.035 + {SPRINT} * 8.0) - {UP} * 6.0 + {DOWN} * 7.0)",
+                    f"{DRY} * {GROUND} * variable.tcos0 * 0.14",
+                    0.0],
+                "position": [0.0, f"{DRY} * {GROUND} * -{STRIDE} * 0.022", 0.0]},
         },
     },
     "animation.player.move.legs": {
         "loop": True,
         "bones": {
-            "leftleg": {"rotation": [f"variable.tcos0 * -1.4 - {AIR} * {RISE}", -0.1, f"-0.1 - {AIR} * 3.0"]},
-            "rightleg": {"rotation": [f"variable.tcos0 * 1.4 + {AIR} * {RISE} * 0.45", 0.1, f"0.1 + {AIR} * 3.0"]},
+            "leftleg": {"rotation": [
+                f"math.clamp({GROUND} * variable.tcos0 * -(1.4 + {SPRINT} * 0.05), -80.0, 80.0) - {UP} * 42.0 - {DOWN} * 10.0 - {TOP} * 20.0",
+                -0.1,
+                f"-0.1 - {DOWN} * 7.0 - {TOP} * 3.0"]},
+            "rightleg": {"rotation": [
+                f"math.clamp({GROUND} * variable.tcos0 * (1.4 + {SPRINT} * 0.05), -80.0, 80.0) + {UP} * 16.0 - {DOWN} * 16.0 - {TOP} * 4.0",
+                0.1,
+                f"0.1 + {DOWN} * 7.0 + {TOP} * 3.0"]},
         },
     },
     # ------------------------------------------------------- idle / breathing

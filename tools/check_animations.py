@@ -37,25 +37,32 @@ STATES = {
     "idle": {},
     "walk (stride peak)": {"variable.tcos0": 40},
     "sprint": {"variable.tcos0": -57, "query.is_sprinting": 1},
-    "jump rising": {"variable.tcos0": 20, "query.is_on_ground": 0, "query.vertical_speed": 0.4},
-    "falling": {"query.is_on_ground": 0, "query.vertical_speed": -0.9},
+    "jump start": {"variable.tcos0": 20, "query.is_on_ground": 0, "query.vertical_speed": 8.0},
+    "top of jump": {"query.is_on_ground": 0, "query.vertical_speed": 0.3},
+    "falling": {"query.is_on_ground": 0, "query.vertical_speed": -9.0},
+    "sprint jump": {"variable.tcos0": -50, "query.is_sprinting": 1, "query.is_on_ground": 0, "query.vertical_speed": 6.0},
     "attack 35%": {"variable.attack_time": 0.35},
     "swimming": {"query.is_swimming": 1, "query.is_in_water": 1, "query.is_on_ground": 0, "variable.tcos0": 30},
 }
-worst = 0.0
-for sn, st in STATES.items():
-    env = dict(BASE)
-    env.update(st)
-    print("==", sn)
-    for an, ad in A.items():
-        row = []
-        for bone, ch in ad["bones"].items():
-            for c, vals in ch.items():
-                v = [ev(x, env) for x in vals]
-                worst = max(worst, max(abs(x) for x in v) if c == "rotation" else 0)
-                if any(abs(x) > 0.05 for x in v):
-                    row.append(f"{bone}.{c[:3]}=[{', '.join('%.1f' % x for x in v)}]")
-        if row:
-            print("  ", an.split("player.")[1].ljust(26), "  ".join(row))
-print("largest rotation seen: %.1f deg" % worst)
-sys.exit(0 if worst < 120 else 1)
+def main():
+    worst = 0.0
+    for sn, st in STATES.items():
+        env = dict(BASE)
+        env.update(st)
+        print("==", sn)
+        for an, ad in A.items():
+            row = []
+            for bone, ch in ad["bones"].items():
+                for c, vals in ch.items():
+                    v = [ev(x, env) for x in vals]
+                    worst = max(worst, max(abs(x) for x in v) if c == "rotation" else 0)
+                    if any(abs(x) > 0.05 for x in v):
+                        row.append(f"{bone}.{c[:3]}=[{', '.join('%.1f' % x for x in v)}]")
+            if row:
+                print("  ", an.split("player.")[1].ljust(26), "  ".join(row))
+    print("largest rotation seen: %.1f deg" % worst)
+    sys.exit(0 if worst < 120 else 1)
+
+
+if __name__ == "__main__":
+    main()
