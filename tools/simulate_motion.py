@@ -108,12 +108,14 @@ def simulate(plan=None):
         pose = {}
         for name in ORDER:
             for bone, ch in A.get(name, {}).get("bones", {}).items():
-                p = pose.setdefault(bone, [np.zeros(3), np.zeros(3)])
+                p = pose.setdefault(bone, [np.zeros(3), np.zeros(3), np.ones(3)])
                 if "rotation" in ch:
                     p[0] = p[0] + np.array([molang.run(x, ctx) for x in ch["rotation"]])
                 if "position" in ch:
                     p[1] = p[1] + np.array([molang.run(x, ctx) for x in ch["position"]])
-        for bone, (r, _) in pose.items():
+                if "scale" in ch:
+                    p[2] = p[2] * np.array([molang.run(x, ctx) for x in ch["scale"]])
+        for bone, (r, _, _s) in pose.items():
             if bone in ("root",):
                 continue
             worst = max(worst, float(np.max(np.abs(r))))

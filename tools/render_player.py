@@ -76,14 +76,16 @@ def world_boxes(pose):
     out = []
     for b in ORDER:
         parent, pivot, boxes = BONES[b]
-        r, t = pose.get(b, [np.zeros(3), np.zeros(3)])
+        entry = pose.get(b, [np.zeros(3), np.zeros(3)])
+        r, t = entry[0], entry[1]
+        sc = entry[2] if len(entry) > 2 else np.ones(3)
         if b == "root" and "28.0 - this" in str(r):
             pass
         R = rot(*r)
         pv = np.array(pivot, float)
         # local transform: translate by animation position, rotate about the pivot
-        def local(p, R=R, pv=pv, t=t):
-            return (R @ (p - pv)) + pv + np.array([-t[0], t[1], t[2]])
+        def local(p, R=R, pv=pv, t=t, sc=sc):
+            return (R @ ((p - pv) * sc)) + pv + np.array([-t[0], t[1], t[2]])
         if parent is None:
             mats[b] = local
         else:

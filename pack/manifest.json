@@ -4,14 +4,14 @@
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "1cfe1b24-c8dd-428f-8ad8-ea5fde34153d",
-    "version": "1.0.42",
+    "version": "1.0.45",
     "min_engine_version": "1.21.130"
   },
   "modules": [
     {
       "type": "resources",
       "uuid": "26fcbd58-13fa-43a9-82d4-31c53c5d0bde",
-      "version": "1.0.42"
+      "version": "1.0.45"
     }
   ],
   "capabilities": [
