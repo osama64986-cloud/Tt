@@ -167,6 +167,32 @@ def make_icon(out, size=256):
     return Image.fromarray(bg, "RGBA")
 
 
+def build_number():
+    """A number that grows with every commit, so each build installs as an update."""
+    import subprocess
+    try:
+        return int(subprocess.run(["git", "rev-list", "--count", "HEAD"], cwd=ROOT, capture_output=True,
+                                  text=True, check=True).stdout.strip()) + 1
+    except Exception:
+        import time
+        return int(time.time() // 60) % 100000
+
+
+def stamp_version(path):
+    """Write the build number into a manifest: the pack, its modules and the
+    behavior pack's dependency on the resource pack all move together.
+    Without a new number the game refuses to import an update over the old pack."""
+    m = json.load(open(path))
+    v = [1, 0, build_number()]
+    m["header"]["version"] = v
+    for mod in m.get("modules", []):
+        mod["version"] = v
+    for dep in m.get("dependencies", []):
+        if "uuid" in dep:
+            dep["version"] = v
+    json.dump(m, open(path, "w"), indent=2, ensure_ascii=False)
+
+
 def calibrate(tex, target, strength=0.65):
     """Pull an item's average colour towards the colour players know for it
     (only the average colour is used - no pixels)."""
@@ -220,6 +246,7 @@ def main():
         shutil.rmtree(PACK)
     if os.path.isdir(SRC):
         shutil.copytree(SRC, PACK)
+        stamp_version(os.path.join(PACK, "manifest.json"))
     else:
         os.makedirs(PACK)
     for name, tex in out.items():
@@ -275,8 +302,13 @@ def main():
                     z.write(p, os.path.relpath(p, PACK))
         print("wrote", zp, round(os.path.getsize(zp) / 1e6, 2), "MB")
         # night-sight behavior pack, and one .mcaddon that installs both packs
-        bp = os.path.join(ROOT, "bp_src")
-        if os.path.isdir(bp):
+        bp_src = os.path.join(ROOT, "bp_src")
+        bp = os.path.join(DIST, "_bp")
+        if os.path.isdir(bp_src):
+            if os.path.isdir(bp):
+                shutil.rmtree(bp)
+            shutil.copytree(bp_src, bp)
+            stamp_version(os.path.join(bp, "manifest.json"))
             shutil.copy(os.path.join(PACK, "pack_icon.png"), os.path.join(bp, "pack_icon.png"))
             bz = os.path.join(DIST, "Nabd_NightSight.mcpack")
             with zipfile.ZipFile(bz, "w", zipfile.ZIP_DEFLATED) as z:
