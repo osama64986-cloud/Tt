@@ -19,3 +19,5 @@ Every change must be checked for security **before** it is pushed:
 - `scripts/publish.py` validates admin requests (runs in Actions) · `scripts/build.py` builds `_site`
 - `.github/workflows/publish.yml` admin uploads → Release + mods.json · `pages.yml` builds and pushes `gh-pages`
 - Deploy target is the `gh-pages` branch (Pages source). Do not edit it by hand.
+- `MC.LATEST` in `assets/common.js` holds the latest Minecraft versions; update it when Mojang releases.
+- actions/checkout v6+ stores credentials outside .git/config: pages.yml builds its own auth header.

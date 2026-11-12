@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
 
@@ -35,13 +35,17 @@ jobs:
         run: python3 scripts/build.py
 
       - name: Push to gh-pages
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          auth="$(git config --local --get http.https://github.com/.extraheader)"
+          # Build the auth header ourselves (checkout v6+ keeps its credentials in a separate file).
+          b64="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$b64"
           cd _site
           git init -q -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config http.https://github.com/.extraheader "$auth"
           git add -A
           git commit -q -m "Deploy ${GITHUB_SHA::7}"
-          git push -f "https://github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $b64" \
+            push -f "https://github.com/${GITHUB_REPOSITORY}.git" gh-pages

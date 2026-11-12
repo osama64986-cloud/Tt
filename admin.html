@@ -27,34 +27,53 @@
     <!-- Login -->
     <section id="loginView" class="panel narrow" hidden>
       <h2>🔐 دخول صاحب الموقع</h2>
-      <p class="muted">هذي الصفحة لك أنت بس. الدخول يكون بمفتاح من GitHub، وبدونه ما أحد يقدر يغيّر شي حتى لو فتح الصفحة.</p>
-      <label>المستودع
-        <input id="repoInput" dir="ltr" placeholder="owner/repo" autocomplete="off" spellcheck="false">
-      </label>
-      <label>مفتاح GitHub (Fine-grained token)
-        <input id="tokenInput" type="password" dir="ltr" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
-      </label>
-      <label class="check"><input type="checkbox" id="rememberInput"> تذكرني على هذا الجهاز (لا تفعّلها على جهاز غيرك)</label>
-      <label id="passWrap" hidden>كلمة سر لقفل المفتاح على هذا الجهاز <small>(8 أحرف أو أكثر، لا تكون نفس كلمة سر GitHub)</small>
-        <input id="passInput" type="password" autocomplete="new-password" minlength="8">
-      </label>
-      <button class="mc-btn mc-btn-green" id="loginBtn">دخول</button>
-      <p class="error" id="loginError" role="alert"></p>
+      <p class="muted">هذي الصفحة لك أنت بس. بدون مفتاحك ما أحد يقدر يغيّر شي، حتى لو فتح الصفحة.</p>
+
+      <div class="step">
+        <span class="step-num">1</span>
+        <div>
+          <b>سوّ مفتاح من GitHub</b> <small class="muted">(مرة وحدة كل 90 يوم)</small>
+          <a class="mc-btn mc-btn-green token-btn" id="makeTokenBtn" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">🔑 افتح GitHub وسوّ المفتاح</a>
+          <ul class="mini-steps">
+            <li>كل الإعدادات تكون معبّاية لحالها ✔</li>
+            <li>عند <b>Repository access</b> اختر <b>Only select repositories</b> ← اختر <b id="repoNameHint">Tt</b></li>
+            <li>انزل لتحت واضغط <b>Generate token</b>، وبعدها <b>انسخ</b> المفتاح 📋</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="grow">
+          <b>الصق المفتاح هنا</b>
+          <div class="paste-row">
+            <input id="tokenInput" type="password" dir="ltr" placeholder="github_pat_..." autocomplete="off" spellcheck="false" aria-label="مفتاح GitHub">
+            <button class="mc-btn" type="button" id="pasteBtn">📋 الصق</button>
+            <button class="mc-btn" type="button" id="showBtn" aria-label="إظهار المفتاح">👁</button>
+          </div>
+          <p class="muted" id="tokenHint"></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="grow">
+          <label class="check"><input type="checkbox" id="rememberInput"> تذكرني على هذا الجهاز (لا تفعّلها على جهاز غيرك)</label>
+          <label id="passWrap" hidden>اختر كلمة سر للوحة <small>(8 أحرف أو أكثر، مو نفس كلمة سر GitHub). المرات الجاية تكتبها بس بدل المفتاح.</small>
+            <input id="passInput" type="password" autocomplete="new-password" minlength="8">
+          </label>
+          <button class="mc-btn mc-btn-green mc-btn-big" id="loginBtn">دخول ←</button>
+          <p class="error" id="loginError" role="alert"></p>
+        </div>
+      </div>
+
       <details class="help">
-        <summary>كيف أسوي المفتاح؟ (مرة وحدة بس)</summary>
-        <ol>
-          <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">صفحة إنشاء مفتاح جديد</a> في GitHub.</li>
-          <li><b>Token name:</b> اكتب مثلاً <code>admin-site</code>، و<b>Expiration:</b> اختر 90 يوم.</li>
-          <li><b>Repository access:</b> اختر <b>Only select repositories</b> وحدد مستودع الموقع بس.</li>
-          <li><b>Permissions → Repository permissions:</b>
-            <ul>
-              <li><b>Contents</b>: Read and write</li>
-              <li><b>Actions</b>: Read and write</li>
-            </ul>
-          </li>
-          <li>اضغط <b>Generate token</b> وانسخه والصقه هنا.</li>
-        </ol>
-        <p class="muted">⚠️ لا تعطي المفتاح لأي أحد ولا تنشره. إذا تسرب، احذفه من نفس الصفحة في GitHub وسوّ واحد جديد.</p>
+        <summary>إعدادات متقدمة</summary>
+        <label>المستودع <small>(يتعبّى لحاله، لا تغيّره)</small>
+          <input id="repoInput" dir="ltr" placeholder="owner/repo" autocomplete="off" spellcheck="false">
+        </label>
+        <p class="muted">المفتاح يحتاج صلاحيتين بس على هذا المستودع: <b>Contents</b> و <b>Actions</b> (Read and write).</p>
+        <p class="muted">⚠️ لا تعطي المفتاح لأي أحد، ولا حتى لـ Claude. إذا تسرب، احذفه من <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">صفحة المفاتيح</a> وسوّ واحد جديد.</p>
       </details>
     </section>
 
@@ -113,7 +132,8 @@
             <option value="Iris / OptiFine"><option value="Map"><option value="World">
           </datalist>
         </label>
-        <label>إصدارات ماين كرافت * <small>(افصل بفاصلة)</small><input name="versions" dir="ltr" maxlength="200" placeholder="1.21.1, 1.20.1" required></label>
+        <label>إصدارات ماين كرافت * <small>(افصل بفاصلة)</small><input name="versions" dir="ltr" maxlength="200" placeholder="26.3" required>
+          <button type="button" class="mini-btn" id="addLatestBtn">➕ آخر إصدار</button></label>
         <label>إصدار الملف<input name="version" dir="ltr" maxlength="30" placeholder="1.0.0"></label>
         <label class="full">وصف قصير * <small>(يظهر على البطاقة)</small><input name="description" maxlength="200" required></label>
         <label class="full">شرح مفصّل<textarea name="details" rows="4" maxlength="4000"></textarea></label>

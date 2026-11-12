@@ -9,6 +9,9 @@ window.MC = (() => {
     world:   { label: "عالم",         plural: "عوالم",        icon: "🌍" },
   };
   const EDITIONS = { java: "Java", bedrock: "Bedrock" };
+  /** Latest stable Minecraft releases (checked Nov 2026). Update when Mojang ships a new one. */
+  const LATEST = { java: "26.3", bedrock: "26.62" };
+  const supportsLatest = (m) => (m.versions || []).includes(LATEST[m.edition]);
 
   const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" };
   const esc = (v) => String(v ?? "").replace(/[&<>"'`]/g, (c) => ESC[c]);
@@ -162,5 +165,5 @@ window.MC = (() => {
 
   const downloadsOf = (m, counts) => (m.releases || []).reduce((s, t) => s + (counts[t] || 0), 0);
 
-  return { SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
+  return { LATEST, supportsLatest, SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
 })();

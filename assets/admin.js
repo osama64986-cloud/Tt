@@ -308,12 +308,54 @@
     }
   }
 
+  /**
+   * Link that opens GitHub's "new fine-grained token" form already filled in
+   * (name, owner, 90-day expiry, Contents + Actions write). The owner only has to
+   * pick the repository and press Generate.
+   */
+  function tokenUrl(repo) {
+    const owner = /^[\w-][\w.-]*\/[\w-][\w.-]*$/.test(repo || "") ? repo.split("/")[0] : "";
+    const q = new URLSearchParams({
+      name: `NABD admin ${new Date().toISOString().slice(0, 10)}`,
+      description: "لوحة تحكم موقع نبض: رفع وتعديل المودات",
+      expires_in: "90",
+      contents: "write",
+      actions: "write",
+    });
+    if (owner) q.set("target_name", owner);
+    return `https://github.com/settings/personal-access-tokens/new?${q}`;
+  }
+  function updateTokenLink() {
+    const repo = $("#repoInput").value.trim();
+    $("#makeTokenBtn").href = tokenUrl(repo);
+    $("#repoNameHint").textContent = repo.split("/")[1] || "مستودع الموقع";
+  }
+
+  /** Pull a token out of whatever was pasted (extra spaces, new lines, labels...). */
+  const extractToken = (text) => (String(text).match(/github_pat_[A-Za-z0-9_]{20,}/) || [""])[0];
+  function checkToken() {
+    const raw = $("#tokenInput").value;
+    const tok = extractToken(raw);
+    if (tok && tok !== raw) $("#tokenInput").value = tok;
+    const hint = $("#tokenHint");
+    hint.classList.toggle("ok", !!tok);
+    hint.textContent = tok ? "✔ المفتاح شكله صحيح" : raw.trim() ? (/^ghp_/.test(raw.trim()) ? "✖ هذا مفتاح Classic. سوّ مفتاح جديد من الزر الأخضر فوق." : "✖ هذا ما يشبه المفتاح. لازم يبدأ بـ github_pat_") : "";
+  }
+
   function warnExpiry() {
     const t = tokenExpiry ? Date.parse(tokenExpiry.replace(" UTC", "Z").replace(" ", "T")) : NaN;
     const days = Math.floor((t - Date.now()) / 864e5);
     const el = $("#tokenWarn");
     el.hidden = !(days <= 10);
-    if (!el.hidden) el.textContent = `⚠️ مفتاح GitHub ينتهي بعد ${Math.max(0, days)} يوم. سوّ مفتاح جديد قبل ما ينتهي.`;
+    if (!el.hidden) {
+      el.textContent = `⚠️ مفتاح GitHub ينتهي بعد ${Math.max(0, days)} يوم. `;
+      const a = document.createElement("a");
+      a.href = tokenUrl(auth?.repo);
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "سوّ مفتاح جديد الحين";
+      el.append(a);
+    }
   }
 
   /** Ends the session. The encrypted vault stays unless forget = true. */
@@ -334,7 +376,7 @@
       const remember = $("#rememberInput").checked;
       const pass = $("#passInput").value;
       if (remember && pass.length < 8) throw new Error("اكتب كلمة سر 8 أحرف أو أكثر لقفل المفتاح.");
-      await login($("#tokenInput").value.trim(), $("#repoInput").value.trim());
+      await login(extractToken($("#tokenInput").value) || $("#tokenInput").value.trim(), $("#repoInput").value.trim());
       if (remember) await lockToVault(pass); else localStorage.removeItem(VAULT_KEY);
       await showDash();
     } catch (e) {
@@ -342,6 +384,23 @@
     } finally { btn.disabled = false; }
   });
   $("#tokenInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#loginBtn").click(); });
+  $("#tokenInput").addEventListener("input", checkToken);
+  $("#repoInput").addEventListener("input", updateTokenLink);
+  $("#pasteBtn").addEventListener("click", async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      $("#tokenInput").value = extractToken(text) || text.trim();
+      checkToken();
+    } catch {
+      $("#tokenInput").focus();
+      $("#tokenHint").classList.remove("ok");
+      $("#tokenHint").textContent = "اضغط مطولاً على الخانة واختر «لصق».";
+    }
+  });
+  $("#showBtn").addEventListener("click", () => {
+    const i = $("#tokenInput");
+    i.type = i.type === "password" ? "text" : "password";
+  });
   $("#rememberInput").addEventListener("change", (e) => { $("#passWrap").hidden = !e.target.checked; });
   $("#logoutBtn").addEventListener("click", () => { logout(); showLogin(); });
   $("#unlockBtn").addEventListener("click", async () => {
@@ -404,6 +463,16 @@
     }
   });
 
+  function updateLatestBtn() {
+    $("#addLatestBtn").textContent = `➕ آخر إصدار (${MC.LATEST[form.edition.value] || ""})`;
+  }
+  $("#addLatestBtn").addEventListener("click", () => {
+    const v = MC.LATEST[form.edition.value];
+    const list = splitList(form.versions.value);
+    if (v && !list.includes(v)) form.versions.value = [v, ...list].join(", ");
+  });
+  form.edition.addEventListener("change", updateLatestBtn);
+
   function openEditor(m) {
     editing = m ? m.id : null;
     form.reset();
@@ -437,6 +506,7 @@
       }
       $("#fileHint").textContent = m.file ? "اترك الملف فاضي إذا ما تبي تغيّره." : "";
     }
+    updateLatestBtn();
     editor.showModal();
     form.name.focus();
   }
@@ -559,6 +629,7 @@
     let site = {};
     try { site = (await (await fetch("mods.json", { cache: "no-cache" })).json()).site || {}; } catch { /* ignore */ }
     $("#repoInput").value = MC.repoOf(site);
+    updateTokenLink();
     try { localStorage.removeItem("mc.admin"); } catch { /* drop old unencrypted format */ }
     const saved = readSession();
     if (saved?.token && saved?.repo) { auth = saved; await showDash(); }

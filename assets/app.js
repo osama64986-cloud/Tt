@@ -151,6 +151,7 @@
           <p>${esc(m.description)}</p>
           <div class="meta">
             ${EDITIONS[m.edition] ? `<span class="chip chip-${esc(m.edition)}">${EDITIONS[m.edition]}</span>` : ""}
+            ${MC.supportsLatest(m) ? `<span class="chip chip-latest">✔ آخر إصدار</span>` : ""}
             ${m.loader ? `<span class="chip">${esc(m.loader)}</span>` : ""}
             ${(m.versions || []).slice(0, 3).map((v) => `<span class="chip">${esc(v)}</span>`).join("")}
           </div>

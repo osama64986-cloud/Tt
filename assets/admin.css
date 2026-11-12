@@ -73,3 +73,23 @@ fieldset.files legend { font-weight: 800; padding: 0 6px; }
   .item .mini { width: 64px; }
   .item .btns { grid-column: 1 / -1; }
 }
+
+/* Login steps */
+.step { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 2px dashed #444; }
+.step:last-of-type { border-bottom: 0; }
+.step .grow { flex: 1; min-width: 0; }
+.step-num {
+  flex: none; width: 36px; height: 36px; display: grid; place-items: center;
+  font-weight: 800; color: #000; background: var(--gold); border: 3px solid #000;
+}
+.token-btn { display: block; text-align: center; margin: 8px 0; }
+.mini-steps { margin: 6px 0 0; padding-inline-start: 18px; font-size: .92rem; color: #ddd; }
+.mini-steps li { margin-bottom: 4px; }
+.paste-row { display: flex; gap: 6px; margin-top: 6px; }
+.paste-row input { flex: 1; min-width: 0; }
+.paste-row .mc-btn { padding: 6px 12px; flex: none; }
+#tokenHint { min-height: 1.2em; margin: 6px 0 0; }
+#tokenHint.ok { color: #7CFC00; font-weight: 700; }
+.admin .mc-btn-big { width: 100%; margin-top: 6px; }
+
+.mini-btn { margin-top: 6px; font: inherit; font-size: .85rem; font-weight: 700; padding: 3px 10px; color: #000; background: var(--gold); border: 2px solid #000; cursor: pointer; }
