@@ -20,7 +20,7 @@
   "settings": [
     {
       "type": "label",
-      "text": "Shoulder view: in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. The game's camera is unchanged.\n§7كاميرا الكتف: بالمنظور الثالث من الخلف الشخصية تتزحزح للجنب والزائد بالنص هو مكان الضربة."
+      "text": "Shoulder view: in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. 'Both' moves the character to the side you turn away from."
     },
     {
       "type": "toggle",
@@ -36,11 +36,15 @@
       "options": [
         {
           "name": "left",
-          "text": "Left (camera over the right shoulder)"
+          "text": "Left"
         },
         {
           "name": "right",
-          "text": "Right (camera over the left shoulder)"
+          "text": "Right"
+        },
+        {
+          "name": "both",
+          "text": "Both (follows the camera)"
         }
       ]
     },

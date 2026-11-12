@@ -39,7 +39,8 @@ def animation():
     movement animation (motion.py), which falls back to the defaults if this file is
     not loaded by a game version."""
     setv = ("v.nb_sh_on = query.is_pack_setting_enabled('nabd:shoulder') ? 1.0 : 0.0; "
-            "v.nb_sh_side = query.is_pack_setting_selected('nabd:shoulder_side', 'right') ? -1.0 : 1.0; "
+            "v.nb_sh_side = query.is_pack_setting_selected('nabd:shoulder_side', 'right') ? -1.0 : "
+            "(query.is_pack_setting_selected('nabd:shoulder_side', 'both') ? (v.nb_sws ?? 1.0) : 1.0); "
             "v.nb_sh_amt = query.get_pack_setting('nabd:shoulder_shift') / 10.0; return 0.0;")
     j = {
         "format_version": "1.21.130",

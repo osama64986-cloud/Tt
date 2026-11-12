@@ -20,6 +20,7 @@ move.arms - the first of our animations in the game's list):
   v.nb_l      landing spring (negative = knees bent, positive = small rebound), v.nb_lv its velocity
   v.nb_c      crouch amount (spring, so it eases in and out with a small overshoot)
   v.nb_cv     crouch spring velocity
+  v.nb_yr     turning speed (deg/s), v.nb_swt / v.nb_sws the shoulder side it asks for (target / eased)
 
 Rotation conventions (measured on the game's skeleton): -x swings a limb
 forwards, +z lifts the right arm/leg outwards, -z the left one.
@@ -61,6 +62,14 @@ STATE = "!query.is_in_ui ? { " + "; ".join([
     "v.nb_lv = (v.nb_lv ?? 0.0) + (-180.0 * (v.nb_l ?? 0.0) - 12.0 * (v.nb_lv ?? 0.0)) * t.dt",
     "v.nb_l = math.clamp((v.nb_l ?? 0.0) + v.nb_lv * t.dt, -1.4, 0.6)",
     "v.nb_air = math.lerp(v.nb_air ?? 0.0, t.grounded ? 0.0 : 1.0, math.clamp(t.dt * (t.grounded ? 16.0 : 28.0), 0.0, 1.0))",
+    # turning (for the shoulder view's "both" setting): which way the camera was last
+    # turned decides the side; small movements keep the current side
+    "t.hy = query.head_y_rotation(0)",
+    "t.dy = math.mod(t.hy - (v.nb_hy ?? t.hy) + 540.0, 360.0) - 180.0",
+    "v.nb_hy = t.hy",
+    "v.nb_yr = math.lerp(v.nb_yr ?? 0.0, t.dy / math.max(t.dt, 0.001), math.clamp(t.dt * 10.0, 0.0, 1.0))",
+    "v.nb_swt = v.nb_yr > 70.0 ? 1.0 : (v.nb_yr < -70.0 ? -1.0 : (v.nb_swt ?? 1.0))",
+    "v.nb_sws = math.lerp(v.nb_sws ?? 1.0, v.nb_swt, math.clamp(t.dt * 6.0, 0.0, 1.0))",
     # crouch spring: eases down and back up with a small natural overshoot
     "t.ct = (query.is_sneaking && !query.is_in_water && !query.is_swimming && !query.is_riding && !query.is_gliding && !query.is_sleeping && !query.is_crawling && !query.is_in_ui) ? 1.0 : 0.0",
     "v.nb_cv = (v.nb_cv ?? 0.0) + (190.0 * (t.ct - (v.nb_c ?? 0.0)) - 17.0 * (v.nb_cv ?? 0.0)) * t.dt",
