@@ -38,12 +38,12 @@
     {
       "folder_name": "nabd_items",
       "name": "Nabd items / أيتمات نبض",
-      "memory_tier": 0
+      "memory_tier": 1
     },
     {
       "folder_name": "game_items",
       "name": "Game items / أيتمات اللعبة",
-      "memory_tier": 0
+      "memory_tier": 1
     }
   ]
 }
