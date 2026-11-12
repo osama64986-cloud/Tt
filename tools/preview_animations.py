@@ -19,7 +19,7 @@ def pose(env):
     """Sum every animation's contribution per bone (rotation x, z and waist offset)."""
     bones = {}
     for name, ad in A.items():
-        if "first_person" in name or "swim" in name or "sneak" in name or "attack" in name:
+        if "first_person" in name or "swim" in name or "sneak" in name or ("attack" in name and not env.get("variable.attack_time")):
             continue
         for bone, ch in ad["bones"].items():
             b = bones.setdefault(bone, [0.0, 0.0, 0.0, 0.0])
@@ -84,6 +84,11 @@ def main():
         env = dict(base)
         env.update({"query.is_on_ground": 0, "query.vertical_speed": vs, "_height": h})
         frames.append(frame(env, f"jump  (vertical speed {vs:+.1f} m/s)"))
+    for label, sword in (("sword slash", 1), ("punch", 0)):
+        for i in range(16):
+            env = dict(base)
+            env.update({"variable.attack_time": i / 15, "_sword": sword})
+            frames.append(frame(env, f"{label}  ({int(i / 15 * 100)}%)"))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     frames[0].save(OUT, save_all=True, append_images=frames[1:], duration=50, loop=0)
     print("wrote", OUT, len(frames), "frames")

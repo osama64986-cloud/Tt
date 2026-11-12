@@ -103,30 +103,37 @@
         },
         "leftarm": {
           "rotation": [
-            -11.0,
+            "-20.0 + variable.tcos0 * 0.35",
             0.0,
-            -5.0
+            "-7.0 - math.abs(variable.tcos0) * 0.05"
           ]
         },
         "rightarm": {
           "rotation": [
-            -11.0,
+            "-20.0 - variable.tcos0 * 0.35",
             0.0,
-            5.0
+            "7.0 + math.abs(variable.tcos0) * 0.05"
           ]
         },
         "leftleg": {
           "rotation": [
             -28.0,
             -0.1,
-            -1.6
+            -2.5
           ]
         },
         "rightleg": {
           "rotation": [
             -28.0,
             0.1,
-            1.6
+            2.5
+          ]
+        },
+        "waist": {
+          "rotation": [
+            0.0,
+            "variable.tcos0 * 0.1",
+            0.0
           ]
         },
         "root": {
@@ -149,22 +156,22 @@
         "body": {
           "rotation": [
             0.0,
-            "math.sin(360.0 * math.sqrt(variable.attack_time)) * 9.0",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 16.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -26.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -10.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
             0.0
-          ]
-        },
-        "leftarm": {
-          "rotation": [
-            "math.sin(variable.attack_time * 180.0) * 13.0",
-            0.0,
-            "-math.sin(variable.attack_time * 180.0) * 4.0"
           ]
         },
         "rightarm": {
           "rotation": [
-            "-(math.sin((1.0 - math.pow(1.0 - variable.attack_time, 3.0)) * 180.0) * 64.0 + math.sin(variable.attack_time * 180.0) * 16.0)",
-            "math.sin((1.0 - math.pow(1.0 - variable.attack_time, 3.0)) * 180.0) * 34.0",
-            "-math.sin(variable.attack_time * 180.0) * 10.0"
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, -150.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -35.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -85.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 35.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -45.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 10.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 20.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -12.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 0.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))"
+          ]
+        },
+        "leftarm": {
+          "rotation": [
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 10.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -28.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 12.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            0.0,
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, -6.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -14.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -4.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))"
           ]
         }
       }
@@ -185,6 +192,23 @@
             "math.lerp(0.0, math.cos(query.life_time * 420.0) * 23.0, variable.swim_amount)",
             0.1,
             1.5
+          ]
+        }
+      }
+    },
+    "animation.player.first_person.attack_rotation": {
+      "loop": true,
+      "bones": {
+        "rightarm": {
+          "position": [
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 3.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -7.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -3.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 5.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -6.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -2.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)))))) + variable.short_arm_offset_right",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, -2.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), 3.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 4.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))"
+          ],
+          "rotation": [
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, -25.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), 35.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, -30.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, 20.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), -35.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 10.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))",
+            "((query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.lerp(math.lerp(math.lerp(0.0, -15.0, ((math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.25, 0.0, 1.0))))), 30.0, ((math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.25) / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.55) / 0.45, 0.0, 1.0))))) + (1.0 - (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0)) * math.lerp(math.lerp(0.0, 8.0, ((math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp(variable.attack_time / 0.3, 0.0, 1.0))))), 0.0, ((math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0)) * (3.0 - 2.0 * (math.clamp((variable.attack_time - 0.3) / 0.7, 0.0, 1.0))))))"
           ]
         }
       }
@@ -224,9 +248,14 @@
       "bones": {
         "rightitem": {
           "position": [
-            "variable.bob_animation * math.cos(query.life_time * 31.0) * 0.22",
-            "variable.bob_animation * math.sin(query.life_time * 45.0) * 0.62",
+            "variable.bob_animation * math.cos(query.life_time * 31.0) * 0.25",
+            "variable.bob_animation * math.sin(query.life_time * 45.0) * 0.65",
             0.0
+          ],
+          "rotation": [
+            "variable.bob_animation * math.sin(query.life_time * 45.0 + 20.0) * 1.6",
+            "variable.bob_animation * math.cos(query.life_time * 31.0) * 1.2",
+            "variable.bob_animation * (query.is_item_name_any('slot.weapon.mainhand', 'minecraft:wooden_sword', 'minecraft:stone_sword', 'minecraft:iron_sword', 'minecraft:golden_sword', 'minecraft:diamond_sword', 'minecraft:netherite_sword', 'minecraft:copper_sword') ? 1.0 : 0.0) * math.sin(query.life_time * 38.0) * 1.4"
           ]
         }
       }

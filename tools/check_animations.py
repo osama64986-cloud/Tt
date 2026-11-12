@@ -19,6 +19,7 @@ def ev(expr, env):
     if not isinstance(expr, str):
         return float(expr)
     e = re.sub(r"\bq\.", "query.", expr)
+    e = re.sub(r"query\.is_item_name_any\([^)]*\)", str(env.get("_sword", 0)), e)
     e = re.sub(r"\(([^()?]+)\?([^():]+):([^()]+)\)", r"((\2) if (\1) else (\3))", e)   # ternaries first
     for k in sorted(env, key=len, reverse=True):
         e = e.replace(k, f"({env[k]})")
@@ -41,7 +42,11 @@ STATES = {
     "top of jump": {"query.is_on_ground": 0, "query.vertical_speed": 0.3},
     "falling": {"query.is_on_ground": 0, "query.vertical_speed": -9.0},
     "sprint jump": {"variable.tcos0": -50, "query.is_sprinting": 1, "query.is_on_ground": 0, "query.vertical_speed": 6.0},
-    "attack 35%": {"variable.attack_time": 0.35},
+    "punch 30%": {"variable.attack_time": 0.3},
+    "sword wind-up 25%": {"variable.attack_time": 0.25, "_sword": 1},
+    "sword strike 55%": {"variable.attack_time": 0.55, "_sword": 1},
+    "sword recover 80%": {"variable.attack_time": 0.8, "_sword": 1},
+    "sneaking walk": {"variable.tcos0": 30},
     "swimming": {"query.is_swimming": 1, "query.is_in_water": 1, "query.is_on_ground": 0, "variable.tcos0": 30},
 }
 def main():
@@ -61,7 +66,7 @@ def main():
             if row:
                 print("  ", an.split("player.")[1].ljust(26), "  ".join(row))
     print("largest rotation seen: %.1f deg" % worst)
-    sys.exit(0 if worst < 120 else 1)
+    sys.exit(0 if worst < 170 else 1)   # a sword wind-up lifts the arm overhead (150)
 
 
 if __name__ == "__main__":

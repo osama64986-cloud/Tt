@@ -283,6 +283,14 @@ def main():
         keep = os.path.join(PACK, "subpacks", "game_items")
         os.makedirs(keep, exist_ok=True)
         open(os.path.join(keep, "README.txt"), "w").write("Empty on purpose: with this option the game shows its own item icons.\n")
+    # player animations are optional too: the same slider picks them on or off
+    anim = os.path.join(PACK, "animations")
+    if os.path.isdir(anim):
+        sp = os.path.join(PACK, "subpacks")
+        shutil.copytree(os.path.join(sp, "nabd_items"), os.path.join(sp, "nabd_items_anim"))
+        shutil.copytree(anim, os.path.join(sp, "nabd_items_anim", "animations"))
+        shutil.copytree(anim, os.path.join(sp, "game_items_anim", "animations"))
+        shutil.rmtree(anim)
     make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
     validate(out)
     print(f"{len(out)} block textures, {len(item_out)} item textures, {len(variations)} variation groups, {len(fb)} flipbooks")

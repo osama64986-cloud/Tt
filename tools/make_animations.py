@@ -29,6 +29,40 @@ SWING = "math.sin((1.0 - math.pow(1.0 - variable.attack_time, 3.0)) * 180.0)"
 ARC = "math.sin(variable.attack_time * 180.0)"
 GROUND = f"(1.0 - {AIR})"
 
+
+# ---------------------------------------------------------------- attack helpers
+SWORDS = ", ".join(f"'minecraft:{m}_sword'" for m in ("wooden", "stone", "iron", "golden", "diamond", "netherite", "copper"))
+SW = f"(query.is_item_name_any('slot.weapon.mainhand', {SWORDS}) ? 1.0 : 0.0)"
+P_ = "variable.attack_time"
+
+
+def ease(k):
+    """smoothstep of a 0..1 Molang expression"""
+    return f"(({k}) * ({k}) * (3.0 - 2.0 * ({k})))"
+
+
+K1 = ease(f"math.clamp({P_} / 0.25, 0.0, 1.0)")              # wind-up
+K2 = ease(f"math.clamp(({P_} - 0.25) / 0.3, 0.0, 1.0)")       # strike
+K3 = ease(f"math.clamp(({P_} - 0.55) / 0.45, 0.0, 1.0)")      # recovery
+
+
+def slash(windup, strike):
+    """0 -> wind-up value -> strike value -> 0, eased between the phases"""
+    return f"math.lerp(math.lerp(math.lerp(0.0, {windup}, {K1}), {strike}, {K2}), 0.0, {K3})"
+
+
+J1 = ease(f"math.clamp({P_} / 0.3, 0.0, 1.0)")                 # punch: out ...
+J2 = ease(f"math.clamp(({P_} - 0.3) / 0.7, 0.0, 1.0)")         # ... and back
+
+
+def jab(peak):
+    return f"math.lerp(math.lerp(0.0, {peak}, {J1}), 0.0, {J2})"
+
+
+def pick(sword, punch):
+    return f"({SW} * {sword} + (1.0 - {SW}) * {punch})"
+
+
 anims = {
     # ------------------------------------------------- walking, running, jumping
     "animation.player.move.arms": {
@@ -80,27 +114,34 @@ anims = {
         },
     },
     # --------------------------------------------------------------- sneaking
-    # body / head / root offsets are the ones the game's camera and hit box
-    # expect; the arm and leg pose is ours (hands held ready, knees apart).
+    # body / head / root offsets are what the game's camera and hit box expect;
+    # on top: hands held low and ready, knees apart, a soft sway while creeping
     "animation.player.sneaking": {
         "loop": True,
         "bones": {
             "body": {"position": [0.0, -2.0, 0.0]},
             "head": {"position": [0.0, -1.0, 0.0]},
-            "leftarm": {"rotation": [-11.0, 0.0, -5.0]},
-            "rightarm": {"rotation": [-11.0, 0.0, 5.0]},
-            "leftleg": {"rotation": [-28.0, -0.1, -1.6]},
-            "rightleg": {"rotation": [-28.0, 0.1, 1.6]},
+            "leftarm": {"rotation": ["-20.0 + variable.tcos0 * 0.35", 0.0, "-7.0 - math.abs(variable.tcos0) * 0.05"]},
+            "rightarm": {"rotation": ["-20.0 - variable.tcos0 * 0.35", 0.0, "7.0 + math.abs(variable.tcos0) * 0.05"]},
+            "leftleg": {"rotation": [-28.0, -0.1, -2.5]},
+            "rightleg": {"rotation": [-28.0, 0.1, 2.5]},
+            "waist": {"rotation": [0.0, "variable.tcos0 * 0.1", 0.0]},
             "root": {"position": [0.0, 1.25, 9.0], "rotation": ["28.0 - this", 0.0, 0.0]},
         },
     },
     # ----------------------------------------------------------------- attack
+    # sword: wind-up high and back, a fast diagonal slash across the body, an
+    # unhurried recovery; the body turns with the blade and the free arm
+    # comes forward for balance.  Anything else: a short forward jab.
     "animation.player.attack.rotations": {
         "loop": True,
         "bones": {
-            "body": {"rotation": [0.0, f"math.sin(360.0 * math.sqrt({T})) * 9.0", 0.0]},
-            "leftarm": {"rotation": [f"{ARC} * 13.0", 0.0, f"-{ARC} * 4.0"]},
-            "rightarm": {"rotation": [f"-({SWING} * 64.0 + {ARC} * 16.0)", f"{SWING} * 34.0", f"-{ARC} * 10.0"]},
+            "body": {"rotation": [0.0, pick(slash("16.0", "-26.0"), jab("-10.0")), 0.0]},
+            "rightarm": {"rotation": [
+                pick(slash("-150.0", "-35.0"), jab("-85.0")),
+                pick(slash("35.0", "-45.0"), jab("10.0")),
+                pick(slash("20.0", "-12.0"), jab("0.0"))]},
+            "leftarm": {"rotation": [pick(slash("10.0", "-28.0"), jab("12.0")), 0.0, pick(slash("-6.0", "-14.0"), jab("-4.0"))]},
         },
     },
     # --------------------------------------------------------------- swimming
@@ -113,6 +154,22 @@ anims = {
         },
     },
     # ----------------------------------------------------------- first person
+    # the hand you see: a sword is drawn up and to the right, then cut down and
+    # across; an empty hand or a block gives a short punch forward
+    "animation.player.first_person.attack_rotation": {
+        "loop": True,
+        "bones": {
+            "rightarm": {
+                "position": [
+                    pick(slash("3.0", "-7.0"), jab("-3.0")),
+                    pick(slash("5.0", "-6.0"), jab("-2.0")) + " + variable.short_arm_offset_right",
+                    pick(slash("-2.0", "3.0"), jab("4.0"))],
+                "rotation": [
+                    pick(slash("-25.0", "35.0"), jab("-30.0")),
+                    pick(slash("20.0", "-35.0"), jab("10.0")),
+                    pick(slash("-15.0", "30.0"), jab("8.0"))]},
+        },
+    },
     "animation.player.first_person.walk": {
         "loop": True,
         "bones": {
@@ -132,9 +189,13 @@ anims = {
         "loop": True,
         "override_previous_animation": False,
         "bones": {
-            "rightitem": {"position": ["variable.bob_animation * math.cos(query.life_time * 31.0) * 0.22",
-                                       "variable.bob_animation * math.sin(query.life_time * 45.0) * 0.62",
-                                       0.0]},
+            "rightitem": {
+                "position": ["variable.bob_animation * math.cos(query.life_time * 31.0) * 0.25",
+                             "variable.bob_animation * math.sin(query.life_time * 45.0) * 0.65",
+                             0.0],
+                "rotation": [f"variable.bob_animation * math.sin(query.life_time * 45.0 + 20.0) * 1.6",
+                             f"variable.bob_animation * math.cos(query.life_time * 31.0) * 1.2",
+                             f"variable.bob_animation * {SW} * math.sin(query.life_time * 38.0) * 1.4"]},
         },
     },
 }

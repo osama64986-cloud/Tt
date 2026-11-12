@@ -36,13 +36,23 @@
   },
   "subpacks": [
     {
+      "folder_name": "nabd_items_anim",
+      "name": "Nabd items + animations / أيتمات نبض + الحركات",
+      "memory_tier": 1
+    },
+    {
       "folder_name": "nabd_items",
-      "name": "Nabd items / أيتمات نبض",
+      "name": "Nabd items, no animations / أيتمات نبض بدون حركات",
+      "memory_tier": 1
+    },
+    {
+      "folder_name": "game_items_anim",
+      "name": "Game items + animations / أيتمات اللعبة + الحركات",
       "memory_tier": 1
     },
     {
       "folder_name": "game_items",
-      "name": "Game items / أيتمات اللعبة",
+      "name": "Game items, no animations / أيتمات اللعبة بدون حركات",
       "memory_tier": 1
     }
   ]
