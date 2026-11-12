@@ -991,6 +991,17 @@ def build_egg_icons():
         icon.paste(face, (3, 3), face)
         icon.save(os.path.join(idir, f"egg_{ch}.png"))
         data[f"ab_egg_{ch}"] = {"textures": f"textures/items/egg_{ch}"}
+    # The Anime Universe idea: beat a character, take its power. One power item per fighter (its face as the icon).
+    os.makedirs(os.path.join(BP, "items"), exist_ok=True)
+    for ch in models.FORMS:
+        item = {"format_version": "1.21.60", "minecraft:item": {
+            "description": {"identifier": f"ab:power_{ch}", "menu_category": {"category": "equipment"}},
+            "components": {"minecraft:icon": {"textures": {"default": f"ab_egg_{ch}"}},
+                           "minecraft:display_name": {"value": "§6§l" + ch.replace("_", " ").title()},
+                           "minecraft:max_stack_size": 1, "minecraft:hand_equipped": True, "minecraft:glint": True,
+                           "minecraft:use_modifiers": {"use_duration": 0.2, "movement_modifier": 1.0}}}}
+        with open(os.path.join(BP, "items", f"power_{ch}.json"), "w") as f:
+            json.dump(item, f, indent=1)
     with open(os.path.join(RP, "textures", "item_texture.json"), "w") as f:
         json.dump({"resource_pack_name": "anime_battles", "texture_name": "atlas.items", "texture_data": data}, f, indent=1)
 
