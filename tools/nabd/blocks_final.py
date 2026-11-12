@@ -334,3 +334,31 @@ def build(out, flip, variations):          # noqa: F811
             t.emis = np.where(al > 0, 255, 0)
             fr.append(t)
         out["firefly_bush_firefly"] = stack_frames(fr)
+
+
+_build_final3 = build
+
+
+def bamboo_end(ramp):
+    """Cut end of a bundle of canes: a 3x3 grid of hollow cane ends."""
+    idx = np.full((N, N), 1)
+    hgt = np.full((N, N), 0.3)
+    for cy in (2.5, 7.5, 12.5):
+        for cx in (2.5, 7.5, 12.5):
+            d = np.hypot(xx - cx, yy - cy)
+            wall = (d <= 2.4) & (d > 1.2)
+            hole = d <= 1.2
+            lit = wall & ((xx - cx) + (yy - cy) < 0)
+            idx = np.where(wall, 3, idx)
+            idx = np.where(lit, 4, idx)
+            idx = np.where(hole, 0, idx)
+            hgt = np.where(wall, 0.9, np.where(hole, 0.1, hgt))
+    return Tex(paint_idx(idx, ramp), hgt, rough=180, bump=1.2)
+
+
+def build(out, flip, variations):          # noqa: F811
+    _build_final3(out, flip, variations)
+    if "bamboo_block_top" in STATS:
+        out["bamboo_block_top"] = bamboo_end(vramp("bamboo_block", 5, contrast=0.4))
+    if "stripped_bamboo_block_top" in STATS:
+        out["stripped_bamboo_block_top"] = bamboo_end(vramp("stripped_bamboo_block", 5, contrast=0.36))
