@@ -55,6 +55,19 @@ J1 = ease(f"math.clamp({P_} / 0.3, 0.0, 1.0)")                 # punch: out ...
 J2 = ease(f"math.clamp(({P_} - 0.3) / 0.7, 0.0, 1.0)")         # ... and back
 
 
+SWING_KEYS = (0.25, 0.48, 0.62)       # wind-up, strike, follow-through; back to rest at 1.0
+
+
+def keys(windup, strike, follow):
+    """rest -> wind-up -> strike -> follow-through -> rest, eased between keys"""
+    t1, t2, t3 = SWING_KEYS
+    e1 = ease(f"math.clamp({P_} / {t1}, 0.0, 1.0)")
+    e2 = ease(f"math.clamp(({P_} - {t1}) / {t2 - t1}, 0.0, 1.0)")
+    e3 = ease(f"math.clamp(({P_} - {t2}) / {t3 - t2}, 0.0, 1.0)")
+    e4 = ease(f"math.clamp(({P_} - {t3}) / {1.0 - t3}, 0.0, 1.0)")
+    return (f"math.lerp(math.lerp(math.lerp(math.lerp(0.0, {windup}, {e1}), {strike}, {e2}), {follow}, {e3}), 0.0, {e4})")
+
+
 def jab(peak):
     return f"math.lerp(math.lerp(0.0, {peak}, {J1}), 0.0, {J2})"
 
@@ -69,12 +82,12 @@ anims = {
         "loop": True,
         "bones": {
             "leftarm": {"rotation": [
-                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -78.0, 70.0)"
+                f"math.clamp({GROUND} * (variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -66.0, 52.0)"
                 f" - {UP} * 38.0 - {DOWN} * 18.0 - {TOP} * 12.0",
                 0.0,
                 f"-({GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0)"]},
             "rightarm": {"rotation": [
-                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -78.0, 70.0)"
+                f"math.clamp({GROUND} * (-variable.tcos0 * (1.05 + {SPRINT} * 0.15) - {SPRINT} * 14.0), -66.0, 52.0)"
                 f" - {UP} * 30.0 - {DOWN} * 18.0 - {TOP} * 12.0",
                 0.0,
                 f"{GROUND} * ({STRIDE} * 0.06 + 2.0) + {UP} * 12.0 + {DOWN} * 52.0 + {TOP} * 30.0"]},
@@ -92,11 +105,11 @@ anims = {
         "loop": True,
         "bones": {
             "leftleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * -(1.4 + {SPRINT} * 0.05), -80.0, 80.0) - {UP} * 42.0 - {DOWN} * 10.0 - {TOP} * 20.0",
+                f"math.clamp({GROUND} * variable.tcos0 * -(1.4 + {SPRINT} * 0.05), -62.0, 62.0) - {UP} * 42.0 - {DOWN} * 10.0 - {TOP} * 20.0",
                 -0.1,
                 f"-0.1 - {DOWN} * 7.0 - {TOP} * 3.0"]},
             "rightleg": {"rotation": [
-                f"math.clamp({GROUND} * variable.tcos0 * (1.4 + {SPRINT} * 0.05), -80.0, 80.0) + {UP} * 16.0 - {DOWN} * 16.0 - {TOP} * 4.0",
+                f"math.clamp({GROUND} * variable.tcos0 * (1.4 + {SPRINT} * 0.05), -62.0, 62.0) + {UP} * 16.0 - {DOWN} * 16.0 - {TOP} * 4.0",
                 0.1,
                 f"0.1 + {DOWN} * 7.0 + {TOP} * 3.0"]},
         },
@@ -136,12 +149,15 @@ anims = {
     "animation.player.attack.rotations": {
         "loop": True,
         "bones": {
-            "body": {"rotation": [0.0, pick(slash("16.0", "-26.0"), jab("-10.0")), 0.0]},
+            "body": {"rotation": [pick(keys("0.0", "6.0", "3.0"), "0.0"), pick(keys("22.0", "-24.0", "-30.0"), jab("-10.0")), 0.0]},
             "rightarm": {"rotation": [
-                pick(slash("-150.0", "-35.0"), jab("-85.0")),
-                pick(slash("35.0", "-45.0"), jab("10.0")),
-                pick(slash("20.0", "-12.0"), jab("0.0"))]},
-            "leftarm": {"rotation": [pick(slash("10.0", "-28.0"), jab("12.0")), 0.0, pick(slash("-6.0", "-14.0"), jab("-4.0"))]},
+                pick(keys("-155.0", "-50.0", "-22.0"), jab("-85.0")),
+                pick(keys("5.0", "-55.0", "-65.0"), jab("10.0")),
+                pick(keys("42.0", "2.0", "-5.0"), jab("0.0"))]},
+            # the blade itself turns in the fist: back over the shoulder, then down through the cut
+            "rightitem": {"rotation": [pick(keys("-45.0", "55.0", "62.0"), "0.0"), 0.0, 0.0]},
+            "leftarm": {"rotation": [pick(keys("-18.0", "12.0", "8.0"), jab("12.0")), 0.0,
+                                     pick(keys("-12.0", "-6.0", "-4.0"), jab("-4.0"))]},
         },
     },
     # --------------------------------------------------------------- swimming
@@ -161,28 +177,28 @@ anims = {
         "bones": {
             "rightarm": {
                 "position": [
-                    pick(slash("3.0", "-7.0"), jab("-3.0")),
-                    pick(slash("5.0", "-6.0"), jab("-2.0")) + " + variable.short_arm_offset_right",
-                    pick(slash("-2.0", "3.0"), jab("4.0"))],
+                    pick(keys("2.0", "-6.0", "-7.0"), jab("-3.0")),
+                    pick(keys("4.0", "-5.0", "-4.0"), jab("-2.0")) + " + variable.short_arm_offset_right",
+                    pick(keys("-2.0", "3.0", "2.0"), jab("4.0"))],
                 "rotation": [
-                    pick(slash("-25.0", "35.0"), jab("-30.0")),
-                    pick(slash("20.0", "-35.0"), jab("10.0")),
-                    pick(slash("-15.0", "30.0"), jab("8.0"))]},
+                    pick(keys("-20.0", "30.0", "20.0"), jab("-30.0")),
+                    pick(keys("15.0", "-30.0", "-35.0"), jab("10.0")),
+                    pick(keys("-12.0", "25.0", "28.0"), jab("8.0"))]},
         },
     },
     "animation.player.first_person.walk": {
         "loop": True,
         "bones": {
             "leftarm": {
-                "position": ["math.sin(-query.walk_distance * 180.0) * variable.hand_bob * 11.5",
-                             "-math.abs(math.cos(-query.walk_distance * 180.0)) * variable.hand_bob * 17.0 + variable.short_arm_offset_left",
+                "position": ["math.sin(-query.walk_distance * 180.0) * variable.hand_bob * (11.5 + (query.is_sprinting ? 4.0 : 0.0))",
+                             "-math.abs(math.cos(-query.walk_distance * 180.0)) * variable.hand_bob * (17.0 + (query.is_sprinting ? 6.0 : 0.0)) + variable.short_arm_offset_left",
                              0.0],
-                "rotation": [0.0, 0.0, "math.sin(-query.walk_distance * 180.0) * variable.hand_bob * 22.0"]},
+                "rotation": [0.0, 0.0, "math.sin(-query.walk_distance * 180.0) * variable.hand_bob * (22.0 + (query.is_sprinting ? 10.0 : 0.0))"]},
             "rightarm": {
-                "position": ["math.sin(-query.walk_distance * 180.0) * variable.hand_bob * 11.5",
-                             "-math.abs(math.cos(-query.walk_distance * 180.0)) * variable.hand_bob * 17.0 + variable.short_arm_offset_right",
+                "position": ["math.sin(-query.walk_distance * 180.0) * variable.hand_bob * (11.5 + (query.is_sprinting ? 4.0 : 0.0))",
+                             "-math.abs(math.cos(-query.walk_distance * 180.0)) * variable.hand_bob * (17.0 + (query.is_sprinting ? 6.0 : 0.0)) + variable.short_arm_offset_right",
                              0.0],
-                "rotation": [0.0, 0.0, "math.sin(-query.walk_distance * 180.0) * variable.hand_bob * 22.0"]},
+                "rotation": [0.0, 0.0, "math.sin(-query.walk_distance * 180.0) * variable.hand_bob * (22.0 + (query.is_sprinting ? 10.0 : 0.0))"]},
         },
     },
     "animation.player.first_person.breathing_bob": {
