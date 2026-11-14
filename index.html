@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>نبض NABD — مودات وإضافات ماين كرافت</title>
+  <meta name="description" content="حمّل مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً — جافا وبيدروك">
+  <meta property="og:title" content="نبض NABD — مودات ماين كرافت">
+  <meta property="og:description" content="مودات وإضافات وتكسترات وخرائط وعوالم ماين كرافت مجاناً">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#1c2747">
+  <link rel="canonical" href="https://osama64986-cloud.github.io/Tt/">
+  <meta property="og:url" content="https://osama64986-cloud.github.io/Tt/">
+  <meta property="og:image" content="https://osama64986-cloud.github.io/Tt/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="assets/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip" href="#mods">تخطَّ إلى التحميلات</a>
+  <header class="hero">
+    <div class="sky" aria-hidden="true"><span class="stars s1"></span><span class="stars s2"></span></div>
+    <nav class="nav">
+      <a href="./" class="logo"><img class="logo-img" src="assets/favicon.svg" alt="" width="32" height="32"><span id="siteName">نبض</span></a>
+      <div class="nav-links">
+        <a href="#mods">التحميلات</a>
+        <a href="#install">طريقة التثبيت</a>
+        <a href="#faq">مساعدة</a>
+        <a href="#about">من أنا</a>
+        <a href="#" id="navDonate" class="nav-donate" target="_blank" rel="noopener noreferrer" hidden>❤ ادعمني</a>
+      </div>
+    </nav>
+    <div class="hero-content">
+      <div class="hero-block" aria-hidden="true">
+        <span class="pulse"></span>
+        <canvas id="heroBlock" width="280" height="280"></canvas>
+        <span class="block-shadow"></span>
+      </div>
+      <h1 class="brand"><span class="brand-ar">نبض</span><span class="pixel-title">NABD</span></h1>
+      <p id="tagline">مودات، تكسترات، خرائط وعوالم ماين كرافت</p>
+      <div class="stats" id="stats" aria-live="polite"></div>
+      <a href="#mods" class="mc-btn mc-btn-green">ابدأ التحميل ⬇</a>
+    </div>
+    <div class="ground" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <section class="section how" aria-label="شلون أحمّل">
+      <div class="how-step"><span class="how-num">1</span><b>اختار</b><small>دوّر على المود اللي يعجبك</small></div>
+      <div class="how-arrow" aria-hidden="true">←</div>
+      <div class="how-step"><span class="how-num">2</span><b>اضغط تحميل</b><small>الزر الأخضر الكبير</small></div>
+      <div class="how-arrow" aria-hidden="true">←</div>
+      <div class="how-step"><span class="how-num">3</span><b>اتبع الخطوات</b><small>نشرح لك بالضبط شنو تسوي</small></div>
+    </section>
+
+    <section id="featured" class="section featured" hidden></section>
+
+    <section id="mods" class="section">
+      <h2 class="section-title">كل الأعمال</h2>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="🔍 ابحث عن مود، تكستر، خريطة..." aria-label="بحث">
+        <select id="editionFilter" aria-label="النسخة">
+          <option value="">جافا + بيدروك</option>
+          <option value="java">Java فقط</option>
+          <option value="bedrock">Bedrock فقط</option>
+        </select>
+        <select id="versionFilter" aria-label="الإصدار"><option value="">كل الإصدارات</option></select>
+        <select id="sortBy" aria-label="الترتيب">
+          <option value="new">الأحدث</option>
+          <option value="popular">الأكثر تحميلاً</option>
+          <option value="name">بالاسم</option>
+        </select>
+      </div>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="grid" id="grid" aria-live="polite">
+        <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+      </div>
+      <p class="empty" id="empty" hidden></p>
+    </section>
+
+    <section id="install" class="section">
+      <h2 class="section-title">طريقة التثبيت</h2>
+      <div class="install-grid">
+        <details class="panel" open>
+          <summary>⚒ مودات جافا (.jar)</summary>
+          <ol>
+            <li>ثبّت <b>Fabric</b> أو <b>Forge</b> أو <b>NeoForge</b> حسب المكتوب على المود.</li>
+            <li>افتح مجلد <code>.minecraft</code> (اضغط <code>Win+R</code> واكتب <code>%appdata%</code>).</li>
+            <li>حط ملف <code>.jar</code> داخل مجلد <code>mods</code>.</li>
+            <li>شغّل اللعبة بالبروفايل الصحيح.</li>
+          </ol>
+        </details>
+        <details class="panel" open>
+          <summary>🧩 إضافات بيدروك (.mcaddon / .mcpack)</summary>
+          <ol>
+            <li>حمّل الملف وافتحه، وماين كرافت يستورده لحاله.</li>
+            <li>عند إنشاء العالم فعّل الحزم من <b>Behavior Packs</b> و<b>Resource Packs</b>.</li>
+            <li>إذا الإضافة تحتاج، فعّل <b>Experiments</b>.</li>
+            <li>على الجوال: افتح الملف من التنزيلات واختر Minecraft.</li>
+          </ol>
+        </details>
+        <details class="panel">
+          <summary>🎨 التكسترات والشيدرات (.zip)</summary>
+          <ol>
+            <li>لا تفك الضغط عن الملف.</li>
+            <li>التكسترات داخل <code>resourcepacks</code>، والشيدرات داخل <code>shaderpacks</code> (تحتاج Iris أو OptiFine).</li>
+            <li>فعّلها من الإعدادات داخل اللعبة.</li>
+          </ol>
+        </details>
+        <details class="panel">
+          <summary>🗺 الخرائط والعوالم</summary>
+          <ol>
+            <li><b>جافا:</b> فك الضغط وانقل المجلد إلى <code>saves</code>.</li>
+            <li><b>بيدروك:</b> افتح ملف <code>.mcworld</code> مباشرة.</li>
+            <li>راح يطلع العالم في قائمة العوالم.</li>
+          </ol>
+        </details>
+      </div>
+    </section>
+
+    <section id="faq" class="section">
+      <h2 class="section-title">❓ أسئلة شائعة</h2>
+      <div class="faq">
+        <details class="panel"><summary>شنو الفرق بين Java و Bedrock؟</summary>
+          <p><b>Java</b>: ماين كرافت الكمبيوتر الأصلية (اللانشر الأخضر).<br><b>Bedrock</b>: نسخة الجوال والإكس بوكس والبلايستيشن وماين كرافت ويندوز من المتجر.<br>اختار الفلتر اللي يناسب لعبتك فوق قائمة الأعمال.</p></details>
+        <details class="panel"><summary>ضغطت تحميل وما صار شي!</summary>
+          <p>شيّك على الإشعارات أو مجلد <b>التنزيلات</b>. إذا المتصفح سألك «تحميل؟» اضغط موافق. وإذا ما زال ما يشتغل، جرب متصفح ثاني مثل Chrome.</p></details>
+        <details class="panel"><summary>اللعبة تقول «Import Failed» أو الملف ما ينفتح</summary>
+          <p>تأكد إن الإصدار المكتوب على العمل نفس إصدار لعبتك، وإن الملف كامل التحميل (نفس الحجم). على الآيفون افتح الملف من تطبيق <b>Files</b> واختر <b>Share ← Minecraft</b>.</p></details>
+        <details class="panel"><summary>الإضافة انضافت بس ما تشتغل في العالم</summary>
+          <p>لازم تفعّلها داخل إعدادات العالم من <b>Behavior Packs</b> و<b>Resource Packs</b>، وبعض الإضافات تحتاج تفعيل <b>Experiments</b>.</p></details>
+        <details class="panel"><summary>المود (Java) يسوي كراش للعبة</summary>
+          <p>تأكد إنك مثبت المحمّل الصحيح (Fabric أو Forge، مكتوب على المود)، ونفس الإصدار، وإن المودات اللي يحتاجها موجودة (مثل Fabric API).</p></details>
+        <details class="panel"><summary>هل الملفات آمنة؟</summary>
+          <p>نعم. كل الملفات مرفوعة على GitHub، والموقع ما يقبل غير ملفات ماين كرافت (ما فيه ملفات .exe). ولكل ملف <b>بصمة</b> تقدر تتأكد منها إنه أصلي.</p></details>
+      </div>
+    </section>
+
+    <section id="about" class="section">
+      <h2 class="section-title">من أنا</h2>
+      <div class="panel about">
+        <div class="avatar" aria-hidden="true"></div>
+        <div>
+          <p id="aboutText">أهلاً! أصنع مودات وتكسترات وخرائط ماين كرافت وأشاركها مجاناً مع الجميع.</p>
+          <p>إذا استخدمت شي من أعمالي في فيديو أو سيرفر، اذكر المصدر 💚</p>
+          <h3 class="follow">تابعني 👇</h3>
+          <div class="socials" id="socials"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="socials footer-socials" id="footerSocials"></div>
+    <nav class="footer-links" aria-label="كل الأعمال"></nav>
+    <p><a href="privacy.html">سياسة الخصوصية</a></p>
+    <p>© <span id="year"></span> <span id="footerName">نبض</span> — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
+  </footer>
+
+  <dialog id="modal" class="modal" aria-labelledby="modalTitle">
+    <button class="close" id="closeModal" aria-label="إغلاق">✕</button>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <script src="assets/common.js"></script>
+  <script src="assets/block.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
