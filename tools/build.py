@@ -290,8 +290,7 @@ def main():
     if os.path.isdir(anim):
         sp = os.path.join(PACK, "subpacks")
         shutil.copytree(os.path.join(sp, "nabd_items"), os.path.join(sp, "nabd_items_anim"))
-        # only the player movement animations are optional; the shoulder view
-        # (referenced by the player entity) must always be in the main pack
+        # only the player movement animations are optional
         moving = [f for f in os.listdir(anim) if f.startswith("nabd_player")]
         for dest in ("nabd_items_anim", "game_items_anim"):
             os.makedirs(os.path.join(sp, dest, "animations"), exist_ok=True)
@@ -318,7 +317,7 @@ def main():
                     p = os.path.join(d, f)
                     z.write(p, os.path.relpath(p, PACK))
         print("wrote", zp, round(os.path.getsize(zp) / 1e6, 2), "MB")
-        # extras behavior pack (night sight + shoulder camera), and one .mcaddon that installs both packs
+        # extras behavior pack (night sight), and one .mcaddon that installs both packs
         bp_src = os.path.join(ROOT, "bp_src")
         bp = os.path.join(DIST, "_bp")
         if os.path.isdir(bp_src):
@@ -339,7 +338,7 @@ def main():
                         for f in sorted(fs):
                             z.write(os.path.join(d, f), os.path.join(prefix, os.path.relpath(os.path.join(d, f), root_dir)))
             print("wrote", bz, "and", az)
-        # stand-alone shoulder view pack (only the camera view and crosshair)
+        # Nazra: the stand-alone shoulder view pack (separate from Nabd)
         import subprocess
         subprocess.run([sys.executable, os.path.join(ROOT, "tools", "make_shoulder_pack.py")],
                        env=dict(os.environ, NABD_BUILD=str(build_number())), check=True)

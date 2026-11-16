@@ -1,83 +1,54 @@
 {
-  "format_version": 3,
+  "format_version": 2,
   "header": {
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "1cfe1b24-c8dd-428f-8ad8-ea5fde34153d",
-    "version": "1.0.52",
-    "min_engine_version": "1.21.130"
+    "version": [
+      1,
+      0,
+      53
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      120
+    ]
   },
   "modules": [
     {
       "type": "resources",
       "uuid": "26fcbd58-13fa-43a9-82d4-31c53c5d0bde",
-      "version": "1.0.52"
+      "version": [
+        1,
+        0,
+        53
+      ]
     }
   ],
   "capabilities": [
     "pbr"
   ],
-  "settings": [
-    {
-      "type": "label",
-      "text": "Nazra (shoulder view by Nabd): in third person (back view) your character stands to the side and the crosshair in the middle marks exactly where you hit and click. 'Both' moves the character to the side you turn away from."
-    },
-    {
-      "type": "toggle",
-      "text": "Nazra - shoulder view in third person",
-      "name": "nabd:shoulder",
-      "default": true
-    },
-    {
-      "type": "dropdown",
-      "text": "Character side on screen",
-      "name": "nabd:shoulder_side",
-      "default": "left",
-      "options": [
-        {
-          "name": "left",
-          "text": "Left"
-        },
-        {
-          "name": "right",
-          "text": "Right"
-        },
-        {
-          "name": "both",
-          "text": "Both (follows the camera)"
-        }
-      ]
-    },
-    {
-      "type": "slider",
-      "text": "How far to the side (tenths of a block)",
-      "name": "nabd:shoulder_shift",
-      "min": 3,
-      "max": 14,
-      "step": 1,
-      "default": 8
-    }
-  ],
   "subpacks": [
     {
       "folder_name": "nabd_items_anim",
       "name": "Nabd items + animations / أيتمات نبض + الحركات",
-      "memory_performance_tier": 1
+      "memory_tier": 1
     },
     {
       "folder_name": "nabd_items",
       "name": "Nabd items, no animations / أيتمات نبض بدون حركات",
-      "memory_performance_tier": 1
+      "memory_tier": 1
     },
     {
       "folder_name": "game_items_anim",
       "name": "Game items + animations / أيتمات اللعبة + الحركات",
-      "memory_performance_tier": 1
+      "memory_tier": 1
     },
     {
       "folder_name": "game_items",
       "name": "Game items, no animations / أيتمات اللعبة بدون حركات",
-      "memory_performance_tier": 1
+      "memory_tier": 1
     }
   ],
   "metadata": {

@@ -1,13 +1,12 @@
 """Builds "Nazra" (نظرة, by Nabd): a tiny stand-alone resource pack with only the
-shoulder view and the third-person crosshair - no textures, no world look, no
-movement changes.  It uses the classic pack slider (works on every version):
+shoulder view - no textures, no world look, no movement changes, no extra
+crosshair.  It uses the classic pack slider (works on every version):
 Left / Right / Both (follows the camera) / Off.
 
 The shift rides on "animation.humanoid.base_pose" (the game plays it in third
 person anyway), for your own player only, never in first person or in the
 inventory doll.  The body turns with the camera at the same instant, so the
-character never lags behind the view.  It also sets v.nb_sh_on = 0 so the main Nabd pack does not
-shift a second time when both packs are active.
+character never lags behind the view.  It is independent of the Nabd pack.
 """
 import json
 import os
@@ -16,8 +15,6 @@ import uuid
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_CROSS = os.path.join(ROOT, "pack_src", "textures", "ui", "nabd_cross.png")
-SRC_UI = os.path.join(ROOT, "pack_src", "ui", "hud_crosshair_overlay.json")
 ICON = os.path.join(ROOT, "pack", "pack_icon.png")
 OUT = os.path.join(ROOT, "dist", "_nazra")
 ZIP = os.path.join(ROOT, "dist", "Nazra.mcpack")
@@ -41,12 +38,9 @@ TURN_ON = "(query.is_local_player && !query.is_first_person && !query.is_in_ui &
 
 
 def shift(side_expr):
-    """waist and legs: the side shift (in the turned frame); also tells the main pack
-    not to shift again and that the body is turned"""
+    """waist: the side shift (in the turned frame)"""
     side = "(v.nb_sws ?? 1.0)" if side_expr == "both" else side_expr
     return (("!query.is_in_ui ? { " + TURN + "}; " if side_expr == "both" else "")
-            + "v.nb_sh_on = 0.0; "
-            + f"v.nb_sh_rot = {TURN_ON} ? 1.0 : 0.0; "
             + f"return {ON} ? -({side}) * 0.8 * 17.0667 : 0.0;")
 
 
@@ -75,7 +69,7 @@ def anim(side_expr):
 
 
 def icon():
-    """Original pack icon: a blocky figure to the left and a crosshair in the free middle."""
+    """Original pack icon: a blocky figure to the left and a sight mark in the free middle."""
     from PIL import Image, ImageDraw
     n = 32
     im = Image.new("RGB", (n, n))
@@ -114,15 +108,11 @@ def main():
             continue
         os.makedirs(os.path.join(d, "animations"))
         json.dump(anim(side), open(os.path.join(d, "animations", "nabd_shoulder_view.animation.json"), "w"), indent=2)
-        os.makedirs(os.path.join(d, "ui"))
-        shutil.copy(SRC_UI, os.path.join(d, "ui", "hud_crosshair_overlay.json"))
-        os.makedirs(os.path.join(d, "textures", "ui"))
-        shutil.copy(SRC_CROSS, os.path.join(d, "textures", "ui", "nabd_cross.png"))
     manifest = {
         "format_version": 2,
         "header": {
             "name": f"Nazra | {AR_NAME}",
-            "description": f"{AR_DESC}\nShoulder view by Nabd: third person with your character to the side and a crosshair in the middle. Nothing else changes. Pick Left / Right / Both / Off with the pack slider.",
+            "description": f"{AR_DESC}\nShoulder view by Nabd: third person with your character to the side and the middle of the screen free. Nothing else changes. Pick Left / Right / Both / Off with the pack slider.",
             "uuid": HEADER_UUID,
             "version": [1, 0, int(os.environ.get("NABD_BUILD", "1"))],
             "min_engine_version": [1, 21, 0],
