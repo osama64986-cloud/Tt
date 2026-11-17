@@ -4847,11 +4847,18 @@ const AR = {
   edge: "minecraft:polished_deepslate", emblem: "minecraft:quartz_block", core: "minecraft:sea_lantern", light: "minecraft:sea_lantern",
   wall: "minecraft:stone_bricks", pillar: "minecraft:chiseled_stone_bricks", stand: "minecraft:stone_bricks", seat: "minecraft:smooth_stone",
   base: "minecraft:stone", red: "minecraft:red_concrete", blue: "minecraft:blue_concrete",
+  ring: "minecraft:polished_blackstone", spoke: "minecraft:polished_deepslate", seat2: "minecraft:polished_andesite",
+  arch: "minecraft:stone_bricks", key: "minecraft:chiseled_stone_bricks", brazier: "minecraft:campfire",
 };
 function arenaFloorBlock(x, z) {
   const r = Math.hypot(x, z);
   if (r < 1.6) return AR.core;
   if (r < 3.6) return AR.emblem;
+  if (r < 4.6) return AR.ring;                                                // dark ring round the emblem
+  if (r < 9.5) {                                                               // eight spokes, like a compass rose
+    const deg = (Math.atan2(z, x) * 180 / Math.PI + 360) % 45;
+    if (deg < 4.5 || deg > 40.5) return AR.spoke;
+  }
   if (Math.abs(r - 12) < 0.5 || r >= ARENA.R - 2) return r >= ARENA.R - 2 ? AR.edge : AR.line;
   for (const [px, col] of [[-17, AR.red], [17, AR.blue]]) if (Math.abs(x - px) <= 1 && Math.abs(z) <= 1) return col;
   for (const [rr, n, off] of [[12, 4, 45], [20, 12, 15]]) {  // floor lights
@@ -4891,20 +4898,24 @@ function buildArena(p) {
         if (r < R) { set(x, 0, z, arenaFloorBlock(x, z)); continue; }
         if (gate(x, z)) {  // the two team gates and their corridors through the stands
           set(x, 0, z, x < 0 ? AR.red : AR.blue);
+          if (r < R + 1.2) { set(x, 5, z, z === 0 ? AR.key : AR.arch); set(x, 6, z, z === 0 ? (x < 0 ? AR.red : AR.blue) : AR.arch); }  // the arch over the gate
           continue;
         }
         if (r < R + 1.2) {  // the low ring wall, with a lit pillar every 30 degrees
           const deg = (Math.atan2(z, x) * 180 / Math.PI + 360) % 30;
           const pillar = deg < 2.2 || deg > 27.8;
           fill(x, z, 0, pillar ? 5 : 2, pillar ? AR.pillar : AR.wall);
-          if (pillar) set(x, 6, z, AR.light);
-          if (Math.abs(z) <= 2.6 && Math.abs(z) > 1.5) fill(x, z, 0, 4, x < 0 ? AR.red : AR.blue);  // gate posts in team colours
+          if (pillar) set(x, 6, z, AR.brazier);                                // a brazier burning on every pillar
+          if (Math.abs(z) <= 2.6 && Math.abs(z) > 1.5) {                       // gate posts in team colours, crowned by an arch
+            fill(x, z, 0, 4, x < 0 ? AR.red : AR.blue);
+            set(x, 5, z, AR.light);
+          }
           continue;
         }
         const h = Math.min(9, 3 + Math.floor(r - (R + 1.2)));  // stands rising in steps
         fill(x, z, 0, h - 1, AR.stand);
         const lamp = Math.round(((Math.atan2(z, x) * 180 / Math.PI) + 360) % 20) === 0 && Math.floor(r) === R + 3;
-        set(x, h, z, lamp ? AR.light : AR.seat);
+        set(x, h, z, lamp ? AR.light : (h % 2 ? AR.seat : AR.seat2));        // seat rows in two tones
         if (r > OUT - 1) fill(x, z, h + 1, h + 1, AR.wall);  // the back rail
       }
       return;

@@ -959,15 +959,23 @@ def build_summons():
     an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
         "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
         "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}
-    an["animations"]["animation.ab.summon_flap"] = {"loop": True, "bones": {  # crow: fast wingbeats, tail steering
-        "rightWing": {"rotation": [0, 0, "math.sin(query.life_time * 900.0) * 38"]},
-        "leftWing": {"rotation": [0, 0, "-math.sin(query.life_time * 900.0) * 38"]},
-        "tails": {"rotation": ["math.sin(query.life_time * 300.0) * 6", 0, 0]}}}
-    an["animations"]["animation.ab.summon_trot"] = {"loop": True, "bones": {  # hound: legs pumping, tail wagging, jaw snapping
-        "rightArm": {"rotation": ["math.sin(query.life_time * 600.0) * 30", 0, 0]},
-        "leftArm": {"rotation": ["-math.sin(query.life_time * 600.0) * 30", 0, 0]},
-        "tails": {"rotation": [0, "math.sin(query.life_time * 700.0) * 25", 0]},
-        "jaw": {"rotation": ["14 + math.sin(query.life_time * 500.0) * 14", 0, 0]}}}
+    an["animations"]["animation.ab.summon_flap"] = {"loop": True, "bones": {  # crow: full wingbeats — the tip lags and folds
+        "rightWing": {"rotation": [0, "math.sin(query.life_time * 1000.0) * 6", "8 + math.sin(query.life_time * 1000.0) * 42"]},
+        "leftWing": {"rotation": [0, "-math.sin(query.life_time * 1000.0) * 6", "-8 - math.sin(query.life_time * 1000.0) * 42"]},
+        "rightWingTip": {"rotation": [0, 0, "math.sin(query.life_time * 1000.0 - 70.0) * 30"]},
+        "leftWingTip": {"rotation": [0, 0, "-math.sin(query.life_time * 1000.0 - 70.0) * 30"]},
+        "body": {"position": [0, "-math.sin(query.life_time * 1000.0) * 0.5", 0], "rotation": ["math.sin(query.life_time * 1000.0) * 3", 0, 0]},
+        "head": {"rotation": ["-math.sin(query.life_time * 1000.0) * 3", "math.sin(query.life_time * 90.0) * 12", 0]},
+        "tails": {"rotation": ["math.sin(query.life_time * 300.0) * 8", "math.sin(query.life_time * 170.0) * 6", 0]}}}
+    an["animations"]["animation.ab.summon_trot"] = {"loop": True, "bones": {  # hound: four legs in a trot, body bouncing, tail wagging
+        "rightArm": {"rotation": ["math.sin(query.life_time * 600.0) * 32", 0, 0]},
+        "leftArm": {"rotation": ["-math.sin(query.life_time * 600.0) * 32", 0, 0]},
+        "rightLeg": {"rotation": ["-math.sin(query.life_time * 600.0) * 28", 0, 0]},
+        "leftLeg": {"rotation": ["math.sin(query.life_time * 600.0) * 28", 0, 0]},
+        "body": {"position": [0, "math.abs(math.sin(query.life_time * 600.0)) * 0.6", 0]},
+        "head": {"rotation": ["math.sin(query.life_time * 1200.0) * 4", 0, 0]},
+        "tails": {"rotation": [0, "math.sin(query.life_time * 900.0) * 28", 0]},
+        "jaw": {"rotation": ["10 + math.sin(query.life_time * 500.0) * 10", 0, 0]}}}
     an["animations"]["animation.ab.summon_tails"] = {"loop": True, "bones": {
         "tails": {"rotation": ["math.sin(query.life_time * 140.0) * 8", "math.sin(query.life_time * 90.0) * 14", 0]}}}
     an["animations"]["animation.ab.summon_swing"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {

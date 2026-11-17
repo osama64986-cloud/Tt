@@ -1577,14 +1577,14 @@ def vegeta_hair_3d(m, c):
     middle), the back row thrown back — a flame with gaps between the spikes from every side, not a block."""
     hp = hair_paint(c)
     m.box("hair", [-3.6, 31.6, -3.0], [7.2, 2.2, 6.4], hp)  # crown
-    for x, h, lean in ((-2.7, 9.0, -0.38), (-0.9, 11.5, -0.12), (0.9, 11.5, 0.12), (2.7, 9.0, 0.38)):    # front row
+    for x, h, lean in ((-2.7, 7.9, -0.38), (-0.9, 10.1, -0.12), (0.9, 10.1, 0.12), (2.7, 7.9, 0.38)):    # front row
         m.strand([x, 32.8, -2.0], [lean, 1, -0.06], h, 2.9, hp)
-    for x, h, lean in ((-3.1, 10.0, -0.5), (-1.0, 13.0, -0.16), (1.0, 13.0, 0.16), (3.1, 10.0, 0.5)):     # middle row (tallest)
+    for x, h, lean in ((-3.1, 8.8, -0.5), (-1.0, 11.4, -0.16), (1.0, 11.4, 0.16), (3.1, 8.8, 0.5)):     # middle row (tallest)
         m.strand([x, 33.0, 0.3], [lean, 1, 0.22], h, 3.0, hp)
-    for x, h, lean in ((-2.5, 9.0, -0.45), (0.0, 10.5, 0.0), (2.5, 9.0, 0.45)):                          # back row, thrown back
+    for x, h, lean in ((-2.5, 7.9, -0.45), (0.0, 9.2, 0.0), (2.5, 7.9, 0.45)):                          # back row, thrown back
         m.strand([x, 32.6, 2.4], [lean, 1, 0.65], h, 2.9, hp)
-    m.mirror_strand([3.9, 31.0, -0.6], [0.75, 1, 0.05], 6.0, 2.6, hp)                                    # flaring sides
-    m.mirror_strand([3.8, 31.0, 2.0], [0.7, 0.9, 0.5], 5.5, 2.5, hp)
+    m.mirror_strand([3.9, 31.0, -0.6], [0.75, 1, 0.05], 5.3, 2.6, hp)                                    # flaring sides
+    m.mirror_strand([3.8, 31.0, 2.0], [0.7, 0.9, 0.5], 4.9, 2.5, hp)
 
 
 def gojo_hair_up_3d(m, c):
