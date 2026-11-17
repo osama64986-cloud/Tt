@@ -99,6 +99,8 @@ def simulate(plan=None):
         st["dist"] += min(hs / 20.0 * 4.0, 1.0) * 20.0 * dt
         st["life"] += dt
         q = {
+            "movement_direction": (lambda a, v=(st["vx"], st["vy"], st["vz"]): (v[int(a)] / max(1e-6, math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2))) if (v[0] ** 2 + v[1] ** 2 + v[2] ** 2) > 1e-6 else 0.0),
+            "yaw_speed": turn, "is_emoting": 0.0,
             "delta_time": dt, "ground_speed": hs, "is_sprinting": float(bool(spr)), "is_sneaking": float(bool(snk)),
             "position": (lambda a, s=dict(st): [s["x"], s["y"], s["z"]][int(a)]),
             "body_y_rotation": st.get("yaw", 0.0), "is_on_ground": float(on_ground), "vertical_speed": st["vy"],
@@ -109,7 +111,13 @@ def simulate(plan=None):
         ctx["q"] = q
         ctx["v"].setdefault("attack_time", 0.0)
         pose = {}
+        st["sneak_t"] = (st.get("sneak_t", 0.0) + dt) if snk else 0.0
         for name in ORDER:
+            # the game plays "sneaking" only while sneaking; its clock starts when it starts
+            if name == "animation.player.sneaking":
+                if not snk:
+                    continue
+                ctx["q"]["anim_time"] = st["sneak_t"]
             for bone, ch in A.get(name, {}).get("bones", {}).items():
                 p = pose.setdefault(bone, [np.zeros(3), np.zeros(3), np.ones(3)])
                 if "rotation" in ch:
