@@ -258,55 +258,116 @@ def strata(name, base, *, top=False, contrast=0.80):
     """Deepslate: flat lens-shaped slabs laid in staggered rows over a dark bed.
     Each slab is drawn on its own as a small pixel ellipse: a lit rim along its top,
     a light upper half, a shaded lower edge and darker tapered ends, so it reads as
-    a stone lying in the wall.  Where slabs do not meet the dark blue-grey bed
-    shows through in irregular gaps, never in straight lines.  The top face uses
-    shorter, rounder slabs in looser rows."""
+    a stone lying in the wall.  Where slabs do not meet, the dark blue-grey bed
+    shows through.  The top face is the end of the stack: rounder slabs, lit from
+    their middle, packed loosely instead of in rows."""
+    if top:
+        return strata_top(name, base, contrast=contrast)
     r = rng_of(name)
+    r2 = rng_of(name + "_fine")                            # extra touches, without moving the layout
     ramp = make_ramp(base, 8, contrast, sat=1.0, warm=0.0)
     idx = np.full((N, N), 1)
     bed = fbm(r, ((4, 1.0), (8, 0.5)), sx=3, sy=1)
-    idx = idx + (bed > 0.7) - (bed < 0.25)               # the bed is not one flat colour
+    idx = idx + (bed > 0.7) - (bed < 0.25)
     slab = np.full((N, N), -1)
-    rows = 5 if not top else 4
+    rows = 5
     k = 0
     for row in range(rows):
         cy = (row + 0.5) * N / rows + r.normal(0, 0.35)
         x = r.random() * N
         end = x + N
         while x < end - 2:
-            w = float(r.integers(6, 11) if not top else r.integers(4, 7))
+            w = float(r.integers(6, 11))
             w = min(w, end - x + 0.5)
-            h = float(r.choice([3.4, 3.8, 4.2, 4.6]) if not top else r.choice([3.6, 4.2, 5.0]))
+            h = float(r.choice([3.0, 3.6, 4.2]))
             a, b = w / 2, h / 2
             cx = x + a
-            cy_s = cy + r.normal(0, 0.6)                   # slabs sit unevenly in their row
-            tone = 4 + int(r.choice([-1, -1, 0, 0, 1, 1, 2]))
+            tone = 4 + int(r.choice([-1, 0, 0, 1]))
+            cy_s = cy + r2.normal(0, 0.25)                 # a hair of unevenness in the row
             dx = (xx + 0.5 - cx + N / 2) % N - N / 2
             dy = (yy + 0.5 - cy_s + N / 2) % N - N / 2
             m = (dx / a) ** 2 + (dy / b) ** 2 <= 1.0
+            rel_y = dy / b
             rel_x = np.abs(dx / a)
-            t = np.full((N, N), tone) - (rel_x > 0.8)
+            soft = r2.random() < 0.2                       # some slabs are flatter, less banded
+            t = np.full((N, N), tone) + (rel_y < -0.3) - ((rel_y > 0.45) & (not soft)) - (rel_x > 0.75)
             idx[m] = t[m]
             slab[m] = k
             k += 1
-            x += w + float(r.choice([0, 0, 0, 1]))       # neighbours touch, now and then a gap
-    # rim light along each slab's top edge, shade along its bottom
+            x += w + float(r.choice([0, 0, 1]))
     top_edge = (slab >= 0) & (np.roll(slab, 1, 0) != slab)
     bot_edge = (slab >= 0) & (np.roll(slab, -1, 0) != slab)
-    side_edge = (slab >= 0) & (np.roll(slab, -1, 1) != slab)
+    side_edge = (slab >= 0) & (np.roll(slab, -1, 1) != slab) & (np.roll(slab, -1, 1) >= 0)
     idx[top_edge] += 1
     idx[bot_edge] -= 1
-    idx[side_edge & ~top_edge] -= 1                        # a shaded joint where two slabs meet
-    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=6 if not top else 2, sy=1)
+    idx[side_edge & ~top_edge & (r2.random((N, N)) < 0.4)] -= 1   # now and then a soft joint where two slabs touch
+    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=6, sy=1)
     inside = slab >= 0
     idx = idx + ((grain > 0.8) & inside) - ((grain < 0.16) & inside)
-    speck = r.random((N, N))
-    idx = idx + ((speck > 0.9) & inside) - ((speck < 0.08) & inside)
+    speck = r2.random((N, N))
+    idx = idx + ((speck > 0.95) & inside)                  # a light sprinkle of grit
     rgb = paint_idx(idx, ramp).astype(float)
     cool = ~inside | (idx <= 1)
     rgb[cool, 2] += 10                                     # the bed and the deep shadows lean blue
     rgb[cool, 0] -= 3
     for _ in range(4):                                     # mica flecks
+        x, y = int(r.integers(0, N)), int(r.integers(0, N))
+        if inside[y, x]:
+            rgb[y, x] = ramp[-1]
+    hgt = np.where(inside, 0.4 + 0.1 * (idx - 3), 0.08)
+    return Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.clip(hgt, 0, 1), rough=190, bump=1.1)
+
+
+def strata_top(name, base, contrast=0.80):
+    """Top of deepslate: the cut ends of the slabs - rounded plates of mixed size,
+    packed loosely with no rows, each lit on its upper-left and darker towards its
+    lower-right, with the cool dark bed between them."""
+    r = rng_of(name + "_v2")
+    ramp = make_ramp(base, 8, contrast, sat=1.0, warm=0.0)
+    idx = np.full((N, N), 1)
+    bed = fbm(r, ((4, 1.0), (8, 0.5)))
+    idx = idx + (bed > 0.7) - (bed < 0.25)
+    slab = np.full((N, N), -1)
+    k = 0
+    placed = []
+    tries = 0
+    while k < 14 and tries < 600:
+        tries += 1
+        w = float(r.choice([4.2, 5.0, 5.8, 6.6]))
+        h = float(r.choice([3.6, 4.2, 5.0]))
+        cx, cy = r.random() * N, r.random() * N
+        ok = True
+        for (px, py, pw, ph) in placed:                   # keep plates from piling up
+            ddx = min(abs(cx - px), N - abs(cx - px))
+            ddy = min(abs(cy - py), N - abs(cy - py))
+            if (ddx / ((w + pw) / 2 * 0.82)) ** 2 + (ddy / ((h + ph) / 2 * 0.82)) ** 2 < 1:
+                ok = False
+                break
+        if not ok:
+            continue
+        placed.append((cx, cy, w, h))
+        a, b = w / 2, h / 2
+        tone = 4 + int(r.choice([-1, 0, 0, 1, 1]))
+        dx = (xx + 0.5 - cx + N / 2) % N - N / 2
+        dy = (yy + 0.5 - cy + N / 2) % N - N / 2
+        m = (dx / a) ** 2 + (dy / b) ** 2 <= 1.0
+        diag = (dx / a + dy / b) / 2                       # -1 upper-left .. 1 lower-right
+        t = np.full((N, N), tone) + (diag < -0.25) - (diag > 0.35)
+        idx[m] = t[m]
+        slab[m] = k
+        k += 1
+    inside = slab >= 0
+    ul = inside & ((np.roll(slab, 1, 0) != slab) | (np.roll(slab, 1, 1) != slab))
+    lr = inside & ((np.roll(slab, -1, 0) != slab) | (np.roll(slab, -1, 1) != slab))
+    idx[ul & ~lr] += 1
+    idx[lr & ~ul] -= 1
+    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=2, sy=2)
+    idx = idx + ((grain > 0.8) & inside) - ((grain < 0.16) & inside)
+    rgb = paint_idx(idx, ramp).astype(float)
+    cool = ~inside | (idx <= 1)
+    rgb[cool, 2] += 10
+    rgb[cool, 0] -= 3
+    for _ in range(3):
         x, y = int(r.integers(0, N)), int(r.integers(0, N))
         if inside[y, x]:
             rgb[y, x] = ramp[-1]
@@ -346,7 +407,7 @@ def bedrock(name, base):
 
 
 def deepslate_set(out):
-    b = shift(vbase("deepslate/deepslate"), dv=0.02, ds=0.02)        # close to the game's own tone
+    b = shift(vbase("deepslate/deepslate"), dv=-0.01, ds=0.02)       # close to the game's own tone
     out["deepslate/deepslate"] = strata("deepslate", b)
     out["deepslate/deepslate_top"] = strata("deepslate_top", b, top=True)
 
