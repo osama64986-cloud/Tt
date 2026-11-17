@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes pack_src/animations/nabd_player.animation.json.
+"""Writes pack_src/animations/nabd_motion.animation.json.
 
 These are our own motion curves.  They are registered under the animation
 names the game's player already plays, so they take over without replacing the
@@ -231,7 +231,7 @@ anims = {
     },
 }
 
-out = os.path.join(ROOT, "pack_src", "animations", "nabd_player.animation.json")
+out = os.path.join(ROOT, "pack_src", "animations", "nabd_motion.animation.json")
 os.makedirs(os.path.dirname(out), exist_ok=True)
 anims.update(motion.build())
 json.dump({"format_version": "1.8.0", "animations": anims}, open(out, "w"), indent=2)

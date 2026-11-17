@@ -10,7 +10,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-A = json.load(open(os.path.join(ROOT, "pack_src", "animations", "nabd_player.animation.json")))["animations"]
+A = json.load(open(os.path.join(ROOT, "pack_src", "animations", "nabd_motion.animation.json")))["animations"]
 FN = {"dsin": lambda d: math.sin(math.radians(d)), "dcos": lambda d: math.cos(math.radians(d)), "abs": abs,
       "clamp": lambda x, a, b: max(a, min(b, x)), "pow": pow, "sqrt": lambda x: math.sqrt(max(0, x)),
       "lerp": lambda a, b, t: a + (b - a) * t, "max": max, "math_fmod": math.fmod}

@@ -21,7 +21,7 @@ import molang  # noqa: E402
 import render_player as R  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-A = json.load(open(os.path.join(ROOT, "pack_src", "animations", "nabd_player.animation.json")))["animations"]
+A = json.load(open(os.path.join(ROOT, "pack_src", "animations", "nabd_motion.animation.json")))["animations"]
 ORDER = ["animation.player.move.arms", "animation.player.move.legs", "animation.player.sneaking", "animation.player.bob"]
 
 FPS = 60

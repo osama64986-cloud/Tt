@@ -286,19 +286,14 @@ def main():
         keep = os.path.join(PACK, "subpacks", "game_items")
         os.makedirs(keep, exist_ok=True)
         open(os.path.join(keep, "README.txt"), "w").write("Empty on purpose: with this option the game shows its own item icons.\n")
-    # player animations are optional too: the same slider picks them on or off
-    anim = os.path.join(PACK, "animations")
-    if os.path.isdir(anim):
-        sp = os.path.join(PACK, "subpacks")
-        shutil.copytree(os.path.join(sp, "nabd_items"), os.path.join(sp, "nabd_items_anim"))
-        # only the player movement animations are optional
-        moving = [f for f in os.listdir(anim) if f.startswith("nabd_player")]
-        for dest in ("nabd_items_anim", "game_items_anim"):
-            os.makedirs(os.path.join(sp, dest, "animations"), exist_ok=True)
-            for f in moving:
-                shutil.copy(os.path.join(anim, f), os.path.join(sp, dest, "animations", f))
-        for f in moving:
-            os.remove(os.path.join(anim, f))
+    # player animations live in the main pack, so they always come with this version;
+    # the "no animations" slider options override them with an empty file
+    sp = os.path.join(PACK, "subpacks")
+    shutil.copytree(os.path.join(sp, "nabd_items"), os.path.join(sp, "nabd_items_anim"))
+    for dest in ("nabd_items", "game_items"):
+        os.makedirs(os.path.join(sp, dest, "animations"), exist_ok=True)
+        json.dump({"format_version": "1.8.0", "animations": {}},
+                  open(os.path.join(sp, dest, "animations", "nabd_motion.animation.json"), "w"))
     make_icon(out).save(os.path.join(PACK, "pack_icon.png"))
     validate(out)
     print(f"{len(out)} block textures, {len(item_out)} item textures, {len(variations)} variation groups, {len(fb)} flipbooks")
@@ -338,7 +333,12 @@ def main():
                     for d, _, fs in os.walk(root_dir):
                         for f in sorted(fs):
                             z.write(os.path.join(d, f), os.path.join(prefix, os.path.relpath(os.path.join(d, f), root_dir)))
-            print("wrote", bz, "and", az)
+            ver = ".".join(map(str, json.load(open(os.path.join(PACK, "manifest.json")))["header"]["version"]))
+            for f in os.listdir(DIST):
+                if f.startswith("Nabd_v") and f.endswith(".mcaddon"):
+                    os.remove(os.path.join(DIST, f))
+            shutil.copy(az, os.path.join(DIST, f"Nabd_v{ver}.mcaddon"))
+            print("wrote", bz, "and", az, "and", f"Nabd_v{ver}.mcaddon")
 
 
 if __name__ == "__main__":
