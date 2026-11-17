@@ -254,10 +254,51 @@ def slate(name, base, *, count=9, stretch=0.42, contrast=0.55, top=False):
     return Tex(paint_idx(idx, ramp), hgt, rough=190, bump=1.1)
 
 
+def strata(name, base, *, top=False, contrast=0.80):
+    """Deepslate: wide, flat, lens-shaped slabs packed in loose rows (cells measured
+    with the vertical distance stretched, so they come out long and thin).  Each
+    slab is lighter in its middle with a lit upper rim and a horizontal grain; the
+    seams between slabs are a cool, deep blue-grey.  On the top face the slabs are
+    shorter and rounder."""
+    r = rng_of(name)
+    ramp = make_ramp(base, 7, contrast, sat=1.0, warm=0.0)
+    count = 13 if not top else 12
+    # loose rows: points sit near row centres with a random horizontal spread
+    rows = 4 if not top else 4
+    pts = []
+    for k in range(count):
+        row = k % rows
+        pts.append([r.random() * N, (row + 0.5 + r.normal(0, 0.12)) * N / rows])
+    pts = np.array(pts)
+    dx = np.abs(xx[..., None] + 0.5 - pts[:, 0])
+    dy = np.abs(yy[..., None] + 0.5 - pts[:, 1])
+    dx = np.minimum(dx, N - dx)
+    dy = np.minimum(dy, N - dy)
+    d = np.hypot(dx * (0.42 if not top else 0.7), dy)
+    ds = np.sort(d, axis=-1)
+    ids = np.argmin(d, axis=-1)
+    edge = ds[..., 1] - ds[..., 0]
+    off = r.choice([-1, 0, 0, 1], size=len(pts))
+    inner = np.clip(edge / 1.6, 0, 1)
+    idx = 3 + off[ids] + (inner > 0.55) + (inner > 0.95) * (r.random((N, N)) < 0.5)
+    below = np.roll(ids, -1, 0) != ids                      # 1-px seams: under each slab,
+    right = (np.roll(ids, -1, 1) != ids) & (r.random((N, N)) < 0.3)   # and some slab ends
+    seam = below | right
+    up = (np.roll(ids, 1, 0) != ids) & ~seam
+    idx[up] += 1
+    idx[seam] = 0
+    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=6 if not top else 2, sy=1)
+    idx = idx + ((grain > 0.8) & (idx > 1)) - ((grain < 0.16) & (idx > 1))
+    rgb = paint_idx(idx, ramp)
+    rgb[seam] = np.array((base[0] * 0.68, base[1] * 0.70, base[2] * 0.88)).astype(np.uint8)   # cool blue-grey seams
+    hgt = 0.15 + 0.7 * inner
+    return Tex(rgb, hgt, rough=190, bump=1.0)
+
+
 def deepslate_set(out):
-    b = shift(vbase("deepslate/deepslate"), dv=-0.07, ds=0.03)       # darker than before
-    out["deepslate/deepslate"] = slate("deepslate", b)
-    out["deepslate/deepslate_top"] = slate("deepslate_top", b, count=7, top=True)
+    b = shift(vbase("deepslate/deepslate"), dv=-0.02, ds=0.02)       # close to the game's own tone
+    out["deepslate/deepslate"] = strata("deepslate", b)
+    out["deepslate/deepslate_top"] = strata("deepslate_top", b, top=True)
 
 
 def build(out, flip, variations):
@@ -285,7 +326,7 @@ def build(out, flip, variations):
     out["stone_diorite_smooth"] = polished("diorite_smooth", shift(vbase("stone_diorite_smooth"), dv=0.02))
     out["stone_andesite_smooth"] = polished("andesite_smooth", shift(vbase("stone_andesite_smooth"), dv=0.04))
     out["polished_tuff"] = polished("polished_tuff", shift(vbase("polished_tuff"), dv=0.04), frame=2)
-    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/deepslate"), dv=-0.05, ds=0.03), contrast=0.40)
+    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/deepslate"), dv=-0.02, ds=0.02), contrast=0.40)
     out["stone_slab_top"] = polished("smooth_stone_top", shift(vbase("stone_slab_top"), dv=0.04), frame=2)
     out["stone_slab_side"] = polished("smooth_stone_side", shift(vbase("stone_slab_side"), dv=0.04), panels=2)
     # dyed families

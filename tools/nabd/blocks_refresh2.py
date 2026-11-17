@@ -257,35 +257,92 @@ def suspicious(out):
             out[f"suspicious_{kind}_{stage}"] = t
 
 
+def cobble(name, base, count=12, gap_dv=-0.22, contrast=0.48, gap_w=0.55, speck=0.30):
+    """Cobblestone close to the game's look: many packed stones of mixed size, thin
+    mid-grey joints, each stone lit on its upper-left and speckled inside."""
+    r = rng_of(name)
+    ramp = make_ramp(base, 7, contrast, sat=1.1, warm=0.3)
+    ids, f1, f2, pts = voronoi(r, count, min_dist=0.55 * np.sqrt(N * N / count))
+    edge = f2 - f1
+    n = len(pts)
+    off = r.choice([-1, 0, 0, 1, 1], size=n)
+    up = (np.roll(ids, 1, 0) != ids) | (np.roll(ids, 1, 1) != ids)
+    down = (np.roll(ids, -1, 0) != ids) | (np.roll(ids, -1, 1) != ids)
+    idx = 3 + off[ids]
+    idx = np.where(edge < 1.3, idx - 1, idx)
+    idx[up & (edge >= gap_w)] += 2
+    idx[down & (edge >= gap_w)] -= 1
+    g = fbm(r, ((8, 1.0), (16, 0.6)))
+    idx = idx + (g > 1 - speck * 0.9) - (g < speck * 0.7)
+    rgb = paint_idx(idx, ramp)
+    gap_m = edge < gap_w
+    gap = np.array(shift(base, dv=gap_dv))
+    rgb[gap_m] = gap
+    hgt = np.clip(edge / 3.0, 0, 1) * 0.8
+    hgt[gap_m] = 0.1
+    return Tex(rgb, hgt, rough=200, bump=1.1), (ids, edge, r)
+
+
+def gravel_fine(name, base):
+    """Gravel close to the game's look: a dense bed of tiny pebbles (2-3 px) in soft,
+    near-grey tones.  Each pebble has a lit top-left pixel and a shaded lower-right
+    one; there are no outlines, just a few dark pixels where pebbles meet."""
+    r = rng_of(name)
+    ids, f1, f2, pts = voronoi(r, 64, min_dist=1.3)
+    edge = f2 - f1
+    n = len(pts)
+    tones = [make_ramp(base, 6, 0.40, sat=1.0, warm=0.0),
+             make_ramp(shift(base, ds=0.03, dv=0.05), 6, 0.38, sat=1.0, warm=0.0),
+             make_ramp(shift(base, ds=-0.04, dv=-0.07), 6, 0.40, sat=1.0, warm=0.0),
+             make_ramp(shift(base, ds=-0.05, dv=0.07), 6, 0.30, sat=1.0, warm=0.0)]
+    which = r.choice([0, 0, 0, 1, 1, 2, 2, 3], size=n)
+    off = r.choice([-1, 0, 0, 0, 1], size=n)
+    up = (np.roll(ids, 1, 0) != ids) & (np.roll(ids, 1, 1) != ids)
+    down = (np.roll(ids, -1, 0) != ids) & (np.roll(ids, -1, 1) != ids)
+    idx = 3 + off[ids]
+    idx[up] += 1
+    idx[down] -= 1
+    rgb = np.zeros((N, N, 3), np.uint8)
+    for k, ramp in enumerate(tones):
+        sel = which[ids] == k
+        rgb[sel] = paint_idx(idx, ramp)[sel]
+    gap_m = (edge < 0.3) & down & (rng_of(name + 'g').random((N, N)) < 0.5)
+    rgb[gap_m] = np.array(shift(base, dv=-0.22))
+    hgt = np.clip(edge / 2.0, 0, 1) * 0.7
+    hgt[gap_m] = 0.1
+    return Tex(rgb, hgt, rough=210, bump=1.0)
+
+
 def darker_deepslate_family(out):
     """the whole deepslate family follows the darker deepslate"""
     for k in list(out):
         if k.startswith("deepslate/") and "_ore" not in k and k not in ("deepslate/deepslate", "deepslate/deepslate_top"):
             t = out[k]
-            t.rgb = (t.rgb.astype(float) * 0.84).astype(np.uint8)
+            t.rgb = (t.rgb.astype(float) * 0.95).astype(np.uint8)
 
 
 def build(out, flip, variations):
     darker_deepslate_family(out)
     ores(out, flip)
-    # cobblestone: rounded stones, three slightly different greys, clean gaps
-    cb = shift(vbase("cobblestone"), dv=0.06)
-    sets = [make_ramp(cb, 7, 0.42), make_ramp(shift(cb, dv=0.07, dh=0.02, ds=0.03), 7, 0.42),
-            make_ramp(shift(cb, dv=-0.07), 7, 0.42)]
-    gap = shift(cb, dv=-0.36)
-    out["cobblestone"] = pebbles("cobblestone2", sets, 9, gap=gap)
-    out["nabd/cobblestone_v1"] = pebbles("cobblestone2_v1", sets, 9, gap=gap)
+    # cobblestone: many packed stones with thin mid-grey joints, like the game's
+    cb = shift(vbase("cobblestone"), dv=0.02)
+    out["cobblestone"], _ = cobble("cobblestone3", cb)
+    out["nabd/cobblestone_v1"], _ = cobble("cobblestone3_v1", cb)
     variations["cobblestone"] = ["cobblestone", "nabd/cobblestone_v1"]
-    moss = make_ramp((74, 118, 42), 5, 0.32)
-    out["cobblestone_mossy"] = pebbles("cobblestone2", sets, 9, gap=gap, moss=moss)
-    # gravel: many small mixed pebbles
-    gb = shift(vbase("gravel"), dv=0.04)
-    grey = (128, 126, 124)
-    gsets = [make_ramp(grey, 7, 0.44), make_ramp((150, 132, 116), 7, 0.44),
-             make_ramp((176, 172, 166), 7, 0.40), make_ramp((104, 104, 112), 7, 0.44)]
-    ggap = (62, 58, 56)
-    out["gravel"] = pebbles("gravel2", gsets, 22, gap=ggap)
-    out["nabd/gravel_v1"] = pebbles("gravel2_v1", gsets, 22, gap=ggap)
+    moss = make_ramp((92, 122, 58), 5, 0.36, sat=1.0)
+    mt, (ids, edge, r) = cobble("cobblestone3", cb)
+    mg = fbm(rng_of("cobble_moss"), ((2, 1.0), (4, 0.6)))
+    speck = rng_of("cobble_moss_speck").random((N, N))
+    m = (((mg > 0.5) & (edge < 1.4)) | ((mg > 0.72) & (edge < 2.6))) & (speck < 0.8)
+    mt.rgb[m] = paint_idx(np.clip(((mg[m] - 0.55) * 10).astype(int) + 1, 0, 4), moss)
+    mt.height[m] = 0.6
+    out["cobblestone_mossy"] = mt
+    dsb = shift(vbase("deepslate/cobbled_deepslate"), dv=-0.01, ds=0.02)
+    out["deepslate/cobbled_deepslate"], _ = cobble("cobbled_deepslate3", dsb, count=11, gap_dv=-0.14, contrast=0.55)
+    # gravel: a fine bed of small pebbles
+    gb = shift(vbase("gravel"), dv=-0.04)
+    out["gravel"] = gravel_fine("gravel3", gb)
+    out["nabd/gravel_v1"] = gravel_fine("gravel3_v1", gb)
     variations["gravel"] = ["gravel", "nabd/gravel_v1"]
     crying(out)
     grasses(out)
