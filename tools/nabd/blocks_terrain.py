@@ -88,7 +88,7 @@ def build(out, flip, variations):
     out["calcite"] = P.rock("calcite", vramp("calcite", 5, contrast=0.14), "smooth", cracks=2, rough=170)
     out["dripstone_block"] = P.rock("dripstone_block", vramp("dripstone_block", 5, contrast=0.28), "pillars", cracks=2, speck=0.03)
     out["smooth_basalt"] = P.rock("smooth_basalt", vramp("smooth_basalt", 5, contrast=0.24), "smooth", cracks=1)
-    out["bedrock"] = P.cells("bedrock", vramp("bedrock", 6, contrast=0.55), 7, vary=0.5, dome=0.4)
+    out["bedrock"] = blocks_refresh.bedrock("bedrock", vbase("bedrock"))
     ob = make_ramp((30, 22, 46), 5, 0.55, warm=0.02)
     t = P.rock("obsidian", ob, "smooth", cracks=3, rough=40)
     out["obsidian"] = t
