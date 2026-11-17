@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Shonen Apex (formerly Anime Battles / Tenka Clash) add-on builder.
+"""Anime Multiverse Clash (formerly Anime Battles) add-on builder.
 
 Generates the cube models (geometry), pixel textures, item icons, particle
-texture and pack icons, then zips BP + RP into dist/ShonenApex.mcaddon.
+texture and pack icons, then zips BP + RP into dist/AnimeMultiverseClash.mcaddon.
 
 Run:  python3 tools/build.py
 """
@@ -132,7 +132,7 @@ def build_icons():
 
 def build_zip():
     os.makedirs(DIST, exist_ok=True)
-    out = os.path.join(DIST, "ShonenApex.mcaddon")
+    out = os.path.join(DIST, "AnimeMultiverseClash.mcaddon")
     if os.path.exists(out):
         os.remove(out)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
