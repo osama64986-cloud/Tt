@@ -52,10 +52,24 @@
     }
   }
 
-  /** Approved comments from the database, cleaned like everything else. */
+  // Approved comments are cached per tab for 5 minutes, so browsing back and forth does not
+  // call the database again (keeps the free plan's monthly traffic small).
+  const CACHE_MS = 5 * 60 * 1000;
+  function cached(modId) {
+    try {
+      const c = JSON.parse(sessionStorage.getItem("nabd.c." + modId) || "null");
+      return c && typeof c.at === "number" && Date.now() - c.at >= 0 && Date.now() - c.at < CACHE_MS && Array.isArray(c.rows) ? c.rows : null;
+    } catch { return null; }
+  }
+  function store(modId, rows) {
+    try { sessionStorage.setItem("nabd.c." + modId, JSON.stringify({ at: Date.now(), rows })); } catch { /* full / private mode */ }
+  }
+
+  /** Approved comments from the database, cleaned like everything else (also when read from the cache). */
   async function loadSiteComments(modId) {
     try {
-      const rows = await rpc("list_comments", { p_mod: modId });
+      let rows = cached(modId);
+      if (!rows) { rows = await rpc("list_comments", { p_mod: modId }); if (Array.isArray(rows) && rows.length) store(modId, rows.slice(0, 50)); } // empty lists are tiny: not cached, so a new approval shows at once
       return (Array.isArray(rows) ? rows : []).slice(0, 50).filter((r) => r && Object.hasOwn(KINDS, r.kind)
         && typeof r.body === "string" && r.body).map((r) => ({
         kind: r.kind,
@@ -135,11 +149,18 @@
       const n = Object.keys(KINDS).map((k) => [k, items.filter((i) => i.kind === k).length]).filter(([, c]) => c);
       counts.innerHTML = n.map(([k, c]) => `<span class="chip">${KINDS[k][0]} ${c}</span>`).join(" ");
     };
-    render(fromGithub);
-    loadSiteComments(modId).then((site) => {
+    if (fromGithub.length) render(fromGithub);
+    const loadList = () => loadSiteComments(modId).then((site) => {
       if (site === null) { if (!fromGithub.length) list.innerHTML = `<li class="muted-note">ما قدرنا نحمّل الآراء هسه.</li>`; return; }
       render([...site, ...fromGithub].sort((a, b) => (b.date || "").localeCompare(a.date || "")));
     });
+    // Ask the database only when the visitor actually reaches the comments.
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) { io.disconnect(); loadList(); }
+      }, { rootMargin: "300px" });
+      io.observe(el);
+    } else loadList();
 
     const form = el.querySelector(".cform");
     const msg = el.querySelector(".c-msg");
