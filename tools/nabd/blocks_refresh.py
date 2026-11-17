@@ -285,7 +285,7 @@ def build(out, flip, variations):
     out["stone_diorite_smooth"] = polished("diorite_smooth", shift(vbase("stone_diorite_smooth"), dv=0.02))
     out["stone_andesite_smooth"] = polished("andesite_smooth", shift(vbase("stone_andesite_smooth"), dv=0.04))
     out["polished_tuff"] = polished("polished_tuff", shift(vbase("polished_tuff"), dv=0.04), frame=2)
-    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/deepslate"), dv=0.06, ds=0.03), contrast=0.36)
+    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/deepslate"), dv=-0.05, ds=0.03), contrast=0.40)
     out["stone_slab_top"] = polished("smooth_stone_top", shift(vbase("stone_slab_top"), dv=0.04), frame=2)
     out["stone_slab_side"] = polished("smooth_stone_side", shift(vbase("stone_slab_side"), dv=0.04), panels=2)
     # dyed families
