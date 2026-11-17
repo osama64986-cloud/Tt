@@ -36,7 +36,7 @@
       const r = await fetch("stats.json", { cache: "no-cache" });
       if (r.ok) {
         const j = await r.json();
-        if (j && typeof j.tags === "object" && Object.keys(j.tags).length) return j.tags;
+        if (j && typeof j.tags === "object" && Object.keys(j.tags).length) return MC.cleanCounts(j.tags);
       }
     } catch { /* fall back below */ }
     const repo = MC.repoOf(state.site);
@@ -157,7 +157,7 @@
           </div>
         </div>
         <div class="card-foot">
-          <small>${esc(m.size || "")}${dl ? ` · ⬇ ${fmtNum(dl)}` : ""}</small>
+          <small>${esc(m.size || "")}${dl ? ` · ⬇ ${esc(fmtNum(dl))}` : ""}</small>
           ${file ? `<button class="mc-btn mc-btn-green" type="button">⬇ تحميل</button>` : ""}
         </div>
       </article>`;

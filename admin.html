@@ -3,14 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex, nofollow">
   <title>لوحة التحكم</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/fonts.css">
   <link rel="stylesheet" href="assets/style.css">
   <link rel="stylesheet" href="assets/admin.css">
 </head>
@@ -59,8 +57,8 @@
         <span class="step-num">3</span>
         <div class="grow">
           <label class="check"><input type="checkbox" id="rememberInput"> تذكرني على هذا الجهاز (لا تفعّلها على جهاز غيرك)</label>
-          <label id="passWrap" hidden>اختر كلمة سر للوحة <small>(8 أحرف أو أكثر، مو نفس كلمة سر GitHub). المرات الجاية تكتبها بس بدل المفتاح.</small>
-            <input id="passInput" type="password" autocomplete="new-password" minlength="8">
+          <label id="passWrap" hidden>اختر كلمة سر للوحة <small>(10 أحرف أو أكثر، مو نفس كلمة سر GitHub). المرات الجاية تكتبها بس بدل المفتاح.</small>
+            <input id="passInput" type="password" autocomplete="new-password" minlength="10">
           </label>
           <button class="mc-btn mc-btn-green mc-btn-big" id="loginBtn">دخول ←</button>
           <p class="error" id="loginError" role="alert"></p>
@@ -113,65 +111,76 @@
     <button class="close" type="button" data-close aria-label="إغلاق">✕</button>
     <form id="itemForm" class="modal-content" novalidate>
       <h2 id="editorTitle">رفع عمل جديد</h2>
+
+      <!-- Step 1: the file -->
+      <div class="up-step"><span class="step-num">1</span><b>اختار الملف</b></div>
+      <div class="seg">
+        <label><input type="radio" name="source" value="upload" checked> من جهازي (حتى 95MB)</label>
+        <label><input type="radio" name="source" value="link"> رابط خارجي</label>
+      </div>
+      <div data-source="upload">
+        <label class="dropzone" id="dropzone">
+          <input type="file" name="file" accept=".jar,.zip,.mcaddon,.mcpack,.mcworld,.mctemplate,.rar,.7z">
+          <span class="dz-icon" aria-hidden="true">📦</span>
+          <span class="dz-text" id="dzText">اضغط هنا واختار الملف، أو اسحبه وحطه هنا</span>
+          <small>.mcaddon · .mcpack · .mcworld · .jar · .zip</small>
+        </label>
+        <p class="muted" id="fileHint"></p>
+      </div>
+      <div data-source="link" hidden>
+        <input name="externalUrl" dir="ltr" placeholder="https://www.mediafire.com/..." maxlength="500">
+        <input name="externalSize" placeholder="الحجم مثل 150 MB" maxlength="20">
+        <p class="muted">للملفات الأكبر من 95MB: ارفعها على MediaFire أو CurseForge والصق الرابط.</p>
+      </div>
+      <p class="muted">🛡️ ارفع بس شغلك أنت أو شي عندك إذن بنشره، وتأكد إن الملف نظيف.</p>
+
+      <!-- Step 2: the basics -->
+      <div class="up-step"><span class="step-num">2</span><b>المعلومات الأساسية</b> <small class="muted">(أغلبها يتعبّى لحاله)</small></div>
       <div class="form-grid">
         <label class="full">الاسم *<input name="name" maxlength="80" required></label>
-        <label>المعرّف (بالإنجليزي، للرابط) *<input name="id" dir="ltr" maxlength="50" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+        <label class="full">وصف قصير * <small>(سطر واحد يظهر على البطاقة)</small><input name="description" maxlength="200" required placeholder="مثلاً: يضيف تنانين تقدر تركبها"></label>
+        <label>النسخة *
+          <select name="edition" required>
+            <option value="bedrock">Bedrock (جوال / ويندوز / كونسول)</option>
+            <option value="java">Java (كمبيوتر)</option>
+          </select>
+        </label>
         <label>النوع *
           <select name="type" required></select>
         </label>
-        <label>النسخة *
-          <select name="edition" required>
-            <option value="java">Java</option>
-            <option value="bedrock">Bedrock</option>
-          </select>
-        </label>
-        <label>المحمّل / الصيغة<input name="loader" maxlength="40" list="loaders" placeholder="Fabric">
-          <datalist id="loaders">
-            <option value="Fabric"><option value="Forge"><option value="NeoForge"><option value="Quilt">
-            <option value="Bedrock Add-on"><option value="Resource Pack"><option value="Behavior Pack">
-            <option value="Iris / OptiFine"><option value="Map"><option value="World">
-          </datalist>
-        </label>
-        <label>إصدارات ماين كرافت * <small>(افصل بفاصلة)</small><input name="versions" dir="ltr" maxlength="200" placeholder="26.3" required>
+        <label class="full">إصدارات ماين كرافت * <small>(آخر إصدار معبّى لحاله)</small><input name="versions" dir="ltr" maxlength="200" required>
           <button type="button" class="mini-btn" id="addLatestBtn">➕ آخر إصدار</button></label>
-        <label>إصدار الملف<input name="version" dir="ltr" maxlength="30" placeholder="1.0.0"></label>
-        <label class="full">وصف قصير * <small>(يظهر على البطاقة)</small><input name="description" maxlength="200" required></label>
-        <label class="full">شرح مفصّل<textarea name="details" rows="4" maxlength="4000"></textarea></label>
-        <label>الوسوم <small>(افصل بفاصلة)</small><input name="tags" maxlength="200" placeholder="سحر، أسلحة"></label>
-        <label>رابط فيديو يوتيوب<input name="video" dir="ltr" maxlength="200" placeholder="https://youtu.be/..."></label>
-        <label>لون البطاقة (إذا ما فيه صورة)<input name="color" type="color" value="#5d9c3b"></label>
-        <label class="check"><input type="checkbox" name="featured"> ⭐ عمل مميز (يظهر بالأعلى)</label>
-        <label class="full">ملاحظة التحديث <small>(تنضاف لسجل التحديثات)</small><input name="changelogNote" maxlength="200" placeholder="الإصدار الأول"></label>
+        <label class="full">صورة الغلاف <small>(اختياري بس تخلي العمل أحلى)</small><input type="file" name="cover" accept="image/png,image/jpeg,image/webp,image/gif"></label>
       </div>
+      <div class="previews" id="previews"></div>
 
-      <fieldset class="files">
-        <legend>📦 الملف</legend>
-        <div class="seg">
-          <label><input type="radio" name="source" value="upload" checked> رفع ملف (حتى 95MB)</label>
-          <label><input type="radio" name="source" value="link"> رابط خارجي</label>
+      <!-- Step 3: optional extras -->
+      <details class="more">
+        <summary>➕ تفاصيل إضافية (اختياري)</summary>
+        <div class="form-grid">
+          <label class="full">شرح مفصّل<textarea name="details" rows="4" maxlength="4000"></textarea></label>
+          <label>إصدار الملف<input name="version" dir="ltr" maxlength="30" placeholder="1.0.0"></label>
+          <label>المحمّل / الصيغة<input name="loader" maxlength="40" list="loaders" placeholder="Bedrock Add-on">
+            <datalist id="loaders">
+              <option value="Fabric"><option value="Forge"><option value="NeoForge"><option value="Quilt">
+              <option value="Bedrock Add-on"><option value="Resource Pack"><option value="Behavior Pack">
+              <option value="Iris / OptiFine"><option value="Map"><option value="World">
+            </datalist>
+          </label>
+          <label class="full">صور إضافية (حتى 6)<input type="file" name="screenshots" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
+          <label>الوسوم <small>(افصل بفاصلة)</small><input name="tags" maxlength="200" placeholder="سحر، أسلحة"></label>
+          <label>رابط فيديو يوتيوب<input name="video" dir="ltr" maxlength="200" placeholder="https://youtu.be/..."></label>
+          <label class="full">ملاحظة التحديث <small>(تنضاف لسجل التحديثات)</small><input name="changelogNote" maxlength="200" placeholder="الإصدار الأول"></label>
+          <label>لون البطاقة (إذا ما فيه صورة)<input name="color" type="color" value="#5d9c3b"></label>
+          <label class="check"><input type="checkbox" name="featured"> ⭐ عمل مميز (يظهر بالأعلى)</label>
+          <label class="full">المعرّف بالرابط <small>(يتسوى لحاله، لا تغيّره إلا إذا تعرف شنو تسوي)</small><input name="id" dir="ltr" maxlength="50" pattern="[a-z0-9]+(-[a-z0-9]+)*"></label>
         </div>
-        <div data-source="upload">
-          <input type="file" name="file" accept=".jar,.zip,.mcaddon,.mcpack,.mcworld,.mctemplate,.rar,.7z">
-          <p class="muted" id="fileHint"></p>
-        </div>
-        <div data-source="link" hidden>
-          <input name="externalUrl" dir="ltr" placeholder="https://www.mediafire.com/..." maxlength="500">
-          <input name="externalSize" placeholder="الحجم مثل 150 MB" maxlength="20">
-          <p class="muted">للملفات الأكبر من 95MB: ارفعها على Releases أو MediaFire أو CurseForge والصق الرابط.</p>
-        </div>
-      </fieldset>
-
-      <fieldset class="files">
-        <legend>🖼 الصور</legend>
-        <label>صورة الغلاف<input type="file" name="cover" accept="image/png,image/jpeg,image/webp,image/gif"></label>
-        <label>صور إضافية (حتى 6)<input type="file" name="screenshots" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
         <p class="muted">الصور تنضغط تلقائياً قبل الرفع. إذا اخترت صور جديدة تنحذف القديمة.</p>
-        <div class="previews" id="previews"></div>
-      </fieldset>
+      </details>
 
       <p class="error" id="formError" role="alert"></p>
       <div class="actions">
-        <button class="mc-btn mc-btn-green" type="submit" id="saveBtn">💾 نشر</button>
+        <button class="mc-btn mc-btn-green mc-btn-big" type="submit" id="saveBtn">🚀 انشر</button>
         <button class="mc-btn" type="button" data-close>إلغاء</button>
       </div>
     </form>

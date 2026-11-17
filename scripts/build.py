@@ -22,15 +22,15 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = pathlib.Path(os.environ.get("OUT", ROOT / "_site")).resolve()
 REPO = os.environ.get("REPO", "")
-PUBLIC = ["index.html", "admin.html", "404.html", "privacy.html", "mods.json", "assets", "images", "downloads"]
+PUBLIC = ["index.html", "admin.html", "404.html", "privacy.html", "terms.html", "mods.json", "assets", "images", "downloads"]
 TYPES = {
     "mod": ("مود", "⚒"), "addon": ("إضافة بيدروك", "🧩"), "texture": ("تكستر", "🎨"),
     "shader": ("شيدر", "✨"), "map": ("خريطة", "🗺"), "world": ("عالم", "🌍"),
 }
 EDITIONS = {"java": "Java", "bedrock": "Bedrock"}
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-CSP = ("default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
-       "font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com; "
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
+       "font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://api.github.com; "
        "frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'")
 
 
@@ -42,7 +42,7 @@ def safe_url(u):
     u = str(u or "").strip()
     if re.fullmatch(r"https://[^\s\"'<>\\`]+", u, re.I):
         return u
-    if re.fullmatch(r"[\w\-./%]+", u) and not u.startswith("//") and ".." not in u:
+    if re.fullmatch(r"[\w\-./%]+", u) and not u.startswith("//") and ".." not in u and "%2e" not in u.lower():
         return u
     return ""
 
@@ -77,7 +77,28 @@ def socials_html(site):
     return "".join(out)
 
 
-def fetch_stats():
+def copy_public_tree(src, dst):
+    """Copy a public folder, refusing symlinks and anything that is not a plain file/dir.
+    (A symlink committed under images/ could otherwise publish a file from the build
+    machine, e.g. /proc/self/environ, which holds the workflow token.)"""
+    src, dst = pathlib.Path(src), pathlib.Path(dst)
+    if src.is_symlink():
+        raise SystemExit(f"refusing symlink: {src}")
+    dst.mkdir(parents=True, exist_ok=True)
+    for entry in os.scandir(src):
+        if entry.name == ".gitkeep":
+            continue
+        if entry.is_symlink():
+            raise SystemExit(f"refusing symlink in published folder: {pathlib.Path(entry.path).relative_to(ROOT)}")
+        if entry.is_dir(follow_symlinks=False):
+            copy_public_tree(entry.path, dst / entry.name)
+        elif entry.is_file(follow_symlinks=False):
+            shutil.copyfile(entry.path, dst / entry.name, follow_symlinks=False)
+        else:
+            raise SystemExit(f"refusing special file: {entry.path}")
+
+
+def fetch_stats(wanted):
     """Sum of asset downloads per release tag."""
     if not REPO:
         return {}
@@ -91,7 +112,11 @@ def fetch_stats():
             with urllib.request.urlopen(req, timeout=20) as r:
                 rels = json.load(r)
             for rel in rels:
-                out[str(rel.get("tag_name"))] = sum(int(a.get("download_count") or 0) for a in rel.get("assets") or [])
+                tag = str(rel.get("tag_name"))
+                # never publish drafts, and only count releases the site itself links to
+                if rel.get("draft") or tag not in wanted:
+                    continue
+                out[tag] = sum(max(0, int(a.get("download_count") or 0)) for a in rel.get("assets") or [])
             if len(rels) < 100:
                 break
     except Exception as exc:  # stats are optional; never fail the deploy
@@ -157,9 +182,7 @@ def item_page(m, site, base, stats):
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#5d9c3b">
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/fonts.css">
   <link rel="stylesheet" href="../../assets/style.css">
   <script type="application/ld+json">{ld_json}</script>
 </head>
@@ -204,7 +227,7 @@ def item_page(m, site, base, stats):
   </main>
   <footer class="footer">
     <div class="socials footer-socials">{socials_html(site)}</div>
-    <p><a href="../../privacy.html">سياسة الخصوصية</a></p>
+    <p><a href="../../privacy.html">سياسة الخصوصية</a> · <a href="../../terms.html">شروط الاستخدام والتبليغ</a></p>
     <p>{e(site_name)} — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
   </footer>
   <script src="../../assets/common.js"></script>
@@ -224,13 +247,15 @@ def main():
     OUT.mkdir(parents=True)
     for p in PUBLIC:
         src = ROOT / p
+        if src.is_symlink():
+            raise SystemExit(f"refusing symlink: {p}")
         if src.is_dir():
-            shutil.copytree(src, OUT / p, symlinks=False, ignore=shutil.ignore_patterns(".gitkeep"))
+            copy_public_tree(src, OUT / p)
         elif src.is_file():
             shutil.copyfile(src, OUT / p)
     (OUT / ".nojekyll").touch()
 
-    stats = fetch_stats()
+    stats = fetch_stats({str(t) for m in mods for t in (m.get("releases") or []) if isinstance(m.get("releases"), list)})
     (OUT / "stats.json").write_text(json.dumps({"generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "tags": stats}), encoding="utf-8")
 
     for m in mods:
@@ -251,7 +276,7 @@ def main():
     (OUT / "index.html").write_text(index, encoding="utf-8")
 
     today = dt.date.today().isoformat()
-    urls = [(base, today), (base + "privacy.html", today)] + [(f"{base}m/{m['id']}/", str(m.get("updated") or m.get("date") or today)) for m in mods]
+    urls = [(base, today), (base + "privacy.html", today), (base + "terms.html", today)] + [(f"{base}m/{m['id']}/", str(m.get("updated") or m.get("date") or today)) for m in mods]
     (OUT / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + "".join(f"  <url><loc>{e(u)}</loc><lastmod>{e(d[:10])}</lastmod></url>\n" for u, d in urls)

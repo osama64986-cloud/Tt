@@ -24,12 +24,15 @@
   const STORE_KEY = "mc.admin";      // sessionStorage: this tab only, cleared on close
   const VAULT_KEY = "mc.admin.vault"; // localStorage: token encrypted with the owner's password
   const IDLE_MS = 30 * 60 * 1000;     // auto-lock after 30 minutes without activity
+  const MIN_PASS = 10;                // vault password minimum length
 
   let auth = null;      // { token, repo, login }
   let data = { site: {}, mods: [] };
   let counts = {};
   let editing = null;   // id of the item being edited, or null for new
   let busy = false;
+  let lastActive = Date.now();        // last user activity (also stored with the session record)
+  let lastSaved = 0;
   let tokenExpiry = null;
 
   /* ---------- GitHub API ---------- */
@@ -131,7 +134,7 @@
         $("small", el).textContent = text;
         if (link) {
           const a = document.createElement("a");
-          a.href = link; a.target = "_blank"; a.rel = "noopener"; a.textContent = " (التفاصيل)";
+          a.href = /^https:\/\/github\.com\//.test(MC.safeUrl(link)) ? link : "#"; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = " (التفاصيل)";
           $("small", el).append(a);
         }
       },
@@ -208,6 +211,17 @@
   function renderList() {
     const total = data.mods.reduce((s, m) => s + MC.downloadsOf(m, counts), 0);
     $("#dashSummary").textContent = `${data.mods.length} عمل منشور${total ? ` · ${fmtNum(total)} تحميل` : ""}`;
+    const byType = {};
+    data.mods.forEach((m) => { if (Object.hasOwn(TYPES, m.type)) byType[m.type] = (byType[m.type] || 0) + 1; });
+    const countsEl = document.createElement("div");
+    countsEl.className = "dash-counts";
+    Object.entries(byType).forEach(([t, n]) => {
+      const c = document.createElement("span");
+      c.className = "chip";
+      c.textContent = `${TYPES[t].icon} ${TYPES[t].plural}: ${n}`;
+      countsEl.append(c);
+    });
+    $("#dashSummary").append(countsEl);
     if (!data.mods.length) {
       $("#itemList").innerHTML = `<div class="panel"><p>ما فيه أعمال بعد. اضغط <b>➕ رفع عمل جديد</b> وابدأ!</p></div>`;
       return;
@@ -219,7 +233,7 @@
         <div class="mini" data-color="${esc(safeColor(m.color))}">${img ? `<img src="${esc(img)}" alt="">` : esc(TYPES[m.type]?.icon || "📦")}</div>
         <div>
           <h3>${m.featured === true ? "⭐ " : ""}${esc(m.name)}</h3>
-          <div class="sub">${esc(TYPES[m.type]?.label || m.type)} · ${esc(EDITIONS[m.edition] || "")} · ${esc((m.versions || []).join(", "))} · ${esc(m.size || "")}${dl ? ` · ⬇ ${fmtNum(dl)}` : ""}</div>
+          <div class="sub">${esc(TYPES[m.type]?.label || m.type)} · ${esc(EDITIONS[m.edition] || "")} · ${esc((m.versions || []).join(", "))} · ${esc(m.size || "")}${dl ? ` · ⬇ ${esc(fmtNum(dl))}` : ""}</div>
         </div>
         <div class="btns">
           <a class="mc-btn" href="./#${encodeURIComponent(m.id)}" target="_blank" rel="noopener">👁</a>
@@ -267,11 +281,27 @@
     try { const v = JSON.parse(localStorage.getItem(VAULT_KEY) || "null"); return v?.v === 1 ? v : null; }
     catch { return null; }
   }
+  /**
+   * Session record = { token, repo, login, at } where `at` is the last user activity.
+   * A record older than IDLE_MS (or without `at`) is discarded on load, so reloading or
+   * restoring a tab can never skip the auto-lock.
+   */
   function readSession() {
-    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || "null"); } catch { return null; }
+    let s = null;
+    try { s = JSON.parse(sessionStorage.getItem(STORE_KEY) || "null"); } catch { return null; }
+    if (!s || typeof s.token !== "string" || typeof s.repo !== "string") return null;
+    const age = Date.now() - Number(s.at);
+    if (!Number.isFinite(age) || age < 0 || age > IDLE_MS) {
+      try { sessionStorage.removeItem(STORE_KEY); } catch { /* ignore */ }
+      return { expired: true };
+    }
+    if (!/^github_pat_[A-Za-z0-9_]{20,}$/.test(s.token) || !/^[\w-][\w.-]*\/[\w-][\w.-]*$/.test(s.repo)) return null;
+    return { token: s.token, repo: s.repo, login: typeof s.login === "string" ? s.login : "" };
   }
   function saveSession() {
-    try { sessionStorage.setItem(STORE_KEY, JSON.stringify(auth)); } catch { /* page-only login */ }
+    if (!auth) return;
+    lastSaved = Date.now();
+    try { sessionStorage.setItem(STORE_KEY, JSON.stringify({ ...auth, at: lastActive })); } catch { /* page-only login */ }
   }
 
   async function login(token, repo) {
@@ -283,6 +313,7 @@
     let me = "";
     try { me = (await gh("/user", { token })).login; } catch { /* fine-grained tokens may not read /user */ }
     auth = { token, repo: info.full_name, login: me };
+    lastActive = Date.now();
     saveSession();
   }
 
@@ -375,7 +406,7 @@
     try {
       const remember = $("#rememberInput").checked;
       const pass = $("#passInput").value;
-      if (remember && pass.length < 8) throw new Error("اكتب كلمة سر 8 أحرف أو أكثر لقفل المفتاح.");
+      if (remember && pass.length < MIN_PASS) throw new Error(`اكتب كلمة سر ${MIN_PASS} أحرف أو أكثر لقفل المفتاح.`);
       await login(extractToken($("#tokenInput").value) || $("#tokenInput").value.trim(), $("#repoInput").value.trim());
       if (remember) await lockToVault(pass); else localStorage.removeItem(VAULT_KEY);
       await showDash();
@@ -410,6 +441,7 @@
       const a = await unlockVault($("#unlockInput").value);
       await gh(`/repos/${a.repo}`, { token: a.token }); // still valid?
       auth = a;
+      lastActive = Date.now();
       saveSession();
       await showDash();
     } catch (e) {
@@ -422,16 +454,23 @@
     if (confirm("راح ينحذف المفتاح المحفوظ من هذا الجهاز. متأكد؟")) { logout(true); show("loginView"); }
   });
 
-  // Auto-lock when idle.
-  let lastActive = Date.now();
-  ["pointerdown", "keydown", "scroll"].forEach((ev) => addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true }));
-  setInterval(() => {
-    if (auth && !busy && Date.now() - lastActive > IDLE_MS) {
+  // Auto-lock when idle. Activity is also written to the session record (at most every
+  // 15 s) so a reload or restored tab after a long idle period starts locked.
+  ["pointerdown", "keydown", "scroll", "input"].forEach((ev) => addEventListener(ev, () => {
+    lastActive = Date.now();
+    if (auth && lastActive - lastSaved > 15000) saveSession();
+  }, { passive: true }));
+  function idleCheck() {
+    if (!auth) return;
+    if (busy) { lastActive = Date.now(); saveSession(); return; } // never lock during an upload
+    if (Date.now() - lastActive > IDLE_MS) {
       logout();
       document.querySelectorAll("dialog[open]").forEach((d) => d.close());
       showLogin("انقفلت اللوحة لأنك ما استخدمتها 30 دقيقة.");
     }
-  }, 30000);
+  }
+  setInterval(idleCheck, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) idleCheck(); });
   $("#reloadBtn").addEventListener("click", () => loadData().catch((e) => alert(e.message)));
 
   /* ---------- Editor ---------- */
@@ -440,22 +479,71 @@
   form.type.innerHTML = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.icon} ${t.label}</option>`).join("");
 
   const slugify = (s) => String(s).toLowerCase().normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 44).replace(/-+$/, "");
+
+  /** A free, valid id: from the name, else the file name, else "mod-<random>". */
+  function autoId() {
+    const f = form.file.files[0];
+    let base = slugify(form.name.value) || slugify((f?.name || "").replace(/\.[^.]+$/, ""));
+    if (!base) base = `mod-${Date.now().toString(36)}`;
+    let id = base, n = 2;
+    while (data.mods.some((m) => m.id === id)) id = `${base}-${n++}`;
+    return id;
+  }
+
+  /** Guess edition, type and loader from the file extension. */
+  const DETECT = {
+    mcaddon: { edition: "bedrock", type: "addon", loader: "Bedrock Add-on" },
+    mcpack: { edition: "bedrock", type: "addon", loader: "Bedrock Add-on" },
+    mcworld: { edition: "bedrock", type: "world", loader: "World" },
+    mctemplate: { edition: "bedrock", type: "world", loader: "World" },
+    jar: { edition: "java", type: "mod", loader: "" },
+  };
+  /** "Dragons_Addon-v1.2.mcaddon" -> "Dragons Addon" */
+  const prettyName = (fname) => String(fname).replace(/\.[^.]+$/, "")
+    .replace(/[-_ ]*v?\d+(\.\d+)+.*$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 80);
+
+  function setEdition(ed) {
+    const old = form.edition.value;
+    form.edition.value = ed;
+    // keep "latest version" in sync when the edition changes
+    if (splitList(form.versions.value).join() === (MC.LATEST[old] || "")) form.versions.value = MC.LATEST[ed] || "";
+    updateLatestBtn();
+  }
+
+  function onFileChosen() {
+    const f = form.file.files[0];
+    $("#dropzone").classList.toggle("has-file", !!f);
+    $("#dzText").textContent = f ? `✔ ${f.name}` : "اضغط هنا واختار الملف، أو اسحبه وحطه هنا";
+    $("#fileHint").textContent = f ? `${(f.size / 1048576).toFixed(1)} MB${f.size > MAX_FILE ? " ⚠️ أكبر من 95MB، استخدم «رابط خارجي»" : ""}` : "";
+    if (!f) return;
+    const d = DETECT[(f.name.split(".").pop() || "").toLowerCase()];
+    if (d && !form.edition.dataset.touched) setEdition(d.edition);
+    if (d && !form.type.dataset.touched) form.type.value = d.type;
+    if (d?.loader && !form.loader.value) form.loader.value = d.loader;
+    if (!editing && !form.name.value.trim()) form.name.value = prettyName(f.name);
+    if (!editing && !form.id.dataset.touched) form.id.value = autoId();
+  }
+
+  const dz = $("#dropzone");
+  ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, () => dz.classList.remove("drag")));
+  dz.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (e.dataTransfer?.files?.length) { form.file.files = e.dataTransfer.files; onFileChosen(); }
+  });
 
   form.name.addEventListener("input", () => {
-    if (!editing && !form.id.dataset.touched) form.id.value = slugify(form.name.value);
+    if (!editing && !form.id.dataset.touched) form.id.value = autoId();
   });
   form.id.addEventListener("input", () => { form.id.dataset.touched = "1"; });
   form.addEventListener("change", (e) => {
     if (e.target.name === "source") {
       form.querySelectorAll("[data-source]").forEach((el) => { el.hidden = el.dataset.source !== form.source.value; });
     }
-    if (e.target.name === "file") {
-      const f = form.file.files[0];
-      $("#fileHint").textContent = f ? `${f.name} — ${(f.size / 1048576).toFixed(1)} MB${f.size > MAX_FILE ? " ⚠️ أكبر من 95MB، استخدم رابط خارجي" : ""}` : "";
-      if (f && !form.edition.dataset.touched && /\.(mcaddon|mcpack|mcworld|mctemplate)$/i.test(f.name)) form.edition.value = "bedrock";
-    }
+    if (e.target.name === "file") onFileChosen();
     if (e.target.name === "edition") form.edition.dataset.touched = "1";
+    if (e.target.name === "type") form.type.dataset.touched = "1";
     if (e.target.name === "cover" || e.target.name === "screenshots") {
       const imgs = [...form.cover.files, ...form.screenshots.files].slice(0, 7);
       $("#previews").querySelectorAll("img").forEach((i) => URL.revokeObjectURL(i.src));
@@ -471,13 +559,24 @@
     const list = splitList(form.versions.value);
     if (v && !list.includes(v)) form.versions.value = [v, ...list].join(", ");
   });
-  form.edition.addEventListener("change", updateLatestBtn);
+  let prevEdition = form.edition.value;
+  form.edition.addEventListener("focus", () => { prevEdition = form.edition.value; });
+  form.edition.addEventListener("change", () => {
+    const ed = form.edition.value;
+    form.edition.value = prevEdition;
+    setEdition(ed);
+    prevEdition = ed;
+  });
 
   function openEditor(m) {
     editing = m ? m.id : null;
     form.reset();
     delete form.id.dataset.touched;
     delete form.edition.dataset.touched;
+    delete form.type.dataset.touched;
+    form.querySelector("details.more").open = !!m;
+    $("#dropzone").classList.remove("has-file");
+    $("#dzText").textContent = "اضغط هنا واختار الملف، أو اسحبه وحطه هنا";
     $("#previews").replaceChildren();
     $("#fileHint").textContent = "";
     $("#formError").textContent = "";
@@ -505,7 +604,10 @@
         form.externalSize.value = m.size || "";
       }
       $("#fileHint").textContent = m.file ? "اترك الملف فاضي إذا ما تبي تغيّره." : "";
+    } else {
+      form.versions.value = MC.LATEST[form.edition.value] || "";
     }
+    prevEdition = form.edition.value;
     updateLatestBtn();
     editor.showModal();
     form.name.focus();
@@ -518,10 +620,11 @@
     const err = (msg) => { $("#formError").textContent = msg; };
     if (busy) return err("فيه عملية نشر شغّالة، انتظرها تخلص.");
 
+    if (!editing && !form.id.value.trim()) form.id.value = autoId();
     const id = form.id.value.trim();
     const versions = splitList(form.versions.value);
     if (!form.name.value.trim()) return err("اكتب اسم العمل.");
-    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id) || id.length > 50) return err("المعرّف لازم يكون حروف إنجليزية صغيرة وأرقام وشرطات فقط، مثل: dragon-addon");
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id) || id.length > 50) { form.querySelector("details.more").open = true; return err("المعرّف (بالتفاصيل الإضافية) لازم يكون حروف إنجليزية صغيرة وأرقام وشرطات فقط، مثل: dragon-addon"); }
     if (!editing && data.mods.some((m) => m.id === id)) return err("فيه عمل بنفس المعرّف، غيّره.");
     if (!versions.length) return err("اكتب إصدار ماين كرافت واحد على الأقل.");
     if (!form.description.value.trim()) return err("اكتب وصف قصير.");
@@ -632,7 +735,7 @@
     updateTokenLink();
     try { localStorage.removeItem("mc.admin"); } catch { /* drop old unencrypted format */ }
     const saved = readSession();
-    if (saved?.token && saved?.repo) { auth = saved; await showDash(); }
-    else showLogin();
+    if (saved?.token) { auth = saved; lastActive = Date.now(); saveSession(); await showDash(); }
+    else showLogin(saved?.expired ? "انقفلت اللوحة لأنك ما استخدمتها 30 دقيقة." : "");
   })();
 })();

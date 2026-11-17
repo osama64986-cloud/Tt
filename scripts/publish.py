@@ -18,6 +18,7 @@ import os
 import pathlib
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import unicodedata
@@ -115,11 +116,31 @@ def gh(*args):
     return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
 
 
+def safe_msg(value, limit=200):
+    """Text for logs: no control characters (a newline could start a workflow command)."""
+    return re.sub(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]", "?", str(value))[:limit]
+
+
 def inbox_file(rel):
-    """Resolve a path inside the inbox, refusing anything that escapes it."""
-    p = (INBOX / rel).resolve()
-    if INBOX not in p.parents or not p.is_file() or p.is_symlink():
-        raise Invalid(f"missing or invalid inbox file: {rel}")
+    """A regular file inside the inbox. Refuses '..', control characters and symlinks
+    in ANY path component (checked with lstat before resolving)."""
+    parts = pathlib.PurePosixPath(rel).parts
+    if not parts or any(p in ("", ".", "..") or safe_msg(p) != p for p in parts):
+        raise Invalid("invalid inbox path")
+    cur = INBOX
+    for part in parts:
+        cur = cur / part
+        try:
+            st = os.lstat(cur)
+        except OSError:
+            raise Invalid(f"missing inbox file: {safe_msg(rel)}") from None
+        if stat.S_ISLNK(st.st_mode):
+            raise Invalid(f"symlinks are not allowed: {safe_msg(rel)}")
+    if not stat.S_ISREG(st.st_mode):
+        raise Invalid(f"not a regular file: {safe_msg(rel)}")
+    p = cur.resolve()
+    if INBOX not in p.parents:
+        raise Invalid("inbox path escapes the inbox")
     return p
 
 
@@ -159,40 +180,107 @@ def clean_entry(raw):
     return e
 
 
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def carried_fields(current, item_id):
+    """Fields kept from the existing item, each re-validated (never trusted blindly)."""
+    if not current:
+        return {}
+    c, out = current, {}
+    img_re = re.compile(rf"^images/{re.escape(item_id)}/[A-Za-z0-9._-]{{1,80}}$")
+    if DATE_RE.fullmatch(str(c.get("date") or "")): out["date"] = c["date"]
+    if DATE_RE.fullmatch(str(c.get("updated") or "")): out["updated"] = c["updated"]
+    if isinstance(c.get("releases"), list):
+        out["releases"] = [t for t in c["releases"] if re.fullmatch(rf"{re.escape(item_id)}-\d{{14}}", str(t))][:50]
+    if isinstance(c.get("changelog"), list):
+        out["changelog"] = [x for x in (text(v, 240) for v in c["changelog"]) if x][:30]
+    if HTTPS_RE.fullmatch(str(c.get("file") or "")) and len(str(c["file"])) <= 500: out["file"] = c["file"]
+    if c.get("external") is True: out["external"] = True
+    if c.get("size"): out["size"] = text(c["size"], 20)
+    if re.fullmatch(r"[0-9a-f]{64}", str(c.get("sha256") or "")): out["sha256"] = c["sha256"]
+    if img_re.fullmatch(str(c.get("image") or "")): out["image"] = c["image"]
+    if isinstance(c.get("screenshots"), list):
+        out["screenshots"] = [x for x in c["screenshots"] if img_re.fullmatch(str(x))][:6]
+    return out
+
+
 def upsert(db, meta, log):
     item_id = str(meta.get("id") or "")
     if not ID_RE.fullmatch(item_id) or len(item_id) > 50:
         raise Invalid("bad id")
     mods = db["mods"]
-    current = next((m for m in mods if m.get("id") == item_id), None)
+    current = next((m for m in mods if isinstance(m, dict) and m.get("id") == item_id), None)
     if meta.get("isNew") is True and current:
         raise Invalid(f"id '{item_id}' already exists")
     entry = clean_entry(meta.get("entry"))
     today = dt.date.today().isoformat()
-    item = dict(current or {"id": item_id, "date": today, "releases": [], "changelog": []})
+    item = {"id": item_id, "date": today, "releases": [], "changelog": []}
+    item.update(carried_fields(current, item_id))
     item.update(entry)
     item["id"] = item_id
 
-    # --- the downloadable file ---
+    # ---------- 1) validate EVERYTHING before any side effect ----------
     ext = meta.get("external")
     file_name = meta.get("fileName")
+    upload = None
     if ext:
+        if not isinstance(ext, dict):
+            raise Invalid("external must be an object")
         url = str(ext.get("url") or "")
         if not HTTPS_RE.fullmatch(url) or len(url) > 500:
             raise Invalid("external link must be https://")
-        item.update(file=url, external=True, size=text(ext.get("size"), 20), updated=today)
-        item.pop("sha256", None)
     elif file_name:
-        src = inbox_file(f"files/{pathlib.PurePosixPath(str(file_name)).name}")
+        name = pathlib.PurePosixPath(str(file_name)).name
+        src = inbox_file(f"files/{name}")
         if src.stat().st_size > MAX_FILE:
             raise Invalid("file too large")
         asset = safe_filename(file_name)
         ext_name = asset.rpartition(".")[2].lower() if "." in asset else ""
         if ext_name not in ALLOWED_EXT:
-            raise Invalid(f"file type .{ext_name} is not allowed ({', '.join(sorted(ALLOWED_EXT))})")
+            raise Invalid(f"file type .{safe_msg(ext_name, 12)} is not allowed ({', '.join(sorted(ALLOWED_EXT))})")
         head = src.read_bytes()[:8] if src.stat().st_size else b""
         if ext_name in ZIP_EXT and not head.startswith(b"PK"):
             raise Invalid(f".{ext_name} file is not a valid zip archive")
+        upload = (src, asset)
+    elif not item.get("file"):
+        raise Invalid("a file or an external link is required")
+
+    images = []  # (src, kind, index, ext)
+    if meta.get("cover") is True:
+        src = inbox_file("images/cover.webp")
+        if src.stat().st_size > MAX_IMAGE:
+            raise Invalid("cover too large")
+        images.append((src, "cover", 0, image_ext(src)))
+    shots = meta.get("screenshots")
+    if type(shots) is int and 0 < shots <= 6:
+        for i in range(1, shots + 1):
+            src = inbox_file(f"images/shot-{i}.webp")
+            if src.stat().st_size > MAX_IMAGE:
+                raise Invalid("screenshot too large")
+            images.append((src, "shot", i, image_ext(src)))
+
+    # ---------- 2) side effects, release last-but-one, mods.json written by main() ----------
+    if ext:
+        item.update(file=str(ext["url"]), external=True, size=text(ext.get("size"), 20), updated=today)
+        item.pop("sha256", None)
+
+    img_dir = ROOT / "images" / item_id
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    new_shots = []
+    for src, kind, i, iext in images:
+        img_dir.mkdir(parents=True, exist_ok=True)
+        dest = img_dir / (f"cover-{stamp}.{iext}" if kind == "cover" else f"shot-{stamp}-{i}.{iext}")
+        shutil.copyfile(src, dest)
+        if kind == "cover":
+            item["image"] = dest.relative_to(ROOT).as_posix()
+        else:
+            new_shots.append(dest.relative_to(ROOT).as_posix())
+    if new_shots:
+        item["screenshots"] = new_shots
+
+    if upload:
+        src, asset = upload
         digest = hashlib.sha256()
         with open(src, "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -216,36 +304,11 @@ def upsert(db, meta, log):
         )
         item["releases"] = [tag] + [t for t in item.get("releases", []) if t != tag]
         log.append(f"release {tag} ({asset})")
-    elif not current or not item.get("file"):
-        raise Invalid("a file or an external link is required")
 
-    # --- images ---
-    img_dir = ROOT / "images" / item_id
-    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
-    if meta.get("cover") is True:
-        src = inbox_file("images/cover.webp")
-        if src.stat().st_size > MAX_IMAGE:
-            raise Invalid("cover too large")
-        img_dir.mkdir(parents=True, exist_ok=True)
-        dest = img_dir / f"cover-{stamp}.{image_ext(src)}"
-        shutil.copyfile(src, dest)
-        item["image"] = dest.relative_to(ROOT).as_posix()
-    shots = meta.get("screenshots")
-    if isinstance(shots, int) and 0 < shots <= 6:
-        img_dir.mkdir(parents=True, exist_ok=True)
-        out = []
-        for i in range(1, shots + 1):
-            src = inbox_file(f"images/shot-{i}.webp")
-            if src.stat().st_size > MAX_IMAGE:
-                raise Invalid("screenshot too large")
-            dest = img_dir / f"shot-{stamp}-{i}.{image_ext(src)}"
-            shutil.copyfile(src, dest)
-            out.append(dest.relative_to(ROOT).as_posix())
-        item["screenshots"] = out
     if img_dir.is_dir():  # drop images that are no longer referenced
         keep = {item.get("image")} | set(item.get("screenshots") or [])
         for f in img_dir.iterdir():
-            if f.relative_to(ROOT).as_posix() not in keep:
+            if f.relative_to(ROOT).as_posix() not in keep and (f.is_file() or f.is_symlink()):
                 f.unlink()
 
     note = text(meta.get("changelogNote"), 200)
@@ -319,12 +382,12 @@ def main():
         elif action == "settings":
             settings(db, meta, log)
         else:
-            raise Invalid(f"unknown action {action!r}")
+            raise Invalid(f"unknown action {safe_msg(action, 40)!r}")
         if REPO and not db["site"].get("repo"):
             db["site"]["repo"] = REPO
         save_db(db)
     except (Invalid, ValueError) as exc:  # ValueError covers broken JSON
-        print(f"::error::Rejected: {exc}")
+        print(f"::error::Rejected: {safe_msg(exc)}")
         sys.exit(1)
     summary = "\n".join(f"- {line}" for line in log)
     print(summary)

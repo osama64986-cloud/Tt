@@ -1,16 +1,18 @@
 /* Shared helpers for the public site and the admin panel. */
 window.MC = (() => {
-  const TYPES = {
+  // Null-prototype maps: a value like "constructor" never resolves to an Object member.
+  const dict = (o) => Object.freeze(Object.assign(Object.create(null), o));
+  const TYPES = dict({
     mod:     { label: "مود",          plural: "مودات",        icon: "⚒" },
     addon:   { label: "إضافة بيدروك", plural: "إضافات بيدروك", icon: "🧩" },
     texture: { label: "تكستر",        plural: "تكسترات",      icon: "🎨" },
     shader:  { label: "شيدر",         plural: "شيدرات",       icon: "✨" },
     map:     { label: "خريطة",        plural: "خرائط",        icon: "🗺" },
     world:   { label: "عالم",         plural: "عوالم",        icon: "🌍" },
-  };
-  const EDITIONS = { java: "Java", bedrock: "Bedrock" };
+  });
+  const EDITIONS = dict({ java: "Java", bedrock: "Bedrock" });
   /** Latest stable Minecraft releases (checked Nov 2026). Update when Mojang ships a new one. */
-  const LATEST = { java: "26.3", bedrock: "26.62" };
+  const LATEST = dict({ java: "26.3", bedrock: "26.62" });
   const supportsLatest = (m) => (m.versions || []).includes(LATEST[m.edition]);
 
   const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" };
@@ -20,7 +22,9 @@ window.MC = (() => {
   function safeUrl(u) {
     u = String(u ?? "").trim();
     if (/^https:\/\/[^\s"'<>\\`]+$/i.test(u)) return u;
-    if (/^[\w\-./%]+$/.test(u) && !u.startsWith("//") && !u.includes("..")) return u;
+    // relative path: no scheme, no "//", no ".." and no percent-encoded dot ("%2e") that a
+    // browser would turn back into ".."
+    if (/^[\w\-./%]+$/.test(u) && !u.startsWith("//") && !u.includes("..") && !/%2e/i.test(u)) return u;
     return "";
   }
   const safeColor = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : "#5d5d5d");
@@ -34,7 +38,15 @@ window.MC = (() => {
     return m ? m[1] : "";
   }
 
-  const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n || 0));
+  /** Always returns digits (plus K/M), whatever it is given. */
+  const toCount = (v) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n > 0 ? n : 0; };
+  const fmtNum = (v) => { const n = toCount(v); return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n); };
+  /** Copy a { tag: count } object into a null-prototype map of plain numbers. */
+  const cleanCounts = (o) => {
+    const out = Object.create(null);
+    if (o && typeof o === "object") for (const [k, v] of Object.entries(o)) out[k] = toCount(v);
+    return out;
+  };
 
   function isRecent(date, days = 14) {
     const t = Date.parse(date);
@@ -54,9 +66,9 @@ window.MC = (() => {
     const key = `mc.dl.${repo}`;
     try {
       const c = JSON.parse(sessionStorage.getItem(key) || "null");
-      if (c && Date.now() - c.t < 6e5) return c.v;
+      if (c && Date.now() - c.t < 6e5) return cleanCounts(c.v);
     } catch { /* storage unavailable */ }
-    const out = {};
+    const out = Object.create(null);
     try {
       for (let page = 1; page <= 5; page++) {
         const r = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100&page=${page}`, {
@@ -65,7 +77,8 @@ window.MC = (() => {
         if (!r.ok) break;
         const list = await r.json();
         list.forEach((rel) => {
-          out[rel.tag_name] = (rel.assets || []).reduce((s, a) => s + (a.download_count || 0), 0);
+          if (rel.draft) return;
+          out[rel.tag_name] = (rel.assets || []).reduce((s, a) => s + toCount(a.download_count), 0);
         });
         if (list.length < 100) break;
       }
@@ -163,7 +176,8 @@ window.MC = (() => {
   /** Where people can report a broken download: Discord first, then Instagram. */
   const reportUrl = (site) => socialUrl("discord", site?.discord) || socialUrl("instagram", site?.instagram);
 
-  const downloadsOf = (m, counts) => (m.releases || []).reduce((s, t) => s + (counts[t] || 0), 0);
+  const downloadsOf = (m, counts) => (Array.isArray(m.releases) ? m.releases : [])
+    .reduce((s, t) => s + (counts && Object.hasOwn(counts, t) ? toCount(counts[t]) : 0), 0);
 
-  return { LATEST, supportsLatest, SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
+  return { cleanCounts, toCount, LATEST, supportsLatest, SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
 })();

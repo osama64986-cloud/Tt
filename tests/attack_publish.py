@@ -61,4 +61,22 @@ res.append(run("tiktok javascript:", {"action": "settings", "site": {"tiktok": "
 res.append(run("real social links accepted", {"action": "settings", "site": {"youtube": "https://www.youtube.com/@nabd", "instagram": "https://instagram.com/nabd",
     "tiktok": "https://www.tiktok.com/@nabd", "discord": "https://discord.gg/abc"}}, expect_fail=False,
     check=lambda db, out: db["site"]["instagram"] == "https://instagram.com/nabd" and db["site"]["discord"] == "https://discord.gg/abc"))
+# --- added after the Nov 2026 audit ---
+res.append(run("newline in fileName cannot inject a workflow command", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.jar\n::warning::INJECTED"},
+    check=lambda db, out: "\n::warning::" not in out and "::warning::INJECTED" not in out.split("\n", 1)[-1]))
+res.append(run("symlinked folder inside the inbox", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.jar"},
+    {"real/a.jar": ZIP, "files": ("link", str(W / "inbox" / "real"))}))
+res.append(run("no release is created when an image is missing", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.jar", "cover": True},
+    {"files/a.jar": ZIP}, check=lambda db, out: "release create" not in out and not db["mods"]))
+res.append(run("bad stored fields are dropped on update", {"action": "upsert", "id": "x", "entry": GOOD, "external": {"url": "https://a.b/f.zip"}},
+    expect_fail=False, seed=[{"id": "x", "name": "old", "file": "https://a.b/old.zip", "image": "javascript:alert(1)", "screenshots": ["../../x.png", "images/x/ok.png"],
+                             "releases": ["x-20260101000000", "other-20260101000000"], "evil": "<script>", "sha256": "zz", "date": "not-a-date"}],
+    check=lambda db, out: (m := db["mods"][0]) and "image" not in m and m["screenshots"] == ["images/x/ok.png"] and m["releases"] == ["x-20260101000000"]
+        and "evil" not in m and "sha256" not in m and m["date"] != "not-a-date"))
+res.append(run("delete only removes the item's own releases", {"action": "delete", "id": "x"}, expect_fail=False,
+    seed=[{"id": "x", "name": "n", "file": "https://a.b", "releases": ["x-20260101000000", "victim-20260101000000", "x-latest"]}],
+    check=lambda db, out: "release delete x-20260101000000" in out and "victim" not in out and "x-latest" not in out and not db["mods"]))
+res.append(run("boolean screenshots value is ignored", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "external": {"url": "https://a.b"}, "screenshots": True},
+    expect_fail=False, check=lambda db, out: "screenshots" not in db["mods"][0]))
 print(f"\n{sum(res)}/{len(res)} attacks blocked")
+sys.exit(0 if all(res) else 1)
