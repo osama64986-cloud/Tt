@@ -206,6 +206,7 @@
     data.mods = Array.isArray(data.mods) ? data.mods : [];
     counts = await MC.downloadCounts(auth.repo).catch(() => ({}));
     renderList();
+    syncMods();
   }
 
   function renderList() {
@@ -695,6 +696,7 @@
   // ("activation code"), which Claude adds once; the code alone cannot moderate anything.
   const MODKEY = "mc.modkey";
   let modTab = "pending";
+  let modBefore = null; // paging: show rows older than this id
   const readModKey = () => { try { const k = localStorage.getItem(MODKEY) || ""; return /^[A-Za-z0-9_-]{43}$/.test(k) ? k : ""; } catch { return ""; } };
   async function sha256hex(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -716,43 +718,66 @@
   $("#modCopy").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText($("#modCode").textContent); $("#modCopy").textContent = "✔ انسخ"; } catch { /* select manually */ }
   });
-  document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { modTab = b.dataset.mtab; loadMod(); }));
-  $("#modRefresh").addEventListener("click", () => loadMod());
+  document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { modTab = b.dataset.mtab; modBefore = null; loadMod(); }));
+  $("#modRefresh").addEventListener("click", () => { modBefore = null; loadMod(); });
+  $("#modMore").addEventListener("click", () => loadMod());
+  $("#modPurge").addEventListener("click", async () => {
+    if (!confirm("تحذف كل الآراء اللي تنتظر موافقتك؟ (المنشورة ما تنمسح)")) return;
+    try {
+      const n = await MC.comments.rpc("mod_purge_pending", { p_key: readModKey() });
+      alert(`✔ انحذف ${Number.isSafeInteger(n) ? n : 0} رأي.`);
+    } catch { alert("ما زبط. جرّب مرة ثانية."); }
+    modBefore = null; loadMod();
+  });
+
+  /** Tell the database which mods exist, so visitors can only comment on real ones. */
+  async function syncMods() {
+    const key = readModKey();
+    const ids = data.mods.map((m) => m.id).filter((id) => typeof id === "string" && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id) && id.length <= 50);
+    if (!key || ids.length !== data.mods.length) return;
+    try { await MC.comments.rpc("mod_sync_mods", { p_key: key, p_ids: ids }); } catch { /* not activated yet / offline */ }
+  }
 
   async function loadMod() {
     const key = readModKey();
     const msg = $("#modMsg"), list = $("#modList");
     document.querySelectorAll("[data-mtab]").forEach((b) => b.classList.toggle("active", b.dataset.mtab === modTab));
-    list.replaceChildren();
+    const page = modBefore;
+    if (!page) list.replaceChildren();
+    $("#modMore").hidden = true;
+    $("#modPurge").hidden = modTab !== "pending";
     if (!key) { $("#modSetup").hidden = false; $("#modGen").hidden = false; $("#modCodeBox").hidden = true; msg.textContent = ""; return; }
     $("#modSetup").hidden = true;
     msg.textContent = "جاري التحميل…";
     let rows;
     try {
-      rows = await MC.comments.rpc("mod_list", { p_key: key, p_status: modTab });
+      rows = await MC.comments.rpc("mod_list", { p_key: key, p_status: modTab, p_before: page });
     } catch (e) {
       if (/^(401|403)$/.test(e.message)) { msg.textContent = "المفتاح لسا ما تفعّل. دز هذا الكود لـ Claude:"; await showModCode(key); }
       else msg.textContent = "ما قدرنا نتصل بقاعدة الآراء هسه. جرّب بعد شوية.";
       return;
     }
-    rows = Array.isArray(rows) ? rows : [];
-    if (modTab === "pending") {
+    rows = (Array.isArray(rows) ? rows : []).filter((r) => r && Number.isSafeInteger(r.id) && r.id > 0);
+    if (modTab === "pending" && !page) {
       $("#pendingCount").hidden = !rows.length;
-      $("#pendingCount").textContent = String(rows.length);
+      $("#pendingCount").textContent = rows.length >= 100 ? "100+" : String(rows.length);
     }
-    msg.textContent = rows.length ? "" : (modTab === "pending" ? "ما فيه آراء جديدة 👌" : "ما فيه آراء منشورة بعد.");
+    $("#modPurge").hidden = modTab !== "pending" || (!rows.length && !page);
+    $("#modMore").hidden = rows.length < 100;
+    if (rows.length) modBefore = rows[rows.length - 1].id;
+    msg.textContent = rows.length || page ? "" : (modTab === "pending" ? "ما فيه آراء جديدة 👌" : "ما فيه آراء منشورة بعد.");
     const K = MC.comments.KINDS, D = MC.comments.DEVICES;
-    list.innerHTML = rows.map((r) => {
+    list.insertAdjacentHTML("beforeend", rows.map((r) => {
       const kind = Object.hasOwn(K, r.kind) ? K[r.kind] : ["❔", "?"];
       const mod = data.mods.find((m) => m.id === r.mod_id);
-      return `<li class="mod-item" data-id="${Number.isSafeInteger(r.id) ? r.id : 0}">
-        <div class="sub">${kind[0]} ${esc(kind[1])} · ${esc(mod ? mod.name : r.mod_id)} · ${esc(r.nickname || "لاعب")}${Object.hasOwn(D, r.device) ? ` · ${esc(D[r.device])}` : ""} · ${esc(String(r.created_at || "").slice(0, 16).replace("T", " "))}</div>
-        <p>${esc(r.body)}</p>
+      return `<li class="mod-item" data-id="${r.id}">
+        <div class="sub">${kind[0]} ${esc(kind[1])} · ${esc(String(mod ? mod.name : r.mod_id ?? ""))} · ${esc(String(r.nickname || "لاعب"))}${Object.hasOwn(D, r.device) ? ` · ${esc(D[r.device])}` : ""} · ${esc(String(r.created_at || "").slice(0, 16).replace("T", " "))}</div>
+        <p>${esc(String(r.body ?? ""))}</p>
         <div class="btns">
           ${r.status === "pending" ? `<button class="mc-btn mc-btn-green" data-mact="approve">✅ انشر</button>` : ""}
           <button class="mc-btn mc-btn-red" data-mact="delete">🗑 احذف</button>
         </div></li>`;
-    }).join("");
+    }).join(""));
   }
   $("#modList").addEventListener("click", async (e) => {
     const b = e.target.closest("[data-mact]");
@@ -764,7 +789,7 @@
     try {
       await MC.comments.rpc("mod_set", { p_key: readModKey(), p_id: id, p_action: b.dataset.mact });
       b.closest(".mod-item").remove();
-      if (!$("#modList").children.length) loadMod();
+      if (!$("#modList").children.length) { modBefore = null; loadMod(); }
     } catch {
       b.disabled = false;
       alert("ما زبط. جرّب مرة ثانية.");

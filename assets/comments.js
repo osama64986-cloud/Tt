@@ -17,10 +17,14 @@
   const DEVICES = { phone: "📱 جوال", pc: "💻 كمبيوتر", console: "🎮 كونسول" };
   const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
   // Same idea as the database rule: no links, markup or e-mail-like text.
-  const LINK_RE = /(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|org|io|xyz|ru|ly|me|gg|link|site|top)\b|[<>]|@[a-z0-9_.-]+\.)/i;
+  // (checked after NFKC, so fullwidth letters and dots count too; the database repeats every check)
+  const LINK_RE = /(https?:|www\.|[a-z0-9-]+(\.|\[\.\]|\(\.\)|\[dot\]|。|٫)(com|net|org|io|xyz|ru|ly|me|gg|link|site|top|co|shop|app|dev|tv|info|biz|store|online|live|tk|ml|cc|to|us|uk)\b|[<>]|@[a-z0-9_.-]+\.|discord\.gg|t\.me\/)/i;
+  const hasLink = (t) => LINK_RE.test(t.normalize("NFKC"));
+  const TWO_CHARS = /[\p{L}\p{N}].*[\p{L}\p{N}]/su;
   const MESSAGES = {
     ok: "✔ وصل رأيك! راح يظهر هنا بعد ما يراجعه صاحب الموقع. شكراً 💚",
     too_short: "اكتب رأيك أول (حرفين على الأقل).",
+    bad_mod: "هذا العمل ما يقبل آراء هسه.",
     too_long: "رأيك طويل كلش، اختصره شوية.",
     no_links: "ممنوع الروابط والإيميلات بالرأي. اكتب كلام بس.",
     bad_nickname: "الاسم بس حروف وأرقام.",
@@ -147,9 +151,9 @@
       const body = form.body.value.trim();
       const nick = form.nick.value.trim();
       if (form.website.value || Date.now() - opened < 2500) return say("ok", true); // bot: pretend success
-      if (body.length < 2) return say("too_short");
-      if (LINK_RE.test(body) || LINK_RE.test(nick)) return say("no_links");
-      if (nick && !/^[\p{L}\p{N} _.-]+$/u.test(nick)) return say("bad_nickname");
+      if (!TWO_CHARS.test(body)) return say("too_short");
+      if (hasLink(body) || hasLink(nick)) return say("no_links");
+      if (nick && (!/^[\p{L}\p{N} _.-]+$/u.test(nick) || !/[\p{L}\p{N}]/u.test(nick))) return say("bad_nickname");
       if (!underLimit()) return say("limit");
       btn.disabled = true;
       try {
