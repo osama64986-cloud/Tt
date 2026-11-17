@@ -27,3 +27,8 @@ Every change must be checked for security **before** it is pushed:
 - Deploy target is the `gh-pages` branch (Pages source). Do not edit it by hand.
 - `MC.LATEST` in `assets/common.js` holds the latest Minecraft versions; update it when Mojang releases.
 - actions/checkout v6+ stores credentials outside .git/config: pages.yml builds its own auth header.
+
+## Security audits
+- Cloudflare's MIT-licensed `security-audit` skill lives in `.claude/skills/security-audit` (never published: build.py copies only PUBLIC).
+  Use it (guidance mode, or full mode when the owner asks for a full audit) for every security review, and red-team every new
+  feature with a separate agent on a local copy only, never the live site or Supabase project.
