@@ -78,7 +78,7 @@
         kind: r.kind,
         text: Array.from(r.body).slice(0, 600).join(""),
         name: typeof r.nickname === "string" && r.nickname ? Array.from(r.nickname).slice(0, 30).join("") : "لاعب",
-        date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(r.approved_at || "") ? r.approved_at.slice(0, 10) : "",
+        date: typeof r.approved_at === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(r.approved_at) ? r.approved_at.slice(0, 10) : "",
         device: Object.hasOwn(DEVICES, r.device) ? r.device : "",
         pid: typeof r.pub_id === "string" && UUID_RE.test(r.pub_id) ? r.pub_id : "",
       }));

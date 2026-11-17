@@ -70,9 +70,9 @@ try:
     check("every function pins an empty search_path", rc == 0 and out == "", out)
     rc, out = psql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
                    "where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')")
-    check("anon can call exactly the intended functions", out == "comments_for,mod_items,mod_list,mod_page,mod_purge_pending,mod_set,mod_sync_mods,post_comment,report_comment", out)
-    rc, out = psql("select string_agg(provolatile::text, '') from pg_proc where proname in ('mod_items', 'mod_list', 'mod_page', 'mod_set', 'mod_purge_pending', 'mod_sync_mods', 'post_comment', 'report_comment')")
-    check("owner/write functions are volatile (PostgREST refuses GET, key never in a URL)", out == "vvvvvvvv", out)
+    check("anon can call exactly the intended functions", out == "comments_for,mod_approve,mod_items,mod_list,mod_page,mod_purge_pending,mod_set,mod_sync_mods,post_comment,report_comment", out)
+    rc, out = psql("select string_agg(provolatile::text, '') from pg_proc where proname in ('mod_approve', 'mod_items', 'mod_list', 'mod_page', 'mod_set', 'mod_purge_pending', 'mod_sync_mods', 'post_comment', 'report_comment')")
+    check("owner/write functions are volatile (PostgREST refuses GET, key never in a URL)", out == "vvvvvvvvv", out)
     rc, out = psql("select count(*) from pg_proc where proname in ('list_comments', 'mod_list')")
     check("no leftover overloads of public functions", out == "2", out)
 
@@ -108,10 +108,32 @@ try:
     psql("delete from public.comments")
     for body in ["مود رهيب ومرتب", "اكس بوكس يشتغل عليه", "اكسر الصخر بسرعة", "الميكانيك حلو", "night vision حلو", "كسرت راسي من الحلاوة"]:
         rc, out = sub(body, mod="zenlite"); check(f"clean comment published at once: {body}", out == "ok", out)
-    for body in ["انت كواد", "يا شرموطه", "كسمك", "fuuuuck this", "يلعن نيچ", "زق عليك", "هههههههههههههه", "lolololololololol", "والكس"]:
-        rc, out = sub(body, mod="bareview-ui"); check(f"bad comment held, not shown: {body}", out == "held" and visible("bareview-ui") == "0", out)
+    # false positives found by the red team: these are normal text and must publish
+    for body in ["الأكواد ما تشتغل", "سافرت أوزبكستان", "الزبيب طيب", "انا من الزبيدي", "بكس الموسيقى", "عرصة البيت", "2023 احسن سنة",
+                 "Dickson server", "Scunthorpe fans", "shiitake mushroom", "ههههههههه حلو", "!!!!!!!! واو", "hahahaha حلو"]:
+        psql("update public.comments set created_at = created_at - interval '11 minutes'")
+        rc, out = sub(body, mod="nabd-pack", ip=f"192.0.2.{len(body)}")
+        check(f"normal text is not held: {body}", last(out) == "ok", out)
+    psql("update private.submit_log set at = at - interval '1 day'")
+    bad = ["انت كواد", "يا شرموطه", "كسمك", "fuuuuck this", "يلعن نيچ", "زق عليك", "ههههههههههههههههههه", "lolololololololololol", "والكس",
+           "کس امك", "کسمك", "نیك", "ش ر م و ط ه", "ش.ر.م.و.ط.ه", "ق-ح-ب-ه", "fúck", "f*ck", "fck you", "fuk", "sh!t", "b!tch",
+           "kos omak", "zeb", "a7a", "sharmoota", "5ara", "🖕", "сука fuсk", "كسٱمك"]
+    for i, body in enumerate(bad):
+        psql("update public.comments set created_at = created_at - interval '11 minutes'")
+        rc, out = sub(body, mod="bareview-ui", ip=f"198.18.{i}.1"); check(f"bad comment held or refused, not shown: {body}", last(out) in ("held", "too_short") and visible("bareview-ui") == "0", out)
+    for i, nick in enumerate(["صاحب الموقع", "Admin", "NABD", "نبض", "Vanta"]):
+        psql("update public.comments set created_at = created_at - interval '11 minutes'")
+        rc, out = sub("مود حلو جداً " + str(i), mod="bareview-ui", nick=f"'{nick}'", ip=f"198.19.{i}.1")
+        check(f"impersonating nickname held: {nick}", last(out) == "held", out)
+    psql("update public.comments set created_at = created_at - interval '11 minutes'")
+    rc, out = sub("مود رهيب ومرتب", mod="nabd-pack", ip="198.20.0.1"); check("same text on another mod is fine", last(out) == "ok", out)
+    import time as _t
+    t0 = _t.time(); rc, out = sub("ابو " * 150, mod="zenlite", ip="198.21.0.1")
+    check("a 600-character comment is checked fast (<0.3 s)", _t.time() - t0 < 0.8 and last(out) in ACC, f"{_t.time() - t0:.2f}s {out}")
+    psql("update private.submit_log set at = at - interval '1 day'; update public.comments set created_at = created_at - interval '11 minutes'")
     rc, out = sub("ﾌｧｯｸ fｕｃｋ you", mod="bareview-ui"); check("fullwidth insult held", out == "held", out)
     rc, out = sub("مود رهيب ومرتب", mod="zenlite"); check("copy-paste of an existing comment is held", out == "held", out)
+    psql("update public.comments set status='pending', auto=false where mod_id='zenlite' and body like 'ابو%'")
     check("only clean comments are visible", visible("zenlite") == "6" and visible("bareview-ui") == "0", visible("zenlite"))
     rc, out = psql("select * from public.comments_for('zenlite') limit 1", "anon")
     import re as _re
@@ -126,16 +148,39 @@ try:
     report(pid, "198.51.100.3")
     check("3 different visitors hide an auto-published comment", visible("zenlite") == "5" and psql(f"select status || reports from public.comments where pub_id='{pid}'")[1] == "pending3")
     check("hidden comment cannot be reported further", report(pid, "198.51.100.4") == "not_found")
+    # IPv6: one home network (/48) is one visitor, however many addresses it uses
+    pid2 = psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' order by id limit 1")[1]
+    outs = [report(pid2, a) for a in ["2001:db8:1::1", "2001:DB8:1::2", "2001:0db8:0001:ffff::9"]]
+    check("IPv6 addresses of one network count as one reporter", outs == ["ok", "already", "already"], outs)
+    # parallel reports from 3 different visitors must hide the comment every time
+    import concurrent.futures as _cf
+    hidden_ok = 0
+    for trial in range(5):
+        pidx = psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' and auto order by id desc limit 1")[1]
+        if not pidx: break
+        with _cf.ThreadPoolExecutor(3) as ex: list(ex.map(lambda k: report(pidx, f"203.0.{trial}.{k}"), range(1, 4)))
+        hidden_ok += psql(f"select status || reports from public.comments where pub_id='{pidx}'")[1] == "pending3"
+        psql(f"update public.comments set status='approved', auto=true, reports=0 where pub_id='{pidx}'; select 1")
+        psql(f"update private.reports set comment_id = -comment_id where comment_id = (select id from public.comments where pub_id='{pidx}')")
+    check("3 reports sent at the same moment still hide the comment (5/5)", hidden_ok == 5, hidden_ok)
     check("bad report id is rejected", psql("select public.report_comment('not-a-uuid')", "anon")[0] != 0)
     hid = psql(f"select id from public.comments where pub_id='{pid}'")[1]
-    psql(f"select public.mod_set('{KEY}', {hid}, 'approve')", "anon")
+    rc, out = psql(f"select public.mod_approve($k$bad$k$, {hid})", "anon"); check("wrong key cannot approve/keep", rc != 0 and "not allowed" in out, out)
+    psql(f"select public.mod_approve('{KEY}', {hid})", "anon")
+    check("owner approval resets the report counter", psql(f"select reports from public.comments where id={hid}")[1] == "0")
     for i in range(5, 9): report(pid, f"198.51.100.{i}")
     check("a comment the owner approved cannot be hidden by reports", visible("zenlite") == "6")
     psql("select set_config('request.headers', '{\"cf-connecting-ip\": \"10.9.0.1\"}', false);\n"
          "insert into private.reports (comment_id, who) select -g, private.visitor_hash() from generate_series(1, 20) g")
+    psql("insert into private.reports (comment_id, who) select -1000 - g, md5(g::text) from generate_series(1, 300) g")
+    check("site-wide report cap per day", report(psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' order by id desc limit 1")[1], "10.20.0.1") == "limit")
+    psql("update private.reports set at = at - interval '2 days' where comment_id <= -1000")
     check("report flood: at most 20 reports per visitor per day", report(psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' order by id desc limit 1")[1], "10.9.0.1") == "limit")
-    check("visitor address in reports is only a hash", psql("select count(*) from private.reports where who !~ '^[0-9a-f]{64}$'")[1] == "0")
-    rc, out = psql(f"select count(*) from public.mod_items('{KEY}', 'pending')", "anon"); check("owner sees held + hidden comments", out == "11", out)
+    check("visitor address in reports is only a hash", psql("select count(*) from private.reports where who !~ '^[0-9a-f]{32,64}$'")[1] == "0")
+    psql("insert into private.daily_salt values (current_date - 1, 'old') on conflict (day) do update set salt = 'old'")
+    report(pid2, "10.30.0.1")
+    check("yesterday's salt is wiped (old hashes cannot be linked back)", psql("select count(*) from private.daily_salt where day < current_date and salt <> ''")[1] == "0")
+    rc, out = psql(f"select count(*) from public.mod_items('{KEY}', 'pending')", "anon"); check("owner sees held + hidden comments", int(out) >= 25, out)
     rc, out = psql(f"select count(*) from public.mod_items($k${'K'*42}L$k$, 'pending')", "anon"); check("wrong key cannot read held comments", rc != 0 and "not allowed" in out, out)
     # per visitor (address from Cloudflare's header, stored only as a salted hash)
     outs = [last(sub("حلو كلش", ip="203.0.113.7")[1]) for _ in range(5)]

@@ -722,7 +722,7 @@
   $("#modRefresh").addEventListener("click", () => { modBefore = null; loadMod(); });
   $("#modMore").addEventListener("click", () => loadMod());
   $("#modPurge").addEventListener("click", async () => {
-    if (!confirm("تحذف كل الآراء اللي تنتظر موافقتك؟ (المنشورة ما تنمسح)")) return;
+    if (!confirm("تحذف كل الآراء اللي تنتظر موافقتك؟ (يشمل المخفية بسبب البلاغات. المنشورة ما تنمسح)")) return;
     try {
       const n = await MC.comments.rpc("mod_purge_pending", { p_key: readModKey() });
       alert(`✔ انحذف ${Number.isSafeInteger(n) ? n : 0} رأي.`);
@@ -775,6 +775,7 @@
         <p>${esc(String(r.body ?? ""))}</p>
         <div class="btns">
           ${r.status === "pending" ? `<button class="mc-btn mc-btn-green" data-mact="approve">✅ انشر</button>` : ""}
+          ${r.status === "approved" && r.auto === true ? `<button class="mc-btn" data-mact="keep" title="البلاغات ما تكدر تخفيه بعد">📌 ثبّت</button>` : ""}
           <button class="mc-btn mc-btn-red" data-mact="delete">🗑 احذف</button>
         </div></li>`;
     }).join(""));
@@ -787,7 +788,9 @@
     if (b.dataset.mact === "delete" && !confirm("تحذف هذا الرأي نهائياً؟")) return;
     b.disabled = true;
     try {
-      await MC.comments.rpc("mod_set", { p_key: readModKey(), p_id: id, p_action: b.dataset.mact });
+      if (b.dataset.mact === "delete") await MC.comments.rpc("mod_set", { p_key: readModKey(), p_id: id, p_action: "delete" });
+      else await MC.comments.rpc("mod_approve", { p_key: readModKey(), p_id: id });
+      if (b.dataset.mact === "keep") { b.remove(); return; }
       b.closest(".mod-item").remove();
       if (!$("#modList").children.length) { modBefore = null; loadMod(); }
     } catch {
