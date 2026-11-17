@@ -18,6 +18,7 @@ import os
 import pathlib
 import re
 import shutil
+import tempfile
 import stat
 import subprocess
 import sys
@@ -45,6 +46,7 @@ MAX_IMAGE = 5 * 1024 * 1024
 # Only Minecraft content. Executables and scripts are refused even if the token leaks.
 ALLOWED_EXT = {"jar", "zip", "mcaddon", "mcpack", "mcworld", "mctemplate", "7z", "rar"}
 ZIP_EXT = {"jar", "zip", "mcaddon", "mcpack", "mcworld", "mctemplate"}
+MAGIC = {"7z": b"7z\xbc\xaf\x27\x1c", "rar": b"Rar!\x1a\x07"}
 
 
 class Invalid(Exception):
@@ -188,7 +190,7 @@ def carried_fields(current, item_id):
     if not current:
         return {}
     c, out = current, {}
-    img_re = re.compile(rf"^images/{re.escape(item_id)}/[A-Za-z0-9._-]{{1,80}}$")
+    img_re = re.compile(rf"^images/{re.escape(item_id)}/[A-Za-z0-9_-][A-Za-z0-9._-]{{0,79}}$")
     if DATE_RE.fullmatch(str(c.get("date") or "")): out["date"] = c["date"]
     if DATE_RE.fullmatch(str(c.get("updated") or "")): out["updated"] = c["updated"]
     if isinstance(c.get("releases"), list):
@@ -242,6 +244,8 @@ def upsert(db, meta, log):
         head = src.read_bytes()[:8] if src.stat().st_size else b""
         if ext_name in ZIP_EXT and not head.startswith(b"PK"):
             raise Invalid(f".{ext_name} file is not a valid zip archive")
+        if ext_name in MAGIC and not head.startswith(MAGIC[ext_name]):
+            raise Invalid(f".{ext_name} file is not a valid {ext_name} archive")
         upload = (src, asset)
     elif not item.get("file"):
         raise Invalid("a file or an external link is required")
@@ -285,9 +289,13 @@ def upsert(db, meta, log):
         with open(src, "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
                 digest.update(chunk)
-        staged = INBOX / "upload" / asset
-        staged.parent.mkdir(exist_ok=True)
-        shutil.copyfile(src, staged)
+        # Stage in a fresh private temp dir OUTSIDE the inbox: the inbox tree is
+        # attacker-shaped and could contain a symlink at any write path.
+        staged = pathlib.Path(tempfile.mkdtemp(prefix="nabd-upload-")) / asset
+        with open(src, "rb") as fin:
+            fd = os.open(staged, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(fd, "wb") as fout:
+                shutil.copyfileobj(fin, fout)
         tag = f"{item_id}-{dt.datetime.now(dt.timezone.utc):%Y%m%d%H%M%S}"
         notes = f"{entry['name']} {entry['version']}".strip()
         if meta.get("changelogNote"):
@@ -327,7 +335,7 @@ def delete(db, meta, log):
     item_id = str(meta.get("id") or "")
     if not ID_RE.fullmatch(item_id):
         raise Invalid("bad id")
-    item = next((m for m in db["mods"] if m.get("id") == item_id), None)
+    item = next((m for m in db["mods"] if isinstance(m, dict) and m.get("id") == item_id), None)
     if not item:
         raise Invalid(f"'{item_id}' not found")
     for tag in item.get("releases") or []:
@@ -336,7 +344,7 @@ def delete(db, meta, log):
                 gh("release", "delete", tag, f"--repo={REPO}", "--yes", "--cleanup-tag")
                 log.append(f"deleted release {tag}")
             except subprocess.CalledProcessError as exc:
-                log.append(f"could not delete release {tag}: {exc.stderr.strip()}")
+                log.append(f"could not delete release {tag}: {safe_msg((exc.stderr or '').strip())}")
     shutil.rmtree(ROOT / "images" / item_id, ignore_errors=True)
     db["mods"].remove(item)
     log.append(f"deleted {item_id}")

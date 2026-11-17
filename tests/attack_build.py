@@ -34,6 +34,12 @@ site = fresh_site()
 r = build(site)
 report("symlinked folder under images/ refuses to build", r.returncode != 0, r.stdout + r.stderr)
 
+# 2b. only image files may be published from images/
+site = fresh_site()
+(site / "images" / "evil.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>")
+r = build(site)
+report("non-image file under images/ refuses to build", r.returncode != 0 and not (W / "out" / "images" / "evil.svg").exists(), r.stdout + r.stderr)
+
 # 3. draft and unknown releases never reach stats.json
 spec = importlib.util.spec_from_file_location("b", REPO_DIR / "scripts" / "build.py"); b = importlib.util.module_from_spec(spec)
 os.environ["OUT"] = str(W / "unused"); spec.loader.exec_module(b)

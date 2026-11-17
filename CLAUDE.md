@@ -5,7 +5,7 @@ explain in simple Iraqi/Gulf Arabic, keep the site very easy for visitors.
 
 ## Golden rule: security first
 Every change must be checked for security **before** it is pushed:
-1. Run `python3 -I tests/attack_publish.py . /tmp/redteam-work` → every line must be `BLOCKED`.
+1. Run `python3 -I tests/attack_publish.py . /tmp/redteam-work` and `python3 -I tests/attack_build.py . /tmp/redteam-build` → every line must be `BLOCKED` (both exit non-zero otherwise).
 2. Any new field shown on a page must be escaped (`MC.esc` in JS, `html.escape` in build.py),
    links must pass `MC.safeUrl` / `safe_url`, and it must be validated in `scripts/publish.py`.
 3. Never add inline scripts or `'unsafe-inline'` scripts; keep the CSP meta tags.

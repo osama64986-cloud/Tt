@@ -41,7 +41,11 @@ jobs:
           git fetch --no-tags --depth=1 origin "refs/heads/${INBOX}:refs/remotes/inbox"
           mkdir -p "$RUNNER_TEMP/req"
           # Extract only the inbox/ folder, outside the site checkout.
-          git archive refs/remotes/inbox inbox | tar -x -C "$RUNNER_TEMP/req"
+          # Refuse symlinks (120000) and submodules (160000) anywhere in the inbox tree.
+          if git ls-tree -r refs/remotes/inbox | awk '$1=="120000"||$1=="160000"{bad=1} END{exit !bad}'; then
+            echo "::error::Inbox contains symlinks or submodules"; exit 1
+          fi
+          git archive refs/remotes/inbox inbox | tar -x --no-same-owner -C "$RUNNER_TEMP/req"
 
       - name: Apply request
         env:

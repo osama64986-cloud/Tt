@@ -22,7 +22,9 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = pathlib.Path(os.environ.get("OUT", ROOT / "_site")).resolve()
 REPO = os.environ.get("REPO", "")
-PUBLIC = ["index.html", "admin.html", "404.html", "privacy.html", "terms.html", "mods.json", "assets", "images", "downloads"]
+PUBLIC = ["index.html", "admin.html", "404.html", "privacy.html", "terms.html", "mods.json", "assets", "images"]
+# Only these file types may be published from images/ (never HTML/SVG/JS from that folder).
+IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 TYPES = {
     "mod": ("مود", "⚒"), "addon": ("إضافة بيدروك", "🧩"), "texture": ("تكستر", "🎨"),
     "shader": ("شيدر", "✨"), "map": ("خريطة", "🗺"), "world": ("عالم", "🌍"),
@@ -93,6 +95,9 @@ def copy_public_tree(src, dst):
         if entry.is_dir(follow_symlinks=False):
             copy_public_tree(entry.path, dst / entry.name)
         elif entry.is_file(follow_symlinks=False):
+            rel = pathlib.Path(entry.path).relative_to(ROOT)
+            if rel.parts[0] == "images" and rel.suffix.lower() not in IMAGE_EXT:
+                raise SystemExit(f"refusing non-image file in images/: {rel}")
             shutil.copyfile(entry.path, dst / entry.name, follow_symlinks=False)
         else:
             raise SystemExit(f"refusing special file: {entry.path}")
@@ -140,7 +145,7 @@ def item_page(m, site, base, stats):
     file = safe_url(m.get("file"))
     color = m.get("color") if re.fullmatch(r"#[0-9a-fA-F]{6}", str(m.get("color") or "")) else "#5d5d5d"
     versions = [str(v) for v in m.get("versions") or []]
-    downloads = sum(stats.get(t, 0) for t in m.get("releases") or [])
+    downloads = sum(stats.get(t, 0) for t in (m.get("releases") if isinstance(m.get("releases"), list) else []) if isinstance(t, str))
     shots = [s for s in (safe_url(x) for x in m.get("screenshots") or []) if s]
     video = m.get("video") if re.fullmatch(r"[\w-]{11}", str(m.get("video") or "")) else ""
     sha = m.get("sha256") if re.fullmatch(r"[0-9a-f]{64}", str(m.get("sha256") or "")) else ""
@@ -254,6 +259,9 @@ def main():
         elif src.is_file():
             shutil.copyfile(src, OUT / p)
     (OUT / ".nojekyll").touch()
+    # 404.html is served at any depth, so its home link must be absolute.
+    nf = OUT / "404.html"
+    nf.write_text(nf.read_text(encoding="utf-8").replace('<a href="./">', f'<a href="{e(base)}">', 1), encoding="utf-8")
 
     stats = fetch_stats({str(t) for m in mods for t in (m.get("releases") or []) if isinstance(m.get("releases"), list)})
     (OUT / "stats.json").write_text(json.dumps({"generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "tags": stats}), encoding="utf-8")

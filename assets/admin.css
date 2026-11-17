@@ -112,3 +112,4 @@ details.more { margin: 12px 0; background: #1f1f1f; border: 2px solid #000; padd
 details.more summary { cursor: pointer; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
 .dash-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .dash-counts .chip { font-size: .85rem; }
+.dropzone:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }

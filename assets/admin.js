@@ -290,6 +290,7 @@
     let s = null;
     try { s = JSON.parse(sessionStorage.getItem(STORE_KEY) || "null"); } catch { return null; }
     if (!s || typeof s.token !== "string" || typeof s.repo !== "string") return null;
+    if (!("at" in s)) { try { sessionStorage.removeItem(STORE_KEY); } catch { /* ignore */ } return null; }
     const age = Date.now() - Number(s.at);
     if (!Number.isFinite(age) || age < 0 || age > IDLE_MS) {
       try { sessionStorage.removeItem(STORE_KEY); } catch { /* ignore */ }
@@ -456,10 +457,12 @@
 
   // Auto-lock when idle. Activity is also written to the session record (at most every
   // 15 s) so a reload or restored tab after a long idle period starts locked.
-  ["pointerdown", "keydown", "scroll", "input"].forEach((ev) => addEventListener(ev, () => {
+  ["pointerdown", "keydown", "scroll", "wheel", "touchstart", "input"].forEach((ev) => addEventListener(ev, () => {
     lastActive = Date.now();
     if (auth && lastActive - lastSaved > 15000) saveSession();
-  }, { passive: true }));
+  }, { passive: true, capture: true }));
+  // A file dropped outside the drop zone must not make the browser leave the page.
+  ["dragover", "drop"].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault()));
   function idleCheck() {
     if (!auth) return;
     if (busy) { lastActive = Date.now(); saveSession(); return; } // never lock during an upload
@@ -494,7 +497,7 @@
   /** Guess edition, type and loader from the file extension. */
   const DETECT = {
     mcaddon: { edition: "bedrock", type: "addon", loader: "Bedrock Add-on" },
-    mcpack: { edition: "bedrock", type: "addon", loader: "Bedrock Add-on" },
+    mcpack: { edition: "bedrock", type: "", loader: "" },
     mcworld: { edition: "bedrock", type: "world", loader: "World" },
     mctemplate: { edition: "bedrock", type: "world", loader: "World" },
     jar: { edition: "java", type: "mod", loader: "" },
@@ -503,9 +506,11 @@
   const prettyName = (fname) => String(fname).replace(/\.[^.]+$/, "")
     .replace(/[-_ ]*v?\d+(\.\d+)+.*$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 80);
 
+  let curEdition = "bedrock";
   function setEdition(ed) {
-    const old = form.edition.value;
+    const old = curEdition;
     form.edition.value = ed;
+    curEdition = ed;
     // keep "latest version" in sync when the edition changes
     if (splitList(form.versions.value).join() === (MC.LATEST[old] || "")) form.versions.value = MC.LATEST[ed] || "";
     updateLatestBtn();
@@ -517,9 +522,9 @@
     $("#dzText").textContent = f ? `✔ ${f.name}` : "اضغط هنا واختار الملف، أو اسحبه وحطه هنا";
     $("#fileHint").textContent = f ? `${(f.size / 1048576).toFixed(1)} MB${f.size > MAX_FILE ? " ⚠️ أكبر من 95MB، استخدم «رابط خارجي»" : ""}` : "";
     if (!f) return;
-    const d = DETECT[(f.name.split(".").pop() || "").toLowerCase()];
+    const d = editing ? null : DETECT[(f.name.split(".").pop() || "").toLowerCase()];
     if (d && !form.edition.dataset.touched) setEdition(d.edition);
-    if (d && !form.type.dataset.touched) form.type.value = d.type;
+    if (d?.type && !form.type.dataset.touched) form.type.value = d.type;
     if (d?.loader && !form.loader.value) form.loader.value = d.loader;
     if (!editing && !form.name.value.trim()) form.name.value = prettyName(f.name);
     if (!editing && !form.id.dataset.touched) form.id.value = autoId();
@@ -559,14 +564,7 @@
     const list = splitList(form.versions.value);
     if (v && !list.includes(v)) form.versions.value = [v, ...list].join(", ");
   });
-  let prevEdition = form.edition.value;
-  form.edition.addEventListener("focus", () => { prevEdition = form.edition.value; });
-  form.edition.addEventListener("change", () => {
-    const ed = form.edition.value;
-    form.edition.value = prevEdition;
-    setEdition(ed);
-    prevEdition = ed;
-  });
+  form.edition.addEventListener("change", () => setEdition(form.edition.value));
 
   function openEditor(m) {
     editing = m ? m.id : null;
@@ -607,7 +605,7 @@
     } else {
       form.versions.value = MC.LATEST[form.edition.value] || "";
     }
-    prevEdition = form.edition.value;
+    curEdition = form.edition.value;
     updateLatestBtn();
     editor.showModal();
     form.name.focus();

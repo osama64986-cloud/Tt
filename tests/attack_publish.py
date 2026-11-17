@@ -78,5 +78,14 @@ res.append(run("delete only removes the item's own releases", {"action": "delete
     check=lambda db, out: "release delete x-20260101000000" in out and "victim" not in out and "x-latest" not in out and not db["mods"]))
 res.append(run("boolean screenshots value is ignored", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "external": {"url": "https://a.b"}, "screenshots": True},
     expect_fail=False, check=lambda db, out: "screenshots" not in db["mods"][0]))
+# --- added after the independent review ---
+OUTSIDE = W / "outside"
+def staged_outside(db, out):
+    return not any(OUTSIDE.rglob("*")) and "upload/" not in out.split("release create", 1)[-1].split(" --repo", 1)[0].replace("nabd-upload-", "")
+shutil.rmtree(OUTSIDE, ignore_errors=True); OUTSIDE.mkdir(parents=True)
+res.append(run("planted inbox/upload symlink cannot redirect the staging write", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.jar"},
+    {"files/a.jar": ZIP, "upload": ("link", str(OUTSIDE))}, expect_fail=False, check=staged_outside))
+res.append(run(".rar that is not a rar archive", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.rar"}, {"files/a.rar": b"<svg onload=alert(1)>"}))
+res.append(run(".7z that is not a 7z archive", {"action": "upsert", "id": "x", "isNew": True, "entry": GOOD, "fileName": "a.7z"}, {"files/a.7z": b"MZ" + b"\0" * 50}))
 print(f"\n{sum(res)}/{len(res)} attacks blocked")
 sys.exit(0 if all(res) else 1)
