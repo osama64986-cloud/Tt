@@ -32,10 +32,8 @@ def build(out, flip, variations):
     (flattened_stone, cobblestone, ...) - never the legacy indexed lists."""
     # ------------------------------------------------------------------- stone
     st = vramp("stone", 5, contrast=0.2)
-    out["stone"] = P.rock("stone", st, "smooth", cracks=3)
-    for i in (1, 2):
-        out[f"nabd/stone_v{i}"] = P.rock(f"stone_v{i}", st, "smooth", cracks=2 + i)
-    variations["flattened_stone"] = ["stone", "nabd/stone_v1", "nabd/stone_v2"]
+    from . import blocks_refresh
+    blocks_refresh.stone_set(out, variations)        # refreshed stone (the ores are painted on top of it)
 
     cb = vramp("cobblestone", 6, contrast=0.36)
     out["cobblestone"] = P.cells("cobblestone", cb, 9)
@@ -66,8 +64,7 @@ def build(out, flip, variations):
 
     # --------------------------------------------------------------- deepslate
     ds = vramp("deepslate/deepslate", 5, contrast=0.3)
-    out["deepslate/deepslate"] = P.rock("deepslate", ds, "strata", cracks=2, rough=190)
-    out["deepslate/deepslate_top"] = P.rock("deepslate_top", ds, "smooth", cracks=2, rough=190)
+    blocks_refresh.deepslate_set(out)
     out["deepslate/cobbled_deepslate"] = P.cells("cobbled_deepslate", vramp("deepslate/cobbled_deepslate", 6, contrast=0.36), 9)
     out["deepslate/polished_deepslate"] = P.slab_face("polished_deepslate", vramp("deepslate/polished_deepslate", 5, contrast=0.24), vary=0.2)
     dm = [(34, 34, 38), (42, 42, 46), (50, 50, 54)]
