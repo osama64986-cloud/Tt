@@ -40,8 +40,16 @@ BACK = f"({BACKW} * {W})"
 RISING = f"math.clamp(query.vertical_speed / 4.0, 0.0, 1.0)"
 SIDE = f"(math.clamp({SIDEWAYS} * 1.4, 0.0, 1.0) * {W})"
 
+# ------------------------------------------------------------------ climbing, hits, eating, fire
+# ladders and vines: off the ground, a steady climbing / sliding speed, barely moving sideways
+CLIMB = (f"(((!query.is_on_ground && !query.is_in_water && !{BUSY} && math.abs(query.vertical_speed) > 1.2"
+         f" && math.abs(query.vertical_speed) < 3.4 && {SPEED} < 0.6) ? 1.0 : 0.0) * {UI})")
+HURT = f"(math.clamp(query.hurt_time / 10.0, 0.0, 1.0) * {UI})"
+EAT = f"((query.is_eating ? 1.0 : 0.0) * {UI})"
+FIRE = f"((query.is_on_fire ? 1.0 : 0.0) * {CALM} * {UI})"
+
 # ------------------------------------------------------------------ in the air
-AIRW = f"(((query.is_on_ground || query.is_in_water || {BUSY}) ? 0.0 : 1.0) * {UI})"
+AIRW = f"(((query.is_on_ground || query.is_in_water || {BUSY}) ? 0.0 : 1.0) * (1.0 - {CLIMB}) * {UI})"
 VY = "query.vertical_speed"
 MV = f"math.min({SPEED} / 4.0, 1.0)"
 BREATH = f"math.cos({LIFE} * 245.0)"
@@ -78,6 +86,7 @@ def leg(side):
         f" + {air_x}"
         f" + {TURNSTEP} * 12.0 * math.sin({LIFE} * 620.0 + {ph})"                      # small steps while turning
         f" - {IDLE} * 3.0 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})"          # the relaxed leg bends a little
+        f" - {CLIMB} * 26.0 * math.max(0.0, math.sin({LIFE} * 400.0 + {ph} + 180.0))"  # climbing: legs step in turn
     )
     rot_z = (f"{side * -0.1} + {side * -1.0} * ({SIDE} * 9.0 * math.max(0.0, {sw}{S}))"  # sidestep: open the moving leg
              f" + {side * -1.0} * {air_z}")
@@ -85,7 +94,8 @@ def leg(side):
         0.0,
         f"({lift} * (1.3 + 2.2 * {SPRINTING}) * (1.0 - 0.4 * {BACKW}) * {W}) + {air_y}"
         f" + {TURNSTEP} * 1.4 * math.max(0.0, math.sin({LIFE} * 620.0 + {ph}))"
-        f" + {IDLE} * 0.6 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})",
+        f" + {IDLE} * 0.6 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})"
+        f" + {CLIMB} * 2.0 * math.max(0.0, math.sin({LIFE} * 400.0 + {ph} + 180.0))",
         f"-{lift} * 1.0 * {K} * {W} + {air_fz}",
     ]
     return {"rotation": [rot_x, f"{side * -0.1}", rot_z], "position": pos}
@@ -104,11 +114,14 @@ def arm(side):
         f" - 12.0 * {SPR}"                                  # running: arms carried higher
         f" - 12.0 * {SNEAK} * {CALM}"                       # crouched: hands low and ready
         f" + 2.0 * {SNEAK} * {CALM} * math.sin({LIFE} * 110.0 + {ph})"   # a little sway while crouched
+        f" + {CLIMB} * (-150.0 + 28.0 * math.sin({LIFE} * 400.0 + {ph}))"  # climbing: hands reach up in turn
+        f" + 12.0 * {HURT}"                                                # hit: arms jerk back
         f" + {air_x}"
     )
     # the arm swinging forward comes in towards the body a little
     inward = f"math.max(0.0, {'-' if side > 0 else ''}{swing} * {K}) * 4.0 * {W}"
-    out = f"(2.0 + 2.0 * {SPR} + {air_out} + 4.0 * {SNEAK} * {CALM} - {inward})"
+    out = (f"(2.0 + 2.0 * {SPR} + {air_out} + 4.0 * {SNEAK} * {CALM} - {inward} + 6.0 * {CLIMB} + 14.0 * {HURT}"
+           f" + {FIRE} * (14.0 + 12.0 * math.sin({LIFE} * 900.0 + {ph})))")
     rot_z = f"{'-' if side > 0 else ''}{out}"
     rot_y = f"{'' if side > 0 else '-'}math.sin({PHASE}) * 5.0 * {W}"
     return {"rotation": [rot_x, rot_y, rot_z]}
@@ -120,12 +133,13 @@ CRE = f"({CR} * {CR} * (3.0 - 2.0 * {CR}))"
 
 
 def build():
-    waist_rx = (f"{UI} * (7.0 * {SPR} - 3.5 * {BACK})"
+    waist_rx = (f"{UI} * (7.0 * {SPR} - 3.5 * {BACK}) - 10.0 * {HURT}"
                 + " + " + inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0) + 3.0 * {FALLING}"))
     waist_ry = f"{UI} * (8.0 + 5.0 * {SPRINTING}) * {S} * {K} * {W}"
     waist_rz = f"{UI} * (2.2 * {C} + 2.0 * {S} * {SIDE}) * {W} + {IDLE} * 1.6 * {SHIFTW}"
     waist_py = f"-(0.9 + 0.7 * {SPRINTING}) * {S} * {S} * {W}"     # lowest when the feet are apart
-    head_x = (f"1.0 * math.cos({PHASE} * 2.0) * {W} + 3.0 * {SPR} + 2.0 * {BACK} + "
+    head_x = (f"1.0 * math.cos({PHASE} * 2.0) * {W} + 3.0 * {SPR} + 2.0 * {BACK} - 9.0 * {HURT}"
+              f" + 5.0 * {EAT} * math.sin({LIFE} * 1100.0) - 10.0 * {CLIMB} + "
               + inair(f"4.0 + 10.0 * {FALLING} - 4.0 * {RISING}"))
     return {
         "animation.player.move.arms": {

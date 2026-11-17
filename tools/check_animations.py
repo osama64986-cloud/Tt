@@ -53,6 +53,10 @@ STATES = {
     "axe chop 48%": {"variable.attack_time": 0.48, "_item": "minecraft:iron_axe"},
     "pickaxe wind-up 25%": {"variable.attack_time": 0.25, "_item": "minecraft:diamond_pickaxe"},
     "pickaxe strike 48%": {"variable.attack_time": 0.48, "_item": "minecraft:diamond_pickaxe"},
+    "climbing ladder": {"query.is_on_ground": 0, "query.vertical_speed": 2.35, "query.ground_speed": 0.0, "query.life_time": 1.1},
+    "hit (just hurt)": {"query.hurt_time": 9},
+    "eating": {"query.is_eating": 1, "query.life_time": 0.2},
+    "on fire": {"query.is_on_fire": 1, "query.life_time": 0.3},
     "sneaking walk": {"variable.tcos0": 30},
     "swimming": {"query.is_swimming": 1, "query.is_in_water": 1, "query.is_on_ground": 0, "variable.tcos0": 30},
 }
