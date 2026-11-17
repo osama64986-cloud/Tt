@@ -352,6 +352,10 @@ def main():
         elif src.is_file():
             shutil.copyfile(src, OUT / p)
     (OUT / ".nojekyll").touch()
+    # Google Search Console ownership files: generated here from a strict name, never copied.
+    for f in sorted(ROOT.glob("google*.html")):
+        if re.fullmatch(r"google[0-9a-f]{16}\.html", f.name) and not f.is_symlink():
+            (OUT / f.name).write_text(f"google-site-verification: {f.name}", encoding="utf-8")
     # 404.html is served at any depth, so its home link must be absolute.
     nf = OUT / "404.html"
     nf.write_text(nf.read_text(encoding="utf-8").replace('<a href="./">', f'<a href="{e(base)}">', 1), encoding="utf-8")
