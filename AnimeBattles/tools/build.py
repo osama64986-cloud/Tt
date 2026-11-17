@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Anime Multiverse Clash (formerly Anime Battles) add-on builder.
+"""Anime Multiverse (formerly Anime Battles) add-on builder.
 
 Generates the cube models (geometry), pixel textures, item icons, particle
-texture and pack icons, then zips BP + RP into dist/AnimeMultiverseClash.mcaddon.
+texture and pack icons, then zips BP + RP into dist/AnimeMultiverse.mcaddon.
 
 Run:  python3 tools/build.py
 """
@@ -132,7 +132,7 @@ def build_icons():
 
 def build_zip():
     os.makedirs(DIST, exist_ok=True)
-    out = os.path.join(DIST, "AnimeMultiverseClash.mcaddon")
+    out = os.path.join(DIST, "AnimeMultiverse.mcaddon")
     if os.path.exists(out):
         os.remove(out)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
