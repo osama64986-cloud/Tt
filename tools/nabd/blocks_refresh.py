@@ -375,6 +375,105 @@ def strata_top(name, base, contrast=0.80):
     return Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.clip(hgt, 0, 1), rough=190, bump=1.1)
 
 
+def strata_top_mixed(name, base, contrast=0.80):
+    """Top of deepslate, option B: the same lens slabs as the side, seen from above -
+    some lying east-west, some north-south, packed loosely, each lit along its top
+    and left rims, the cool dark bed between."""
+    r = rng_of(name + "_mixed")
+    ramp = make_ramp(base, 8, contrast, sat=1.0, warm=0.0)
+    idx = np.full((N, N), 1)
+    bed = fbm(r, ((4, 1.0), (8, 0.5)))
+    idx = idx + (bed > 0.7) - (bed < 0.25)
+    slab = np.full((N, N), -1)
+    placed, k, tries = [], 0, 0
+    while k < 16 and tries < 900:
+        tries += 1
+        long_, short = float(r.choice([5.0, 6.0, 7.0, 8.0])), float(r.choice([3.0, 3.6, 4.2]))
+        w, h = (long_, short) if r.random() < 0.55 else (short, long_)
+        cx, cy = r.random() * N, r.random() * N
+        bad = False
+        for (px, py, pw, ph) in placed:
+            ddx = min(abs(cx - px), N - abs(cx - px))
+            ddy = min(abs(cy - py), N - abs(cy - py))
+            if (ddx / ((w + pw) / 2 * 0.9)) ** 2 + (ddy / ((h + ph) / 2 * 0.9)) ** 2 < 1:
+                bad = True
+                break
+        if bad:
+            continue
+        placed.append((cx, cy, w, h))
+        a, b = w / 2, h / 2
+        tone = 4 + int(r.choice([-1, 0, 0, 1]))
+        dx = (xx + 0.5 - cx + N / 2) % N - N / 2
+        dy = (yy + 0.5 - cy + N / 2) % N - N / 2
+        m = (dx / a) ** 2 + (dy / b) ** 2 <= 1.0
+        t = np.full((N, N), tone) + ((dy / b) < -0.3) - ((dy / b) > 0.5)
+        idx[m] = t[m]
+        slab[m] = k
+        k += 1
+    inside = slab >= 0
+    ul = inside & ((np.roll(slab, 1, 0) != slab) | (np.roll(slab, 1, 1) != slab))
+    lr = inside & ((np.roll(slab, -1, 0) != slab) | (np.roll(slab, -1, 1) != slab))
+    idx[ul & ~lr] += 1
+    idx[lr & ~ul] -= 1
+    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=2, sy=2)
+    idx = idx + ((grain > 0.8) & inside) - ((grain < 0.16) & inside)
+    rgb = paint_idx(idx, ramp).astype(float)
+    cool = ~inside | (idx <= 1)
+    rgb[cool, 2] += 10
+    rgb[cool, 0] -= 3
+    for _ in range(3):
+        x, y = int(r.integers(0, N)), int(r.integers(0, N))
+        if inside[y, x]:
+            rgb[y, x] = ramp[-1]
+    hgt = np.where(inside, 0.4 + 0.1 * (idx - 3), 0.08)
+    return Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.clip(hgt, 0, 1), rough=190, bump=1.1)
+
+
+def strata_top_rows(name, base, contrast=0.80):
+    """Top of deepslate, option C: the side's slab rows with shorter, taller slabs
+    (the look from the earlier favoured sheet), calmer than the side."""
+    r = rng_of(name)
+    ramp = make_ramp(base, 8, contrast, sat=1.0, warm=0.0)
+    idx = np.full((N, N), 1)
+    bed = fbm(r, ((4, 1.0), (8, 0.5)), sx=3, sy=1)
+    idx = idx + (bed > 0.7) - (bed < 0.25)
+    slab = np.full((N, N), -1)
+    k = 0
+    for row in range(4):
+        cy = (row + 0.5) * N / 4 + r.normal(0, 0.35)
+        x = r.random() * N
+        end = x + N
+        while x < end - 2:
+            w = min(float(r.integers(4, 7)), end - x + 0.5)
+            h = float(r.choice([3.6, 4.2, 5.0]))
+            a, b = w / 2, h / 2
+            tone = 4 + int(r.choice([-1, 0, 0, 1]))
+            dx = (xx + 0.5 - (x + a) + N / 2) % N - N / 2
+            dy = (yy + 0.5 - cy + N / 2) % N - N / 2
+            m = (dx / a) ** 2 + (dy / b) ** 2 <= 1.0
+            rel_y, rel_x = dy / b, np.abs(dx / a)
+            t = np.full((N, N), tone) + (rel_y < -0.3) - (rel_y > 0.45) - (rel_x > 0.75)
+            idx[m] = t[m]
+            slab[m] = k
+            k += 1
+            x += w + float(r.choice([0, 0, 1]))
+    inside = slab >= 0
+    idx[inside & (np.roll(slab, 1, 0) != slab)] += 1
+    idx[inside & (np.roll(slab, -1, 0) != slab)] -= 1
+    grain = fbm(r, ((4, 0.6), (16, 1.0)), sx=2, sy=1)
+    idx = idx + ((grain > 0.8) & inside) - ((grain < 0.16) & inside)
+    rgb = paint_idx(idx, ramp).astype(float)
+    cool = ~inside | (idx <= 1)
+    rgb[cool, 2] += 10
+    rgb[cool, 0] -= 3
+    for _ in range(4):
+        x, y = int(r.integers(0, N)), int(r.integers(0, N))
+        if inside[y, x]:
+            rgb[y, x] = ramp[-1]
+    hgt = np.where(inside, 0.4 + 0.1 * (idx - 3), 0.08)
+    return Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.clip(hgt, 0, 1), rough=190, bump=1.1)
+
+
 def bedrock(name, base):
     """Bedrock: a jumble of broken rock chips in strong light and dark - pale grey
     chips, near-black chips and everything between, packed tight, each chip lit on
