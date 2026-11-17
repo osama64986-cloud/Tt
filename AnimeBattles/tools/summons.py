@@ -431,8 +431,35 @@ def hound():
     return m
 
 
-SUMMONS = [("susanoo", susanoo_perfect), ("kurama", kurama), ("gamabunta", gamabunta),
-           ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
-           ("susanoo_madara", susanoo_madara), ("susanoo_itachi", susanoo_itachi), ("susanoo_kakashi", susanoo_kakashi),
+def _ghost(fn, k=0.38):
+    """A see-through Susanoo: every part keeps its colour but only ~38% of its opacity, so the fighter standing in its
+    chest stays clearly visible."""
+    def build():
+        m = fn()
+        for c in m.cubes:
+            p = c["paint"]
+            sw = getattr(p, "swatch", None)
+            if sw:
+                c["paint"] = S.swatch(sw[0], max(40, int(sw[1] * k)))
+                continue
+
+            def faded(face, img, _p=p):
+                _p(face, img)
+                px = img.load()
+                w, h = img.size
+                for y in range(h):
+                    for x in range(w):
+                        r, g, b, a = px[x, y]
+                        if a:
+                            px[x, y] = (r, g, b, max(40, int(min(a, 235) * k)))
+            c["paint"] = faded
+        return m
+    build.__name__ = fn.__name__
+    return build
+
+
+SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta", gamabunta),
+           ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
+           ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
            ("crow", crow), ("hound", hound)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound"}   # opaque flesh; the rest are glowing chakra

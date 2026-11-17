@@ -202,7 +202,11 @@ function summonGiant(e, kind, t, o = {}) {
   } catch (err) { warn("summon", err); return undefined; }
 }
 // The Susanoo stays with Sasuke for as long as he holds a Susanoo form, wrapped round him or towering behind him.
-const SUSANOO_SIZE = { 3: 1.05, 4: 2.3, 0: 5, 7: 5.2, 8: 2.3, 9: 4.6 }, SUSANOO_BACK = { 3: 0, 4: 0.3, 0: 3.5, 7: 3.8, 8: 0.3, 9: 3.4 };
+const SUSANOO_SIZE = { 3: 1.05, 4: 2.3, 0: 4.4, 7: 4.6, 8: 2.3, 9: 4.2 };
+// The owner stands INSIDE the Susanoo, in its chest: the giant is centred on them and sunk into the ground until its
+// chest (39 model units up on the full Susanoo, 21 on the armoured one) is level with the owner's chest.
+const SUSANOO_CHEST = { 3: 0, 4: 21, 8: 21, 0: 39, 7: 39, 9: 39 };
+const susanooSink = (stage) => Math.max(0, (SUSANOO_CHEST[stage] ?? 0) * (SUSANOO_SIZE[stage] ?? 1) / 16 - 1.2);
 function susanooStage(e) {
   const f = formOf(e);
   if (e.typeId === "ab:sasuke") return f === 2 ? 3 : -1;
@@ -223,7 +227,7 @@ function updateSusanoo(e, s) {
   let yaw = 0;
   try { yaw = e.getRotation().y; } catch (err) { /* ignore */ }
   const fwd = { x: -Math.sin((yaw * Math.PI) / 180), y: 0, z: Math.cos((yaw * Math.PI) / 180) };
-  const at = V.add(e.location, V.mul(fwd, -SUSANOO_BACK[stage]));
+  const at = V.add(e.location, { x: 0, y: -susanooSink(stage), z: 0 });
   try {
     if (!s.susanoo) {
       s.susanoo = spawnSummon(e.dimension, stage, at, fwd, SUSANOO_SIZE[stage], 40);
@@ -261,8 +265,17 @@ function fx(dim, kind, loc, color, size, life, extra) {
     dim.spawnParticle(`ab:${kind}`, loc, m);
   } catch (e) { /* chunk not loaded or particle missing */ }
 }
+// Our own effect names mapped onto Minecraft's recorded sounds (natural, not synthetic), and every sound played
+// quieter than before so fights never get loud.
+const SOUND_MAP = {
+  "ab.impact": ["mob.irongolem.hit", 0.8], "ab.whoosh": ["mob.phantom.swoop", 1.4], "ab.boom": ["random.explode", 0.7],
+  "ab.domain": ["block.end_portal.spawn", 0.8], "ab.blackflash": ["ambient.weather.lightning.impact", 1.5],
+};
+const SOUND_GAIN = 0.55;
 function sound(dim, id, loc, volume = 1, pitch = 1) {
-  try { dim.playSound(id, loc, { volume, pitch }); } catch (e) { /* ignore */ }
+  const m = SOUND_MAP[id];
+  if (m) { id = m[0]; pitch *= m[1]; volume *= 0.8; }
+  try { dim.playSound(id, loc, { volume: Math.min(1, volume * SOUND_GAIN), pitch: Math.max(0.5, Math.min(2, pitch)) }); } catch (e) { /* ignore */ }
 }
 function burst(dim, loc, color, count, speed, size = 0.35, life = 0.6) {
   fx(dim, "burst", loc, color, size, life, { count: Math.ceil(count * fxLevel()), speed, radius: 0.2 });
@@ -2820,23 +2833,51 @@ const NARUTO_ADULT = {
 // One move library, four versions: each version picks the techniques he really had at that age.
 const SASUKES = new Set(["ab:sasuke_kid", "ab:sasuke", "ab:sasuke_war", "ab:sasuke_adult"]);
 const SAS = {
-  chidori: (o = {}) => ({ id: o.id ?? "chidori", label: o.label ?? "Chidori", cd: 140, cost: 90, min: 0, max: 20, weight: 5, cond: o.cond,
+  chidori: (o = {}) => ({ id: o.id ?? "chidori", label: o.label ?? "Chidori", cd: 140, cost: 90, min: 0, max: o.teleport ? 20 : 26, weight: 5, cond: o.cond,
     run(e, s, t) {
       const col = o.color ?? C.kameBlue;
-      busy(s, 22); face(e, aim(t)); announce(e, o.say ?? "§b§lChidori!");
+      busy(s, o.teleport ? 22 : 34); face(e, aim(t)); announce(e, o.say ?? "§b§lChidori!");
       later(8, () => susanooPose(e, 5, 14));      // his Susanoo swings with him
       chargeOrb(e, t, 10, col, 0.4, 1.1, 4);
       every(2, 5, () => { if (e.isValid) fx(e.dimension, "streak", handPos(e, alive(t) ? t : e).pos, C.white, 0.8, 0.2, { count: 4, speed: 6 }); });
-      later(10, () => {
+      const strike = () => {
         if (!e.isValid || !alive(t)) return;
-        afterimage(e); teleportNear(e, t, false, 1.2); setPose(e, 5);
+        setPose(e, 5);
         const c = aim(t);
+        // can the target slip it? quick, clever fighters can (their own dodge, sharper eyes); a far stronger attacker can't be dodged
+        const td = FIGHTERS[t.typeId];
+        const slip = td && powerOf(e) < powerOf(t) * 1.5 ? clamp((td.dodge ? td.dodge(t) : 0) * 2.6 + (iqOf(t) - iqOf(e)) * 0.04, 0, 0.6) : 0;
+        if (!o.teleport && Math.random() < slip) {
+          dodgeFx(t, e);
+          fx(e.dimension, "streak", c, col, 1.4, 0.3, { count: 14, speed: 9 });  // the blade of lightning cuts empty air
+          later(8, () => { if (e.isValid) setPose(e, 0); });
+          return;
+        }
         deal(e, t, (o.dmg ?? 34) * powerOf(e) / 100);
         if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 8); }  // the lightning locks the muscles
         fx(e.dimension, "streak", c, col, 1.8, 0.4, { count: 22, speed: 12 });
         fx(e.dimension, "flash", c, C.white, 3, 0.2);
         burst(e.dimension, c, col, 20, 4, 0.4, 0.4);
         later(8, () => { if (e.isValid) setPose(e, 0); });
+      };
+      later(10, () => {
+        if (!e.isValid || !alive(t)) return;
+        if (o.teleport) { afterimage(e); teleportNear(e, t, false, 1.2); strike(); return; }
+        // the charge: he sprints straight at the target along the ground, lightning screaming from his hand
+        sound(e.dimension, "ambient.weather.lightning.impact", e.location, 0.6, 1.8);
+        every(1, 16, (i) => {
+          if (!e.isValid || !alive(t)) return false;
+          const to = V.sub(t.location, e.location);
+          const d = Math.hypot(to.x, to.z);
+          if (d <= 1.6 || i === 15) { strike(); return false; }
+          const step = V.mul(V.norm({ x: to.x, y: 0, z: to.z }), Math.min(d - 1.4, 1.5));
+          try { e.tryTeleport(V.add(e.location, step), { checkForBlocks: true, facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+          const hp = handPos(e, t).pos;
+          fx(e.dimension, "streak", hp, col, 1.0, 0.25, { count: 6, speed: 7 });
+          fx(e.dimension, "orb", hp, C.white, 0.5, 0.15);
+          if (i % 2 === 0) fx(e.dimension, "aura", e.location, DUST, 0.6, 0.4, { count: 3, speed: 1 });
+          if (i % 3 === 0) groundTear(e.dimension, e.location, 0.9);  // his hand gouges the ground as he runs
+        });
       });
     } }),
   fireball: (o = {}) => ({ id: "fireball", label: "Great Fireball", cd: 160, cost: 90, min: 0, max: 30, weight: 4, cond: o.cond,
@@ -3108,7 +3149,7 @@ const SASUKE_WAR = {
   thresholds: [0.6, 0.35], transformCd: 100, formSound: [null, "mob.wither.spawn", "beacon.activate"],
   abilities: [SAS.katana(), SAS.dragonFlame(), SAS.onslaught(), SAS.chidori({ dmg: 40 }), SAS.spear(), SAS.senbon(), SAS.nagashi(), SAS.kirin(), SAS.fireball({ size: 3 }), SAS.amaterasu(), SAS.kagutsuchi(),
     SAS.arrow({ say: "§5§lSusanoo: Yasaka Magatama!", dmg: 70 }), SAS.susSword({ cond: G(1, 2) }), SAS.indra(),
-    SAS.ameno({ cond: G(2) }), SAS.chidori({ id: "susChidori", label: "Susanoo Chidori", say: "§5§lSusanoo Chidori!", color: C.purple, dmg: 60, cond: G(1, 2) })],
+    SAS.ameno({ cond: G(2) }), SAS.chidori({ id: "susChidori", label: "Susanoo Chidori", say: "§5§lSusanoo Chidori!", color: C.purple, dmg: 60, cond: G(1, 2), teleport: true })],
 };
 const SASUKE_ADULT = {
   name: "Sasuke", color: "§5", energy: 1500, regen: 28, energyName: "§6CHAKRA",
@@ -3211,7 +3252,7 @@ const KAKASHI = {
         later(26, () => { if (alive(t)) { fx(t.dimension, "flash", aim(t), C.white, 3, 0.2); deal(e, t, 24 * powerOf(e) / 100); } });
         later(14, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SAS.chidori({ id: "kamuiraikiri", label: "Kamui Raikiri", say: "§5§lKamui Raikiri! §7— through space, straight to the heart", color: C.purple, dmg: 66, cond: G(2) }),
+    SAS.chidori({ id: "kamuiraikiri", label: "Kamui Raikiri", say: "§5§lKamui Raikiri! §7— through space, straight to the heart", color: C.purple, dmg: 66, cond: G(2), teleport: true }),
     SAS.arrow({ say: "§b§lSusanoo: Kamui Shuriken!", color: C.kameBlue, dmg: 66, size: 1.6, cond: G(2) }),
   ],
 };
