@@ -3,7 +3,7 @@ Anime legends from Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach and De
 
 ---
 
-# Anime Multiverse
+# Anime Multiverse Clash (AMC)
 
 **Six anime worlds collide in Minecraft.** Put the legends of **Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach and Demon Slayer** into a red team and a blue team, then sit back and watch them fight.
 Every character has their real transformations, signature techniques and fighting style.
@@ -107,7 +107,7 @@ Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, 
 
 ## 📦 Installation
 
-1. Download **AnimeMultiverse.mcaddon** and open it. Minecraft imports both packs automatically.
+1. Download **AnimeMultiverseClash.mcaddon** and open it. Minecraft imports both packs automatically.
 2. Create a world (or edit one) and turn on **both** the Behavior Pack and the Resource Pack.
 3. Requires **Minecraft Bedrock 1.26.50 or newer**. Works on phone, PC and console.
 
@@ -120,4 +120,4 @@ When updating: if Minecraft says the pack is already installed, delete the old p
 
 ---
 
-*Anime Multiverse is a fan-made add-on and is not affiliated with Mojang, Microsoft, or the owners of Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach or Demon Slayer. All characters belong to their respective creators.*
+*Anime Multiverse Clash is a fan-made add-on and is not affiliated with Mojang, Microsoft, or the owners of Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach or Demon Slayer. All characters belong to their respective creators.*
