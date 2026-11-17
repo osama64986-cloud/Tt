@@ -63,9 +63,11 @@ try:
     check("every function pins an empty search_path", rc == 0 and out == "", out)
     rc, out = psql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
                    "where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')")
-    check("anon can call exactly the six intended functions", out == "list_comments,mod_list,mod_purge_pending,mod_set,mod_sync_mods,submit_comment", out)
-    rc, out = psql("select provolatile from pg_proc where proname = 'mod_list'")
-    check("mod_list is volatile (PostgREST refuses GET, key never in a URL)", out == "v", out)
+    check("anon can call exactly the seven intended functions", out == "list_comments,mod_list,mod_page,mod_purge_pending,mod_set,mod_sync_mods,submit_comment", out)
+    rc, out = psql("select string_agg(provolatile::text, '') from pg_proc where proname in ('mod_list', 'mod_page', 'mod_set', 'mod_purge_pending', 'mod_sync_mods')")
+    check("owner functions are volatile (PostgREST refuses GET, key never in a URL)", out == "vvvvv", out)
+    rc, out = psql("select count(*) from pg_proc where proname in ('list_comments', 'mod_list')")
+    check("no leftover overloads of public functions", out == "2", out)
 
     # --- submit validation
     cases = {
@@ -123,10 +125,11 @@ try:
         check(f"wrong key cannot approve ({bad[:12]!r}…)", rc != 0, out)
     rc, out = psql("select public.mod_set(null, 1, 'approve')", "anon"); check("null key cannot approve", rc != 0, out)
     rc, out = psql(f"select public.mod_purge_pending($k$x' or '1'='1$k$)", "anon"); check("wrong key cannot purge", rc != 0, out)
+    rc, out = psql(f"select count(*) from public.mod_page($k${'K'*42}L$k$, 'pending', null)", "anon"); check("wrong key cannot page the owner list", rc != 0 and "not allowed" in out, out)
     rc, out = psql(f"select public.mod_sync_mods($k$bad$k$, array['evil'])", "anon"); check("wrong key cannot change the mod list", rc != 0, out)
     rc, out = psql(f"select public.mod_sync_mods('{KEY}', array['../x'])", "anon"); check("mod list rejects bad ids", out == "-1", out)
     rc, out = psql(f"select count(*) from public.mod_list('{KEY}')", "anon"); check("right key lists pending (100 per page)", rc == 0 and out == "30", out)
-    rc, out = psql(f"select count(*) from public.mod_list('{KEY}', 'pending', {int(psql("select max(id) from public.comments")[1]) - 9})", "anon")
+    rc, out = psql(f"select count(*) from public.mod_page('{KEY}', 'pending', {int(psql("select max(id) from public.comments")[1]) - 9})", "anon")
     check("owner list pages with p_before", out == "20", out)
     rc, out = psql(f"select public.mod_set('{KEY}', 1, 'drop')", "anon"); check("unknown action refused", out == "bad_action", out)
     first = psql("select min(id) from public.comments")[1]
@@ -135,7 +138,7 @@ try:
     check("approved comment becomes visible", out == "ok" and out2 == "1", f"{out} {out2}")
     rc, out = psql("select count(*) from public.list_comments('other-mod')", "anon"); check("other mods see nothing", out == "0", out)
     rc, out = psql("select * from public.list_comments('nabd-pack')", "anon")
-    check("public list exposes no id/status/created/mod internals", out.count("|") == 4, out)
+    check("public list exposes no id/status/created/mod internals", out.count("|") == 5 and out.startswith("|"), out)
     rc, out = psql(f"select public.mod_set('{KEY}', {first}, 'delete')", "anon")
     check("owner can delete", out == "ok" and psql("select count(*) from public.list_comments('nabd-pack')", "anon")[1] == "0", out)
     rc, out = psql(f"select public.mod_purge_pending('{KEY}')", "anon")

@@ -751,7 +751,7 @@
     msg.textContent = "جاري التحميل…";
     let rows;
     try {
-      rows = await MC.comments.rpc("mod_list", { p_key: key, p_status: modTab, p_before: page });
+      rows = await MC.comments.rpc("mod_page", { p_key: key, p_status: modTab, p_before: page });
     } catch (e) {
       if (/^(401|403)$/.test(e.message)) { msg.textContent = "المفتاح لسا ما تفعّل. دز هذا الكود لـ Claude:"; await showModCode(key); }
       else msg.textContent = "ما قدرنا نتصل بقاعدة الآراء هسه. جرّب بعد شوية.";

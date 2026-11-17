@@ -4,7 +4,8 @@
 --  F2 huge inputs are refused before any text processing.
 --  F3 public list no longer shows the running id.  F4 sequence closed.
 --  F5 stronger cleaning: NFKC, more invisible characters, Zalgo, links in nicknames.
---  F7 owner list can page.  mod_list is volatile so PostgREST refuses GET (key never in a URL).
+--  F7 owner list can page (mod_page).  Owner functions are volatile so PostgREST refuses GET (key never in a URL).
+--  No DROP statements: old signatures are kept and replaced in place.
 
 revoke all on sequence public.comments_id_seq from public, anon, authenticated;
 
@@ -82,11 +83,11 @@ begin
   return 'ok';
 end $$;
 
-drop function if exists public.list_comments(text);
-create function public.list_comments(p_mod text)
-returns table (kind text, body text, nickname text, device text, approved_at timestamptz)
+-- same signature as before (no DROP needed); the running id is no longer revealed (always null)
+create or replace function public.list_comments(p_mod text)
+returns table (id bigint, kind text, body text, nickname text, device text, approved_at timestamptz)
 language sql stable security definer set search_path = '' as $$
-  select c.kind, c.body, c.nickname, c.device, c.approved_at
+  select null::bigint, c.kind, c.body, c.nickname, c.device, c.approved_at
   from public.comments c
   where c.status = 'approved' and c.mod_id = lower(btrim(left(coalesce(p_mod, ''), 60)))
   order by c.approved_at desc
@@ -94,8 +95,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- ---------- owner (moderation key) ----------
-drop function if exists public.mod_list(text, text);
-create function public.mod_list(p_key text, p_status text default 'pending', p_before bigint default null)
+create or replace function public.mod_page(p_key text, p_status text default 'pending', p_before bigint default null)
 returns table (id bigint, mod_id text, kind text, body text, nickname text, device text, status text, created_at timestamptz)
 language plpgsql volatile security definer set search_path = '' as $$
 begin
@@ -105,6 +105,13 @@ begin
     where c.status = coalesce(p_status, 'pending') and (p_before is null or c.id < p_before)
     order by c.id desc limit 100;
 end $$;
+
+-- the old mod_list keeps its signature (no DROP) but becomes volatile (no GET) and pages by 100
+create or replace function public.mod_list(p_key text, p_status text default 'pending')
+returns table (id bigint, mod_id text, kind text, body text, nickname text, device text, status text, created_at timestamptz)
+language sql volatile security definer set search_path = '' as $$
+  select * from public.mod_page(p_key, p_status, null)
+$$;
 
 create or replace function public.mod_purge_pending(p_key text)
 returns int language plpgsql volatile security definer set search_path = '' as $$
@@ -133,11 +140,13 @@ end $$;
 
 revoke all on function public.submit_comment(text, text, text, text, text) from public;
 revoke all on function public.list_comments(text) from public;
-revoke all on function public.mod_list(text, text, bigint) from public;
+revoke all on function public.mod_list(text, text) from public;
+revoke all on function public.mod_page(text, text, bigint) from public;
 revoke all on function public.mod_purge_pending(text) from public;
 revoke all on function public.mod_sync_mods(text, text[]) from public;
 grant execute on function public.submit_comment(text, text, text, text, text) to anon, authenticated;
 grant execute on function public.list_comments(text) to anon, authenticated;
-grant execute on function public.mod_list(text, text, bigint) to anon, authenticated;
+grant execute on function public.mod_list(text, text) to anon, authenticated;
+grant execute on function public.mod_page(text, text, bigint) to anon, authenticated;
 grant execute on function public.mod_purge_pending(text) to anon, authenticated;
 grant execute on function public.mod_sync_mods(text, text[]) to anon, authenticated;
