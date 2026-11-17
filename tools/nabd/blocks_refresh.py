@@ -262,7 +262,7 @@ def strata(name, base, *, top=False, contrast=0.80):
     shows through.  The top face is the end of the stack: rounder slabs, lit from
     their middle, packed loosely instead of in rows."""
     if top:
-        return strata_top(name, base, contrast=contrast)
+        return strata_top_rows(name, base, contrast=contrast)
     r = rng_of(name)
     r2 = rng_of(name + "_fine")                            # extra touches, without moving the layout
     ramp = make_ramp(base, 8, contrast, sat=1.0, warm=0.0)

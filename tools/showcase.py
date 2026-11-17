@@ -187,24 +187,8 @@ def text_ar(d, x, y, s, font, fill):
 
 
 def logo():
-    S = 400
-    im = Image.new("RGBA", (S, S), (24, 30, 44, 255))
-    d = ImageDraw.Draw(im)
-    for y in range(S):
-        t = y / S
-        d.line([(0, y), (S, y)], fill=(int(30 + 30 * t), int(36 + 50 * t), int(60 + 40 * t), 255))
-    # a grass block in the middle
-    iso = Iso(70)
-    iso.add(0, 0, 0, tex("grass_carried"), tex("grass_side_carried"), tex("grass_side_carried"))
-    block = iso.render((S, S), (S // 2, 150), (0, 0, 0, 0))
-    im.alpha_composite(block)
-    # a heartbeat line across it
-    pts = [(20, 250), (120, 250), (150, 200), (185, 300), (215, 170), (245, 250), (380, 250)]
-    d.line(pts, fill=(255, 255, 255, 255), width=12, joint="curve")
-    d.line(pts, fill=(255, 92, 92, 255), width=6, joint="curve")
-    f = ImageFont.truetype(FONT, 64)
-    d.text((S // 2, 318), "NABD", font=f, fill=(255, 255, 255, 255), anchor="mm")
-    return im
+    """The CurseForge avatar is the pack's own icon (the grass block), only enlarged."""
+    return Image.open(os.path.join(ROOT, "pack", "pack_icon.png")).convert("RGBA").resize((400, 400), Image.LANCZOS)
 
 
 def catalogue(names, cols=10, cell=96, title=""):

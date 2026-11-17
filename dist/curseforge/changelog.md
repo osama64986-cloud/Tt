@@ -1,6 +1,8 @@
-# Nabd 1.0.66 — the big update
+# Nabd 1.0.71 — the big update
 
 ### Textures
+- Deepslate redrawn: shaded lens-shaped slabs over a cool dark bed, with a matching top face; bedrock as a jumble of light and dark rock chips.
+- Cobblestone, cobbled deepslate and gravel redrawn closer to the classic look.
 - Third block refresh: netherrack, soul sand/soil, blackstone and basalt families, end stone, quartz family, amethyst, animated sculk, snow, stone bricks (all variants) and bricks.
 - All ores redrawn with shimmer; diamond and emerald as a few big gems.
 - Darker deepslate as slate plates; whole family matched.
