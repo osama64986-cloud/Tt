@@ -8,7 +8,8 @@ is replaced and other add-ons keep working.
 State kept on the player between frames (Molang variables, written from inside
 move.arms - the first of our animations in the game's list):
 
-  v.nb_gs     ground speed in m/s, smoothed
+  v.nb_gs     ground speed in m/s, smoothed; v.nb_acc its change (speeding up / slowing down)
+  v.nb_turn   turning speed of the body (deg/s), v.nb_by last body yaw
   v.nb_spr    0..1 sprinting, smoothed
   v.nb_fwd    -1..1 walking direction against the body's facing (-1 = backwards)
   v.nb_side   0..1 how much of the movement is sideways, v.nb_ss the same with its sign
@@ -36,7 +37,10 @@ C = f"math.cos({PHASE})"
 STATE = "!query.is_in_ui ? { " + "; ".join([
     "t.dt = " + DT,
     # speed and sprint
+    "t.gs0 = v.nb_gs ?? 0.0",
     "v.nb_gs = math.lerp(v.nb_gs ?? 0.0, query.is_riding ? 0.0 : query.ground_speed, math.clamp(t.dt * 10.0, 0.0, 1.0))",
+    # speeding up / slowing down (m/s per second), smoothed
+    "v.nb_acc = math.lerp(v.nb_acc ?? 0.0, (v.nb_gs - t.gs0) / math.max(t.dt, 0.001), math.clamp(t.dt * 6.0, 0.0, 1.0))",
     "v.nb_spr = math.lerp(v.nb_spr ?? 0.0, query.is_sprinting ? 1.0 : 0.0, math.clamp(t.dt * 6.0, 0.0, 1.0))",
     # direction of travel against where the body faces
     "t.mx = query.position(0) - (v.nb_px ?? query.position(0))",
@@ -45,6 +49,10 @@ STATE = "!query.is_in_ui ? { " + "; ".join([
     "v.nb_pz = query.position(2)",
     "t.len = math.sqrt(t.mx * t.mx + t.mz * t.mz)",
     "t.yaw = query.body_y_rotation",
+    # turning on the spot (deg/s), smoothed
+    "t.dyaw = math.mod(t.yaw - (v.nb_by ?? t.yaw) + 540.0, 360.0) - 180.0",
+    "v.nb_by = t.yaw",
+    "v.nb_turn = math.lerp(v.nb_turn ?? 0.0, t.dyaw / math.max(t.dt, 0.001), math.clamp(t.dt * 8.0, 0.0, 1.0))",
     "t.f = t.len > 0.004 ? (-t.mx * math.sin(t.yaw) + t.mz * math.cos(t.yaw)) / t.len : (v.nb_fwd ?? 1.0)",
     "t.sd = t.len > 0.004 ? math.abs(t.mx * math.cos(t.yaw) + t.mz * math.sin(t.yaw)) / t.len : (v.nb_side ?? 0.0)",
     "v.nb_fwd = math.lerp(v.nb_fwd ?? 1.0, t.f, math.clamp(t.dt * 9.0, 0.0, 1.0))",
@@ -78,6 +86,14 @@ K = "math.clamp((v.nb_fwd ?? 1.0) * 2.5, -1.0, 1.0)"
 BACK = f"(math.clamp(-(v.nb_fwd ?? 1.0), 0.0, 1.0) * {W})"
 SIDE = f"((v.nb_side ?? 0.0) * {W})"
 CR = "(v.nb_c ?? 0.0)"
+LIFE_T = "query.life_time"
+CALM = "((query.is_riding || query.is_gliding || query.is_swimming || query.is_crawling || query.is_sleeping) ? 0.0 : 1.0)"
+# standing still on the ground (not crouched): the idle life and the turning steps
+IDLE = f"((1.0 - math.clamp((v.nb_gs ?? 0.0) / 1.2, 0.0, 1.0)) * {GROUNDED} * (1.0 - math.clamp({CR}, 0.0, 1.0)) * {CALM} * (query.is_in_ui ? 0.0 : 1.0))"
+TURNSTEP = f"({IDLE} * math.clamp((math.abs(v.nb_turn ?? 0.0) - 40.0) / 80.0, 0.0, 1.0))"
+# slow weight shift from one leg to the other (~8 s)
+SHIFTW = f"math.sin({LIFE_T} * 45.0)"
+ACCEL = f"(math.clamp((v.nb_acc ?? 0.0) * 1.1, -6.0, 6.0) * {GROUNDED} * {CALM} * (query.is_in_ui ? 0.0 : 1.0))"
 # rising quickly when standing up (spring velocity), for the stand-up accent
 RISE = "math.clamp(-(v.nb_cv ?? 0.0) / 6.0, 0.0, 1.0)"
 
@@ -131,6 +147,8 @@ def leg(side):
     rot_x = (
         f"{'-' if side > 0 else ''}{amp} * {S} * {K}"                     # stride
         f" - 28.0 * {CR}"                                                   # crouch: legs stay upright under the tilted body
+        f" + {TURNSTEP} * 12.0 * math.sin({LIFE_T} * 620.0 + {'0.0' if side > 0 else '180.0'})"   # small steps while turning on the spot
+        f" - {IDLE} * 3.0 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})"                    # the relaxed leg bends a little
         f" + {air_x}"
         f" + 10.0 * {L}"                                                    # landing: thighs slope back, feet stay forward
     )
@@ -141,7 +159,9 @@ def leg(side):
     rot_y = f"{side * -0.1} + {side * -10.0} * {L}"                         # toes turn out as the knees bend
     pos = [
         f"{side * 0.5} * {L}",
-        f"({lift} * (1.3 + 1.6 * (v.nb_spr ?? 0.0)) * {W}) + {air_y} + 0.8 * {L}",
+        f"({lift} * (1.3 + 1.6 * (v.nb_spr ?? 0.0)) * {W}) + {air_y} + 0.8 * {L}"
+        f" + {TURNSTEP} * 1.4 * math.max(0.0, math.sin({LIFE_T} * 620.0 + {'0.0' if side > 0 else '180.0'}))"
+        f" + {IDLE} * 0.6 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})",
         f"-{lift} * 1.0 * {K} * {W} + {air_fz} - 2.0 * {L}",
     ]
     return {"rotation": [rot_x, rot_y, rot_z], "position": pos}
@@ -174,13 +194,14 @@ def build():
     # the torso stays upright in the air (only a slight breath); the legs and arms tell the jump
     lean = inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0)")
     tip = "0.0"
-    waist_rx = f"{UI} * (7.0 * {SPR} - 3.5 * {BACK} - 4.0 * {RISE}) + {lean} + 12.0 * {L} - 3.0 * {REB}"
+    waist_rx = f"{UI} * (7.0 * {SPR} - 3.5 * {BACK} - 4.0 * {RISE}) + {lean} + 12.0 * {L} - 3.0 * {REB} + {ACCEL}"
     waist_ry = f"{UI} * 8.0 * {S} * {K} * {W}"
-    waist_rz = f"{UI} * 2.2 * {C} * {W} + {tip}"
+    waist_rz = f"{UI} * 2.2 * {C} * {W} + {tip} + {IDLE} * 1.6 * {SHIFTW}"
     waist_py = (f"-(0.9 + 0.7 * (v.nb_spr ?? 0.0)) * {S} * {S} * {W}"     # lowest when the feet are apart
                 f" - 4.0 * {L} + 0.8 * {REB}")
     waist_pz = f"1.0 * {L}"
-    head_x = f"1.0 * math.cos({PHASE} * 2.0) * {W} + 12.0 * {L} + " + inair(f"4.0 + 4.0 * {FLAIL}")
+    head_x = (f"1.0 * math.cos({PHASE} * 2.0) * {W} + 12.0 * {L} + 3.0 * {SPR} - 0.4 * {ACCEL} + "
+              + inair(f"4.0 + 4.0 * {FLAIL}"))
     anims = {
         # move.arms is the first of our animations each frame: it also updates the state
         "animation.player.move.arms": {

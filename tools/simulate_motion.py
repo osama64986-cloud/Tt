@@ -64,7 +64,10 @@ def simulate(plan=None):
     worst = 0.0
     t = 0.0
     while t < plan[-1][1]:
-        i, (t0, t1, fw, sd, spr, snk, jump, ledge) = segment(t, plan)
+        seg_i, seg = segment(t, plan)
+        i, (t0, t1, fw, sd, spr, snk, jump, ledge) = seg_i, seg[:8]
+        turn = seg[8] if len(seg) > 8 else 0.0
+        st["yaw"] = st.get("yaw", 0.0) + turn * dt
         if i != last_seg:
             if jump and st["y"] <= st["floor"] + 1e-6:
                 st["vy"] = 8.4
@@ -98,7 +101,7 @@ def simulate(plan=None):
         q = {
             "delta_time": dt, "ground_speed": hs, "is_sprinting": float(bool(spr)), "is_sneaking": float(bool(snk)),
             "position": (lambda a, s=dict(st): [s["x"], s["y"], s["z"]][int(a)]),
-            "body_y_rotation": 0.0, "is_on_ground": float(on_ground), "vertical_speed": st["vy"],
+            "body_y_rotation": st.get("yaw", 0.0), "is_on_ground": float(on_ground), "vertical_speed": st["vy"],
             "is_in_water": 0.0, "is_riding": 0.0, "is_gliding": 0.0, "is_sleeping": 0.0, "is_swimming": 0.0,
             "is_crawling": 0.0, "is_in_ui": 0.0, "modified_distance_moved": st["dist"], "life_time": st["life"],
             "target_x_rotation": 0.0, "is_first_person": 0.0, "is_local_player": 0.0,

@@ -339,10 +339,6 @@ def main():
                         for f in sorted(fs):
                             z.write(os.path.join(d, f), os.path.join(prefix, os.path.relpath(os.path.join(d, f), root_dir)))
             print("wrote", bz, "and", az)
-        # Nazra: the stand-alone shoulder view pack (separate from Nabd)
-        import subprocess
-        subprocess.run([sys.executable, os.path.join(ROOT, "tools", "make_shoulder_pack.py")],
-                       env=dict(os.environ, NABD_BUILD=str(build_number())), check=True)
 
 
 if __name__ == "__main__":
