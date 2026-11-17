@@ -33,8 +33,11 @@ SNEAK = "((query.is_sneaking && !query.is_in_water) ? 1.0 : 0.0)"
 _MX, _MZ, _YAW = "query.movement_direction(0)", "query.movement_direction(2)", "query.body_y_rotation"
 FWD = f"(-{_MX} * math.sin({_YAW}) + {_MZ} * math.cos({_YAW}))"
 SIDEWAYS = f"math.abs({_MX} * math.cos({_YAW}) + {_MZ} * math.sin({_YAW}))"
-K = f"math.clamp({FWD} * 2.5, -1.0, 1.0)"
-BACK = f"(math.clamp(-{FWD} * 1.5, 0.0, 1.0) * {W})"
+# if the game reports no direction (or it is tiny), walk forwards
+K = f"(math.abs({FWD}) < 0.2 ? 1.0 : math.clamp({FWD} * 2.5, -1.0, 1.0))"
+BACKW = f"math.clamp(-{FWD} * 1.5, 0.0, 1.0)"
+BACK = f"({BACKW} * {W})"
+RISING = f"math.clamp(query.vertical_speed / 4.0, 0.0, 1.0)"
 SIDE = f"(math.clamp({SIDEWAYS} * 1.4, 0.0, 1.0) * {W})"
 
 # ------------------------------------------------------------------ in the air
@@ -62,7 +65,7 @@ def leg(side):
     ph = "0.0" if side > 0 else "180.0"
     lift = f"math.max(0.0, {sw}{C})"            # this leg is in its swing phase
     lead = "1.0" if side < 0 else "0.0"         # the right knee leads in the air
-    amp = f"((24.0 + 16.0 * {SPRINTING}) * (1.0 - 0.12 * math.clamp(-{FWD}, 0.0, 1.0)) * (1.0 + 1.1 * {SNEAK}) * {W})"
+    amp = f"((24.0 + 16.0 * {SPRINTING}) * (1.0 - 0.2 * {BACKW}) * (1.0 + 1.1 * {SNEAK}) * {W})"
     back = "34.0" if side > 0 else "28.0"
     air_x = inair(f"({lead} * 7.0 + (1.0 - {lead}) * 5.0) - 2.0 * {BREATH} + {FWD} * {back} * {MV}"
                   f" - 6.0 * {FALLING} * (1.0 - {MV})"
@@ -80,7 +83,7 @@ def leg(side):
              f" + {side * -1.0} * {air_z}")
     pos = [
         0.0,
-        f"({lift} * (1.3 + 1.6 * {SPRINTING}) * {W}) + {air_y}"
+        f"({lift} * (1.3 + 2.2 * {SPRINTING}) * (1.0 - 0.4 * {BACKW}) * {W}) + {air_y}"
         f" + {TURNSTEP} * 1.4 * math.max(0.0, math.sin({LIFE} * 620.0 + {ph}))"
         f" + {IDLE} * 0.6 * math.max(0.0, {'' if side > 0 else '-'}{SHIFTW})",
         f"-{lift} * 1.0 * {K} * {W} + {air_fz}",
@@ -91,18 +94,21 @@ def leg(side):
 def arm(side):
     """side: +1 left arm, -1 right arm"""
     ph = "0.0" if side > 0 else "180.0"
-    amp = f"((20.0 + 30.0 * {SPRINTING}) * (1.0 - 0.35 * math.clamp(-{FWD}, 0.0, 1.0)) * {W})"
+    amp = f"((20.0 + 30.0 * {SPRINTING}) * (1.0 - 0.4 * {BACKW}) * {W})"
     swing = f"math.sin({PHASE} + 12.0)"
-    air_x = inair(f"-2.0 * {BREATH} + {FWD} * 18.0 * {MV} - 18.0 * {FALLING}"
+    air_x = inair(f"-2.0 * {BREATH} + {FWD} * 18.0 * {MV} - 18.0 * {FALLING} - 22.0 * {RISING} * (1.0 - 0.5 * {MV})"
                   f" - {FLAIL} * (40.0 + 30.0 * math.sin({LIFE} * 380.0 + {ph}))")
     air_out = inair(f"7.0 + 14.0 * {FALLING} + {FLAIL} * (30.0 + 10.0 * math.sin({LIFE} * 500.0 + {ph}))")
     rot_x = (
         f"{'' if side > 0 else '-'}{amp} * {swing} * {K}"   # opposite to the leg on this side
         f" - 12.0 * {SPR}"                                  # running: arms carried higher
         f" - 12.0 * {SNEAK} * {CALM}"                       # crouched: hands low and ready
+        f" + 2.0 * {SNEAK} * {CALM} * math.sin({LIFE} * 110.0 + {ph})"   # a little sway while crouched
         f" + {air_x}"
     )
-    out = f"(2.0 + 2.0 * {SPR} + {air_out} + 4.0 * {SNEAK} * {CALM})"
+    # the arm swinging forward comes in towards the body a little
+    inward = f"math.max(0.0, {'-' if side > 0 else ''}{swing} * {K}) * 4.0 * {W}"
+    out = f"(2.0 + 2.0 * {SPR} + {air_out} + 4.0 * {SNEAK} * {CALM} - {inward})"
     rot_z = f"{'-' if side > 0 else ''}{out}"
     rot_y = f"{'' if side > 0 else '-'}math.sin({PHASE}) * 5.0 * {W}"
     return {"rotation": [rot_x, rot_y, rot_z]}
@@ -116,10 +122,11 @@ CRE = f"({CR} * {CR} * (3.0 - 2.0 * {CR}))"
 def build():
     waist_rx = (f"{UI} * (7.0 * {SPR} - 3.5 * {BACK})"
                 + " + " + inair(f"2.0 * math.cos({LIFE} * 245.0 - 90.0) + 3.0 * {FALLING}"))
-    waist_ry = f"{UI} * 8.0 * {S} * {K} * {W}"
-    waist_rz = f"{UI} * 2.2 * {C} * {W} + {IDLE} * 1.6 * {SHIFTW}"
+    waist_ry = f"{UI} * (8.0 + 5.0 * {SPRINTING}) * {S} * {K} * {W}"
+    waist_rz = f"{UI} * (2.2 * {C} + 2.0 * {S} * {SIDE}) * {W} + {IDLE} * 1.6 * {SHIFTW}"
     waist_py = f"-(0.9 + 0.7 * {SPRINTING}) * {S} * {S} * {W}"     # lowest when the feet are apart
-    head_x = f"1.0 * math.cos({PHASE} * 2.0) * {W} + 3.0 * {SPR} + " + inair(f"4.0 + 6.0 * {FALLING}")
+    head_x = (f"1.0 * math.cos({PHASE} * 2.0) * {W} + 3.0 * {SPR} + 2.0 * {BACK} + "
+              + inair(f"4.0 + 10.0 * {FALLING} - 4.0 * {RISING}"))
     return {
         "animation.player.move.arms": {
             "loop": True,
@@ -132,7 +139,9 @@ def build():
                 "rightleg": leg(-1),
                 "waist": {"rotation": [waist_rx, waist_ry, waist_rz], "position": [0.0, waist_py, 0.0]},
                 # head stays steady while the torso twists
-                "head": {"rotation": [head_x, f"-5.0 * {S} * {K} * {W}", 0.0]},
+                "head": {"rotation": [head_x, f"-5.0 * {S} * {K} * {W}", f"-1.5 * {C} * {W}"]},
+                # breathing: the chest and shoulders lift a touch
+                "body": {"position": [0.0, f"0.18 * math.sin({LIFE} * 140.0) * (1.0 - {W}) * {UI}", 0.0]},
             },
         },
         # crouch: the whole figure tilts forward from the feet with the hips set back (the
