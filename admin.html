@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://eqcexrzutbqaubzyelce.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex, nofollow">
   <title>لوحة التحكم</title>
@@ -113,6 +113,27 @@
         <p class="muted">🔒 بس تعليقك أنت (صاحب المستودع) يشتغل. وأي تعديل يسويه الشخص على رأيه بعد موافقتك ما يتغير بالموقع.</p>
       </details>
       <div id="jobs"></div>
+      <section class="panel mod-panel" id="modPanel">
+        <div class="mod-head">
+          <h3>💬 آراء الزوار <span class="badge" id="pendingCount" hidden></span></h3>
+          <div class="mod-tabs">
+            <button class="mc-btn" type="button" data-mtab="pending">⏳ تنتظر موافقتك</button>
+            <button class="mc-btn" type="button" data-mtab="approved">✅ المنشورة</button>
+            <button class="mc-btn" type="button" id="modRefresh" title="تحديث">⟳</button>
+          </div>
+        </div>
+        <div id="modSetup" hidden>
+          <p>حتى تقدر توافق على الآراء، فعّل «مفتاح المراجعة» مرة وحدة:</p>
+          <button class="mc-btn mc-btn-gold" type="button" id="modGen">🔑 سوّ مفتاح المراجعة</button>
+          <div id="modCodeBox" hidden>
+            <p>✔ انحفظ المفتاح بهذا الجهاز. هسه دز <b>كود التفعيل</b> هذا لـ Claude حتى يفعّله (الكود آمن، ما يقدر أحد يستخدمه):</p>
+            <code id="modCode" dir="ltr" class="mod-code"></code>
+            <button class="mc-btn" type="button" id="modCopy">📋 انسخ الكود</button>
+          </div>
+        </div>
+        <p class="muted" id="modMsg"></p>
+        <ul class="mod-list" id="modList"></ul>
+      </section>
       <div id="itemList" class="item-list"></div>
     </section>
   </main>
@@ -225,6 +246,7 @@
   </dialog>
 
   <script src="assets/common.js"></script>
+  <script src="assets/comments.js"></script>
   <script src="assets/admin.js"></script>
 </body>
 </html>

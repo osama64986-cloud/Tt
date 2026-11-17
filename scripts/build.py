@@ -32,7 +32,7 @@ TYPES = {
 EDITIONS = {"java": "Java", "bedrock": "Bedrock"}
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
-       "font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://api.github.com; "
+       "font-src 'self'; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://eqcexrzutbqaubzyelce.supabase.co; "
        "frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'")
 
 
@@ -309,7 +309,7 @@ def item_page(m, site, base, stats, feedback=()):
         {f'<h2 class="h4">عن هذا العمل</h2><div class="details-text">{details}</div>' if details else ''}
         {('<h2 class="h4">صور</h2><div class="gallery">' + ''.join(f'<a class="shot" href="{e(rel(s))}" target="_blank" rel="noopener"><img src="{e(rel(s))}" alt="{e(name)} صورة {i}" loading="lazy"></a>' for i, s in enumerate(shots, 1)) + '</div>') if shots else ''}
         {f'<h2 class="h4">فيديو</h2><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/{video}" title="فيديو {e(name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' if video else ''}
-        {feedback_html(m, site, feedback)}
+        <div id="comments" data-mod="{e(m['id'])}">{feedback_html(m, site, feedback)}</div>
         <h2 class="h4">معلومات</h2>
         <table class="info-table">{''.join(f'<tr><td>{e(k)}</td><td>{e(v)}</td></tr>' for k, v in rows if v)}</table>
         {('<div class="meta tags">' + ''.join(f'<span class="chip">{e(x)}</span>' for x in m.get('tags') or []) + '</div>') if m.get('tags') else ''}
@@ -328,6 +328,7 @@ def item_page(m, site, base, stats, feedback=()):
     <p>{e(site_name)} — موقع غير رسمي، غير تابع لـ Mojang أو Microsoft.</p>
   </footer>
   <script src="../../assets/common.js"></script>
+  <script src="../../assets/comments.js"></script>
   <script src="../../assets/item.js"></script>
 </body>
 </html>

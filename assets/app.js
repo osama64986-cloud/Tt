@@ -268,7 +268,7 @@
         ${shots.length ? `<h4>صور</h4><div class="gallery">${shots.map((s, i) =>
           `<button type="button" class="shot" data-src="${esc(s)}" aria-label="صورة ${i + 1}"><img src="${esc(s)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
         ${video ? `<h4>فيديو</h4><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${video}" title="فيديو ${esc(m.name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ""}
-        ${MC.feedbackHtml(state.site, m, state.feedback)}
+        <div class="c-mount"></div>
         <h4>معلومات</h4>
         <table class="info-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
         ${(m.tags || []).length ? `<div class="meta tags">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
@@ -281,6 +281,7 @@
         </div>
       </div>`;
     paintColors($("#modalBody"));
+    MC.comments?.mount($("#modalBody .c-mount"), m.id, state.feedback);
 
     $("#modalBody").querySelectorAll(".shot").forEach((b) => b.addEventListener("click", () => {
       const thumb = $("#modalBody .thumb");

@@ -329,6 +329,7 @@
   async function showDash() {
     show("dashView");
     $("#whoami").textContent = auth.login || "";
+    loadMod();
     $("#feedbackLink").href = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/.test(auth.repo)
       ? `https://github.com/${auth.repo}/issues?q=${encodeURIComponent("is:issue is:open label:feedback")}` : "#";
     $("#tokenInput").value = "";
@@ -686,6 +687,87 @@
       if (busy) return alert("فيه عملية نشر شغّالة، انتظرها تخلص.");
       const typed = prompt(`راح ينحذف "${m.name}" مع ملفاته وصوره نهائياً.\nللتأكيد اكتب المعرّف: ${m.id}`);
       if (typed === m.id) publish({ action: "delete", id: m.id }, [], `حذف: ${m.name}`);
+    }
+  });
+
+  /* ---------- Visitor comments (moderation) ---------- */
+  // The moderation key lives only in this browser. The database stores only its SHA-256
+  // ("activation code"), which Claude adds once; the code alone cannot moderate anything.
+  const MODKEY = "mc.modkey";
+  let modTab = "pending";
+  const readModKey = () => { try { const k = localStorage.getItem(MODKEY) || ""; return /^[A-Za-z0-9_-]{43}$/.test(k) ? k : ""; } catch { return ""; } };
+  async function sha256hex(text) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  async function showModCode(key) {
+    $("#modSetup").hidden = false;
+    $("#modGen").hidden = true;
+    $("#modCodeBox").hidden = false;
+    $("#modCode").textContent = await sha256hex(key);
+  }
+  $("#modGen").addEventListener("click", async () => {
+    if (readModKey() && !confirm("عندك مفتاح من قبل. تسوي واحد جديد؟ (القديم يبطل بعد ما يتفعّل الجديد)")) return;
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const key = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    try { localStorage.setItem(MODKEY, key); } catch { $("#modMsg").textContent = "ما قدرنا نحفظ المفتاح بهذا المتصفح."; return; }
+    await showModCode(key);
+  });
+  $("#modCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("#modCode").textContent); $("#modCopy").textContent = "✔ انسخ"; } catch { /* select manually */ }
+  });
+  document.querySelectorAll("[data-mtab]").forEach((b) => b.addEventListener("click", () => { modTab = b.dataset.mtab; loadMod(); }));
+  $("#modRefresh").addEventListener("click", () => loadMod());
+
+  async function loadMod() {
+    const key = readModKey();
+    const msg = $("#modMsg"), list = $("#modList");
+    document.querySelectorAll("[data-mtab]").forEach((b) => b.classList.toggle("active", b.dataset.mtab === modTab));
+    list.replaceChildren();
+    if (!key) { $("#modSetup").hidden = false; $("#modGen").hidden = false; $("#modCodeBox").hidden = true; msg.textContent = ""; return; }
+    $("#modSetup").hidden = true;
+    msg.textContent = "جاري التحميل…";
+    let rows;
+    try {
+      rows = await MC.comments.rpc("mod_list", { p_key: key, p_status: modTab });
+    } catch (e) {
+      if (/^(401|403)$/.test(e.message)) { msg.textContent = "المفتاح لسا ما تفعّل. دز هذا الكود لـ Claude:"; await showModCode(key); }
+      else msg.textContent = "ما قدرنا نتصل بقاعدة الآراء هسه. جرّب بعد شوية.";
+      return;
+    }
+    rows = Array.isArray(rows) ? rows : [];
+    if (modTab === "pending") {
+      $("#pendingCount").hidden = !rows.length;
+      $("#pendingCount").textContent = String(rows.length);
+    }
+    msg.textContent = rows.length ? "" : (modTab === "pending" ? "ما فيه آراء جديدة 👌" : "ما فيه آراء منشورة بعد.");
+    const K = MC.comments.KINDS, D = MC.comments.DEVICES;
+    list.innerHTML = rows.map((r) => {
+      const kind = Object.hasOwn(K, r.kind) ? K[r.kind] : ["❔", "?"];
+      const mod = data.mods.find((m) => m.id === r.mod_id);
+      return `<li class="mod-item" data-id="${Number.isSafeInteger(r.id) ? r.id : 0}">
+        <div class="sub">${kind[0]} ${esc(kind[1])} · ${esc(mod ? mod.name : r.mod_id)} · ${esc(r.nickname || "لاعب")}${Object.hasOwn(D, r.device) ? ` · ${esc(D[r.device])}` : ""} · ${esc(String(r.created_at || "").slice(0, 16).replace("T", " "))}</div>
+        <p>${esc(r.body)}</p>
+        <div class="btns">
+          ${r.status === "pending" ? `<button class="mc-btn mc-btn-green" data-mact="approve">✅ انشر</button>` : ""}
+          <button class="mc-btn mc-btn-red" data-mact="delete">🗑 احذف</button>
+        </div></li>`;
+    }).join("");
+  }
+  $("#modList").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-mact]");
+    if (!b) return;
+    const id = Number(b.closest(".mod-item").dataset.id);
+    if (!Number.isSafeInteger(id) || id < 1) return;
+    if (b.dataset.mact === "delete" && !confirm("تحذف هذا الرأي نهائياً؟")) return;
+    b.disabled = true;
+    try {
+      await MC.comments.rpc("mod_set", { p_key: readModKey(), p_id: id, p_action: b.dataset.mact });
+      b.closest(".mod-item").remove();
+      if (!$("#modList").children.length) loadMod();
+    } catch {
+      b.disabled = false;
+      alert("ما زبط. جرّب مرة ثانية.");
     }
   });
 

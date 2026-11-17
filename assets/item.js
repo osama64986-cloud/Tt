@@ -21,6 +21,13 @@
       g.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.tab; });
     });
   }
+  // Visitor comments (approved ones + the form to write a new one)
+  const c = $("#comments");
+  if (c && MC.comments) {
+    fetch("../../feedback.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      .then((j) => MC.comments.mount(c, c.dataset.mod, MC.cleanFeedback(j, new Set([c.dataset.mod]))));
+  }
   $("#dlBtn")?.addEventListener("click", () => {
     $("#dlStarted").hidden = false;
     g?.classList.add("flash");

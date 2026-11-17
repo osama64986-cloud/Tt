@@ -113,3 +113,18 @@ details.more summary { cursor: pointer; font-weight: 800; color: var(--gold); ma
 .dash-counts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .dash-counts .chip { font-size: .85rem; }
 .dropzone:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Visitor comment moderation */
+.mod-panel { margin-bottom: 16px; }
+.mod-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mod-head h3 { margin: 0; }
+.mod-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.mod-tabs .mc-btn { padding: 4px 12px; font-size: .9rem; }
+.mod-tabs .mc-btn.active { background: var(--green); }
+.mod-code { display: block; word-break: break-all; background: #000; padding: 8px; margin: 6px 0; user-select: all; }
+.mod-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.mod-item { background: #1f1f1f; border: 2px solid #000; padding: 10px 12px; }
+.mod-item p { margin: 4px 0 8px; white-space: pre-line; overflow-wrap: anywhere; }
+.mod-item .sub { color: var(--muted); font-size: .85rem; }
+.mod-item .btns { display: flex; gap: 6px; }
+.mod-item .btns .mc-btn { padding: 4px 12px; font-size: .9rem; }

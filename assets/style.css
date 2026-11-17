@@ -481,3 +481,23 @@ a.social:hover { filter: brightness(1.15); }
 .fb-idea { border-inline-start-color: #2e86c1; }
 
 .avatar-img { background: #000; object-fit: cover; image-rendering: pixelated; }
+
+/* ---------- On-site comment form ---------- */
+.cform { margin-top: 14px; display: grid; gap: 8px; }
+.cform h5 { margin: 4px 0 0; font-size: 1rem; }
+.kind-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.kind-pick label { cursor: pointer; }
+.kind-pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.kind-pick span { display: inline-block; padding: 6px 12px; font-weight: 800; background: var(--panel-2); border: 3px solid #000; }
+.kind-pick input:checked + span { background: var(--green); color: #fff; }
+.kind-pick input:focus-visible + span { outline: 3px solid var(--gold); }
+.cform textarea, .cform input:not([type=radio]), .cform select {
+  font: inherit; font-size: 1rem; width: 100%; padding: 9px 12px; background: #000; color: #fff; border: 3px solid #8a8a8a;
+}
+.cform textarea:focus, .cform input:focus, .cform select:focus { border-color: var(--gold); outline: none; }
+.c-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cform .hp { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; opacity: 0; }
+.cform button { justify-self: start; }
+.c-msg { min-height: 1.2em; margin: 0; font-weight: 700; color: #ff9b9b; }
+.c-msg.ok { color: #7CFC00; }
+@media (max-width: 500px) { .c-row { grid-template-columns: 1fr; } }
