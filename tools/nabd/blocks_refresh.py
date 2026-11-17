@@ -224,11 +224,40 @@ def stone_set(out, variations):
     variations["flattened_stone"] = ["stone", "nabd/stone_v1", "nabd/stone_v2"]
 
 
+def slate(name, base, *, count=9, stretch=0.42, contrast=0.55, top=False):
+    """Deepslate: stacked slate plates.  Plates are long and upright on the side
+    (short and squarish on the top), each with a lit upper edge, a dark seam
+    below it and a fine grain running along it."""
+    r = rng_of(name)
+    ramp = make_ramp(base, 7, contrast, sat=1.15)
+    pts = np.stack([r.random(count) * N, r.random(count) * N], 1)
+    dx = np.abs(xx[..., None] + 0.5 - pts[:, 0])
+    dy = np.abs(yy[..., None] + 0.5 - pts[:, 1])
+    dx = np.minimum(dx, N - dx)
+    dy = np.minimum(dy, N - dy)
+    sy = 1.0 if top else stretch                      # squash the vertical distance: tall plates
+    d = np.hypot(dx, dy * sy)
+    order = np.argsort(d, axis=-1)
+    ids = order[..., 0]
+    ds = np.sort(d, axis=-1)
+    edge = ds[..., 1] - ds[..., 0]
+    off = r.choice([-1, 0, 0, 1], size=count)
+    grain = fbm(r, ((2, 0.5), (8, 1.0)), sx=1, sy=1 if top else 6)
+    idx = 3 + off[ids] + (grain > 0.68) - (grain < 0.25)
+    seam = cell_edges(ids)
+    lit = ((ids != np.roll(ids, 1, 0)) | (ids != np.roll(ids, 1, 1))) & ~seam
+    idx[lit & (edge > 0.4)] += 2
+    idx[seam] = 0
+    idx = dots(r, idx, 4, +2)
+    hgt = np.clip(edge / 2.5, 0, 1) * 0.7 + 0.1
+    hgt[seam] = 0.05
+    return Tex(paint_idx(idx, ramp), hgt, rough=190, bump=1.1)
+
+
 def deepslate_set(out):
-    b = shift(vbase("deepslate/deepslate"), dv=0.05)
-    out["deepslate/deepslate"] = natural("deepslate", b, streak=0.85, spread=0.75, cracks=2, light=(5, 1), dark=(4, 1),
-                                         contrast=0.40)
-    out["deepslate/deepslate_top"] = facets("deepslate_top", b, count=8, keep=0.7, cracks=1, light=(4, 1), contrast=0.40)
+    b = shift(vbase("deepslate/deepslate"), dv=-0.07, ds=0.03)       # darker than before
+    out["deepslate/deepslate"] = slate("deepslate", b)
+    out["deepslate/deepslate_top"] = slate("deepslate_top", b, count=7, top=True)
 
 
 def build(out, flip, variations):
@@ -256,7 +285,7 @@ def build(out, flip, variations):
     out["stone_diorite_smooth"] = polished("diorite_smooth", shift(vbase("stone_diorite_smooth"), dv=0.02))
     out["stone_andesite_smooth"] = polished("andesite_smooth", shift(vbase("stone_andesite_smooth"), dv=0.04))
     out["polished_tuff"] = polished("polished_tuff", shift(vbase("polished_tuff"), dv=0.04), frame=2)
-    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/polished_deepslate"), dv=0.05), contrast=0.32)
+    out["deepslate/polished_deepslate"] = polished("polished_deepslate", shift(vbase("deepslate/deepslate"), dv=0.06, ds=0.03), contrast=0.36)
     out["stone_slab_top"] = polished("smooth_stone_top", shift(vbase("stone_slab_top"), dv=0.04), frame=2)
     out["stone_slab_side"] = polished("smooth_stone_side", shift(vbase("stone_slab_side"), dv=0.04), panels=2)
     # dyed families

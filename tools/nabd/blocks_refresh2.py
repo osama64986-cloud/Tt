@@ -24,14 +24,34 @@ PIECES = {
     "gold":     [shape([".##", "###", "##."]), shape(["##", "##"]), shape(["#.", "##"])],
     "redstone": [shape(["#.#", "...", ".#."]), shape(["#", ".", "#"]), shape(["#.", ".#"])],
     "lapis":    [shape(["#..", ".##", "..#"]), shape(["##.", ".##"]), shape([".#", "#."])],
-    "diamond":  [shape([".#.", "###", ".#."]), shape([".##.", "####", ".##."]), shape(["#"])],
-    "emerald":  [shape([".#.", "###", "###", ".#."]), shape([".#.", "###", ".#."]), shape(["#"])],
+    "diamond":  [shape(["..#..", ".###.", "#####", ".###.", "..#.."]), shape([".#.", "###", ".#."])],
+    "emerald":  [shape([".#.", "###", "###", "###", ".#."]), shape([".##.", "####", "####", ".##."])],
 }
 VEINS = {"coal": 5, "iron": 5, "copper": 5, "gold": 5, "redstone": 6, "lapis": 6, "diamond": 4, "emerald": 4}
 
 
+# diamond and emerald: a few big gems spread evenly over the face (one in each
+# part of the block, never touching), instead of many small ones
+SPREAD = {
+    "diamond": [((1, 1), 0), ((9, 3), 0), ((3, 9), 0), ((11, 11), 1)],
+    "emerald": [((2, 1), 0), ((10, 4), 1), ((4, 9), 1), ((11, 10), 0)],
+}
+
+
+def spread_layout(ore):
+    r = rng_of("ore3:" + ore)
+    clusters = []
+    for (x0, y0), k in SPREAD[ore]:
+        x0 += int(r.integers(0, 2))
+        y0 += int(r.integers(0, 2))
+        clusters.append([((x0 + x) % N, (y0 + y) % N) for x, y in PIECES[ore][k]])
+    return clusters
+
+
 def layout(ore):
     """Veins spread over the face (wrapping), each 1-3 pieces close together."""
+    if ore in SPREAD:
+        return spread_layout(ore)
     r = rng_of("ore2:" + ore)
     pieces = PIECES[ore]
     taken = np.zeros((N, N), bool)
@@ -237,7 +257,16 @@ def suspicious(out):
             out[f"suspicious_{kind}_{stage}"] = t
 
 
+def darker_deepslate_family(out):
+    """the whole deepslate family follows the darker deepslate"""
+    for k in list(out):
+        if k.startswith("deepslate/") and "_ore" not in k and k not in ("deepslate/deepslate", "deepslate/deepslate_top"):
+            t = out[k]
+            t.rgb = (t.rgb.astype(float) * 0.84).astype(np.uint8)
+
+
 def build(out, flip, variations):
+    darker_deepslate_family(out)
     ores(out, flip)
     # cobblestone: rounded stones, three slightly different greys, clean gaps
     cb = shift(vbase("cobblestone"), dv=0.06)
