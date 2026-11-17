@@ -37,6 +37,11 @@ GROUND = f"(1.0 - {AIR})"
 # ---------------------------------------------------------------- attack helpers
 SWORDS = ", ".join(f"'minecraft:{m}_sword'" for m in ("wooden", "stone", "iron", "golden", "diamond", "netherite", "copper"))
 SW = f"(query.is_item_name_any('slot.weapon.mainhand', {SWORDS}) ? 1.0 : 0.0)"
+_MATS = ("wooden", "stone", "iron", "golden", "diamond", "netherite", "copper")
+AXES = ", ".join(f"'minecraft:{m}_axe'" for m in _MATS)
+TOOLS = ", ".join(f"'minecraft:{m}_{t}'" for m in _MATS for t in ("pickaxe", "shovel", "hoe"))
+AX = f"(query.is_item_name_any('slot.weapon.mainhand', {AXES}) ? 1.0 : 0.0)"
+TL = f"(query.is_item_name_any('slot.weapon.mainhand', {TOOLS}) ? 1.0 : 0.0)"
 P_ = "variable.attack_time"
 
 
@@ -101,8 +106,12 @@ def jab(peak):
     return f"math.lerp(math.lerp(0.0, {peak}, {J1}), 0.0, {J2})"
 
 
-def pick(sword, punch):
-    return f"({SW} * {sword} + (1.0 - {SW}) * {punch})"
+def pick(sword, punch, axe=None, tool=None):
+    """sword / axe / pickaxe-shovel-hoe / anything else (punch)"""
+    axe = sword if axe is None else axe
+    tool = sword if tool is None else tool
+    return (f"({SW} * {sword} + {AX} * {axe} + {TL} * {tool}"
+            f" + (1.0 - {SW} - {AX} - {TL}) * {punch})")
 
 
 anims = {
@@ -127,15 +136,21 @@ anims = {
     "animation.player.attack.rotations": {
         "loop": True,
         "bones": {
-            "body": {"rotation": [pick(keys("0.0", "6.0", "3.0"), "0.0"), pick(keys("22.0", "-24.0", "-30.0"), jab("-10.0")), 0.0]},
+            # sword: wind-up high and back, diagonal slash across the body
+            # axe: raised high behind the head, a heavy downward chop with a forward lean
+            # pickaxe / shovel / hoe: a shorter diagonal digging strike
+            "body": {"rotation": [
+                pick(keys("0.0", "6.0", "3.0"), "0.0", keys("-6.0", "14.0", "8.0"), keys("0.0", "5.0", "3.0")),
+                pick(keys("22.0", "-24.0", "-30.0"), jab("-10.0"), keys("5.0", "-6.0", "-4.0"), keys("12.0", "-12.0", "-14.0")),
+                0.0]},
             "rightarm": {"rotation": [
-                pick(keys("-155.0", "-50.0", "-22.0"), jab("-85.0")),
-                pick(keys("5.0", "-55.0", "-65.0"), jab("10.0")),
-                pick(keys("42.0", "2.0", "-5.0"), jab("0.0"))]},
-            # the blade itself turns in the fist: back over the shoulder, then down through the cut
-            "rightitem": {"rotation": [pick(keys("-45.0", "55.0", "62.0"), "0.0"), 0.0, 0.0]},
-            "leftarm": {"rotation": [pick(keys("-18.0", "12.0", "8.0"), jab("12.0")), 0.0,
-                                     pick(keys("-12.0", "-6.0", "-4.0"), jab("-4.0"))]},
+                pick(keys("-155.0", "-50.0", "-22.0"), jab("-85.0"), keys("-175.0", "-40.0", "-15.0"), keys("-120.0", "-45.0", "-30.0")),
+                pick(keys("5.0", "-55.0", "-65.0"), jab("10.0"), keys("0.0", "-10.0", "-15.0"), keys("10.0", "-20.0", "-25.0")),
+                pick(keys("42.0", "2.0", "-5.0"), jab("0.0"), keys("10.0", "0.0", "-4.0"), keys("25.0", "0.0", "-3.0"))]},
+            # the item turns in the fist: back over the shoulder, then down through the strike
+            "rightitem": {"rotation": [pick(keys("-45.0", "55.0", "62.0"), "0.0", keys("-30.0", "40.0", "50.0"), keys("-20.0", "35.0", "40.0")), 0.0, 0.0]},
+            "leftarm": {"rotation": [pick(keys("-18.0", "12.0", "8.0"), jab("12.0"), keys("-20.0", "10.0", "5.0"), keys("-14.0", "10.0", "6.0")), 0.0,
+                                     pick(keys("-12.0", "-6.0", "-4.0"), jab("-4.0"), keys("-8.0", "-4.0", "-2.0"), keys("-10.0", "-5.0", "-3.0"))]},
         },
     },
     # --------------------------------------------------------------- swimming
@@ -177,13 +192,13 @@ anims = {
         "bones": {
             "rightarm": {
                 "position": [
-                    pick(keys("2.0", "-6.0", "-7.0"), jab("-3.0")),
-                    pick(keys("4.0", "-5.0", "-4.0"), jab("-2.0")) + " + variable.short_arm_offset_right",
-                    pick(keys("-2.0", "3.0", "2.0"), jab("4.0"))],
+                    pick(keys("2.0", "-6.0", "-7.0"), jab("-3.0"), keys("1.0", "0.0", "0.0"), keys("2.0", "-2.0", "-2.0")),
+                    pick(keys("4.0", "-5.0", "-4.0"), jab("-2.0"), keys("6.0", "-7.0", "-5.0"), keys("3.0", "-5.0", "-4.0")) + " + variable.short_arm_offset_right",
+                    pick(keys("-2.0", "3.0", "2.0"), jab("4.0"), keys("-1.0", "-6.0", "-4.0"), keys("-1.0", "-5.0", "-4.0"))],
                 "rotation": [
-                    pick(keys("-20.0", "30.0", "20.0"), jab("-30.0")),
-                    pick(keys("15.0", "-30.0", "-35.0"), jab("10.0")),
-                    pick(keys("-12.0", "25.0", "28.0"), jab("8.0"))]},
+                    pick(keys("-20.0", "30.0", "20.0"), jab("-30.0"), keys("-35.0", "40.0", "30.0"), keys("-25.0", "30.0", "22.0")),
+                    pick(keys("15.0", "-30.0", "-35.0"), jab("10.0"), keys("5.0", "-5.0", "-8.0"), keys("10.0", "-20.0", "-22.0")),
+                    pick(keys("-12.0", "25.0", "28.0"), jab("8.0"), keys("0.0", "5.0", "5.0"), keys("-8.0", "15.0", "15.0"))]},
         },
     },
     "animation.player.first_person.walk": {

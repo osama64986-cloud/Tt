@@ -24,7 +24,8 @@ def ev(expr, env):
             ctx["q"][k[6:]] = val
         elif k.startswith("variable."):
             ctx["v"].setdefault(k[9:], val)
-    ctx["q"]["is_item_name_any"] = lambda *a: float(env.get("_sword", 0))
+    item = env.get("_item") or ("minecraft:iron_sword" if env.get("_sword") else "minecraft:dirt")
+    ctx["q"]["is_item_name_any"] = lambda slot, *names: float(item in names)
     ctx["q"]["position"] = lambda i: 0.0
     return molang.run(expr, ctx)
 
@@ -48,6 +49,10 @@ STATES = {
     "sword strike 48%": {"variable.attack_time": 0.48, "_sword": 1},
     "sword follow 62%": {"variable.attack_time": 0.62, "_sword": 1},
     "sword recover 80%": {"variable.attack_time": 0.8, "_sword": 1},
+    "axe wind-up 25%": {"variable.attack_time": 0.25, "_item": "minecraft:iron_axe"},
+    "axe chop 48%": {"variable.attack_time": 0.48, "_item": "minecraft:iron_axe"},
+    "pickaxe wind-up 25%": {"variable.attack_time": 0.25, "_item": "minecraft:diamond_pickaxe"},
+    "pickaxe strike 48%": {"variable.attack_time": 0.48, "_item": "minecraft:diamond_pickaxe"},
     "sneaking walk": {"variable.tcos0": 30},
     "swimming": {"query.is_swimming": 1, "query.is_in_water": 1, "query.is_on_ground": 0, "variable.tcos0": 30},
 }

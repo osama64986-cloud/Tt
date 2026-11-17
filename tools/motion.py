@@ -73,13 +73,15 @@ STATE = "!query.is_in_ui ? { " + "; ".join([
     "t.ct = (query.is_sneaking && !query.is_in_water && !query.is_swimming && !query.is_riding && !query.is_gliding && !query.is_sleeping && !query.is_crawling && !query.is_in_ui) ? 1.0 : 0.0",
     "v.nb_cv = (v.nb_cv ?? 0.0) + (190.0 * (t.ct - (v.nb_c ?? 0.0)) - 17.0 * (v.nb_cv ?? 0.0)) * t.dt",
     "v.nb_c = math.clamp((v.nb_c ?? 0.0) + v.nb_cv * t.dt, -0.12, 1.12)",
+    # heartbeat: tells the sneaking animation that our movement animations are running
+    "v.nb_lt = query.life_time",
 ]) + "; }; return 0.0;"
 
 # ------------------------------------------------------------------ shared weights
-UI = "(query.is_in_ui ? 0.0 : 1.0)"
+UI = "((query.is_in_ui || query.is_emoting) ? 0.0 : 1.0)"
 GROUNDED = "(1.0 - (v.nb_air ?? 0.0))"
 # how much walking there is: 0 standing .. 1 full walk (sneak-walk ~0.4)
-W = f"(math.clamp((v.nb_gs ?? 0.0) / 3.4, 0.0, 1.0) * {GROUNDED} * ((query.is_riding || query.is_gliding || query.is_swimming || query.is_crawling || query.is_sleeping) ? 0.0 : 1.0))"
+W = f"(math.clamp((v.nb_gs ?? 0.0) / 3.4, 0.0, 1.0) * {GROUNDED} * ((query.is_riding || query.is_gliding || query.is_swimming || query.is_crawling || query.is_sleeping || query.is_emoting) ? 0.0 : 1.0))"
 SPR = f"((v.nb_spr ?? 0.0) * {W})"
 # walking direction: +1 forwards, -1 backwards, ~0 pure sideways
 K = "math.clamp((v.nb_fwd ?? 1.0) * 2.5, -1.0, 1.0)"
@@ -87,7 +89,7 @@ BACK = f"(math.clamp(-(v.nb_fwd ?? 1.0), 0.0, 1.0) * {W})"
 SIDE = f"((v.nb_side ?? 0.0) * {W})"
 CR = "(v.nb_c ?? 0.0)"
 LIFE_T = "query.life_time"
-CALM = "((query.is_riding || query.is_gliding || query.is_swimming || query.is_crawling || query.is_sleeping) ? 0.0 : 1.0)"
+CALM = "((query.is_riding || query.is_gliding || query.is_swimming || query.is_crawling || query.is_sleeping || query.is_emoting) ? 0.0 : 1.0)"
 # standing still on the ground (not crouched): the idle life and the turning steps
 IDLE = f"((1.0 - math.clamp((v.nb_gs ?? 0.0) / 1.2, 0.0, 1.0)) * {GROUNDED} * (1.0 - math.clamp({CR}, 0.0, 1.0)) * {CALM} * (query.is_in_ui ? 0.0 : 1.0))"
 TURNSTEP = f"({IDLE} * math.clamp((math.abs(v.nb_turn ?? 0.0) - 40.0) / 80.0, 0.0, 1.0))"
@@ -189,6 +191,10 @@ def arm(side):
     return {"rotation": [rot_x, rot_y, rot_z], "position": [0.0, 0.0, inair(f"{FWD} * 1.25 * {MV}")]}
 
 
+# 1 when our movement animations have not run for a moment (another add-on replaced them)
+FALLBACK = "((query.life_time - (v.nb_lt ?? -10.0)) > 0.25 ? 1.0 : 0.0)"
+
+
 def build():
     # in the air the torso leans into the leap (back when jumping backwards) and tips to the side it moves to
     # the torso stays upright in the air (only a slight breath); the legs and arms tell the jump
@@ -221,7 +227,7 @@ def build():
                 # head stays steady while the torso twists; small nod on landing
                 "head": {"rotation": [head_x,
                                       f"-5.0 * {S} * {K} * {W}", 0.0],
-                         "position": [0.0, f"-1.0 * {CR}", 0.0]},
+                         "position": [0.0, 0.0, 0.0]},
                 "body": {"position": [0.0, f"-2.0 * {CR}", 0.0]},
                 # crouch: the whole figure tilts forward from the feet with the hips set back
                 # (the same frame the game's camera and hit box expect), blended by the spring
@@ -233,7 +239,17 @@ def build():
                                    f"1.0 + 0.025 * {L} - 0.01 * {REB}"]},
             },
         },
-        # the game's own crouch pose snaps on and off; ours lives in move.legs above
-        "animation.player.sneaking": {"loop": True, "bones": {}},
+        # Our crouch lives in move.legs (eased by the spring).  If another add-on's player
+        # file does not play our movement animations, the heartbeat stops and this
+        # falls back to a plain crouch so the player never loses the pose.
+        "animation.player.sneaking": {"loop": True, "bones": {
+            "body": {"position": [0.0, f"-2.0 * {FALLBACK}", 0.0]},
+            "leftleg": {"rotation": [f"-28.0 * {FALLBACK}", 0.0, 0.0]},
+            "rightleg": {"rotation": [f"-28.0 * {FALLBACK}", 0.0, 0.0]},
+            "leftarm": {"rotation": [f"-6.0 * {FALLBACK}", 0.0, 0.0]},
+            "rightarm": {"rotation": [f"-6.0 * {FALLBACK}", 0.0, 0.0]},
+            "root": {"position": [0.0, f"1.25 * {FALLBACK}", f"9.0 * {FALLBACK}"],
+                     "rotation": [f"28.0 * {FALLBACK}", 0.0, 0.0]},
+        }},
     }
     return anims
