@@ -1,0 +1,108 @@
+name: Approve visitor feedback
+
+# Runs when someone comments on an issue or an issue is deleted.
+# Only the repository OWNER's "/approve" (موافق) or "/remove" (احذف) comment does
+# anything; scripts/feedback.py re-checks that. Issue text is never put into a shell
+# command or an expression: it is read from the event file by Python only.
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, deleted]
+
+permissions: {}
+
+jobs:
+  label:
+    # Tag new feedback-form issues with "feedback" (creates the label the first time).
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - name: Label feedback issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || exit 0
+          [ "$(python3 -I scripts/feedback.py --is-form)" = "yes" ] || exit 0
+          gh label create feedback --repo "$REPO" --color 2e86c1 --description "رأي أو بلاغ من زوار الموقع" --force >/dev/null
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label feedback >/dev/null
+
+  apply:
+    if: >-
+      (github.event_name == 'issues' && github.event.action == 'deleted') ||
+      (github.event.comment.user.login == github.repository_owner &&
+       github.event.comment.author_association == 'OWNER' &&
+       !github.event.issue.pull_request)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Job-level and separate from publish.yml, so a flood of issues can never queue
+    # behind (or cancel) an owner's upload. Only owner commands reach this job.
+    concurrency:
+      group: feedback-apply
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+
+      - name: Apply command
+        env:
+          REPLY_FILE: ${{ runner.temp }}/reply.txt
+        run: python3 -I scripts/feedback.py
+
+      - name: Commit changes
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add feedback.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git commit -q -F .commit-msg
+          for i in 1 2 3; do
+            if git push origin HEAD:main; then echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
+
+      - name: Confirm with a reaction
+        if: steps.commit.outputs.changed == 'true' && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          [[ "$COMMENT_ID" =~ ^[0-9]+$ ]] || exit 0
+          gh api -X POST "repos/$REPO/issues/comments/$COMMENT_ID/reactions" -f content=+1 >/dev/null
+
+      - name: Explain a rejection on the issue
+        if: failure() && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPLY_FILE: ${{ runner.temp }}/reply.txt
+        run: |
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || exit 0
+          [ -s "$REPLY_FILE" ] || exit 0
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file "$REPLY_FILE"
+
+  deploy:
+    needs: apply
+    if: needs.apply.outputs.changed == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/pages.yml

@@ -1,7 +1,7 @@
 (() => {
   const { guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, fmtNum, isRecent } = MC;
   const $ = (s) => document.querySelector(s);
-  const state = { site: {}, mods: [], counts: {}, type: "", edition: "", q: "", version: "", sort: "new" };
+  const state = { site: {}, mods: [], feedback: [], counts: {}, type: "", edition: "", q: "", version: "", sort: "new" };
 
   init();
 
@@ -18,6 +18,10 @@
     }
     state.site = data.site || {};
     state.mods = (Array.isArray(data.mods) ? data.mods : []).filter((m) => m && m.id && m.name);
+    try {
+      const r = await fetch("feedback.json", { cache: "no-cache" });
+      if (r.ok) state.feedback = MC.cleanFeedback(await r.json(), new Set(state.mods.map((m) => m.id)));
+    } catch { /* no feedback yet */ }
     setupSite();
     buildControls();
     render();
@@ -264,6 +268,7 @@
         ${shots.length ? `<h4>صور</h4><div class="gallery">${shots.map((s, i) =>
           `<button type="button" class="shot" data-src="${esc(s)}" aria-label="صورة ${i + 1}"><img src="${esc(s)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
         ${video ? `<h4>فيديو</h4><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${video}" title="فيديو ${esc(m.name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ""}
+        ${MC.feedbackHtml(state.site, m, state.feedback)}
         <h4>معلومات</h4>
         <table class="info-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
         ${(m.tags || []).length ? `<div class="meta tags">${m.tags.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}

@@ -329,6 +329,7 @@
   async function showDash() {
     show("dashView");
     $("#whoami").textContent = auth.login || "";
+    $("#feedbackLink").href = `https://github.com/${auth.repo}/issues?q=${encodeURIComponent("is:issue is:open label:feedback")}`;
     $("#tokenInput").value = "";
     $("#passInput").value = "";
     try {
@@ -689,7 +690,7 @@
 
   /* ---------- Settings ---------- */
   const sForm = $("#settingsForm");
-  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "instagram", "website", "googleVerify"];
+  const SITE_FIELDS = ["name", "author", "tagline", "about", "donate", "youtube", "discord", "tiktok", "instagram", "website", "googleVerify", "feedbackForm"];
   $("#settingsBtn").addEventListener("click", () => {
     SITE_FIELDS.forEach((k) => { sForm[k].value = data.site[k] || ""; });
     $("#settingsError").textContent = "";
@@ -708,6 +709,10 @@
       }
       if (["donate", "website"].includes(k) && v && !/^https:\/\/[^\s"'<>\\`]+$/i.test(v)) {
         $("#settingsError").textContent = "الروابط لازم تبدأ بـ https://";
+        return;
+      }
+      if (k === "feedbackForm" && v && !MC.feedbackFormUrl({ feedbackForm: v })) {
+        $("#settingsError").textContent = "رابط الاستمارة لازم يكون من Google Forms (يبدأ بـ https://forms.gle/ أو https://docs.google.com/forms/).";
         return;
       }
       if (k === "googleVerify" && v && !/^[A-Za-z0-9_-]{10,100}$/.test(v)) {

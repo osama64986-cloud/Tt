@@ -98,9 +98,20 @@
           <button class="mc-btn mc-btn-green" id="newBtn">➕ رفع عمل جديد</button>
           <button class="mc-btn" id="settingsBtn">⚙ إعدادات الموقع</button>
           <button class="mc-btn" id="reloadBtn" title="تحديث">⟳</button>
+          <a class="mc-btn mc-btn-gold" id="feedbackLink" href="#" target="_blank" rel="noopener noreferrer">📬 آراء الناس</a>
         </div>
       </div>
       <p class="error" id="tokenWarn" hidden></p>
+      <details class="help fb-help">
+        <summary>💬 شلون أنشر آراء الناس على الموقع؟</summary>
+        <ol>
+          <li>اضغط <b>📬 آراء الناس</b>. تطلع لك كل الآراء الجديدة على GitHub (ويوصلك إشعار بكل رأي جديد).</li>
+          <li>افتح الرأي واقراه. إذا زين، اكتب تعليق فيه كلمة وحدة: <code>موافق</code> (أو <code>/approve</code>).</li>
+          <li>خلال دقيقة يطلع على صفحة المود، ويطلع 👍 على تعليقك.</li>
+          <li>تبي تشيله؟ اكتب <code>احذف</code> (أو <code>/remove</code>). الرأي المسيء احذفه من GitHub مباشرة.</li>
+        </ol>
+        <p class="muted">🔒 بس تعليقك أنت (صاحب المستودع) يشتغل. وأي تعديل يسويه الشخص على رأيه بعد موافقتك ما يتغير بالموقع.</p>
+      </details>
       <div id="jobs"></div>
       <div id="itemList" class="item-list"></div>
     </section>
@@ -202,6 +213,7 @@
         <label>إنستغرام<input name="instagram" dir="ltr" placeholder="https://instagram.com/..." maxlength="300"></label>
         <label class="full">❤ رابط الدعم والتبرع <small>(Ko-fi أو PayPal أو Patreon)</small><input name="donate" dir="ltr" placeholder="https://ko-fi.com/..." maxlength="300"></label>
         <label class="full">🔎 كود التحقق من Google Search Console <small>(اختياري، الكود بس)</small><input name="googleVerify" dir="ltr" placeholder="abc123..." maxlength="100"></label>
+        <label class="full">✉️ رابط Google Form للآراء بدون حساب <small>(اختياري: https://forms.gle/...)</small><input name="feedbackForm" dir="ltr" placeholder="https://forms.gle/..." maxlength="300"></label>
         <label>موقع آخر<input name="website" dir="ltr" placeholder="https://..." maxlength="300"></label>
       </div>
       <p class="error" id="settingsError" role="alert"></p>

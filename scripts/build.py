@@ -57,6 +57,84 @@ def base_url(site):
     return f"https://{owner.lower()}.github.io/{name}/"
 
 
+REPO_RE = re.compile(r"^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$")
+LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$")
+FB_KINDS = {"pro": ("👍", "عجبهم"), "con": ("👎", "ما عجبهم"), "bug": ("🐞", "مشكلة"), "idea": ("💡", "اقتراح")}
+FB_DEVICES = {"phone": "📱 جوال", "pc": "💻 كمبيوتر", "console": "🎮 كونسول"}
+
+
+def site_repo(site):
+    r = str(site.get("repo") or "")
+    return r if REPO_RE.fullmatch(r) else (REPO if REPO_RE.fullmatch(REPO) else "")
+
+
+def load_feedback(ids):
+    """Approved visitor feedback (written by scripts/feedback.py), re-validated here."""
+    try:
+        raw = json.loads((ROOT / "feedback.json").read_text(encoding="utf-8")).get("items")
+    except (OSError, ValueError, AttributeError):
+        return []
+    out = []
+    for i in raw if isinstance(raw, list) else []:
+        if not isinstance(i, dict) or type(i.get("n")) is not int or i["n"] < 1:
+            continue
+        if i.get("mod") not in ids or i.get("kind") not in FB_KINDS:
+            continue
+        txt, user, date = str(i.get("text") or "")[:600], str(i.get("user") or ""), str(i.get("date") or "")
+        if not txt or not LOGIN_RE.fullmatch(user) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+            continue
+        item = {"n": i["n"], "mod": i["mod"], "kind": i["kind"], "text": txt, "user": user, "date": date}
+        if i.get("device") in FB_DEVICES:
+            item["device"] = i["device"]
+        out.append(item)
+    return out[:2000]
+
+
+def feedback_issue_url(site, m):
+    repo = site_repo(site)
+    if not repo:
+        return ""
+    q = urllib.parse.urlencode({"template": "feedback.yml", "mod": m["id"], "title": f"رأي: {str(m.get('name') or '')[:60]}"})
+    return f"https://github.com/{repo}/issues/new?{q}"
+
+
+def feedback_form_url(site):
+    """Optional anonymous form (Google Forms only)."""
+    u = safe_url(site.get("feedbackForm"))
+    if not u.startswith("https://"):
+        return ""
+    parts = urllib.parse.urlsplit(u)
+    host = (parts.hostname or "").lower()
+    if host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/")):
+        return u
+    return ""
+
+
+def feedback_html(m, site, items):
+    mine = [i for i in items if i["mod"] == m["id"]]
+    repo = site_repo(site)
+    counts = {k: sum(1 for i in mine if i["kind"] == k) for k in FB_KINDS}
+    issue_url, form_url = feedback_issue_url(site, m), feedback_form_url(site)
+    lis = "".join(
+        f'<li class="fb fb-{i["kind"]}"><span class="fb-kind">{FB_KINDS[i["kind"]][0]} {e(FB_KINDS[i["kind"]][1])}</span>'
+        f'<p>{e(i["text"])}</p><small>— '
+        + (f'<a href="https://github.com/{e(repo)}/issues/{i["n"]}" rel="noopener noreferrer nofollow ugc"><bdi dir="ltr">@{e(i["user"])}</bdi></a>' if repo else f'<bdi dir="ltr">@{e(i["user"])}</bdi>')
+        + f' · {e(i["date"])}{" · " + e(FB_DEVICES[i["device"]]) if i.get("device") else ""}</small></li>'
+        for i in mine[:20])
+    summary = " ".join(f'<span class="chip">{FB_KINDS[k][0]} {counts[k]}</span>' for k in FB_KINDS if counts[k])
+    buttons = ""
+    if issue_url:
+        buttons += f'<a class="mc-btn mc-btn-gold" href="{e(issue_url)}" target="_blank" rel="noopener noreferrer">💬 اكتب رأيك أو بلّغ عن مشكلة</a>'
+    if form_url:
+        buttons += f'<a class="mc-btn" href="{e(form_url)}" target="_blank" rel="noopener noreferrer">✉️ بدون حساب</a>'
+    if not buttons and not mine:
+        return ""
+    note = '<p class="muted-note">الرأي يحتاج حساب GitHub مجاني، وما يظهر هنا إلا بعد ما أراجعه.</p>' if issue_url else ""
+    return (f'<section class="feedback"><h2 class="h4">💬 آراء اللاعبين</h2>'
+            + (f'<div class="meta">{summary}</div><ul class="fb-list">{lis}</ul>' if mine else '<p class="muted-note">ما فيه آراء بعد. كن أول واحد!</p>')
+            + f'<div class="actions">{buttons}</div>{note}</section>')
+
+
 SOCIALS = [("youtube", "يوتيوب", "▶", ("youtube.com", "youtu.be")), ("tiktok", "تيك توك", "♪", ("tiktok.com",)),
            ("instagram", "إنستغرام", "◎", ("instagram.com",)), ("discord", "ديسكورد", "💬", ("discord.gg", "discord.com"))]
 
@@ -133,7 +211,7 @@ def fmt_num(n):
     return f"{n/1e6:.1f}M" if n >= 1e6 else f"{n/1e3:.1f}K" if n >= 1e3 else str(n)
 
 
-def item_page(m, site, base, stats):
+def item_page(m, site, base, stats, feedback=()):
     t_label, t_icon = TYPES.get(m.get("type"), ("", "📦"))
     name, desc = m.get("name", ""), m.get("description", "")
     url = f"{base}m/{m['id']}/"
@@ -218,6 +296,7 @@ def item_page(m, site, base, stats):
         {f'<h2 class="h4">عن هذا العمل</h2><div class="details-text">{details}</div>' if details else ''}
         {('<h2 class="h4">صور</h2><div class="gallery">' + ''.join(f'<a class="shot" href="{e(rel(s))}" target="_blank" rel="noopener"><img src="{e(rel(s))}" alt="{e(name)} صورة {i}" loading="lazy"></a>' for i, s in enumerate(shots, 1)) + '</div>') if shots else ''}
         {f'<h2 class="h4">فيديو</h2><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/{video}" title="فيديو {e(name)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' if video else ''}
+        {feedback_html(m, site, feedback)}
         <h2 class="h4">معلومات</h2>
         <table class="info-table">{''.join(f'<tr><td>{e(k)}</td><td>{e(v)}</td></tr>' for k, v in rows if v)}</table>
         {('<div class="meta tags">' + ''.join(f'<span class="chip">{e(x)}</span>' for x in m.get('tags') or []) + '</div>') if m.get('tags') else ''}
@@ -266,10 +345,12 @@ def main():
     stats = fetch_stats({str(t) for m in mods for t in (m.get("releases") or []) if isinstance(m.get("releases"), list)})
     (OUT / "stats.json").write_text(json.dumps({"generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "tags": stats}), encoding="utf-8")
 
+    feedback = load_feedback({m["id"] for m in mods})
+    (OUT / "feedback.json").write_text(json.dumps({"items": feedback}, ensure_ascii=False), encoding="utf-8")
     for m in mods:
         d = OUT / "m" / m["id"]
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(item_page(m, site, base, stats), encoding="utf-8")
+        (d / "index.html").write_text(item_page(m, site, base, stats, feedback), encoding="utf-8")
 
     # Home page: canonical, optional Search Console tag, and plain links to every item.
     index = (OUT / "index.html").read_text(encoding="utf-8")

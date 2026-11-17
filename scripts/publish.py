@@ -370,6 +370,14 @@ def settings(db, meta, log):
     if verify and not re.fullmatch(r"[A-Za-z0-9_-]{10,100}", verify):
         raise Invalid("googleVerify must be the code only (letters, digits, - and _)")
     site["googleVerify"] = verify
+    form = str(raw.get("feedbackForm") or "").strip()
+    if form:
+        parts = urllib.parse.urlsplit(form)
+        host = (parts.hostname or "").lower()
+        ok_host = host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/"))
+        if not HTTPS_RE.fullmatch(form) or len(form) > 300 or not ok_host or parts.username or parts.port:
+            raise Invalid("feedbackForm must be a Google Forms link (https://forms.gle/... or https://docs.google.com/forms/...)")
+    site["feedbackForm"] = form
     if REPO:
         site["repo"] = REPO
     log.append("updated site settings")

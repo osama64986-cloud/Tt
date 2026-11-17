@@ -174,10 +174,60 @@ window.MC = (() => {
     }).join("");
   }
   /** Where people can report a broken download: Discord first, then Instagram. */
+  /* ---------- Visitor feedback (approved GitHub issues, see scripts/feedback.py) ---------- */
+  const FB_KINDS = dict({ pro: ["👍", "عجبهم"], con: ["👎", "ما عجبهم"], bug: ["🐞", "مشكلة"], idea: ["💡", "اقتراح"] });
+  const FB_DEVICES = dict({ phone: "📱 جوال", pc: "💻 كمبيوتر", console: "🎮 كونسول" });
+  const REPO_RE = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
+  const LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+  /** Keep only well-formed feedback items for known mods. */
+  function cleanFeedback(json, ids) {
+    const raw = json && Array.isArray(json.items) ? json.items : [];
+    return raw.filter((i) => i && Number.isInteger(i.n) && i.n > 0 && ids.has(i.mod) && Object.hasOwn(FB_KINDS, i.kind)
+      && typeof i.text === "string" && i.text && LOGIN_RE.test(i.user || "") && /^\d{4}-\d{2}-\d{2}$/.test(i.date || ""))
+      .slice(0, 2000)
+      .map((i) => ({ n: i.n, mod: i.mod, kind: i.kind, text: i.text.slice(0, 600), user: i.user, date: i.date,
+        device: Object.hasOwn(FB_DEVICES, i.device) ? i.device : "" }));
+  }
+  function feedbackIssueUrl(site, m) {
+    const repo = REPO_RE.test(site?.repo || "") ? site.repo : "";
+    if (!repo || !m?.id) return "";
+    const q = new URLSearchParams({ template: "feedback.yml", mod: m.id, title: `رأي: ${String(m.name || "").slice(0, 60)}` });
+    return `https://github.com/${repo}/issues/new?${q}`;
+  }
+  function feedbackFormUrl(site) {
+    const u = safeUrl(site?.feedbackForm);
+    if (!/^https:\/\//i.test(u)) return "";
+    try {
+      const x = new URL(u);
+      const host = x.hostname.toLowerCase();
+      if (x.username || x.password || x.port) return "";
+      return host === "forms.gle" || (host === "docs.google.com" && x.pathname.startsWith("/forms/")) ? u : "";
+    } catch { return ""; }
+  }
+  /** HTML for the feedback section of one item (all values escaped). */
+  function feedbackHtml(site, m, items) {
+    const repo = REPO_RE.test(site?.repo || "") ? site.repo : "";
+    const mine = items.filter((i) => i.mod === m.id);
+    const issue = feedbackIssueUrl(site, m), form = feedbackFormUrl(site);
+    if (!mine.length && !issue && !form) return "";
+    const counts = Object.keys(FB_KINDS).map((k) => [k, mine.filter((i) => i.kind === k).length]).filter(([, n]) => n);
+    const list = mine.slice(0, 20).map((i) => `<li class="fb fb-${i.kind}"><span class="fb-kind">${FB_KINDS[i.kind][0]} ${esc(FB_KINDS[i.kind][1])}</span>
+      <p>${esc(i.text)}</p><small>— ${repo ? `<a href="https://github.com/${esc(repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer nofollow ugc"><bdi dir="ltr">@${esc(i.user)}</bdi></a>` : `<bdi dir="ltr">@${esc(i.user)}</bdi>`}
+      · ${esc(i.date)}${i.device ? ` · ${esc(FB_DEVICES[i.device])}` : ""}</small></li>`).join("");
+    return `<section class="feedback"><h4>💬 آراء اللاعبين</h4>
+      ${mine.length ? `<div class="meta">${counts.map(([k, n]) => `<span class="chip">${FB_KINDS[k][0]} ${n}</span>`).join(" ")}</div><ul class="fb-list">${list}</ul>`
+        : `<p class="muted-note">ما فيه آراء بعد. كن أول واحد!</p>`}
+      <div class="actions">
+        ${issue ? `<a class="mc-btn mc-btn-gold" href="${esc(issue)}" target="_blank" rel="noopener noreferrer">💬 اكتب رأيك أو بلّغ عن مشكلة</a>` : ""}
+        ${form ? `<a class="mc-btn" href="${esc(form)}" target="_blank" rel="noopener noreferrer">✉️ بدون حساب</a>` : ""}
+      </div>
+      ${issue ? `<p class="muted-note">الرأي يحتاج حساب GitHub مجاني، وما يظهر هنا إلا بعد ما أراجعه.</p>` : ""}</section>`;
+  }
+
   const reportUrl = (site) => socialUrl("discord", site?.discord) || socialUrl("instagram", site?.instagram);
 
   const downloadsOf = (m, counts) => (Array.isArray(m.releases) ? m.releases : [])
     .reduce((s, t) => s + (counts && Object.hasOwn(counts, t) ? toCount(counts[t]) : 0), 0);
 
-  return { cleanCounts, toCount, LATEST, supportsLatest, SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
+  return { cleanFeedback, feedbackIssueUrl, feedbackFormUrl, feedbackHtml, cleanCounts, toCount, LATEST, supportsLatest, SOCIALS, socialUrl, socialsHtml, reportUrl, guideFor, TYPES, EDITIONS, esc, safeUrl, safeColor, ytId, parseYouTube, fmtNum, isRecent, repoOf, downloadCounts, downloadsOf };
 })();

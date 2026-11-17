@@ -1,0 +1,46 @@
+name: "💬 رأي أو بلاغ عن مود"
+description: "قل رأيك بعمل من موقع نبض، أو بلّغ عن مشكلة فيه"
+title: "رأي: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        شكراً لأنك تساعدنا نحسّن الأعمال 💚
+        رأيك ما يظهر بالموقع إلا بعد ما يراجعه صاحب الموقع. **لا تكتب معلومات شخصية** (رقمك، إيميلك، عنوانك).
+  - type: input
+    id: mod
+    attributes:
+      label: "العمل"
+      description: "يتعبّى لحاله إذا جيت من زر الموقع"
+      placeholder: "dragons-addon"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "نوع الرأي"
+      options:
+        - "👍 شي عجبني"
+        - "👎 شي ما عجبني"
+        - "🐞 مشكلة أو خطأ"
+        - "💡 اقتراح"
+    validations:
+      required: true
+  - type: textarea
+    id: text
+    attributes:
+      label: "رأيك"
+      description: "اكتب بالتفصيل. إذا مشكلة: شنو صار، وشلون نكررها."
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: "جهازك"
+      options:
+        - "📱 جوال"
+        - "💻 كمبيوتر"
+        - "🎮 كونسول"
+    validations:
+      required: false

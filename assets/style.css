@@ -466,3 +466,16 @@ a.social:hover { filter: brightness(1.15); }
 .legal { padding: 24px; }
 
 .chip-latest { border-color: #7CFC00; color: #7CFC00; }
+
+/* ---------- Visitor feedback ---------- */
+.feedback { margin-top: 18px; background: #1f1f1f; border: 3px solid #000; padding: 12px 14px; }
+.feedback h4, .feedback .h4 { margin-top: 0; }
+.fb-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.fb { background: var(--panel); border: 2px solid #000; border-inline-start: 6px solid #555; padding: 8px 12px; }
+.fb p { margin: 4px 0; white-space: pre-line; overflow-wrap: anywhere; }
+.fb small { color: var(--muted); }
+.fb-kind { font-weight: 800; font-size: .9rem; }
+.fb-pro { border-inline-start-color: #3e7b22; }
+.fb-con { border-inline-start-color: #a93226; }
+.fb-bug { border-inline-start-color: #d68910; }
+.fb-idea { border-inline-start-color: #2e86c1; }
