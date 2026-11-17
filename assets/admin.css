@@ -129,3 +129,4 @@ details.more summary { cursor: pointer; font-weight: 800; color: var(--gold); ma
 .mod-item .btns { display: flex; gap: 6px; }
 .mod-item .btns .mc-btn { padding: 4px 12px; font-size: .9rem; }
 .mod-foot { margin-top: 10px; }
+.mod-rep { color: #ff8a80; }

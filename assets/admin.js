@@ -751,7 +751,7 @@
     msg.textContent = "جاري التحميل…";
     let rows;
     try {
-      rows = await MC.comments.rpc("mod_page", { p_key: key, p_status: modTab, p_before: page });
+      rows = await MC.comments.rpc("mod_items", { p_key: key, p_status: modTab, p_before: page });
     } catch (e) {
       if (/^(401|403)$/.test(e.message)) { msg.textContent = "المفتاح لسا ما تفعّل. دز هذا الكود لـ Claude:"; await showModCode(key); }
       else msg.textContent = "ما قدرنا نتصل بقاعدة الآراء هسه. جرّب بعد شوية.";
@@ -765,13 +765,13 @@
     $("#modPurge").hidden = modTab !== "pending" || (!rows.length && !page);
     $("#modMore").hidden = rows.length < 100;
     if (rows.length) modBefore = rows[rows.length - 1].id;
-    msg.textContent = rows.length || page ? "" : (modTab === "pending" ? "ما فيه آراء جديدة 👌" : "ما فيه آراء منشورة بعد.");
+    msg.textContent = rows.length || page ? "" : (modTab === "pending" ? "ما فيه شي ينتظرك 👌 (التعليقات النظيفة تنشر بروحها، وهنا يجيك بس المشكوك فيه أو اللي بلّغوا عنه)" : "ما فيه آراء منشورة بعد.");
     const K = MC.comments.KINDS, D = MC.comments.DEVICES;
     list.insertAdjacentHTML("beforeend", rows.map((r) => {
       const kind = Object.hasOwn(K, r.kind) ? K[r.kind] : ["❔", "?"];
       const mod = data.mods.find((m) => m.id === r.mod_id);
       return `<li class="mod-item" data-id="${r.id}">
-        <div class="sub">${kind[0]} ${esc(kind[1])} · ${esc(String(mod ? mod.name : r.mod_id ?? ""))} · ${esc(String(r.nickname || "لاعب"))}${Object.hasOwn(D, r.device) ? ` · ${esc(D[r.device])}` : ""} · ${esc(String(r.created_at || "").slice(0, 16).replace("T", " "))}</div>
+        <div class="sub">${kind[0]} ${esc(kind[1])} · ${esc(String(mod ? mod.name : r.mod_id ?? ""))} · ${esc(String(r.nickname || "لاعب"))}${Object.hasOwn(D, r.device) ? ` · ${esc(D[r.device])}` : ""} · ${esc(String(r.created_at || "").slice(0, 16).replace("T", " "))}${r.auto === true ? " · ⚡ نشر تلقائي" : ""}${Number.isSafeInteger(r.reports) && r.reports > 0 ? ` · <b class="mod-rep">🚩 ${r.reports} بلاغ</b>` : ""}</div>
         <p>${esc(String(r.body ?? ""))}</p>
         <div class="btns">
           ${r.status === "pending" ? `<button class="mc-btn mc-btn-green" data-mact="approve">✅ انشر</button>` : ""}

@@ -2,10 +2,11 @@
  * Visitor comments written ON the site (no account needed).
  *
  * Backend: a Supabase project whose table is closed to everyone. The browser can only
- * call two database functions:
- *   submit_comment(...) -> puts the comment in a private queue (status "pending")
- *   list_comments(mod)  -> returns comments the owner approved
- * The owner approves from admin.html with a moderation key (see admin.js).
+ * call three database functions:
+ *   post_comment(...)    -> publishes a clean comment at once ("ok"), or holds a suspicious one ("held")
+ *   comments_for(mod)    -> published comments (each with a random pub_id, no internal ids)
+ *   report_comment(id)   -> one report per visitor; 3 reports hide an auto-published comment
+ * The owner moderates from admin.html with a moderation key (see admin.js).
  * The publishable key below is meant to be public; it grants nothing else.
  * Every value from the server is treated as untrusted and escaped before display.
  */
@@ -16,13 +17,15 @@
   const KINDS = { pro: ["👍", "عجبني"], con: ["👎", "ما عجبني"], bug: ["🐞", "مشكلة"], idea: ["💡", "اقتراح"] };
   const DEVICES = { phone: "📱 جوال", pc: "💻 كمبيوتر", console: "🎮 كونسول" };
   const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   // Same idea as the database rule: no links, markup or e-mail-like text.
   // (checked after NFKC, so fullwidth letters and dots count too; the database repeats every check)
   const LINK_RE = /(https?:|www\.|[a-z0-9-]+(\.|\[\.\]|\(\.\)|\[dot\]|。|٫)(com|net|org|io|xyz|ru|ly|me|gg|link|site|top|co|shop|app|dev|tv|info|biz|store|online|live|tk|ml|cc|to|us|uk)\b|[<>]|@[a-z0-9_.-]+\.|discord\.gg|t\.me\/)/i;
   const hasLink = (t) => LINK_RE.test(t.normalize("NFKC"));
   const TWO_CHARS = /[\p{L}\p{N}].*[\p{L}\p{N}]/su;
   const MESSAGES = {
-    ok: "✔ وصل رأيك! راح يظهر هنا بعد ما يراجعه صاحب الموقع. شكراً 💚",
+    ok: "✔ انشر رأيك! شكراً 💚",
+    held: "✔ وصل رأيك! راح يظهر بعد ما يشوفه صاحب الموقع. 💚",
     too_short: "اكتب رأيك أول (حرفين على الأقل).",
     bad_mod: "هذا العمل ما يقبل آراء هسه.",
     too_long: "رأيك طويل كلش، اختصره شوية.",
@@ -69,7 +72,7 @@
   async function loadSiteComments(modId) {
     try {
       let rows = cached(modId);
-      if (!rows) { rows = await rpc("list_comments", { p_mod: modId }); if (Array.isArray(rows) && rows.length) store(modId, rows.slice(0, 50)); } // empty lists are tiny: not cached, so a new approval shows at once
+      if (!rows) { rows = await rpc("comments_for", { p_mod: modId }); if (Array.isArray(rows) && rows.length) store(modId, rows.slice(0, 50)); } // empty lists are tiny: not cached, so a new approval shows at once
       return (Array.isArray(rows) ? rows : []).slice(0, 50).filter((r) => r && Object.hasOwn(KINDS, r.kind)
         && typeof r.body === "string" && r.body).map((r) => ({
         kind: r.kind,
@@ -77,6 +80,7 @@
         name: typeof r.nickname === "string" && r.nickname ? Array.from(r.nickname).slice(0, 30).join("") : "لاعب",
         date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(r.approved_at || "") ? r.approved_at.slice(0, 10) : "",
         device: Object.hasOwn(DEVICES, r.device) ? r.device : "",
+        pid: typeof r.pub_id === "string" && UUID_RE.test(r.pub_id) ? r.pub_id : "",
       }));
     } catch {
       return null; // offline / paused: the section still works without the list
@@ -100,10 +104,16 @@
     } catch { /* ignore */ }
   }
 
+  // Reports this browser already sent (so the button shows "reported" and is not pressed twice).
+  const reported = () => { try { const a = JSON.parse(localStorage.getItem("nabd.rep") || "[]"); return Array.isArray(a) ? a.filter((x) => typeof x === "string") : []; } catch { return []; } };
+  const markReported = (pid) => { try { localStorage.setItem("nabd.rep", JSON.stringify([...reported(), pid].slice(-200))); } catch { /* ignore */ } };
+
   function itemHtml(c) {
     const [icon, label] = KINDS[c.kind];
+    const rep = c.pid ? (reported().includes(c.pid) ? `<span class="c-rep done">🚩 بلّغت</span>`
+      : `<button type="button" class="c-rep" data-pid="${esc(c.pid)}" title="بلّغ عن كلام مسيء أو سبام">🚩 بلّغ</button>`) : "";
     return `<li class="fb fb-${c.kind}"><span class="fb-kind">${icon} ${esc(label)}</span><p>${esc(c.text)}</p>
-      <small>— <bdi>${esc(c.name)}</bdi>${c.date ? ` · ${esc(c.date)}` : ""}${c.device ? ` · ${esc(DEVICES[c.device])}` : ""}</small></li>`;
+      <small>— <bdi>${esc(c.name)}</bdi>${c.date ? ` · ${esc(c.date)}` : ""}${c.device ? ` · ${esc(DEVICES[c.device])}` : ""}</small>${rep}</li>`;
   }
 
   /**
@@ -137,7 +147,7 @@
         <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="mc-btn mc-btn-green" type="submit">📨 إرسال</button>
         <p class="c-msg" role="status"></p>
-        <p class="muted-note">رأيك يظهر هنا بعد ما يراجعه صاحب الموقع. لا تكتب معلوماتك الشخصية (رقم، إيميل، عنوان).</p>
+        <p class="muted-note">رأيك يطلع فوراً. الكلام المسيء والسبام يتشال. لا تكتب معلوماتك الشخصية (رقم، إيميل، عنوان).</p>
       </form>
     </section>`;
 
@@ -150,6 +160,17 @@
       counts.innerHTML = n.map(([k, c]) => `<span class="chip">${KINDS[k][0]} ${c}</span>`).join(" ");
     };
     if (fromGithub.length) render(fromGithub);
+    list.addEventListener("click", async (e) => {
+      const b = e.target.closest("button.c-rep");
+      if (!b || !UUID_RE.test(b.dataset.pid || "")) return;
+      if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "🚩 متأكد؟ اضغط مرة ثانية"; return; }
+      b.disabled = true;
+      try {
+        const r = await rpc("report_comment", { p_pub_id: b.dataset.pid });
+        if (r === "ok" || r === "already") { markReported(b.dataset.pid); b.textContent = "🚩 وصل البلاغ، شكراً"; }
+        else b.textContent = r === "limit" ? "بلّغت كثير اليوم" : "ما زبط";
+      } catch { b.disabled = false; b.textContent = "ما زبط، جرّب مرة ثانية"; }
+    });
     const loadList = () => loadSiteComments(modId).then((site) => {
       if (site === null) { if (!fromGithub.length) list.innerHTML = `<li class="muted-note">ما قدرنا نحمّل الآراء هسه.</li>`; return; }
       render([...site, ...fromGithub].sort((a, b) => (b.date || "").localeCompare(a.date || "")));
@@ -178,12 +199,13 @@
       if (!underLimit()) return say("limit");
       btn.disabled = true;
       try {
-        const res = await rpc("submit_comment", {
+        const res = await rpc("post_comment", {
           p_mod: modId, p_kind: form.kind.value, p_body: body, p_nickname: nick || null, p_device: form.device.value || null,
         });
         const key = typeof res === "string" ? res : "error";
-        say(Object.hasOwn(MESSAGES, key) ? key : "error", key === "ok");
-        if (key === "ok") { remember(); form.reset(); }
+        say(Object.hasOwn(MESSAGES, key) ? key : "error", key === "ok" || key === "held");
+        if (key === "ok" || key === "held") { remember(); form.reset(); }
+        if (key === "ok") { try { sessionStorage.removeItem("nabd.c." + modId); } catch { /* ignore */ } loadList(); }
       } catch {
         say("error");
       } finally {

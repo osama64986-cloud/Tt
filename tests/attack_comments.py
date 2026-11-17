@@ -41,7 +41,12 @@ try:
     assert rc == 0, out
     sub = lambda body, mod="nabd-pack", kind="pro", nick="null", dev="null", ip=None: psql(
         (f"select set_config('request.headers', '{{\"cf-connecting-ip\": \"{ip}\"}}', false);\n" if ip else "")
-        + f"select public.submit_comment('{mod}', '{kind}', $b${body}$b$, {nick}, {dev});", "anon")
+        + f"select public.post_comment('{mod}', '{kind}', $b${body}$b$, {nick}, {dev});", "anon")
+    ACC = ("ok", "held")   # accepted: published at once, or held for the owner
+    def report(pid, ip=None):
+        return last(psql((f"select set_config('request.headers', '{{\"cf-connecting-ip\": \"{ip}\"}}', false);\n" if ip else "")
+                         + f"select public.report_comment('{pid}');", "anon")[1])
+    visible = lambda mod="nabd-pack": psql(f"select count(*) from public.comments_for('{mod}')", "anon")[1]
     last = lambda o: o.splitlines()[-1] if o else o
     count = lambda where="true": psql(f"select count(*) from public.comments where {where}")[1]
 
@@ -55,7 +60,9 @@ try:
     check("anon cannot create objects in public", rc != 0, out)
     for stmt in ["select nextval('public.comments_id_seq')", "select setval('public.comments_id_seq', 9223372036854775807)",
                  "select * from private.known_mods", "select * from private.submit_log", "select * from private.daily_salt",
-                 "select private.has_link('x')"]:
+                 "select private.has_link('x')", "select private.norm('x')", "select private.needs_review('x', null)",
+                 "select private.visitor_hash()", "select * from private.reports",
+                 "select public.submit_comment('nabd-pack','pro','old path', null, null)", "select * from public.list_comments('nabd-pack')"]:
         rc, out = psql(stmt, "authenticated")
         check(f"authenticated cannot run: {stmt[:60]}", rc != 0 and "permission denied" in out, out)
     rc, out = psql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
@@ -63,9 +70,9 @@ try:
     check("every function pins an empty search_path", rc == 0 and out == "", out)
     rc, out = psql("select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
                    "where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')")
-    check("anon can call exactly the seven intended functions", out == "list_comments,mod_list,mod_page,mod_purge_pending,mod_set,mod_sync_mods,submit_comment", out)
-    rc, out = psql("select string_agg(provolatile::text, '') from pg_proc where proname in ('mod_list', 'mod_page', 'mod_set', 'mod_purge_pending', 'mod_sync_mods')")
-    check("owner functions are volatile (PostgREST refuses GET, key never in a URL)", out == "vvvvv", out)
+    check("anon can call exactly the intended functions", out == "comments_for,mod_items,mod_list,mod_page,mod_purge_pending,mod_set,mod_sync_mods,post_comment,report_comment", out)
+    rc, out = psql("select string_agg(provolatile::text, '') from pg_proc where proname in ('mod_items', 'mod_list', 'mod_page', 'mod_set', 'mod_purge_pending', 'mod_sync_mods', 'post_comment', 'report_comment')")
+    check("owner/write functions are volatile (PostgREST refuses GET, key never in a URL)", out == "vvvvvvvv", out)
     rc, out = psql("select count(*) from pg_proc where proname in ('list_comments', 'mod_list')")
     check("no leftover overloads of public functions", out == "2", out)
 
@@ -89,33 +96,65 @@ try:
     rc, out = sub("حلو", dev="'laptop'"); check("submit rejects fake device", out == "bad_device", out)
     rc, out = sub("حلو", nick="'<b>x</b>'"); check("submit rejects markup nickname", out in ("bad_nickname", "no_links"), out)
     rc, out = sub("حلو", nick="'evil.com'"); check("submit rejects link nickname", out == "no_links", out)
-    rc, out = sub("حلو", nick="'\u3164'"); check("invisible-only nickname becomes anonymous", out == "ok" and psql("select nickname is null from public.comments order by id desc limit 1")[1] == "t", out)
+    rc, out = sub("حلو", nick="'\u3164'"); check("invisible-only nickname becomes anonymous", out in ACC and psql("select nickname is null from public.comments order by id desc limit 1")[1] == "t", out)
     rc, out = sub("حلو", nick="'" + "x" * 500 + "'"); check("huge nickname refused", out == "too_long", out)
     rc, out = sub("حلو", mod="no-such-mod"); check("comments only on real (known) mods", out == "bad_mod", out)
-    rc, out = sub("مود حلو z" + "\u0301" * 50 + "x"); check("Zalgo marks stripped", out == "ok" and "\u0301" not in psql("select body from public.comments order by id desc limit 1")[1], out)
+    rc, out = sub("مود حلو z" + "\u0301" * 50 + "x"); check("Zalgo marks stripped", out in ACC and "\u0301" not in psql("select body from public.comments order by id desc limit 1")[1], out)
     rc, out = sub("مود رهيب ومرتب"); check("normal Arabic comment accepted", out == "ok", out)
     psql("delete from public.comments")
-    rc, out = sub("حلو $$; drop table public.comments; --"); check("SQL in text is just text", out == "ok" and count() == "1", out)
-    rc, out = sub("سطر‮مقلوب\u0001\nثاني"); check("control/bidi characters removed", out == "ok" and "‮" not in psql("select body from public.comments order by id desc limit 1")[1])
-    rc, out = psql("select count(*) from public.list_comments('nabd-pack')", "anon")
-    check("pending comments are NOT visible", out == "0", out)
+    rc, out = sub("حلو $$; drop table public.comments; --"); check("SQL in text is just text", out in ACC and count() == "1", out)
+    rc, out = sub("سطر‮مقلوب\u0001\nثاني"); check("control/bidi characters removed", out in ACC and "‮" not in psql("select body from public.comments order by id desc limit 1")[1])
+    # --- instant publishing with a word / spam filter
+    psql("delete from public.comments")
+    for body in ["مود رهيب ومرتب", "اكس بوكس يشتغل عليه", "اكسر الصخر بسرعة", "الميكانيك حلو", "night vision حلو", "كسرت راسي من الحلاوة"]:
+        rc, out = sub(body, mod="zenlite"); check(f"clean comment published at once: {body}", out == "ok", out)
+    for body in ["انت كواد", "يا شرموطه", "كسمك", "fuuuuck this", "يلعن نيچ", "زق عليك", "هههههههههههههه", "lolololololololol", "والكس"]:
+        rc, out = sub(body, mod="bareview-ui"); check(f"bad comment held, not shown: {body}", out == "held" and visible("bareview-ui") == "0", out)
+    rc, out = sub("ﾌｧｯｸ fｕｃｋ you", mod="bareview-ui"); check("fullwidth insult held", out == "held", out)
+    rc, out = sub("مود رهيب ومرتب", mod="zenlite"); check("copy-paste of an existing comment is held", out == "held", out)
+    check("only clean comments are visible", visible("zenlite") == "6" and visible("bareview-ui") == "0", visible("zenlite"))
+    rc, out = psql("select * from public.comments_for('zenlite') limit 1", "anon")
+    import re as _re
+    check("public list shows a random id only (no running number / status / mod)", bool(_re.match(r"^[0-9a-f-]{36}\|", out)) and out.count("|") == 5, out)
+    # --- reports
+    pid = psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' order by id limit 1")[1]
+    check("report without a visitor address is refused", report(pid) == "limit")
+    check("first report counted", report(pid, "198.51.100.1") == "ok")
+    check("same visitor cannot report twice", report(pid, "198.51.100.1") == "already")
+    report(pid, "198.51.100.2")
+    check("2 reports: still visible", visible("zenlite") == "6")
+    report(pid, "198.51.100.3")
+    check("3 different visitors hide an auto-published comment", visible("zenlite") == "5" and psql(f"select status || reports from public.comments where pub_id='{pid}'")[1] == "pending3")
+    check("hidden comment cannot be reported further", report(pid, "198.51.100.4") == "not_found")
+    check("bad report id is rejected", psql("select public.report_comment('not-a-uuid')", "anon")[0] != 0)
+    hid = psql(f"select id from public.comments where pub_id='{pid}'")[1]
+    psql(f"select public.mod_set('{KEY}', {hid}, 'approve')", "anon")
+    for i in range(5, 9): report(pid, f"198.51.100.{i}")
+    check("a comment the owner approved cannot be hidden by reports", visible("zenlite") == "6")
+    psql("select set_config('request.headers', '{\"cf-connecting-ip\": \"10.9.0.1\"}', false);\n"
+         "insert into private.reports (comment_id, who) select -g, private.visitor_hash() from generate_series(1, 20) g")
+    check("report flood: at most 20 reports per visitor per day", report(psql("select pub_id from public.comments where mod_id='zenlite' and status='approved' order by id desc limit 1")[1], "10.9.0.1") == "limit")
+    check("visitor address in reports is only a hash", psql("select count(*) from private.reports where who !~ '^[0-9a-f]{64}$'")[1] == "0")
+    rc, out = psql(f"select count(*) from public.mod_items('{KEY}', 'pending')", "anon"); check("owner sees held + hidden comments", out == "11", out)
+    rc, out = psql(f"select count(*) from public.mod_items($k${'K'*42}L$k$, 'pending')", "anon"); check("wrong key cannot read held comments", rc != 0 and "not allowed" in out, out)
     # per visitor (address from Cloudflare's header, stored only as a salted hash)
     outs = [last(sub("حلو كلش", ip="203.0.113.7")[1]) for _ in range(5)]
-    check("per-visitor limit: 3 per 10 minutes", outs == ["ok", "ok", "ok", "limit", "limit"], outs)
-    rc, out = sub("حلو كلش", ip="203.0.113.8"); check("another visitor is not blocked by the first", last(out) == "ok", out)
+    check("per-visitor limit: 3 per 10 minutes", [o in ACC for o in outs] == [True, True, True, False, False] and outs[3:] == ["limit", "limit"], outs)
+    rc, out = sub("حلو كلش", ip="203.0.113.8"); check("another visitor is not blocked by the first", last(out) in ACC, out)
     rc, out = psql("select count(*) from private.submit_log where who ~ '^[0-9a-f]{64}$' and who !~ '203'")
     check("visitor address is stored only as a hash", out == "4", out)
     oks = 3
     for _ in range(4):
         psql("update private.submit_log set at = at - interval '11 minutes'; update public.comments set created_at = created_at - interval '11 minutes'")
-        oks += [last(sub("حلو كلش", ip="203.0.113.7")[1]) for _ in range(3)].count("ok")
+        oks += sum(last(sub("حلو كلش", ip="203.0.113.7")[1]) in ACC for _ in range(3))
     check("per-visitor daily cap: 10 per day", oks == 10, oks)
     psql("update private.submit_log set at = at - interval '2 days'")
     sub("حلو كلش", ip="203.0.113.9")
     check("visitor log older than 24h is deleted", psql("select count(*) from private.submit_log where at < now() - interval '1 day'")[1] == "0")
     psql("delete from public.comments; delete from private.submit_log")
-    rc, out = psql("select public.submit_comment('nabd-pack','pro','حلو كلش', null, null) from generate_series(1,40)", "anon")
+    rc, out = psql("select public.post_comment('nabd-pack','pro','حلو كلش', null, null) from generate_series(1,40)", "anon")
     check("site-wide flood limit: at most 30 per 10 minutes", count() == "30" and "busy" in out, count())
+    check("a flood of the same text: only the first is published", count("status='approved'") == "1", count("status='approved'"))
 
     # --- moderation key
     for bad in ["", "K" * 42, "k" * 43, KEY + " ", "x' or '1'='1", KEY[:-1] + "L", "K" * 300]:
@@ -128,27 +167,24 @@ try:
     rc, out = psql(f"select count(*) from public.mod_page($k${'K'*42}L$k$, 'pending', null)", "anon"); check("wrong key cannot page the owner list", rc != 0 and "not allowed" in out, out)
     rc, out = psql(f"select public.mod_sync_mods($k$bad$k$, array['evil'])", "anon"); check("wrong key cannot change the mod list", rc != 0, out)
     rc, out = psql(f"select public.mod_sync_mods('{KEY}', array['../x'])", "anon"); check("mod list rejects bad ids", out == "-1", out)
-    rc, out = psql(f"select count(*) from public.mod_list('{KEY}')", "anon"); check("right key lists pending (100 per page)", rc == 0 and out == "30", out)
+    rc, out = psql(f"select count(*) from public.mod_list('{KEY}')", "anon"); check("right key lists pending (100 per page)", rc == 0 and out == "29", out)
     rc, out = psql(f"select count(*) from public.mod_page('{KEY}', 'pending', {int(psql("select max(id) from public.comments")[1]) - 9})", "anon")
-    check("owner list pages with p_before", out == "20", out)
+    check("owner list pages with p_before", out == "19", out)
     rc, out = psql(f"select public.mod_set('{KEY}', 1, 'drop')", "anon"); check("unknown action refused", out == "bad_action", out)
-    first = psql("select min(id) from public.comments")[1]
+    first = psql("select min(id) from public.comments where status='pending'")[1]
     rc, out = psql(f"select public.mod_set('{KEY}', {first}, 'approve')", "anon")
-    rc2, out2 = psql("select count(*) from public.list_comments('nabd-pack')", "anon")
-    check("approved comment becomes visible", out == "ok" and out2 == "1", f"{out} {out2}")
-    rc, out = psql("select count(*) from public.list_comments('other-mod')", "anon"); check("other mods see nothing", out == "0", out)
-    rc, out = psql("select * from public.list_comments('nabd-pack')", "anon")
-    check("public list exposes no id/status/created/mod internals", out.count("|") == 5 and out.startswith("|"), out)
+    check("approved comment becomes visible", out == "ok" and visible() == "2", f"{out} {visible()}")
+    check("other mods see nothing", visible("other-mod") == "0")
     rc, out = psql(f"select public.mod_set('{KEY}', {first}, 'delete')", "anon")
-    check("owner can delete", out == "ok" and psql("select count(*) from public.list_comments('nabd-pack')", "anon")[1] == "0", out)
+    check("owner can delete", out == "ok" and visible() == "1", out)
     rc, out = psql(f"select public.mod_purge_pending('{KEY}')", "anon")
-    check("owner can delete all pending spam at once", out == "29" and count("status='pending'") == "0", out)
+    check("owner can delete all pending spam at once", out == "28" and count("status='pending'") == "0", out)
     # caps: 60 pending per mod, 300 pending overall (time moved back to skip the 10-minute limits)
     ids = [f"m{i}" for i in range(7)]
     psql(f"select public.mod_sync_mods('{KEY}', array{ids!r})", "anon")
     for mod in ids:
         for _ in range(3):
-            psql(f"select public.submit_comment('{mod}','pro','حلو كلش', null, null) from generate_series(1,25)", "anon")
+            psql(f"select public.post_comment('{mod}','pro','حلو كلش', null, null) from generate_series(1,25)", "anon")
             psql("update public.comments set created_at = created_at - interval '11 minutes'")
     check("pending caps: 60 per mod and 300 overall", count("status='pending'") == "300" and count("mod_id='m0' and status='pending'") == "60", count("status='pending'"))
     rc, out = sub("حلو", mod="nabd-pack"); check("sync removed mods that no longer exist", out == "bad_mod", out)

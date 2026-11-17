@@ -23,6 +23,9 @@ Every change must be checked for security **before** it is pushed:
 - On-site comments (no account): `assets/comments.js` → Supabase project `eqcexrzutbqaubzyelce` (publishable key is public by design).
   The `comments` table is closed; only the RPCs in `supabase/migrations/*.sql` are exposed (submit/list for visitors, mod_list/mod_set need the
   owner's moderation key; the DB stores only its sha256 in `private.moderation_key`). Owner approves in admin.html «آراء الزوار».
+  Visitors: `post_comment` (clean → published at once; `private.needs_review` words/spam → held), `comments_for`, `report_comment`
+  (3 visitors hide an auto-published comment). Supabase's MCP asks the owner to confirm any SQL containing DROP/DELETE and the
+  prompt does not reach the owner's phone: write migrations without them where possible, otherwise give the owner a paste page.
   Any DB change = new migration file + apply it + rerun attack_comments.py.
 - Deploy target is the `gh-pages` branch (Pages source). Do not edit it by hand.
 - `MC.LATEST` in `assets/common.js` holds the latest Minecraft versions; update it when Mojang releases.
