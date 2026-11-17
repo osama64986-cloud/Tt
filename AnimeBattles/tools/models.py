@@ -1492,6 +1492,43 @@ def _strand_chunky(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, 
 
 Model.strand = _strand_chunky
 
+SMOOTH_HAIR = [False]
+
+
+def _strand_smooth_switch(self, base, d, length, width, paint, bend=(0, 0, 0), segs=3, bone="hair", thick=None):
+    """With SMOOTH_HAIR on (Saiyans, Broly, Kakashi): five overlapping pieces tapering gently to a point instead of
+    three big steps, so a spike reads as one clean cone."""
+    if not SMOOTH_HAIR[0] or segs < 3:
+        return _strand_chunky(self, base, d, length, width, paint, bend, segs, bone, thick)
+    width *= 1.1
+    th = thick or 0.88
+    widths = [1.0, 0.8, 0.6, 0.42, 0.24]
+    lens = [0.26, 0.24, 0.21, 0.18, 0.16]
+    p = list(base)
+    d = norm(d)
+    for i in range(5):
+        w = max(0.5, round(width * widths[i] * 4) / 4)
+        t = max(0.5, round(th * w * 4) / 4)
+        seg_len = max(0.75, round(length * lens[i] * 4) / 4) + (0.5 if i < 4 else 0)
+        ax, az = math.degrees(math.asin(clampf(d[2]))), math.degrees(math.atan2(-d[0], d[1]))
+        self.box(bone, [p[0] - w / 2, p[1], p[2] - t / 2], [w, seg_len, t], paint,
+                 rot=[round(ax, 2), 0, round(az, 2)], pivot=[round(p[0], 3), round(p[1], 3), round(p[2], 3)])
+        p = [p[k] + d[k] * seg_len * 0.78 for k in range(3)]
+        d = norm([d[k] + bend[k] * 0.6 for k in range(3)])
+
+
+Model.strand = _strand_smooth_switch
+
+
+def smooth_hair(fn):
+    def wrapped(*a, **kw):
+        SMOOTH_HAIR[0] = True
+        try:
+            return fn(*a, **kw)
+        finally:
+            SMOOTH_HAIR[0] = False
+    return wrapped
+
 def goku_hair_base_3d(m, c):
     hp = hair_paint(c)
     # bangs over the forehead
@@ -1536,15 +1573,18 @@ def goku_hair_ssj3_3d(m, c):
 
 
 def vegeta_hair_3d(m, c):
+    """Vegeta's flame: a low crown, then three rows of separate spikes standing up and fanning out (tallest in the
+    middle), the back row thrown back — a flame with gaps between the spikes from every side, not a block."""
     hp = hair_paint(c)
-    m.box("hair", [-3.75, 31.5, -3.25], [7.5, 5, 6.75], hp)  # flame body
-    m.box("hair", [-2.75, 35.5, -2.25], [5.5, 3.5, 5], hp)
-    m.strand([0, 37.5, 0], [0, 1, 0.12], 7.5, 4.5, hp)
-    m.mirror_strand([2.2, 34, -1.6], [0.18, 1, -0.05], 7.5, 4, hp)
-    m.mirror_strand([3.2, 32.5, 1], [0.32, 1, 0.2], 7.5, 4, hp)
-    m.strand([0, 34, 2.4], [0, 1, 0.35], 8, 4.5, hp)
-    m.strand([0, 34, -2.4], [0, 1, -0.06], 6.5, 4, hp)
-    m.mirror_strand([3.9, 30.5, -1.5], [0.4, 1, 0], 5, 3, hp)
+    m.box("hair", [-3.6, 31.6, -3.0], [7.2, 2.2, 6.4], hp)  # crown
+    for x, h, lean in ((-2.7, 9.0, -0.38), (-0.9, 11.5, -0.12), (0.9, 11.5, 0.12), (2.7, 9.0, 0.38)):    # front row
+        m.strand([x, 32.8, -2.0], [lean, 1, -0.06], h, 2.9, hp)
+    for x, h, lean in ((-3.1, 10.0, -0.5), (-1.0, 13.0, -0.16), (1.0, 13.0, 0.16), (3.1, 10.0, 0.5)):     # middle row (tallest)
+        m.strand([x, 33.0, 0.3], [lean, 1, 0.22], h, 3.0, hp)
+    for x, h, lean in ((-2.5, 9.0, -0.45), (0.0, 10.5, 0.0), (2.5, 9.0, 0.45)):                          # back row, thrown back
+        m.strand([x, 32.6, 2.4], [lean, 1, 0.65], h, 2.9, hp)
+    m.mirror_strand([3.9, 31.0, -0.6], [0.75, 1, 0.05], 6.0, 2.6, hp)                                    # flaring sides
+    m.mirror_strand([3.8, 31.0, 2.0], [0.7, 0.9, 0.5], 5.5, 2.5, hp)
 
 
 def gojo_hair_up_3d(m, c):
@@ -1583,10 +1623,10 @@ def _hair3d(fn, **kw):
     return wrapped
 
 
-goku_hair_base = _hair3d(goku_hair_base_3d, hairline=29.2)
-goku_hair_ssj = _hair3d(goku_hair_ssj_3d, hairline=29.3)
-goku_hair_ssj3 = _hair3d(goku_hair_ssj3_3d, hairline=29.2, back_to=24.2)
-vegeta_hair = _hair3d(vegeta_hair_3d, hairline=30.0, peak=True, teeth=0.4)
+goku_hair_base = smooth_hair(_hair3d(goku_hair_base_3d, hairline=29.2))
+goku_hair_ssj = smooth_hair(_hair3d(goku_hair_ssj_3d, hairline=29.3))
+goku_hair_ssj3 = smooth_hair(_hair3d(goku_hair_ssj3_3d, hairline=29.2, back_to=24.2))
+vegeta_hair = smooth_hair(_hair3d(vegeta_hair_3d, hairline=30.0, peak=True, teeth=0.4))
 gojo_hair_up = _hair3d(gojo_hair_up_3d, hairline=28.9, sideburn=False)
 gojo_hair_down = _hair3d(gojo_hair_down_3d, hairline=28.8)
 
@@ -1620,7 +1660,7 @@ def goku_hair_ssj3_v2(m, c):
     m.mirror_strand([4.4, 31, -1.6], [0.25, -1, 0.05], 8, 3.25, hp)
 
 
-goku_hair_ssj3 = _hair3d(goku_hair_ssj3_v2, hairline=29.2, back_to=24.0)
+goku_hair_ssj3 = smooth_hair(_hair3d(goku_hair_ssj3_v2, hairline=29.2, back_to=24.0))
 
 
 # ==================================================================================

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Anime Battles add-on builder.
+"""Tenka Clash (formerly Anime Battles) add-on builder.
 
 Generates the cube models (geometry), pixel textures, item icons, particle
-texture and pack icons, then zips BP + RP into dist/AnimeBattles.mcaddon.
+texture and pack icons, then zips BP + RP into dist/TenkaClash.mcaddon.
 
 Run:  python3 tools/build.py
 """
@@ -94,6 +94,19 @@ def build_icons():
     idir = os.path.join(RP, "textures", "items")
     stick_icon(os.path.join(idir, "kill_stick.png"), (40, 20, 50), (70, 10, 20), (255, 255, 255), (230, 20, 30))
     stick_icon(os.path.join(idir, "team_stick.png"), (40, 80, 230), (225, 40, 40), (255, 255, 255), (250, 210, 80))
+    # arena builder: a little round arena seen from above (stone floor, red and blue gates, gold centre)
+    ar = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    for y in range(16):
+        for x in range(16):
+            d = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
+            if d <= 7.6:
+                col = (70, 70, 80) if d > 6.4 else (168, 168, 160) if (x // 3 + y // 3) % 2 else (140, 140, 136)
+                if d < 1.6:
+                    col = (250, 210, 80)
+                if 6.4 < d and abs(y - 7.5) < 1.6:
+                    col = (220, 40, 40) if x < 8 else (40, 80, 230)
+                ar.putpixel((x, y), col + (255,))
+    ar.save(os.path.join(idir, "arena_builder.png"))
 
     orb = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     px = orb.load()
@@ -119,7 +132,7 @@ def build_icons():
 
 def build_zip():
     os.makedirs(DIST, exist_ok=True)
-    out = os.path.join(DIST, "AnimeBattles.mcaddon")
+    out = os.path.join(DIST, "TenkaClash.mcaddon")
     if os.path.exists(out):
         os.remove(out)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -909,8 +922,10 @@ def build_summons():
                 "geometry": {n: f"geometry.ab.summon_{n}" for n in names},
                 "animations": {"base": "animation.ab.summon_base", "wings": "animation.ab.summon_wings", "tails": "animation.ab.summon_tails",
                                "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap",
-                               "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin"},
-                "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"},
+                               "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin",
+                               "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot"},
+                "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"}, {"flap": f"{K} == {names.index('crow')}"},
+                                        {"trot": f"{K} == {names.index('hound')}"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
                                         {"leap": "query.property('ab:pose') == 3"}, {"bite": "query.property('ab:pose') == 4"},
                                         {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}]},
@@ -944,6 +959,15 @@ def build_summons():
     an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
         "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
         "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}
+    an["animations"]["animation.ab.summon_flap"] = {"loop": True, "bones": {  # crow: fast wingbeats, tail steering
+        "rightWing": {"rotation": [0, 0, "math.sin(query.life_time * 900.0) * 38"]},
+        "leftWing": {"rotation": [0, 0, "-math.sin(query.life_time * 900.0) * 38"]},
+        "tails": {"rotation": ["math.sin(query.life_time * 300.0) * 6", 0, 0]}}}
+    an["animations"]["animation.ab.summon_trot"] = {"loop": True, "bones": {  # hound: legs pumping, tail wagging, jaw snapping
+        "rightArm": {"rotation": ["math.sin(query.life_time * 600.0) * 30", 0, 0]},
+        "leftArm": {"rotation": ["-math.sin(query.life_time * 600.0) * 30", 0, 0]},
+        "tails": {"rotation": [0, "math.sin(query.life_time * 700.0) * 25", 0]},
+        "jaw": {"rotation": ["14 + math.sin(query.life_time * 500.0) * 14", 0, 0]}}}
     an["animations"]["animation.ab.summon_tails"] = {"loop": True, "bones": {
         "tails": {"rotation": ["math.sin(query.life_time * 140.0) * 8", "math.sin(query.life_time * 90.0) * 14", 0]}}}
     an["animations"]["animation.ab.summon_swing"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {
@@ -974,7 +998,8 @@ def build_egg_icons():
     """Spawn eggs show the fighter's own face (32x32) in a coloured frame."""
     import models
     data = {"ab_kill_stick": {"textures": "textures/items/kill_stick"},
-            "ab_team_stick": {"textures": "textures/items/team_stick"}}
+            "ab_team_stick": {"textures": "textures/items/team_stick"},
+            "ab_arena_builder": {"textures": "textures/items/arena_builder"}}
     idir = os.path.join(RP, "textures", "items")
     for ch, forms in models.FORMS.items():
         src = HEADS[(ch, "eyes" if ch == "gojo" else forms[0])].convert("RGBA")

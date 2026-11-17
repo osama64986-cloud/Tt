@@ -2865,6 +2865,65 @@
      }
     }
    }
+  },
+  "animation.ab.summon_flap": {
+   "loop": true,
+   "bones": {
+    "rightWing": {
+     "rotation": [
+      0,
+      0,
+      "math.sin(query.life_time * 900.0) * 38"
+     ]
+    },
+    "leftWing": {
+     "rotation": [
+      0,
+      0,
+      "-math.sin(query.life_time * 900.0) * 38"
+     ]
+    },
+    "tails": {
+     "rotation": [
+      "math.sin(query.life_time * 300.0) * 6",
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "animation.ab.summon_trot": {
+   "loop": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      "math.sin(query.life_time * 600.0) * 30",
+      0,
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      "-math.sin(query.life_time * 600.0) * 30",
+      0,
+      0
+     ]
+    },
+    "tails": {
+     "rotation": [
+      0,
+      "math.sin(query.life_time * 700.0) * 25",
+      0
+     ]
+    },
+    "jaw": {
+     "rotation": [
+      "14 + math.sin(query.life_time * 500.0) * 14",
+      0,
+      0
+     ]
+    }
+   }
   }
  }
 }

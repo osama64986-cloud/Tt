@@ -1262,21 +1262,35 @@ def broly(m, form):
         for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
             m.box(arm, [3.2 if s_ > 0 else -8.8, 20.0, -2.8], [5.6, 4.6, 5.6], musc)
     fur, fur2 = SC.swatch((96, 140, 70)), SC.swatch((70, 110, 52))
-    for k in range(18):  # the green fur pelt round his waist
-        a = 2 * math.pi * k / 18
-        SC.blade(m, "body", [math.cos(a) * 4.4, 13.4, math.sin(a) * 2.6], [math.cos(a) * 0.35, -1, math.sin(a) * 0.35], 3.6, 1.8, 0.7,
+    m.box("body", [-4.5, 11.6, -2.7], [9.0, 2.2, 5.4], solid((84, 124, 62)))  # the pelt wrapped tight round his waist
+    for k in range(20):  # its ragged fur hem hanging all round (a little longer at the back) — no tail
+        a = 2 * math.pi * k / 20
+        back = max(0.0, math.sin(a))
+        SC.blade(m, "body", [math.cos(a) * 4.3, 12.0, math.sin(a) * 2.6], [math.cos(a) * 0.3, -1, math.sin(a) * 0.3], 3.0 + back * 1.6, 1.9, 0.7,
                  fur if k % 2 else fur2, width_dir=[-math.sin(a), 0, math.cos(a)])
-    SC.curve_tube(m, "body", [[0, 12.5, 2.8], [0, 9, 4.2], [0, 4, 4.6], [0, 0.6, 4.4]], 2.6, 1.6, [fur, fur2], n=2, flat=0.45, width=[1, 0, 0])  # flowing down behind
-    # hair: overgrown, spiky, down to the upper back
+    broly_hair(m, hair, form)
+
+
+@M.smooth_hair
+def broly_hair(m, hair, form):
+    """Broly's hair: a thick, overgrown, untamed mane. Base/Wrathful: heavy spikes swept back and down to the upper
+    back with shaggy bangs; Super Saiyan / Legendary: the same mane thrown up and back, huge and jagged."""
     shell(m, hair, hairline=30.8, sideburn=False, teeth=0.8)
     hp = M.hair_paint(hair)
-    wild = 1.25 if form in ("ssj", "lssj") else (1.12 if form == "wrath" else 1.0)
-    for x, z, lean in ((0, -2.0, 0), (2.4, -1.4, 0.6), (-2.4, -1.4, -0.6), (3.4, 1.2, 1.0), (-3.4, 1.2, -1.0), (1.4, 2.6, 0.4), (-1.4, 2.6, -0.4)):
-        m.strand([x, 32.0, z], [lean, 1.0 if form in ("ssj", "lssj") else 0.7, z * 0.3 + 0.3], 4.2 * wild, 2.8, hp, bone="hair", segs=3, thick=0.75)
-    for x in (-3.0, -1.5, 0, 1.5, 3.0):  # long spikes falling to the upper back
-        m.strand([x, 30.5, 3.8], [x * 0.12, -0.8, 0.6], 7.5 * wild, 2.6, hp, bone="hair", segs=3, thick=0.7)
-    for x, tilt in ((-2.6, -0.3), (-0.8, -0.05), (1.0, 0.1), (2.8, 0.35)):
-        m.strand([x, 31.6, -4.1], [tilt, -0.6, -0.5], 3.0, 2.2, hp, bone="hair", segs=3, thick=0.7)
+    up = form in ("ssj", "lssj")
+    big = 1.3 if form == "lssj" else 1.15 if up else 1.0
+    rise = 1.0 if up else 0.35
+    for x, z, sx in ((-2.8, -1.6, -0.5), (-0.9, -2.0, -0.15), (0.9, -2.0, 0.15), (2.8, -1.6, 0.5)):    # front crown
+        m.strand([x, 32.1, z], [sx, rise, 0.55], 6.0 * big, 3.4, hp, bone="hair", thick=0.8, bend=(0, -0.08 if not up else 0, 0.05))
+    for x, z, sx in ((-3.2, 0.6, -0.8), (-1.1, 0.4, -0.25), (1.1, 0.4, 0.25), (3.2, 0.6, 0.8)):        # top, thrown back
+        m.strand([x, 32.3, z], [sx, rise * 0.9, 0.9], 7.0 * big, 3.6, hp, bone="hair", thick=0.8, bend=(0, -0.1 if not up else 0, 0))
+    for x in (-3.4, -1.7, 0.0, 1.7, 3.4):                                                          # the mane down the back
+        m.strand([x, 31.0, 3.6], [x * 0.15, -0.75 + (0.6 if up else 0), 0.7], 8.5 * big, 3.2, hp, bone="hair", thick=0.75)
+    for s_ in (1, -1):                                                                             # wild sides
+        m.strand([s_ * 4.0, 31.2, -0.6], [s_ * 1, rise * 0.6, 0.3], 5.5 * big, 3.0, hp, bone="hair", thick=0.75)
+        m.strand([s_ * 4.0, 29.8, 1.6], [s_ * 0.9, -0.3 + rise * 0.4, 0.6], 5.0 * big, 2.8, hp, bone="hair", thick=0.75)
+    for x, tilt in ((-2.6, -0.3), (-0.9, -0.08), (1.0, 0.1), (2.7, 0.32)):                          # shaggy bangs
+        m.strand([x, 31.6, -4.1], [tilt, -0.6 if not up else 0.2, -0.5], 3.2, 2.4, hp, bone="hair", thick=0.7)
 
 
 # ------------------------------------------------------------------ Madara Uchiha
@@ -1486,6 +1500,22 @@ def itachi(m, form):
 
 
 # ------------------------------------------------------------------ Kakashi Hatake
+@M.smooth_hair
+def kakashi_hair(m):
+    """Kakashi's hair: separate silver spikes standing up and all sweeping over to his left (-x), the tallest
+    over the middle, short ones at the back, two short bangs framing the headband."""
+    shell(m, KAK_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(KAK_HAIR)
+    for x, z, L in ((2.8, -1.8, 6.0), (1.2, -2.2, 7.6), (-0.4, -2.0, 8.4), (-2.0, -1.4, 8.0), (-3.4, -0.6, 6.6)):     # front row
+        m.strand([x, 32.0, z], [-0.55, 1, -0.05], L, 3.0, hp, bone="hair", thick=0.8, bend=(-0.06, 0, 0))
+    for x, z, L in ((2.4, 0.8, 6.4), (0.6, 0.6, 7.6), (-1.2, 0.8, 7.8), (-2.9, 1.0, 6.6)):                          # middle row
+        m.strand([x, 32.2, z], [-0.6, 1, 0.25], L, 3.1, hp, bone="hair", thick=0.8, bend=(-0.06, 0, 0))
+    for x, z, L in ((1.6, 3.0, 5.0), (-0.4, 3.2, 5.6), (-2.4, 3.0, 5.0)):                                          # back row
+        m.strand([x, 31.6, z], [-0.5, 0.8, 0.7], L, 3.0, hp, bone="hair", thick=0.8)
+    for s_ in (1, -1):
+        m.strand([s_ * 3.4, 31.4, -3.9], [s_ * 0.1, -1, -0.1], 3.6, 2.0, hp, bone="hair", segs=2, thick=0.6)
+    m.strand([0.6, 31.6, -4.1], [0.15, -1, -0.2], 2.8, 2.2, hp, bone="hair", segs=2, thick=0.6)
+
 KAK_HAIR = (206, 210, 222)
 
 
@@ -1529,15 +1559,7 @@ def kakashi(m, form):
         m.box("head", [-2.4, 28.2, -4.65], [4.8, 2.2, 0.35], layered((196, 202, 212), [leaf_plate]), rot=[0, 0, -12], pivot=[0, 29.2, 0])
     else:
         headband(m, (36, 40, 62))
-    # hair: a big silver mass thrusting up and over to his left
-    shell(m, KAK_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
-    hp = M.hair_paint(KAK_HAIR)
-    for x, z, lean, L in ((-3.0, -1.0, -0.9, 7.0), (-1.6, -2.0, -0.6, 7.5), (0.0, -1.2, -0.45, 7.8), (1.6, -0.6, -0.3, 7.0), (3.0, 0.4, -0.15, 6.0),
-                          (-2.2, 1.6, -0.7, 6.8), (0.6, 2.0, -0.35, 6.4), (2.4, 2.4, -0.1, 5.2), (-0.8, 3.0, -0.5, 5.8)):
-        m.strand([x, 32.0, z], [lean, 1.0, z * 0.12 + 0.1], L, 3.2, hp, bone="hair", segs=3, thick=0.75, bend=(-0.08, 0, 0))
-    for s_ in (1, -1):
-        m.strand([s_ * 3.4, 31.4, -3.9], [s_ * 0.1, -1, -0.1], 3.6, 2.0, hp, bone="hair", segs=2, thick=0.6)
-    m.strand([0.6, 31.6, -4.1], [0.15, -1, -0.2], 2.8, 2.2, hp, bone="hair", segs=2, thick=0.6)
+    kakashi_hair(m)
     # the kunai pouch on his right thigh
     m.box("rightLeg", [2.2, 6.6, -1.2], [1.0, 2.4, 2.4], solid((36, 38, 46)))
 

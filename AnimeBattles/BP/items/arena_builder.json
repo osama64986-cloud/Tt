@@ -1,0 +1,28 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "ab:arena_builder",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "ab_arena_builder"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "\u00a76\u00a7lArena Builder"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:glint": true,
+      "minecraft:use_modifiers": {
+        "use_duration": 0.6,
+        "movement_modifier": 1.0
+      }
+    }
+  }
+}

@@ -366,7 +366,61 @@ def mahoraga():
     return m
 
 
+def crow():
+    """Itachi's crow: a glossy black bird with Sharingan-red eyes, a dark beak, broad flapping wings and a fan tail.
+    Built small (about a block long at ab:size 1); it faces -z, the way it flies."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 8, 0], "head": [0, 9.4, -3.6], "rightWing": [1.6, 9.4, -0.6], "leftWing": [-1.6, 9.4, -0.6],
+                      "tails": [0, 8.6, 3.4]})
+    BLK, SHEEN, BEAK, EYE = smooth((26, 26, 34)), smooth((48, 54, 82)), smooth((54, 54, 60)), smooth((228, 28, 34))
+    blob(m, "body", [0, 8.6, 0], [2.0, 1.8, 3.8], BLK, slices=4, axis="z")                     # body
+    blob(m, "body", [0, 9.4, -2.4], [1.6, 1.5, 1.6], SHEEN, slices=3)                          # chest
+    blob(m, "head", [0, 9.9, -4.0], [1.45, 1.45, 1.6], BLK, slices=3)                          # head
+    blade(m, "head", [0, 9.7, -5.3], [0, -0.12, -1], 2.2, 1.0, 0.7, BEAK, width_dir=[1, 0, 0])  # beak
+    for sx in (1, -1):
+        box_at(m, "head", [sx * 1.15, 10.3, -4.7], [0.35, 0.45, 0.45], EYE)                    # Sharingan eyes
+        bone = "rightWing" if sx > 0 else "leftWing"
+        blade(m, bone, [sx * 1.6, 9.5, -1.2], [sx, 0.12, 0.25], 6.5, 3.2, 0.4, SHEEN, taper=False, width_dir=[0, 0, 1])
+        for k in range(4):  # primaries fanning out at the tip
+            blade(m, bone, [sx * (4.5 + k * 0.6), 9.5, -0.8 + k * 0.7], [sx * 0.85, 0.05, 0.45 + k * 0.15], 3.4, 1.0, 0.3, BLK, width_dir=[0, 0, 1])
+        tube(m, "body", [[sx * 0.7, 7.4, 0.4], [sx * 0.7, 6.0, 0.2]], [0.22, 0.18], BEAK, knuckles=False)  # legs
+    for k in (-1, 0, 1):  # fan tail
+        blade(m, "tails", [k * 0.5, 8.6, 3.0], [k * 0.25, -0.1, 1], 3.6, 1.4, 0.3, BLK, width_dir=[1, 0, 0])
+    return m
+
+
+def hound():
+    """Kakashi's ninja hound: a big brown dog with a dark muzzle, ears up, a Leaf headband and a ninja vest,
+    bursting out of the ground jaws first. Faces -z."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 10, 0], "head": [0, 13, -6], "jaw": [0, 12, -8], "rightArm": [2.4, 9, -4], "leftArm": [-2.4, 9, -4],
+                      "tails": [0, 12, 6]})
+    FUR, DARK, BELLY, BAND, PLATE, VEST = smooth((150, 104, 62)), smooth((60, 42, 32)), smooth((210, 176, 130)), smooth((40, 44, 70)), smooth((196, 202, 212)), smooth((60, 70, 110))
+    blob(m, "body", [0, 11, 0], [3.4, 3.2, 6.6], FUR, slices=5, axis="z")                     # body
+    blob(m, "body", [0, 10.0, -1.0], [2.6, 2.0, 4.6], BELLY, slices=3, axis="z")
+    blob(m, "body", [0, 11.6, -2.4], [3.6, 3.4, 2.6], VEST, slices=3, axis="z")               # ninja vest
+    blob(m, "head", [0, 14.0, -7.4], [2.6, 2.5, 2.8], FUR, slices=4)                          # head
+    blob(m, "head", [0, 13.0, -10.0], [1.5, 1.3, 1.8], DARK, slices=3, axis="z")             # muzzle
+    box_at(m, "head", [0, 13.6, -11.6], [1.2, 0.9, 0.8], smooth((20, 18, 20)))                # nose
+    blob(m, "jaw", [0, 11.9, -9.6], [1.3, 0.6, 1.7], DARK, slices=2, axis="z")               # lower jaw
+    for sx in (1, -1):
+        blade(m, "head", [sx * 1.6, 15.8, -7.0], [sx * 0.3, 1, 0.1], 2.6, 1.6, 0.5, DARK, width_dir=[0, 0, 1])  # ears
+        box_at(m, "head", [sx * 1.1, 14.6, -9.9], [0.5, 0.5, 0.3], smooth((16, 14, 18)))     # eyes
+        blade(m, "jaw", [sx * 0.6, 12.3, -10.8], [0, 1, 0], 0.8, 0.35, 0.3, smooth((240, 238, 230)))  # fangs
+    box_at(m, "head", [0, 15.4, -7.4], [5.4, 1.1, 5.6], BAND)                                 # headband
+    box_at(m, "head", [0, 15.4, -10.25], [2.4, 1.2, 0.3], PLATE)                              # Leaf plate
+    for sx, bone in ((1, "rightArm"), (-1, "leftArm")):  # front legs
+        tube(m, bone, [[sx * 2.4, 9.5, -4], [sx * 2.5, 4, -4.4], [sx * 2.5, 0.8, -4.6]], [1.3, 1.0, 0.9], FUR)
+        box_at(m, bone, [sx * 2.5, 0.5, -5.2], [1.8, 1.0, 2.2], DARK)
+    for sx in (1, -1):  # hind legs
+        tube(m, "body", [[sx * 2.4, 10, 4.4], [sx * 2.6, 5, 5.4], [sx * 2.5, 0.8, 4.8]], [1.6, 1.1, 0.9], FUR)
+        box_at(m, "body", [sx * 2.5, 0.5, 4.2], [1.8, 1.0, 2.2], DARK)
+    curve_tube(m, "tails", [[0, 12.4, 6], [0, 14.6, 8.2], [0, 16.4, 8.8]], 0.8, 0.4, FUR, n=2)
+    return m
+
+
 SUMMONS = [("susanoo", susanoo_perfect), ("kurama", kurama), ("gamabunta", gamabunta),
            ("susanoo_ribs", susanoo_ribs), ("susanoo_armour", susanoo_armour), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
-           ("susanoo_madara", susanoo_madara), ("susanoo_itachi", susanoo_itachi), ("susanoo_kakashi", susanoo_kakashi)]
-SOLID = {"gamabunta", "muzan_infant", "mahoraga"}   # opaque flesh; the rest are glowing chakra
+           ("susanoo_madara", susanoo_madara), ("susanoo_itachi", susanoo_itachi), ("susanoo_kakashi", susanoo_kakashi),
+           ("crow", crow), ("hound", hound)]
+SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound"}   # opaque flesh; the rest are glowing chakra

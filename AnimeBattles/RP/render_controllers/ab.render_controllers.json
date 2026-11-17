@@ -1069,7 +1069,9 @@
       "Texture.mahoraga",
       "Texture.susanoo_madara",
       "Texture.susanoo_itachi",
-      "Texture.susanoo_kakashi"
+      "Texture.susanoo_kakashi",
+      "Texture.crow",
+      "Texture.hound"
      ]
     },
     "geometries": {
@@ -1083,7 +1085,9 @@
       "Geometry.mahoraga",
       "Geometry.susanoo_madara",
       "Geometry.susanoo_itachi",
-      "Geometry.susanoo_kakashi"
+      "Geometry.susanoo_kakashi",
+      "Geometry.crow",
+      "Geometry.hound"
      ]
     }
    },
@@ -1110,7 +1114,9 @@
       "Texture.mahoraga",
       "Texture.susanoo_madara",
       "Texture.susanoo_itachi",
-      "Texture.susanoo_kakashi"
+      "Texture.susanoo_kakashi",
+      "Texture.crow",
+      "Texture.hound"
      ]
     },
     "geometries": {
@@ -1124,7 +1130,9 @@
       "Geometry.mahoraga",
       "Geometry.susanoo_madara",
       "Geometry.susanoo_itachi",
-      "Geometry.susanoo_kakashi"
+      "Geometry.susanoo_kakashi",
+      "Geometry.crow",
+      "Geometry.hound"
      ]
     }
    },

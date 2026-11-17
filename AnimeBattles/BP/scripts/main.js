@@ -1,7 +1,7 @@
-// Anime Battles — Goku, Vegeta, Gojo
+// Tenka Clash (formerly Anime Battles) — anime legends fight in red and blue teams
 // Team Stick: hit = red, next hit = blue (alternates). Use = switch next team. Sneak + use = reset all teams.
 // Kill Stick: hit = instant permanent kill (any mob, even the Warden). Use = toggle block damage. Sneak + use = effects quality.
-import { world, system, MolangVariableMap, EntityDamageCause, EquipmentSlot, ItemStack } from "@minecraft/server";
+import { world, system, MolangVariableMap, EntityDamageCause, EquipmentSlot, ItemStack, BlockVolume } from "@minecraft/server";
 
 // ------------------------------------------------------------------ settings
 const RED = "ab_red";
@@ -120,7 +120,63 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue];
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }];
+const KIND_CROW = 10, KIND_HOUND = 11;
+// Itachi's crows: real birds (not particles). A small flock flies out of him, swirls once and dives at the target;
+// each crow that strikes bursts into black feathers.
+function crowFlock(e, t, n = 5, dmg = 6) {
+  const dim = e.dimension;
+  const crows = [];
+  for (let i = 0; i < n; i++) {
+    const at = V.add(V.up(e.location, 1.6 + Math.random()), { x: (Math.random() - 0.5) * 2, y: 0, z: (Math.random() - 0.5) * 2 });
+    try {
+      const v = dim.spawnEntity("ab:summon", at);
+      v.setProperty("ab:kind", KIND_CROW); v.setProperty("ab:size", 0.9 + Math.random() * 0.25);
+      vfxAlive.set(v.id, now() + 80);
+      crows.push({ v, ph: Math.random() * Math.PI * 2, done: false });
+    } catch (err) { warn("crow", err); }
+  }
+  sound(dim, "mob.parrot.fly", e.location, 1.2, 0.6);
+  every(1, 60, (i) => {
+    for (const c of crows) {
+      if (c.done || !c.v.isValid) continue;
+      const tgt = alive(t) ? aim(t) : V.add(e.location, V.mul(e.getViewDirection(), 10));
+      const pos = c.v.location;
+      const to = V.sub(tgt, pos), d = V.len(to);
+      if (d < 1.2 || i === 59) {
+        c.done = true;
+        if (alive(t) && d < 1.6) deal(e, t, dmg * powerOf(e) / 100);
+        burst(dim, pos, C.black, 14, 3, 0.35, 0.6);
+        killVfx(c.v);
+        continue;
+      }
+      const swirl = i < 12 ? 1 : 0.25;  // they circle out first, then dive
+      const side = V.norm({ x: -to.z, y: 0, z: to.x });
+      const step = V.add(V.mul(V.norm(to), Math.min(d, 0.55 + i * 0.02)), V.mul(side, Math.sin(c.ph + i * 0.5) * 0.35 * swirl));
+      const next = V.add(pos, V.add(step, { x: 0, y: Math.sin(c.ph + i * 0.7) * 0.08, z: 0 }));
+      try { c.v.teleport(next, { facingLocation: V.add(next, step) }); } catch (err) { c.done = true; }
+    }
+    if (crows.every((c) => c.done)) return false;
+  });
+}
+// Kakashi's ninja hounds: they burst out of the ground round the target and bite down, pinning it.
+function houndAmbush(e, t, n = 3) {
+  const dim = e.dimension;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random();
+    const at = V.add(t.location, { x: Math.cos(a) * 1.8, y: -0.8, z: Math.sin(a) * 1.8 });
+    try {
+      const v = dim.spawnEntity("ab:summon", at);
+      v.setProperty("ab:kind", KIND_HOUND); v.setProperty("ab:size", 1.05);
+      vfxAlive.set(v.id, now() + 60);
+      try { v.teleport(at, { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
+      burst(dim, V.up(at, 1), DUST, 18, 3, 0.45, 0.6);
+      every(1, 6, (k) => { if (v.isValid) { try { v.teleport(V.up(at, (k + 1) * 0.14), { facingLocation: aim(t) }); } catch (err) { /* ignore */ } } });
+      later(7, () => vset(v, "ab:pose", 4));  // bite
+      later(40, () => { burst(dim, V.up(v.location, 0.6), C.white, 12, 2, 0.4, 0.5); killVfx(v); });
+    } catch (err) { warn("hound", err); }
+  }
+}
 function spawnSummon(dim, kind, at, dir, size, life) {
   const v = dim.spawnEntity("ab:summon", at);
   try { v.teleport(at, { facingLocation: V.add(at, V.mul(dir, 10)) }); } catch (err) { /* ignore */ }
@@ -3074,7 +3130,12 @@ const ITACHI = {
   abilities: [
     SAS.fireball({ size: 2.8 }), SAS.phoenix(),
     SIG.ball("shuriken", "Shuriken Jutsu", { say: "§7§l(shuriken — every one finds its mark)", color: C.silver, count: 6, size: 0.35, dmg: 5, spread: 1.5, cd: 100, cost: 40, charge: 2, speed: 2.2 }),
-    SIG.ball("crows", "Crow Clone", { say: "§0§lCrow Clone! §7— a flock of crows", color: C.black, count: 8, size: 0.5, dmg: 5, spread: 3, homing: true, cd: 200, cost: 90, charge: 4 }),
+    { id: "crows", label: "Crow Clone", cd: 200, cost: 90, min: 0, max: 30, weight: 4,
+      run(e, s, t) {  // a flock of real crows bursts out of him and dives at the target
+        busy(s, 12); face(e, aim(t)); setPose(e, 21); announce(e, "§0§lCrow Clone!");
+        crowFlock(e, t, 5, 7);
+        later(10, () => { if (e.isValid) setPose(e, 0); });
+      } },
     SAS.genjutsu({ cond: G(0), say: "§c§l(the Sharingan turns) §7— genjutsu" }),
     { ...SAS.genjutsu({ label: "Tsukuyomi", say: "§4§lTsukuyomi. §7— seventy-two hours in an instant", stun: 50, dmg: 34, cond: G(1, 2) }), id: "tsukuyomi", cd: 520, cost: 260 },
     SAS.amaterasu({ cond: G(1, 2) }),
@@ -3114,9 +3175,10 @@ const KAKASHI = {
       run(e, s, t) {  // his ninja hounds burst out of the ground and pin the target
         busy(s, 12); setPose(e, 21); announce(e, "§6§lSummoning: Earth Style — Tracking Fang!");
         if (!alive(t)) return;
-        later(6, () => {
+        later(2, () => { if (alive(t)) houndAmbush(e, t, 3); });
+        later(8, () => {
           if (!alive(t)) return;
-          burst(t.dimension, V.up(t.location, 0.3), DUST, 30, 4, 0.45, 0.6); fx(t.dimension, "shock", t.location, DUST, 4, 0.4);
+          fx(t.dimension, "shock", t.location, DUST, 4, 0.4);
           deal(e, t, 12 * powerOf(e) / 100);
           if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 28); }
         });
@@ -4513,6 +4575,21 @@ function dodgeFx(v, src) {
   const color = ui ? C.silver : C.white;
   fx(v.dimension, "aura", v.location, color, 1, 0.4, { count: 12 * fxLevel(), speed: 0 });
   const from = src && src.isValid ? src.location : V.add(v.location, { x: 1, y: 0, z: 0 });
+  if (v.typeId === "ab:itachi" && now() >= (state(v).crowDodge ?? 0)) {  // the blow hits a crow clone: it bursts into crows
+    state(v).crowDodge = now() + 120;
+    const dim = v.dimension, o = V.up(v.location, 1.2);
+    for (let i = 0; i < 4; i++) {
+      try {
+        const c = dim.spawnEntity("ab:summon", o);
+        c.setProperty("ab:kind", KIND_CROW); c.setProperty("ab:size", 0.9);
+        vfxAlive.set(c.id, now() + 40);
+        const dir = V.norm({ x: Math.cos(i * 1.6 + 0.3), y: 0.5, z: Math.sin(i * 1.6 + 0.3) });
+        every(1, 18, (k) => { if (!c.isValid) return false; const nx = V.add(c.location, V.mul(dir, 0.45)); try { c.teleport(nx, { facingLocation: V.add(nx, dir) }); } catch (err) { return false; } });
+        later(19, () => { burst(dim, c.location, C.black, 8, 2, 0.3, 0.5); killVfx(c); });
+      } catch (err) { break; }
+    }
+    sound(dim, "mob.parrot.fly", o, 1, 0.7);
+  }
   const side = V.mul(sideOf(V.norm(V.sub(v.location, from))), Math.random() < 0.5 ? 1.6 : -1.6);
   try { v.tryTeleport(V.add(v.location, side), { checkForBlocks: true }); } catch (e) { /* ignore */ }
   sound(v.dimension, "mob.endermen.portal", v.location, 0.6, 2);
@@ -4633,6 +4710,8 @@ world.afterEvents.itemUse.subscribe((ev) => {
       const team = enemyOf(nextTeam.get(p.id) ?? RED);
       nextTeam.set(p.id, team);
       p.onScreenDisplay.setActionBar(`§fNext hit joins ${teamLabel(team)}§r §7(sneak + use = reset)`);
+    } else if (id === "ab:arena_builder") {
+      buildArena(p);
     } else if (id === "ab:kill_stick") {
       if (p.isSneaking) {
         const v = fxLevel() === 1 ? 0.5 : 1;
@@ -4707,10 +4786,12 @@ function checkWinner(dim, losingTeam) {
 function startBattle(p, a, b) {
   const ida = "ab:" + a, idb = "ab:" + b;
   if (!FIGHTERS[ida] || !FIGHTERS[idb]) { p.sendMessage(`§c[Anime Battles] unknown fighter. Names: ${Object.keys(FIGHTERS).map((k) => k.slice(3)).join(", ")}`); return; }
+  const arena = nearArena(p);
   const d = V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
-  const mid = V.add(p.location, V.mul(d, 14));
-  const side = sideOf(d);
-  for (const [id, team, off] of [[ida, RED, -7], [idb, BLUE, 7]]) {
+  const mid = arena ? { x: arena.x, y: arena.y, z: arena.z } : V.add(p.location, V.mul(d, 14));
+  const side = arena ? { x: 1, y: 0, z: 0 } : sideOf(d);
+  const gap = arena ? 17 : 7;
+  for (const [id, team, off] of [[ida, RED, -gap], [idb, BLUE, gap]]) {
     try {
       const f = p.dimension.spawnEntity(id, V.add(mid, V.mul(side, off)));
       later(25, () => { if (f.isValid) setTeam(f, team); });
@@ -4748,6 +4829,100 @@ function startWar(p, n) {
       });
     });
   }
+}
+
+// ------------------------------------------------------------------ the Arena Builder
+// Use (long press on a phone) builds a full fighting arena centred where you stand. Build it again anywhere else
+// whenever the old one is wrecked. Design (open circle first, then stands — gameplay before decoration):
+//   - a fighting floor 27 blocks in radius (room for 7-block knockbacks, long beams and the giant Susanoo),
+//     cleared 28 blocks up and laid on a stone foundation so it also works over valleys and water;
+//   - stone tiles with an inner ring line, a centre emblem, a red and a blue starting pad;
+//   - sea lanterns set flush into the floor and the stands (block light everywhere: no hostile mobs spawn);
+//   - a low wall with tall lit pillars and two gates (red and blue), then stands rising in steps to watch from.
+// Built in slices over a few seconds so the game never stalls. Fights scar it; it rebuilds itself afterwards.
+const ARENA = { R: 27, OUT: 34, CLEAR: 28 };
+const arenaBusy = new Set();
+const AR = {
+  tileA: "minecraft:polished_andesite", tileB: "minecraft:smooth_stone", line: "minecraft:deepslate_tiles",
+  edge: "minecraft:polished_deepslate", emblem: "minecraft:quartz_block", core: "minecraft:sea_lantern", light: "minecraft:sea_lantern",
+  wall: "minecraft:stone_bricks", pillar: "minecraft:chiseled_stone_bricks", stand: "minecraft:stone_bricks", seat: "minecraft:smooth_stone",
+  base: "minecraft:stone", red: "minecraft:red_concrete", blue: "minecraft:blue_concrete",
+};
+function arenaFloorBlock(x, z) {
+  const r = Math.hypot(x, z);
+  if (r < 1.6) return AR.core;
+  if (r < 3.6) return AR.emblem;
+  if (Math.abs(r - 12) < 0.5 || r >= ARENA.R - 2) return r >= ARENA.R - 2 ? AR.edge : AR.line;
+  for (const [px, col] of [[-17, AR.red], [17, AR.blue]]) if (Math.abs(x - px) <= 1 && Math.abs(z) <= 1) return col;
+  for (const [rr, n, off] of [[12, 4, 45], [20, 12, 15]]) {  // floor lights
+    for (let k = 0; k < n; k++) {
+      const a = (off + (360 / n) * k) * Math.PI / 180;
+      if (Math.round(Math.cos(a) * rr) === x && Math.round(Math.sin(a) * rr) === z) return AR.light;
+    }
+  }
+  return (Math.floor((x + 300) / 3) + Math.floor((z + 300) / 3)) % 2 ? AR.tileA : AR.tileB;
+}
+function buildArena(p) {
+  if (arenaBusy.has(p.id)) return;
+  arenaBusy.add(p.id);
+  const dim = p.dimension;
+  const c = { x: Math.floor(p.location.x), y: Math.floor(p.location.y) - 1, z: Math.floor(p.location.z) };
+  const { R, OUT, CLEAR } = ARENA;
+  const cols = [];
+  for (let x = -OUT; x <= OUT; x++) for (let z = -OUT; z <= OUT; z++) if (Math.hypot(x, z) <= OUT + 0.5) cols.push([x, z]);
+  const fill = (x, z, y0, y1, block) => {
+    if (y1 < y0) return;
+    try { dim.fillBlocks(new BlockVolume({ x: c.x + x, y: c.y + y0, z: c.z + z }, { x: c.x + x, y: c.y + y1, z: c.z + z }), block); } catch (e) { /* unloaded */ }
+  };
+  const set = (x, y, z, block) => { try { dim.getBlock({ x: c.x + x, y: c.y + y, z: c.z + z })?.setType(block); } catch (e) { /* unloaded */ } };
+  const gate = (x, z) => Math.abs(z) <= 1.5 && Math.abs(x) > R - 1;
+  sound(dim, "random.anvil_use", p.location, 1, 0.6);
+  const per = 220, steps = Math.ceil(cols.length / per);
+  every(1, steps * 2 + 2, (i) => {
+    if (i < steps) {  // 1) clear the air above and lay the foundation
+      for (const [x, z] of cols.slice(i * per, (i + 1) * per)) { fill(x, z, 1, CLEAR, "minecraft:air"); fill(x, z, -4, -1, AR.base); }
+      if (i % 3 === 0) fx(dim, "aura", { x: c.x + 0.5, y: c.y + 1, z: c.z + 0.5 }, C.white, 2, 0.6, { count: 10, speed: 3 });
+      return;
+    }
+    const j = i - steps;
+    if (j < steps) {  // 2) floor, wall, pillars, stands
+      for (const [x, z] of cols.slice(j * per, (j + 1) * per)) {
+        const r = Math.hypot(x, z);
+        if (r < R) { set(x, 0, z, arenaFloorBlock(x, z)); continue; }
+        if (gate(x, z)) {  // the two team gates and their corridors through the stands
+          set(x, 0, z, x < 0 ? AR.red : AR.blue);
+          continue;
+        }
+        if (r < R + 1.2) {  // the low ring wall, with a lit pillar every 30 degrees
+          const deg = (Math.atan2(z, x) * 180 / Math.PI + 360) % 30;
+          const pillar = deg < 2.2 || deg > 27.8;
+          fill(x, z, 0, pillar ? 5 : 2, pillar ? AR.pillar : AR.wall);
+          if (pillar) set(x, 6, z, AR.light);
+          if (Math.abs(z) <= 2.6 && Math.abs(z) > 1.5) fill(x, z, 0, 4, x < 0 ? AR.red : AR.blue);  // gate posts in team colours
+          continue;
+        }
+        const h = Math.min(9, 3 + Math.floor(r - (R + 1.2)));  // stands rising in steps
+        fill(x, z, 0, h - 1, AR.stand);
+        const lamp = Math.round(((Math.atan2(z, x) * 180 / Math.PI) + 360) % 20) === 0 && Math.floor(r) === R + 3;
+        set(x, h, z, lamp ? AR.light : AR.seat);
+        if (r > OUT - 1) fill(x, z, h + 1, h + 1, AR.wall);  // the back rail
+      }
+      return;
+    }
+    // 3) done: remember it so battles started nearby use its team pads
+    world.setDynamicProperty("ab:arena", JSON.stringify({ x: c.x + 0.5, y: c.y + 1, z: c.z + 0.5, dim: dim.id }));
+    arenaBusy.delete(p.id);
+    sound(dim, "random.levelup", p.location, 1, 0.8);
+    ring(dim, { x: c.x + 0.5, y: c.y + 1.2, z: c.z + 0.5 }, 6, C.gold, 40, 0.6);
+    return false;
+  });
+}
+function nearArena(p) {
+  try {
+    const a = JSON.parse(world.getDynamicProperty("ab:arena") ?? "null");
+    if (a && a.dim === p.dimension.id && Math.hypot(a.x - p.location.x, a.z - p.location.z) < ARENA.OUT + 6) return a;
+  } catch (e) { /* ignore */ }
+  return null;
 }
 
 const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
@@ -4799,7 +4974,13 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 
 function giveKit(p) {
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg", "ab:broly_spawn_egg", "ab:madara_spawn_egg", "ab:itachi_spawn_egg", "ab:kakashi_spawn_egg"]) {
+    for (const id of ["ab:team_stick", "ab:kill_stick", "ab:arena_builder"]) {
+      try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
+    }
+}
+function giveEggs(p) {  // every fighter's spawn egg: /scriptevent ab:eggs
+    const inv = p.getComponent("minecraft:inventory")?.container;
+    for (const id of ["ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg", "ab:broly_spawn_egg", "ab:madara_spawn_egg", "ab:itachi_spawn_egg", "ab:kakashi_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
 }
@@ -4820,7 +5001,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     const p = ev.sourceEntity && ev.sourceEntity.typeId === "minecraft:player" ? ev.sourceEntity : world.getPlayers()[0];
     if (p) startWar(p, clamp(parseInt(ev.message, 10) || 3, 2, 6));
   }
-  if (ev.id === "ab:kit") {  // every stick and spawn egg again: /scriptevent ab:kit
+  if (ev.id === "ab:eggs") { for (const p of world.getPlayers()) giveEggs(p); }
+  if (ev.id === "ab:kit") {  // the sticks and the arena builder again: /scriptevent ab:kit
     for (const p of world.getPlayers()) giveKit(p);
   }
 });

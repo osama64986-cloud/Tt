@@ -1,4 +1,4 @@
-pack.name=Anime Battles
+pack.name=Tenka Clash
 pack.description=Goku, Vegeta and Gojo with real abilities
 entity.ab:goku.name=Goku
 entity.ab:vegeta.name=Vegeta
@@ -51,3 +51,4 @@ entity.ab:itachi.name=Itachi Uchiha
 item.spawn_egg.entity.ab:itachi.name=Spawn Itachi Uchiha
 entity.ab:kakashi.name=Kakashi Hatake
 item.spawn_egg.entity.ab:kakashi.name=Spawn Kakashi Hatake
+item.ab:arena_builder.name=Arena Builder

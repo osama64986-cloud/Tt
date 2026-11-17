@@ -8,6 +8,9 @@
   "ab_team_stick": {
    "textures": "textures/items/team_stick"
   },
+  "ab_arena_builder": {
+   "textures": "textures/items/arena_builder"
+  },
   "ab_egg_goku": {
    "textures": "textures/items/egg_goku"
   },
