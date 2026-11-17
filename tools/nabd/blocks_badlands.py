@@ -147,21 +147,30 @@ def chiseled(name, base):
 
 # ------------------------------------------------------------------ terracotta
 def terracotta(name, base):
-    """Fired clay: gentle mottling, faint trowel smears, fine grit; a light top row
-    and a dark bottom row, so stacked layers read like the bands of a badlands cliff."""
+    """Fired clay in natural layers: gentle mottling, two thin wavy sediment lines
+    (one lighter, one darker), a few embedded pebbles and a faint shadow at the
+    bottom - stacked in a badlands cliff the layers flow into each other."""
     r = rng_of(name)
-    ramp = make_ramp(base, 7, 0.28)
+    ramp = make_ramp(base, 7, 0.30)
     mott = fbm(r, ((2, 1.0), (4, 0.6)))
     smear = fbm(r, ((2, 0.5), (8, 1.0)), sx=6)
-    t = 0.5 + (mott - 0.5) * 0.3 + (smear - 0.5) * 0.35
+    t = 0.5 + (mott - 0.5) * 0.3 + (smear - 0.5) * 0.3
     idx = q(t, 3) + 2                                     # 2..4
-    idx = specks(r, idx, 4, +1)                          # pale grit
-    idx = specks(r, idx, 4, -1)                          # dark grit
-    idx[0, :] += 1
+    for row, delta, k in ((4.5, +1, 1), (10.5, -1, 2)):
+        ph = r.uniform(0, TAU)
+        line = np.round(row + 1.1 * np.sin(TAU * k * xx / 16 + ph)).astype(int) % N
+        idx[line, xx[0]] += delta
+        if delta > 0:                                     # a lit line has a soft shadow under it
+            idx[(line + 1) % N, xx[0]] -= 1
+    for _ in range(3):                                    # pebbles caught in the clay
+        x, y = int(r.integers(0, N)), int(r.integers(1, N - 2))
+        idx[y, x] -= 2
+        idx[(y + 1) % N, x] += 1
+    idx = specks(r, idx, 4, +1)
     idx[N - 1, :] -= 1
     hgt = 0.55 + (smear - 0.5) * 0.15
-    hgt[N - 1] = 0.4
-    return Tex(paint_idx(idx, ramp), hgt, rough=195, bump=0.7)
+    hgt[N - 1] = 0.45
+    return Tex(paint_idx(idx, ramp), hgt, rough=195, bump=0.8)
 
 
 COLORS = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "silver", "cyan",
