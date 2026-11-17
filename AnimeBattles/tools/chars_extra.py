@@ -1479,8 +1479,6 @@ def itachi(m, form):
     for s_ in (1, -1):
         m.strand([s_ * 3.6, 31.6, -4.1], [s_ * 0.12, -1, -0.05], 7.6, 2.2, hp, bone="hair", segs=3, thick=0.6)
         m.strand([s_ * 1.4, 31.9, -4.2], [s_ * 0.45, -1, -0.15], 3.0, 1.8, hp, bone="hair", segs=2, thick=0.6)
-    for x in (-2.4, 0, 2.4):  # smooth hair swept back over the crown
-        m.strand([x, 31.9, 1.6], [x * 0.08, -0.55, 1], 2.6, 3.2, hp, bone="hair", segs=2, thick=0.6)
     m.box("hair", [-0.7, 25.6, 3.9], [1.4, 1.0, 1.0], solid((40, 40, 50)))                       # the tie
     m.strand([0, 25.8, 4.3], [0, -1, 0.25], 6.5, 1.6, hp, bone="hair", segs=3, thick=0.7)       # the ponytail
     # the ring on his right ring finger (Suzaku, red)
@@ -1517,6 +1515,13 @@ def kakashi(m, form):
                          region((0.15, 0.86, 0.85, 0.92), SKIN, faces=("north",))])
     base_body(m, torso, arm, leg, head)
     m.box("body", [-2.4, 23.2, -2.5], [4.8, 1.6, 5.0], solid(navy))                             # the mask's neck
+
+    def mask_front(face, px, w, h, base):  # the ridge of the nose under the cloth
+        if face == "north":
+            for x in range(int(w * 0.4), int(w * 0.6)):
+                _put(px, w, h, x, 0, light(navy, 0.25))
+    # the mask wraps all the way round the lower head: nose, mouth, cheeks, jaw and the back of the neck
+    m.box("head", [-4.15, 23.95, -4.15], [8.3, 2.55, 8.3], layered(navy, [mask_front]))
     m.box("body", [-4.4, 21.4, -2.6], [8.8, 2.4, 5.2], solid(vest))                              # the vest's thick collar
     # headband: tilted down over the left eye in base form, up on the forehead otherwise
     if form == "base":
