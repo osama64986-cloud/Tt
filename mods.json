@@ -2,13 +2,17 @@
   "site": {
     "name": "نبض",
     "tagline": "مودات، إضافات، تكسترات، خرائط وعوالم ماين كرافت — مجاناً للجميع",
-    "author": "Osama",
-    "about": "",
+    "author": "Vanta",
+    "about": "أهلاً! أنا Vanta 👋 صانع محتوى على يوتيوب. أسوي مودات وإضافات وتكسترات ماين كرافت وأشاركها مجاناً مع الكل. تابع قناتي حتى تشوف كل جديد أول بأول، وإذا عندك فكرة أو لقيت مشكلة بأي مود، اكتب رأيك تحت المود وأنا أشوفه.",
     "repo": "osama64986-cloud/Tt",
-    "youtube": "",
+    "youtube": "https://youtube.com/@vanta-game",
     "discord": "",
     "tiktok": "",
-    "website": ""
+    "website": "",
+    "donate": "",
+    "instagram": "",
+    "googleVerify": "",
+    "feedbackForm": ""
   },
   "mods": [
     {
