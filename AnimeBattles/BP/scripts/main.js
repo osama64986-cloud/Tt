@@ -1,4 +1,4 @@
-// Tenka Clash (formerly Anime Battles) — anime legends fight in red and blue teams
+// Shonen Apex (formerly Anime Battles) — anime legends fight in red and blue teams
 // Team Stick: hit = red, next hit = blue (alternates). Use = switch next team. Sneak + use = reset all teams.
 // Kill Stick: hit = instant permanent kill (any mob, even the Warden). Use = toggle block damage. Sneak + use = effects quality.
 import { world, system, MolangVariableMap, EntityDamageCause, EquipmentSlot, ItemStack, BlockVolume } from "@minecraft/server";

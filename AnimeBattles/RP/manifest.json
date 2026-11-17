@@ -1,13 +1,13 @@
 {
   "format_version": 2,
   "header": {
-    "name": "Tenka Clash RP",
-    "description": "Models, textures, animations, sounds and effects for Tenka Clash.",
+    "name": "Shonen Apex RP",
+    "description": "Models, textures, animations and effects for Shonen Apex.",
     "uuid": "8660b29f-ee5b-4672-898d-8cc1353f5e83",
     "version": [
       1,
       17,
-      3
+      4
     ],
     "min_engine_version": [
       1,
@@ -22,7 +22,7 @@
       "version": [
         1,
         17,
-        3
+        4
       ]
     }
   ],
@@ -32,7 +32,7 @@
       "version": [
         1,
         17,
-        3
+        4
       ]
     }
   ]

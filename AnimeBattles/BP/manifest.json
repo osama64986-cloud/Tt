@@ -1,13 +1,13 @@
 {
   "format_version": 2,
   "header": {
-    "name": "Tenka Clash BP",
-    "description": "Tenka Clash: anime legends fight in red and blue teams. Team Stick, Kill Stick, Arena Builder.",
+    "name": "Shonen Apex BP",
+    "description": "Shonen Apex: the legends of Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach and Demon Slayer fight for the top. Team Stick, Kill Stick, Arena Builder.",
     "uuid": "da8fb047-b286-4180-94cf-afa1715ad272",
     "version": [
       1,
       17,
-      3
+      4
     ],
     "min_engine_version": [
       1,
@@ -22,7 +22,7 @@
       "version": [
         1,
         17,
-        3
+        4
       ]
     },
     {
@@ -33,7 +33,7 @@
       "version": [
         1,
         17,
-        3
+        4
       ]
     }
   ],
@@ -43,7 +43,7 @@
       "version": [
         1,
         17,
-        3
+        4
       ]
     },
     {

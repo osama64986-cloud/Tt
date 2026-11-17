@@ -1,4 +1,4 @@
-# Tenka Clash — Characters
+# Shonen Apex — Characters
 
 **Dragon Ball**
 - **Goku** — The strongest fighter in the mod. Climbs from base form through Super Saiyan, Super Saiyan 3, God, Blue and finally Ultra Instinct, where his body dodges and counters on its own.
