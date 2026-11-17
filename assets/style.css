@@ -479,3 +479,5 @@ a.social:hover { filter: brightness(1.15); }
 .fb-con { border-inline-start-color: #a93226; }
 .fb-bug { border-inline-start-color: #d68910; }
 .fb-idea { border-inline-start-color: #2e86c1; }
+
+.avatar-img { background: #000; object-fit: cover; image-rendering: pixelated; }
