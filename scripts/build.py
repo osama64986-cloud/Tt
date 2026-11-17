@@ -81,7 +81,7 @@ def load_feedback(ids):
         if i.get("mod") not in ids or i.get("kind") not in FB_KINDS:
             continue
         txt, user, date = str(i.get("text") or "")[:600], str(i.get("user") or ""), str(i.get("date") or "")
-        if not txt or not LOGIN_RE.fullmatch(user) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+        if not txt or not LOGIN_RE.fullmatch(user) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", date):
             continue
         item = {"n": i["n"], "mod": i["mod"], "kind": i["kind"], "text": txt, "user": user, "date": date}
         if i.get("device") in FB_DEVICES:
@@ -98,16 +98,29 @@ def feedback_issue_url(site, m):
     return f"https://github.com/{repo}/issues/new?{q}"
 
 
+def google_form_ok(u):
+    """Same rule as MC.feedbackFormUrl: https, no userinfo/port, no dot segments,
+    host forms.gle or docs.google.com/forms/."""
+    u = str(u or "").strip()
+    if len(u) > 300 or not re.fullmatch(r"https://[^\s\"'<>\\`]+", u, re.I):
+        return False
+    try:
+        parts = urllib.parse.urlsplit(u)
+        host = (parts.hostname or "").lower()
+        if parts.username or parts.password or parts.port:
+            return False
+    except ValueError:
+        return False
+    rest = u[len(parts.scheme) + 3 + len(parts.netloc):]
+    if ".." in rest or "%2e" in rest.lower():
+        return False
+    return host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/"))
+
+
 def feedback_form_url(site):
     """Optional anonymous form (Google Forms only)."""
-    u = safe_url(site.get("feedbackForm"))
-    if not u.startswith("https://"):
-        return ""
-    parts = urllib.parse.urlsplit(u)
-    host = (parts.hostname or "").lower()
-    if host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/")):
-        return u
-    return ""
+    u = str(site.get("feedbackForm") or "").strip()
+    return u if google_form_ok(u) else ""
 
 
 def feedback_html(m, site, items):

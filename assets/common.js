@@ -185,7 +185,7 @@ window.MC = (() => {
     return raw.filter((i) => i && Number.isInteger(i.n) && i.n > 0 && ids.has(i.mod) && Object.hasOwn(FB_KINDS, i.kind)
       && typeof i.text === "string" && i.text && LOGIN_RE.test(i.user || "") && /^\d{4}-\d{2}-\d{2}$/.test(i.date || ""))
       .slice(0, 2000)
-      .map((i) => ({ n: i.n, mod: i.mod, kind: i.kind, text: i.text.slice(0, 600), user: i.user, date: i.date,
+      .map((i) => ({ n: i.n, mod: i.mod, kind: i.kind, text: Array.from(i.text).slice(0, 600).join(""), user: i.user, date: i.date,
         device: Object.hasOwn(FB_DEVICES, i.device) ? i.device : "" }));
   }
   function feedbackIssueUrl(site, m) {
@@ -200,7 +200,8 @@ window.MC = (() => {
     try {
       const x = new URL(u);
       const host = x.hostname.toLowerCase();
-      if (x.username || x.password || x.port) return "";
+      if (x.protocol !== "https:" || x.username || x.password || x.port) return "";
+      if (/\.\.|%2e/i.test(u.replace(/^https:\/\/[^/]*/i, ""))) return "";
       return host === "forms.gle" || (host === "docs.google.com" && x.pathname.startsWith("/forms/")) ? u : "";
     } catch { return ""; }
   }

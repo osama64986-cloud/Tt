@@ -118,6 +118,25 @@ def gh(*args):
     return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
 
 
+def google_form_ok(u):
+    """Same rule as MC.feedbackFormUrl: https, no userinfo/port, no dot segments,
+    host forms.gle or docs.google.com/forms/."""
+    u = str(u or "").strip()
+    if len(u) > 300 or not re.fullmatch(r"https://[^\s\"'<>\\`]+", u, re.I):
+        return False
+    try:
+        parts = urllib.parse.urlsplit(u)
+        host = (parts.hostname or "").lower()
+        if parts.username or parts.password or parts.port:
+            return False
+    except ValueError:
+        return False
+    rest = u[len(parts.scheme) + 3 + len(parts.netloc):]
+    if ".." in rest or "%2e" in rest.lower():
+        return False
+    return host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/"))
+
+
 def safe_msg(value, limit=200):
     """Text for logs: no control characters (a newline could start a workflow command)."""
     return re.sub(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]", "?", str(value))[:limit]
@@ -182,7 +201,7 @@ def clean_entry(raw):
     return e
 
 
-DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 
 
 def carried_fields(current, item_id):
@@ -372,10 +391,7 @@ def settings(db, meta, log):
     site["googleVerify"] = verify
     form = str(raw.get("feedbackForm") or "").strip()
     if form:
-        parts = urllib.parse.urlsplit(form)
-        host = (parts.hostname or "").lower()
-        ok_host = host == "forms.gle" or (host == "docs.google.com" and parts.path.startswith("/forms/"))
-        if not HTTPS_RE.fullmatch(form) or len(form) > 300 or not ok_host or parts.username or parts.port:
+        if not google_form_ok(form):
             raise Invalid("feedbackForm must be a Google Forms link (https://forms.gle/... or https://docs.google.com/forms/...)")
     site["feedbackForm"] = form
     if REPO:

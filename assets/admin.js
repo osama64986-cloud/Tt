@@ -329,7 +329,8 @@
   async function showDash() {
     show("dashView");
     $("#whoami").textContent = auth.login || "";
-    $("#feedbackLink").href = `https://github.com/${auth.repo}/issues?q=${encodeURIComponent("is:issue is:open label:feedback")}`;
+    $("#feedbackLink").href = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/.test(auth.repo)
+      ? `https://github.com/${auth.repo}/issues?q=${encodeURIComponent("is:issue is:open label:feedback")}` : "#";
     $("#tokenInput").value = "";
     $("#passInput").value = "";
     try {

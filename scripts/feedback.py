@@ -52,11 +52,18 @@ def text(value, limit):
         cat = unicodedata.category(ch)
         if ch in "\n\r\t":
             out.append(" ")
-        elif cat in ("Cc", "Cs", "Co", "Cn") or (cat == "Cf" and ch not in "‌‍"):
+        elif cat in ("Cc", "Cs", "Co", "Cn") or (cat == "Cf" and ch not in "\u200c\u200d"):
             continue
+        elif cat == "Mn" and len(out) >= 2 and all(unicodedata.category(c) == "Mn" for c in out[-2:]):
+            continue  # at most 2 stacked marks (no "zalgo" text)
         else:
             out.append(ch)
     return re.sub(r"\s+", " ", "".join(out)).strip()[:limit]
+
+
+# Markdown/HTML that GitHub hides or disguises when it shows an issue. The owner must see
+# exactly what will be published, so feedback containing any of it is refused.
+HIDDEN_RE = re.compile(r"[<>]|\]\(|^\s*\[[^\]]*\]:|&#|&[a-z]+;", re.I | re.M)
 
 
 def safe_msg(value, limit=200):
@@ -68,13 +75,17 @@ def parse_form(body):
     a label appearing twice is rejected (someone hand-crafting the body)."""
     fields, current, buf = {}, None, []
     for line in str(body or "").replace("\r\n", "\n").split("\n"):
-        if line.startswith("### "):
+        heading = LABELS.get(line[4:].strip()) if line.startswith("### ") else None
+        # Inside the free-text field only the next form label ("### جهازك") ends it, so
+        # a visitor's own "### ..." lines stay part of their text instead of cutting it.
+        if current == "text" and heading != "device":
+            heading = None
+        if heading or (line.startswith("### ") and current != "text"):
             if current:
                 fields[current] = "\n".join(buf).strip()
-            key = LABELS.get(line[4:].strip())
-            if key and key in fields:
+            if heading and heading in fields:
                 raise Invalid("duplicate form field")
-            current, buf = key, []
+            current, buf = heading, []
         elif current:
             buf.append(line)
     if current:
@@ -89,6 +100,7 @@ def load_db():
         db = {"items": []}
     if not isinstance(db, dict) or not isinstance(db.get("items"), list):
         raise Invalid("feedback.json is malformed")
+    db["items"] = [i for i in db["items"] if isinstance(i, dict)]
     return db
 
 
@@ -105,14 +117,16 @@ def main():
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
     ev = json.loads(pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
-    issue = ev.get("issue") or {}
+    if not isinstance(ev, dict):
+        raise Stop("bad event")
+    issue = ev.get("issue") if isinstance(ev.get("issue"), dict) else {}
     number = issue.get("number")
     if type(number) is not int or number < 1:
         raise Stop("no issue number")
     db = load_db()
 
     if event_name == "issues":
-        if ev.get("action") != "deleted":
+        if ev.get("action") not in ("deleted", "transferred"):
             raise Stop("issue event ignored")
         before = len(db["items"])
         db["items"] = [i for i in db["items"] if i.get("n") != number]
@@ -125,12 +139,12 @@ def main():
         raise Stop("event ignored")
     if issue.get("pull_request"):
         raise Stop("pull request comment ignored")
-    comment = ev.get("comment") or {}
-    author = (comment.get("user") or {}).get("login", "")
+    comment = ev.get("comment") if isinstance(ev.get("comment"), dict) else {}
+    author = (comment.get("user") if isinstance(comment.get("user"), dict) else {}).get("login", "")
     # Only the repository owner can approve; double-checked with GitHub's own association.
     if not owner or author != owner or comment.get("author_association") != "OWNER":
         raise Stop("comment is not from the owner")
-    command = text(comment.get("body"), 40)
+    command = str(comment.get("body") or "").strip()
     if command in REMOVE:
         before = len(db["items"])
         db["items"] = [i for i in db["items"] if i.get("n") != number]
@@ -146,18 +160,21 @@ def main():
         raise Invalid("this issue was not made with the feedback form")
     mod = text(f.get("mod"), 50).lower()
     if not ID_RE.fullmatch(mod) or mod not in mod_ids():
-        raise Invalid(f"unknown mod id: {safe_msg(mod, 50)}")
+        raise Invalid("the mod in this feedback does not exist on the site (check the mod field)")
     kind = KINDS.get(text(f.get("kind"), 40))
     if not kind:
         raise Invalid("unknown feedback kind")
-    body = text(f.get("text"), MAX_TEXT)
+    raw_text = str(f.get("text") or "")
+    if HIDDEN_RE.search(raw_text):
+        raise Invalid("feedback contains HTML, hidden comments or link markup; only plain text can be published")
+    body = text(raw_text, MAX_TEXT)
     if len(body) < 2:
         raise Invalid("empty feedback")
-    user = (issue.get("user") or {}).get("login", "")
+    user = (issue.get("user") if isinstance(issue.get("user"), dict) else {}).get("login", "")
     if not LOGIN_RE.fullmatch(str(user)):
         raise Invalid("bad user name")
     created = str(issue.get("created_at") or "")[:10]
-    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", created):
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", created):
         created = dt.date.today().isoformat()
     item = {"n": number, "mod": mod, "kind": kind, "text": body, "user": user, "date": created}
     device = DEVICES.get(text(f.get("device"), 20))
@@ -170,6 +187,11 @@ def main():
     items.insert(0, item)
     db["items"] = items[:MAX_TOTAL]
     save_db(db)
+    # Show the owner exactly what went live (in a fence longer than any backtick run).
+    reply = os.environ.get("CONFIRM_FILE")
+    if reply:
+        fence = "`" * max(3, max((len(r) for r in re.findall(r"`+", body)), default=0) + 1)
+        pathlib.Path(reply).write_text(f"✅ انضاف للموقع بهذا النص بالضبط:\n\n{fence}text\n{body}\n{fence}\n\nإذا مو هذا اللي قريته، اكتب «احذف».\n", encoding="utf-8")
     return f"approved #{number} for {mod}"
 
 
@@ -194,7 +216,7 @@ if __name__ == "__main__":
         pathlib.Path(ROOT / ".commit-msg").write_text(f"feedback: {msg}\n", encoding="utf-8")
     except Stop as s:
         print(f"skip: {safe_msg(s)}")
-    except (Invalid, ValueError, KeyError, OSError) as exc:
+    except Exception as exc:  # any failure: clear message, no traceback details posted
         print(f"::error::Rejected: {safe_msg(exc)}")
         msg_file = os.environ.get("REPLY_FILE")
         if msg_file:

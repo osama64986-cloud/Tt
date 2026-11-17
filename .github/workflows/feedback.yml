@@ -8,14 +8,16 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [opened, deleted]
+    types: [opened, deleted, transferred]
 
 permissions: {}
 
 jobs:
   label:
     # Tag new feedback-form issues with "feedback" (creates the label the first time).
-    if: github.event_name == 'issues' && github.event.action == 'opened'
+    if: >-
+      github.event_name == 'issues' && github.event.action == 'opened' &&
+      !contains(github.event.issue.labels.*.name, 'feedback')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
@@ -33,60 +35,62 @@ jobs:
         run: |
           [[ "$ISSUE" =~ ^[0-9]+$ ]] || exit 0
           [ "$(python3 -I scripts/feedback.py --is-form)" = "yes" ] || exit 0
-          gh label create feedback --repo "$REPO" --color 2e86c1 --description "رأي أو بلاغ من زوار الموقع" --force >/dev/null
+          gh label create feedback --repo "$REPO" --color 2e86c1 --description "رأي أو بلاغ من زوار الموقع" >/dev/null 2>&1 || true
           gh issue edit "$ISSUE" --repo "$REPO" --add-label feedback >/dev/null
 
   apply:
     if: >-
-      (github.event_name == 'issues' && github.event.action == 'deleted') ||
-      (github.event.comment.user.login == github.repository_owner &&
+      (github.event_name == 'issues' && (github.event.action == 'deleted' || github.event.action == 'transferred')) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.comment.user.login == github.repository_owner &&
        github.event.comment.author_association == 'OWNER' &&
        !github.event.issue.pull_request)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    # Job-level and separate from publish.yml, so a flood of issues can never queue
-    # behind (or cancel) an owner's upload. Only owner commands reach this job.
-    concurrency:
-      group: feedback-apply
-      cancel-in-progress: false
+    timeout-minutes: 8
+    # No concurrency group: a group keeps only one waiting run and would silently drop
+    # quick successive approvals. Parallel runs are safe: each one re-applies its own
+    # command on top of the latest main until its push succeeds.
     permissions:
       contents: write
       issues: write
     outputs:
-      changed: ${{ steps.commit.outputs.changed }}
+      changed: ${{ steps.apply.outputs.changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
 
-      - name: Apply command
+      - name: Apply command and push
+        id: apply
         env:
           REPLY_FILE: ${{ runner.temp }}/reply.txt
-        run: python3 -I scripts/feedback.py
-
-      - name: Commit changes
-        id: commit
+          CONFIRM_FILE: ${{ runner.temp }}/confirm.txt
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add feedback.json 2>/dev/null || true
-          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
-          git commit -q -F .commit-msg
-          for i in 1 2 3; do
-            if git push origin HEAD:main; then echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-            git pull --rebase origin main
+          for i in 1 2 3 4 5 6; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            python3 -I scripts/feedback.py
+            git add feedback.json 2>/dev/null || true
+            if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+            git commit -q -F .commit-msg
+            if git push -q origin HEAD:main; then echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((RANDOM % 5 + i))
           done
           exit 1
 
-      - name: Confirm with a reaction
-        if: steps.commit.outputs.changed == 'true' && github.event_name == 'issue_comment'
+      - name: Confirm on the issue
+        if: steps.apply.outputs.changed == 'true' && github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
           COMMENT_ID: ${{ github.event.comment.id }}
+          CONFIRM_FILE: ${{ runner.temp }}/confirm.txt
         run: |
-          [[ "$COMMENT_ID" =~ ^[0-9]+$ ]] || exit 0
+          [[ "$COMMENT_ID" =~ ^[0-9]+$ && "$ISSUE" =~ ^[0-9]+$ ]] || exit 0
           gh api -X POST "repos/$REPO/issues/comments/$COMMENT_ID/reactions" -f content=+1 >/dev/null
+          if [ -s "$CONFIRM_FILE" ]; then gh issue comment "$ISSUE" --repo "$REPO" --body-file "$CONFIRM_FILE" >/dev/null; fi
 
       - name: Explain a rejection on the issue
         if: failure() && github.event_name == 'issue_comment'

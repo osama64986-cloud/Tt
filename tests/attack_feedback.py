@@ -28,7 +28,7 @@ def run(title, ev_pair, expect_rc=0, check=None, seed=None, args=()):
     evf = W / "event.json"; evf.write_text(json.dumps(ev, ensure_ascii=False))
     reply = W / "reply.txt"; reply.unlink(missing_ok=True)
     env = {"PATH": os.environ.get("PATH", ""), "GITHUB_EVENT_PATH": str(evf), "GITHUB_EVENT_NAME": name,
-           "GITHUB_REPOSITORY_OWNER": OWNER, "SITE_ROOT": str(site), "REPLY_FILE": str(reply)}
+           "GITHUB_REPOSITORY_OWNER": OWNER, "SITE_ROOT": str(site), "REPLY_FILE": str(reply), "CONFIRM_FILE": str(W / "confirm.txt")}
     r = subprocess.run([sys.executable, "-I", str(REPO_DIR / "scripts" / "feedback.py"), *args], capture_output=True, text=True, env=env)
     db = json.loads((site / "feedback.json").read_text())
     ok = r.returncode == expect_rc and (check(db, r.stdout, reply) if check else True)
@@ -45,7 +45,7 @@ run("command must be the whole comment", event(cbody="موافق بس عدّل �
 run("edited issue events are ignored", event(name="issues", action="edited"), check=unchanged)
 run("owner approval adds a clean snapshot", event(), check=lambda db, out, reply: db["items"] == [
     {"n": 7, "mod": "dragons", "kind": "pro", "text": "حلو كلش", "user": "player-1", "date": "2026-11-17", "device": "phone"}])
-run("XSS text is stored as plain text only", event(body=form(text=XSS)), check=lambda db, out, reply: db["items"][0]["text"] == XSS.strip())
+run("XSS / HTML text is refused at approval", event(body=form(text=XSS)), expect_rc=1, check=unchanged)
 run("unknown mod is rejected with a reply", event(body=form(mod="nope")), expect_rc=1, check=lambda db, out, reply: unchanged(db, out, reply) and reply.read_text().startswith("ما انضاف"))
 run("mod id with path tricks is rejected", event(body=form(mod="../mods")), expect_rc=1, check=unchanged)
 run("fake kind is rejected", event(body=form(kind="⭐ admin")), expect_rc=1, check=unchanged)
@@ -71,6 +71,24 @@ run("--is-form says yes for a form issue", ("issues", {"action": "opened", "issu
 run("--is-form says no for other issues", ("issues", {"action": "opened", "issue": {"number": 1, "body": "hello"}}), args=("--is-form",),
     check=lambda db, out, reply: out.strip() == "no")
 
+# ---- added after the dedicated red-team review ----
+for label, hidden in [("hidden HTML comment", "مود رهيب <!-- SPAM evil.example -->"), ("collapsed <details>", "حلو <details>buy evil</details>"),
+                      ("markdown link with hidden address", "شوفوا [هنا](https://evil.example)"), ("invisible reference link", "حلو\n[a]: https://evil.example"),
+                      ("HTML entity tricks", "حلو &#60;b&#62;"), ("named entity", "حلو &nbsp; evil")]:
+    run(f"{label} cannot be approved", event(body=form(text=hidden)), expect_rc=1, check=unchanged)
+run("visitor '### ' lines stay inside the text (no silent cut)", event(body=form(text="أول\n### ملاحظة\nثاني")),
+    check=lambda db, out, reply: db["items"][0]["text"] == "أول ### ملاحظة ثاني")
+run("rejection reply never echoes visitor text", event(body=form(mod="@everyone [x](https://evil.example)")), expect_rc=1,
+    check=lambda db, out, reply: "@everyone" not in reply.read_text() and "evil" not in reply.read_text())
+run("approve command must match exactly (no hidden characters)", event(cbody="موا\u200bفق"), check=unchanged)
+run("event that is a JSON list is ignored safely", ("issue_comment", ["x"]), check=unchanged)
+run("non-object items in feedback.json do not crash", event(), seed=["junk", 5], check=lambda db, out, reply: len(db["items"]) == 1)
+run("non-ASCII digits in dates are not trusted", event(created_at="٢٠٢٦-١١-١٧T00:00:00Z"), check=lambda db, out, reply: db["items"][0]["date"].isascii())
+run("transferred issue is removed", event(name="issues", action="transferred"), check=unchanged, seed=seed)
+def confirm_ok(db, out, reply):
+    c = (W / "confirm.txt")
+    return c.exists() and "حلو ``` كلش" in c.read_text() and "````text" in c.read_text()
+run("owner gets the exact published text back (fence longer than any backticks)", event(body=form(text="حلو ``` كلش")), check=confirm_ok)
 # ---- rendering: a hostile feedback.json written by anyone with repo access ----
 site = W / "build"; shutil.rmtree(site, ignore_errors=True)
 shutil.copytree(REPO_DIR, site, ignore=shutil.ignore_patterns(".git", "_site", "__pycache__"))
@@ -91,5 +109,16 @@ ok = (r.returncode == 0 and "<img src=x" not in page and "<script>alert" not in 
 print(("BLOCKED " if ok else "!!! VULNERABLE ") + "hostile feedback.json is filtered and escaped on item pages" + ("" if ok else f"\n{r.stdout}{r.stderr}"))
 res.append(ok)
 
+import importlib.util
+def load(name):
+    spec = importlib.util.spec_from_file_location(name, REPO_DIR / "scripts" / f"{name}.py"); m = importlib.util.module_from_spec(spec)
+    os.environ.setdefault("INBOX_DIR", str(W)); spec.loader.exec_module(m); return m
+b, pub = load("build"), load("publish")
+GOOD_FORMS = ["https://forms.gle/abc123", "https://docs.google.com/forms/d/e/x/viewform", "HTTPS://FORMS.GLE/x"]
+BAD_FORMS = ["https://evil.com@forms.gle/x", "https://forms.gle:444/x", "https://docs.google.com/forms/../url?q=https://evil.com",
+             "https://docs.google.com/forms/%2e%2e/url", "https://docs.google.com.evil/forms/x", "https://[forms.gle/x", "javascript:alert(1)//forms.gle",
+             "http://forms.gle/x", "https://docs.google.com/document/x"]
+same = all(b.google_form_ok(u) and pub.google_form_ok(u) for u in GOOD_FORMS) and not any(b.google_form_ok(u) or pub.google_form_ok(u) for u in BAD_FORMS)
+print(("BLOCKED " if same else "!!! VULNERABLE ") + "Google Form rule is identical and strict in build.py and publish.py"); res.append(same)
 print(f"\n{sum(res)}/{len(res)} attacks blocked")
 sys.exit(0 if all(res) else 1)
