@@ -1,4 +1,4 @@
-# Nabd 1.0.71 — the big update
+# Nabd 1.0.72 — the big update
 
 ### Textures
 - Deepslate redrawn: shaded lens-shaped slabs over a cool dark bed, with a matching top face; bedrock as a jumble of light and dark rock chips.
