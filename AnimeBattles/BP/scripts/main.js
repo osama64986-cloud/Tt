@@ -203,10 +203,17 @@ function summonGiant(e, kind, t, o = {}) {
 }
 // The Susanoo stays with Sasuke for as long as he holds a Susanoo form, wrapped round him or towering behind him.
 const SUSANOO_SIZE = { 3: 1.05, 4: 2.3, 0: 4.4, 7: 4.6, 8: 2.3, 9: 4.2 };
-// The owner stands INSIDE the Susanoo, in its chest: the giant is centred on them and sunk into the ground until its
-// chest (39 model units up on the full Susanoo, 21 on the armoured one) is level with the owner's chest.
+// The Susanoo stands at full height on the ground, and its owner floats in the middle of its chest
+// (39 model units up on the full Susanoo, 21 on the armoured one; the rib cage simply surrounds them).
 const SUSANOO_CHEST = { 3: 0, 4: 21, 8: 21, 0: 39, 7: 39, 9: 39 };
-const susanooSink = (stage) => Math.max(0, (SUSANOO_CHEST[stage] ?? 0) * (SUSANOO_SIZE[stage] ?? 1) / 16 - 1.2);
+const susanooLift = (stage) => Math.max(0, (SUSANOO_CHEST[stage] ?? 0) * (SUSANOO_SIZE[stage] ?? 1) / 16 - 1.0);
+function groundBelow(e, s) {
+  try {
+    const hit = e.dimension.getBlockFromRay(V.up(e.location, 0.2), { x: 0, y: -1, z: 0 }, { maxDistance: 40, includeLiquidBlocks: true, includePassableBlocks: false });
+    if (hit && hit.block) { s.susGround = hit.block.location.y + 1; return s.susGround; }
+  } catch (err) { /* ignore */ }
+  return s.susGround ?? e.location.y;
+}
 function susanooStage(e) {
   const f = formOf(e);
   if (e.typeId === "ab:sasuke") return f === 2 ? 3 : -1;
@@ -227,7 +234,14 @@ function updateSusanoo(e, s) {
   let yaw = 0;
   try { yaw = e.getRotation().y; } catch (err) { /* ignore */ }
   const fwd = { x: -Math.sin((yaw * Math.PI) / 180), y: 0, z: Math.cos((yaw * Math.PI) / 180) };
-  const at = V.add(e.location, { x: 0, y: -susanooSink(stage), z: 0 });
+  const ground = groundBelow(e, s);
+  const at = { x: e.location.x, y: ground, z: e.location.z };
+  const lift = susanooLift(stage);
+  if (lift > 0 && Math.abs(e.location.y - (ground + lift)) > 0.25) {  // hold the owner up in the chest
+    let rot;
+    try { rot = e.getRotation(); } catch (err) { rot = undefined; }
+    try { e.teleport({ x: e.location.x, y: ground + lift, z: e.location.z }, rot ? { keepVelocity: false, rotation: rot } : { keepVelocity: false }); } catch (err) { /* ignore */ }
+  }
   try {
     if (!s.susanoo) {
       s.susanoo = spawnSummon(e.dimension, stage, at, fwd, SUSANOO_SIZE[stage], 40);
@@ -4293,7 +4307,8 @@ function updateFighter(e, tick) {
   }
   // Up close they still fight with their powers: a combo some of the time — more when the opponent is open.
   const comboChance = s.cloneUntil ? 0.7 : ctx.opening ? 0.25 + 0.05 * iq : 0.32;
-  if (ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < comboChance) {
+  const inGiant = susanooLift(susanooStage(e)) > 2.5;  // floating in a Susanoo's chest: the Susanoo does the fighting, no fist combos
+  if (!inGiant && ctx.dist <= 6 && tick >= (s.cd.combo ?? 0) && Math.random() < comboChance) {
     s.cd.combo = tick + 50 + Math.floor(Math.random() * 40);
     const tst = isFighter(target) ? state(target) : undefined;
     if (tst && !s.cloneUntil && now() < tst.busyUntil && (tst.lastCombo ?? 0) > now() - 6 && Math.random() < 0.5) { fistClash(e, target); return; }
@@ -4444,7 +4459,8 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       if (item === "ab:team_stick" || item === "ab:kill_stick") { ev.cancel = true; return; }
     }
     const def = FIGHTERS[v.typeId];
-    if (!def || cause === EntityDamageCause.fall) return;
+    if (def && cause === EntityDamageCause.fall) { ev.cancel = true; return; }  // fighters land from any height unhurt (leaving a Susanoo)
+    if (!def) return;
     if (v.hasTag("ab_clone")) { ev.cancel = true; system.run(() => poof(v)); return; }  // a shadow clone: one hit and it's smoke
     const s = state(v);
     const attackerP = src && src.isValid && isFighter(src) ? powerOf(src) : 0;
