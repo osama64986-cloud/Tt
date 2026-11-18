@@ -4822,7 +4822,10 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     if (attackerP > 0) {
       // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
       ev.damage *= clamp(Math.pow(attackerP / defenderP, 2.2), 0.08, 4);
-      ev.damage *= 1 + 0.035 * (iqOf(src) - iqOf(v));  // the smarter fighter hits the gaps
+      // the smarter fighter hits the gaps — that counts fully between near equals and fades to nothing once one side is
+      // 30% stronger: against a far stronger opponent no amount of cleverness is enough
+      const gap = Math.max(attackerP, defenderP) / Math.max(1, Math.min(attackerP, defenderP));
+      ev.damage *= 1 + 0.035 * (iqOf(src) - iqOf(v)) * clamp((1.3 - gap) / 0.3, 0, 1);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
     }
     ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
