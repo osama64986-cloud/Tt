@@ -4453,7 +4453,21 @@ const MEGUMI = {
     SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 12, finisher: 22, cd: 200, cost: 60, weight: 3 }),
     SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 26, cd: 180, cost: 60, weight: 3 }),
     abFrom(SUKUNA, "maxelephant", { cond: G(1), cost: 120, weight: 6 }),
-    SIG.wave("garden", "Domain Expansion: Chimera Shadow Garden", { say: "§8§lDomain Expansion: Chimera Shadow Garden", color: C.black, radius: 7, dmg: 36, cd: 900, cost: 400, cond: G(1) }),
+    ((b) => ({ ...b, run(e, s, t) {  // the ground floods with liquid shadow; shikigami rise out of it and the enemy sinks
+      b.run(e, s, t);
+      const c = e.location, dim = e.dimension;
+      every(4, 15, (i) => {
+        for (let k = 0; k < 10 * fxLevel(); k++) {
+          const a = Math.random() * Math.PI * 2, r = Math.random() * (3 + i * 0.5);
+          fx(dim, "orb_solid", V.add(c, { x: Math.cos(a) * r, y: 0.1, z: Math.sin(a) * r }), C.black, 0.9, 0.8);
+        }
+        if (i % 5 === 2 && alive(t) && V.dist(t.location, c) < 10) {
+          deal(e, t, 6 * powerOf(e) / 100);
+          if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil, now() + 8); }
+          burst(dim, V.up(t.location, 0.3), C.black, 14, 2, 0.3, 0.5);
+        }
+      });
+    } }))(SIG.wave("garden", "Domain Expansion: Chimera Shadow Garden", { say: "§8§lDomain Expansion: Chimera Shadow Garden", color: C.black, radius: 7, dmg: 30, cd: 900, cost: 400, cond: G(1) })),
     abFrom(SUKUNA, "mahoraga", { cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.45, weight: 9 }),  // his last resort, as in the anime
   ],
 };
