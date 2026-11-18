@@ -35,6 +35,9 @@
 ## الجديد في 1.18.0: خمس شخصيات جديدة من خمس أنميات
 ![كل الشخصيات](docs/roster.png)
 ![قدرات الشخصيات الجديدة](docs/new5_abilities.png)
+![الشخصيات الجديدة بكل تحولاتها](docs/new5_models.png)
+
+![ضربة ديترويت مال ديكو](docs/detroit_smash.gif) ![قبضة النار مال إيس](docs/fire_fist.gif)
 - **إيزوكو ميدوريا: ديكو (My Hero Academia)** (ذكاء 8):
   - **التحولات:** Full Cowl 20% ← 45% مع برق أخضر ← **Dark Deku**، بعباءة ممزقة وكمامة ومجسات Blackwhip سودا طالعة من ظهره.
   - **القدرات:** Delaware Smash، **Detroit Smash** (يقرب ويضرب، فتطلع من ضربته قبضة ريح خضرا عملاقة تخترق الخصم)، St. Louis Smash، Manchester Smash، **Blackwhip** (يمسك الخصم ويسحبه)، Smokescreen، و**United States of Smash**.
