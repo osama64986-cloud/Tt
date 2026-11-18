@@ -2430,8 +2430,8 @@
     "wheel": {
      "rotation": [
       0,
-      0,
-      "query.life_time * 30.0"
+      "query.life_time * 30.0",
+      0
      ]
     }
    }

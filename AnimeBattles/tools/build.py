@@ -995,7 +995,7 @@ def build_summons():
         "rightArm": {"rotation": ["math.sin(query.life_time * 90.0) * 3", 0, 0]},
         "leftArm": {"rotation": ["-math.sin(query.life_time * 90.0) * 3", 0, 0]},
         "jaw": {"rotation": ["6 + math.sin(query.life_time * 60.0) * 3", 0, 0]},
-        "wheel": {"rotation": [0, 0, "query.life_time * 30.0"]}}}
+        "wheel": {"rotation": [0, "query.life_time * 30.0", 0]}}}
     an["animations"]["animation.ab.summon_wings"] = {"loop": True, "bones": {
         "rightWing": {"rotation": [0, "-10 + math.sin(query.life_time * 160.0) * 12", "math.sin(query.life_time * 160.0) * 6"]},
         "leftWing": {"rotation": [0, "10 - math.sin(query.life_time * 160.0) * 12", "-math.sin(query.life_time * 160.0) * 6"]}}}

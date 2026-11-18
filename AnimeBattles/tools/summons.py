@@ -328,93 +328,96 @@ def muzan_infant():
 
 # ------------------------------------------------------------------ Mahoraga (Ten Shadows, Sukuna)
 def mahoraga():
-    """Eight-Handled Sword Divergent Sila Divine General Mahoraga (from the anime reference): a huge, pale white,
-    heavily muscled body; a long eyeless head with two pairs of feathered wing-horns sweeping out and up from where
-    the eyes would be, and a wide grin of teeth; the golden eight-handled Dharma wheel above its head, eight spokes and
-    eight knobs round the rim; a black chain necklace with tassels across the chest; black cloth at the waist, black
-    wrist bands, and the Sword of Extermination growing from its right forearm."""
+    """Eight-Handled Sword Divergent Sila Divine General Mahoraga (from the anime reference): a tall, athletic, pale
+    white body (broad shoulders and chest, narrow waist — muscled, never bulky); a long eyeless head with two pairs of
+    broad feathered wing-horns sweeping out and up from where the eyes would be, and a wide grin of teeth; the golden
+    eight-handled Dharma wheel lying FLAT above its head like a halo, eight spokes and eight knobs round the rim; a black
+    chain necklace with tassels across the chest; black cloth at the waist, black wrist bands, and the Sword of
+    Extermination growing from its right forearm."""
     m = M.Model()
-    m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 40, 0], "rightArm": [10, 36, 0], "leftArm": [-10, 36, 0],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 40, -2], "wheel": [0, 55, 1.5]})
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 40, 0], "rightArm": [9, 36, 0], "leftArm": [-9, 36, 0],
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 40, -2], "wheel": [0, 54, 0.4]})
     SK, SH, LN = smooth((236, 236, 240)), smooth((206, 206, 214)), smooth((150, 150, 160))
     BLK, BLK2 = smooth((28, 28, 32)), smooth((52, 52, 58))
     GOLD, GOLD2 = smooth((172, 140, 74)), smooth((196, 166, 100))
     TEETH, GUM = smooth((246, 246, 240)), smooth((36, 34, 38))
-    # legs in the black cloth, white feet
+    # long legs in loose black trousers, white feet
     for s_ in (1, -1):
-        tube(m, "body", [[s_ * 4.2, 18, 0], [s_ * 4.8, 10, -0.4], [s_ * 4.8, 3.0, 0]], [3.6, 3.2, 2.8], BLK)
-        box_at(m, "body", [s_ * 4.8, 1.0, -1.2], [4.0, 2.0, 6.0], SK)
-    frustum(m, "body", [0, 12, 0], 9, (8.6, 6.2), (7.4, 5.4), BLK, slices=4)                       # the black cloth round its hips
-    box_at(m, "body", [0, 17.6, 0], [15.6, 2.2, 11.4], BLK2)                                        # the black sash
-    # a massive V-shaped torso
-    blob(m, "body", [0, 22.5, 0], [6.4, 4.2, 4.6], SK, slices=4)                                    # waist / abdomen
-    blob(m, "body", [0, 30.0, 0], [9.4, 6.8, 5.8], SK, slices=6)                                    # chest
-    blob(m, "body", [0, 37.0, 0.6], [8.6, 3.4, 5.0], SK, slices=4)                                  # trapezius rising to the neck
+        tube(m, "body", [[s_ * 3.0, 18, 0], [s_ * 3.3, 10, -0.3], [s_ * 3.3, 3.0, 0]], [2.8, 2.6, 2.3], BLK)
+        box_at(m, "body", [s_ * 3.3, 1.0, -1.0], [3.2, 2.0, 5.0], SK)
+    frustum(m, "body", [0, 12, 0], 7, (6.0, 4.2), (5.4, 3.8), BLK, slices=4)                         # the black cloth round its hips
+    box_at(m, "body", [0, 18.0, 0], [11.0, 1.8, 7.6], BLK2)                                          # the black sash
+    # an athletic V-shaped torso: wide, shallow chest; narrow waist
+    blob(m, "body", [0, 22.2, 0], [4.4, 3.6, 3.2], SK, slices=4)                                     # narrow waist
+    blob(m, "body", [0, 30.5, 0], [8.0, 5.6, 4.0], SK, slices=6)                                     # chest and ribs
     for s_ in (1, -1):
-        blob(m, "body", [s_ * 4.2, 32.0, -4.0], [4.2, 3.0, 2.0], SK, slices=3)                       # pectorals
-        box_at(m, "body", [s_ * 4.2, 29.2, -5.6], [5.0, 0.35, 0.4], SH)                             # the line under each pec
+        blob(m, "body", [s_ * 5.4, 27.4, 0.8], [2.4, 4.0, 2.8], SK, slices=3)                        # lats tapering to the waist
+    blob(m, "body", [0, 36.4, 0.6], [5.0, 2.4, 3.2], SK, slices=4)                                   # trapezius rising to the neck
+    for s_ in (1, -1):
+        blob(m, "body", [s_ * 3.6, 32.2, -3.0], [3.4, 2.4, 1.3], SK, slices=3)                       # pectorals
+        box_at(m, "body", [s_ * 3.6, 29.9, -4.2], [4.2, 0.3, 0.3], SH)                              # the line under each pec
         for k in range(3):                                                                           # six-pack
-            box_at(m, "body", [s_ * 1.6, 26.8 - k * 2.4, -5.0 + k * 0.25], [2.4, 1.9, 0.8], SK)
-            box_at(m, "body", [s_ * 1.6, 25.7 - k * 2.4, -5.3 + k * 0.25], [2.4, 0.3, 0.3], SH)
-        blob(m, "body", [s_ * 6.2, 23.5, -1.5], [2.0, 3.6, 3.0], SH, slices=3)                       # obliques
-    box_at(m, "body", [0, 23.0, -5.5], [0.3, 7.5, 0.3], SH)                                          # the line down the abs
+            box_at(m, "body", [s_ * 1.3, 26.6 - k * 2.2, -3.4 + k * 0.15], [2.0, 1.7, 0.6], SK)
+            box_at(m, "body", [s_ * 1.3, 25.6 - k * 2.2, -3.7 + k * 0.15], [2.0, 0.25, 0.25], SH)
+    box_at(m, "body", [0, 23.4, -3.75], [0.25, 7.0, 0.25], SH)                                        # the line down the abs
     # the black chain necklace: rings and links curving across the chest, with tassels hanging from it
-    pts = [(-7.6, 36.2), (-5.6, 35.0), (-3.6, 34.0), (-1.6, 33.4), (0, 33.2), (1.6, 33.4), (3.6, 34.0), (5.6, 35.0), (7.6, 36.2)]
-    chain = [[x, y, -6.5 + abs(x) * 0.12] for x, y in pts]
-    tube(m, "body", chain, [0.3] * len(chain), BLK, knuckles=False)                                  # the cord the rings hang on
+    pts = [(-6.6, 35.6), (-4.9, 34.6), (-3.2, 33.8), (-1.5, 33.3), (0, 33.1), (1.5, 33.3), (3.2, 33.8), (4.9, 34.6), (6.6, 35.6)]
+    chain = [[x, y, -5.0 + abs(x) * 0.22] for x, y in pts]
+    tube(m, "body", chain, [0.25] * len(chain), BLK, knuckles=False)                                 # the cord the rings hang on
     for k, (x, y) in enumerate(pts):
-        z = -6.7 + abs(x) * 0.12
+        z = -5.2 + abs(x) * 0.22
         if k % 2 == 0:
-            box_at(m, "body", [x, y, z], [1.5, 1.5, 0.5], BLK)                                     # ring
-            box_at(m, "body", [x, y, z - 0.2], [0.6, 0.6, 0.3], SK)                                # the hole of the ring
+            box_at(m, "body", [x, y, z], [1.3, 1.3, 0.4], BLK)                                     # ring
+            box_at(m, "body", [x, y, z - 0.15], [0.5, 0.5, 0.25], SK)                              # the hole of the ring
         else:
-            box_at(m, "body", [x, y, z], [1.6, 0.6, 0.5], BLK)                                     # link
+            box_at(m, "body", [x, y, z], [1.4, 0.5, 0.4], BLK)                                     # link
         if k in (1, 3, 5, 7):
-            box_at(m, "body", [x, y - 1.6, z], [0.6, 2.0, 0.4], BLK)                               # tassel
-            box_at(m, "body", [x, y - 2.8, z], [1.0, 0.8, 0.4], BLK)
-    box_at(m, "body", [0, 31.6, -6.8], [2.2, 1.6, 0.5], BLK)                                        # the centre piece
-    box_at(m, "body", [0, 29.8, -6.7], [0.8, 2.2, 0.4], BLK)
-    # a thick neck and the long, eyeless head
-    tube(m, "body", [[0, 37.5, 0], [0, 41, -0.4]], [3.0, 2.6], SK)
-    blob(m, "head", [0, 45.4, -0.2], [3.8, 5.6, 4.0], SK, slices=5)
-    for x in (-1.2, 0, 1.2):                                                                       # ridges up its forehead
-        box_at(m, "head", [x, 48.0, -3.85], [0.3, 4.6, 0.3], LN)
+            box_at(m, "body", [x, y - 1.4, z], [0.5, 1.8, 0.35], BLK)                              # tassel
+            box_at(m, "body", [x, y - 2.5, z], [0.9, 0.7, 0.35], BLK)
+    box_at(m, "body", [0, 31.7, -5.3], [1.9, 1.4, 0.45], BLK)                                        # the centre piece
+    box_at(m, "body", [0, 30.1, -5.25], [0.7, 2.0, 0.35], BLK)
+    # the neck and the long, eyeless head
+    tube(m, "body", [[0, 37.5, 0], [0, 41, -0.3]], [2.3, 2.1], SK)
+    blob(m, "head", [0, 45.4, -0.2], [3.5, 5.6, 3.8], SK, slices=5)
+    for x in (-1.1, 0, 1.1):                                                                       # ridges up its forehead
+        box_at(m, "head", [x, 48.0, -3.75], [0.3, 4.6, 0.3], LN)
     # the grin: a wide row of teeth
-    box_at(m, "head", [0, 42.0, -3.6], [4.6, 2.4, 0.6], GUM)
-    box_at(m, "head", [0, 42.6, -4.0], [4.2, 0.95, 0.3], TEETH)
-    box_at(m, "head", [0, 41.45, -4.0], [4.2, 0.95, 0.3], TEETH)
-    for x in (-1.5, -0.75, 0, 0.75, 1.5):
-        box_at(m, "head", [x, 42.0, -4.2], [0.14, 2.0, 0.2], GUM)
-    for x in (-1.2, 0, 1.2):                                                                       # ridged chin
-        box_at(m, "head", [x, 40.0, -3.3], [0.3, 1.6, 0.3], LN)
+    box_at(m, "head", [0, 42.0, -3.5], [4.2, 2.4, 0.6], GUM)
+    box_at(m, "head", [0, 42.6, -3.9], [3.8, 0.95, 0.3], TEETH)
+    box_at(m, "head", [0, 41.45, -3.9], [3.8, 0.95, 0.3], TEETH)
+    for x in (-1.4, -0.7, 0, 0.7, 1.4):
+        box_at(m, "head", [x, 42.0, -4.1], [0.14, 2.0, 0.2], GUM)
+    for x in (-1.1, 0, 1.1):                                                                       # ridged chin
+        box_at(m, "head", [x, 40.0, -3.2], [0.3, 1.6, 0.3], LN)
     # two pairs of feathered wing-horns sweeping out and up from where its eyes would be
     for s_ in (1, -1):
-        for k, (up, L, w) in enumerate(((0.85, 14.0, 3.4), (0.38, 12.0, 3.0))):
-            base = [s_ * 0.6, 46.4 - k * 1.2, -3.8]
+        for k, (up, L, w) in enumerate(((0.85, 14.0, 3.2), (0.38, 12.0, 2.8))):
+            base = [s_ * 0.6, 46.4 - k * 1.2, -3.7]
             d = [s_ * 1.0, up, -0.25]
-            blade(m, "head", base, d, L, w, 1.1, SK, width_dir=[0, 0.4, 1])                          # a broad feathered horn
+            blade(m, "head", base, d, L, w, 1.0, SK, width_dir=[0, 0.4, 1])                          # a broad feathered horn
             blade(m, "head", [base[0] + s_ * 0.6, base[1] + 0.3, base[2] - 0.5], d, L * 0.85, w * 0.22, 0.35, LN, width_dir=[0, 0.4, 1])  # its vane line
-    # the golden eight-handled wheel above its head: rim, eight spokes, eight knobs
-    R, cy, cz = 6.4, 55.0, 1.5
-    rim_pts = [[math.cos(a) * R, cy + math.sin(a) * R, cz] for a in [i * math.pi / 10 for i in range(21)]]
-    tube(m, "wheel", rim_pts, [0.55] * len(rim_pts), GOLD, knuckles=False)
+    # the golden eight-handled wheel, lying FLAT above its head like a halo, on a short post
+    R, cy, cz = 6.4, 54.0, 0.4
+    tube(m, "head", [[0, 50.6, -0.2], [0, cy, cz]], [0.55, 0.45], GOLD, knuckles=False)
+    rim_pts = [[math.cos(a) * R, cy, cz + math.sin(a) * R] for a in [i * math.pi / 10 for i in range(21)]]
+    tube(m, "wheel", rim_pts, [0.5] * len(rim_pts), GOLD, knuckles=False)
     for i in range(8):
         a = i * math.pi / 4 + math.pi / 8
-        d = [math.cos(a), math.sin(a), 0]
-        tube(m, "wheel", [[0, cy, cz], [d[0] * R, cy + d[1] * R, cz]], [0.35, 0.35], GOLD, knuckles=False)
-        tube(m, "wheel", [[d[0] * R, cy + d[1] * R, cz], [d[0] * (R + 1.4), cy + d[1] * (R + 1.4), cz]], [0.35, 0.35], GOLD, knuckles=False)
-        blob(m, "wheel", [d[0] * (R + 2.6), cy + d[1] * (R + 2.6), cz], [1.3, 1.3, 1.3], GOLD2, slices=3)
-    blob(m, "wheel", [0, cy, cz], [1.4, 1.4, 0.9], GOLD2, slices=3)
-    # massive arms: deltoids, biceps, forearms, black wrist bands, fists
+        d = [math.cos(a), 0, math.sin(a)]
+        tube(m, "wheel", [[0, cy, cz], [d[0] * R, cy, cz + d[2] * R]], [0.32, 0.32], GOLD, knuckles=False)
+        tube(m, "wheel", [[d[0] * R, cy, cz + d[2] * R], [d[0] * (R + 1.4), cy, cz + d[2] * (R + 1.4)]], [0.32, 0.32], GOLD, knuckles=False)
+        blob(m, "wheel", [d[0] * (R + 2.5), cy, cz + d[2] * (R + 2.5)], [1.2, 1.2, 1.2], GOLD2, slices=3)
+    blob(m, "wheel", [0, cy, cz], [1.3, 0.8, 1.3], GOLD2, slices=3)
+    # strong but lean arms: deltoids, biceps, forearms, black wrist bands, fists
     for s_, bone in ((1, "rightArm"), (-1, "leftArm")):
-        blob(m, bone, [s_ * 10.0, 35.5, 0], [4.2, 4.0, 4.2], SK, slices=4)                           # deltoid
-        tube(m, bone, [[s_ * 10.8, 33, 0], [s_ * 12.2, 27, -0.6], [s_ * 12.4, 21.5, -2.4]], [3.4, 3.0, 2.6], SK)
-        blob(m, bone, [s_ * 12.0, 29.5, -1.8], [2.4, 2.8, 2.2], SK, slices=3)                        # bicep
-        box_at(m, bone, [s_ * 12.4, 19.8, -3.0], [4.8, 2.2, 4.8], BLK)                              # black wrist band
-        blob(m, bone, [s_ * 12.4, 17.4, -3.4], [2.5, 2.4, 2.5], SK, slices=3)                        # fist
+        blob(m, bone, [s_ * 8.8, 35.2, 0], [3.0, 3.0, 3.0], SK, slices=4)                            # deltoid
+        tube(m, bone, [[s_ * 9.3, 33, 0], [s_ * 10.2, 27, -0.5], [s_ * 10.4, 21.5, -2.0]], [2.4, 2.1, 1.9], SK)
+        blob(m, bone, [s_ * 9.8, 29.5, -1.3], [1.7, 2.2, 1.6], SK, slices=3)                         # bicep
+        box_at(m, bone, [s_ * 10.4, 19.8, -2.6], [3.6, 2.0, 3.6], BLK)                              # black wrist band
+        blob(m, bone, [s_ * 10.4, 17.6, -3.0], [1.9, 1.9, 1.9], SK, slices=3)                        # fist
     # the Sword of Extermination grows from the right forearm, blade forward
-    box_at(m, "rightArm", [12.4, 21.8, -5.0], [3.4, 3.0, 2.4], BLK2)
-    blade(m, "rightArm", [12.4, 21.4, -6.0], [0, -0.25, -1], 24, 3.4, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
+    box_at(m, "rightArm", [10.4, 21.8, -4.2], [3.0, 2.8, 2.2], BLK2)
+    blade(m, "rightArm", [10.4, 21.4, -5.0], [0, -0.25, -1], 24, 3.2, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
     return m
 
 
