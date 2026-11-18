@@ -25,7 +25,8 @@
     "fire_fist": "textures/entity/summon/fire_fist",
     "ofa_fist": "textures/entity/summon/ofa_fist",
     "dog_black": "textures/entity/summon/dog_black",
-    "dog_white": "textures/entity/summon/dog_white"
+    "dog_white": "textures/entity/summon/dog_white",
+    "nen_fist": "textures/entity/summon/nen_fist"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -45,7 +46,8 @@
     "fire_fist": "geometry.ab.summon_fire_fist",
     "ofa_fist": "geometry.ab.summon_ofa_fist",
     "dog_black": "geometry.ab.summon_dog_black",
-    "dog_white": "geometry.ab.summon_dog_white"
+    "dog_white": "geometry.ab.summon_dog_white",
+    "nen_fist": "geometry.ab.summon_nen_fist"
    },
    "animations": {
     "base": "animation.ab.summon_base",

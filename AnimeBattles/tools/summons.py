@@ -516,6 +516,11 @@ def fire_fist(cols=None):
     return m
 
 
+def nen_fist():
+    """Gon's Jajanken: Rock — a giant fist of blazing yellow nen."""
+    return fire_fist(((255, 222, 70), (255, 250, 200), (220, 160, 30)))
+
+
 def ofa_fist():
     """Deku's Detroit Smash: the same giant fist, made of One For All's green wind."""
     return fire_fist(((110, 240, 140), (210, 255, 220), (40, 160, 80)))
@@ -552,5 +557,5 @@ SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta
            ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
            ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
            ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo), ("fire_fist", fire_fist), ("ofa_fist", ofa_fist),
-           ("dog_black", divine_dog_black), ("dog_white", divine_dog_white)]
+           ("dog_black", divine_dog_black), ("dog_white", divine_dog_white), ("nen_fist", nen_fist)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo", "dog_black", "dog_white"}   # opaque flesh; the rest are glowing chakra

@@ -120,17 +120,17 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire, C.ofa, C.black, C.white];
-const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14, KIND_OFA_FIST = 15, KIND_DOG_BLACK = 16, KIND_DOG_WHITE = 17;
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire, C.ofa, C.black, C.white, C.kiYellow];
+const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14, KIND_OFA_FIST = 15, KIND_DOG_BLACK = 16, KIND_DOG_WHITE = 17, KIND_NEN_FIST = 18;
 // Deku's Detroit Smash: he closes in, punches, and a giant fist of green wind blasts out through the target.
-function detroitSmash(e, t, dmg) {
+function detroitSmash(e, t, dmg, kind = KIND_OFA_FIST, col = C.ofa) {
   const dim = e.dimension;
   const start = handPos(e, t).pos;
   const dir = V.norm(V.sub(aim(t), start));
   let v;
   try {
     v = dim.spawnEntity("ab:summon", start);
-    v.setProperty("ab:kind", KIND_OFA_FIST); v.setProperty("ab:size", 1.2);
+    v.setProperty("ab:kind", kind); v.setProperty("ab:size", 1.2);
     vfxAlive.set(v.id, now() + 30);
   } catch (err) { warn("detroit", err); return; }
   let hit = false;
@@ -139,7 +139,7 @@ function detroitSmash(e, t, dmg) {
     const p = V.add(start, V.mul(dir, 1.2 + i * 1.3));
     vset(v, "ab:size", 1.2 + i * 0.18);  // the blast swells as it flies
     try { v.teleport(V.add(p, { x: 0, y: -0.5, z: 0 }), { facingLocation: V.add(p, dir) }); } catch (err) { return false; }
-    fx(dim, "streak", p, C.ofa, 1.6, 0.3, { count: 10, speed: 6 });
+    fx(dim, "streak", p, col, 1.6, 0.3, { count: 10, speed: 6 });
     if (i % 2 === 0) carve(dim, V.add(p, { x: 0, y: -0.6, z: 0 }), 1.2, 16);
     if (!hit && alive(t) && V.dist(p, aim(t)) < 2.4) { hit = true; deal(e, t, dmg); fx(dim, "flash", aim(t), C.white, 4, 0.2); launch(e, t, 1.2); }
     if (i === 11) killVfx(v);
@@ -4394,7 +4394,17 @@ const GON = {
     SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 80, charge: 8, cond: G(1, 2), weight: 6 }),
     SIG.slash("scissors", "Jajanken: Scissors", { say: "§e§lScissors!", color: C.kiYellow, dmg: 28, cd: 180, cost: 90, size: 2.0, cond: G(1, 2) }),
     SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(2) }),
-    SIG.rush("adultrock", "Adult Gon: Jajanken Rock", { say: "§e§lJAJANKEN... ROCK!", color: C.kiYellow, hits: 3, dmg: 14, finisher: 90, slam: true, cd: 520, cost: 300, cond: G(2) }),
+    { id: "adultrock", label: "Adult Gon: Jajanken Rock", cd: 480, cost: 260, min: 0, max: 18, weight: 7, cond: G(2),
+      run(e, s, t) {  // "First comes rock..." — the nen gathers in his fist, then a giant fist of yellow nen
+        busy(s, 26); announce(e, "§e§lFirst comes rock... JAJANKEN... ROCK!"); setPose(e, 22);
+        fx(e.dimension, "aura", e.location, C.kiYellow, 2, 1.0, { count: 40, speed: 3 });
+        later(12, () => {
+          if (!e.isValid || !alive(t)) return;
+          afterimage(e); teleportNear(e, t, false, 2.4); face(e, aim(t)); setPose(e, 5);
+          detroitSmash(e, t, 90 * powerOf(e) / 100, KIND_NEN_FIST, C.kiYellow);
+          later(10, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
   ],
 };
 

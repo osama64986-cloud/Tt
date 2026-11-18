@@ -1442,7 +1442,8 @@
       "Texture.fire_fist",
       "Texture.ofa_fist",
       "Texture.dog_black",
-      "Texture.dog_white"
+      "Texture.dog_white",
+      "Texture.nen_fist"
      ]
     },
     "geometries": {
@@ -1464,7 +1465,8 @@
       "Geometry.fire_fist",
       "Geometry.ofa_fist",
       "Geometry.dog_black",
-      "Geometry.dog_white"
+      "Geometry.dog_white",
+      "Geometry.nen_fist"
      ]
     }
    },
@@ -1499,7 +1501,8 @@
       "Texture.fire_fist",
       "Texture.ofa_fist",
       "Texture.dog_black",
-      "Texture.dog_white"
+      "Texture.dog_white",
+      "Texture.nen_fist"
      ]
     },
     "geometries": {
@@ -1521,7 +1524,8 @@
       "Geometry.fire_fist",
       "Geometry.ofa_fist",
       "Geometry.dog_black",
-      "Geometry.dog_white"
+      "Geometry.dog_white",
+      "Geometry.nen_fist"
      ]
     }
    },
