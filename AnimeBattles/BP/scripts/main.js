@@ -4359,7 +4359,17 @@ const GOHAN = {
     SIG.beam("kame", "Kamehameha", { say: "§b§lKa... me... ha... me... HA!", color: C.kameBlue, dmg: 55, width: 1.8, charge: 14, cd: 300, cost: 180 }),
     SIG.wave("rage", "Rage Burst", { say: "§e§lRAAAAH!", color: C.gold, radius: 5, dmg: 24, cd: 220, cost: 100, cond: G(1, 2, 3) }),
     SIG.rush("ultrush", "Ultimate Rush", { say: "§f§lUltimate rush", color: C.white, hits: 6, dmg: 8, finisher: 30, cd: 180, cost: 100, cond: G(2, 3) }),
-    SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 360, cost: 220, cond: G(3), pose: 4 }),
+    ((b) => ({ ...b, run(e, s, t) {  // Piccolo's technique: a thin beam with a spiral of ki coiling round it
+      b.run(e, s, t);
+      later(16, () => {
+        if (!e.isValid || !alive(t)) return;
+        const from = V.up(e.location, 1.4), d = V.norm(V.sub(aim(t), from)), side = sideOf(d), up = { x: 0, y: 1, z: 0 };
+        for (let k = 0; k < 40 * fxLevel(); k++) {
+          const a = k * 0.7, r = 0.9, p = V.add(V.add(from, V.mul(d, k * 0.9)), V.add(V.mul(side, Math.cos(a) * r), V.mul(up, Math.sin(a) * r)));
+          fx(e.dimension, "orb", p, C.gold, 0.5, 0.4);
+        }
+      });
+    } }))(SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 360, cost: 220, cond: G(3), pose: 4 })),
     SIG.beam("beastkame", "Beast Kamehameha", { say: "§f§lKAMEHAMEHA! §7— Beast", color: C.white, dmg: 95, width: 2.6, charge: 18, cd: 600, cost: 400, cond: G(3), carve: 2 }),
   ],
 };
