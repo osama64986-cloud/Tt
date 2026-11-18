@@ -33,12 +33,12 @@
 - **Madara Uchiha** — The legend reborn. Edo Tensei, a blue Perfect Susanoo, then Six Paths with the Truth-Seeking Balls.
 
 **My Hero Academia**
-- **Izuku Midoriya (Deku)** — The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
+- **Izuku Midoriya (Deku)** — The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash drives a giant fist of green wind straight into the enemy; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
 - **Katsuki Bakugo** — Explosions from his palms. AP Shot, Stun Grenade, Howitzer Impact, Cluster and the Max Cannon of his grenade gauntlets.
 
 **Hunter x Hunter**
 - **Killua Zoldyck** — The assassin prodigy. Steel yo-yos, razor Assassin Claws, Rhythm Echo, Lightning Palm, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
-- **Gon Freecss** — Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, with a mane of hair and a crushing dark nen.
+- **Gon Freecss** — Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, towering, with a mane of hair; his Rock is a giant fist of nen driven into the enemy.
 
 **Chainsaw Man**
 - **Denji (Chainsaw Man)** — Pull the cord and the devil comes out. Chainsaws burst from his head and arms; he rams with his head saw, spins into a whirl of blades, whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.

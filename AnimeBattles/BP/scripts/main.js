@@ -1148,6 +1148,56 @@ const SIG = {
     } }),
 };
 
+// A strike that lands UP CLOSE (fist, kick, blade, palm explosion): dash in, then each blow hits on contact.
+SIG.strike = (id, label, o) => ({ id, label, cd: o.cd ?? 160, cost: o.cost ?? 80, min: 0, max: o.max ?? 14, weight: o.weight ?? 5, cond: o.cond,
+  run(e, s, t) {
+    const n = o.hits ?? 1, poses = o.poses ?? [5];
+    busy(s, 8 + n * 5); announce(e, o.say);
+    afterimage(e); teleportNear(e, t, !!o.behind, 1.5); face(e, aim(t));
+    every(5, n, (i) => {
+      if (!alive(t) || !e.isValid) return false;
+      face(e, aim(t)); setPose(e, poses[i % poses.length]);
+      const c = aim(t), last = i === n - 1, dim = t.dimension;
+      if (o.blade) { const v = slashVfx(dim, c, V.norm(V.sub(c, V.up(e.location, 1.2))), o.color, o.size ?? 1.6, (o.roll ?? 0) + i * 70); later(4, () => killVfx(v)); }
+      deal(e, t, (last ? (o.finisher ?? o.dmg) : o.dmg) * powerOf(e) / 100);
+      fx(dim, o.blast ? "flash" : "shock_v", c, o.color, o.blast ? 3.2 : 2.4, 0.25);
+      burst(dim, c, o.color, o.blast ? 22 : 12, o.blast ? 3 : 2, 0.4, 0.4);
+      if (last) {
+        if (o.slam) { try { t.applyKnockback({ x: 0, z: 0 }, lowLift(-1.6)); } catch (err) { /* ignore */ } fx(dim, "shock", t.location, o.color, 6, 0.4); ring(dim, V.up(t.location, 0.2), 3, o.color, 24, 0.4); }
+        else if (o.launch) launch(e, t, o.launch);
+        later(6, () => { if (e.isValid) setPose(e, 0); });
+      }
+    });
+  } });
+// A fist that swells with power ON the fighter's hand and is driven into the enemy (Adult Gon's Rock).
+function heldFist(e, t, dmg, kind, col) {
+  const dim = e.dimension;
+  let v;
+  try {
+    v = dim.spawnEntity("ab:summon", handPos(e, t).pos);
+    v.setProperty("ab:kind", kind); v.setProperty("ab:size", 0.5);
+    vfxAlive.set(v.id, now() + 30);
+  } catch (err) { warn("heldFist", err); return; }
+  every(1, 10, (i) => {
+    if (!v.isValid || !e.isValid) return false;
+    const { pos, dir } = handPos(e, alive(t) ? t : e);
+    const p = V.add(pos, V.mul(dir, 0.5 + i * 0.08));
+    vset(v, "ab:size", 0.5 + i * 0.1);  // the nen swells round his fist
+    try { v.teleport(V.add(p, { x: 0, y: -0.5, z: 0 }), { facingLocation: V.add(p, dir) }); } catch (err) { /* ignore */ }
+    fx(dim, "streak", p, col, 1.0, 0.25, { count: 6, speed: 4 });
+  });
+  later(10, () => {
+    if (alive(t)) {
+      const c = aim(t);
+      deal(e, t, dmg);
+      fx(dim, "flash", c, C.white, 5, 0.25); fx(dim, "shock", t.location, col, 9, 0.5); burst(dim, c, col, 40, 5, 0.5, 0.6);
+      shake(dim, c, 0.6, 0.5); sound(dim, "ab.boom", c, 1, 0.9);
+      launch(e, t, 1.2);
+    }
+    later(3, () => killVfx(v));
+  });
+}
+
 const GOKU = {
   name: "Goku", color: "§6", energy: 1000, regen: 15, energyName: "§bKI",
   dodge: (e, s) => (formOf(e) === 5 ? 0.6 : 0.1),
@@ -3634,12 +3684,7 @@ const TANJIRO = {
         every(4, 10, () => { if (e.isValid) ring(e.dimension, V.up(e.location, 0.1), 1.6, C.kameBlue, 18, 0.35); });
         later(40, () => { if (e.isValid) setPose(e, 0); });
       } },
-    { id: "dance", label: "Hinokami Kagura: Dance", cd: 110, cost: 60, min: 0, max: 26, weight: 5, cond: G(1, 2),
-      run(e, s, t) {
-        busy(s, 14); setPose(e, 19); announce(e, "§6§lHinokami Kagura: Dance!");
-        flyingSlash(e, t, { color: C.fire, dmg: 26 * powerOf(e) / 100, range: 20, roll: 30, size: 1.6 });
-        later(10, () => { if (e.isValid) setPose(e, 0); });
-      } },
+    SIG.strike("dance", "Hinokami Kagura: Dance", { say: "§6§lHinokami Kagura: Dance!", color: C.fire, blade: true, hits: 2, dmg: 13, finisher: 13, cd: 110, cost: 60, size: 1.6, roll: 30, poses: [19, 28], cond: G(1, 2) }),
     { id: "bluesky", label: "Clear Blue Sky", cd: 180, cost: 90, min: 0, max: 3.2, weight: 4, cond: G(1, 2),
       run(e, s, t) {
         busy(s, 16); setPose(e, 24); announce(e, "§6§lHinokami Kagura: Clear Blue Sky!");
@@ -4142,13 +4187,14 @@ const DEKU = {
         busy(s, 18); announce(e, "§a§lDETROIT... SMASH!"); setPose(e, 22);
         later(6, () => {
           if (!e.isValid || !alive(t)) return;
-          afterimage(e); teleportNear(e, t, false, 2.4); face(e, aim(t)); setPose(e, 5);
-          detroitSmash(e, t, 60 * powerOf(e) / 100);
+          afterimage(e); teleportNear(e, t, false, 1.6); face(e, aim(t)); setPose(e, 5);
+          heldFist(e, t, 60 * powerOf(e) / 100, KIND_OFA_FIST, C.ofa);  // the punch lands, then its wind roars on past the target
+          later(10, () => { if (!e.isValid) return; const d = e.getViewDirection(); for (let k = 2; k < 14; k++) fx(e.dimension, "streak", V.add(V.up(e.location, 1.3), V.mul(d, k * 1.2)), C.ofa, 1.4, 0.3, { count: 6, speed: 8 }); });
           later(10, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
-    SIG.slash("stlouis", "St. Louis Smash", { say: "§a§lSt. Louis Smash!", color: C.ofa, dmg: 30, cd: 150, cost: 80, size: 2.2, pose: 7 }),
-    SIG.drop("manchester", "Manchester Smash", { say: "§a§lManchester Smash!", color: C.ofa, dmg: 50, cd: 340, cost: 200, size: 2, radius: 5, grow: 0.06, cond: G(1, 2) }),
+    SIG.strike("stlouis", "St. Louis Smash", { say: "§a§lSt. Louis Smash!", color: C.ofa, dmg: 30, cd: 150, cost: 80, poses: [8], launch: 1 }),
+    SIG.strike("manchester", "Manchester Smash", { say: "§a§lManchester Smash! §7— he flips over and kicks straight down", color: C.ofa, dmg: 50, cd: 300, cost: 150, poses: [10], slam: true, behind: true, cond: G(1, 2) }),
     { id: "blackwhip", label: "Blackwhip", cd: 240, cost: 110, min: 3, max: 24, weight: 5, cond: G(1, 2),
       run(e, s, t) {  // black tendrils lash out, seize the target and drag it in
         busy(s, 16); face(e, aim(t)); setPose(e, 4); announce(e, "§0§lBlackwhip!");
@@ -4246,7 +4292,7 @@ const DENJI = {
           later(6, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
-    SIG.slash("sawslash", "Chainsaw Slash", { say: "§c§lChainsaw Slash!", color: C.saw, count: 2, dmg: 22, cd: 150, cost: 70, size: 2.2, cond: G(1, 2) }),
+    SIG.strike("sawslash", "Chainsaw Slash", { say: "§c§lChainsaw Slash!", color: C.saw, blade: true, hits: 2, dmg: 22, cd: 150, cost: 70, size: 2.0, poses: [19, 28], cond: G(1, 2) }),
     SIG.wave("rev", "Revving Roar", { say: "§c§lVRRRRRMMMMM!!", color: C.blood, radius: 5, dmg: 16, cd: 240, cost: 80, cond: G(1, 2), knock: 3 }),
     { id: "blood", label: "Drink Blood", cd: 600, cost: 100, min: 0, max: 64, weight: 3, cond: G(1, 2),
       run(e, s) {  // blood restores Chainsaw Man
@@ -4275,8 +4321,8 @@ const RENGOKU = {
         deal(e, t, 26 * powerOf(e) / 100); burst(e.dimension, aim(t), C.fire, 18, 4, 0.45, 0.5);
         later(8, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.slash("rising", "Second Form: Rising Scorching Sun", { say: "§6§lSecond Form: Rising Scorching Sun!", color: C.fire, dmg: 24, cd: 150, cost: 70, size: 2.2, roll: 80, pose: 28 }),
-    SIG.slash("universe", "Third Form: Blazing Universe", { say: "§6§lThird Form: Blazing Universe!", color: C.fire, dmg: 30, cd: 170, cost: 80, size: 2.6, roll: 90, pose: 19 }),
+    SIG.strike("rising", "Second Form: Rising Scorching Sun", { say: "§6§lSecond Form: Rising Scorching Sun!", color: C.fire, blade: true, dmg: 24, cd: 150, cost: 70, size: 2.2, roll: 80, poses: [28] }),
+    SIG.strike("universe", "Third Form: Blazing Universe", { say: "§6§lThird Form: Blazing Universe!", color: C.fire, blade: true, dmg: 30, cd: 170, cost: 80, size: 2.6, roll: 90, poses: [19], slam: true }),
     SIG.wave("bloom", "Fourth Form: Blooming Flame Undulation", { say: "§6§lFourth Form: Blooming Flame Undulation!", color: C.fire, radius: 4.5, dmg: 18, cd: 200, cost: 70, pose: 24 }),
     { id: "tiger", label: "Fifth Form: Flame Tiger", cd: 240, cost: 105, min: 2, max: 26, weight: 8,
       run(e, s, t) {  // a real tiger of flame leaps from his sword
@@ -4381,7 +4427,7 @@ const BAKUGO = {
   forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 104, aura: C.ember }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
   abilities: [
-    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 13, speed: 2.4, cd: 130, cost: 50, charge: 2, pose: 5, radius: 3 }),
+    SIG.strike("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, blast: true, dmg: 13, cd: 130, cost: 50, poses: [5] }),
     SIG.beam("apshot", "AP Shot", { say: "§e§lAP Shot!", color: C.kiYellow, dmg: 28, width: 0.7, length: 36, charge: 6, cd: 200, cost: 100, pose: 4 }),
     SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 11, cd: 300, cost: 80, weight: 3 }),
     SIG.rush("blastrush", "Blast Rush", { say: "§6§lBlast rush!", color: C.fire, hits: 5, dmg: 6, finisher: 20, cd: 170, cost: 90 }),
@@ -4402,7 +4448,7 @@ const GON = {
     SIG.rush("wild", "Wild Rush", { say: "§a§lHyaa!", color: C.white, hits: 4, dmg: 7, finisher: 18, cd: 150, cost: 60 }),
     SIG.rush("rock", "Jajanken: Rock", { say: "§e§lFirst comes rock... ROCK!", color: C.kiYellow, hits: 2, dmg: 8, finisher: 40, cd: 200, cost: 70, slam: true, weight: 8 }),
     SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 80, charge: 8, cond: G(1, 2), weight: 6 }),
-    SIG.slash("scissors", "Jajanken: Scissors", { say: "§e§lScissors!", color: C.kiYellow, dmg: 28, cd: 180, cost: 90, size: 2.0, cond: G(1, 2) }),
+    SIG.strike("scissors", "Jajanken: Scissors", { say: "§e§lScissors! §7— a blade of nen from his two fingers", color: C.kiYellow, blade: true, dmg: 28, cd: 180, cost: 90, size: 2.0, poses: [19], cond: G(1, 2) }),
     SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(2) }),
     { id: "adultrock", label: "Adult Gon: Jajanken Rock", cd: 480, cost: 260, min: 0, max: 18, weight: 7, cond: G(2),
       run(e, s, t) {  // "First comes rock..." — the nen gathers in his fist, then a giant fist of yellow nen
@@ -4410,8 +4456,8 @@ const GON = {
         fx(e.dimension, "aura", e.location, C.kiYellow, 2, 1.0, { count: 40, speed: 3 });
         later(12, () => {
           if (!e.isValid || !alive(t)) return;
-          afterimage(e); teleportNear(e, t, false, 2.4); face(e, aim(t)); setPose(e, 5);
-          detroitSmash(e, t, 90 * powerOf(e) / 100, KIND_NEN_FIST, C.kiYellow);
+          afterimage(e); teleportNear(e, t, false, 1.6); face(e, aim(t)); setPose(e, 5);
+          heldFist(e, t, 90 * powerOf(e) / 100, KIND_NEN_FIST, C.kiYellow);
           later(10, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
@@ -4427,7 +4473,7 @@ const AKAZA = {
   abilities: [
     SIG.ball("airtype", "Destructive Death: Air Type", { say: "§d§lDestructive Death: Air Type!", color: C.white, count: 6, size: 0.6, dmg: 9, spread: 2, speed: 3, cd: 120, cost: 60, charge: 2, pose: 5 }),
     SIG.rush("lightbulbs", "Disordered Light Bulbs", { say: "§b§lDisordered Light Bulbs!", color: C.kameBlue, hits: 7, dmg: 6, finisher: 22, cd: 170, cost: 80 }),
-    SIG.slash("flowingflash", "Leg Type: Flowing Flash", { say: "§b§lLeg Type: Flowing Flash!", color: C.kameBlue, dmg: 26, count: 2, cd: 180, cost: 90, pose: 7 }),
+    SIG.strike("flowingflash", "Leg Type: Flowing Flash", { say: "§b§lLeg Type: Flowing Flash!", color: C.kameBlue, hits: 2, dmg: 13, finisher: 15, cd: 180, cost: 90, poses: [8, 12], launch: 1 }),
     SIG.wave("chaotic", "Destructive Death: Chaotic Type", { say: "§b§lDestructive Death: Chaotic Type!", color: C.kameBlue, radius: 5.5, dmg: 30, cd: 240, cost: 110 }),
     SIG.rush("annihilation", "Destructive Death: Annihilation Type", { say: "§d§lAnnihilation Type!", color: C.blood, hits: 4, dmg: 10, finisher: 45, slam: true, cd: 260, cost: 140 }),
     SIG.ball("afterglow", "Final Form: Blue Silver Chaotic Afterglow", { say: "§b§lFinal Form: Blue Silver Chaotic Afterglow!", color: C.kameBlue, count: 12, size: 0.6, dmg: 7, spread: 4, speed: 2.8, cd: 380, cost: 250, charge: 6, cond: G(1) }),
@@ -4451,7 +4497,7 @@ const MEGUMI = {
       } },
     abFrom(SUKUNA, "nue", { cond: undefined, cost: 80, weight: 6 }),
     SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 12, finisher: 22, cd: 200, cost: 60, weight: 3 }),
-    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 26, cd: 180, cost: 60, weight: 3 }),
+    SIG.strike("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, blade: true, hits: 2, dmg: 13, finisher: 13, cd: 180, cost: 60, weight: 3, poses: [19, 28] }),
     abFrom(SUKUNA, "maxelephant", { cond: G(1), cost: 120, weight: 6 }),
     ((b) => ({ ...b, run(e, s, t) {  // the ground floods with liquid shadow; shikigami rise out of it and the enemy sinks
       b.run(e, s, t);

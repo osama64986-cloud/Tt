@@ -31,7 +31,7 @@ Every character has their real transformations, signature techniques and fightin
   - Susanoo in every stage: the fighter floats inside its chest.
   - Kurama, Gamabunta and Mahoraga.
   - Itachi's crows, Kakashi's ninja hounds, Rengoku's Flame Tiger, Killua's steel yo-yos and Megumi's black and white Divine Dogs.
-  - Giant fists: Deku's Detroit Smash of green wind, Ace's Fire Fist of flame and Adult Gon's Jajanken Rock of yellow nen.
+  - Giant fists: Deku's Detroit Smash of green wind and Adult Gon's Rock of yellow nen are punched straight into the enemy; Ace hurls his Fire Fist of flame.
 - **Cinematic camera** for the battle face-off, Domain Expansions, final transformations and the victory.
 - **No text during fights.** Only the winning team is shown at the end.
 - **Arena Builder:** one tap builds a complete, lit fighting arena anywhere:
@@ -75,12 +75,12 @@ Every character has their real transformations, signature techniques and fightin
 - **Madara Uchiha**: The legend reborn. Edo Tensei, a blue Perfect Susanoo, then Six Paths with the Truth-Seeking Balls.
 
 **My Hero Academia**
-- **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
+- **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash drives a giant fist of green wind straight into the enemy; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
 - **Katsuki Bakugo**: Explosions from his palms. AP Shot, Stun Grenade, Howitzer Impact, Cluster and the Max Cannon of his grenade gauntlets.
 
 **Hunter x Hunter**
 - **Killua Zoldyck**: The assassin prodigy. Steel yo-yos, razor Assassin Claws, Rhythm Echo, Lightning Palm, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
-- **Gon Freecss**: Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, with a mane of hair and a crushing dark nen.
+- **Gon Freecss**: Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, towering, with a mane of hair; his Rock is a giant fist of nen driven into the enemy.
 
 **Chainsaw Man**
 - **Denji (Chainsaw Man)**: Pull the cord and the devil comes out. Chainsaws burst from his head and arms; he rams with his head saw, spins into a whirl of blades, whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
