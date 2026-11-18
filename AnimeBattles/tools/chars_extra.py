@@ -2075,3 +2075,365 @@ def build(char, form):
                 if c["pivot"]:
                     c["pivot"] = [round(P[i] + (c["pivot"][i] - P[i]) * f, 3) for i in range(3)]
     return m
+
+
+# ==================================================================================
+# 1.19: Gohan, Bakugo, Gon, Akaza, Megumi
+# ==================================================================================
+M.FACE32.update({
+    "gohan": dict(eye="anime", brow="angled", mouth="neutral", marks=["glasses"]),
+    "gohan_ssj2": dict(eye="narrow", brow="sharp", mouth="clench", marks=[]),
+    "gohan_ult": dict(eye="narrow", brow="sharp", mouth="neutral", marks=[]),
+    "gohan_beast": dict(eye="narrow", brow="sharp", mouth="clench", marks=["beast_eyes"]),
+    "bakugo": dict(eye="narrow", brow="sharp", mouth="big_grin", marks=["bakugo_mask"]),
+    "bakugo_cluster": dict(eye="narrow", brow="sharp", mouth="clench", marks=["bakugo_mask", "scorch"]),
+    "gon": dict(eye="round", brow="angled", mouth="smile", marks=[]),
+    "gon_jaja": dict(eye="round", brow="sharp", mouth="clench", marks=[]),
+    "gon_adult": dict(eye="narrow", brow="sharp", mouth="none", marks=["adult_shadow"]),
+    "akaza": dict(eye="narrow", brow="none", mouth="smirk", marks=["akaza_lines", "akaza_eyes"]),
+    "akaza_compass": dict(eye="narrow", brow="none", mouth="clench", marks=["akaza_lines", "akaza_eyes"]),
+    "megumi": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
+    "megumi_shadow": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["shadow_eyes"]),
+})
+_face32_prev4 = M.face32
+
+
+def face32_new19(px, W, H, spec, hair, iris, skin):
+    _face32_prev4(px, W, H, spec, hair, iris, skin)
+    marks = spec.get("marks", [])
+    k = W / 32.0
+    open_eyes = M.EXPR not in ("blink", "hurt")
+
+    def put(x, y, c):
+        for dx in range(max(1, int(k))):
+            for dy in range(max(1, int(k))):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    if "glasses" in marks:  # Gohan's round-ish glasses (base form only)
+        fr = (40, 40, 48)
+        for cx in (10, 21):
+            for x in range(cx - 3, cx + 4):
+                put(x, 16, fr); put(x, 21, fr)
+            for y in range(16, 22):
+                put(cx - 3, y, fr); put(cx + 3, y, fr)
+        for x in (14, 15, 16, 17):
+            put(x, 17, fr)
+    if "beast_eyes" in marks and open_eyes:  # Beast: piercing red eyes
+        for cx in (10, 21):
+            for x in (cx, cx + 1):
+                put(x, 18, (230, 30, 40)); put(x, 19, (170, 20, 30))
+    if "bakugo_mask" in marks:  # the black eye mask with orange edges, sweeping out to the sides
+        for x in list(range(3, 15)) + list(range(17, 29)):
+            put(x, 15, (240, 130, 30))
+            for y in (16, 21):
+                put(x, y, (24, 24, 28))
+        for y in range(16, 22):
+            for x in (3, 4, 5, 26, 27, 28):
+                put(x, y, (24, 24, 28))
+        if open_eyes:
+            for cx in (10, 21):
+                put(cx, 18, (220, 30, 30)); put(cx + 1, 18, (220, 30, 30))
+    if "scorch" in marks:
+        for x, y in ((6, 25), (7, 26), (24, 24), (25, 25), (23, 26)):
+            put(x, y, (70, 50, 46))
+    if "adult_shadow" in marks:  # Adult Gon: a dark, emotionless shadow across the eyes
+        for x in range(4, 28):
+            put(x, 15, (40, 30, 30))
+    if "akaza_lines" in marks:  # the dark blue tattoo lines across his face
+        ln = (40, 60, 150)
+        for x in range(2, 30):
+            if x not in (14, 15, 16, 17):
+                put(x, 13, ln)
+        for y in range(22, 30):
+            put(5, y, ln); put(26, y, ln)
+        for x in (6, 7, 24, 25):
+            put(x, 25, ln)
+    if "akaza_eyes" in marks and open_eyes:  # yellow irises on dark blue sclera
+        for cx in (10, 21):
+            for x in range(cx - 2, cx + 3):
+                for y in (17, 18, 19):
+                    put(x, y, (40, 70, 170))
+            put(cx, 18, (250, 220, 70)); put(cx + 1, 18, (250, 220, 70)); put(cx, 17, (250, 220, 70))
+    if "shadow_eyes" in marks and open_eyes:
+        for cx in (10, 21):
+            put(cx, 18, (40, 120, 120)); put(cx + 1, 18, (40, 120, 120))
+
+
+M.face32 = face32_new19
+
+
+def spiky_crown(m, col, up=1.0, n=9, L=5.0, spread=0.8, hairline=30.6, bangs=None, back=True):
+    """Spiky anime hair standing up: a shell plus a crown of spikes, optional bangs over the forehead."""
+    shell(m, col, hairline=hairline, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(col)
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        dx, dz = math.sin(a), -math.cos(a)
+        if not back and dz > 0.5:
+            continue
+        m.strand([dx * 2.6, 31.8, dz * 2.6], [dx * spread, up, dz * spread], L, 3.2, hp, bone="hair", thick=0.8)
+    for x, z in ((0, 0), (1.5, 1.4), (-1.5, 1.4)):
+        m.strand([x, 32.2, z], [x * 0.2, 1, z * 0.25], L * 1.05, 3.2, hp, bone="hair", thick=0.8)
+    for x, tilt, ln in (bangs or ()):
+        m.strand([x, 31.6, -4.1], [tilt, -0.7, -0.5], ln, 2.2, hp, bone="hair", thick=0.75)
+
+
+# ------------------------------------------------------------------ Son Gohan — Dragon Ball
+GOHAN_BLACK, GOHAN_GOLD, GOHAN_BEAST = (24, 24, 34), (255, 214, 70), (226, 228, 240)
+
+
+@M.smooth_hair
+def gohan_hair(m, form):
+    if form == "base":
+        spiky_crown(m, GOHAN_BLACK, up=0.7, n=8, L=3.8, spread=0.9, bangs=((-1.2, -0.2, 2.6), (1.4, 0.25, 2.4)))
+    elif form == "ssj2":  # gold, swept up, one bang hanging down
+        spiky_crown(m, GOHAN_GOLD, up=1.0, n=9, L=5.4, spread=0.6, bangs=((0.6, 0.05, 3.6),))
+    elif form == "ultimate":  # black, wild and spiky, a single bang
+        spiky_crown(m, GOHAN_BLACK, up=0.95, n=10, L=5.0, spread=0.75, bangs=((0.6, 0.05, 3.4),))
+    else:  # Beast: tall silver-white spikes swept up and back
+        spiky_crown(m, GOHAN_BEAST, up=1.2, n=11, L=7.6, spread=0.55, bangs=((0.8, 0.05, 3.8),))
+        hp = M.hair_paint(GOHAN_BEAST)
+        for x in (-2.0, 0, 2.0):
+            m.strand([x, 32.4, 2.6], [x * 0.1, 0.7, 1], 7.0, 3.0, hp, bone="hair", thick=0.8)
+
+
+def gohan(m, form):
+    """Gohan in Piccolo's colours: a purple gi with a red sash, blue wristbands, brown boots. Base: glasses.
+    Super Saiyan 2: gold with sparks of lightning. Ultimate: black spiky hair. Beast: towering silver hair, red eyes."""
+    key = {"base": "gohan", "ssj2": "gohan_ssj2", "ultimate": "gohan_ult", "beast": "gohan_beast"}[form]
+    hair = {"base": GOHAN_BLACK, "ssj2": GOHAN_GOLD, "ultimate": GOHAN_BLACK, "beast": GOHAN_BEAST}[form]
+    iris = {"base": (40, 40, 50), "ssj2": (40, 160, 160), "ultimate": (40, 40, 50), "beast": (220, 30, 40)}[form]
+    head = head_paint(hair, iris, True, key)
+    gi = (78, 50, 120)
+
+    def collar(face, px, w, h, base):  # the gi's crossed front
+        if face == "north":
+            for y in range(int(h * 0.45)):
+                _put(px, w, h, int(w * 0.5 - y * 0.6), y, dark(gi, 0.6)); _put(px, w, h, int(w * 0.5 + y * 0.6), y, dark(gi, 0.6))
+    sparks = None
+    if form == "ssj2":
+        def sparks(face, px, w, h, base):
+            for i in range(0, h, 3):
+                _put(px, w, h, int(w * 0.5 + (i % 6 - 3) * w * 0.1), i, (120, 220, 255))
+    torso = layered(gi, [collar] + ([sparks] if sparks else []))
+    arm = layered(gi, ([sparks] if sparks else []) + [region((0, 0.66, 1, 0.84), (40, 80, 200)), region((0, 0.84, 1, 1), SKIN)])
+    leg = layered(gi, [region((0, 0.8, 1, 1), (110, 64, 40))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-4.4, 11.0, -2.5], [8.8, 2.0, 5.0], solid((200, 36, 36)))  # red sash
+    m.box("body", [2.0, 6.5, -2.6], [1.6, 4.6, 0.6], solid((200, 36, 36)))    # the sash's hanging end
+    gohan_hair(m, form)
+    if form == "beast":  # a crackling white-purple aura of spikes round his shoulders
+        au = SC.swatch((230, 210, 255), 170)
+        for k in range(5):
+            a = math.pi * (0.15 + 0.7 * k / 4)
+            SC.blade(m, "body", [math.cos(a) * 5.2, 21, math.sin(a) * 2.5 + 2.4], [math.cos(a) * 0.3, 1, 0.25], 4.0, 1.4, 0.5, au)
+
+
+# ------------------------------------------------------------------ Katsuki Bakugo — My Hero Academia
+BAKU_HAIR = (236, 222, 170)
+
+
+@M.smooth_hair
+def bakugo_hair(m):
+    # an explosion of ash-blond spikes in every direction
+    shell(m, BAKU_HAIR, hairline=30.4, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(BAKU_HAIR)
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        dx, dz = math.sin(a), -math.cos(a)
+        m.strand([dx * 3.0, 31.0, dz * 3.0], [dx * 1.0, 0.5, dz * 1.0], 4.8, 3.0, hp, bone="hair", thick=0.8)
+    for x, z in ((0, 0), (2, 1.5), (-2, 1.5), (0, -2), (2, -1.6), (-2, -1.6)):
+        m.strand([x, 32.0, z], [x * 0.3, 1, z * 0.3], 4.6, 3.0, hp, bone="hair", thick=0.8)
+    for x, tilt in ((-2.6, -0.4), (-0.6, -0.1), (1.2, 0.15), (2.8, 0.45)):
+        m.strand([x, 31.4, -4.1], [tilt, -0.6, -0.6], 3.0, 2.2, hp, bone="hair", thick=0.75)
+
+
+def bakugo(m, form):
+    """Bakugo's hero costume: a black sleeveless top with an orange X across the chest, black trousers with orange
+    knee pads, the huge grenade gauntlets, the black eye mask. Cluster: the costume scorched, his palms burning orange."""
+    cluster = form == "cluster"
+    head = head_paint(BAKU_HAIR, (220, 30, 30), True, "bakugo_cluster" if cluster else "bakugo")
+    top, orange = (30, 30, 34), (240, 130, 30)
+
+    def xmark(face, px, w, h, base):  # the orange X across his chest
+        if face == "north":
+            for y in range(int(h * 0.1), int(h * 0.75)):
+                t = (y - h * 0.1) / (h * 0.65)
+                for d in (0, 1):
+                    _put(px, w, h, int(w * (0.15 + 0.7 * t)) + d, y, orange); _put(px, w, h, int(w * (0.85 - 0.7 * t)) + d, y, orange)
+    def burns(face, px, w, h, base):
+        if cluster:
+            for x, y in ((0.2, 0.3), (0.7, 0.6), (0.4, 0.8)):
+                _put(px, w, h, int(w * x), int(h * y), (90, 60, 50)); _put(px, w, h, int(w * x) + 1, int(h * y), (90, 60, 50))
+    torso = layered(top, [xmark, burns])
+    arm = layered(SKIN, [region((0, 0.0, 1, 0.12), top)])
+    leg = layered((26, 26, 30), [region((0, 0.42, 1, 0.56), orange), region((0, 0.86, 1, 1), (20, 20, 24))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.4, 5.0], solid((80, 70, 60)))      # belt with grenade pouches
+    for x0 in (-4.0, -1.0, 2.0):
+        m.box("body", [x0, 10.6, -2.8], [1.8, 2.2, 0.8], solid((90, 110, 70)))
+    m.box("body", [-4.2, 22.2, -2.6], [8.4, 1.6, 5.2], solid((50, 50, 56)))     # neck guard
+    # the grenade gauntlets: big hand-grenade bracers with a pin ring
+    glow = (255, 160, 50) if cluster else (240, 210, 70)
+    for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+        m.box(arm_, [s_ * 6.2 - 3.0, 12.0, -3.0], [6.0, 6.6, 6.0], layered((70, 88, 60), [region((0, 0.0, 1, 0.16), (40, 40, 44)), region((0, 0.84, 1, 1), (40, 40, 44)),
+                                                                                       lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (50, 64, 44))]))
+        m.box(arm_, [s_ * 6.2 - 0.8, 18.4, -0.8], [1.6, 1.2, 1.6], solid(glow))  # the pin
+        m.box(arm_, [s_ * 6.2 - 2.4, 10.5, -2.4], [4.8, 1.6, 4.8], solid(SKIN))
+    bakugo_hair(m)
+    if cluster:  # explosions sparking from his palms
+        ex = SC.swatch((255, 170, 60), 200)
+        for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            for k in range(4):
+                a = 2 * math.pi * k / 4
+                SC.blade(m, arm_, [s_ * 6.2, 10.4, 0], [math.cos(a) * 0.8, -0.6, math.sin(a) * 0.8], 2.6, 1.2, 0.5, ex)
+
+
+# ------------------------------------------------------------------ Gon Freecss — Hunter x Hunter
+GON_HAIR = (24, 30, 26)
+
+
+@M.smooth_hair
+def gon_hair(m, adult):
+    if not adult:  # spiky black hair all standing straight up, tinted green at the tips
+        spiky_crown(m, GON_HAIR, up=1.4, n=10, L=6.2, spread=0.35, back=True)
+        hp = M.hair_paint((30, 60, 40))
+        for x in (-1.6, 0, 1.6):
+            m.strand([x, 32.4, -1.2], [x * 0.1, 1, -0.1], 6.8, 2.8, hp, bone="hair", thick=0.8)
+    else:  # Adult Gon: a huge mane of spiky hair falling past his waist
+        spiky_crown(m, GON_HAIR, up=1.2, n=10, L=7.0, spread=0.45)
+        long_hair(m, GON_HAIR, back_len=19, z=4.2, front=False)
+
+
+def gon(m, form):
+    """Gon: the green jacket and shorts, white socks and boots, the fishing rod on his back. Jajanken: his fist blazes
+    with yellow nen. Adult Gon: grown in an instant, his clothes torn to rags, a towering mane of hair, a dark aura."""
+    adult = form == "adult"
+    jaja = form == "jajanken"
+    key = "gon_adult" if adult else ("gon_jaja" if jaja else "gon")
+    head = head_paint(GON_HAIR, (120, 70, 40), True, key)
+    green = (50, 130, 70)
+    if adult:
+        def shreds(face, px, w, h, base):
+            for x in range(w):
+                for y in range(int(h * 0.15) + (x * 5 % 4), h):
+                    px[x, y] = (0, 0, 0, 0)
+        torso = layered(SKIN, [lines((("north",), [[(0.5, 0.25), (0.5, 0.75)]]), dark(SKIN, 0.85))])
+        base_body(m, torso, layered(SKIN, []), layered(green, [region((0, 0.5, 1, 1), SKIN)]), head)
+        m.box("body", [-4.6, 12.0, -2.6], [9.2, 6.0, 5.2], layered(green, [shreds]))  # rags of the jacket
+        au = SC.swatch((60, 50, 70), 170)
+        for k in range(6):
+            a = math.pi * (0.1 + 0.8 * k / 5)
+            SC.blade(m, "body", [math.cos(a) * 5.5, 18, math.sin(a) * 3 + 2], [math.cos(a) * 0.4, 1, 0.3], 5.0, 1.6, 0.5, au)
+    else:
+        torso = layered(green, [region((0.42, 0, 0.58, 1), (230, 120, 40), faces=("north",)), region((0, 0, 1, 0.08), (36, 80, 46))])
+        arm = layered(green, [region((0, 0, 1, 0.12), (36, 80, 46)), region((0, 0.82, 1, 1), SKIN)])
+        leg = layered(green, [region((0, 0.36, 1, 0.66), SKIN), region((0, 0.66, 1, 0.8), (240, 240, 236)), region((0, 0.8, 1, 1), (60, 120, 60))])
+        base_body(m, torso, arm, leg, head)
+        m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((100, 70, 40)))
+        m.strand([-2.5, 4, 2.6], [0.25, 1, 0.05], 22, 0.7, solid((160, 120, 70)), bone="body", segs=2)  # fishing rod
+        if jaja:  # the Rock: a fist of blazing yellow nen
+            nen = SC.swatch((255, 230, 90), 200)
+            SC.blob(m, "rightArm", [6.2, 10.6, 0], [2.6, 2.6, 2.6], nen)
+    gon_hair(m, adult)
+
+
+# ------------------------------------------------------------------ Akaza — Demon Slayer (Upper Moon Three)
+AKA_HAIR = (238, 140, 170)
+
+
+@M.smooth_hair
+def akaza_hair(m):
+    spiky_crown(m, AKA_HAIR, up=0.6, n=10, L=3.6, spread=1.0, bangs=((-2.4, -0.3, 2.8), (-0.6, -0.05, 3.0), (1.2, 0.15, 2.8), (2.8, 0.4, 2.6)))
+
+
+def akaza(m, form):
+    """Akaza: pale skin covered in dark blue stripe tattoos, short pink hair, a sleeveless pink-purple vest open over
+    his chest, light hakama trousers, bare feet. Compass Needle: a snowflake of light glows under his feet."""
+    compass = form == "compass"
+    skin = (240, 214, 200)
+    head = head_paint(AKA_HAIR, (250, 220, 70), True, "akaza_compass" if compass else "akaza")
+    ln = (40, 60, 150)
+
+    def stripes(face, px, w, h, base):  # the rings of tattoo round his arms and legs
+        for y in range(1, h, max(2, h // 6)):
+            for x in range(w):
+                _put(px, w, h, x, y, ln)
+    def chest(face, px, w, h, base):
+        if face == "north":
+            for y in range(int(h * 0.15), int(h * 0.7), max(2, h // 7)):
+                for x in range(int(w * 0.25), int(w * 0.75)):
+                    _put(px, w, h, x, y, ln)
+    vest = (196, 110, 160)
+    torso = layered(skin, [chest])
+    arm = layered(skin, [stripes])
+    leg = layered((236, 230, 240), [region((0, 0.0, 1, 0.12), (120, 160, 220)), region((0, 0.86, 1, 1), skin)])
+    base_body(m, torso, arm, leg, head)
+    for x0 in (-4.6, 2.6):  # the open vest
+        m.box("body", [x0, 12.0, -2.6], [2.0, 12.2, 5.2], layered(vest, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(vest, 0.7))]))
+    m.box("body", [-4.6, 12.0, 2.1], [9.2, 12.2, 0.5], solid(vest))
+    m.box("body", [-4.4, 11.2, -2.5], [8.8, 1.4, 5.0], solid((120, 160, 220)))
+    akaza_hair(m)
+    if compass:  # the snowflake compass at his feet
+        snow = SC.swatch((120, 200, 255), 190)
+        for k in range(6):
+            a = 2 * math.pi * k / 6
+            SC.blade(m, "body", [0, 0.2, 0], [math.cos(a), 0, math.sin(a)], 8.0, 1.0, 0.2, snow)
+
+
+# ------------------------------------------------------------------ Megumi Fushiguro — Jujutsu Kaisen
+MEG_HAIR = (20, 22, 34)
+
+
+@M.smooth_hair
+def megumi_hair(m):
+    # big spiky black hair flaring up and out like a sea urchin
+    shell(m, MEG_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(MEG_HAIR)
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        dx, dz = math.sin(a), -math.cos(a)
+        m.strand([dx * 2.8, 31.6, dz * 2.8], [dx * 0.9, 0.9, dz * 0.9], 5.6, 3.2, hp, bone="hair", thick=0.8)
+    for x, z in ((0, 0), (1.8, 1.4), (-1.8, 1.4), (0, -1.6)):
+        m.strand([x, 32.2, z], [x * 0.3, 1, z * 0.3], 5.8, 3.2, hp, bone="hair", thick=0.8)
+    for x, tilt in ((-2.4, -0.3), (0, 0), (2.4, 0.3)):
+        m.strand([x, 31.4, -4.1], [tilt, -0.7, -0.5], 2.6, 2.2, hp, bone="hair", thick=0.75)
+
+
+def megumi(m, form):
+    """Megumi in the Jujutsu High uniform (dark navy, high collar, gold buttons). Ten Shadows: black shadow pools
+    under his feet and ink-black shadow tendrils rising round him."""
+    shadow = form == "shadows"
+    head = head_paint(MEG_HAIR, (40, 110, 110), True, "megumi_shadow" if shadow else "megumi")
+    uni = (28, 32, 52)
+    buttons = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (220, 190, 90)) for y in range(int(h * 0.1), int(h * 0.8), max(2, h // 6))] if f == "north" else None
+    base_body(m, layered(uni, [buttons]), arm_paint(uni, sleeve_to=0.88), layered(uni, [region((0, 0.86, 1, 1), (20, 20, 24))]), head)
+    m.box("body", [-4.2, 21.6, -2.6], [8.4, 2.6, 5.2], solid(uni))  # high collar
+    megumi_hair(m)
+    if shadow:
+        ink = SC.swatch((10, 10, 16), 230)
+        m.box("body", [-6, 0.05, -6], [12, 0.2, 12], solid((8, 8, 12)))
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            SC.curve_tube(m, "body", [[math.cos(a) * 3, 0.2, math.sin(a) * 3], [math.cos(a) * 5, 5, math.sin(a) * 5], [math.cos(a) * 4, 10, math.sin(a) * 4]],
+                          0.8, 0.2, [ink, ink, ink], n=2)
+
+
+FORMS.update({
+    "gohan": ["base", "ssj2", "ultimate", "beast"],
+    "bakugo": ["base", "cluster"],
+    "gon": ["base", "jajanken", "adult"],
+    "akaza": ["base", "compass"],
+    "megumi": ["base", "shadows"],
+})
+_build_prev19 = build
+_NEW19 = {"gohan": gohan, "bakugo": bakugo, "gon": gon, "akaza": akaza, "megumi": megumi}
+
+
+def build(char, form):  # noqa: F811
+    if char in _NEW19:
+        m = M.Model()
+        _NEW19[char](m, form)
+        return m
+    return _build_prev19(char, form)

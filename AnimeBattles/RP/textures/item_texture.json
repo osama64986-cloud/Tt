@@ -100,6 +100,21 @@
   },
   "ab_egg_ace": {
    "textures": "textures/items/egg_ace"
+  },
+  "ab_egg_gohan": {
+   "textures": "textures/items/egg_gohan"
+  },
+  "ab_egg_bakugo": {
+   "textures": "textures/items/egg_bakugo"
+  },
+  "ab_egg_gon": {
+   "textures": "textures/items/egg_gon"
+  },
+  "ab_egg_akaza": {
+   "textures": "textures/items/egg_akaza"
+  },
+  "ab_egg_megumi": {
+   "textures": "textures/items/egg_megumi"
   }
  }
 }

@@ -1013,6 +1013,11 @@ function transform(e, s, to, label, color, extraSound) {
   }
   if (e.typeId === "ab:deku") every(3, 8, () => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 2 ? C.whip : C.ofa, 1.2, 0.3, { count: 10, speed: 7 }); });
   if (e.typeId === "ab:rengoku" || e.typeId === "ab:ace") every(3, 8, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + i * 0.3), 1.5 + i * 0.3, C.fire, 20, 0.5); });
+  if (e.typeId === "ab:gohan") every(3, 8, (i) => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 3 ? C.silver : to === 1 ? C.kameBlue : C.gold, 1.2, 0.3, { count: 10, speed: 7 }); });
+  if (e.typeId === "ab:bakugo") every(4, 5, () => { if (e.isValid) { fx(dim, "flash", V.up(e.location, 1), C.fire, 3, 0.2); burst(dim, V.up(e.location, 1), C.ember, 16, 3, 0.4, 0.5); } });
+  if (e.typeId === "ab:gon" && to === 2) { later(6, () => { if (e.isValid) { fx(dim, "shock", e.location, C.void, 8, 0.6); burst(dim, V.up(e.location, 1.5), C.void, 40, 4, 0.5, 0.7); } }); sound(dim, "mob.wither.spawn", e.location, 0.5, 0.8); }
+  if (e.typeId === "ab:akaza" && to === 1) every(2, 6, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.1), 1.5 + i * 0.8, C.kameBlue, 24, 0.5); });
+  if (e.typeId === "ab:megumi") every(3, 6, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.1), 1 + i * 0.6, C.black, 20, 0.5); });
   if (!calm) setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
@@ -3301,6 +3306,8 @@ const ITACHI = {
     { label: "Susanoo", power: 165, aura: C.red }],
   thresholds: [0.75, 0.5], transformCd: 110, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
   abilities: [
+    SIG.ball("watershark", "Water Shark Bullet", { say: "§9§lWater Style: Water Shark Bullet", color: C.kameBlue, count: 1, size: 1.8, dmg: 26, speed: 1.6, cd: 200, cost: 100, charge: 8 }),
+    SIG.ball("magatama", "Susanoo: Yasaka Magatama", { say: "§c§lYasaka Magatama", color: C.red, count: 3, size: 1.4, dmg: 22, spread: 3, speed: 1.8, cd: 240, cost: 130, charge: 6, cond: G(2) }),
     SAS.fireball({ size: 2.8 }), SAS.phoenix(),
     SIG.ball("shuriken", "Shuriken Jutsu", { say: "§7§l(shuriken — every one finds its mark)", color: C.silver, count: 6, size: 0.35, dmg: 5, spread: 1.5, cd: 100, cost: 40, charge: 2, speed: 2.2 }),
     { id: "crows", label: "Crow Clone", cd: 200, cost: 90, min: 0, max: 30, weight: 4,
@@ -3341,6 +3348,8 @@ const KAKASHI = {
     { label: "Double Mangekyo — Susanoo", power: 150, aura: C.kameBlue }],
   thresholds: [0.8, 0.45], transformCd: 110, formSound: [null, "mob.wither.ambient", "beacon.activate"],
   abilities: [
+    SIG.beam("shiden", "Purple Lightning", { say: "§5§lPurple Lightning! §7— Shiden", color: C.purple, dmg: 36, width: 1.0, length: 36, charge: 6, cd: 220, cost: 110 }),
+    SIG.ball("kamuishuriken", "Susanoo: Kamui Shuriken", { say: "§5§lKamui Shuriken", color: C.void, count: 2, size: 1.8, dmg: 34, speed: 1.6, cd: 260, cost: 140, charge: 8, cond: G(2) }),
     SAS.chidori({ id: "raikiri", label: "Raikiri", say: "§b§lRaikiri! §7— the blade that cut lightning", dmg: 42 }),
     SIG.ball("hound", "Lightning Beast Running", { say: "§b§lLightning Release: Lightning Beast Running!", color: C.kameBlue, count: 1, size: 1.3, dmg: 30, homing: true, speed: 1.8, cd: 180, cost: 110 }),
     SIG.ball("waterdragon", "Water Dragon Bullet", { say: "§9§lWater Style: Water Dragon Bullet!", color: C.blue, count: 1, size: 2.4, dmg: 34, speed: 1.1, cd: 220, cost: 130, charge: 10, radius: 3.2 }),
@@ -4125,6 +4134,8 @@ const DEKU = {
     { label: "Dark Deku — every quirk", power: 168, aura: C.whip }],
   thresholds: [0.75, 0.45], transformCd: 110, formSound: [null, "ambient.weather.thunder", "mob.wither.ambient"],
   abilities: [
+    SIG.ball("airforce", "Air Force", { say: "§a§lAir Force!", color: C.white, count: 3, size: 0.7, dmg: 12, speed: 2.6, cd: 130, cost: 60, charge: 3, pose: 5 }),
+    SIG.rush("fajin", "Fa Jin: Kinetic Smash", { say: "§a§lFa Jin!", color: C.ofa, hits: 3, dmg: 10, finisher: 40, cd: 220, cost: 100, slam: true, cond: G(2) }),
     SIG.ball("delaware", "Delaware Smash", { say: "§a§lDelaware Smash! §7— a flick of air", color: C.white, count: 1, size: 1.4, dmg: 22, speed: 2.4, cd: 110, cost: 60, charge: 4, radius: 2.2, knock: 2.4 }),
     { id: "detroit", label: "Detroit Smash", cd: 200, cost: 110, min: 0, max: 18, weight: 9,
       run(e, s, t) {  // in close, a full-power punch — and the wind of it becomes a giant green fist
@@ -4170,6 +4181,8 @@ const KILLUA = {
   forms: [{ label: "Assassin", power: 55 }, { label: "Godspeed", power: 110, aura: C.volt }],
   thresholds: [0.6], transformCd: 110, formSound: [null, "ambient.weather.thunder"],
   abilities: [
+    SIG.wave("lightpalm", "Lightning Palm", { say: "§b§lLightning Palm! §7— Kanmuru", color: C.volt, radius: 3.6, dmg: 26, cd: 150, cost: 70, pose: 5 }),
+    SIG.rush("claws", "Assassin Claws", { say: "§f§lAssassin claws", color: C.white, hits: 4, dmg: 7, finisher: 20, cd: 170, cost: 70, poses: [5, 6, 5, 9] }),
     { id: "yoyo", label: "Yo-Yo Strike", cd: 120, cost: 50, min: 2, max: 16, weight: 4,
       run(e, s, t) {  // his 50 kg steel yo-yos, out and back on their strings
         busy(s, 18); face(e, aim(t)); setPose(e, 4); announce(e, "§7§lYo-yos!");
@@ -4215,6 +4228,8 @@ const DENJI = {
     { label: "True Chainsaw Man", power: 150, aura: C.black }],
   thresholds: [0.85, 0.4], transformCd: 90, formSound: [null, "mob.ravager.roar", "mob.warden.roar"],
   abilities: [
+    SIG.rush("sawram", "Chainsaw Head Ram", { say: "§7§lVRRRRRM!", color: C.saw, hits: 3, dmg: 10, finisher: 28, cd: 200, cost: 80, poses: [9, 5, 7], cond: G(1, 2) }),
+    SIG.wave("sawspin", "Chainsaw Spin", { say: "§7§lChainsaw spin", color: C.saw, radius: 4.5, dmg: 24, cd: 190, cost: 80, cond: G(1, 2) }),
     SIG.rush("brawl", "Street Brawl", { say: "§6§lDenji throws himself at it!", color: C.white, dmg: 5, finisher: 14, hits: 4, cd: 140, cost: 40, cond: G(0) }),
     SIG.rush("sawrush", "Chainsaw Frenzy", { say: "§c§lVRRRRRRRMMM!", color: C.blood, dmg: 9, finisher: 30, hits: 7, poses: [5, 6, 5, 6, 9, 5, 10], cd: 160, cost: 80, cond: G(1, 2) }),
     { id: "chainwhip", label: "Chain Whip", cd: 220, cost: 90, min: 3, max: 22, weight: 4, cond: G(1, 2),
@@ -4312,6 +4327,8 @@ const ACE = {
   forms: [{ label: "Fire Fist", power: 70, aura: C.fire }, { label: "Flame Emperor", power: 115, aura: C.fire }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
+    SIG.ball("jujika", "Cross Fire", { say: "§6§lCross Fire! §7— Jujika", color: C.fire, count: 2, size: 1.2, dmg: 20, speed: 2.2, cd: 170, cost: 80, charge: 4, pose: 4 }),
+    SIG.beam("shiranui", "Shinka: Shiranui", { say: "§6§lShinka: Shiranui!", color: C.ember, dmg: 34, width: 0.9, length: 34, charge: 8, cd: 240, cost: 110 }),
     { id: "hiken", label: "Fire Fist", cd: 190, cost: 100, min: 2, max: 34, weight: 9,
       run(e, s, t) {  // his fist bursts into a giant fist of flame and flies at the enemy
         busy(s, 20); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lFIRE FIST! §7— Hiken");
@@ -4326,11 +4343,107 @@ const ACE = {
   ],
 };
 
+// ------------------------------------------------------------------ 1.19: five more fighters
+const abFrom = (D, id, extra) => ({ ...D.abilities.find((a) => a.id === id), ...extra });
+
+// Son Gohan: the scholar who becomes a beast. Piccolo's Special Beam Cannon is his last word.
+const GOHAN = {
+  name: "Gohan", color: "§5", energy: 1200, regen: 20, energyName: "§bKI",
+  dodge: (e) => [0.1, 0.14, 0.18, 0.24][formOf(e)] ?? 0.1,
+  forms: [{ label: "Base", power: 200 }, { label: "Super Saiyan 2", power: 360, aura: C.gold },
+    { label: "Ultimate (Mystic)", power: 520, aura: C.white }, { label: "Beast", power: 700, aura: C.silver }],
+  thresholds: [0.85, 0.6, 0.35], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
+  abilities: [
+    SIG.ball("kiblast", "Ki Barrage", { say: "§e§lKi barrage", color: C.kiYellow, count: 8, size: 0.5, dmg: 6, spread: 3, speed: 2.4, cd: 120, cost: 60, charge: 3 }),
+    SIG.beam("masenko", "Masenko", { say: "§e§lMasenko... HA!", color: C.kiYellow, dmg: 42, width: 1.4, charge: 10, cd: 220, cost: 140, pose: 23 }),
+    SIG.beam("kame", "Kamehameha", { say: "§b§lKa... me... ha... me... HA!", color: C.kameBlue, dmg: 55, width: 1.8, charge: 14, cd: 300, cost: 180 }),
+    SIG.wave("rage", "Rage Burst", { say: "§e§lRAAAAH!", color: C.gold, radius: 5, dmg: 24, cd: 220, cost: 100, cond: G(1, 2, 3) }),
+    SIG.rush("ultrush", "Ultimate Rush", { say: "§f§lUltimate rush", color: C.white, hits: 6, dmg: 8, finisher: 30, cd: 180, cost: 100, cond: G(2, 3) }),
+    SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 360, cost: 220, cond: G(3), pose: 4 }),
+    SIG.beam("beastkame", "Beast Kamehameha", { say: "§f§lKAMEHAMEHA! §7— Beast", color: C.white, dmg: 95, width: 2.6, charge: 18, cd: 600, cost: 400, cond: G(3), carve: 2 }),
+  ],
+};
+
+// Katsuki Bakugo: nitro-glycerin sweat, explosions from his palms, the grenade gauntlets.
+const BAKUGO = {
+  name: "Bakugo", color: "§6", energy: 1100, regen: 22, energyName: "§6NITRO",
+  dodge: () => 0.14,
+  forms: [{ label: "Explosion", power: 85, aura: C.fire }, { label: "Cluster", power: 130, aura: C.ember }],
+  thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
+  abilities: [
+    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 20, speed: 2.4, cd: 100, cost: 50, charge: 2, pose: 5, radius: 3 }),
+    SIG.beam("apshot", "AP Shot", { say: "§e§lAP Shot!", color: C.kiYellow, dmg: 36, width: 0.7, length: 36, charge: 6, cd: 200, cost: 100, pose: 4 }),
+    SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 16, cd: 240, cost: 80 }),
+    SIG.rush("blastrush", "Blast Rush", { say: "§6§lBlast rush!", color: C.fire, hits: 5, dmg: 8, finisher: 26, cd: 170, cost: 90 }),
+    SIG.wave("howitzer", "Howitzer Impact", { say: "§6§lHOWITZER... IMPACT!", color: C.fire, radius: 6.5, dmg: 48, cd: 340, cost: 180, pose: 23 }),
+    SIG.ball("cluster", "Cluster", { say: "§6§lCluster!", color: C.ember, count: 6, size: 0.8, dmg: 10, spread: 3, homing: true, speed: 1.4, cd: 240, cost: 120, charge: 5, cond: G(1) }),
+    SIG.beam("maxcannon", "Grenade Bracer: Max Cannon", { say: "§6§lMAX... CANNON!", color: C.fire, dmg: 70, width: 2.4, charge: 16, cd: 520, cost: 320, cond: G(1), carve: 2 }),
+  ],
+};
+
+// Gon Freecss: Jajanken — Rock, Paper, Scissors. And the vow that turned him into a man.
+const GON = {
+  name: "Gon", color: "§a", energy: 1000, regen: 18, energyName: "§eNEN",
+  dodge: () => 0.12,
+  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow }, { label: "Adult Gon", power: 200, aura: C.void }],
+  thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn"],
+  abilities: [
+    SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 120, cost: 40, charge: 2, pose: 5 }),
+    SIG.rush("wild", "Wild Rush", { say: "§a§lHyaa!", color: C.white, hits: 4, dmg: 7, finisher: 18, cd: 150, cost: 60 }),
+    SIG.rush("rock", "Jajanken: Rock", { say: "§e§lFirst comes rock... ROCK!", color: C.kiYellow, hits: 2, dmg: 8, finisher: 40, cd: 200, cost: 110, slam: true }),
+    SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 110, charge: 8, cond: G(1, 2) }),
+    SIG.slash("scissors", "Jajanken: Scissors", { say: "§e§lScissors!", color: C.kiYellow, dmg: 28, cd: 180, cost: 90, size: 2.0, cond: G(1, 2) }),
+    SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(2) }),
+    SIG.rush("adultrock", "Adult Gon: Jajanken Rock", { say: "§e§lJAJANKEN... ROCK!", color: C.kiYellow, hits: 3, dmg: 14, finisher: 90, slam: true, cd: 520, cost: 300, cond: G(2) }),
+  ],
+};
+
+// Akaza, Upper Moon Three: Destructive Death — every technique a martial art.
+const AKAZA = {
+  name: "Akaza", color: "§d", energy: 1200, regen: 24, energyName: "§dBLOOD ART",
+  dodge: (e) => (formOf(e) === 1 ? 0.24 : 0.14),  // Compass Needle: he reads every fighting spirit
+  forms: [{ label: "Upper Moon Three", power: 120, aura: C.blood }, { label: "Destructive Death: Compass Needle", power: 140, aura: C.kameBlue }],
+  thresholds: [0.55], transformCd: 110, formSound: [null, "random.glass"],
+  abilities: [
+    SIG.ball("airtype", "Destructive Death: Air Type", { say: "§d§lDestructive Death: Air Type!", color: C.white, count: 6, size: 0.6, dmg: 9, spread: 2, speed: 3, cd: 120, cost: 60, charge: 2, pose: 5 }),
+    SIG.rush("lightbulbs", "Disordered Light Bulbs", { say: "§b§lDisordered Light Bulbs!", color: C.kameBlue, hits: 7, dmg: 6, finisher: 22, cd: 170, cost: 80 }),
+    SIG.slash("flowingflash", "Leg Type: Flowing Flash", { say: "§b§lLeg Type: Flowing Flash!", color: C.kameBlue, dmg: 26, count: 2, cd: 180, cost: 90, pose: 7 }),
+    SIG.wave("chaotic", "Destructive Death: Chaotic Type", { say: "§b§lDestructive Death: Chaotic Type!", color: C.kameBlue, radius: 5.5, dmg: 30, cd: 240, cost: 110 }),
+    SIG.rush("annihilation", "Destructive Death: Annihilation Type", { say: "§d§lAnnihilation Type!", color: C.blood, hits: 4, dmg: 10, finisher: 45, slam: true, cd: 260, cost: 140 }),
+    SIG.ball("afterglow", "Final Form: Blue Silver Chaotic Afterglow", { say: "§b§lFinal Form: Blue Silver Chaotic Afterglow!", color: C.kameBlue, count: 12, size: 0.6, dmg: 7, spread: 4, speed: 2.8, cd: 380, cost: 250, charge: 6, cond: G(1) }),
+    regenAbility("Upper Moon Regeneration", "§d§l(his wounds close in an instant)", 0.08),
+  ],
+};
+
+// Megumi Fushiguro: the Ten Shadows Technique — shikigami from his own shadow.
+const MEGUMI = {
+  name: "Megumi", color: "§3", energy: 1100, regen: 20, energyName: "§3CE",
+  dodge: () => 0.12,
+  forms: [{ label: "Ten Shadows", power: 80 }, { label: "Ten Shadows: Unleashed", power: 112, aura: C.black }],
+  thresholds: [0.5], transformCd: 120, formSound: [null, "mob.wither.ambient"],
+  abilities: [
+    { id: "dogs", label: "Divine Dogs", cd: 200, cost: 90, min: 0, max: 30, weight: 6,
+      run(e, s, t) {  // the black and white wolves burst out of the target's shadow and bite
+        busy(s, 12); setPose(e, 21); announce(e, "§8§lDivine Dogs!");
+        later(3, () => { if (alive(t)) houndAmbush(e, t, 2); });
+        later(9, () => { if (alive(t)) { deal(e, t, 24 * powerOf(e) / 100); fx(t.dimension, "shock", t.location, C.white, 3, 0.3); } });
+        later(12, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    abFrom(SUKUNA, "nue", { cond: undefined, cost: 120 }),
+    SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 10, finisher: 16, cd: 160, cost: 60 }),
+    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 20, cd: 140, cost: 60 }),
+    abFrom(SUKUNA, "maxelephant", { cond: G(1) }),
+    SIG.wave("garden", "Domain Expansion: Chimera Shadow Garden", { say: "§8§lDomain Expansion: Chimera Shadow Garden", color: C.black, radius: 7, dmg: 36, cd: 900, cost: 400, cond: G(1) }),
+    abFrom(SUKUNA, "mahoraga", { cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.45, weight: 9 }),  // his last resort, as in the anime
+  ],
+};
+
 const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yuji": YUJI, "ab:yuji_final": YUJI_FINAL, "ab:sukuna": SUKUNA, "ab:luffy": LUFFY, "ab:zoro": ZORO, "ab:frieza": FRIEZA,
   "ab:naruto_kid": NARUTO_KID, "ab:naruto_teen": NARUTO_TEEN, "ab:naruto_war": NARUTO_WAR, "ab:naruto_adult": NARUTO_ADULT,
   "ab:tanjiro_demon": TANJIRO_DEMON, "ab:muzan": MUZAN, "ab:broly": BROLY, "ab:madara": MADARA, "ab:sasuke_kid": SASUKE_KID, "ab:sasuke": SASUKE, "ab:sasuke_war": SASUKE_WAR, "ab:sasuke_adult": SASUKE_ADULT, "ab:ichigo": ICHIGO, "ab:tanjiro": TANJIRO,
   "ab:itachi": ITACHI, "ab:kakashi": KAKASHI,
-  "ab:deku": DEKU, "ab:killua": KILLUA, "ab:denji": DENJI, "ab:rengoku": RENGOKU, "ab:ace": ACE };
+  "ab:deku": DEKU, "ab:killua": KILLUA, "ab:denji": DENJI, "ab:rengoku": RENGOKU, "ab:ace": ACE,
+  "ab:gohan": GOHAN, "ab:bakugo": BAKUGO, "ab:gon": GON, "ab:akaza": AKAZA, "ab:megumi": MEGUMI };
 
 // ------------------------------------------------------------------ battle intelligence
 // Every fighter is smart, but some read a fight better than others (1-10). Intelligence decides HOW they fight:
@@ -4342,7 +4455,7 @@ const IQ = {
   "ab:luffy": 6, "ab:zoro": 6, "ab:ichigo": 6, "ab:naruto_kid": 3, "ab:naruto_teen": 5, "ab:naruto_war": 7, "ab:naruto_adult": 8,
   "ab:sasuke_kid": 6, "ab:sasuke": 7, "ab:sasuke_war": 8, "ab:sasuke_adult": 9, "ab:tanjiro": 7, "ab:tanjiro_demon": 3,
   "ab:muzan": 8, "ab:madara": 9, "ab:itachi": 10, "ab:kakashi": 10,
-  "ab:deku": 8, "ab:killua": 9, "ab:denji": 3, "ab:rengoku": 7, "ab:ace": 6,
+  "ab:deku": 8, "ab:killua": 9, "ab:denji": 3, "ab:rengoku": 7, "ab:ace": 6, "ab:gohan": 8, "ab:bakugo": 8, "ab:gon": 4, "ab:akaza": 7, "ab:megumi": 8,
 };
 const iqOf = (e) => IQ[e.typeId] ?? 6;
 const isMeleeAb = (a) => (a.max ?? 99) <= 9;
@@ -4416,6 +4529,11 @@ const COMBOS = {
   "ab:killua": [["blink", "jab_r", "jab_l", "kick_r"], ["blink", "kick", "upper"], ["jab_l", "jab_r", "rush"]],
   "ab:denji": [["jab_r", "jab_l", "upper"], ["rush", "kick"], ["jab_r", "kick_r", "axe"]],
   "ab:rengoku": [["jab_r", "kick", "kick_r"], ["blink", "jab_l", "upper", "axe"], ["kick_l", "jab_r", "kiburst"]],
+  "ab:gohan": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
+  "ab:bakugo": [["jab_r", "kiburst", "kick_l"], ["blink", "jab_l", "upper", "kiburst"], ["kick_r", "jab_r", "axe"]],
+  "ab:gon": [["jab_r", "jab_l", "kick", "upper"], ["jab_l", "jab_r", "kick_r"], ["rush", "kick_l", "axe"]],
+  "ab:akaza": [["jab_r", "jab_l", "rush", "kick_r", "kick_l"], ["kick", "kick_r", "upper", "axe"], ["rush", "rush", "kick_l", "kiburst"]],
+  "ab:megumi": [["jab_r", "kick", "kick_r"], ["jab_l", "jab_r", "upper"], ["blink", "kick_l", "axe"]],
   "ab:ace": [["jab_r", "jab_l", "kick_r", "kiburst"], ["kick", "upper", "axe"], ["blink", "jab_r", "kick_l"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
@@ -4426,7 +4544,7 @@ const BLACK_FLASH = { "ab:gojo": 0.25, "ab:yuji": 0.2, "ab:yuji_final": 0.45, "a
 const HIT_COLOR = { "ab:goku": C.kiYellow, "ab:vegeta": C.bigBang, "ab:gojo": C.blue, "ab:yuji": C.ce, "ab:yuji_final": C.blood, "ab:sukuna": C.red, "ab:luffy": C.white, "ab:zoro": C.zoro, "ab:frieza": C.death,
   "ab:naruto_kid": C.white, "ab:naruto_teen": C.blue, "ab:naruto_war": C.gold, "ab:naruto_adult": C.gold,
   "ab:sasuke": C.kameBlue, "ab:sasuke_kid": C.kameBlue, "ab:sasuke_war": C.purple, "ab:sasuke_adult": C.purple, "ab:ichigo": C.kameBlue, "ab:tanjiro": C.kameBlue, "ab:tanjiro_demon": C.blood, "ab:muzan": C.blood, "ab:broly": BG, "ab:madara": C.fire, "ab:itachi": C.red, "ab:kakashi": C.kameBlue,
-  "ab:deku": C.ofa, "ab:killua": C.volt, "ab:denji": C.blood, "ab:rengoku": C.fire, "ab:ace": C.fire };
+  "ab:deku": C.ofa, "ab:killua": C.volt, "ab:denji": C.blood, "ab:rengoku": C.fire, "ab:ace": C.fire, "ab:gohan": C.kiYellow, "ab:bakugo": C.fire, "ab:gon": C.kiYellow, "ab:akaza": C.kameBlue, "ab:megumi": C.black };
 
 function combo(e, s, t) {
   const list = COMBOS[e.typeId];
@@ -5368,7 +5486,7 @@ function nearArena(p) {
   return null;
 }
 
-const VICTORY = { "ab:deku": 22, "ab:killua": 0, "ab:denji": 27, "ab:rengoku": 21, "ab:ace": 26, "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
+const VICTORY = { "ab:gohan": 31, "ab:bakugo": 22, "ab:gon": 27, "ab:akaza": 22, "ab:megumi": 21, "ab:deku": 22, "ab:killua": 0, "ab:denji": 27, "ab:rengoku": 21, "ab:ace": 26, "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
 const ENTRANCE_LINES = {
   "ab:goku": "§6§lHey, it's me, Goku! §7Let's fight!", "ab:vegeta": "§9§lKakarot! §7The Prince of all Saiyans is here.",
   "ab:frieza": "§5§lOhohoho... §7you should be honoured.", "ab:gojo": "§b§lThroughout heaven and earth, I alone am the honoured one.",
@@ -5384,9 +5502,11 @@ const ENTRANCE_LINES = {
   "ab:itachi": "§4§lForgive me, Sasuke... §7— Itachi Uchiha", "ab:kakashi": "§7§lYo. §7— Kakashi Hatake",
   "ab:deku": "§a§lI'm here! §7— Deku", "ab:killua": "§b§lI'm an assassin. §7— Killua", "ab:denji": "§6§lLet's go! §7— Denji",
   "ab:rengoku": "§6§lSet your heart ablaze! §7— Rengoku", "ab:ace": "§6§lFire Fist Ace! §7— Portgas D. Ace",
+  "ab:gohan": "§5§lI won't let you hurt anyone. §7— Son Gohan", "ab:bakugo": "§6§lI'm gonna win. §7— Bakugo",
+  "ab:gon": "§a§lRock, paper, scissors! §7— Gon", "ab:akaza": "§d§lBecome a demon! §7— Akaza", "ab:megumi": "§3§lTen Shadows. §7— Megumi Fushiguro",
 };
 // Entrance: a freshly spawned fighter strikes its signature pose with a shout before joining the fight.
-const ENTRANCE = { "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
+const ENTRANCE = { "ab:gohan": 22, "ab:bakugo": 22, "ab:gon": 1, "ab:akaza": 22, "ab:megumi": 21, "ab:goku": 22, "ab:vegeta": 22, "ab:frieza": 23, "ab:gojo": 26, "ab:yuji": 5, "ab:yuji_final": 19,
   "ab:sukuna": 21, "ab:luffy": 27, "ab:zoro": 1, "ab:naruto_kid": 35, "ab:naruto_teen": 35, "ab:naruto_war": 35, "ab:naruto_adult": 35,
   "ab:tanjiro_demon": 22, "ab:muzan": 0, "ab:broly": 22, "ab:madara": 23, "ab:itachi": 21, "ab:kakashi": 21, "ab:deku": 22, "ab:killua": 1, "ab:denji": 22, "ab:rengoku": 19, "ab:ace": 22, "ab:sasuke": 21, "ab:sasuke_kid": 21, "ab:sasuke_war": 21, "ab:sasuke_adult": 0, "ab:ichigo": 19, "ab:tanjiro": 19 };
 world.afterEvents.entitySpawn.subscribe((ev) => {
@@ -5425,7 +5545,7 @@ function giveKit(p) {
 }
 function giveEggs(p) {  // every fighter's spawn egg: /scriptevent ab:eggs
     const inv = p.getComponent("minecraft:inventory")?.container;
-    for (const id of ["ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg", "ab:broly_spawn_egg", "ab:madara_spawn_egg", "ab:itachi_spawn_egg", "ab:kakashi_spawn_egg", "ab:deku_spawn_egg", "ab:killua_spawn_egg", "ab:denji_spawn_egg", "ab:rengoku_spawn_egg", "ab:ace_spawn_egg"]) {
+    for (const id of ["ab:goku_spawn_egg", "ab:vegeta_spawn_egg", "ab:gojo_spawn_egg", "ab:yuji_spawn_egg", "ab:yuji_final_spawn_egg", "ab:sukuna_spawn_egg", "ab:luffy_spawn_egg", "ab:zoro_spawn_egg", "ab:frieza_spawn_egg", "ab:naruto_kid_spawn_egg", "ab:naruto_teen_spawn_egg", "ab:naruto_war_spawn_egg", "ab:naruto_adult_spawn_egg", "ab:sasuke_kid_spawn_egg", "ab:sasuke_spawn_egg", "ab:sasuke_war_spawn_egg", "ab:sasuke_adult_spawn_egg", "ab:ichigo_spawn_egg", "ab:tanjiro_spawn_egg", "ab:tanjiro_demon_spawn_egg", "ab:muzan_spawn_egg", "ab:broly_spawn_egg", "ab:madara_spawn_egg", "ab:itachi_spawn_egg", "ab:kakashi_spawn_egg", "ab:deku_spawn_egg", "ab:killua_spawn_egg", "ab:denji_spawn_egg", "ab:rengoku_spawn_egg", "ab:ace_spawn_egg", "ab:gohan_spawn_egg", "ab:bakugo_spawn_egg", "ab:gon_spawn_egg", "ab:akaza_spawn_egg", "ab:megumi_spawn_egg"]) {
       try { inv?.addItem(new ItemStack(id, 1)); } catch (e) { warn("kit " + id, e); }
     }
 }
