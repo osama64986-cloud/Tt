@@ -15,6 +15,7 @@
 **One Piece**
 - **Monkey D. Luffy** — Every Gear from 2 to 5. Jet Pistol, Gear 4's Kong Gun, and Gear 5 where he turns the battlefield into a cartoon.
 - **Roronoa Zoro** — The Three-Sword Style. Oni Giri, Tatsumaki, the nine-sword Asura demon, and King of Hell Three Thousand Worlds.
+- **Portgas D. Ace** — Fire Fist Ace, Luffy's brother. His Fire Fist hurls a giant fist of flame; he also has Fire Gun, Firefly and the giant Entei, and as a Logia, blows pass straight through his body of flame.
 
 **Naruto**
 - **Naruto (Kid)** — Shadow Clones, the Rasengan and the first red chakra of the Nine-Tails.
@@ -30,13 +31,13 @@
 - **Madara Uchiha** — The legend reborn. Edo Tensei, a blue Perfect Susanoo, then Six Paths with the Truth-Seeking Balls.
 
 **My Hero Academia**
-- **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Blackwhip, Smokescreen and the United States of Smash.
+- **Izuku Midoriya (Deku)** — The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Blackwhip, Smokescreen and the United States of Smash.
 
 **Hunter x Hunter**
-- **Killua Zoldyck**: The assassin prodigy. Steel yo-yos, razor claws, Rhythm Echo, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
+- **Killua Zoldyck** — The assassin prodigy. Steel yo-yos, razor claws, Rhythm Echo, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
 
 **Chainsaw Man**
-- **Denji (Chainsaw Man)**: Pull the cord and the devil comes out. Chainsaws burst from his head and arms, he whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
+- **Denji (Chainsaw Man)** — Pull the cord and the devil comes out. Chainsaws burst from his head and arms, he whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
 
 **Bleach**
 - **Ichigo Kurosaki** — Shikai, Fullbring, Bankai, the Hollow mask, Vasto Lorde, the Final Getsuga Tensho and True Bankai.
@@ -44,6 +45,7 @@
 **Demon Slayer**
 - **Tanjiro Kamado** — Water Breathing, then Hinokami Kagura, the dance of the Sun.
 - **Demon Tanjiro** — Turned by Muzan, with flesh tendrils bursting from his back and the Demon King's power.
+- **Kyojuro Rengoku** — The Flame Hashira. Set your heart ablaze: Unknowing Fire, Rising Scorching Sun, a real Flame Tiger that leaps and bites, and the Ninth Form: Rengoku, a charge wrapped in a dragon of flame. When he's nearly beaten, his heart blazes up one last time.
 - **Muzan Kibutsuji** — The Demon King. His disguise falls away to reveal his final form of whips, mouths and regeneration.
 
 Every fighter is smart: they choose their technique for the moment, punish openings, dodge, retreat and heal. The

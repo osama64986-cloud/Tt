@@ -30,7 +30,8 @@ Every character has their real transformations, signature techniques and fightin
 - **Giant summons:**
   - Susanoo in every stage: the fighter floats inside its chest.
   - Kurama, Gamabunta and Mahoraga.
-  - Itachi's crows, Kakashi's ninja hounds and Rengoku's Flame Tiger.
+  - Itachi's crows, Kakashi's ninja hounds, Rengoku's Flame Tiger and Killua's steel yo-yos.
+  - Giant fists: Deku's Detroit Smash of green wind and Ace's Fire Fist of flame.
 - **Cinematic camera** for the battle face-off, Domain Expansions, final transformations and the victory.
 - **No text during fights.** Only the winning team is shown at the end.
 - **Arena Builder:** one tap builds a complete, lit fighting arena anywhere:
