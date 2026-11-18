@@ -1927,6 +1927,17 @@ def ace(m, form):
                     d = math.hypot(x - cx, y - cy)
                     if abs(d - r) < 0.9 or (abs(x - cx) - abs(y - cy) < 0.6 and abs(x - cx) - abs(y - cy) > -0.6 and d > r * 1.1 and d < r * 1.8):
                         _put(px, w, h, x, y, (110, 50, 140))
+                    elif d < r - 0.9:
+                        _put(px, w, h, x, y, (150, 90, 175))  # the skull, a lighter purple
+            # the crescent moustache: a wide bow curling up at both ends, under the eyes
+            for x in range(w):
+                dx = (x - cx) / (r * 1.25)
+                if abs(dx) <= 1:
+                    yy = cy + r * 0.25 - r * 0.45 * dx * dx
+                    for t in (0, 1):
+                        _put(px, w, h, x, int(round(yy)) + t, (70, 25, 95))
+            for ex in (-1, 1):  # the two eye holes
+                _put(px, w, h, int(cx + ex * r * 0.4), int(cy - r * 0.3), (70, 25, 95))
     def pecs(face, px, w, h, base):
         if face == "north":
             for x in range(int(w * 0.2), int(w * 0.8)):
