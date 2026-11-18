@@ -10,7 +10,7 @@
 7. التصنيفات المقترحة: Texture Packs، Animations (أو Cosmetic)، Utility.
 8. الرخصة: All Rights Reserved (أو اللي تفضّلها).
 9. **Upload File**:
-   - الملف: `Nabd_v1.0.73.mcaddon` من مجلد `dist`.
+   - الملف: `Nabd_v1.0.74.mcaddon` من مجلد `dist`.
    - Release Type: Release
    - Game Version: 1.21.120 وما بعده (اختار كل الإصدارات الموجودة من 1.21.120 لفوگ)
    - Changelog: انسخ `changelog.md`.

@@ -67,6 +67,7 @@ def simulate(plan=None):
         seg_i, seg = segment(t, plan)
         i, (t0, t1, fw, sd, spr, snk, jump, ledge) = seg_i, seg[:8]
         turn = seg[8] if len(seg) > 8 else 0.0
+        extra = seg[9] if len(seg) > 9 else {}
         st["yaw"] = st.get("yaw", 0.0) + turn * dt
         if i != last_seg:
             if jump and st["y"] <= st["floor"] + 1e-6:
@@ -108,6 +109,9 @@ def simulate(plan=None):
             "is_crawling": 0.0, "is_in_ui": 0.0, "modified_distance_moved": st["dist"], "life_time": st["life"],
             "target_x_rotation": 0.0, "is_first_person": 0.0, "is_local_player": 0.0,
         }
+        q["life_time"] += extra.get("_life", 0.0)
+        q.update({k: v for k, v in extra.items() if not k.startswith("_")})
+        q["is_item_name_any"] = (lambda slot, *n, it=extra.get("_item"): float(it in n))
         ctx["q"] = q
         ctx["v"].setdefault("attack_time", 0.0)
         pose = {}

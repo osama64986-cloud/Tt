@@ -34,7 +34,7 @@ BASE = {"query.is_in_water": 0, "query.is_riding": 0, "query.is_gliding": 0, "qu
         "query.is_swimming": 0, "variable.attack_time": 0, "query.life_time": 3.3, "variable.swim_amount": 1,
         "query.walk_distance": 1.3, "variable.hand_bob": 0.08, "variable.short_arm_offset_left": 0,
         "variable.short_arm_offset_right": 0, "variable.bob_animation": 1, "this": 5,
-        "variable.tcos0": 0, "query.delta_time": 0.016, "query.ground_speed": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0, "query.target_x_rotation": 0}
+        "variable.tcos0": 0, "query.delta_time": 0.016, "query.ground_speed": 0, "query.is_sprinting": 0, "query.is_on_ground": 1, "query.vertical_speed": 0, "query.target_x_rotation": 0, "query.health": 20, "query.max_health": 20}
 STATES = {
     "idle": {},
     "swimming (crawl stroke)": {"query.is_swimming": 1, "query.is_in_water": 1, "query.life_time": 0.4},
@@ -58,6 +58,15 @@ STATES = {
     "eating": {"query.is_eating": 1, "query.life_time": 0.2},
     "on fire": {"query.is_on_fire": 1, "query.life_time": 0.3},
     "sneaking walk": {"variable.tcos0": 30},
+    "low health idle": {"query.health": 3, "query.life_time": 1.0},
+    "low health walk": {"query.health": 3, "query.ground_speed": 4.3, "query.modified_distance_moved": 5.6},
+    "treading water": {"query.is_in_water": 1, "query.is_on_ground": 0, "query.life_time": 0.7},
+    "elytra gliding": {"query.is_gliding": 1, "query.is_on_ground": 0, "query.vertical_speed": -4.0},
+    "idle glance": {"query.life_time": 13.65},
+    "idle stretch": {"query.life_time": 23.1},
+    "sword ready stance": {"_sword": 1},
+    "sprint turning": {"query.is_sprinting": 1, "query.ground_speed": 5.6, "query.modified_distance_moved": 8.4, "query.yaw_speed": 220},
+    "sleeping": {"query.is_sleeping": 1, "query.life_time": 1.1},
     "swimming": {"query.is_swimming": 1, "query.is_in_water": 1, "query.is_on_ground": 0, "variable.tcos0": 30},
 }
 def main():

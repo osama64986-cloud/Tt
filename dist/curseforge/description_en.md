@@ -21,7 +21,8 @@ Every texture is drawn from scratch — nothing is copied from other packs.
 - Small steps when turning on the spot, idle weight shift, breathing.
 - **Attacks by weapon:** sword slash, axe overhead chop, pickaxe/shovel/hoe digging strike, punch — in first and third person.
 - Climbing ladders and vines, flinch when hit, chewing while eating, panic arms when on fire.
-- Full-circle swimming stroke.
+- Full-circle swimming stroke, treading water when floating, an elytra flight pose.
+- Low health: hunched, heavy breathing and a limp. Sword ready stance, leaning into turns, idle glances and stretches.
 
 ![Animations](images/new_actions.png)
 
