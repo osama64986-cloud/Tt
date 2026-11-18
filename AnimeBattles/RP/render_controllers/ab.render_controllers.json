@@ -1254,7 +1254,8 @@
       "Texture.hound",
       "Texture.flame_tiger",
       "Texture.yoyo",
-      "Texture.fire_fist"
+      "Texture.fire_fist",
+      "Texture.ofa_fist"
      ]
     },
     "geometries": {
@@ -1273,7 +1274,8 @@
       "Geometry.hound",
       "Geometry.flame_tiger",
       "Geometry.yoyo",
-      "Geometry.fire_fist"
+      "Geometry.fire_fist",
+      "Geometry.ofa_fist"
      ]
     }
    },
@@ -1305,7 +1307,8 @@
       "Texture.hound",
       "Texture.flame_tiger",
       "Texture.yoyo",
-      "Texture.fire_fist"
+      "Texture.fire_fist",
+      "Texture.ofa_fist"
      ]
     },
     "geometries": {
@@ -1324,7 +1327,8 @@
       "Geometry.hound",
       "Geometry.flame_tiger",
       "Geometry.yoyo",
-      "Geometry.fire_fist"
+      "Geometry.fire_fist",
+      "Geometry.ofa_fist"
      ]
     }
    },

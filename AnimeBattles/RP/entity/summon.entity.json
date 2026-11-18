@@ -22,7 +22,8 @@
     "hound": "textures/entity/summon/hound",
     "flame_tiger": "textures/entity/summon/flame_tiger",
     "yoyo": "textures/entity/summon/yoyo",
-    "fire_fist": "textures/entity/summon/fire_fist"
+    "fire_fist": "textures/entity/summon/fire_fist",
+    "ofa_fist": "textures/entity/summon/ofa_fist"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -39,7 +40,8 @@
     "hound": "geometry.ab.summon_hound",
     "flame_tiger": "geometry.ab.summon_flame_tiger",
     "yoyo": "geometry.ab.summon_yoyo",
-    "fire_fist": "geometry.ab.summon_fire_fist"
+    "fire_fist": "geometry.ab.summon_fire_fist",
+    "ofa_fist": "geometry.ab.summon_ofa_fist"
    },
    "animations": {
     "base": "animation.ab.summon_base",

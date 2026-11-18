@@ -37,7 +37,7 @@
 ![قدرات الشخصيات الجديدة](docs/new5_abilities.png)
 - **إيزوكو ميدوريا: ديكو (My Hero Academia)** (ذكاء 8):
   - **التحولات:** Full Cowl 20% ← 45% مع برق أخضر ← **Dark Deku**، بعباءة ممزقة وكمامة ومجسات Blackwhip سودا طالعة من ظهره.
-  - **القدرات:** Delaware Smash، Detroit Smash، St. Louis Smash، Manchester Smash، **Blackwhip** (يمسك الخصم ويسحبه)، Smokescreen، و**United States of Smash**.
+  - **القدرات:** Delaware Smash، **Detroit Smash** (يقرب ويضرب، فتطلع من ضربته قبضة ريح خضرا عملاقة تخترق الخصم)، St. Louis Smash، Manchester Smash، **Blackwhip** (يمسك الخصم ويسحبه)، Smokescreen، و**United States of Smash**.
 - **كيلوا زولديك (Hunter x Hunter)** (ذكاء 9):
   - **التحولات:** القاتل ← **Godspeed**، البرق بشعره وعيونه. بالـ Godspeed جسمه يرد على الضربات وحده بضربة برق (Whirlwind).
   - **القدرات:** **اليويو** (أقراص فولاذ حقيقية تدور على خيطها وترجع لإيده)، Rhythm Echo (صور متعددة ثم مخلب من الخلف)، Thunderbolt، Narukami، وSpeed of Lightning.

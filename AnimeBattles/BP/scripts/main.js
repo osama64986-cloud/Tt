@@ -120,8 +120,32 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire];
-const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14;
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire, C.ofa];
+const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14, KIND_OFA_FIST = 15;
+// Deku's Detroit Smash: he closes in, punches, and a giant fist of green wind blasts out through the target.
+function detroitSmash(e, t, dmg) {
+  const dim = e.dimension;
+  const start = handPos(e, t).pos;
+  const dir = V.norm(V.sub(aim(t), start));
+  let v;
+  try {
+    v = dim.spawnEntity("ab:summon", start);
+    v.setProperty("ab:kind", KIND_OFA_FIST); v.setProperty("ab:size", 1.2);
+    vfxAlive.set(v.id, now() + 30);
+  } catch (err) { warn("detroit", err); return; }
+  let hit = false;
+  every(1, 12, (i) => {
+    if (!v.isValid) return false;
+    const p = V.add(start, V.mul(dir, 1.2 + i * 1.3));
+    vset(v, "ab:size", 1.2 + i * 0.18);  // the blast swells as it flies
+    try { v.teleport(V.add(p, { x: 0, y: -0.5, z: 0 }), { facingLocation: V.add(p, dir) }); } catch (err) { return false; }
+    fx(dim, "streak", p, C.ofa, 1.6, 0.3, { count: 10, speed: 6 });
+    if (i % 2 === 0) carve(dim, V.add(p, { x: 0, y: -0.6, z: 0 }), 1.2, 16);
+    if (!hit && alive(t) && V.dist(p, aim(t)) < 2.4) { hit = true; deal(e, t, dmg); fx(dim, "flash", aim(t), C.white, 4, 0.2); launch(e, t, 1.2); }
+    if (i === 11) killVfx(v);
+  });
+  shake(dim, start, 0.5, 0.4); sound(dim, "ab.boom", start, 1, 1.1);
+}
 // Ace's Fire Fist (Hiken): a giant fist of flame thrown from his punch, exploding where it lands.
 function fireFist(e, t, dmg) {
   const dim = e.dimension;
@@ -4102,7 +4126,16 @@ const DEKU = {
   thresholds: [0.75, 0.45], transformCd: 110, formSound: [null, "ambient.weather.thunder", "mob.wither.ambient"],
   abilities: [
     SIG.ball("delaware", "Delaware Smash", { say: "§a§lDelaware Smash! §7— a flick of air", color: C.white, count: 1, size: 1.4, dmg: 22, speed: 2.4, cd: 110, cost: 60, charge: 4, radius: 2.2, knock: 2.4 }),
-    SIG.beam("detroit", "Detroit Smash", { say: "§a§lDETROIT... SMASH!", color: C.ofa, width: 2.4, length: 22, dmg: 58, charge: 10, max: 18, cd: 260, cost: 170, carve: 2, blast: 5, pose: 5 }),
+    { id: "detroit", label: "Detroit Smash", cd: 260, cost: 170, min: 0, max: 18, weight: 6,
+      run(e, s, t) {  // in close, a full-power punch — and the wind of it becomes a giant green fist
+        busy(s, 18); announce(e, "§a§lDETROIT... SMASH!"); setPose(e, 22);
+        later(6, () => {
+          if (!e.isValid || !alive(t)) return;
+          afterimage(e); teleportNear(e, t, false, 2.4); face(e, aim(t)); setPose(e, 5);
+          detroitSmash(e, t, 60 * powerOf(e) / 100);
+          later(10, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
     SIG.slash("stlouis", "St. Louis Smash", { say: "§a§lSt. Louis Smash!", color: C.ofa, dmg: 30, cd: 150, cost: 80, size: 2.2, pose: 7 }),
     SIG.drop("manchester", "Manchester Smash", { say: "§a§lManchester Smash!", color: C.ofa, dmg: 50, cd: 340, cost: 200, size: 2, radius: 5, grow: 0.06, cond: G(1, 2) }),
     { id: "blackwhip", label: "Blackwhip", cd: 240, cost: 110, min: 3, max: 24, weight: 5, cond: G(1, 2),
