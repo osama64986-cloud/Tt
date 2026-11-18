@@ -1056,9 +1056,11 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
-  if (e.typeId === "ab:gon" && form === 2) {  // Adult Gon: ominous black nen pouring off his whole body
-    fx(e.dimension, "aura", e.location, C.black, 1.6, 0.9, { count: 10 * fxLevel(), speed: 2.2 });
-    if (Math.random() < 0.4) fx(e.dimension, "streak", V.up(e.location, 1 + Math.random() * 1.5), C.black, 1.2, 0.5, { count: 4, speed: 3 });
+  if (e.typeId === "ab:gon" && form === 2) {  // Adult Gon: ominous black nen pouring off his whole body, rising like smoke
+    const dim = e.dimension;
+    fx(dim, "aura", e.location, C.black, 1.7, 1.0, { count: 14 * fxLevel(), speed: 2.4 });
+    for (let k = 0; k < 2; k++) fx(dim, "orb", V.add(e.location, { x: (Math.random() - 0.5) * 1.6, y: 0.4 + Math.random() * 2.6, z: (Math.random() - 0.5) * 1.6 }), C.black, 0.6 + Math.random() * 0.5, 0.9);
+    if (Math.random() < 0.5) fx(dim, "streak", V.up(e.location, 1 + Math.random() * 1.8), C.black, 1.3, 0.6, { count: 5, speed: 3 });
   }
   if (e.typeId === "ab:gojo" && e.hasTag("ab_infinity") && Math.random() < 0.25) {
     fx(e.dimension, "orb", V.add(V.up(e.location, 1), V.mul(V.randSphere(), 0.9)), C.blue, 0.15, 0.4);

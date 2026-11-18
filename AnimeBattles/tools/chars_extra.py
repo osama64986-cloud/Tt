@@ -2140,7 +2140,7 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
     if "adult_shadow" in marks:  # a dark, emotionless shadow across the eyes
         for x in range(4, 28):
             put(x, 15, (40, 30, 30))
-    if "adult_eyes" in marks:  # Adult Gon: blank, round white eyes with a tiny pupil, under a heavy dark brow
+    if "adult_eyes" in marks:  # Adult Gon: blank, empty round white eyes (no pupils), under a heavy dark brow
         for cx in (10.5, 21.5):
             for y in range(14, 23):
                 for x in range(int(cx) - 4, int(cx) + 5):
@@ -2149,8 +2149,7 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
                         put(x, y, (246, 246, 242))
                     elif d <= 4.1:
                         put(x, y, (24, 20, 22))
-            put(int(cx), 18, (12, 10, 12))
-        for x in range(5, 27):  # the dark shadow over the eyes
+        for x in range(5, 27):  # the dark shadow over the (empty, pupil-less) eyes
             put(x, 13, (40, 30, 34))
     if "akaza_lines" in marks:  # the dark blue tattoo lines across his face
         ln = (40, 60, 150)
@@ -2352,14 +2351,7 @@ def gon(m, form):
             m.box(arm_, [s_ * 6.0 - 2.6, 18.5, -2.6], [5.2, 5.6, 5.2], layered(SKIN, [lines((SIDES, [[(0.5, 0.3), (0.5, 0.8)]]), mus)]))
         m.box("body", [-4.4, 18.6, -2.7], [8.8, 3.8, 0.6], layered(SKIN, [lines((("north",), [[(0.5, 0), (0.5, 1)], [(0, 0.95), (1, 0.95)]]), mus)]))  # pecs
         m.box("body", [-3.0, 23.0, -1.6], [6.0, 1.4, 4.4], skp)  # thick traps at the neck
-        # the ominous black aura: tall dark flames rising off his back, shoulders and sides (never in front of him)
-        au, au2 = SC.swatch((14, 10, 20), 170), SC.swatch((44, 34, 58), 135)
-        for k in range(9):
-            a = math.pi * (k / 8)  # half a circle behind him: from his right side, round his back, to his left
-            x, z = math.cos(a) * 5.0, 1.2 + math.sin(a) * 3.2
-            SC.blade(m, "body", [x, 12 + (k % 3) * 2.5, z], [math.cos(a) * 0.3, 1, 0.35], 10 + (k % 3) * 2.5, 3.2, 0.6, au if k % 2 else au2, width_dir=[-math.sin(a), 0, math.cos(a)])
-        for s_ in (1, -1):  # flames licking up off his shoulders
-            SC.blade(m, "body", [s_ * 5.6, 22, 0.8], [s_ * 0.25, 1, 0.2], 7, 2.6, 0.5, au, width_dir=[0, 0, 1])
+        # (his ominous black aura is energy, not part of the body: the game draws it as black smoke pouring off him)
     else:
         torso = layered(green, [region((0.42, 0, 0.58, 1), (230, 120, 40), faces=("north",)), region((0, 0, 1, 0.08), (36, 80, 46))])
         arm = layered(green, [region((0, 0, 1, 0.12), (36, 80, 46)), region((0, 0.82, 1, 1), SKIN)])
