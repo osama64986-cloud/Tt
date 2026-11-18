@@ -1056,6 +1056,10 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  if (e.typeId === "ab:gon" && form === 2) {  // Adult Gon: ominous black nen pouring off his whole body
+    fx(e.dimension, "aura", e.location, C.black, 1.6, 0.9, { count: 10 * fxLevel(), speed: 2.2 });
+    if (Math.random() < 0.4) fx(e.dimension, "streak", V.up(e.location, 1 + Math.random() * 1.5), C.black, 1.2, 0.5, { count: 4, speed: 3 });
+  }
   if (e.typeId === "ab:gojo" && e.hasTag("ab_infinity") && Math.random() < 0.25) {
     fx(e.dimension, "orb", V.add(V.up(e.location, 1), V.mul(V.randSphere(), 0.9)), C.blue, 0.15, 0.4);
   }
@@ -4441,7 +4445,7 @@ const BAKUGO = {
 const GON = {
   name: "Gon", color: "§a", energy: 1000, regen: 18, energyName: "§eNEN",
   dodge: () => 0.12,
-  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow }, { label: "Adult Gon", power: 200, aura: C.void }],
+  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow }, { label: "Adult Gon", power: 200, aura: C.black }],
   thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn"],
   abilities: [
     SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 180, cost: 40, charge: 2, pose: 5 }),

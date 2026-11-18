@@ -2089,7 +2089,7 @@ M.FACE32.update({
     "bakugo_cluster": dict(eye="narrow", brow="sharp", mouth="clench", marks=["bakugo_mask", "scorch"]),
     "gon": dict(eye="round", brow="angled", mouth="smile", marks=[]),
     "gon_jaja": dict(eye="round", brow="sharp", mouth="clench", marks=[]),
-    "gon_adult": dict(eye="narrow", brow="sharp", mouth="none", marks=["adult_shadow"]),
+    "gon_adult": dict(eye="round", brow="sharp", mouth="none", marks=["adult_eyes"]),
     "akaza": dict(eye="narrow", brow="none", mouth="smirk", marks=["akaza_lines", "akaza_eyes"]),
     "akaza_compass": dict(eye="narrow", brow="none", mouth="clench", marks=["akaza_lines", "akaza_eyes"]),
     "megumi": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
@@ -2137,9 +2137,21 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
     if "scorch" in marks:
         for x, y in ((6, 25), (7, 26), (24, 24), (25, 25), (23, 26)):
             put(x, y, (70, 50, 46))
-    if "adult_shadow" in marks:  # Adult Gon: a dark, emotionless shadow across the eyes
+    if "adult_shadow" in marks:  # a dark, emotionless shadow across the eyes
         for x in range(4, 28):
             put(x, 15, (40, 30, 30))
+    if "adult_eyes" in marks:  # Adult Gon: blank, round white eyes with a tiny pupil, under a heavy dark brow
+        for cx in (10.5, 21.5):
+            for y in range(14, 23):
+                for x in range(int(cx) - 4, int(cx) + 5):
+                    d = math.hypot(x + 0.5 - cx, y + 0.5 - 18.5)
+                    if d <= 3.3:
+                        put(x, y, (246, 246, 242))
+                    elif d <= 4.1:
+                        put(x, y, (24, 20, 22))
+            put(int(cx), 18, (12, 10, 12))
+        for x in range(5, 27):  # the dark shadow over the eyes
+            put(x, 13, (40, 30, 34))
     if "akaza_lines" in marks:  # the dark blue tattoo lines across his face
         ln = (40, 60, 150)
         for x in range(2, 30):
@@ -2319,13 +2331,35 @@ def gon(m, form):
             for x in range(w):
                 for y in range(int(h * 0.15) + (x * 5 % 4), h):
                     px[x, y] = (0, 0, 0, 0)
-        torso = layered(SKIN, [lines((("north",), [[(0.5, 0.25), (0.5, 0.75)]]), dark(SKIN, 0.85))])
-        base_body(m, torso, layered(SKIN, []), layered(green, [region((0, 0.5, 1, 1), SKIN)]), head)
+        mus = dark(SKIN, 0.82)
+
+        def abs_(face, px, w, h, base):  # a heavily muscled chest and stomach
+            if face == "north":
+                for x in range(w):
+                    _put(px, w, h, x, int(h * 0.36), mus)
+                for y in range(int(h * 0.36), h):
+                    _put(px, w, h, w // 2, y, mus)
+                for fy in (0.55, 0.72, 0.88):
+                    for x in range(int(w * 0.25), int(w * 0.75)):
+                        _put(px, w, h, x, int(h * fy), mus)
+        torso = layered(SKIN, [abs_])
+        arm = layered(SKIN, [lines((SIDES, [[(0.5, 0.2), (0.5, 0.45)]]), mus)])
+        base_body(m, torso, arm, layered(green, [region((0, 0.5, 1, 1), SKIN)]), head)
         m.box("body", [-4.4, 10.6, -2.5], [8.8, 1.6, 5.0], layered(green, [shreds]))  # the torn waistband of his shorts
-        au = SC.swatch((60, 50, 70), 170)
-        for k in range(6):
-            a = math.pi * (0.1 + 0.8 * k / 5)
-            SC.blade(m, "body", [math.cos(a) * 5.5, 18, math.sin(a) * 3 + 2], [math.cos(a) * 0.4, 1, 0.3], 5.0, 1.6, 0.5, au)
+        skp = layered(SKIN, [])
+        for s_ in (1, -1):  # broad shoulders and thick upper arms
+            arm_ = "rightArm" if s_ > 0 else "leftArm"
+            m.box(arm_, [s_ * 6.0 - 2.6, 18.5, -2.6], [5.2, 5.6, 5.2], layered(SKIN, [lines((SIDES, [[(0.5, 0.3), (0.5, 0.8)]]), mus)]))
+        m.box("body", [-4.4, 18.6, -2.7], [8.8, 3.8, 0.6], layered(SKIN, [lines((("north",), [[(0.5, 0), (0.5, 1)], [(0, 0.95), (1, 0.95)]]), mus)]))  # pecs
+        m.box("body", [-3.0, 23.0, -1.6], [6.0, 1.4, 4.4], skp)  # thick traps at the neck
+        # the ominous black aura: tall dark flames rising off his back, shoulders and sides (never in front of him)
+        au, au2 = SC.swatch((14, 10, 20), 170), SC.swatch((44, 34, 58), 135)
+        for k in range(9):
+            a = math.pi * (k / 8)  # half a circle behind him: from his right side, round his back, to his left
+            x, z = math.cos(a) * 5.0, 1.2 + math.sin(a) * 3.2
+            SC.blade(m, "body", [x, 12 + (k % 3) * 2.5, z], [math.cos(a) * 0.3, 1, 0.35], 10 + (k % 3) * 2.5, 3.2, 0.6, au if k % 2 else au2, width_dir=[-math.sin(a), 0, math.cos(a)])
+        for s_ in (1, -1):  # flames licking up off his shoulders
+            SC.blade(m, "body", [s_ * 5.6, 22, 0.8], [s_ * 0.25, 1, 0.2], 7, 2.6, 0.5, au, width_dir=[0, 0, 1])
     else:
         torso = layered(green, [region((0.42, 0, 0.58, 1), (230, 120, 40), faces=("north",)), region((0, 0, 1, 0.08), (36, 80, 46))])
         arm = layered(green, [region((0, 0, 1, 0.12), (36, 80, 46)), region((0, 0.82, 1, 1), SKIN)])
