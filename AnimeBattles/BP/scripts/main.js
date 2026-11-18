@@ -4347,7 +4347,7 @@ const IQ = {
 const iqOf = (e) => IQ[e.typeId] ?? 6;
 const isMeleeAb = (a) => (a.max ?? 99) <= 9;
 const isRangedAb = (a) => (a.min ?? 0) >= 3 || (a.max ?? 0) >= 24;
-const isHealAb = (a) => /rct|heal|regen|recover/.test(a.id);
+const isHealAb = (a) => /rct|heal|regen|recover|blood/.test(a.id);
 // How well a technique fits the moment, scaled by how clearly the fighter reads it.
 function abilityScore(a, e, s, target, ctx, tick) {
   const iq = iqOf(e);
@@ -4576,6 +4576,13 @@ function updateFighter(e, tick) {
     if (on && team) s.energy -= 1.5;
   }
   if (s.kaiokenUntil > tick && tick % 20 === 0) deal(undefined, e, 2);
+  if (e.typeId === "ab:rengoku" && !s.ablaze && team && hpPct(e) < 0.2) {  // "Set your heart ablaze!" — his last stand
+    s.ablaze = true;
+    const h = health(e); if (h) try { h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.08)); } catch (err) { /* ignore */ }
+    fx(e.dimension, "shock", e.location, C.fire, 8, 0.6); ring(e.dimension, V.up(e.location, 0.3), 3, C.fire, 30, 0.6);
+    fx(e.dimension, "aura", e.location, C.fire, 1.8, 0.8, { count: 40, speed: 3 }); setExpr(e, 1, 30);
+    sound(e.dimension, "mob.blaze.shoot", e.location, 1, 0.6);
+  }
   aura(e, s, def);
   if (s.expr && tick >= s.exprUntil) {
     s.expr = 0;
