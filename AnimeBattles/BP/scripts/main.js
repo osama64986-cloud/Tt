@@ -4367,15 +4367,15 @@ const GOHAN = {
 // Katsuki Bakugo: nitro-glycerin sweat, explosions from his palms, the grenade gauntlets.
 const BAKUGO = {
   name: "Bakugo", color: "§6", energy: 1100, regen: 22, energyName: "§6NITRO",
-  dodge: () => 0.14,
+  dodge: () => 0.11,
   forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 108, aura: C.ember }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
   abilities: [
-    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 20, speed: 2.4, cd: 130, cost: 50, charge: 2, pose: 5, radius: 3 }),
-    SIG.beam("apshot", "AP Shot", { say: "§e§lAP Shot!", color: C.kiYellow, dmg: 36, width: 0.7, length: 36, charge: 6, cd: 200, cost: 100, pose: 4 }),
-    SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 16, cd: 300, cost: 80, weight: 3 }),
-    SIG.rush("blastrush", "Blast Rush", { say: "§6§lBlast rush!", color: C.fire, hits: 5, dmg: 8, finisher: 26, cd: 170, cost: 90 }),
-    SIG.wave("howitzer", "Howitzer Impact", { say: "§6§lHOWITZER... IMPACT!", color: C.fire, radius: 6.5, dmg: 48, cd: 300, cost: 110, pose: 23, weight: 8 }),
+    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 13, speed: 2.4, cd: 130, cost: 50, charge: 2, pose: 5, radius: 3 }),
+    SIG.beam("apshot", "AP Shot", { say: "§e§lAP Shot!", color: C.kiYellow, dmg: 28, width: 0.7, length: 36, charge: 6, cd: 200, cost: 100, pose: 4 }),
+    SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 11, cd: 300, cost: 80, weight: 3 }),
+    SIG.rush("blastrush", "Blast Rush", { say: "§6§lBlast rush!", color: C.fire, hits: 5, dmg: 6, finisher: 20, cd: 170, cost: 90 }),
+    SIG.wave("howitzer", "Howitzer Impact", { say: "§6§lHOWITZER... IMPACT!", color: C.fire, radius: 6.5, dmg: 40, cd: 300, cost: 110, pose: 23, weight: 8 }),
     SIG.ball("cluster", "Cluster", { say: "§6§lCluster!", color: C.ember, count: 6, size: 0.8, dmg: 10, spread: 3, homing: true, speed: 1.4, cd: 240, cost: 120, charge: 5, cond: G(1) }),
     SIG.beam("maxcannon", "Grenade Bracer: Max Cannon", { say: "§6§lMAX... CANNON!", color: C.fire, dmg: 70, width: 2.4, charge: 16, cd: 520, cost: 320, cond: G(1), carve: 2 }),
   ],
@@ -4419,19 +4419,19 @@ const AKAZA = {
 const MEGUMI = {
   name: "Megumi", color: "§3", energy: 1100, regen: 20, energyName: "§3CE",
   dodge: () => 0.12,
-  forms: [{ label: "Ten Shadows", power: 80 }, { label: "Ten Shadows: Unleashed", power: 112, aura: C.black }],
-  thresholds: [0.5], transformCd: 120, formSound: [null, "mob.wither.ambient"],
+  forms: [{ label: "Ten Shadows", power: 95 }, { label: "Ten Shadows: Unleashed", power: 112, aura: C.black }],
+  thresholds: [0.65], transformCd: 120, formSound: [null, "mob.wither.ambient"],
   abilities: [
     { id: "dogs", label: "Divine Dogs", cd: 200, cost: 90, min: 0, max: 30, weight: 6,
       run(e, s, t) {  // the black and white wolves burst out of the target's shadow and bite
         busy(s, 12); setPose(e, 21); announce(e, "§8§lDivine Dogs!");
         later(3, () => { if (alive(t)) houndAmbush(e, t, 2, [KIND_DOG_BLACK, KIND_DOG_WHITE], 1.4); });
-        later(9, () => { if (alive(t)) { deal(e, t, 24 * powerOf(e) / 100); fx(t.dimension, "shock", t.location, C.white, 3, 0.3); } });
+        later(9, () => { if (alive(t)) { deal(e, t, 30 * powerOf(e) / 100); fx(t.dimension, "shock", t.location, C.white, 3, 0.3); } });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },
     abFrom(SUKUNA, "nue", { cond: undefined, cost: 80, weight: 6 }),
-    SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 10, finisher: 16, cd: 200, cost: 60, weight: 3 }),
-    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 20, cd: 180, cost: 60, weight: 3 }),
+    SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 12, finisher: 22, cd: 200, cost: 60, weight: 3 }),
+    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 26, cd: 180, cost: 60, weight: 3 }),
     abFrom(SUKUNA, "maxelephant", { cond: G(1), cost: 120, weight: 6 }),
     SIG.wave("garden", "Domain Expansion: Chimera Shadow Garden", { say: "§8§lDomain Expansion: Chimera Shadow Garden", color: C.black, radius: 7, dmg: 36, cd: 900, cost: 400, cond: G(1) }),
     abFrom(SUKUNA, "mahoraga", { cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.45, weight: 9 }),  // his last resort, as in the anime
