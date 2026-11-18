@@ -120,8 +120,35 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver];
-const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13;
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire];
+const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14;
+// Ace's Fire Fist (Hiken): a giant fist of flame thrown from his punch, exploding where it lands.
+function fireFist(e, t, dmg) {
+  const dim = e.dimension;
+  const start = handPos(e, t).pos;
+  let v;
+  try {
+    v = dim.spawnEntity("ab:summon", start);
+    v.setProperty("ab:kind", KIND_FIST); v.setProperty("ab:size", 0);
+    vfxAlive.set(v.id, now() + 40);
+    every(1, 4, (i) => vset(v, "ab:size", 1.8 * (i + 1) / 4));
+  } catch (err) { warn("firefist", err); return; }
+  const goal = alive(t) ? aim(t) : V.add(start, V.mul(e.getViewDirection(), 16));
+  const dir = V.norm(V.sub(goal, start));
+  sound(dim, "mob.blaze.shoot", start, 1, 0.5);
+  every(1, 14, (i) => {
+    if (!v.isValid) return false;
+    const tgt = alive(t) ? aim(t) : goal;
+    const p = V.add(start, V.mul(V.sub(tgt, start), (i + 1) / 12));
+    try { v.teleport(V.add(p, { x: 0, y: -0.5, z: 0 }), { facingLocation: V.add(p, dir) }); } catch (err) { return false; }
+    fx(dim, "aura", p, C.fire, 1.6, 0.5, { count: 12, speed: 2 });
+    if (i === 11) {
+      explosion(e, tgt, { radius: 4, dmg, color: C.fire, slot: 11, carve: 1, knock: 3 });
+      later(1, () => killVfx(v));
+      return false;
+    }
+  });
+}
 // Killua's yo-yos: two spinning steel discs on strings fly out, smash into the target and snap back to his hands.
 function yoyoThrow(e, t, dmg) {
   const dim = e.dimension;
@@ -4252,7 +4279,13 @@ const ACE = {
   forms: [{ label: "Fire Fist", power: 70, aura: C.fire }, { label: "Flame Emperor", power: 115, aura: C.fire }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
-    SIG.beam("hiken", "Fire Fist", { say: "§6§lFIRE FIST! §7— Hiken", color: C.fire, width: 2.6, length: 34, dmg: 48, charge: 8, cd: 220, cost: 150, carve: 1, blast: 5, pose: 5 }),
+    { id: "hiken", label: "Fire Fist", cd: 220, cost: 150, min: 2, max: 34, weight: 6,
+      run(e, s, t) {  // his fist bursts into a giant fist of flame and flies at the enemy
+        busy(s, 20); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lFIRE FIST! §7— Hiken");
+        chargeOrb(e, t, 6, C.fire, 0.4, 1.2, 4);
+        later(6, () => { if (e.isValid) { setPose(e, 5); fireFist(e, t, 50 * powerOf(e) / 100); } });
+        later(18, () => { if (e.isValid) setPose(e, 0); });
+      } },
     SIG.ball("higan", "Fire Gun", { say: "§6§lFire Gun! §7— Higan", color: C.ember, count: 8, size: 0.5, dmg: 6, spread: 2.5, speed: 2.4, cd: 140, cost: 70, charge: 3, pose: 4 }),
     SIG.ball("hotarubi", "Firefly: Hidaruma", { say: "§6§lFirefly — Hidaruma!", color: C.ember, count: 6, size: 0.5, dmg: 8, spread: 3, homing: true, speed: 0.9, cd: 220, cost: 100, charge: 6 }),
     SIG.wave("pillar", "Flame Pillar", { say: "§6§lFlame Pillar! §7— Enjomo", color: C.fire, radius: 5, dmg: 22, cd: 220, cost: 90, pose: 22 }),
@@ -4928,6 +4961,10 @@ function dodgeFx(v, src) {
     }
     sound(dim, "mob.parrot.fly", o, 1, 0.7);
   }
+  if (v.typeId === "ab:deku" && formOf(v) === 2) {  // Danger Sense: a green flash over his head an instant before the blow
+    const h = V.up(v.location, 2.3);
+    fx(v.dimension, "flash", h, C.ofa, 1.4, 0.15); fx(v.dimension, "streak", h, C.ofa, 0.8, 0.25, { count: 8, speed: 5 });
+  }
   if (v.typeId === "ab:ace") {  // Logia: the blow passes straight through a body of flame
     burst(v.dimension, V.up(v.location, 1.1), C.fire, 26, 3, 0.45, 0.5); fx(v.dimension, "aura", v.location, C.fire, 1.2, 0.5, { count: 16, speed: 2 });
   }
@@ -5165,9 +5202,10 @@ function startWar(p, n) {
   pick.sort((a, b) => peak(b) - peak(a));
   const red = [], blue = [];
   pick.forEach((id, i) => ((i % 4 === 0 || i % 4 === 3) ? red : blue).push(id));
-  const d = V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
-  const mid = V.add(p.location, V.mul(d, 18));
-  const side = sideOf(d);
+  const arena = nearArena(p);  // inside a built arena: the teams line up on its red and blue sides
+  const d = arena ? { x: 0, y: 0, z: 1 } : V.norm({ x: p.getViewDirection().x, y: 0, z: p.getViewDirection().z });
+  const mid = arena ? { x: arena.x, y: arena.y, z: arena.z } : V.add(p.location, V.mul(d, 18));
+  const side = arena ? { x: 1, y: 0, z: 0 } : sideOf(d);
   later(4, () => cinematicAt(p.dimension, mid, 50, 16, V.up(mid, 1.2)));
   for (const [list, team, off] of [[red, RED, -10], [blue, BLUE, 10]]) {
     list.forEach((id, k) => {

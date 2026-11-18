@@ -475,6 +475,23 @@ def yoyo():
     return m
 
 
+def fire_fist():
+    """Ace's Hiken: a giant fist made of flame, knuckles forward (-z), trailing fire behind it."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 8, 0], "tails": [0, 8, 6]})
+    F, F2, R = S.swatch((255, 150, 40), 210), S.swatch((255, 214, 100), 200), S.swatch((220, 60, 20), 220)
+    blob(m, "body", [0, 8, 0.5], [4.2, 3.8, 3.4], F, slices=5, axis="z")                     # back of the hand
+    for k, x in enumerate((-2.7, -0.9, 0.9, 2.7)):                                           # four curled fingers
+        blob(m, "body", [x, 9.6, -3.0], [0.95, 1.2, 1.4], F2, slices=3, axis="z")            # knuckle
+        tube(m, "body", [[x, 9.4, -3.6], [x, 7.6, -4.4], [x, 5.8, -3.6]], [0.9, 0.85, 0.8], F, knuckles=False)
+    tube(m, "body", [[-4.0, 7.0, -0.5], [-3.6, 5.6, -2.8], [-1.8, 5.2, -4.0]], [1.0, 0.9, 0.8], F2, knuckles=False)  # thumb
+    curve_tube(m, "body", [[0, 8, 3.5], [0, 8, 6.5]], 3.0, 2.6, F, n=1)                      # wrist
+    for k in range(8):                                                                        # flames streaming back
+        a = 2 * math.pi * k / 8
+        blade(m, "tails", [math.cos(a) * 2.6, 8 + math.sin(a) * 2.6, 6], [math.cos(a) * 0.3, math.sin(a) * 0.3, 1], 6 + (k % 3) * 2, 2.2, 0.6, R if k % 2 else F2)
+    return m
+
+
 def _ghost(fn, k=0.38):
     """A see-through Susanoo: every part keeps its colour but only ~38% of its opacity, so the fighter standing in its
     chest stays clearly visible."""
@@ -505,5 +522,5 @@ def _ghost(fn, k=0.38):
 SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta", gamabunta),
            ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
            ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
-           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo)]
+           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo), ("fire_fist", fire_fist)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo"}   # opaque flesh; the rest are glowing chakra

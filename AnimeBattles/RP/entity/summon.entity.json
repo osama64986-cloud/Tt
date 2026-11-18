@@ -21,7 +21,8 @@
     "crow": "textures/entity/summon/crow",
     "hound": "textures/entity/summon/hound",
     "flame_tiger": "textures/entity/summon/flame_tiger",
-    "yoyo": "textures/entity/summon/yoyo"
+    "yoyo": "textures/entity/summon/yoyo",
+    "fire_fist": "textures/entity/summon/fire_fist"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -37,7 +38,8 @@
     "crow": "geometry.ab.summon_crow",
     "hound": "geometry.ab.summon_hound",
     "flame_tiger": "geometry.ab.summon_flame_tiger",
-    "yoyo": "geometry.ab.summon_yoyo"
+    "yoyo": "geometry.ab.summon_yoyo",
+    "fire_fist": "geometry.ab.summon_fire_fist"
    },
    "animations": {
     "base": "animation.ab.summon_base",
