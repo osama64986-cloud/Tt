@@ -2362,9 +2362,9 @@ def akaza(m, form):
                 _put(px, w, h, x, y, ln)
     def chest(face, px, w, h, base):
         if face == "north":
-            for y in range(int(h * 0.15), int(h * 0.7), max(2, h // 7)):
-                for x in range(int(w * 0.25), int(w * 0.75)):
-                    _put(px, w, h, x, y, ln)
+            for fy in (0.22, 0.42, 0.62):  # three thin tattoo lines across the chest and stomach
+                for x in range(int(w * 0.3), int(w * 0.7)):
+                    _put(px, w, h, x, int(h * fy), ln)
     vest = (196, 110, 160)
     torso = layered(skin, [chest])
     arm = layered(skin, [stripes])

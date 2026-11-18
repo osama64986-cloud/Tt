@@ -10,7 +10,7 @@ Every character has their real transformations, signature techniques and fightin
 
 ## ⚔️ Features
 
-- **30 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
+- **35 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
 - **Smart fighters.** Every fighter reads the battle:
   - uses ranged attacks from afar and close-range techniques up close;
   - punishes openings, dodges big attacks and finishes weakened enemies;
@@ -47,12 +47,14 @@ Every character has their real transformations, signature techniques and fightin
 - **Vegeta**: The proud Saiyan Prince. Galick Gun, Big Bang Attack and Final Flash, all the way up to Ultra Ego, where every blow he takes makes him stronger.
 - **Broly**: The Legendary Super Saiyan. The angrier he gets the stronger he becomes, an unstoppable rage that can overpower Vegeta.
 - **Frieza**: The Emperor of the Universe. Death Beams, the Death Ball and telekinesis, then Golden Frieza.
+- **Son Gohan**: The scholar who becomes a beast. Masenko and Kamehameha through Super Saiyan 2 and Ultimate, then Beast, with towering silver hair, Piccolo's Special Beam Cannon and the Beast Kamehameha.
 
 **Jujutsu Kaisen**
 - **Gojo Satoru**: The honoured one. Infinity stops every attack. He uses Blue, Red and Hollow Purple, and his Domain Expansion, Unlimited Void, raises a real dome around the fight.
 - **Yuji Itadori**: The vessel with superhuman strength. Divergent Fist and Black Flash; land one and he enters "the zone".
 - **Yuji Itadori (Final)**: Shinjuku Yuji, a master of Black Flash with Reverse Cursed Technique and his own Domain Expansion.
 - **Ryomen Sukuna**: The King of Curses. Dismantle, Cleave, the Mahoraga wheel, and Malevolent Shrine, which rises behind him as he slices everything in range.
+- **Megumi Fushiguro**: The Ten Shadows. Divine Dogs that burst out of the ground and bite, Nue, Toad, Max Elephant, the Chimera Shadow Garden domain, and Mahoraga as his last resort.
 
 **One Piece**
 - **Monkey D. Luffy**: Every Gear from 2 to 5. Jet Pistol, Gear 4's Kong Gun, and Gear 5 where he turns the battlefield into a cartoon.
@@ -74,9 +76,11 @@ Every character has their real transformations, signature techniques and fightin
 
 **My Hero Academia**
 - **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Blackwhip, Smokescreen and the United States of Smash.
+- **Katsuki Bakugo**: Explosions from his palms. AP Shot, Stun Grenade, Howitzer Impact, Cluster and the Max Cannon of his grenade gauntlets.
 
 **Hunter x Hunter**
 - **Killua Zoldyck**: The assassin prodigy. Steel yo-yos, razor claws, Rhythm Echo, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
+- **Gon Freecss**: Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, with a mane of hair and a crushing dark nen.
 
 **Chainsaw Man**
 - **Denji (Chainsaw Man)**: Pull the cord and the devil comes out. Chainsaws burst from his head and arms, he whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
@@ -88,6 +92,7 @@ Every character has their real transformations, signature techniques and fightin
 - **Tanjiro Kamado**: Water Breathing, then Hinokami Kagura, the dance of the Sun.
 - **Demon Tanjiro**: Turned by Muzan, with flesh tendrils bursting from his back and the Demon King's power.
 - **Kyojuro Rengoku**: The Flame Hashira. Set your heart ablaze: Unknowing Fire, Rising Scorching Sun, a real Flame Tiger that leaps and bites, and the Ninth Form: Rengoku, a charge wrapped in a dragon of flame. When he's nearly beaten, his heart blazes up one last time.
+- **Akaza**: Upper Moon Three. Destructive Death: Air Type, Disordered Light Bulbs, Annihilation Type and Blue Silver Chaotic Afterglow; his Compass Needle reads every attack.
 - **Muzan Kibutsuji**: The Demon King. His disguise falls away to reveal his final form of whips, mouths and regeneration.
 
 ## 🎮 How to Play
@@ -115,7 +120,7 @@ As soon as two fighters are on opposite teams, the battle begins.
 | `/scriptevent ab:cinema off` | Turns off the cinematic camera |
 | `/scriptevent ab:fx low` | Lighter effects for weaker devices |
 
-Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan, deku, killua, denji, rengoku, ace.
+Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan, deku, killua, denji, rengoku, ace, gohan, bakugo, gon, akaza, megumi.
 
 ## 📦 Installation
 
