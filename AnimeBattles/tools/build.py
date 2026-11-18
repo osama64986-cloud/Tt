@@ -965,7 +965,7 @@ def build_summons():
                                "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin",
                                "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot", "roll": "animation.ab.summon_roll"},
                 "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"}, {"flap": f"{K} == {names.index('crow')}"},
-                                        {"trot": f"{K} == {names.index('hound')} || {K} == {names.index('flame_tiger')}"}, {"roll": f"{K} == {names.index('yoyo')}"},
+                                        {"trot": f"{K} == {names.index('hound')} || {K} == {names.index('flame_tiger')} || {K} == {names.index('dog_black')} || {K} == {names.index('dog_white')}"}, {"roll": f"{K} == {names.index('yoyo')}"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
                                         {"leap": "query.property('ab:pose') == 3"}, {"bite": "query.property('ab:pose') == 4"},
                                         {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}]},

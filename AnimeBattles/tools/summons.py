@@ -395,18 +395,19 @@ def crow():
     return m
 
 
-def hound():
+def hound(fur=(178, 118, 62), cream=(238, 216, 178), dark=(92, 60, 38), ninja=True, big=1.0):
     """Kakashi's ninja hound: a compact, sharp-eared tan dog with a cream muzzle and chest, tongue out, a curled
     tail, a navy vest and the Leaf headband; four slim legs with paws (front and hind legs move). Faces -z."""
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 10, 0], "head": [0, 12.6, -5.8], "jaw": [0, 13.0, -8.4], "rightArm": [1.7, 9.6, -3.6],
                       "leftArm": [-1.7, 9.6, -3.6], "rightLeg": [1.8, 10.0, 3.8], "leftLeg": [-1.8, 10.0, 3.8], "tails": [0, 11.6, 5.0]})
-    FUR, CREAM, DARK, NOSE, PINK = smooth((178, 118, 62)), smooth((238, 216, 178)), smooth((92, 60, 38)), smooth((24, 20, 22)), smooth((226, 110, 120))
+    FUR, CREAM, DARK, NOSE, PINK = smooth(fur), smooth(cream), smooth(dark), smooth((24, 20, 22)), smooth((226, 110, 120))
     NAVY, STEEL, BAND = smooth((44, 54, 92)), smooth((198, 204, 214)), smooth((34, 40, 70))
     blob(m, "body", [0, 10.2, 0.4], [2.5, 2.4, 5.2], FUR, slices=5, axis="z")                 # body
     blob(m, "body", [0, 10.4, -3.2], [2.7, 2.7, 2.2], FUR, slices=4)                          # chest
     blob(m, "body", [0, 9.4, -3.4], [1.9, 2.0, 1.8], CREAM, slices=3)                         # cream chest
-    blob(m, "body", [0, 11.6, -0.6], [2.7, 1.3, 3.0], NAVY, slices=3, axis="z")              # ninja vest over the back
+    if ninja:
+        blob(m, "body", [0, 11.6, -0.6], [2.7, 1.3, 3.0], NAVY, slices=3, axis="z")          # ninja vest over the back
     tube(m, "body", [[0, 11.6, -4.4], [0, 13.0, -5.6]], [1.6, 1.5], FUR, knuckles=False)        # neck
     blob(m, "head", [0, 14.2, -7.0], [2.1, 2.0, 2.2], FUR, slices=4)                          # head
     blob(m, "head", [0, 13.4, -9.3], [1.15, 1.0, 1.6], CREAM, slices=3, axis="z")            # muzzle
@@ -418,8 +419,9 @@ def hound():
         box_at(m, "head", [sx * 0.85, 14.95, -9.06], [0.15, 0.15, 0.05], smooth((255, 255, 255)))
     blob(m, "jaw", [0, 12.75, -9.1], [0.95, 0.4, 1.3], CREAM, slices=2, axis="z")           # lower jaw
     blade(m, "jaw", [0, 12.6, -9.9], [0, -1, -0.35], 1.4, 0.8, 0.25, PINK, width_dir=[1, 0, 0])  # tongue
-    box_at(m, "head", [0, 15.5, -7.0], [4.5, 0.9, 4.6], BAND)                                 # headband
-    box_at(m, "head", [0, 15.5, -9.35], [2.0, 1.0, 0.3], STEEL)                               # Leaf plate
+    if ninja:
+        box_at(m, "head", [0, 15.5, -7.0], [4.5, 0.9, 4.6], BAND)                             # headband
+        box_at(m, "head", [0, 15.5, -9.35], [2.0, 1.0, 0.3], STEEL)                           # Leaf plate
     for sx, bone in ((1, "rightArm"), (-1, "leftArm")):                                       # front legs
         tube(m, bone, [[sx * 1.7, 9.6, -3.6], [sx * 1.75, 4.8, -3.9], [sx * 1.75, 1.3, -4.0]], [0.95, 0.72, 0.66], FUR)
         box_at(m, bone, [sx * 1.75, 0.6, -4.5], [1.5, 1.2, 1.9], CREAM)                       # paw
@@ -427,8 +429,29 @@ def hound():
         blob(m, bone, [sx * 1.8, 9.0, 3.9], [1.25, 2.0, 1.6], FUR, slices=3)
         tube(m, bone, [[sx * 1.8, 7.6, 4.4], [sx * 1.9, 4.2, 5.2], [sx * 1.9, 1.3, 4.6]], [0.85, 0.66, 0.62], FUR)
         box_at(m, bone, [sx * 1.9, 0.6, 4.1], [1.5, 1.2, 1.9], CREAM)
-    curve_tube(m, "tails", [[0, 11.6, 5.0], [0, 13.8, 6.4], [0, 15.2, 5.4], [0, 14.6, 3.8]], 0.9, 0.5, [FUR, CREAM], n=2)  # curled tail
+    if ninja:
+        curve_tube(m, "tails", [[0, 11.6, 5.0], [0, 13.8, 6.4], [0, 15.2, 5.4], [0, 14.6, 3.8]], 0.9, 0.5, [FUR, CREAM], n=2)  # curled tail
+    else:  # a wolf's bushy tail, held out straight
+        curve_tube(m, "tails", [[0, 11.6, 5.0], [0, 11.0, 8.0], [0, 9.6, 10.6]], 1.2, 0.6, [FUR, FUR], n=2)
+        for sx in (1, -1):  # a mane of rough fur at the neck
+            blade(m, "body", [sx * 1.6, 12.4, -4.2], [sx * 0.6, 0.5, 0.3], 2.0, 1.4, 0.5, FUR)
+        blade(m, "head", [0, 15.0, -5.2], [0, 0.6, 1], 2.4, 1.6, 0.5, FUR)
+    if big != 1.0:
+        for c in m.cubes:
+            c["frm"] = [v * big for v in c["frm"]]; c["size"] = [v * big for v in c["size"]]
+            if c.get("pivot"):
+                c["pivot"] = [v * big for v in c["pivot"]]
     return m
+
+
+def divine_dog_black():
+    """Megumi's Divine Dog: Black — a big black wolf, no vest, a white muzzle and a wild ruff."""
+    return hound((30, 30, 36), (210, 210, 216), (14, 14, 18), ninja=False)
+
+
+def divine_dog_white():
+    """Megumi's Divine Dog: White — a big white wolf with a dark muzzle tip."""
+    return hound((236, 236, 240), (250, 250, 252), (180, 180, 190), ninja=False)
 
 
 def flame_tiger():
@@ -528,5 +551,6 @@ def _ghost(fn, k=0.38):
 SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta", gamabunta),
            ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
            ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
-           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo), ("fire_fist", fire_fist), ("ofa_fist", ofa_fist)]
-SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo"}   # opaque flesh; the rest are glowing chakra
+           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo), ("fire_fist", fire_fist), ("ofa_fist", ofa_fist),
+           ("dog_black", divine_dog_black), ("dog_white", divine_dog_white)]
+SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo", "dog_black", "dog_white"}   # opaque flesh; the rest are glowing chakra

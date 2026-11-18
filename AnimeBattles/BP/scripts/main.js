@@ -120,8 +120,8 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire, C.ofa];
-const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14, KIND_OFA_FIST = 15;
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver, C.fire, C.ofa, C.black, C.white];
+const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13, KIND_FIST = 14, KIND_OFA_FIST = 15, KIND_DOG_BLACK = 16, KIND_DOG_WHITE = 17;
 // Deku's Detroit Smash: he closes in, punches, and a giant fist of green wind blasts out through the target.
 function detroitSmash(e, t, dmg) {
   const dim = e.dimension;
@@ -268,14 +268,14 @@ function crowFlock(e, t, n = 5, dmg = 6) {
   });
 }
 // Kakashi's ninja hounds: they burst out of the ground round the target and bite down, pinning it.
-function houndAmbush(e, t, n = 3) {
+function houndAmbush(e, t, n = 3, kinds = null, size = 1.05) {
   const dim = e.dimension;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + Math.random();
     const at = V.add(t.location, { x: Math.cos(a) * 1.8, y: -0.8, z: Math.sin(a) * 1.8 });
     try {
       const v = dim.spawnEntity("ab:summon", at);
-      v.setProperty("ab:kind", KIND_HOUND); v.setProperty("ab:size", 1.05);
+      v.setProperty("ab:kind", kinds ? kinds[i % kinds.length] : KIND_HOUND); v.setProperty("ab:size", size);
       vfxAlive.set(v.id, now() + 60);
       try { v.teleport(at, { facingLocation: aim(t) }); } catch (err) { /* ignore */ }
       burst(dim, V.up(at, 1), DUST, 18, 3, 0.45, 0.6);
@@ -4425,7 +4425,7 @@ const MEGUMI = {
     { id: "dogs", label: "Divine Dogs", cd: 200, cost: 90, min: 0, max: 30, weight: 6,
       run(e, s, t) {  // the black and white wolves burst out of the target's shadow and bite
         busy(s, 12); setPose(e, 21); announce(e, "§8§lDivine Dogs!");
-        later(3, () => { if (alive(t)) houndAmbush(e, t, 2); });
+        later(3, () => { if (alive(t)) houndAmbush(e, t, 2, [KIND_DOG_BLACK, KIND_DOG_WHITE], 1.4); });
         later(9, () => { if (alive(t)) { deal(e, t, 24 * powerOf(e) / 100); fx(t.dimension, "shock", t.location, C.white, 3, 0.3); } });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },

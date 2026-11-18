@@ -1440,7 +1440,9 @@
       "Texture.flame_tiger",
       "Texture.yoyo",
       "Texture.fire_fist",
-      "Texture.ofa_fist"
+      "Texture.ofa_fist",
+      "Texture.dog_black",
+      "Texture.dog_white"
      ]
     },
     "geometries": {
@@ -1460,7 +1462,9 @@
       "Geometry.flame_tiger",
       "Geometry.yoyo",
       "Geometry.fire_fist",
-      "Geometry.ofa_fist"
+      "Geometry.ofa_fist",
+      "Geometry.dog_black",
+      "Geometry.dog_white"
      ]
     }
    },
@@ -1493,7 +1497,9 @@
       "Texture.flame_tiger",
       "Texture.yoyo",
       "Texture.fire_fist",
-      "Texture.ofa_fist"
+      "Texture.ofa_fist",
+      "Texture.dog_black",
+      "Texture.dog_white"
      ]
     },
     "geometries": {
@@ -1513,7 +1519,9 @@
       "Geometry.flame_tiger",
       "Geometry.yoyo",
       "Geometry.fire_fist",
-      "Geometry.ofa_fist"
+      "Geometry.ofa_fist",
+      "Geometry.dog_black",
+      "Geometry.dog_white"
      ]
     }
    },
