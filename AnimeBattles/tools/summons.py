@@ -4,7 +4,7 @@
 import math
 
 import models as M
-from models import dark, layered, light, _put
+from models import dark, layered, light, _put, solid
 import sculpt as S
 from sculpt import blob, box_at, chakra, curve_tube, tube, blade, spline, flesh, stripes, speckle, rim, alpha, smooth
 
@@ -328,96 +328,138 @@ def muzan_infant():
 
 # ------------------------------------------------------------------ Mahoraga (Ten Shadows, Sukuna)
 def mahoraga():
-    """Eight-Handled Sword Divergent Sila Divine General Mahoraga (from the anime reference): a tall, athletic, pale
-    white body (broad shoulders and chest, narrow waist — muscled, never bulky); a long eyeless head with two pairs of
-    broad feathered wing-horns sweeping out and up from where the eyes would be, and a wide grin of teeth; the golden
-    eight-handled Dharma wheel lying FLAT above its head like a halo, eight spokes and eight knobs round the rim; a black
-    chain necklace with tassels across the chest; black cloth at the waist, black wrist bands, and the Sword of
-    Extermination growing from its right forearm."""
+    """Eight-Handled Sword Divergent Sila Divine General Mahoraga, built in the mod's clean block style (like the
+    fighters): a tall, athletic, pale-white body whose muscles are PAINTED on (pecs, abs, arms) instead of lumpy blobs;
+    a tall eyeless head with ridges up its face and a wide painted grin of teeth; two pairs of broad wing-horns sweeping
+    out from where its eyes would be; the golden eight-handled wheel lying FLAT above its head on a short post, eight
+    spokes and eight knobs; a black ring-chain necklace with tassels; black cloth at the waist and black wrist bands;
+    the Sword of Extermination on its right forearm. Faces -z."""
     m = M.Model()
-    m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 40, 0], "rightArm": [9, 36, 0], "leftArm": [-9, 36, 0],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 40, -2], "wheel": [0, 54, 0.4]})
-    SK, SH, LN = smooth((236, 236, 240)), smooth((206, 206, 214)), smooth((150, 150, 160))
-    BLK, BLK2 = smooth((28, 28, 32)), smooth((52, 52, 58))
-    GOLD, GOLD2 = smooth((172, 140, 74)), smooth((196, 166, 100))
-    TEETH, GUM = smooth((246, 246, 240)), smooth((36, 34, 38))
-    # long legs in loose black trousers, white feet
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 20, 0], "head": [0, 41, 0], "rightArm": [10.6, 37, 0], "leftArm": [-10.6, 37, 0],
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 42, -2], "wheel": [0, 55, 0]})
+    SKC, MUS, RID = (232, 232, 236), (176, 176, 186), (150, 150, 162)
+    BLKC = (30, 30, 34)
+
+    def line_h(px, w, h, fy, x0, x1, col, curve=0.0):
+        for x in range(int(w * x0), int(w * x1)):
+            t = (x / max(1, w - 1)) - 0.5
+            _put(px, w, h, x, int(h * fy + curve * h * (t * t * 4 - 1)), col)
+
+    def line_v(px, w, h, fx, y0, y1, col):
+        for y in range(int(h * y0), int(h * y1)):
+            _put(px, w, h, int(w * fx), y, col)
+
+    def chest_paint(face, px, w, h, base):  # pecs, the line between them, and the top of the abs
+        if face == "north":
+            line_h(px, w, h, 0.44, 0.08, 0.48, MUS, curve=0.04); line_h(px, w, h, 0.44, 0.52, 0.92, MUS, curve=0.04)
+            line_v(px, w, h, 0.5, 0.05, 1.0, MUS)
+            for fy in (0.66, 0.86):
+                line_h(px, w, h, fy, 0.3, 0.7, MUS)
+            for fx in (0.3, 0.7):
+                line_v(px, w, h, fx, 0.5, 1.0, MUS)
+        elif face in ("east", "west"):
+            for fy in (0.55, 0.7, 0.85):  # serratus ribs
+                line_h(px, w, h, fy, 0.2, 0.6, MUS)
+
+    def waist_paint(face, px, w, h, base):  # the lower abs and the V-lines of the hips
+        if face == "north":
+            line_v(px, w, h, 0.5, 0, 1.0, MUS)
+            line_h(px, w, h, 0.4, 0.3, 0.7, MUS)
+            for fx in (0.3, 0.7):
+                line_v(px, w, h, fx, 0, 0.85, MUS)
+            for k in range(int(h * 0.5), h):
+                _put(px, w, h, int(w * 0.18) + (k - int(h * 0.5)) // 2, k, MUS)
+                _put(px, w, h, int(w * 0.82) - (k - int(h * 0.5)) // 2, k, MUS)
+
+    def arm_paint(face, px, w, h, base):  # bicep / tricep split
+        if face in ("north", "south"):
+            line_v(px, w, h, 0.5, 0.15, 0.85, MUS)
+
+    def head_paint(face, px, w, h, base):  # ridges up the eyeless face, and the wide grin of teeth
+        if face == "north":
+            for fx in (0.32, 0.5, 0.68):
+                line_v(px, w, h, fx, 0.0, 0.46, RID)
+            for fx in (0.14, 0.86):
+                line_v(px, w, h, fx, 0.2, 0.55, RID)
+            y0, y1, x0, x1 = int(h * 0.56), int(h * 0.82), int(w * 0.14), int(w * 0.86)
+            for y in range(y0, y1 + 1):
+                for x in range(x0, x1 + 1):
+                    edge = y in (y0, y1) or x in (x0, x1)
+                    _put(px, w, h, x, y, (30, 28, 32) if edge else (246, 246, 240))
+            for x in range(x0 + 1, x1):  # the thin seam between the upper and lower teeth
+                _put(px, w, h, x, (y0 + y1) // 2, (150, 150, 156))
+            for k in range(1, 5):  # four gaps: five big teeth
+                xx = x0 + (x1 - x0) * k // 5
+                for y in range(y0, y1 + 1):
+                    _put(px, w, h, xx, y, (90, 88, 96))
+            for fx in (0.36, 0.5, 0.64):
+                line_v(px, w, h, fx, 0.84, 1.0, RID)
+
+    def cloth_paint(face, px, w, h, base):  # folds in the black cloth
+        for fx in (0.25, 0.5, 0.75):
+            line_v(px, w, h, fx, 0.1, 1.0, (52, 52, 58))
+
+    SKIN_ = layered(SKC, [])
+    # legs in loose black trousers, white feet
     for s_ in (1, -1):
-        tube(m, "body", [[s_ * 3.0, 18, 0], [s_ * 3.3, 10, -0.3], [s_ * 3.3, 3.0, 0]], [2.8, 2.6, 2.3], BLK)
-        box_at(m, "body", [s_ * 3.3, 1.0, -1.0], [3.2, 2.0, 5.0], SK)
-    frustum(m, "body", [0, 12, 0], 7, (6.0, 4.2), (5.4, 3.8), BLK, slices=4)                         # the black cloth round its hips
-    box_at(m, "body", [0, 18.0, 0], [11.0, 1.8, 7.6], BLK2)                                          # the black sash
-    # an athletic V-shaped torso: wide, shallow chest; narrow waist
-    blob(m, "body", [0, 22.2, 0], [4.4, 3.6, 3.2], SK, slices=4)                                     # narrow waist
-    blob(m, "body", [0, 30.5, 0], [8.0, 5.6, 4.0], SK, slices=6)                                     # chest and ribs
-    for s_ in (1, -1):
-        blob(m, "body", [s_ * 5.4, 27.4, 0.8], [2.4, 4.0, 2.8], SK, slices=3)                        # lats tapering to the waist
-    blob(m, "body", [0, 36.4, 0.6], [5.0, 2.4, 3.2], SK, slices=4)                                   # trapezius rising to the neck
-    for s_ in (1, -1):
-        blob(m, "body", [s_ * 3.6, 32.2, -3.0], [3.4, 2.4, 1.3], SK, slices=3)                       # pectorals
-        box_at(m, "body", [s_ * 3.6, 29.9, -4.2], [4.2, 0.3, 0.3], SH)                              # the line under each pec
-        for k in range(3):                                                                           # six-pack
-            box_at(m, "body", [s_ * 1.3, 26.6 - k * 2.2, -3.4 + k * 0.15], [2.0, 1.7, 0.6], SK)
-            box_at(m, "body", [s_ * 1.3, 25.6 - k * 2.2, -3.7 + k * 0.15], [2.0, 0.25, 0.25], SH)
-    box_at(m, "body", [0, 23.4, -3.75], [0.25, 7.0, 0.25], SH)                                        # the line down the abs
-    # the black chain necklace: rings and links curving across the chest, with tassels hanging from it
-    pts = [(-6.6, 35.6), (-4.9, 34.6), (-3.2, 33.8), (-1.5, 33.3), (0, 33.1), (1.5, 33.3), (3.2, 33.8), (4.9, 34.6), (6.6, 35.6)]
-    chain = [[x, y, -5.0 + abs(x) * 0.22] for x, y in pts]
-    tube(m, "body", chain, [0.25] * len(chain), BLK, knuckles=False)                                 # the cord the rings hang on
+        m.box("body", [s_ * 3.1 - 2.9, 2.0, -2.9], [5.8, 16.5, 5.8], layered(BLKC, [cloth_paint]))
+        m.box("body", [s_ * 3.1 - 2.7, 0.0, -3.9], [5.4, 2.0, 6.8], SKIN_)
+    m.box("body", [-6.6, 14.0, -3.6], [13.2, 6.0, 7.2], layered(BLKC, [cloth_paint]))              # the black cloth round its hips
+    m.box("body", [-6.8, 19.4, -3.8], [13.6, 1.8, 7.6], layered((54, 54, 60), []))                  # the black sash
+    # an athletic V-shaped torso
+    m.box("body", [-5.2, 21.0, -3.0], [10.4, 4.6, 6.0], layered(SKC, [waist_paint]))               # narrow waist
+    m.box("body", [-7.6, 25.4, -3.7], [15.2, 11.8, 7.4], layered(SKC, [chest_paint]))              # broad chest
+    m.box("body", [-5.0, 37.0, -2.8], [10.0, 2.2, 5.8], SKIN_)                                     # traps
+    m.box("body", [-2.6, 38.6, -2.6], [5.2, 3.0, 5.2], SKIN_)                                      # neck
+    # the black ring-chain necklace across the chest, with tassels
+    pts = [(-6.6, 36.2), (-4.9, 35.2), (-3.2, 34.5), (-1.6, 34.1), (0, 34.0), (1.6, 34.1), (3.2, 34.5), (4.9, 35.2), (6.6, 36.2)]
     for k, (x, y) in enumerate(pts):
-        z = -5.2 + abs(x) * 0.22
+        if k < len(pts) - 1:  # the cord between rings
+            x2, y2 = pts[k + 1]
+            ang = math.degrees(math.atan2(y2 - y, x2 - x))
+            box_at(m, "body", [(x + x2) / 2, (y + y2) / 2, -3.85], [math.hypot(x2 - x, y2 - y), 0.45, 0.3], solid(BLKC), rot=[0, 0, ang])
         if k % 2 == 0:
-            box_at(m, "body", [x, y, z], [1.3, 1.3, 0.4], BLK)                                     # ring
-            box_at(m, "body", [x, y, z - 0.15], [0.5, 0.5, 0.25], SK)                              # the hole of the ring
-        else:
-            box_at(m, "body", [x, y, z], [1.4, 0.5, 0.4], BLK)                                     # link
+            box_at(m, "body", [x, y, -3.95], [1.4, 1.4, 0.4], solid(BLKC))                          # ring
+            box_at(m, "body", [x, y, -4.1], [0.55, 0.55, 0.2], SKIN_)                               # the hole of the ring
         if k in (1, 3, 5, 7):
-            box_at(m, "body", [x, y - 1.4, z], [0.5, 1.8, 0.35], BLK)                              # tassel
-            box_at(m, "body", [x, y - 2.5, z], [0.9, 0.7, 0.35], BLK)
-    box_at(m, "body", [0, 31.7, -5.3], [1.9, 1.4, 0.45], BLK)                                        # the centre piece
-    box_at(m, "body", [0, 30.1, -5.25], [0.7, 2.0, 0.35], BLK)
-    # the neck and the long, eyeless head
-    tube(m, "body", [[0, 37.5, 0], [0, 41, -0.3]], [2.3, 2.1], SK)
-    blob(m, "head", [0, 45.4, -0.2], [3.5, 5.6, 3.8], SK, slices=5)
-    for x in (-1.1, 0, 1.1):                                                                       # ridges up its forehead
-        box_at(m, "head", [x, 48.0, -3.75], [0.3, 4.6, 0.3], LN)
-    # the grin: a wide row of teeth
-    box_at(m, "head", [0, 42.0, -3.5], [4.2, 2.4, 0.6], GUM)
-    box_at(m, "head", [0, 42.6, -3.9], [3.8, 0.95, 0.3], TEETH)
-    box_at(m, "head", [0, 41.45, -3.9], [3.8, 0.95, 0.3], TEETH)
-    for x in (-1.4, -0.7, 0, 0.7, 1.4):
-        box_at(m, "head", [x, 42.0, -4.1], [0.14, 2.0, 0.2], GUM)
-    for x in (-1.1, 0, 1.1):                                                                       # ridged chin
-        box_at(m, "head", [x, 40.0, -3.2], [0.3, 1.6, 0.3], LN)
-    # two pairs of feathered wing-horns sweeping out and up from where its eyes would be
+            box_at(m, "body", [x, y - 1.3, -3.9], [0.5, 1.8, 0.3], solid(BLKC))                     # tassel
+            box_at(m, "body", [x, y - 2.4, -3.9], [0.9, 0.7, 0.3], solid(BLKC))
+    box_at(m, "body", [0, 32.6, -4.0], [2.0, 1.5, 0.45], solid(BLKC))                               # the centre piece
+    box_at(m, "body", [0, 31.0, -3.95], [0.7, 2.0, 0.35], solid(BLKC))
+    # the tall, eyeless head
+    m.box("head", [-3.5, 41.0, -3.5], [7.0, 9.6, 7.0], layered(SKC, [head_paint]))
+    m.box("head", [-3.0, 50.6, -3.0], [6.0, 1.0, 6.0], SKIN_)                                      # the rounded crown
+    # two pairs of broad wing-horns sweeping out and up from where its eyes would be
     for s_ in (1, -1):
-        for k, (up, L, w) in enumerate(((0.85, 14.0, 3.2), (0.38, 12.0, 2.8))):
-            base = [s_ * 0.6, 46.4 - k * 1.2, -3.7]
-            d = [s_ * 1.0, up, -0.25]
-            blade(m, "head", base, d, L, w, 1.0, SK, width_dir=[0, 0.4, 1])                          # a broad feathered horn
-            blade(m, "head", [base[0] + s_ * 0.6, base[1] + 0.3, base[2] - 0.5], d, L * 0.85, w * 0.22, 0.35, LN, width_dir=[0, 0.4, 1])  # its vane line
-    # the golden eight-handled wheel, lying FLAT above its head like a halo, on a short post
-    R, cy, cz = 6.4, 54.0, 0.4
-    tube(m, "head", [[0, 50.6, -0.2], [0, cy, cz]], [0.55, 0.45], GOLD, knuckles=False)
-    rim_pts = [[math.cos(a) * R, cy, cz + math.sin(a) * R] for a in [i * math.pi / 10 for i in range(21)]]
-    tube(m, "wheel", rim_pts, [0.5] * len(rim_pts), GOLD, knuckles=False)
+        for k, (up, L, w) in enumerate(((0.8, 13.0, 3.0), (0.32, 11.0, 2.6))):
+            base = [s_ * 1.2, 47.0 - k * 1.4, -3.6]
+            d = [s_ * 1.0, up, -0.2]
+            blade(m, "head", base, d, L, w, 0.9, smooth((236, 236, 240)), width_dir=[0, 0.35, 1])
+            blade(m, "head", [base[0] + s_ * 0.6, base[1] + 0.25, base[2] - 0.5], d, L * 0.85, w * 0.2, 0.3, smooth(RID), width_dir=[0, 0.35, 1])
+    # the golden eight-handled wheel lying FLAT above its head on a short post
+    GOLD, GOLD2 = layered((176, 142, 74), []), layered((204, 172, 104), [])
+    m.box("head", [-0.6, 51.6, -0.6], [1.2, 3.2, 1.2], GOLD)                                     # post
+    R, cy = 6.4, 55.0
+    for i in range(16):  # the rim: 16 straight segments round the circle
+        a = (i + 0.5) * math.pi / 8
+        box_at(m, "wheel", [math.cos(a) * R, cy, math.sin(a) * R], [2.6, 0.9, 0.9], GOLD, rot=[0, -math.degrees(a) + 90, 0])
     for i in range(8):
         a = i * math.pi / 4 + math.pi / 8
-        d = [math.cos(a), 0, math.sin(a)]
-        tube(m, "wheel", [[0, cy, cz], [d[0] * R, cy, cz + d[2] * R]], [0.32, 0.32], GOLD, knuckles=False)
-        tube(m, "wheel", [[d[0] * R, cy, cz + d[2] * R], [d[0] * (R + 1.4), cy, cz + d[2] * (R + 1.4)]], [0.32, 0.32], GOLD, knuckles=False)
-        blob(m, "wheel", [d[0] * (R + 2.5), cy, cz + d[2] * (R + 2.5)], [1.2, 1.2, 1.2], GOLD2, slices=3)
-    blob(m, "wheel", [0, cy, cz], [1.3, 0.8, 1.3], GOLD2, slices=3)
-    # strong but lean arms: deltoids, biceps, forearms, black wrist bands, fists
+        box_at(m, "wheel", [math.cos(a) * R / 2, cy, math.sin(a) * R / 2], [R, 0.6, 0.6], GOLD, rot=[0, -math.degrees(a), 0])          # spoke
+        box_at(m, "wheel", [math.cos(a) * (R + 1.0), cy, math.sin(a) * (R + 1.0)], [1.6, 0.5, 0.5], GOLD, rot=[0, -math.degrees(a), 0])  # handle
+        box_at(m, "wheel", [math.cos(a) * (R + 2.4), cy, math.sin(a) * (R + 2.4)], [2.2, 2.2, 2.2], GOLD2)                              # knob
+    box_at(m, "wheel", [0, cy, 0], [2.0, 1.2, 2.0], GOLD2)
+    # strong, lean arms: deltoid, upper arm, forearm, black wrist band, fist
     for s_, bone in ((1, "rightArm"), (-1, "leftArm")):
-        blob(m, bone, [s_ * 8.8, 35.2, 0], [3.0, 3.0, 3.0], SK, slices=4)                            # deltoid
-        tube(m, bone, [[s_ * 9.3, 33, 0], [s_ * 10.2, 27, -0.5], [s_ * 10.4, 21.5, -2.0]], [2.4, 2.1, 1.9], SK)
-        blob(m, bone, [s_ * 9.8, 29.5, -1.3], [1.7, 2.2, 1.6], SK, slices=3)                         # bicep
-        box_at(m, bone, [s_ * 10.4, 19.8, -2.6], [3.6, 2.0, 3.6], BLK)                              # black wrist band
-        blob(m, bone, [s_ * 10.4, 17.6, -3.0], [1.9, 1.9, 1.9], SK, slices=3)                        # fist
+        cx = s_ * 10.6
+        m.box(bone, [cx - 3.2, 33.0, -3.2], [6.4, 5.0, 6.4], SKIN_)                                # deltoid
+        m.box(bone, [cx - 2.7, 27.0, -2.7], [5.4, 6.4, 5.4], layered(SKC, [arm_paint]))            # upper arm
+        m.box(bone, [cx - 2.5, 20.6, -2.5], [5.0, 6.6, 5.0], SKIN_)                                # forearm
+        m.box(bone, [cx - 2.8, 18.8, -2.8], [5.6, 2.0, 5.6], solid(BLKC))                          # black wrist band
+        m.box(bone, [cx - 2.4, 15.0, -2.4], [4.8, 3.8, 4.8], SKIN_)                                # fist
     # the Sword of Extermination grows from the right forearm, blade forward
-    box_at(m, "rightArm", [10.4, 21.8, -4.2], [3.0, 2.8, 2.2], BLK2)
-    blade(m, "rightArm", [10.4, 21.4, -5.0], [0, -0.25, -1], 24, 3.2, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
+    m.box("rightArm", [10.6 - 1.6, 21.4, -4.6], [3.2, 2.8, 2.2], solid((54, 54, 60)))
+    blade(m, "rightArm", [10.6, 22.6, -5.6], [0, -0.2, -1], 24, 3.2, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
     return m
 
 
