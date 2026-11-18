@@ -117,17 +117,40 @@ def build_icons():
             px[x, y] = (255, 255, 255, int(255 * a))
     orb.save(os.path.join(RP, "textures", "particle", "ab_orb.png"))
 
-    # pack icon: Goku / Vegeta / Gojo faces side by side
-    icon = Image.new("RGBA", (96, 96), (18, 18, 30, 255))
-    for x in range(96):
-        for y in range(96):
-            icon.putpixel((x, y), (230 - y, 40, 60, 255) if x < 48 else (40, 70 + y // 2, 230, 255))
-    for (ch, form), ox in ((("goku", "ssj"), 2), (("vegeta", "ssb"), 34), (("gojo", "eyes"), 66)):
-        face = HEADS[(ch, form)].resize((28, 28), Image.NEAREST)
-        icon.paste(face, (ox, 34), face)
-    icon = icon.resize((128, 128), Image.NEAREST)
-    icon.save(os.path.join(RP, "pack_icon.png"))
-    icon.save(os.path.join(BP, "pack_icon.png"))
+    # pack icon: nine faces from nine anime around the title, on a red-to-blue split (the two teams)
+    from PIL import ImageDraw, ImageFont
+    S_ = 512
+    icon = Image.new("RGBA", (S_, S_), (18, 18, 30, 255))
+    px = icon.load()
+    for y in range(S_):
+        for x in range(S_):
+            t = (x + y) / (2 * S_)
+            px[x, y] = (int(200 * (1 - t) + 30 * t), int(30 + 20 * t), int(50 * (1 - t) + 210 * t), 255)
+    picks = [("goku", "ssb"), ("naruto_war", "kcm"), ("luffy", "g5"), ("gojo", "eyes"), ("deku", "cowl45"), ("tanjiro", "hinokami")]
+    cell = S_ // 3
+    for k, key in enumerate(picks):  # six faces from six anime, two rows across the top
+        face = HEADS.get(key)
+        if face is None:
+            continue
+        f = face.convert("RGBA").resize((cell - 24, cell - 24), Image.NEAREST)
+        cx, cy = (k % 3) * cell + 12, (k // 3) * cell + 12
+        ImageDraw.Draw(icon).rectangle([cx - 4, cy - 4, cx + cell - 20, cy + cell - 20], fill=(10, 10, 18, 255))
+        icon.paste(f, (cx, cy), f)
+    d = ImageDraw.Draw(icon)
+    try:  # the name across the bottom third
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 46)
+        small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 52)
+        d.rectangle([0, 2 * cell, S_, S_], fill=(10, 10, 20, 235))
+        for text, f_, y, col in (("ANIME MULTIVERSE", font, 2 * cell + 26, (255, 214, 80)), ("CLASH", small, 2 * cell + 86, (255, 255, 255))):
+            w = d.textlength(text, font=f_)
+            d.text(((S_ - w) / 2 + 2, y + 2), text, font=f_, fill=(0, 0, 0))
+            d.text(((S_ - w) / 2, y), text, font=f_, fill=col)
+    except OSError:
+        pass
+    icon.save(os.path.join(ROOT, "docs", "curseforge_logo.png"))
+    small_icon = icon.resize((256, 256), Image.LANCZOS)
+    small_icon.save(os.path.join(RP, "pack_icon.png"))
+    small_icon.save(os.path.join(BP, "pack_icon.png"))
 
 
 def build_zip():
@@ -933,9 +956,9 @@ def build_summons():
                 "animations": {"base": "animation.ab.summon_base", "wings": "animation.ab.summon_wings", "tails": "animation.ab.summon_tails",
                                "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap",
                                "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin",
-                               "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot"},
+                               "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot", "roll": "animation.ab.summon_roll"},
                 "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"}, {"flap": f"{K} == {names.index('crow')}"},
-                                        {"trot": f"{K} == {names.index('hound')} || {K} == {names.index('flame_tiger')}"},
+                                        {"trot": f"{K} == {names.index('hound')} || {K} == {names.index('flame_tiger')}"}, {"roll": f"{K} == {names.index('yoyo')}"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
                                         {"leap": "query.property('ab:pose') == 3"}, {"bite": "query.property('ab:pose') == 4"},
                                         {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}]},
@@ -986,6 +1009,7 @@ def build_summons():
         "head": {"rotation": ["math.sin(query.life_time * 1200.0) * 4", 0, 0]},
         "tails": {"rotation": [0, "math.sin(query.life_time * 900.0) * 28", 0]},
         "jaw": {"rotation": ["10 + math.sin(query.life_time * 500.0) * 10", 0, 0]}}}
+    an["animations"]["animation.ab.summon_roll"] = {"loop": True, "bones": {"body": {"rotation": ["query.life_time * 1440.0", 0, 0]}}}  # yo-yo spinning on its axle
     an["animations"]["animation.ab.summon_tails"] = {"loop": True, "bones": {
         "tails": {"rotation": ["math.sin(query.life_time * 140.0) * 8", "math.sin(query.life_time * 90.0) * 14", 0]}}}
     an["animations"]["animation.ab.summon_swing"] = {"loop": "hold_on_last_frame", "animation_length": 0.6, "bones": {

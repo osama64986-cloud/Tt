@@ -120,8 +120,38 @@ function fadeVfx(v, from, ticks = 5) {
 // Giant summons (ab:summon): 0 Perfect Susanoo, 1 Kurama avatar, 2 Gamabunta. They grow out of a burst of chakra,
 // act (pose 1 swing, 2 aim, 3 leap) and fade away; the cleanup loop removes any that outlive their time.
 // kinds: 0 Perfect Susanoo, 1 Kurama, 2 Gamabunta, 3 Susanoo ribcage, 4 armoured Susanoo, 5 Muzan's giant infant form
-const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire];
-const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12;
+const SUMMON_COLOR = [C.purple, C.gold, C.white, C.purple, C.purple, C.blood, C.white, C.blue, C.red, C.kameBlue, C.black, { red: 0.6, green: 0.45, blue: 0.3 }, C.fire, C.silver];
+const KIND_CROW = 10, KIND_HOUND = 11, KIND_TIGER = 12, KIND_YOYO = 13;
+// Killua's yo-yos: two spinning steel discs on strings fly out, smash into the target and snap back to his hands.
+function yoyoThrow(e, t, dmg) {
+  const dim = e.dimension;
+  const yoyos = [];
+  for (const side of [1, -1]) {
+    try {
+      const { pos } = handPos(e, t);
+      const v = dim.spawnEntity("ab:summon", pos);
+      v.setProperty("ab:kind", KIND_YOYO); v.setProperty("ab:size", 0.9);
+      vfxAlive.set(v.id, now() + 40);
+      yoyos.push({ v, side });
+    } catch (err) { warn("yoyo", err); }
+  }
+  every(1, 18, (i) => {
+    for (const y of yoyos) {
+      if (!y.v.isValid || !e.isValid) continue;
+      const hand = V.add(handPos(e, alive(t) ? t : e).pos, V.mul(sideOf(e.getViewDirection()), y.side * 0.4));
+      const tgt = alive(t) ? V.add(aim(t), V.mul(sideOf(e.getViewDirection()), y.side * 0.6)) : V.add(hand, V.mul(e.getViewDirection(), 10));
+      const k = i < 9 ? (i + 1) / 9 : (17 - i) / 9;                      // out to the target, then back on the string
+      const p = V.add(hand, V.mul(V.sub(tgt, hand), k));
+      try { y.v.teleport(p, { facingLocation: V.add(p, V.sub(tgt, hand)) }); } catch (err) { /* ignore */ }
+      for (let s2 = 1; s2 < 6; s2++) fx(dim, "orb", V.add(hand, V.mul(V.sub(p, hand), s2 / 6)), C.white, 0.12, 0.1);  // the string
+      if (i === 8 && alive(t) && y.side === 1) {
+        deal(e, t, dmg); fx(dim, "flash", aim(t), C.white, 2.4, 0.15); burst(dim, aim(t), C.silver, 16, 3, 0.35, 0.4);
+        sound(dim, "random.anvil_land", t.location, 0.5, 1.6);
+      }
+    }
+    if (i === 17) for (const y of yoyos) killVfx(y.v);
+  });
+}
 // Rengoku's Flame Tiger: a tiger of fire bursts out of his swing, leaps in an arc onto the target and bites down in flame.
 function flameTiger(e, t, dmg) {
   const dim = e.dimension;
@@ -922,6 +952,16 @@ function transform(e, s, to, label, color, extraSound) {
     const cocoon = spawnVfx(dim, 1, V.up(e.location, 1.1), { slot: 9, size: 1.7, life: 34 });
     later(30, () => killVfx(cocoon));
   }
+  if (e.typeId === "ab:denji") {  // he yanks the cord in his chest: blood, an engine roar, and the devil bursts out
+    later(4, () => { if (!e.isValid) return; fx(dim, "streak", V.up(e.location, 1.2), C.ember, 1.2, 0.3, { count: 12, speed: 6 }); burst(dim, V.up(e.location, 1.4), C.blood, 30, 4, 0.45, 0.6); });
+    sound(dim, "mob.ravager.roar", e.location, 0.8, 1.5);
+  }
+  if (e.typeId === "ab:killua" && to === 1) {  // Godspeed: he strikes himself with his own lightning to charge up
+    later(10, () => { if (!e.isValid) return; for (let y = 0; y < 12; y++) fx(dim, "streak", V.up(e.location, y), C.volt, 1.2, 0.3, { count: 4, speed: 4 }); fx(dim, "flash", V.up(e.location, 1), C.white, 4, 0.2); });
+    sound(dim, "ambient.weather.lightning.impact", e.location, 0.6, 1.4);
+  }
+  if (e.typeId === "ab:deku") every(3, 8, () => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 2 ? C.whip : C.ofa, 1.2, 0.3, { count: 10, speed: 7 }); });
+  if (e.typeId === "ab:rengoku" || e.typeId === "ab:ace") every(3, 8, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + i * 0.3), 1.5 + i * 0.3, C.fire, 20, 0.5); });
   if (!calm) setExpr(e, 1, 34);
   s.transformUntil = now() + 32;
   s.nextTransform = now() + (def.transformCd ?? 160);
@@ -4070,7 +4110,12 @@ const KILLUA = {
   forms: [{ label: "Assassin", power: 55 }, { label: "Godspeed", power: 110, aura: C.volt }],
   thresholds: [0.6], transformCd: 110, formSound: [null, "ambient.weather.thunder"],
   abilities: [
-    SIG.ball("yoyo", "Yo-Yo Strike", { say: "§7§lYo-yos!", color: C.silver, count: 2, size: 0.8, dmg: 12, speed: 1.9, cd: 120, cost: 50, charge: 3, spread: 1 }),
+    { id: "yoyo", label: "Yo-Yo Strike", cd: 120, cost: 50, min: 2, max: 16, weight: 4,
+      run(e, s, t) {  // his 50 kg steel yo-yos, out and back on their strings
+        busy(s, 18); face(e, aim(t)); setPose(e, 4); announce(e, "§7§lYo-yos!");
+        yoyoThrow(e, t, 24 * powerOf(e) / 100);
+        later(18, () => { if (e.isValid) setPose(e, 0); });
+      } },
     { id: "heart", label: "Rhythm Echo — Heart Grab", cd: 220, cost: 90, min: 0, max: 20, weight: 5,
       run(e, s, t) {  // afterimages all round the target, then the claw from behind
         busy(s, 18); announce(e, "§b§lRhythm Echo...");
@@ -4164,7 +4209,39 @@ const RENGOKU = {
         later(4, () => { if (e.isValid && alive(t)) flameTiger(e, t, 46 * powerOf(e) / 100); });
         later(16, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.beam("ninth", "Ninth Form: Rengoku", { say: "§4§lNinth Form... §6§lRENGOKU!", color: C.fire, width: 2.8, length: 30, dmg: 92, charge: 14, cd: 900, cost: 400, carve: 2, blast: 6, pose: 19, cond: G(1), aura: C.fire }),
+    { id: "ninth", label: "Ninth Form: Rengoku", cd: 900, cost: 400, min: 0, max: 30, weight: 7, cond: G(1),
+      run(e, s, t) {  // he gathers everything, then charges straight through the enemy wrapped in a dragon of flame
+        busy(s, 40); face(e, aim(t)); setPose(e, 19); announce(e, "§4§lNinth Form... §6§lRENGOKU!");
+        const dim = e.dimension;
+        every(2, 7, () => { if (e.isValid) { fx(dim, "aura", e.location, C.fire, 1.8, 0.7, { count: 26, speed: 3 }); implode(dim, V.up(e.location, 1), C.fire, 4, 14); } });
+        sound(dim, "mob.blaze.shoot", e.location, 1, 0.5);
+        later(14, () => {
+          if (!e.isValid || !alive(t)) return;
+          const start = e.location;
+          const dir = V.norm({ x: t.location.x - start.x, y: 0, z: t.location.z - start.z });
+          const total = Math.max(6, Math.hypot(t.location.x - start.x, t.location.z - start.z) + 4);
+          let hit = false;
+          every(1, 10, (i) => {
+            if (!e.isValid) return false;
+            const p = V.add(start, V.mul(dir, total * (i + 1) / 10));
+            try { e.tryTeleport(p, { checkForBlocks: true, facingLocation: V.add(p, dir) }); } catch (err) { /* ignore */ }
+            // the flame dragon coiling round his charge
+            for (let k = 0; k < 6; k++) {
+              const a = i * 0.9 + k * 1.05;
+              fx(dim, "orb_solid", V.add(V.up(e.location, 1.2), { x: Math.cos(a) * 1.6 * dir.z, y: Math.sin(a) * 1.6, z: -Math.cos(a) * 1.6 * dir.x }), k % 2 ? C.fire : C.ember, 1.3, 0.5);
+            }
+            fx(dim, "aura", e.location, C.fire, 1.6, 0.6, { count: 18, speed: 2 });
+            if (i % 2 === 0) groundTear(dim, e.location, 1.1);
+            if (!hit && alive(t) && V.dist(e.location, t.location) < 2.6) {
+              hit = true;
+              deal(e, t, 96 * powerOf(e) / 100);
+              fx(dim, "flash", aim(t), C.white, 5, 0.25); burst(dim, aim(t), C.fire, 50, 6, 0.6, 0.8); shake(dim, t.location, 0.5, 0.5);
+              launch(e, t, 1.2);
+            }
+          });
+          later(12, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
   ],
 };
 

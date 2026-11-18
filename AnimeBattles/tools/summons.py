@@ -461,6 +461,20 @@ def flame_tiger():
     return m
 
 
+def yoyo():
+    """Killua's yo-yo: two heavy steel discs on an axle with a dark rim — each one weighs 50 kg. Built small; the
+    'spin' animation rolls it about its axle."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 4, 0]})
+    STEEL, RIM, CORE = S.swatch((200, 204, 214)), S.swatch((60, 64, 80)), S.swatch((110, 90, 160))
+    for sx in (1, -1):
+        blob(m, "body", [sx * 0.9, 4, 0], [0.7, 3.0, 3.0], STEEL, slices=3, axis="x")      # the two discs
+        blob(m, "body", [sx * 1.4, 4, 0], [0.25, 3.1, 3.1], RIM, slices=2, axis="x")       # their dark outer rims
+        box_at(m, "body", [sx * 1.7, 4, 0], [0.3, 1.2, 1.2], CORE)                           # purple centre caps
+    box_at(m, "body", [0, 4, 0], [1.2, 0.8, 0.8], RIM)                                       # axle
+    return m
+
+
 def _ghost(fn, k=0.38):
     """A see-through Susanoo: every part keeps its colour but only ~38% of its opacity, so the fighter standing in its
     chest stays clearly visible."""
@@ -491,5 +505,5 @@ def _ghost(fn, k=0.38):
 SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta", gamabunta),
            ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
            ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
-           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger)]
-SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound"}   # opaque flesh; the rest are glowing chakra
+           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo)]
+SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo"}   # opaque flesh; the rest are glowing chakra

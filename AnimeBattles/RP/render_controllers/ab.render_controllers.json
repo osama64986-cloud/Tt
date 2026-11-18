@@ -1252,7 +1252,8 @@
       "Texture.susanoo_kakashi",
       "Texture.crow",
       "Texture.hound",
-      "Texture.flame_tiger"
+      "Texture.flame_tiger",
+      "Texture.yoyo"
      ]
     },
     "geometries": {
@@ -1269,7 +1270,8 @@
       "Geometry.susanoo_kakashi",
       "Geometry.crow",
       "Geometry.hound",
-      "Geometry.flame_tiger"
+      "Geometry.flame_tiger",
+      "Geometry.yoyo"
      ]
     }
    },
@@ -1299,7 +1301,8 @@
       "Texture.susanoo_kakashi",
       "Texture.crow",
       "Texture.hound",
-      "Texture.flame_tiger"
+      "Texture.flame_tiger",
+      "Texture.yoyo"
      ]
     },
     "geometries": {
@@ -1316,7 +1319,8 @@
       "Geometry.susanoo_kakashi",
       "Geometry.crow",
       "Geometry.hound",
-      "Geometry.flame_tiger"
+      "Geometry.flame_tiger",
+      "Geometry.yoyo"
      ]
     }
    },

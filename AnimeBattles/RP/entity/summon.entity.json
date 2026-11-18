@@ -20,7 +20,8 @@
     "susanoo_kakashi": "textures/entity/summon/susanoo_kakashi",
     "crow": "textures/entity/summon/crow",
     "hound": "textures/entity/summon/hound",
-    "flame_tiger": "textures/entity/summon/flame_tiger"
+    "flame_tiger": "textures/entity/summon/flame_tiger",
+    "yoyo": "textures/entity/summon/yoyo"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -35,7 +36,8 @@
     "susanoo_kakashi": "geometry.ab.summon_susanoo_kakashi",
     "crow": "geometry.ab.summon_crow",
     "hound": "geometry.ab.summon_hound",
-    "flame_tiger": "geometry.ab.summon_flame_tiger"
+    "flame_tiger": "geometry.ab.summon_flame_tiger",
+    "yoyo": "geometry.ab.summon_yoyo"
    },
    "animations": {
     "base": "animation.ab.summon_base",
@@ -48,7 +50,8 @@
     "swipe": "animation.ab.summon_swipe",
     "spin": "animation.ab.summon_spin",
     "flap": "animation.ab.summon_flap",
-    "trot": "animation.ab.summon_trot"
+    "trot": "animation.ab.summon_trot",
+    "roll": "animation.ab.summon_roll"
    },
    "scripts": {
     "animate": [
@@ -64,6 +67,9 @@
      },
      {
       "trot": "query.property('ab:kind') == 11 || query.property('ab:kind') == 12"
+     },
+     {
+      "roll": "query.property('ab:kind') == 13"
      },
      {
       "swing": "query.property('ab:pose') == 1"
@@ -87,10 +93,10 @@
    },
    "render_controllers": [
     {
-     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5 && query.property('ab:kind') != 6 && query.property('ab:kind') != 10 && query.property('ab:kind') != 11"
+     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5 && query.property('ab:kind') != 6 && query.property('ab:kind') != 10 && query.property('ab:kind') != 11 && query.property('ab:kind') != 13"
     },
     {
-     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5 || query.property('ab:kind') == 6 || query.property('ab:kind') == 10 || query.property('ab:kind') == 11"
+     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5 || query.property('ab:kind') == 6 || query.property('ab:kind') == 10 || query.property('ab:kind') == 11 || query.property('ab:kind') == 13"
     }
    ]
   }
