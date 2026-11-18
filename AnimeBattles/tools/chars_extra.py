@@ -2321,7 +2321,7 @@ def gon(m, form):
                     px[x, y] = (0, 0, 0, 0)
         torso = layered(SKIN, [lines((("north",), [[(0.5, 0.25), (0.5, 0.75)]]), dark(SKIN, 0.85))])
         base_body(m, torso, layered(SKIN, []), layered(green, [region((0, 0.5, 1, 1), SKIN)]), head)
-        m.box("body", [-4.6, 12.0, -2.6], [9.2, 6.0, 5.2], layered(green, [shreds]))  # rags of the jacket
+        m.box("body", [-4.4, 10.6, -2.5], [8.8, 1.6, 5.0], layered(green, [shreds]))  # the torn waistband of his shorts
         au = SC.swatch((60, 50, 70), 170)
         for k in range(6):
             a = math.pi * (0.1 + 0.8 * k / 5)
