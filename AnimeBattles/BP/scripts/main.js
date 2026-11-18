@@ -4371,11 +4371,11 @@ const BAKUGO = {
   forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 108, aura: C.ember }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
   abilities: [
-    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 20, speed: 2.4, cd: 100, cost: 50, charge: 2, pose: 5, radius: 3 }),
+    SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 20, speed: 2.4, cd: 130, cost: 50, charge: 2, pose: 5, radius: 3 }),
     SIG.beam("apshot", "AP Shot", { say: "§e§lAP Shot!", color: C.kiYellow, dmg: 36, width: 0.7, length: 36, charge: 6, cd: 200, cost: 100, pose: 4 }),
-    SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 16, cd: 240, cost: 80 }),
+    SIG.wave("stun", "Stun Grenade", { say: "§f§lStun Grenade!", color: C.white, radius: 5, dmg: 16, cd: 300, cost: 80, weight: 3 }),
     SIG.rush("blastrush", "Blast Rush", { say: "§6§lBlast rush!", color: C.fire, hits: 5, dmg: 8, finisher: 26, cd: 170, cost: 90 }),
-    SIG.wave("howitzer", "Howitzer Impact", { say: "§6§lHOWITZER... IMPACT!", color: C.fire, radius: 6.5, dmg: 48, cd: 340, cost: 180, pose: 23 }),
+    SIG.wave("howitzer", "Howitzer Impact", { say: "§6§lHOWITZER... IMPACT!", color: C.fire, radius: 6.5, dmg: 48, cd: 300, cost: 110, pose: 23, weight: 8 }),
     SIG.ball("cluster", "Cluster", { say: "§6§lCluster!", color: C.ember, count: 6, size: 0.8, dmg: 10, spread: 3, homing: true, speed: 1.4, cd: 240, cost: 120, charge: 5, cond: G(1) }),
     SIG.beam("maxcannon", "Grenade Bracer: Max Cannon", { say: "§6§lMAX... CANNON!", color: C.fire, dmg: 70, width: 2.4, charge: 16, cd: 520, cost: 320, cond: G(1), carve: 2 }),
   ],
@@ -4388,10 +4388,10 @@ const GON = {
   forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow }, { label: "Adult Gon", power: 200, aura: C.void }],
   thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn"],
   abilities: [
-    SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 120, cost: 40, charge: 2, pose: 5 }),
+    SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 180, cost: 40, charge: 2, pose: 5 }),
     SIG.rush("wild", "Wild Rush", { say: "§a§lHyaa!", color: C.white, hits: 4, dmg: 7, finisher: 18, cd: 150, cost: 60 }),
-    SIG.rush("rock", "Jajanken: Rock", { say: "§e§lFirst comes rock... ROCK!", color: C.kiYellow, hits: 2, dmg: 8, finisher: 40, cd: 200, cost: 110, slam: true }),
-    SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 110, charge: 8, cond: G(1, 2) }),
+    SIG.rush("rock", "Jajanken: Rock", { say: "§e§lFirst comes rock... ROCK!", color: C.kiYellow, hits: 2, dmg: 8, finisher: 40, cd: 200, cost: 70, slam: true, weight: 8 }),
+    SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 80, charge: 8, cond: G(1, 2), weight: 6 }),
     SIG.slash("scissors", "Jajanken: Scissors", { say: "§e§lScissors!", color: C.kiYellow, dmg: 28, cd: 180, cost: 90, size: 2.0, cond: G(1, 2) }),
     SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(2) }),
     SIG.rush("adultrock", "Adult Gon: Jajanken Rock", { say: "§e§lJAJANKEN... ROCK!", color: C.kiYellow, hits: 3, dmg: 14, finisher: 90, slam: true, cd: 520, cost: 300, cond: G(2) }),
@@ -4429,10 +4429,10 @@ const MEGUMI = {
         later(9, () => { if (alive(t)) { deal(e, t, 24 * powerOf(e) / 100); fx(t.dimension, "shock", t.location, C.white, 3, 0.3); } });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },
-    abFrom(SUKUNA, "nue", { cond: undefined, cost: 120 }),
-    SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 10, finisher: 16, cd: 160, cost: 60 }),
-    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 20, cd: 140, cost: 60 }),
-    abFrom(SUKUNA, "maxelephant", { cond: G(1) }),
+    abFrom(SUKUNA, "nue", { cond: undefined, cost: 80, weight: 6 }),
+    SIG.rush("toad", "Toad: Tongue Lash", { say: "§2§lToad!", color: C.black, hits: 2, dmg: 10, finisher: 16, cd: 200, cost: 60, weight: 3 }),
+    SIG.slash("shadowsword", "Shadow Sword", { say: "§8§l(a sword drawn out of his shadow)", color: C.black, dmg: 20, cd: 180, cost: 60, weight: 3 }),
+    abFrom(SUKUNA, "maxelephant", { cond: G(1), cost: 120, weight: 6 }),
     SIG.wave("garden", "Domain Expansion: Chimera Shadow Garden", { say: "§8§lDomain Expansion: Chimera Shadow Garden", color: C.black, radius: 7, dmg: 36, cd: 900, cost: 400, cond: G(1) }),
     abFrom(SUKUNA, "mahoraga", { cond: (e, s, c) => formOf(e) === 1 && c.hp < 0.45, weight: 9 }),  // his last resort, as in the anime
   ],
