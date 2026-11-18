@@ -26,11 +26,11 @@ from nabd import blocks_terrain  # noqa: E402
 from nabd import blocks_wood, blocks_build, blocks_plants, blocks_village  # noqa: E402
 from nabd import blocks_nether_end, blocks_more, blocks_fluids, blocks_minerals, blocks_rest  # noqa: E402
 from nabd import blocks_final  # noqa: E402
-from nabd import blocks_badlands, blocks_refresh, blocks_refresh2, blocks_refresh3  # noqa: E402
+from nabd import blocks_badlands, blocks_refresh, blocks_refresh2, blocks_refresh3, blocks_refresh4  # noqa: E402
 from nabd import items  # noqa: E402
 
 EXTRA = [blocks_wood, blocks_build, blocks_plants, blocks_village, blocks_nether_end, blocks_more, blocks_fluids,
-         blocks_minerals, blocks_rest, blocks_final, blocks_badlands, blocks_refresh, blocks_refresh2, blocks_refresh3]
+         blocks_minerals, blocks_rest, blocks_final, blocks_badlands, blocks_refresh, blocks_refresh2, blocks_refresh3, blocks_refresh4]
 
 PACK = os.path.join(ROOT, "pack")
 SRC = os.path.join(ROOT, "pack_src")
