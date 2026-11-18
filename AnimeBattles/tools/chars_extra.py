@@ -2277,8 +2277,8 @@ def bakugo(m, form):
     # the grenade gauntlets: big hand-grenade bracers with a pin ring
     glow = (255, 160, 50) if cluster else (240, 210, 70)
     for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
-        m.box(arm_, [s_ * 6.2 - 3.0, 12.0, -3.0], [6.0, 6.6, 6.0], layered((70, 88, 60), [region((0, 0.0, 1, 0.16), (40, 40, 44)), region((0, 0.84, 1, 1), (40, 40, 44)),
-                                                                                       lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (50, 64, 44))]))
+        m.box(arm_, [s_ * 6.2 - 3.0, 12.0, -3.0], [6.0, 6.6, 6.0], layered((52, 52, 58), [region((0, 0.0, 1, 0.14), (30, 30, 34)), region((0, 0.86, 1, 1), (30, 30, 34)),
+                                                                                       region((0, 0.42, 1, 0.56), (240, 130, 30)), lines((SIDES, [[(0.5, 0), (0.5, 0.4)]]), (80, 80, 88))]))
         m.box(arm_, [s_ * 6.2 - 0.8, 18.4, -0.8], [1.6, 1.2, 1.6], solid(glow))  # the pin
         m.box(arm_, [s_ * 6.2 - 2.4, 10.5, -2.4], [4.8, 1.6, 4.8], solid(SKIN))
     bakugo_hair(m)
