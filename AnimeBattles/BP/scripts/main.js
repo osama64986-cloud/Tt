@@ -4126,7 +4126,7 @@ const DEKU = {
   thresholds: [0.75, 0.45], transformCd: 110, formSound: [null, "ambient.weather.thunder", "mob.wither.ambient"],
   abilities: [
     SIG.ball("delaware", "Delaware Smash", { say: "§a§lDelaware Smash! §7— a flick of air", color: C.white, count: 1, size: 1.4, dmg: 22, speed: 2.4, cd: 110, cost: 60, charge: 4, radius: 2.2, knock: 2.4 }),
-    { id: "detroit", label: "Detroit Smash", cd: 260, cost: 170, min: 0, max: 18, weight: 6,
+    { id: "detroit", label: "Detroit Smash", cd: 200, cost: 110, min: 0, max: 18, weight: 9,
       run(e, s, t) {  // in close, a full-power punch — and the wind of it becomes a giant green fist
         busy(s, 18); announce(e, "§a§lDETROIT... SMASH!"); setPose(e, 22);
         later(6, () => {
@@ -4263,7 +4263,7 @@ const RENGOKU = {
     SIG.slash("rising", "Second Form: Rising Scorching Sun", { say: "§6§lSecond Form: Rising Scorching Sun!", color: C.fire, dmg: 24, cd: 150, cost: 70, size: 2.2, roll: 80, pose: 28 }),
     SIG.slash("universe", "Third Form: Blazing Universe", { say: "§6§lThird Form: Blazing Universe!", color: C.fire, dmg: 30, cd: 170, cost: 80, size: 2.6, roll: 90, pose: 19 }),
     SIG.wave("bloom", "Fourth Form: Blooming Flame Undulation", { say: "§6§lFourth Form: Blooming Flame Undulation!", color: C.fire, radius: 4.5, dmg: 18, cd: 200, cost: 70, pose: 24 }),
-    { id: "tiger", label: "Fifth Form: Flame Tiger", cd: 300, cost: 160, min: 2, max: 26, weight: 5,
+    { id: "tiger", label: "Fifth Form: Flame Tiger", cd: 240, cost: 105, min: 2, max: 26, weight: 8,
       run(e, s, t) {  // a real tiger of flame leaps from his sword
         busy(s, 22); face(e, aim(t)); setPose(e, 19); announce(e, "§6§lFifth Form: Flame Tiger!");
         later(4, () => { if (e.isValid && alive(t)) flameTiger(e, t, 46 * powerOf(e) / 100); });
@@ -4312,7 +4312,7 @@ const ACE = {
   forms: [{ label: "Fire Fist", power: 70, aura: C.fire }, { label: "Flame Emperor", power: 115, aura: C.fire }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
-    { id: "hiken", label: "Fire Fist", cd: 220, cost: 150, min: 2, max: 34, weight: 6,
+    { id: "hiken", label: "Fire Fist", cd: 190, cost: 100, min: 2, max: 34, weight: 9,
       run(e, s, t) {  // his fist bursts into a giant fist of flame and flies at the enemy
         busy(s, 20); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lFIRE FIST! §7— Hiken");
         chargeOrb(e, t, 6, C.fire, 0.4, 1.2, 4);
