@@ -1697,6 +1697,11 @@ def deku(m, form):
         if cowl:
             for i in range(0, h, 2):
                 _put(px, w, h, int(w * 0.5 + math.sin(i * 0.9) * w * 0.3), i, bolt)
+            if form == "cowl45":  # 45%: twice the lightning, and red strain lines where the power tears at his body
+                for i in range(1, h, 2):
+                    _put(px, w, h, int(w * 0.3 + math.sin(i * 1.3 + 1) * w * 0.25), i, bolt)
+                for i in range(0, h, 5):
+                    _put(px, w, h, int(w * 0.7 + math.sin(i * 0.7) * w * 0.2), i, (220, 60, 60))
     torso = layered(suit, [suit_lines, region((0, 0, 1, 0.1), accent)])
     arm = layered(suit, [suit_lines, region((0, 0.7, 1, 1), (238, 238, 232) if not dark_form else (60, 62, 60)), region((0, 0.7, 1, 0.74), (200, 40, 40))])
     leg = layered(suit, [suit_lines, region((0, 0.66, 1, 1), (210, 40, 40)), region((0, 0.92, 1, 1), (40, 30, 30)),
@@ -1763,6 +1768,10 @@ def killua(m, form):
     leg = layered(white, [region((0, 0.5, 1, 0.82), SKIN), region((0, 0.82, 1, 1), (110, 70, 160))])
     base_body(m, torso, arm, leg, head)
     m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((60, 60, 70)))  # belt
+    claw = SC.swatch((236, 238, 246))
+    for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):  # the assassin's hand: nails grown into blades
+        for k in range(4):
+            SC.blade(m, arm_, [s_ * (4.6 + k * 0.9), 12.2, -1.6], [0, -1, -0.35], 1.8, 0.45, 0.3, claw)
     killua_hair(m, (214, 236, 255) if god else KIL_HAIR, god)
     if god:  # little arcs of electricity standing off his hair and arms
         bolt = SC.swatch((170, 230, 255))
@@ -1821,6 +1830,7 @@ def denji(m, form):
                     if (x * 3 + y * 5) % 13 == 0:
                         _put(px, w, h, x, y, hd)
         head_skin = layered(hc, [grain])
+        m.cubes = [c for c in m.cubes if not (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5])]  # no human ears on the devil's head
         m.box("head", [-4.25, 24.0, 3.9], [8.5, 8.25, 0.35], head_skin)          # back
         m.box("head", [-4.25, 32.0, -4.25], [8.5, 0.35, 8.5], head_skin)         # top
         for x0 in (3.9, -4.25):

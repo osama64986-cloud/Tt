@@ -4547,9 +4547,11 @@ function updateFighter(e, tick) {
       tick - s.combatSince > (outmatched ? 20 : 40) && inForm >= hold && (outmatched || tick >= s.nextTransform) &&
       (outmatched || ctx.hp < def.thresholds[form] || (inForm > 400 && ctx.tPower > ctx.power * 0.8))) {
     let next = def.nextForm ? def.nextForm(form) : form + 1;
-    if (outmatched) {  // answer the opponent's CURRENT form with the first form that matches it — not the last one
+    if (outmatched) {  // answer the opponent's CURRENT form with the first form that matches it, skipping middle forms if
+      // needed — but never straight into the LAST form: that one only ever comes after the form before it
       const match = def.forms.findIndex((f, i) => i > form && f.power * (def.ego && i === def.ego ? 1.05 : 1) >= ctx.tPower * 1.05);
-      next = match >= 0 ? match : def.forms.length - 1;
+      const last = def.forms.length - 1;
+      next = Math.min(match >= 0 ? match : last, Math.max(form + 1, last - 1));
     }
     s.formSince = tick;
     const nf = def.forms[next];
@@ -5285,7 +5287,7 @@ function nearArena(p) {
   return null;
 }
 
-const VICTORY = { "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
+const VICTORY = { "ab:deku": 22, "ab:killua": 0, "ab:denji": 27, "ab:rengoku": 21, "ab:ace": 26, "ab:goku": 34, "ab:vegeta": 31, "ab:frieza": 31, "ab:luffy": 27, "ab:gojo": 26, "ab:sukuna": 21, "ab:zoro": 0, "ab:yuji_final": 0, "ab:sasuke": 0, "ab:sasuke_kid": 0, "ab:sasuke_war": 0, "ab:sasuke_adult": 0, "ab:ichigo": 0 };
 const ENTRANCE_LINES = {
   "ab:goku": "§6§lHey, it's me, Goku! §7Let's fight!", "ab:vegeta": "§9§lKakarot! §7The Prince of all Saiyans is here.",
   "ab:frieza": "§5§lOhohoho... §7you should be honoured.", "ab:gojo": "§b§lThroughout heaven and earth, I alone am the honoured one.",
