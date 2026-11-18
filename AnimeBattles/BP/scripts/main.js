@@ -4368,7 +4368,7 @@ const GOHAN = {
 const BAKUGO = {
   name: "Bakugo", color: "§6", energy: 1100, regen: 22, energyName: "§6NITRO",
   dodge: () => 0.11,
-  forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 108, aura: C.ember }],
+  forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 104, aura: C.ember }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
   abilities: [
     SIG.ball("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, count: 1, size: 1.4, dmg: 13, speed: 2.4, cd: 130, cost: 50, charge: 2, pose: 5, radius: 3 }),
