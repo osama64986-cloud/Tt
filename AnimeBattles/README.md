@@ -37,7 +37,7 @@
 - **سون غوهان (Dragon Ball)** (ذكاء 8):
   - **التحولات:** العادي بنظاراته ← سوبر ساين 2 مع برق ← Ultimate (الصوفي) ← **Beast**، بشعر فضي طويل وعيون حمرا.
   - **القدرات:** وابل كي، Masenko، Kamehameha، انفجار الغضب، هجمة Ultimate، **Special Beam Cannon** (ضربة بيكولو)، و**Beast Kamehameha**.
-- **كاتسوكي باكوغو (My Hero Academia)** (ذكاء 8):
+- **كاتسوكي باكوغو (My Hero Academia)** (ذكاء 8، أضعف من ديكو):
   - **التحولات:** Explosion ← **Cluster**، تطلع انفجارات من كفوفه.
   - **القدرات:** انفجار، AP Shot، Stun Grenade، هجمة انفجارات، **Howitzer Impact**، Cluster، و**Max Cannon** من قفازاته القنابل.
 - **غون فريكس (Hunter × Hunter)** (ذكاء 4):

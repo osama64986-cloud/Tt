@@ -27,6 +27,8 @@
 
 **الشخصيات الجديدة (1.18):** ديكو 168، تشينسو مان 150، إيس 115، كيلوا 110، رينغوكو 95.
 
+**الشخصيات الجديدة (1.19):** غوهان 700 (Beast، تحت فيجيتا)، غون الكبير 200، أكازا 140 (أقوى من رينغوكو مثل الأنمي)، ميغومي 112 (تحت غوجو وسوكونا)، باكوغو 108 (تحت ديكو).
+
 ## اللي يخلي القتال خرافي (من بحث مودات الجافا)
 مصادر البحث: Jujutsu Craft (Sorcery Fight)، Mob Battle Mod لـ flemmli97، Jujutsu Craft Mob Battle Addon (حوالي 1.5 مليون تنزيل)،
 Dragon Block C / Dragon Ball: Re، Epic Fight، Anime Assembly، AnimeBosses، The Anime Universe.
