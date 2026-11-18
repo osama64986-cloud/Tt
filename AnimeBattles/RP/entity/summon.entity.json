@@ -19,7 +19,8 @@
     "susanoo_itachi": "textures/entity/summon/susanoo_itachi",
     "susanoo_kakashi": "textures/entity/summon/susanoo_kakashi",
     "crow": "textures/entity/summon/crow",
-    "hound": "textures/entity/summon/hound"
+    "hound": "textures/entity/summon/hound",
+    "flame_tiger": "textures/entity/summon/flame_tiger"
    },
    "geometry": {
     "susanoo": "geometry.ab.summon_susanoo",
@@ -33,7 +34,8 @@
     "susanoo_itachi": "geometry.ab.summon_susanoo_itachi",
     "susanoo_kakashi": "geometry.ab.summon_susanoo_kakashi",
     "crow": "geometry.ab.summon_crow",
-    "hound": "geometry.ab.summon_hound"
+    "hound": "geometry.ab.summon_hound",
+    "flame_tiger": "geometry.ab.summon_flame_tiger"
    },
    "animations": {
     "base": "animation.ab.summon_base",
@@ -61,7 +63,7 @@
       "flap": "query.property('ab:kind') == 10"
      },
      {
-      "trot": "query.property('ab:kind') == 11"
+      "trot": "query.property('ab:kind') == 11 || query.property('ab:kind') == 12"
      },
      {
       "swing": "query.property('ab:pose') == 1"

@@ -431,6 +431,36 @@ def hound():
     return m
 
 
+def flame_tiger():
+    """Rengoku's Fifth Form: a tiger made of flame — glowing orange body with red stripes, a roaring open jaw, four
+    legs mid-leap and a whipping tail of fire. Faces -z."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 10, 0], "head": [0, 13, -7], "jaw": [0, 12.4, -10], "rightArm": [2.2, 9.6, -4.6],
+                      "leftArm": [-2.2, 9.6, -4.6], "rightLeg": [2.2, 10, 4.6], "leftLeg": [-2.2, 10, 4.6], "tails": [0, 11.5, 6.2]})
+    F, F2, R, W = S.swatch((255, 150, 40), 200), S.swatch((255, 200, 80), 185), S.swatch((210, 50, 20), 215), S.swatch((255, 245, 210), 220)
+    blob(m, "body", [0, 10.4, 0.5], [3.0, 2.8, 6.2], F, slices=5, axis="z")
+    blob(m, "body", [0, 10.6, -3.6], [3.3, 3.2, 2.8], F2, slices=4)                          # chest
+    for k in range(5):                                                                        # stripes
+        S.obox(m, "body", [0, 12.8, -2.0 + k * 1.9], [5.2, 0.8, 0.6], R, (0, 1, 0), 0, [1, 0, 0])
+    blob(m, "head", [0, 14.0, -8.0], [2.6, 2.4, 2.6], F, slices=4)
+    blob(m, "head", [0, 13.0, -10.4], [1.6, 1.2, 1.6], F2, slices=3, axis="z")              # muzzle
+    for sx in (1, -1):
+        blade(m, "head", [sx * 1.7, 16.0, -7.6], [sx * 0.3, 1, 0.1], 2.0, 1.6, 0.5, R, width_dir=[0, 0, 1])   # ears
+        box_at(m, "head", [sx * 1.1, 14.9, -10.2], [0.6, 0.5, 0.3], W)                         # blazing eyes
+        blade(m, "jaw", [sx * 0.7, 12.2, -11.2], [0, 1, 0], 1.0, 0.4, 0.3, W)                 # fangs
+    blob(m, "jaw", [0, 11.9, -10.6], [1.3, 0.5, 1.6], R, slices=2, axis="z")                 # open lower jaw
+    for sx, bone in ((1, "rightArm"), (-1, "leftArm")):
+        tube(m, bone, [[sx * 2.2, 9.6, -4.6], [sx * 2.3, 5, -6.2], [sx * 2.3, 1.4, -7.4]], [1.3, 1.0, 0.9], F)
+        blob(m, bone, [sx * 2.3, 0.9, -7.8], [1.2, 0.8, 1.4], F2, slices=2)
+    for sx, bone in ((1, "rightLeg"), (-1, "leftLeg")):
+        blob(m, bone, [sx * 2.2, 9.6, 4.8], [1.5, 2.4, 1.9], F, slices=3)
+        tube(m, bone, [[sx * 2.2, 8, 5.2], [sx * 2.3, 4, 7.0], [sx * 2.3, 1.2, 6.2]], [1.0, 0.8, 0.8], F)
+    curve_tube(m, "tails", [[0, 11.5, 6.2], [0, 13.5, 9.4], [0, 16.5, 11.0], [0, 18.0, 10.2]], 0.9, 0.3, [F, R], n=2)
+    for k in range(6):                                                                        # flames licking off its back
+        blade(m, "body", [(k % 2 - 0.5) * 2.4, 13.2, -3 + k * 1.6], [(k % 2 - 0.5) * 0.4, 1, 0.3], 3.2, 1.4, 0.5, F2)
+    return m
+
+
 def _ghost(fn, k=0.38):
     """A see-through Susanoo: every part keeps its colour but only ~38% of its opacity, so the fighter standing in its
     chest stays clearly visible."""
@@ -461,5 +491,5 @@ def _ghost(fn, k=0.38):
 SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta", gamabunta),
            ("susanoo_ribs", _ghost(susanoo_ribs)), ("susanoo_armour", _ghost(susanoo_armour)), ("muzan_infant", muzan_infant), ("mahoraga", mahoraga),
            ("susanoo_madara", _ghost(susanoo_madara)), ("susanoo_itachi", _ghost(susanoo_itachi)), ("susanoo_kakashi", _ghost(susanoo_kakashi)),
-           ("crow", crow), ("hound", hound)]
+           ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound"}   # opaque flesh; the rest are glowing chakra

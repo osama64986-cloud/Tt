@@ -1564,6 +1564,413 @@ def kakashi(m, form):
     m.box("rightLeg", [2.2, 6.6, -1.2], [1.0, 2.4, 2.4], solid((36, 38, 46)))
 
 
+# ------------------------------------------------------------------ five new fighters: faces
+M.FACE32.update({
+    "deku": dict(eye="round", brow="angled", mouth="clench", marks=["freckles"]),
+    "deku_cowl": dict(eye="round", brow="sharp", mouth="clench", marks=["freckles", "cowl_veins"]),
+    "deku_dark": dict(eye="narrow", brow="sharp", mouth="none", marks=["freckles", "deku_scars", "dark_mask"]),
+    "killua": dict(eye="narrow", brow="flat", mouth="smirk", marks=["cat_mouth"]),
+    "killua_god": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["bolt_eyes"]),
+    "denji": dict(eye="narrow", brow="angled", mouth="big_grin", marks=["shark_teeth"]),
+    "chainsaw": dict(eye="round", brow="none", mouth="none", marks=["chainsaw_face"]),
+    "chainsaw_black": dict(eye="round", brow="none", mouth="none", marks=["chainsaw_face", "chainsaw_black"]),
+    "rengoku": dict(eye="round", brow="sharp", mouth="smile", marks=["rengoku_brows", "rengoku_eyes"]),
+    "rengoku_ninth": dict(eye="round", brow="sharp", mouth="clench", marks=["rengoku_brows", "rengoku_eyes", "flame_aura_face"]),
+    "ace": dict(eye="narrow", brow="angled", mouth="smirk", marks=["freckles"]),
+    "ace_flame": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["freckles", "ember_eyes"]),
+})
+_face32_prev3 = M.face32
+
+
+def face32_new5(px, W, H, spec, hair, iris, skin):
+    _face32_prev3(px, W, H, spec, hair, iris, skin)
+    marks = spec.get("marks", [])
+    k = W / 32.0
+    open_eyes = M.EXPR not in ("blink", "hurt")
+
+    def put(x, y, c):
+        for dx in range(int(k)):
+            for dy in range(int(k)):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    if "freckles" in marks:  # freckles across both cheeks
+        for x, y in ((6, 22), (8, 23), (7, 24), (25, 22), (23, 23), (24, 24)):
+            put(x, y, (176, 112, 84))
+    if "cowl_veins" in marks:  # One For All's green lightning crackling over his face
+        for x, y in ((3, 12), (4, 13), (4, 14), (5, 15), (28, 26), (27, 27), (27, 28), (26, 29), (2, 27), (3, 28)):
+            put(x, y, (120, 255, 150))
+    if "deku_scars" in marks:
+        for i in range(5):
+            put(22 + i, 12 + i, (150, 90, 80))
+    if "dark_mask" in marks:  # the cloth over his mouth and nose, Dark Deku
+        for y in range(23, 32):
+            for x in range(32):
+                put(x, y, (36, 40, 38) if (x + y) % 7 else (28, 32, 30))
+    if "cat_mouth" in marks:  # Killua's cat-like smirk
+        for x, y in ((14, 26), (15, 27), (16, 26), (17, 27), (18, 26)):
+            put(x, y, (110, 60, 60))
+    if "bolt_eyes" in marks and open_eyes:  # Godspeed: the eyes glow electric blue
+        for cx in (10, 21):
+            for x in range(cx - 1, cx + 3):
+                for y in (18, 19, 20):
+                    put(x, y, (150, 230, 255))
+            put(cx, 19, (255, 255, 255)); put(cx + 1, 19, (255, 255, 255))
+    if "shark_teeth" in marks:  # Denji's jagged shark grin
+        for x in range(10, 22, 2):
+            put(x, 26, (250, 250, 250)); put(x + 1, 27, (250, 250, 250))
+    if "chainsaw_face" in marks:  # Chainsaw Man: the devil's head — no human face, wide sockets and a mouth full of jagged teeth
+        base = (226, 96, 50) if "chainsaw_black" not in marks else (40, 38, 42)
+        dark_ = (150, 52, 30) if "chainsaw_black" not in marks else (16, 14, 18)
+        for y in range(32):
+            for x in range(32):
+                put(x, y, base if (x * 3 + y * 5) % 13 else dark_)
+        for cx in (9, 22):  # round empty eye sockets with pinpoint pupils
+            for y in range(15, 21):
+                for x in range(cx - 3, cx + 3):
+                    if (x - cx + 0.5) ** 2 + (y - 17.5) ** 2 < 9:
+                        put(x, y, (250, 246, 236))
+            put(cx, 17, (20, 16, 18)); put(cx - 1, 18, (20, 16, 18))
+        for y in range(22, 30):  # the gaping mouth
+            for x in range(6, 26):
+                put(x, y, (40, 10, 12))
+        for x in range(6, 26, 2):  # rows of sharp teeth top and bottom
+            put(x, 22, (250, 250, 244)); put(x + 1, 23, (250, 250, 244))
+            put(x, 29, (250, 250, 244)); put(x + 1, 28, (250, 250, 244))
+    if "rengoku_brows" in marks:  # thick forked eyebrows: yellow, tipped red
+        for cx, sgn in ((10, -1), (21, 1)):
+            for i in range(6):
+                put(cx - 2 + i, 14 - (i // 3), (250, 196, 40))
+            put(cx + 4, 12, (210, 50, 30)); put(cx + 4, 13, (210, 50, 30))
+    if "rengoku_eyes" in marks and open_eyes:  # wide gold eyes fading to red at the centre
+        for cx in (10, 21):
+            for x in range(cx - 1, cx + 3):
+                for y in (17, 18, 19, 20):
+                    put(x, y, (250, 190, 40) if y < 19 else (230, 90, 30))
+            put(cx, 18, (255, 250, 230))
+    if "flame_aura_face" in marks:
+        for x, y in ((2, 8), (3, 9), (29, 8), (28, 9), (1, 12), (30, 12)):
+            put(x, y, (255, 150, 40))
+    if "ember_eyes" in marks and open_eyes:
+        for cx in (10, 21):
+            put(cx, 19, (255, 140, 40)); put(cx + 1, 19, (255, 140, 40))
+
+
+M.face32 = face32_new5
+
+
+# ------------------------------------------------------------------ Izuku Midoriya (Deku) — My Hero Academia
+DEKU_HAIR = (36, 104, 72)
+
+
+@M.smooth_hair
+def deku_hair(m, col):
+    shell(m, col, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(col)
+    # a bushy, messy mop of curls: short spikes in every direction
+    for x, z, dx, dz, L in ((0, -2.0, 0.0, -0.5, 4.2), (2.4, -1.6, 0.6, -0.4, 4.0), (-2.4, -1.6, -0.6, -0.4, 4.0), (3.4, 0.6, 1.0, 0.1, 3.8),
+                            (-3.4, 0.6, -1.0, 0.1, 3.8), (1.4, 1.2, 0.4, 0.4, 4.2), (-1.4, 1.2, -0.4, 0.4, 4.2), (0, 3.0, 0, 1.0, 4.0),
+                            (2.6, 2.8, 0.7, 0.8, 3.6), (-2.6, 2.8, -0.7, 0.8, 3.6)):
+        m.strand([x, 32.0, z], [dx, 0.9, dz], L, 3.2, hp, bone="hair", thick=0.85, bend=(dx * 0.1, -0.12, dz * 0.1))
+    for x, tilt in ((-2.6, -0.35), (-0.9, -0.1), (0.9, 0.1), (2.6, 0.35)):  # curly bangs
+        m.strand([x, 31.6, -4.1], [tilt, -0.7, -0.5], 2.8, 2.4, hp, bone="hair", thick=0.8, bend=(0, 0.2, -0.1))
+    for s_ in (1, -1):
+        m.strand([s_ * 4.1, 30.0, -0.6], [s_ * 0.5, -0.6, 0.1], 3.0, 2.2, hp, bone="hair", thick=0.7)
+
+
+def deku(m, form):
+    """Deku's hero costume (the green jumpsuit with dark accents, red boots, white gloves, the mouthguard round his
+    neck). Full Cowl: green lightning crackles over him. Dark Deku: the torn, dirty dark cloak and mask of his
+    vigilante days."""
+    dark_form = form == "dark"
+    cowl = form in ("cowl20", "cowl45")
+    key = "deku_dark" if dark_form else ("deku_cowl" if cowl else "deku")
+    head = head_paint(DEKU_HAIR, (40, 150, 90), True, key)
+    suit, accent = ((40, 60, 52) if dark_form else (46, 120, 78)), (26, 30, 32)
+    bolt = (120, 255, 150)
+
+    def suit_lines(face, px, w, h, base):  # the black lines down the jumpsuit (and the green lightning in Full Cowl)
+        for y in range(h):
+            for x in (int(w * 0.25), int(w * 0.75)):
+                if face in ("north", "south"):
+                    _put(px, w, h, x, y, accent)
+        if cowl:
+            for i in range(0, h, 2):
+                _put(px, w, h, int(w * 0.5 + math.sin(i * 0.9) * w * 0.3), i, bolt)
+    torso = layered(suit, [suit_lines, region((0, 0, 1, 0.1), accent)])
+    arm = layered(suit, [suit_lines, region((0, 0.7, 1, 1), (238, 238, 232) if not dark_form else (60, 62, 60)), region((0, 0.7, 1, 0.74), (200, 40, 40))])
+    leg = layered(suit, [suit_lines, region((0, 0.66, 1, 1), (210, 40, 40)), region((0, 0.92, 1, 1), (40, 30, 30)),
+                         region((0.15, 0.72, 0.85, 0.8), (240, 240, 236), faces=("north",))])  # chunky red boots, white straps
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-2.4, 22.4, -2.6], [4.8, 1.6, 5.2], solid((236, 236, 228)))  # the mouthguard pulled down round his neck
+    m.box("body", [-4.3, 11.6, -2.3], [8.6, 1.2, 4.6], solid(accent))            # utility belt
+    for x0 in (-3.8, 2.4):
+        m.box("body", [x0, 11.0, -2.5], [1.4, 1.8, 1.2], solid((60, 64, 62)))
+    both_legs(m, [0.2, 5.6, -2.5], [3.6, 1.4, 0.6], solid((40, 44, 42)))      # knee pads
+    both_arms(m, [4.1, 15.4, -2.2], [3.8, 0.8, 4.4], solid((200, 40, 40)))    # red glove cuffs
+    if dark_form:  # the ragged dark cloak and hood of his vigilante days
+        cloak = (34, 36, 34)
+
+        def rags(face, px, w, h, base):
+            for x in range(w):
+                for y in range(int(h * 0.88) + (x * 7 % 3), h):
+                    px[x, y] = (0, 0, 0, 0)
+        m.box("body", [-4.8, 4.0, 2.2], [9.6, 20.4, 0.6], layered(cloak, [rags]))
+        m.box("body", [-5.0, 21.0, -2.8], [10.0, 3.2, 5.6], solid(cloak))
+        both_arms(m, [3.9, 18.0, -2.4], [4.3, 6.2, 4.8], layered(cloak, [rags]))
+        # Blackwhip: black tendrils of energy writhing up out of his back, edged in green
+        whip, glow = SC.swatch((16, 22, 18), 225), SC.swatch((90, 220, 120), 200)
+        for k, (sx, up) in enumerate(((1, 1.0), (-1, 1.0), (1, 0.3), (-1, 0.3))):
+            pts = SC.curve_tube(m, "body", [[sx * 1.2, 21 - k, 2.6], [sx * 4.5, 23 + up * 3, 5.5], [sx * 8.5, 22 + up * 5, 6.5], [sx * 11, 18 + up * 6, 4.5]],
+                                0.7, 0.25, [whip, whip, glow], n=2)
+            SC.blade(m, "body", pts[-1], [sx * 0.6, -0.4, -0.5], 1.6, 0.8, 0.4, glow)
+    deku_hair(m, DEKU_HAIR)
+
+
+# ------------------------------------------------------------------ Killua Zoldyck — Hunter x Hunter
+KIL_HAIR = (232, 234, 242)
+
+
+@M.smooth_hair
+def killua_hair(m, col, god):
+    shell(m, col, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(col)
+    # fluffy silver hair bursting out in every direction
+    up = 1.0 if god else 0.8
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        dx, dz = math.sin(a), -math.cos(a)
+        m.strand([dx * 2.8, 31.8, dz * 2.8], [dx * 0.95, up * 0.6, dz * 0.95], 4.4 if not god else 5.2, 3.2, hp, bone="hair", thick=0.8)
+    for x, z in ((0, 0), (1.6, 1.2), (-1.6, 1.2), (0, -1.6)):
+        m.strand([x, 32.2, z], [x * 0.3, 1, z * 0.3], 4.6 if not god else 5.6, 3.2, hp, bone="hair", thick=0.8)
+    for x, tilt in ((-2.6, -0.3), (-0.8, -0.05), (1.0, 0.1), (2.8, 0.35)):
+        m.strand([x, 31.6, -4.1], [tilt, -0.7, -0.5], 2.6, 2.2, hp, bone="hair", thick=0.75)
+
+
+def killua(m, form):
+    """Killua: a white short-sleeved top over a navy long-sleeved shirt, white shorts, purple boots, pale skin,
+    fluffy silver hair. Godspeed: the hair crackles with blue lightning and the eyes glow."""
+    god = form == "godspeed"
+    head = head_paint(KIL_HAIR if not god else (214, 236, 255), (60, 130, 220), True, "killua_god" if god else "killua")
+    navy, white = (40, 44, 92), (240, 240, 236)
+
+    def zig(face, px, w, h, base):  # Godspeed: lightning zigzags over the body
+        if god:
+            for i in range(0, h, 2):
+                _put(px, w, h, int(w * 0.5 + (i % 6 - 3) * w * 0.08), i, (170, 230, 255))
+    torso = layered(white, [zig, region((0, 0, 1, 0.08), navy)])
+    arm = layered(navy, [zig, region((0, 0, 1, 0.28), white), region((0, 0.86, 1, 1), SKIN)])
+    leg = layered(white, [region((0, 0.5, 1, 0.82), SKIN), region((0, 0.82, 1, 1), (110, 70, 160))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((60, 60, 70)))  # belt
+    killua_hair(m, (214, 236, 255) if god else KIL_HAIR, god)
+    if god:  # little arcs of electricity standing off his hair and arms
+        bolt = SC.swatch((170, 230, 255))
+        for k in range(6):
+            a = 2 * math.pi * k / 6
+            SC.blade(m, "hair", [math.sin(a) * 4.2, 33.5, -math.cos(a) * 4.2], [math.sin(a) * 0.6, 1, -math.cos(a) * 0.6], 2.4, 0.5, 0.3, bolt)
+
+
+# ------------------------------------------------------------------ Denji — Chainsaw Man
+DEN_HAIR = (232, 200, 96)
+
+
+def chainsaw_blade(m, bone, base, d, length, width, metal, teeth):
+    """A chainsaw bar sticking out of the body: the steel bar with a row of teeth along its edge."""
+    SC.blade(m, bone, base, d, length, width, 0.7, metal, taper=False, width_dir=[1, 0, 0] if abs(d[0]) < 0.5 else [0, 0, 1])
+    dn = SC.norm(d)
+    for i in range(int(length / 1.2)):
+        p = [base[j] + dn[j] * (0.8 + i * 1.2) for j in range(3)]
+        SC.obox(m, bone, [p[0], p[1], p[2]], [0.5, 0.5, 0.5], teeth, d, 45)
+
+
+def denji(m, form):
+    """Denji: devil hunter uniform (white shirt, black tie, black trousers), the pull-cord hanging from his chest,
+    messy blond hair. Chainsaw Man: his head becomes the devil's (an orange head, a chainsaw bar out of his
+    forehead, a jagged grin) and chainsaws burst from both forearms. The true black Chainsaw Man is darker still."""
+    saw = form in ("chainsaw", "black")
+    black = form == "black"
+    key = "chainsaw_black" if black else ("chainsaw" if saw else "denji")
+    head = head_paint(DEN_HAIR, (70, 60, 50), True, key)
+    shirt, tie, pants = (238, 238, 232), (24, 24, 28), (30, 30, 36)
+    if black:
+        shirt = (52, 50, 56)
+
+    def tie_cord(face, px, w, h, base):
+        if face == "north":
+            for y in range(int(h * 0.05), int(h * 0.62)):
+                for x in range(int(w * 0.44), int(w * 0.56)):
+                    _put(px, w, h, x, y, tie)
+            for y in range(int(h * 0.45), int(h * 0.9)):  # the starter cord hanging from his chest
+                _put(px, w, h, int(w * 0.62), y, (220, 120, 40))
+    torso = layered(shirt, [tie_cord, region((0, 0.92, 1, 1), pants)])
+    arm = layered(shirt, [region((0, 0.86, 1, 1), SKIN if not black else (60, 56, 60))])
+    leg = layered(pants, [region((0, 0.9, 1, 1), (20, 20, 22))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [0.6, 15.2, -2.6], [1.2, 1.4, 0.6], solid((220, 120, 40)))  # the cord's handle
+    metal, teeth = SC.swatch((196, 200, 208)), SC.swatch((90, 92, 100))
+    if black:
+        metal, teeth = SC.swatch((70, 70, 78)), SC.swatch((30, 30, 34))
+    if saw:  # the devil's head all round (sides, back, top), not only the face
+        hc = (226, 96, 50) if not black else (40, 38, 42)
+        hd = dark(hc, 0.78)
+
+        def grain(face, px, w, h, b):
+            for y in range(h):
+                for x in range(w):
+                    if (x * 3 + y * 5) % 13 == 0:
+                        _put(px, w, h, x, y, hd)
+        head_skin = layered(hc, [grain])
+        m.box("head", [-4.25, 24.0, 3.9], [8.5, 8.25, 0.35], head_skin)          # back
+        m.box("head", [-4.25, 32.0, -4.25], [8.5, 0.35, 8.5], head_skin)         # top
+        for x0 in (3.9, -4.25):
+            m.box("head", [x0, 24.0, -4.25], [0.35, 8.25, 8.5], head_skin)       # sides
+        # the chainsaw bar out of his forehead and one out of each forearm
+        chainsaw_blade(m, "head", [0, 30.0, -4.2], [0, 0.55, -1], 9.0, 2.0, metal, teeth)
+        SC.box_at(m, "head", [0, 30.0, -4.4], [2.6, 2.4, 1.2], SC.swatch((60, 60, 66)))
+        for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            chainsaw_blade(m, arm_, [s_ * 6.0, 13.0, -2.2], [0, -0.35, -1], 10.0, 1.8, metal, teeth)
+            SC.box_at(m, arm_, [s_ * 6.0, 13.6, -2.2], [2.2, 2.2, 1.4], SC.swatch((60, 60, 66)))
+        if black:  # the true form: ragged scarf of guts and a darker body
+            SC.curve_tube(m, "body", [[0, 23.5, 2.6], [1.5, 20, 4.8], [3, 14, 5.5]], 1.2, 0.5, SC.swatch((140, 30, 36)), n=2, flat=0.4, width=[1, 0, 0])
+    else:
+        shell(m, DEN_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
+        hp = M.hair_paint(DEN_HAIR)
+        for x, z, lean in ((0, -1.6, 0), (2.4, -1.0, 0.6), (-2.4, -1.0, -0.6), (3.2, 1.4, 0.9), (-3.2, 1.4, -0.9), (1.2, 2.6, 0.3), (-1.2, 2.6, -0.3)):
+            m.strand([x, 32.0, z], [lean, 0.8, z * 0.3], 3.6, 2.8, hp, bone="hair", segs=3, thick=0.75, bend=(x * 0.05, -0.1, 0))
+        for x, tilt in ((-2.6, -0.3), (-0.8, -0.05), (1.0, 0.1), (2.8, 0.35)):
+            m.strand([x, 31.6, -4.1], [tilt, -0.7, -0.5], 2.8, 2.2, hp, bone="hair", segs=3, thick=0.7)
+
+
+# ------------------------------------------------------------------ Kyojuro Rengoku — Demon Slayer
+REN_HAIR, REN_TIP = (250, 200, 50), (220, 60, 30)
+
+
+@M.smooth_hair
+def rengoku_hair(m):
+    """A flaming mane: yellow spikes flaring up and back, each tipped in red — and two long bangs."""
+    shell(m, REN_HAIR, hairline=30.8, sideburn=False, teeth=0.8)
+    hp, tp = M.hair_paint(REN_HAIR), M.hair_paint(REN_TIP)
+    spikes = [(0, -1.8, 0.0, 0.9, -0.2, 5.0), (2.4, -1.2, 0.6, 0.9, 0.0, 5.0), (-2.4, -1.2, -0.6, 0.9, 0.0, 5.0),
+              (3.4, 1.0, 1.0, 0.7, 0.4, 5.4), (-3.4, 1.0, -1.0, 0.7, 0.4, 5.4), (1.4, 1.8, 0.4, 0.8, 0.8, 5.6),
+              (-1.4, 1.8, -0.4, 0.8, 0.8, 5.6), (0, 3.2, 0, 0.4, 1.0, 6.0), (2.6, 3.0, 0.8, 0.3, 1.0, 5.4), (-2.6, 3.0, -0.8, 0.3, 1.0, 5.4)]
+    for x, z, dx, dy, dz, L in spikes:
+        m.strand([x, 32.0, z], [dx, dy, dz], L, 3.4, hp, bone="hair", thick=0.8)
+        n = SC.norm([dx, dy, dz])
+        tip = [x + n[0] * L * 0.78, 32.0 + n[1] * L * 0.78, z + n[2] * L * 0.78]
+        m.strand(tip, [dx, dy, dz], L * 0.45, 1.8, tp, bone="hair", segs=3, thick=0.7)  # red flame tips
+    for s_ in (1, -1):  # the two long bangs framing his face
+        m.strand([s_ * 2.0, 31.8, -4.2], [s_ * 0.3, -1, -0.15], 5.0, 2.2, hp, bone="hair", thick=0.7)
+        m.strand([s_ * 4.1, 30.6, -1.0], [s_ * 0.3, -1, 0.2], 5.0, 2.4, hp, bone="hair", thick=0.7)
+    m.strand([0, 30.0, 4.2], [0, -0.7, 0.7], 5.0, 3.0, hp, bone="hair", thick=0.7)
+
+
+def rengoku(m, form):
+    """The Flame Hashira: black Demon Slayer uniform, a white haori whose hem burns with orange and red flames, a
+    flame-guard sword, gold eyes and forked brows. Ninth Form: flames lick round him."""
+    ninth = form == "ninth"
+    head = head_paint(REN_HAIR, (250, 190, 40), True, "rengoku_ninth" if ninth else "rengoku")
+    uni = (30, 30, 40)
+    buttons = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (230, 200, 120)) for y in range(int(h * 0.1), int(h * 0.7), max(2, h // 6))] if f == "north" else None
+    base_body(m, layered(uni, [buttons]), arm_paint(uni, sleeve_to=0.88),
+              layered(uni, [region((0, 0.5, 1, 0.84), (236, 234, 228)), region((0, 0.84, 1, 1), (40, 34, 30))]), head)
+    m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.4, 5.0], solid((240, 240, 236)))  # white belt
+    m.box("body", [-2.2, 22.6, -2.4], [4.4, 1.8, 4.8], solid(uni))
+
+    def flames_hem(face, px, w, h, base):  # the haori's flame pattern: orange flames with red tips rising from the hem
+        for x in range(w):
+            top = int(h * (0.55 + 0.12 * math.sin(x * 1.3)))
+            for y in range(top, h):
+                _put(px, w, h, x, y, (240, 120, 30) if y > top + 2 else (210, 50, 30))
+    haori = layered((244, 242, 236), [flames_hem])
+    m.box("body", [-4.6, 4.5, 2.1], [9.2, 19.7, 0.5], haori)
+    for x0 in (-4.6, 2.2):
+        m.box("body", [x0, 4.5, -2.6], [2.4, 19.7, 0.5], haori)
+    both_arms(m, [3.5, 13.6, -2.7], [5.0, 10.6, 5.4], haori)
+    flame_st = dict(NICHIRIN, wrap=(30, 30, 40), diamond=(220, 60, 30), metal=(214, 92, 36), blade=(220, 100, 40), edge=(255, 200, 120))
+    M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, flame_st)
+    M.sheath(m, (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, flame_st)
+    rengoku_hair(m)
+    if ninth:  # flames rising round his shoulders
+        fl = SC.swatch((255, 140, 40), 210)
+        for k in range(6):
+            a = math.pi * (0.1 + 0.8 * k / 5)
+            SC.blade(m, "body", [math.cos(a) * 5.5, 20, math.sin(a) * 3 + 2], [math.cos(a) * 0.4, 1, 0.3], 4.5, 1.8, 0.6, fl)
+
+
+# ------------------------------------------------------------------ Portgas D. Ace — One Piece
+ACE_HAIR = (26, 24, 30)
+
+
+def ace(m, form):
+    """Fire Fist Ace: bare-chested and freckled, black shorts, an orange belt with his 'A' buckle and a dagger,
+    black boots, the red bead necklace, the ASCE tattoo on his left arm, Whitebeard's mark on his back and the
+    orange cowboy hat with its two faces. Flame Emperor: his arms and shoulders become living fire."""
+    flame = form == "flame"
+    head = head_paint(ACE_HAIR, (40, 30, 30), True, "ace_flame" if flame else "ace")
+
+    def back_mark(face, px, w, h, base):  # Whitebeard's jolly roger, purple, across his back
+        if face == "south":
+            cx, cy, r = w / 2, h * 0.4, min(w, h) * 0.28
+            for y in range(h):
+                for x in range(w):
+                    d = math.hypot(x - cx, y - cy)
+                    if abs(d - r) < 0.9 or (abs(x - cx) - abs(y - cy) < 0.6 and abs(x - cx) - abs(y - cy) > -0.6 and d > r * 1.1 and d < r * 1.8):
+                        _put(px, w, h, x, y, (110, 50, 140))
+    def pecs(face, px, w, h, base):
+        if face == "north":
+            for x in range(int(w * 0.2), int(w * 0.8)):
+                _put(px, w, h, x, int(h * 0.35), dark(SKIN, 0.82))
+            for y in range(int(h * 0.4), int(h * 0.85)):
+                _put(px, w, h, w // 2, y, dark(SKIN, 0.84))
+    torso = layered(SKIN, [pecs, back_mark, region((0, 0.86, 1, 1), (40, 36, 40))])
+
+    def asce(face, px, w, h, base):  # A S C E down his left upper arm (the S crossed out)
+        if face == "west":
+            for i, y in enumerate(range(int(h * 0.12), int(h * 0.5), max(2, int(h * 0.09)))):
+                for x in range(int(w * 0.35), int(w * 0.65)):
+                    _put(px, w, h, x, y, (40, 50, 110))
+            _put(px, w, h, int(w * 0.3), int(h * 0.22), (180, 30, 30)); _put(px, w, h, int(w * 0.7), int(h * 0.2), (180, 30, 30))
+    arm = layered(SKIN, [asce] + ([region((0, 0.5, 1, 0.8), (255, 170, 60)), region((0, 0.8, 1, 1), (255, 220, 120))] if flame else []))  # Flame Emperor: forearms and hands burning bright
+    leg = layered((26, 26, 30), [region((0, 0.6, 1, 0.68), (40, 40, 46)), region((0, 0.68, 1, 1), (20, 20, 24))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-4.4, 11.4, -2.4], [8.8, 1.6, 4.8], layered((236, 140, 40), [region((0.4, 0.1, 0.6, 0.9), (250, 210, 80), faces=("north",))]))  # belt + A buckle
+    m.box("body", [3.6, 9.0, -1.2], [1.0, 3.6, 1.2], solid((90, 60, 40)))  # dagger at his hip
+    for i in range(10):  # the red bead necklace
+        a = math.pi * (0.15 + 0.7 * i / 9)
+        SC.box_at(m, "body", [math.cos(a) * 3.6, 22.2 - math.sin(a) * 2.4, -2.3], [0.9, 0.9, 0.9], SC.swatch((200, 30, 30)))
+    # hair: black, wavy, falling to his neck
+    shell(m, ACE_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(ACE_HAIR)
+    for x, tilt in ((-2.8, -0.35), (-1.0, -0.1), (0.8, 0.1), (2.6, 0.35)):
+        m.strand([x, 31.6, -4.1], [tilt, -0.8, -0.4], 3.2, 2.4, hp, bone="hair", segs=3, thick=0.7)
+    for s_ in (1, -1):
+        m.strand([s_ * 4.1, 30.4, -0.6], [s_ * 0.3, -1, 0.2], 4.2, 2.6, hp, bone="hair", segs=3, thick=0.7)
+        m.strand([s_ * 2.4, 30.4, 4.2], [s_ * 0.3, -1, 0.5], 4.4, 2.8, hp, bone="hair", segs=3, thick=0.7)
+    # the orange cowboy hat: crown (one smiling face, one sad face on the front), red band, wide brim
+    hat_c = (236, 130, 40)
+
+    def faces(face, px, w, h, base):
+        if face == "north":
+            for cx, smile in ((w * 0.32, True), (w * 0.68, False)):
+                _put(px, w, h, int(cx - 1), int(h * 0.3), (30, 30, 30)); _put(px, w, h, int(cx + 1), int(h * 0.3), (30, 30, 30))
+                for dx in (-1, 0, 1):
+                    _put(px, w, h, int(cx + dx), int(h * (0.5 if smile else 0.45)) + (0 if dx == 0 else (-1 if smile else 1)), (30, 30, 30))
+    m.box("hat", [-3.6, 32.0, -3.6], [7.2, 3.6, 7.2], layered(hat_c, [faces, region((0, 0.7, 1, 0.95), (200, 50, 40))]))
+    m.box("hat", [-6.4, 31.6, -6.4], [12.8, 0.6, 12.8], solid(hat_c))
+    for s_ in (1, -1):  # the upturned brim edges
+        m.box("hat", [s_ * 6.4 - (0.6 if s_ > 0 else 0), 31.8, -6.4], [0.6, 1.2, 12.8], solid(hat_c))
+    if flame:  # living fire pouring off his shoulders, forearms and fists
+        fl, fl2 = SC.swatch((255, 140, 40), 215), SC.swatch((255, 210, 90), 200)
+        for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            for k in range(3):                                              # shoulders
+                SC.blade(m, arm_, [s_ * (5.0 + k * 1.2), 24.0, -1.2 + k * 1.2], [s_ * 0.45, 1, 0.15 * (k - 1)], 5.5 - k, 2.4, 0.7, fl if k % 2 == 0 else fl2)
+            for k in range(4):                                              # forearms and fists, flames streaming back
+                SC.blade(m, arm_, [s_ * (8.2 if k % 2 else 3.8), 16 - k * 1.2, -0.5 + k * 0.6], [s_ * 0.7, 0.6, 0.3], 3.6, 1.8, 0.6, fl2 if k % 2 else fl)
+        for k in range(4):                                                  # a crown of flame along his back
+            SC.blade(m, "body", [-3 + k * 2, 23.5, 2.2], [(k - 1.5) * 0.2, 1, 0.5], 4.5, 2.0, 0.6, fl)
+
+
 FORMS = {
     "naruto_kid": ["base", "cloak"],
     "naruto_teen": ["base", "v1", "v2", "sage", "eight"],
@@ -1581,6 +1988,11 @@ FORMS = {
     "madara": ["edo", "susanoo", "sixpaths"],
     "itachi": ["sharingan", "ms", "susanoo"],
     "kakashi": ["base", "sharingan", "dms"],
+    "deku": ["cowl20", "cowl45", "dark"],
+    "killua": ["base", "godspeed"],
+    "denji": ["human", "chainsaw", "black"],
+    "rengoku": ["flame", "ninth"],
+    "ace": ["base", "flame"],
 }
 
 
@@ -1622,6 +2034,16 @@ def build(char, form):
         itachi(m, "ms" if form == "susanoo" else form)
     elif char == "kakashi":
         kakashi(m, form)
+    elif char == "deku":
+        deku(m, form)
+    elif char == "killua":
+        killua(m, form)
+    elif char == "denji":
+        denji(m, form)
+    elif char == "rengoku":
+        rengoku(m, form)
+    elif char == "ace":
+        ace(m, form)
     if char in ("naruto_kid", "sasuke_kid"):  # kid proportions: a bigger head on the small body
         f, P = 1.15, (0.0, 24.0, 0.0)
         for c in m.cubes:

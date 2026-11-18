@@ -977,6 +977,186 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.deku": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.cowl20",
+      "Texture.cowl20_shout",
+      "Texture.cowl20_hurt",
+      "Texture.cowl20_blink",
+      "Texture.cowl45",
+      "Texture.cowl45_shout",
+      "Texture.cowl45_hurt",
+      "Texture.cowl45_blink",
+      "Texture.dark",
+      "Texture.dark_shout",
+      "Texture.dark_hurt",
+      "Texture.dark_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.cowl20",
+      "Geometry.cowl45",
+      "Geometry.dark"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.killua": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.godspeed",
+      "Texture.godspeed_shout",
+      "Texture.godspeed_hurt",
+      "Texture.godspeed_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.godspeed"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.denji": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.human",
+      "Texture.human_shout",
+      "Texture.human_hurt",
+      "Texture.human_blink",
+      "Texture.chainsaw",
+      "Texture.chainsaw_shout",
+      "Texture.chainsaw_hurt",
+      "Texture.chainsaw_blink",
+      "Texture.black",
+      "Texture.black_shout",
+      "Texture.black_hurt",
+      "Texture.black_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.human",
+      "Geometry.chainsaw",
+      "Geometry.black"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.rengoku": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.flame",
+      "Texture.flame_shout",
+      "Texture.flame_hurt",
+      "Texture.flame_blink",
+      "Texture.ninth",
+      "Texture.ninth_shout",
+      "Texture.ninth_hurt",
+      "Texture.ninth_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.flame",
+      "Geometry.ninth"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.ace": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.flame",
+      "Texture.flame_shout",
+      "Texture.flame_hurt",
+      "Texture.flame_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.flame"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.frieza": {
    "arrays": {
     "textures": {
@@ -1071,7 +1251,8 @@
       "Texture.susanoo_itachi",
       "Texture.susanoo_kakashi",
       "Texture.crow",
-      "Texture.hound"
+      "Texture.hound",
+      "Texture.flame_tiger"
      ]
     },
     "geometries": {
@@ -1087,7 +1268,8 @@
       "Geometry.susanoo_itachi",
       "Geometry.susanoo_kakashi",
       "Geometry.crow",
-      "Geometry.hound"
+      "Geometry.hound",
+      "Geometry.flame_tiger"
      ]
     }
    },
@@ -1116,7 +1298,8 @@
       "Texture.susanoo_itachi",
       "Texture.susanoo_kakashi",
       "Texture.crow",
-      "Texture.hound"
+      "Texture.hound",
+      "Texture.flame_tiger"
      ]
     },
     "geometries": {
@@ -1132,7 +1315,8 @@
       "Geometry.susanoo_itachi",
       "Geometry.susanoo_kakashi",
       "Geometry.crow",
-      "Geometry.hound"
+      "Geometry.hound",
+      "Geometry.flame_tiger"
      ]
     }
    },

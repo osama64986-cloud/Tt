@@ -1,16 +1,16 @@
 **Summary (short description field):**
-Anime legends from Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach and Demon Slayer fight in epic team battles!
+Anime legends from Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach, Demon Slayer, My Hero Academia, Hunter x Hunter and Chainsaw Man fight in epic team battles!
 
 ---
 
 # Anime Multiverse Clash (AMC)
 
-**Six anime worlds collide in Minecraft.** Put the legends of **Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach and Demon Slayer** into a red team and a blue team, then sit back and watch them fight.
+**Nine anime worlds collide in Minecraft.** Put the legends of **Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach, Demon Slayer, My Hero Academia, Hunter x Hunter and Chainsaw Man** into a red team and a blue team, then sit back and watch them fight.
 Every character has their real transformations, signature techniques and fighting style.
 
 ## ⚔️ Features
 
-- **25 anime fighters**, each with their full set of transformations, climbing one form at a time just like in the anime.
+- **30 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
 - **Smart fighters.** Every fighter reads the battle:
   - uses ranged attacks from afar and close-range techniques up close;
   - punishes openings, dodges big attacks and finishes weakened enemies;
@@ -30,7 +30,7 @@ Every character has their real transformations, signature techniques and fightin
 - **Giant summons:**
   - Susanoo in every stage: the fighter floats inside its chest.
   - Kurama, Gamabunta and Mahoraga.
-  - Itachi's crows and Kakashi's ninja hounds.
+  - Itachi's crows, Kakashi's ninja hounds and Rengoku's Flame Tiger.
 - **Cinematic camera** for the battle face-off, Domain Expansions, final transformations and the victory.
 - **No text during fights.** Only the winning team is shown at the end.
 - **Arena Builder:** one tap builds a complete, lit fighting arena anywhere:
@@ -56,6 +56,7 @@ Every character has their real transformations, signature techniques and fightin
 **One Piece**
 - **Monkey D. Luffy**: Every Gear from 2 to 5. Jet Pistol, Gear 4's Kong Gun, and Gear 5 where he turns the battlefield into a cartoon.
 - **Roronoa Zoro**: The Three-Sword Style. Oni Giri, Tatsumaki, the nine-sword Asura demon, and King of Hell Three Thousand Worlds.
+- **Portgas D. Ace**: Fire Fist Ace, Luffy's brother. Fire Fist, Fire Gun, Firefly and the giant Entei, and as a Logia, blows pass straight through his body of flame.
 
 **Naruto**
 - **Naruto (Kid)**: Shadow Clones, the Rasengan and the first red chakra of the Nine-Tails.
@@ -70,12 +71,22 @@ Every character has their real transformations, signature techniques and fightin
 - **Kakashi Hatake**: The Copy Ninja. He charges in with Raikiri, sends his ninja hounds out of the ground, warps targets with Kamui, and copies his opponent's own technique back at them.
 - **Madara Uchiha**: The legend reborn. Edo Tensei, a blue Perfect Susanoo, then Six Paths with the Truth-Seeking Balls.
 
+**My Hero Academia**
+- **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited: Detroit, Delaware, St. Louis and Manchester Smash, Blackwhip, Smokescreen and the United States of Smash.
+
+**Hunter x Hunter**
+- **Killua Zoldyck**: The assassin prodigy. Yo-yos, Rhythm Echo, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
+
+**Chainsaw Man**
+- **Denji (Chainsaw Man)**: Pull the cord and the devil comes out. Chainsaws burst from his head and arms, he whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
+
 **Bleach**
 - **Ichigo Kurosaki**: Shikai, Fullbring, Bankai, the Hollow mask, Vasto Lorde, the Final Getsuga Tensho and True Bankai.
 
 **Demon Slayer**
 - **Tanjiro Kamado**: Water Breathing, then Hinokami Kagura, the dance of the Sun.
 - **Demon Tanjiro**: Turned by Muzan, with flesh tendrils bursting from his back and the Demon King's power.
+- **Kyojuro Rengoku**: The Flame Hashira. Set your heart ablaze: Unknowing Fire, Rising Scorching Sun, a real Flame Tiger that leaps and bites, and the Ninth Form: Rengoku.
 - **Muzan Kibutsuji**: The Demon King. His disguise falls away to reveal his final form of whips, mouths and regeneration.
 
 ## 🎮 How to Play
@@ -103,7 +114,7 @@ As soon as two fighters are on opposite teams, the battle begins.
 | `/scriptevent ab:cinema off` | Turns off the cinematic camera |
 | `/scriptevent ab:fx low` | Lighter effects for weaker devices |
 
-Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan.
+Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan, deku, killua, denji, rengoku, ace.
 
 ## 📦 Installation
 
@@ -120,4 +131,4 @@ When updating: if Minecraft says the pack is already installed, delete the old p
 
 ---
 
-*Anime Multiverse Clash is a fan-made add-on and is not affiliated with Mojang, Microsoft, or the owners of Dragon Ball, Jujutsu Kaisen, One Piece, Naruto, Bleach or Demon Slayer. All characters belong to their respective creators.*
+*Anime Multiverse Clash is a fan-made add-on and is not affiliated with Mojang, Microsoft, or the owners of the anime featured. All characters belong to their respective creators.*

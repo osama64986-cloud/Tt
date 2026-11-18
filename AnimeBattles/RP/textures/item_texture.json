@@ -85,6 +85,21 @@
   },
   "ab_egg_kakashi": {
    "textures": "textures/items/egg_kakashi"
+  },
+  "ab_egg_deku": {
+   "textures": "textures/items/egg_deku"
+  },
+  "ab_egg_killua": {
+   "textures": "textures/items/egg_killua"
+  },
+  "ab_egg_denji": {
+   "textures": "textures/items/egg_denji"
+  },
+  "ab_egg_rengoku": {
+   "textures": "textures/items/egg_rengoku"
+  },
+  "ab_egg_ace": {
+   "textures": "textures/items/egg_ace"
   }
  }
 }
