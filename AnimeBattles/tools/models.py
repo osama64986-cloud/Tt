@@ -3364,7 +3364,7 @@ def luffy_body(m, form):  # noqa: F811
 # ==================================================================================
 SILVER = (198, 202, 214)
 
-FACE32["yuji_modulo"] = dict(eye="anime", brow="flat", mouth="none", marks=["yuji", "scars", "hood_shadow", "mask"])
+FACE32["yuji_modulo"] = dict(eye="anime", brow="angled", mouth="neutral", marks=["yuji", "scars"])
 _face32_v4 = face32
 
 
@@ -3450,6 +3450,8 @@ def yuji_modulo(m):
     hp = hair_paint((226, 150, 152))  # longer, relaxed hair peeking out under the hood
     for x in (-2.6, 2.4):
         m.strand([x, 29.8, -4.3], [x * 0.05, -1, -0.4], 2.4, 2.2, hp)
+    for x in (-3.4, -0.6, 1.8):  # pink fringe spikes falling over his forehead, so he's clearly Yuji
+        m.strand([x, 30.4, -4.4], [x * 0.04, -0.7, -0.6], 2.6, 2.0, hp)
 
 
 _build_v5 = build
@@ -3470,6 +3472,9 @@ def yuji_modulo(m):  # noqa: F811
     _yuji_modulo_v1(m)
     drop = {id(c) for c in m.cubes if (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5]) or (c["bone"] == "hair")}
     m.cubes = [c for c in m.cubes if id(c) not in drop]
+    hp = hair_paint((226, 150, 152))  # pink fringe under the cap, so he's clearly Yuji
+    for x in (-2.9, -1.0, 1.0, 2.9):
+        m.strand([x, 30.1, -4.5], [x * 0.03, -1, -0.3], 2.0, 1.0, hp, bone="head")
 
 
 # ==================================================================================
