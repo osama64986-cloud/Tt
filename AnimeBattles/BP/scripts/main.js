@@ -4694,6 +4694,12 @@ function updateFighter(e, tick) {
     if (on && team) s.energy -= 1.5;
   }
   if (s.kaiokenUntil > tick && tick % 20 === 0) deal(undefined, e, 2);
+  if (e.typeId === "ab:gohan" && !s.enraged && team && hpPct(e) < 0.25) {  // his hidden power, unleashed by anger
+    s.enraged = true;
+    const h = health(e); if (h) try { h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.06)); } catch (err) { /* ignore */ }
+    fx(e.dimension, "shock", e.location, C.gold, 9, 0.6); fx(e.dimension, "aura", e.location, C.white, 2, 0.9, { count: 50, speed: 4 });
+    shake(e.dimension, e.location, 0.4, 0.5); setExpr(e, 1, 30); sound(e.dimension, "mob.enderdragon.growl", e.location, 0.6, 1.2);
+  }
   if (e.typeId === "ab:rengoku" && !s.ablaze && team && hpPct(e) < 0.2) {  // "Set your heart ablaze!" — his last stand
     s.ablaze = true;
     const h = health(e); if (h) try { h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.08)); } catch (err) { /* ignore */ }
@@ -5128,6 +5134,22 @@ function dodgeFx(v, src) {
   }
   if (v.typeId === "ab:ace") {  // Logia: the blow passes straight through a body of flame
     burst(v.dimension, V.up(v.location, 1.1), C.fire, 26, 3, 0.45, 0.5); fx(v.dimension, "aura", v.location, C.fire, 1.2, 0.5, { count: 16, speed: 2 });
+  }
+  if (v.typeId === "ab:akaza" && formOf(v) === 1 && src && src.isValid && alive(src) && now() >= (state(v).compass ?? 0)) {
+    state(v).compass = now() + 50;  // Compass Needle: he reads the fighting spirit, slips the blow and kicks back at once
+    later(2, () => {
+      if (!alive(v) || !alive(src)) return;
+      afterimage(v); teleportNear(v, src, true, 1.3); face(v, aim(src)); setPose(v, 7);
+      deal(v, src, 20 * powerOf(v) / 100);
+      ring(v.dimension, V.up(v.location, 0.1), 2.5, C.kameBlue, 24, 0.4); fx(v.dimension, "flash", aim(src), C.kameBlue, 2.2, 0.15);
+      later(6, () => { if (v.isValid) setPose(v, 0); });
+    });
+  }
+  if (v.typeId === "ab:bakugo") {  // he blasts himself aside with an explosion from his palms
+    fx(v.dimension, "flash", V.up(v.location, 1), C.fire, 2.4, 0.15); burst(v.dimension, V.up(v.location, 0.8), C.ember, 20, 3, 0.4, 0.5);
+  }
+  if (v.typeId === "ab:megumi") {  // he sinks into his own shadow for an instant
+    burst(v.dimension, V.up(v.location, 0.2), C.black, 24, 2, 0.3, 0.6); ring(v.dimension, V.up(v.location, 0.05), 1.6, C.black, 18, 0.5);
   }
   if (v.typeId === "ab:killua" && formOf(v) === 1 && src && src.isValid && alive(src) && now() >= (state(v).whirl ?? 0)) {
     state(v).whirl = now() + 40;  // Godspeed, Whirlwind: his body counters with lightning before he even thinks
