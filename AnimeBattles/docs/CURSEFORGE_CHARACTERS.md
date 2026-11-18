@@ -17,7 +17,7 @@
 **One Piece**
 - **Monkey D. Luffy** — Every Gear from 2 to 5. Jet Pistol, Gear 4's Kong Gun, and Gear 5 where he turns the battlefield into a cartoon.
 - **Roronoa Zoro** — The Three-Sword Style. Oni Giri, Tatsumaki, the nine-sword Asura demon, and King of Hell Three Thousand Worlds.
-- **Portgas D. Ace** — Fire Fist Ace, Luffy's brother. His Fire Fist hurls a giant fist of flame; he also has Fire Gun, Firefly and the giant Entei, and as a Logia, blows pass straight through his body of flame.
+- **Portgas D. Ace** — Fire Fist Ace, Luffy's brother. His Fire Fist hurls a giant fist of flame; he also has Fire Gun, Cross Fire, Shinka: Shiranui, Firefly and the giant Entei, and as a Logia, blows pass straight through his body of flame.
 
 **Naruto**
 - **Naruto (Kid)** — Shadow Clones, the Rasengan and the first red chakra of the Nine-Tails.
@@ -28,20 +28,20 @@
 - **Sasuke (Shippuden)** — Kirin, Amaterasu and his first Susanoo.
 - **Sasuke (War)** — Eternal Mangekyo, Perfect Susanoo and the Rinnegan, finishing with Indra's Arrow.
 - **Sasuke (Adult)** — The shadow Hokage. Amenotejikara, the Rinnegan's genjutsu and a full Susanoo.
-- **Itachi Uchiha** — The genius of the Uchiha clan. Fire Style, a flock of real crows, Tsukuyomi, Amaterasu, and a red Susanoo with the sealing Totsuka Blade.
-- **Kakashi Hatake** — The Copy Ninja. He charges in with Raikiri, sends his ninja hounds out of the ground, warps targets with Kamui, and copies his opponent's own technique back at them.
+- **Itachi Uchiha** — The genius of the Uchiha clan. Fire Style, Water Shark Bullet, a flock of real crows, Tsukuyomi, Amaterasu, and a red Susanoo with the sealing Totsuka Blade and Yasaka Magatama.
+- **Kakashi Hatake** — The Copy Ninja. He charges in with Raikiri, fires Purple Lightning, sends his ninja hounds out of the ground, warps targets with Kamui, and copies his opponent's own technique back at them. His Susanoo throws Kamui Shuriken.
 - **Madara Uchiha** — The legend reborn. Edo Tensei, a blue Perfect Susanoo, then Six Paths with the Truth-Seeking Balls.
 
 **My Hero Academia**
-- **Izuku Midoriya (Deku)** — The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Blackwhip, Smokescreen and the United States of Smash.
+- **Izuku Midoriya (Deku)** — The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash throws a giant fist of green wind; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
 - **Katsuki Bakugo** — Explosions from his palms. AP Shot, Stun Grenade, Howitzer Impact, Cluster and the Max Cannon of his grenade gauntlets.
 
 **Hunter x Hunter**
-- **Killua Zoldyck** — The assassin prodigy. Steel yo-yos, razor claws, Rhythm Echo, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
+- **Killua Zoldyck** — The assassin prodigy. Steel yo-yos, razor Assassin Claws, Rhythm Echo, Lightning Palm, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
 - **Gon Freecss** — Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, with a mane of hair and a crushing dark nen.
 
 **Chainsaw Man**
-- **Denji (Chainsaw Man)** — Pull the cord and the devil comes out. Chainsaws burst from his head and arms, he whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
+- **Denji (Chainsaw Man)** — Pull the cord and the devil comes out. Chainsaws burst from his head and arms; he rams with his head saw, spins into a whirl of blades, whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
 
 **Bleach**
 - **Ichigo Kurosaki** — Shikai, Fullbring, Bankai, the Hollow mask, Vasto Lorde, the Final Getsuga Tensho and True Bankai.
