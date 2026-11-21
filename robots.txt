@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://osama64986-cloud.github.io/Tt/sitemap.xml
