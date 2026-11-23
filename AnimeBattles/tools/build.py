@@ -271,6 +271,15 @@ FIGHTERS.update({
             "geo": ["base", "jajanken", "dark", "adult"], "egg": ("#328246", "#181e1a"), "scale": 0.9, "form_scale": [0.9, 0.9, 0.9, 1.35]},  # Adult Gon: suddenly a tall grown man
     "akaza": {"hp": 1000, "forms": [(22, 0.44), (28, 0.46)], "tex": ["base", "compass"], "geo": ["base", "compass"], "egg": ("#ee8caa", "#283c96")},
     "megumi": {"hp": 1000, "forms": [(14, 0.4), (20, 0.42)], "tex": ["base", "shadows"], "geo": ["base", "shadows"], "egg": ("#1c2034", "#286e6e")},
+    "aizen": {"hp": 1000, "forms": [(26, 0.42), (32, 0.44), (38, 0.46)], "tex": ["base", "hogyoku", "final"], "geo": ["base", "hogyoku", "final"],
+              "egg": ("#eeeef0", "#643a22")},
+    "byakuya": {"hp": 1000, "forms": [(22, 0.42), (28, 0.44)], "tex": ["shikai", "bankai"], "geo": ["shikai", "bankai"], "egg": ("#18181e", "#fa96c8")},
+    "power": {"hp": 1000, "forms": [(18, 0.42), (24, 0.44)], "tex": ["fiend", "devil"], "geo": ["fiend", "devil"], "egg": ("#f6cea0", "#c81e24"), "scale": 0.95},
+    "makima": {"hp": 1000, "forms": [(22, 0.42), (28, 0.42)], "tex": ["base", "devil"], "geo": ["base", "devil"], "egg": ("#be5c46", "#e6be5a"), "scale": 0.97},
+    "allmight": {"hp": 1000, "forms": [(30, 0.44), (40, 0.46)], "tex": ["base", "uss"], "geo": ["base", "uss"], "egg": ("#2846aa", "#fad646"), "scale": 1.2},
+    "todoroki": {"hp": 1000, "forms": [(18, 0.42), (24, 0.44)], "tex": ["base", "flashfire"], "geo": ["base", "flashfire"], "egg": ("#ececf0", "#c83232")},
+    "hisoka": {"hp": 1000, "forms": [(20, 0.44), (26, 0.46)], "tex": ["base", "serious"], "geo": ["base", "serious"], "egg": ("#dc4678", "#e2d6ec"), "scale": 1.05},
+    "kurapika": {"hp": 1000, "forms": [(16, 0.42), (24, 0.44)], "tex": ["base", "emperor"], "geo": ["base", "emperor"], "egg": ("#2846a0", "#f6d878")},
     "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42), (70, 0.46)], "tex": ["final", "golden", "black"], "geo": ["final", "golden", "black"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
 })

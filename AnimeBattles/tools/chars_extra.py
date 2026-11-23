@@ -2489,3 +2489,409 @@ def build(char, form):  # noqa: F811
         _NEW19[char](m, form)
         return m
     return _build_prev19(char, form)
+
+
+# ==================================================================================
+# 1.20: Aizen, Byakuya (Bleach) · Power, Makima (Chainsaw Man) · All Might, Todoroki (MHA) · Hisoka, Kurapika (HxH)
+# ==================================================================================
+M.FACE32.update({
+    "aizen": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
+    "aizen_hogyoku": dict(eye="narrow", brow="none", mouth="neutral", marks=["purple_eyes", "hogyoku_lines"]),
+    "aizen_final": dict(eye="narrow", brow="none", mouth="none", marks=["purple_eyes", "hogyoku_lines", "aizen_mask"]),
+    "byakuya": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
+    "byakuya_bankai": dict(eye="narrow", brow="sharp", mouth="neutral", marks=[]),
+    "power": dict(eye="round", brow="angled", mouth="big_grin", marks=["shark_teeth", "power_eyes"]),
+    "power_devil": dict(eye="round", brow="sharp", mouth="big_grin", marks=["shark_teeth", "power_eyes", "blood_drip"]),
+    "makima": dict(eye="round", brow="flat", mouth="smile", marks=["makima_eyes"]),
+    "makima_devil": dict(eye="round", brow="flat", mouth="neutral", marks=["makima_eyes", "makima_glow"]),
+    "allmight": dict(eye="round", brow="sharp", mouth="big_grin", marks=["allmight_shadow"]),
+    "allmight_uss": dict(eye="round", brow="sharp", mouth="clench", marks=["allmight_shadow", "blood_drip"]),
+    "todoroki": dict(eye="narrow", brow="flat", mouth="neutral", marks=["todoroki_scar"]),
+    "todoroki_flash": dict(eye="narrow", brow="sharp", mouth="clench", marks=["todoroki_scar"]),
+    "hisoka": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["hisoka_marks"]),
+    "hisoka_serious": dict(eye="narrow", brow="sharp", mouth="big_grin", marks=["hisoka_marks"]),
+    "kurapika": dict(eye="round", brow="flat", mouth="neutral", marks=[]),
+    "kurapika_scarlet": dict(eye="round", brow="sharp", mouth="clench", marks=["scarlet_eyes"]),
+})
+_face32_prev5 = M.face32
+
+
+def face32_new20(px, W, H, spec, hair, iris, skin):
+    _face32_prev5(px, W, H, spec, hair, iris, skin)
+    marks = spec.get("marks", [])
+    k = W / 32.0
+    open_eyes = M.EXPR not in ("blink", "hurt")
+
+    def put(x, y, c):
+        for dx in range(max(1, int(k))):
+            for dy in range(max(1, int(k))):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    if "purple_eyes" in marks and open_eyes:
+        for cx in (10, 21):
+            put(cx, 18, (170, 60, 220)); put(cx + 1, 18, (170, 60, 220))
+    if "hogyoku_lines" in marks:  # the Hogyoku's white cracks across the face
+        for x, y in ((6, 12), (7, 13), (8, 14), (25, 12), (24, 13), (23, 14), (15, 9), (16, 10)):
+            put(x, y, (150, 110, 190))
+    if "aizen_mask" in marks:  # the final form's mask-like face: a dark band across the eyes
+        for x in range(4, 28):
+            put(x, 16, (60, 30, 80))
+    if "power_eyes" in marks and open_eyes:  # yellow eyes with red cross-shaped pupils
+        for cx in (10, 21):
+            for x in range(cx - 1, cx + 3):
+                for y in (17, 18, 19):
+                    put(x, y, (250, 200, 60))
+            put(cx, 18, (220, 30, 30)); put(cx + 1, 18, (220, 30, 30)); put(cx, 17, (220, 30, 30)); put(cx, 19, (220, 30, 30))
+    if "blood_drip" in marks:
+        for x, y in ((8, 24), (8, 25), (23, 23), (23, 24), (23, 25)):
+            put(x, y, (170, 20, 26))
+    if "makima_eyes" in marks and open_eyes:  # golden eyes with concentric rings
+        for cx in (10, 21):
+            for x in range(cx - 2, cx + 4):
+                for y in range(16, 21):
+                    d = max(abs(x - (cx + 0.5)), abs(y - 18))
+                    put(x, y, (230, 190, 90) if d >= 2 else ((140, 90, 40) if d >= 1 else (250, 220, 120)))
+    if "makima_glow" in marks:
+        for x, y in ((4, 18), (27, 18)):
+            put(x, y, (250, 220, 120))
+    if "allmight_shadow" in marks:  # the deep shadow over his eyes with the two blue glints
+        for x in range(5, 27):
+            for y in range(15, 21):
+                put(x, y, (30, 30, 40))
+        if open_eyes:
+            for cx in (10, 21):
+                put(cx, 18, (90, 200, 255)); put(cx + 1, 18, (90, 200, 255))
+    if "todoroki_scar" in marks:  # the burn scar round his left eye, and his two eye colours
+        for x in range(17, 26):
+            for y in range(13, 22):
+                if (x - 21) ** 2 / 20 + (y - 17.5) ** 2 / 18 < 1 and not (19 <= x <= 22 and 17 <= y <= 19):
+                    put(x, y, (170, 60, 60))
+        if open_eyes:
+            put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))
+            put(21, 18, (40, 170, 190)); put(22, 18, (40, 170, 190))
+    if "hisoka_marks" in marks:  # a star on one cheek, a teardrop on the other
+        for x, y in ((7, 22), (6, 23), (7, 23), (8, 23), (7, 24), (6, 25), (8, 25)):
+            put(x, y, (70, 110, 200))
+        for x, y in ((24, 21), (24, 22), (23, 23), (24, 23), (25, 23), (24, 24)):
+            put(x, y, (220, 60, 140))
+    if "scarlet_eyes" in marks and open_eyes:
+        for cx in (10, 21):
+            for x in (cx, cx + 1):
+                for y in (17, 18, 19):
+                    put(x, y, (230, 20, 40))
+
+
+M.face32 = face32_new20
+
+
+def _shell_strands(m, col, strands, hairline=30.6):
+    shell(m, col, hairline=hairline, sideburn=False, teeth=0.8)
+    hp = M.hair_paint(col)
+    for base, d, L, wd in strands:
+        m.strand(base, d, L, wd, hp, bone="hair", thick=0.8)
+
+
+# ------------------------------------------------------------------ Sosuke Aizen — Bleach
+AIZEN_HAIR = (150, 96, 58)
+
+
+@M.smooth_hair
+def aizen_hair(m, final):
+    if final:
+        return
+    _shell_strands(m, AIZEN_HAIR, [([x, 32.0, -2.5 + abs(x) * 0.2], [x * 0.05, 0.35, 1], 6.0, 3.4) for x in (-2.6, -0.9, 0.9, 2.6)]
+                   + [([0.6, 31.2, -4.2], [0.15, -1, -0.25], 4.0, 1.4)])  # slicked back, one strand on the forehead
+
+
+def aizen(m, form):
+    """Aizen in the white Arrancar coat over a black hakama, slicked-back brown hair, Kyoka Suigetsu at his side.
+    Hogyoku: his body turns white, the Hogyoku glowing purple in his chest. Final: a white chrysalis body with three
+    pairs of dark butterfly wings."""
+    hog = form in ("hogyoku", "final")
+    final = form == "final"
+    key = {"base": "aizen", "hogyoku": "aizen_hogyoku", "final": "aizen_final"}[form]
+    skin = (232, 228, 236) if hog else SKIN
+    head = head_paint(AIZEN_HAIR if not final else (230, 226, 236), (110, 70, 40) if not hog else (170, 60, 220), True, key)
+    coat, sash = (238, 238, 240), (30, 30, 36)
+    lap = lambda f, px, w, h, b: [_put(px, w, h, int(w * 0.5 + (y - h * 0.1) * 0.25) if y < h * 0.45 else w // 2, y, (190, 190, 196)) for y in range(h)] if f == "north" else None
+    torso = layered(coat if not hog else skin, [lap] if not hog else [])
+    arm = layered(coat if not hog else skin, [region((0, 0.86, 1, 1), skin)])
+    leg = layered((34, 34, 40) if not hog else skin, [region((0, 0.88, 1, 1), (20, 20, 24))])
+    base_body(m, torso, arm, leg, head)
+    if not hog:
+        m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.6, 5.0], solid(sash))                         # black sash
+        m.box("body", [-4.6, 3.0, 2.1], [9.2, 21.2, 0.5], solid(coat))                         # long coat tails
+        for x0 in (-4.6, 2.6):
+            m.box("body", [x0, 3.0, -2.6], [2.0, 9.0, 0.5], solid(coat))
+        m.box("body", [-4.2, 22.4, -2.6], [8.4, 1.6, 5.2], solid(coat))                        # high collar
+        kyoka = dict(wrap=(60, 90, 70), diamond=(200, 190, 140), tsuba="round", metal=(150, 140, 90),
+                     blade=(206, 214, 226), edge=(248, 250, 255), hamon=None, saya=(40, 60, 50), saya_band=(200, 190, 140))
+        M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, kyoka)
+    else:
+        orb = SC.swatch((170, 70, 230), 230)
+        SC.blob(m, "body", [0, 19.5, -2.3], [1.1, 1.1, 0.6], orb)                               # the Hogyoku in his chest
+        for k in range(4):
+            m.box("body", [-0.2 + (k - 1.5) * 1.6, 14 + k, -2.25], [0.3, 4, 0.2], solid((150, 110, 190)))
+    if final:  # three pairs of dark butterfly wings
+        wing = SC.swatch((60, 30, 90), 210)
+        for s_ in (1, -1):
+            for k, (up, L) in enumerate(((0.9, 12), (0.3, 13), (-0.4, 10))):
+                SC.blade(m, "body", [s_ * 1.6, 21 - k * 2, 2.4], [s_ * 1, up, 0.4], L, 4.2, 0.4, wing, width_dir=[0, 1, 0.2])
+    aizen_hair(m, final)
+
+
+# ------------------------------------------------------------------ Byakuya Kuchiki — Bleach
+BYA_HAIR = (24, 24, 32)
+
+
+@M.smooth_hair
+def byakuya_hair(m):
+    _shell_strands(m, BYA_HAIR, [([x, 31.0, 3.6], [x * 0.04, -1, 0.15], 8.0, 2.6) for x in (-2.6, -0.8, 0.8, 2.6)]
+                   + [([s * 3.9, 30.6, -1.0], [s * 0.1, -1, 0], 7.0, 2.0) for s in (1, -1)]
+                   + [([x, 31.4, -4.1], [x * 0.05, -0.8, -0.4], 3.4, 1.8) for x in (-1.6, 0.0, 1.6)])
+    for s in (1, -1):  # the white kenseikan pieces clipping his hair
+        for k in range(3):
+            m.box("hair", [s * 4.2 - 0.4, 29.6, -2.8 + k * 1.8], [0.8, 2.6, 0.8], solid((240, 240, 244)))
+
+
+def byakuya(m, form):
+    """Byakuya: the white captain's haori (the 6th division) over black shihakusho, the pale Ginpaku Kazahana scarf,
+    the white kenseikan in his black hair, Senbonzakura at his side. Bankai: pink petals swirl round him."""
+    bankai = form == "bankai"
+    head = head_paint(BYA_HAIR, (60, 70, 100), True, "byakuya_bankai" if bankai else "byakuya")
+    shk = (22, 22, 28)
+    base_body(m, layered(shk, [lines((("north",), [[(0.5, 0), (0.5, 0.45)]]), (230, 230, 236))]),
+              arm_paint(shk, sleeve_to=0.86), layered(shk, [region((0, 0.88, 1, 1), (236, 236, 236))]), head)
+    m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.4, 5.0], solid((236, 236, 236)))                  # white obi
+    haori = layered((244, 244, 246), [region((0, 0.92, 1, 1), (30, 30, 36), faces=("south",))])
+    m.box("body", [-4.6, 3.6, 2.1], [9.2, 20.6, 0.5], haori)
+    for x0 in (-4.6, 2.8):
+        m.box("body", [x0, 3.6, -2.6], [1.8, 20.6, 0.5], haori)
+    both_arms(m, [3.5, 14.0, -2.7], [5.0, 10.2, 5.4], haori)
+    m.box("body", [-4.4, 21.6, -2.8], [8.8, 2.4, 5.6], solid((214, 220, 210)))                  # the pale scarf
+    m.strand([-1.5, 22, 2.8], [-0.1, -1, 0.35], 9, 2.0, solid((214, 220, 210)), bone="body", segs=3)
+    senbon = dict(wrap=(50, 40, 70), diamond=(220, 200, 230), tsuba="cross", metal=(180, 170, 200),
+                  blade=(220, 200, 214) if bankai else (206, 214, 226), edge=(255, 230, 240), hamon=(240, 160, 200), saya=(30, 30, 36), saya_band=(200, 200, 200))
+    M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, senbon)
+    byakuya_hair(m)
+    if bankai:  # a swirl of pink petals
+        pet = SC.swatch((250, 150, 200), 200)
+        for k in range(14):
+            a = k * 2.399
+            SC.blade(m, "body", [math.cos(a) * 6.5, 4 + k * 1.5, math.sin(a) * 4], [math.sin(a), 0.2, -math.cos(a)], 1.4, 0.8, 0.2, pet)
+
+
+# ------------------------------------------------------------------ Power — Chainsaw Man
+POW_HAIR = (246, 206, 160)
+
+
+@M.smooth_hair
+def power_hair(m, devil):
+    _shell_strands(m, POW_HAIR, [([x, 30.8, 3.6], [x * 0.05, -1, 0.15], 13.0, 2.8) for x in (-2.8, -1.0, 1.0, 2.8)]
+                   + [([s * 4.0, 30.6, -0.6], [s * 0.08, -1, 0], 11.0, 2.2) for s in (1, -1)]
+                   + [([x, 31.4, -4.1], [x * 0.05, -0.75, -0.45], 3.4, 1.8) for x in (-2.2, -0.6, 1.0, 2.6)])
+    horn = SC.swatch((200, 30, 36))
+    for s in (1, -1):  # her two red horns
+        SC.blade(m, "hair", [s * 2.2, 32.4, -1.6], [s * 0.25, 1, -0.1], 4.0 if not devil else 6.0, 1.3, 1.1, horn)
+
+
+def power(m, form):
+    """Power, the Blood Fiend: long blonde hair, two red horns, yellow eyes with red cross pupils, shark teeth, in the
+    Public Safety white shirt, black tie and dark trousers. Blood Devil: bigger horns, blood running down."""
+    devil = form == "devil"
+    head = head_paint(POW_HAIR, (250, 200, 60), True, "power_devil" if devil else "power")
+    shirt = (242, 242, 240)
+    tie = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (24, 24, 28)) for y in range(int(h * 0.05), int(h * 0.75))] if f == "north" else None
+    base_body(m, layered(shirt, [tie]), arm_paint(shirt, sleeve_to=0.86),
+              layered((40, 40, 48), [region((0, 0.88, 1, 1), (20, 20, 24))]), head)
+    m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((30, 28, 30)))
+    if devil:
+        bl = SC.swatch((180, 20, 28))
+        SC.blade(m, "rightArm", [6.2, 10.0, -2.0], [0, -0.1, -1], 9, 2.6, 1.0, bl)               # a blood blade in her hand
+    power_hair(m, devil)
+
+
+# ------------------------------------------------------------------ Makima — Chainsaw Man
+MAK_HAIR = (190, 92, 70)
+
+
+@M.smooth_hair
+def makima_hair(m):
+    _shell_strands(m, MAK_HAIR, [([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 4.0, 2.0) for x in (-2.8, -1.0, 1.0, 2.8)]
+                   + [([s * 3.9, 30.6, -0.8], [s * 0.05, -1, 0], 6.0, 2.0) for s in (1, -1)])
+    hp = M.hair_paint(MAK_HAIR)
+    for k in range(5):  # the long braid down her back
+        m.box("hair", [-0.9, 28.6 - k * 2.4, 4.0 + k * 0.1], [1.8, 2.2, 1.6], hp)
+
+
+def makima(m, form):
+    """Makima: copper-red hair in a long braid, golden ringed eyes, Public Safety white shirt and black tie, black
+    trousers and shoes. As the Control Devil, chains of control trail from her hands."""
+    devil = form == "devil"
+    head = head_paint(MAK_HAIR, (230, 190, 90), True, "makima_devil" if devil else "makima")
+    shirt = (244, 242, 236)
+    tie = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (24, 24, 30)) for y in range(int(h * 0.05), int(h * 0.7))] if f == "north" else None
+    base_body(m, layered(shirt, [tie]), arm_paint(shirt, sleeve_to=0.86),
+              layered((26, 26, 32), [region((0, 0.88, 1, 1), (14, 14, 18))]), head)
+    m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((30, 28, 34)))
+    if devil:
+        ch = SC.swatch((140, 140, 150))
+        for s, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            SC.curve_tube(m, arm_, [[s * 6, 12, 0], [s * 8, 9, -3], [s * 10, 8, -7]], 0.35, 0.25, [ch, ch], n=2)
+    makima_hair(m)
+
+
+# ------------------------------------------------------------------ All Might — My Hero Academia
+AM_HAIR = (250, 214, 70)
+
+
+@M.smooth_hair
+def allmight_hair(m):
+    _shell_strands(m, AM_HAIR, [([x, 31.6, 1.4], [x * 0.2, 0.5, 0.9], 4.0, 3.0) for x in (-2.6, -0.8, 0.8, 2.6)])
+    hp = M.hair_paint(AM_HAIR)
+    for s in (1, -1):  # his two famous V-shaped bangs standing straight up
+        m.strand([s * 1.4, 31.4, -3.6], [s * 0.35, 1, -0.05], 9.0, 2.6, hp, bone="hair", thick=0.85)
+
+
+def allmight(m, form):
+    """All Might in his Silver Age costume: a huge muscled body in a blue suit with red and yellow stripes, white
+    gloves, red boots, the two golden V bangs, eyes lost in shadow with two blue glints, the grin."""
+    uss = form == "uss"
+    head = head_paint(AM_HAIR, (90, 200, 255), True, "allmight_uss" if uss else "allmight")
+    blue, red, yel = (40, 70, 170), (210, 40, 40), (250, 200, 50)
+
+    def stripes(face, px, w, h, base):
+        if face == "north":
+            for y in range(int(h * 0.05), int(h * 0.5)):
+                d = y - int(h * 0.05)
+                _put(px, w, h, int(w * 0.5 - d * 0.6), y, yel); _put(px, w, h, int(w * 0.5 + d * 0.6), y, yel)
+            for x in range(w):
+                _put(px, w, h, x, int(h * 0.62), red)
+    base_body(m, layered(blue, [stripes]), layered(blue, [region((0, 0.0, 1, 0.12), red), region((0, 0.78, 1, 1), (244, 244, 244))]),
+              layered(blue, [region((0, 0.62, 1, 1), red)]), head)
+    sk = layered(blue, [])
+    for s_ in (1, -1):  # an enormous frame: broad shoulders and chest
+        arm_ = "rightArm" if s_ > 0 else "leftArm"
+        m.box(arm_, [s_ * 6.0 - 2.7, 18.4, -2.7], [5.4, 5.8, 5.4], layered(blue, [region((0, 0, 1, 0.3), red)]))
+    m.box("body", [-4.6, 17.0, -2.8], [9.2, 6.4, 0.6], layered(blue, [stripes]))
+    if uss:  # the last ember of One For All blazing round his fist
+        gl = SC.swatch((180, 230, 255), 200)
+        SC.blob(m, "rightArm", [6.2, 10.4, 0], [2.4, 2.4, 2.4], gl)
+    allmight_hair(m)
+
+
+# ------------------------------------------------------------------ Shoto Todoroki — My Hero Academia
+@M.smooth_hair
+def todoroki_hair(m):
+    white, red = (236, 236, 240), (200, 50, 50)
+    shell(m, white, hairline=30.6, sideburn=False, teeth=0.8)
+    hw, hr = M.hair_paint(white), M.hair_paint(red)
+    for x in (-3.2, -1.8, -0.6):  # his left side red (the model's -x is his left)
+        m.strand([x, 31.6, -0.5], [x * 0.1, 0.3, 0.6], 4.2, 3.4, hr, bone="hair", thick=0.8)
+        m.strand([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 3.6, 1.8, hr, bone="hair", thick=0.8)
+    for x in (0.6, 1.8, 3.2):
+        m.strand([x, 31.6, -0.5], [x * 0.1, 0.3, 0.6], 4.2, 3.4, hw, bone="hair", thick=0.8)
+        m.strand([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 3.6, 1.8, hw, bone="hair", thick=0.8)
+    for s, hp in ((1, hw), (-1, hr)):
+        m.strand([s * 2.2, 31.0, 3.6], [s * 0.1, -0.6, 0.6], 4.0, 3.0, hp, bone="hair", thick=0.8)
+
+
+def todoroki(m, form):
+    """Todoroki: hair split white (right) and red (left), the burn scar round his left eye, a dark navy hero suit with
+    a utility belt; ice crusted over his right side, fire licking off his left (stronger after Flashfire)."""
+    flash = form == "flashfire"
+    head = head_paint((236, 236, 240), (120, 130, 140), True, "todoroki_flash" if flash else "todoroki")
+    navy = (36, 46, 80)
+    base_body(m, layered(navy, [region((0, 0, 1, 0.08), (26, 30, 52))]), arm_paint(navy, sleeve_to=0.86),
+              layered(navy, [region((0, 0.86, 1, 1), (24, 24, 30))]), head)
+    m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.4, 5.0], solid((150, 130, 90)))
+    ice, fire = SC.swatch((200, 236, 255), 210), SC.swatch((255, 120, 40), 200)
+    for k in range(4):  # ice on his right arm and shoulder
+        SC.blade(m, "rightArm", [6.4, 22 - k * 3, -1 + k * 0.6], [0.7, 0.6, -0.2], 2.2 + k * 0.3, 1.2, 0.8, ice)
+    if flash:
+        for k in range(5):
+            SC.blade(m, "leftArm", [-6.4, 22 - k * 2.6, 0], [-0.4, 1, 0.1], 3.6, 1.4, 0.5, fire)
+    todoroki_hair(m)
+
+
+# ------------------------------------------------------------------ Hisoka Morow — Hunter x Hunter
+HIS_HAIR = (220, 70, 120)
+
+
+@M.smooth_hair
+def hisoka_hair(m):
+    _shell_strands(m, HIS_HAIR, [([x, 31.8, -2.0 + k * 2.0], [x * 0.15, 0.7, 0.8], 5.6, 3.0) for x in (-2.2, 0, 2.2) for k in range(3)])
+
+
+def hisoka(m, form):
+    """Hisoka: pink-red hair slicked up and back, a star and a teardrop painted on his cheeks, a loose light top
+    covered in card suits, a belt, white trousers. Serious: his magenta aura (Bungee Gum) clings to his hands."""
+    serious = form == "serious"
+    head = head_paint(HIS_HAIR, (230, 180, 60), True, "hisoka_serious" if serious else "hisoka")
+    top, pants = (226, 214, 236), (240, 238, 232)
+
+    def suits(face, px, w, h, base):  # ♠ ♥ ♦ ♣ scattered over his top
+        cols = [(40, 40, 60), (220, 40, 80), (220, 40, 80), (40, 40, 60)]
+        for i, (fx, fy) in enumerate(((0.25, 0.25), (0.7, 0.3), (0.3, 0.65), (0.72, 0.7))):
+            cx, cy = int(w * fx), int(h * fy)
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (0, -1)):
+                _put(px, w, h, cx + dx, cy + dy, cols[i])
+    base_body(m, layered(top, [suits]), layered(top, [suits, region((0, 0.82, 1, 1), SKIN)]),
+              layered(pants, [region((0, 0.86, 1, 1), (60, 40, 80))]), head)
+    m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.2, 5.0], solid((90, 60, 140)))
+    if serious:
+        gum = SC.swatch((230, 80, 200), 190)
+        for s, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            SC.curve_tube(m, arm_, [[s * 6, 11, -1], [s * 8, 12, -5], [s * 7, 14, -9]], 0.4, 0.2, [gum, gum], n=2)
+    hisoka_hair(m)
+
+
+# ------------------------------------------------------------------ Kurapika — Hunter x Hunter
+KUR_HAIR = (246, 216, 120)
+
+
+@M.smooth_hair
+def kurapika_hair(m):
+    _shell_strands(m, KUR_HAIR, [([s * 3.9, 30.8, -0.6], [s * 0.1, -1, 0.05], 6.0, 2.6) for s in (1, -1)]
+                   + [([x, 30.8, 3.6], [x * 0.05, -1, 0.1], 5.4, 2.6) for x in (-2.4, 0, 2.4)]
+                   + [([x, 31.4, -4.1], [x * 0.05, -0.8, -0.4], 3.6, 1.9) for x in (-2.4, -0.6, 1.2, 2.8)])
+
+
+def kurapika(m, form):
+    """Kurapika in the Kurta clan's blue tabard with gold trim over a white robe, a blonde bob; on his right hand the
+    five chains of his nen. Emperor Time: his eyes burn scarlet and the chains glow."""
+    scarlet = form == "emperor"
+    head = head_paint(KUR_HAIR, (60, 120, 200) if not scarlet else (230, 20, 40), True, "kurapika_scarlet" if scarlet else "kurapika")
+    white, blue, gold = (238, 238, 232), (40, 70, 160), (230, 190, 70)
+    tab = lambda f, px, w, h, b: [[_put(px, w, h, x, y, gold if (x in (int(w * 0.18), int(w * 0.82)) or y == int(h * 0.12)) else blue) for x in range(int(w * 0.18), int(w * 0.83))] for y in range(int(h * 0.12), h)] if f in ("north", "south") else None
+    base_body(m, layered(white, [tab]), arm_paint(white, sleeve_to=0.86), layered(white, [region((0, 0.86, 1, 1), (60, 50, 40))]), head)
+    m.box("body", [-3.0, 2.0, -2.4], [6.0, 10.0, 0.4], layered(blue, [region((0, 0, 0.08, 1), gold), region((0.92, 0, 1, 1), gold)]))  # the tabard's front panel
+    m.box("body", [-3.0, 2.0, 2.0], [6.0, 10.0, 0.4], layered(blue, [region((0, 0, 0.08, 1), gold), region((0.92, 0, 1, 1), gold)]))
+    ch = SC.swatch((200, 200, 210) if not scarlet else (255, 120, 140), 230)
+    for k in range(5):  # the five chains hanging from his right fingers
+        SC.curve_tube(m, "rightArm", [[5.0 + k * 0.5, 12, -1.2], [5.2 + k * 0.6, 8, -2.2], [5.0 + k * 0.7, 5 - k * 0.4, -1.5]], 0.22, 0.2, [ch, ch], n=2)
+    kurapika_hair(m)
+
+
+FORMS.update({
+    "aizen": ["base", "hogyoku", "final"],
+    "byakuya": ["shikai", "bankai"],
+    "power": ["fiend", "devil"],
+    "makima": ["base", "devil"],
+    "allmight": ["base", "uss"],
+    "todoroki": ["base", "flashfire"],
+    "hisoka": ["base", "serious"],
+    "kurapika": ["base", "emperor"],
+})
+_build_prev20 = build
+_NEW20 = {"aizen": aizen, "byakuya": byakuya, "power": power, "makima": makima, "allmight": allmight,
+          "todoroki": todoroki, "hisoka": hisoka, "kurapika": kurapika}
+
+
+def build(char, form):  # noqa: F811
+    if char in _NEW20:
+        m = M.Model()
+        _NEW20[char](m, form)
+        return m
+    return _build_prev20(char, form)

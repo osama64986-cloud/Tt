@@ -1347,6 +1347,283 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.aizen": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.hogyoku",
+      "Texture.hogyoku_shout",
+      "Texture.hogyoku_hurt",
+      "Texture.hogyoku_blink",
+      "Texture.final",
+      "Texture.final_shout",
+      "Texture.final_hurt",
+      "Texture.final_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.hogyoku",
+      "Geometry.final"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.byakuya": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.shikai",
+      "Texture.shikai_shout",
+      "Texture.shikai_hurt",
+      "Texture.shikai_blink",
+      "Texture.bankai",
+      "Texture.bankai_shout",
+      "Texture.bankai_hurt",
+      "Texture.bankai_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.shikai",
+      "Geometry.bankai"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.power": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.fiend",
+      "Texture.fiend_shout",
+      "Texture.fiend_hurt",
+      "Texture.fiend_blink",
+      "Texture.devil",
+      "Texture.devil_shout",
+      "Texture.devil_hurt",
+      "Texture.devil_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.fiend",
+      "Geometry.devil"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.makima": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.devil",
+      "Texture.devil_shout",
+      "Texture.devil_hurt",
+      "Texture.devil_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.devil"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.allmight": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.uss",
+      "Texture.uss_shout",
+      "Texture.uss_hurt",
+      "Texture.uss_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.uss"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.todoroki": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.flashfire",
+      "Texture.flashfire_shout",
+      "Texture.flashfire_hurt",
+      "Texture.flashfire_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.flashfire"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.hisoka": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.serious",
+      "Texture.serious_shout",
+      "Texture.serious_hurt",
+      "Texture.serious_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.serious"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.kurapika": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.base",
+      "Texture.base_shout",
+      "Texture.base_hurt",
+      "Texture.base_blink",
+      "Texture.emperor",
+      "Texture.emperor_shout",
+      "Texture.emperor_hurt",
+      "Texture.emperor_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.base",
+      "Geometry.emperor"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.frieza": {
    "arrays": {
     "textures": {
