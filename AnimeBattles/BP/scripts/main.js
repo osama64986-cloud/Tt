@@ -2161,9 +2161,10 @@ const SUKUNA = {
         every(30, 6, (i) => {  // it fights for ten seconds: the Sword of Extermination, then crushing blows, harder after every adaptation
           if (!e.isValid || now() > s.mahoUntil || !alive(t)) return;
           const bonus = 1 + 0.25 * (s.mahoTurns ?? 0);
-          if (i % 2 === 0) {
+          if (i % 2 === 0) {  // the Sword of Extermination: raised overhead, then brought down — a silver trail follows the blade
             vset(v, "ab:pose", 1);
-            flyingSlash(e, t, { color: C.white, dmg: 40 * bonus * powerOf(e) / 100, range: 20, roll: 80, size: 3.4 }); shake(dim, t.location, 0.5, 0.4);
+            later(6, () => { if (v?.isValid && alive(t)) mahoragaTrail(v, t); });
+            later(8, () => { if (alive(t)) { flyingSlash(e, t, { color: C.white, dmg: 40 * bonus * powerOf(e) / 100, range: 20, roll: 80, size: 3.4 }); shake(dim, t.location, 0.5, 0.4); } });
           } else {  // a storm of punches: six blows, the last one sends the enemy sliding
             vset(v, "ab:pose", 7);
             every(3, 6, (k) => {
@@ -4961,6 +4962,24 @@ function impact(e, t, strong, color, mv) {
 }
 
 // Swing trails: an arc of light where the fist / leg travels.
+// Mahoraga's sword trail: the arc swept by the blade (shoulder to tip) as the arm comes down, drawn over four ticks.
+function mahoragaTrail(v, t) {
+  const dim = v.dimension, k = 2.8 / 16;  // model units -> blocks at Mahoraga's size
+  const fwd = V.norm({ x: t.location.x - v.location.x, y: 0, z: t.location.z - v.location.z });
+  const side = sideOf(fwd);
+  const shoulder = V.add(V.up(v.location, 37 * k), V.mul(side, -10.6 * k));
+  every(1, 4, (i) => {
+    for (let j = 0; j < 5; j++) {
+      const th = (165 - (i * 5 + j) * 8) * Math.PI / 180;  // from overhead down to the front
+      const dir = V.add(V.mul({ x: 0, y: -1, z: 0 }, Math.cos(th)), V.mul(fwd, Math.sin(th)));
+      for (const r of [20, 28, 36, 42]) {
+        const p = V.add(shoulder, V.mul(dir, r * k));
+        fx(dim, "orb", p, r > 30 ? C.white : C.silver, r > 30 ? 0.9 : 0.6, 0.35);
+      }
+    }
+  });
+  sound(dim, "mob.phantom.swoop", v.location, 1, 0.6);
+}
 function swingArc(e, t, kind, color) {
   if (!kind || kind === "punch") {
     const { pos, dir } = handPos(e, t);
@@ -4970,6 +4989,7 @@ function swingArc(e, t, kind, color) {
   const base = V.up(e.location, kind === "up" ? 1.2 : kind === "down" ? 1.6 : 0.9);
   const fwd = V.norm({ x: t.location.x - e.location.x, y: 0, z: t.location.z - e.location.z });
   const side = sideOf(fwd);
+  const pts = [];
   for (let k = 0; k <= 10; k++) {
     const a = (k / 10) * Math.PI;
     let p;
@@ -4981,9 +5001,17 @@ function swingArc(e, t, kind, color) {
     } else {
       p = V.add(base, V.add(V.mul(fwd, Math.sin(a) * 1.2), { x: 0, y: -Math.cos(a) * 1.1, z: 0 }));
     }
-    fx(e.dimension, "orb", p, color, 0.45, 0.25);
-    if (k % 3 === 0) fx(e.dimension, "orb", p, C.white, 0.22, 0.2);
+    pts.push(p);
   }
+  // the trail is drawn along the path over three ticks, following the limb or blade like an anime smear
+  every(1, 3, (i) => {
+    if (!e.isValid) return false;
+    for (let k = i * 4; k < Math.min(pts.length, i * 4 + 4); k++) {
+      fx(e.dimension, "orb", pts[k], color, 0.5 - i * 0.05, 0.3);
+      fx(e.dimension, "orb", pts[k], C.white, 0.24, 0.22);
+      if (k > 0) fx(e.dimension, "orb", V.add(pts[k], V.mul(V.sub(pts[k - 1], pts[k]), 0.5)), color, 0.38, 0.25);
+    }
+  });
 }
 
 function comboStep(e, t, mv, last) {
