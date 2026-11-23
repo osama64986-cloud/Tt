@@ -1,6 +1,9 @@
-# Nabd 1.0.74 — the big update
+# Nabd 1.0.76 — the big update
 
 ### Textures
+- Lanterns (normal, soul, copper) redrawn on the game's lantern layout: a full pane of glass with a flickering flame, iron bands and a raised cap.
+- Light blocks redrawn: sea lantern, ochre/verdant/pearlescent froglights, shroomlight, redstone lamp (on/off), jack o'lantern and both campfire flames.
+- Tall grass is one continuous plant through both halves.
 - Glowstone redrawn as glowing crystal clusters (hot centres, amber rims, real light).
 - Granite, diorite and andesite: speckled stone with mineral grains; andesite with a soft sideways flow.
 - Ice, packed ice and blue ice: calmer colour, light streaks, fine cracks and frozen plates.

@@ -195,7 +195,17 @@ def build(out, flip, variations):
 # The lantern model reads four regions from its texture: cap (rows 0-1,
 # x1-4), side (rows 2-8, x0-5), top/bottom (rows 9-14, x0-5) and the hanger
 # (x11-13).  Each region is drawn on its own: dark metal frame, glowing glass.
-def lantern_frame(frame_ramp, glow, level):
+def lantern_frame(frame_ramp, glow, level, post=None):
+    """One frame of a lantern, laid out on the game's lantern UV map:
+    rows 0-1 x1-4  cap sides         rows 2-8 x0-5  body sides
+    rows 9-14 x0-5 body top / bottom (the cap top sits on rows 10-13 x1-4)
+    x11-13         the hanging chain links.
+    Body side: an iron band above and below a tall pane of glass that runs the
+    full width between two corner posts; behind the glass a flame burns, white-hot
+    at its heart (a little below the middle), cooling to the glow colour at the
+    edges and the top.  `post` colours the corner posts and the cap's lower band
+    (warm bronze on the lantern, iron on the soul lantern, copper on copper ones).
+    `level` 0..2 makes the flame flicker between frames."""
     rgb = np.zeros((N, N, 3), np.uint8)
     al = np.zeros((N, N), np.uint8)
     emis = np.zeros((N, N))
@@ -206,31 +216,40 @@ def lantern_frame(frame_ramp, glow, level):
         al[y, x] = 255
         emis[y, x] = e
         hgt[y, x] = h
-    fr = frame_ramp
-    for x in range(1, 5):                                  # cap
-        px(x, 0, fr[4] if x < 4 else fr[3], h=0.9)
-        px(x, 1, fr[2] if x < 4 else fr[1], h=0.8)
-    for y in range(2, 9):                                  # side: frame and glass
+    fr = frame_ramp                                         # 0 darkest .. 4 lightest
+    post = post or [fr[1], fr[3]]                           # [shade, lit]
+    # cap sides: iron top, a band of the post colour under it
+    for x in range(1, 5):
+        px(x, 0, fr[3] if x in (2, 3) else fr[2], h=0.9)
+        px(x, 1, post[1] if x in (1, 4) else post[0], h=0.8)
+    # body sides
+    for x in range(0, 6):
+        px(x, 2, fr[3] if 0 < x < 5 else fr[2], h=0.9)    # upper band
+        px(x, 8, fr[3] if 0 < x < 5 else fr[1], h=0.9)    # lower band
+    for y in range(3, 8):
+        px(0, y, post[1] if 4 <= y <= 6 else post[0], h=0.9)
+        px(5, y, post[1] if 4 <= y <= 6 else post[0], h=0.85)
+        for x in range(1, 5):
+            d = abs(x - 2.5) * 1.15 + abs(y - 5.5)           # distance from the flame's heart
+            k = 3 - int(d - 0.2 * level)
+            k = max(0, min(3, k))
+            px(x, y, glow[k], e=140 + 38 * k, h=0.45)
+    # the hottest pixel moves a touch between frames
+    hx, hy = [(2, 5), (3, 6), (2, 6)][level % 3]
+    px(hx, hy, glow[3], e=255, h=0.45)
+    # body top / bottom plate: bevelled, the cap top raised in its middle
+    for y in range(9, 15):
         for x in range(0, 6):
-            edge = x in (0, 5) or y in (2, 8)
-            if edge:
-                c = fr[3] if (x == 0 or y == 2) else fr[1]
-                px(x, y, c, h=0.9)
-            else:
-                g = glow[min(3, max(0, level + (1 if (x in (2, 3) and y in (4, 5, 6)) else 0) - (1 if y == 7 else 0)))]
-                px(x, y, g, e=230, h=0.5)
-    for y in range(9, 15):                                 # top and bottom plate
-        for x in range(0, 6):
-            ring = x in (0, 5) or y in (9, 14)
-            if ring:
-                px(x, y, fr[3] if (x == 0 or y == 9) else fr[1], h=0.9)
-            elif x in (2, 3) and y in (11, 12):
-                px(x, y, glow[min(3, level + 1)], e=200, h=0.5)         # glow seen through the plate
-            else:
-                px(x, y, fr[2], h=0.7)
+            ring = y in (9, 14) or x in (0, 5)
+            px(x, y, fr[1] if ring else fr[2], h=0.75)
+    for x in range(1, 5):
+        for y in range(10, 14):
+            inner = 1 < x < 4 and 10 < y < 13
+            px(x, y, fr[3] if inner else fr[2], h=0.95)
+    # chain links (same places as the game's map)
     for (x, y) in ((11, 1), (12, 1), (13, 1), (11, 2), (13, 2), (11, 3), (13, 3), (11, 4), (12, 4), (13, 4),
                    (11, 6), (13, 6), (11, 7), (12, 7), (13, 7), (11, 10), (12, 10), (13, 10), (11, 11), (13, 11)):
-        px(x, y, fr[3] if x == 11 else fr[1], h=0.8)       # hanger links
+        px(x, y, fr[3] if x == 11 else fr[1], h=0.8)
     t = Tex(rgb, hgt, alpha=al, rough=110, metal=np.where(emis > 0, 0, 200), bump=0.8)
     t.emis = emis
     return t
@@ -241,16 +260,18 @@ _build_final = build
 
 def build(out, flip, variations):          # noqa: F811
     _build_final(out, flip, variations)
-    warm = [(214, 120, 30), (250, 170, 50), (255, 214, 110), (255, 246, 190)]
-    cool = [(30, 130, 150), (70, 200, 220), (150, 240, 245), (225, 255, 255)]
+    warm = [(196, 92, 26), (240, 150, 46), (255, 206, 96), (255, 248, 200)]
+    cool = [(24, 110, 140), (52, 190, 214), (140, 236, 244), (226, 255, 255)]
     green = [(40, 150, 90), (90, 210, 140), (160, 245, 190), (225, 255, 235)]
-    dark = make_ramp((64, 66, 80), 5, 0.5)
+    dark = make_ramp((70, 72, 86), 5, 0.55)
     for nm, glow, metal in [("lantern", warm, dark), ("soul_lantern", cool, dark)] + \
             [(p + "copper_lantern", green, vramp("copper_block" if p == "" else p + "copper", 5, contrast=0.36))
              for p in ("", "exposed_", "weathered_", "oxidized_")]:
         if nm in STATS:
             n = STATS[nm]["size"][1] // N
-            out[nm] = stack_frames([lantern_frame(metal, glow, [1, 2, 1, 0][f % 4]) for f in range(n)])
+            post = ([(122, 62, 34), (150, 86, 50)] if nm == "lantern" else
+                    [metal[1], metal[2]] if nm == "soul_lantern" else [metal[2], metal[3]])
+            out[nm] = stack_frames([lantern_frame(metal, glow, [1, 2, 0][f % 3], post) for f in range(n)])
 
     # shelves: upper half is the plank top, lower half the shelf front with two recessed slots
     woods = {"oak": "planks_oak", "spruce": "planks_spruce", "birch": "planks_birch", "jungle": "planks_jungle",
