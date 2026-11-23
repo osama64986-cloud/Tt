@@ -571,6 +571,23 @@ function hitArea(src, center, radius, dmg, hitSet, opt = {}) {
   }
   return n;
 }
+// The arena does not fall apart: inside it, blows CRACK the floor, wall and stands instead of digging them out.
+let ARENA_AT = undefined;
+function arenaAt() {
+  if (ARENA_AT === undefined) { try { ARENA_AT = JSON.parse(world.getDynamicProperty("ab:arena") ?? "null"); } catch (e) { ARENA_AT = null; } }
+  return ARENA_AT;
+}
+const CRACKED = {
+  "minecraft:polished_andesite": "minecraft:cracked_stone_bricks", "minecraft:smooth_stone": "minecraft:cracked_stone_bricks",
+  "minecraft:stone_bricks": "minecraft:cracked_stone_bricks", "minecraft:chiseled_stone_bricks": "minecraft:cracked_stone_bricks",
+  "minecraft:deepslate_tiles": "minecraft:cracked_deepslate_tiles", "minecraft:polished_deepslate": "minecraft:cracked_deepslate_tiles",
+  "minecraft:polished_blackstone": "minecraft:cracked_polished_blackstone_bricks", "minecraft:polished_blackstone_bricks": "minecraft:cracked_polished_blackstone_bricks",
+};
+function inArena(dim, x, y, z) {
+  const a = arenaAt();
+  if (!a || a.dim !== dim.id) return false;
+  return Math.hypot(x + 0.5 - a.x, z + 0.5 - a.z) <= ARENA.OUT + 1 && y >= a.y - 6 && y <= a.y + 14;
+}
 function carve(dim, center, r, budget = 160) {
   if (!griefing() || r <= 0) return;
   if (r >= 1.5 && Math.random() < 0.4) rubble(dim, center, Math.round(4 + r * 3), 5 + r);
@@ -582,6 +599,11 @@ function carve(dim, center, r, budget = 160) {
       const b = dim.getBlock({ x: Math.floor(center.x + x), y: Math.floor(center.y + y), z: Math.floor(center.z + z) });
       if (!b || b.isAir || b.isLiquid || UNBREAKABLE.has(b.typeId) || DOME_BLOCKS.has(b.typeId)) continue;
       if (b.getComponent("minecraft:inventory")) continue;  // never break chests and other containers
+      if (inArena(dim, b.location.x, b.location.y, b.location.z)) {  // the arena only cracks (and heals after the fight)
+        const cr = CRACKED[b.typeId];
+        if (cr && Math.random() < 0.6) { scar(dim, b); b.setType(cr); if (++n >= budget) return; }
+        continue;
+      }
       scar(dim, b);
       b.setType("minecraft:air");
       if (++n >= budget) return;
@@ -5622,12 +5644,16 @@ function buildArena(p) {
         fill(x, z, 0, h - 1, AR.stand);
         const lamp = Math.round(((Math.atan2(z, x) * 180 / Math.PI) + 360) % 20) === 0 && Math.floor(r) === R + 3;
         set(x, h, z, lamp ? AR.light : (h % 2 ? AR.seat : AR.seat2));        // seat rows in two tones
-        if (r > OUT - 1) fill(x, z, h + 1, h + 1, AR.wall);  // the back rail
+        if (r > OUT - 1) {  // the back rail, with a lantern burning on it every 15 degrees
+          fill(x, z, h + 1, h + 1, AR.wall);
+          if (Math.round(((Math.atan2(z, x) * 180 / Math.PI) + 360) % 15) === 0) set(x, h + 2, z, "minecraft:lantern");
+        }
       }
       return;
     }
     // 3) done: remember it so battles started nearby use its team pads
     world.setDynamicProperty("ab:arena", JSON.stringify({ x: c.x + 0.5, y: c.y + 1, z: c.z + 0.5, dim: dim.id }));
+    ARENA_AT = { x: c.x + 0.5, y: c.y + 1, z: c.z + 0.5, dim: dim.id };
     arenaBusy.delete(p.id);
     sound(dim, "random.levelup", p.location, 1, 0.8);
     ring(dim, { x: c.x + 0.5, y: c.y + 1.2, z: c.z + 0.5 }, 6, C.gold, 40, 0.6);
