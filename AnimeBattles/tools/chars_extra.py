@@ -2693,7 +2693,7 @@ def byakuya(m, form):
 
 
 # ------------------------------------------------------------------ Power — Chainsaw Man
-POW_HAIR = (246, 206, 160)
+POW_HAIR = (244, 214, 176)
 
 
 @M.smooth_hair
@@ -2701,21 +2701,26 @@ def power_hair(m, devil):
     _shell_strands(m, POW_HAIR, [([x, 30.8, 3.6], [x * 0.05, -1, 0.15], 13.0, 2.8) for x in (-2.8, -1.0, 1.0, 2.8)]
                    + [([s * 4.0, 30.6, -0.6], [s * 0.08, -1, 0], 11.0, 2.2) for s in (1, -1)]
                    + [([x, 31.4, -4.1], [x * 0.05, -0.75, -0.45], 3.4, 1.8) for x in (-2.2, -0.6, 1.0, 2.6)])
-    horn = SC.swatch((200, 30, 36))
-    for s in (1, -1):  # her two red horns
-        SC.blade(m, "hair", [s * 2.2, 32.4, -1.6], [s * 0.25, 1, -0.1], 4.0 if not devil else 6.0, 1.3, 1.1, horn)
+    horn, tip = SC.swatch((214, 34, 40)), SC.swatch((150, 16, 24))
+    for s in (1, -1):  # her two short, pointed red horns at the front of her head, curving slightly outward
+        L = 3.2 if not devil else 5.0
+        SC.blade(m, "hair", [s * 1.9, 32.2, -2.4], [s * 0.3, 1, -0.25], L, 1.5, 1.2, horn)
+        SC.blade(m, "hair", [s * (1.9 + 0.3 * L * 0.8), 32.2 + L * 0.8, -2.4 - 0.25 * L * 0.8], [s * 0.5, 1, -0.2], L * 0.35, 0.7, 0.6, tip)
 
 
 def power(m, form):
     """Power, the Blood Fiend: long blonde hair, two red horns, yellow eyes with red cross pupils, shark teeth, in the
     Public Safety white shirt, black tie and dark trousers. Blood Devil: bigger horns, blood running down."""
     devil = form == "devil"
-    head = head_paint(POW_HAIR, (250, 200, 60), True, "power_devil" if devil else "power")
-    shirt = (242, 242, 240)
-    tie = lambda f, px, w, h, b: [_put(px, w, h, w // 2, y, (24, 24, 28)) for y in range(int(h * 0.05), int(h * 0.75))] if f == "north" else None
-    base_body(m, layered(shirt, [tie]), arm_paint(shirt, sleeve_to=0.86),
-              layered((40, 40, 48), [region((0, 0.88, 1, 1), (20, 20, 24))]), head)
-    m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((30, 28, 30)))
+    head = head_paint(POW_HAIR, (230, 60, 40), True, "power_devil" if devil else "power")
+    shirt, jacket, pants = (240, 196, 196), (44, 112, 160), (70, 32, 50)
+    tie = lambda f, px, w, h, b: [_put(px, w, h, w // 2 + d, y, (60, 30, 40)) for y in range(int(h * 0.05), int(h * 0.75)) for d in (0, 1) if d == 0 or y > h * 0.2] if f == "north" else None
+    base_body(m, layered(shirt, [tie]), layered(jacket, [region((0, 0.86, 1, 1), SKIN)]),
+              layered(pants, [region((0, 0.82, 1, 1), (190, 40, 50))]), head)
+    for x0 in (-4.6, 2.6):  # the open blue jacket over her pink shirt
+        m.box("body", [x0, 11.6, -2.6], [2.0, 12.6, 5.2], layered(jacket, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(jacket, 0.75))]))
+    m.box("body", [-4.6, 11.6, 2.1], [9.2, 12.6, 0.5], solid(jacket))
+    m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((40, 26, 34)))
     if devil:
         bl = SC.swatch((180, 20, 28))
         SC.blade(m, "rightArm", [6.2, 10.0, -2.0], [0, -0.1, -1], 9, 2.6, 1.0, bl)               # a blood blade in her hand
