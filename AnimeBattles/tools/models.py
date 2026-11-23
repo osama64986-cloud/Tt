@@ -4096,13 +4096,37 @@ def build(char, form):  # noqa: F811
         return m
     if char == "frieza":
         m = Model()
-        frieza_body(m, golden=form == "golden")
+        frieza_body(m, golden=form in ("golden", "black"))
+        if form == "black":  # Black Frieza (manga): the gold turns to glossy black; the purple gems stay
+            for c in m.cubes:
+                c["paint"] = _to_black(c["paint"])
         return m
     return _build_v7(char, form)
 
 
+def _to_black(paint):
+    """Recolour Golden Frieza into Black Frieza: every gold/yellow pixel becomes black with a faint violet sheen
+    (keeping its shading, so the shells still look glossy); purple, red and dark pixels are left alone."""
+    import colorsys
+
+    def p(face, img):
+        paint(face, img)
+        px = img.load()
+        w, h = img.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if not a:
+                    continue
+                hh, ss, vv = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if 0.05 < hh < 0.19 and ss > 0.3:  # gold / orange / yellow
+                    k = vv ** 1.6
+                    px[x, y] = (int(8 + 42 * k), int(7 + 34 * k), int(12 + 60 * k), a)
+    return p
+
+
 FORMS["zoro"] = ["base", "king"]
-FORMS["frieza"] = ["final", "golden"]
+FORMS["frieza"] = ["final", "golden", "black"]
 
 
 # ================================================================ facial expressions

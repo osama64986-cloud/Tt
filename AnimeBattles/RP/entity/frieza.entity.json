@@ -15,11 +15,16 @@
     "golden": "textures/entity/frieza/golden",
     "golden_shout": "textures/entity/frieza/golden_shout",
     "golden_hurt": "textures/entity/frieza/golden_hurt",
-    "golden_blink": "textures/entity/frieza/golden_blink"
+    "golden_blink": "textures/entity/frieza/golden_blink",
+    "black": "textures/entity/frieza/black",
+    "black_shout": "textures/entity/frieza/black_shout",
+    "black_hurt": "textures/entity/frieza/black_hurt",
+    "black_blink": "textures/entity/frieza/black_blink"
    },
    "geometry": {
     "final": "geometry.ab.frieza_final",
-    "golden": "geometry.ab.frieza_golden"
+    "golden": "geometry.ab.frieza_golden",
+    "black": "geometry.ab.frieza_black"
    },
    "animations": {
     "look": "animation.ab.look_at_target",

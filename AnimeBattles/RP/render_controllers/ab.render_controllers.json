@@ -1358,13 +1358,18 @@
       "Texture.golden",
       "Texture.golden_shout",
       "Texture.golden_hurt",
-      "Texture.golden_blink"
+      "Texture.golden_blink",
+      "Texture.black",
+      "Texture.black_shout",
+      "Texture.black_hurt",
+      "Texture.black_blink"
      ]
     },
     "geometries": {
      "Array.geos": [
       "Geometry.final",
-      "Geometry.golden"
+      "Geometry.golden",
+      "Geometry.black"
      ]
     }
    },

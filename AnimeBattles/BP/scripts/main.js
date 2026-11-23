@@ -1032,6 +1032,9 @@ function transform(e, s, to, label, color, extraSound) {
   const hpc = health(e);  // the surge of a new form restores a little strength
   if (hpc) try { hpc.setCurrentValue(Math.min(hpc.effectiveMax, hpc.currentValue + hpc.effectiveMax * 0.06)); } catch (err) { /* ignore */ }
   const calm = e.typeId === "ab:goku" && to === 5;  // Ultra Instinct awakens in silence: no yell, no crouch
+  if (e.typeId === "ab:frieza" && to === 2) {  // Black Frieza: the gold drains to black in a storm of dark energy
+    later(4, () => { if (e.isValid) { smoke(dim, e.location, C.black, 1.6, 1.6, 40 * fxLevel(), 0.9, 1.0, 3); fx(dim, "shock", e.location, C.void, 10, 0.6); shake(dim, e.location, 0.6, 0.8); } });
+  }
   if (e.typeId === "ab:frieza" && to === 1) {  // Golden Frieza is born inside a cocoon of golden light
     const cocoon = spawnVfx(dim, 1, V.up(e.location, 1.1), { slot: 9, size: 1.7, life: 34 });
     later(30, () => killVfx(cocoon));
@@ -1096,6 +1099,7 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  if (e.typeId === "ab:frieza" && form === 2 && Math.random() < 0.6) smoke(e.dimension, e.location, C.black, 0.8, 1.0, 3 * fxLevel(), 0.6, 0.2, 1.0);
   if (e.typeId === "ab:gon" && form === 2) {  // the Vow: ominous BLACK nen pouring off him without pause
     smoke(e.dimension, e.location, C.black, 0.9, 1.4, 6 * fxLevel(), 0.85, 0.15, 1.2);
   }
@@ -1249,12 +1253,12 @@ const GOKU = {
   name: "Goku", color: "§6", energy: 1000, regen: 15, energyName: "§bKI",
   dodge: (e, s) => (formOf(e) === 5 ? 0.6 : 0.1),
   forms: [
-    { label: "Base", power: 150 },
-    { label: "Super Saiyan", power: 220, aura: C.gold },
-    { label: "Super Saiyan 3", power: 300, aura: C.gold },
-    { label: "Super Saiyan God", power: 420, aura: C.red },
-    { label: "Super Saiyan Blue", power: 560, aura: C.ssbBlue },
-    { label: "Ultra Instinct", power: 850, aura: C.silver },
+    { label: "Base", power: 170 },
+    { label: "Super Saiyan", power: 250, aura: C.gold },
+    { label: "Super Saiyan 3", power: 340, aura: C.gold },
+    { label: "Super Saiyan God", power: 480, aura: C.red },
+    { label: "Super Saiyan Blue", power: 640, aura: C.ssbBlue },
+    { label: "Ultra Instinct", power: 1000, aura: C.silver },
   ],
   thresholds: [0.9, 0.75, 0.6, 0.45, 0.3],
   transformCd: 80,
@@ -1432,11 +1436,11 @@ const VEGETA = {
   dodge: () => 0.08,
   ego: 4,
   forms: [
-    { label: "Base", power: 140 },
-    { label: "Super Saiyan", power: 210, aura: C.gold },
-    { label: "Super Saiyan God", power: 400, aura: C.red },
-    { label: "Super Saiyan Blue", power: 520, aura: C.ssbBlue },
-    { label: "Ultra Ego", power: 680, aura: C.ego },
+    { label: "Base", power: 160 },
+    { label: "Super Saiyan", power: 240, aura: C.gold },
+    { label: "Super Saiyan God", power: 460, aura: C.red },
+    { label: "Super Saiyan Blue", power: 600, aura: C.ssbBlue },
+    { label: "Ultra Ego", power: 820, aura: C.ego },
   ],
   thresholds: [0.85, 0.7, 0.5, 0.35],
   transformCd: 80,
@@ -2509,12 +2513,16 @@ const FRIEZA = {
   name: "Frieza", color: "§5", energy: 1300, regen: 22, energyName: "§bKI",
   dodge: () => 0.12,
   forms: [
-    { label: "Final Form", power: 180 },
-    { label: "Golden Frieza", power: 480, aura: C.gold },
+    { label: "Final Form", power: 220 },
+    { label: "Golden Frieza", power: 700, aura: C.gold },
+    { label: "Black Frieza", power: 1500, aura: C.void },  // manga: beyond Ultra Instinct Goku and Ultra Ego Vegeta together
   ],
-  thresholds: [0.6], transformCd: 100,
-  formSound: [null, "beacon.power"],
+  thresholds: [0.6, 0.4], transformCd: 100,
+  formSound: [null, "beacon.power", "mob.wither.spawn"],
   abilities: [
+    SIG.beam("blackbeam", "Black Death Beam", { say: "§0§lDeath Beam. §7— black lightning", color: C.void, dmg: 70, width: 0.8, length: 48, charge: 4, cd: 160, cost: 120, cond: G(2), pose: 4 }),
+    SIG.strike("blackchop", "Black Frieza: the instant blow", { say: "§0§l...", color: C.void, blast: true, hits: 1, dmg: 80, cd: 220, cost: 150, poses: [19], launch: 1.2, cond: G(2), weight: 7 }),
+    SIG.wave("blackwave", "Black Frieza: Death Storm", { say: "§0§lDeath Storm. §7— the ground blackens", color: C.void, radius: 8, dmg: 60, cd: 360, cost: 220, cond: G(2) }),
     SIG.slash("deathwave", "Death Wave", { say: "§5§lDeath Wave. §7— a flick of the finger", color: C.death, count: 2, dmg: 24, size: 2.0, pose: 4 }),
     SIG.wave("deathstorm", "Death Storm", { say: "§5§lDeath Storm! §7— the ground explodes all round him", color: C.death, radius: 6, dmg: 26, cd: 300 }),
     SIG.ball("deathchaser", "Death Chaser", { say: "§5§lYou can run... §7— a homing ball of death", color: C.death, count: 2, size: 1.2, dmg: 24, homing: true, cd: 240 }),
@@ -4074,8 +4082,8 @@ const BROLY = {
   name: "Broly", color: "§a", energy: 2200, regen: 40, energyName: "§aKI",
   dodge: (e) => (formOf(e) >= 2 ? 0.1 : 0.06),
   ego: 3, egoMax: 0.24,  // the angrier he gets, the stronger: every blow he takes feeds his rage (+24% at most)
-  forms: [{ label: "Base", power: 160 }, { label: "Wrathful", power: 300, aura: C.red },
-    { label: "Super Saiyan", power: 470, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 640, aura: BG }],
+  forms: [{ label: "Base", power: 180 }, { label: "Wrathful", power: 340, aura: C.red },
+    { label: "Super Saiyan", power: 540, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 760, aura: BG }],
   thresholds: [0.85, 0.65, 0.45], transformCd: 120, formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.wither.spawn"],
   abilities: [
     SIG.wave("roar", "Gigantic Roar", { say: "§a§lRAAAAAAAGH! §7— the roar alone flattens the ground", color: BG, radius: 7, dmg: 18, cd: 220 }),
@@ -4455,7 +4463,7 @@ const GOHAN = {
   name: "Gohan", color: "§5", energy: 1200, regen: 20, energyName: "§bKI",
   dodge: (e) => [0.1, 0.14, 0.18, 0.24][formOf(e)] ?? 0.1,
   forms: [{ label: "Base", power: 200 }, { label: "Super Saiyan 2", power: 360, aura: C.gold },
-    { label: "Ultimate (Mystic)", power: 520, aura: C.white }, { label: "Beast", power: 700, aura: C.silver }],
+    { label: "Ultimate (Mystic)", power: 560, aura: C.white }, { label: "Beast", power: 780, aura: C.silver }],
   thresholds: [0.85, 0.6, 0.35], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
   abilities: [
     SIG.ball("kiblast", "Ki Barrage", { say: "§e§lKi barrage", color: C.kiYellow, count: 8, size: 0.5, dmg: 6, spread: 3, speed: 2.4, cd: 120, cost: 60, charge: 3 }),
