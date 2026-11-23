@@ -1247,6 +1247,10 @@
       "Texture.jajanken_shout",
       "Texture.jajanken_hurt",
       "Texture.jajanken_blink",
+      "Texture.dark",
+      "Texture.dark_shout",
+      "Texture.dark_hurt",
+      "Texture.dark_blink",
       "Texture.adult",
       "Texture.adult_shout",
       "Texture.adult_hurt",
@@ -1257,6 +1261,7 @@
      "Array.geos": [
       "Geometry.base",
       "Geometry.jajanken",
+      "Geometry.dark",
       "Geometry.adult"
      ]
     }

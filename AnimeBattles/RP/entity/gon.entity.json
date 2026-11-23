@@ -16,6 +16,10 @@
     "jajanken_shout": "textures/entity/gon/jajanken_shout",
     "jajanken_hurt": "textures/entity/gon/jajanken_hurt",
     "jajanken_blink": "textures/entity/gon/jajanken_blink",
+    "dark": "textures/entity/gon/dark",
+    "dark_shout": "textures/entity/gon/dark_shout",
+    "dark_hurt": "textures/entity/gon/dark_hurt",
+    "dark_blink": "textures/entity/gon/dark_blink",
     "adult": "textures/entity/gon/adult",
     "adult_shout": "textures/entity/gon/adult_shout",
     "adult_hurt": "textures/entity/gon/adult_hurt",
@@ -24,6 +28,7 @@
    "geometry": {
     "base": "geometry.ab.gon_base",
     "jajanken": "geometry.ab.gon_jajanken",
+    "dark": "geometry.ab.gon_dark",
     "adult": "geometry.ab.gon_adult"
    },
    "animations": {

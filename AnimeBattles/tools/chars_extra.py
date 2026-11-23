@@ -2090,6 +2090,7 @@ M.FACE32.update({
     "gon": dict(eye="round", brow="angled", mouth="smile", marks=[]),
     "gon_jaja": dict(eye="round", brow="sharp", mouth="clench", marks=[]),
     "gon_adult": dict(eye="round", brow="sharp", mouth="none", marks=["adult_eyes"]),
+    "gon_dark": dict(eye="round", brow="sharp", mouth="none", marks=["hidden_eyes"]),
     "akaza": dict(eye="narrow", brow="none", mouth="smirk", marks=["akaza_lines", "akaza_eyes"]),
     "akaza_compass": dict(eye="narrow", brow="none", mouth="clench", marks=["akaza_lines", "akaza_eyes"]),
     "megumi": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
@@ -2140,6 +2141,10 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
     if "adult_shadow" in marks:  # a dark, emotionless shadow across the eyes
         for x in range(4, 28):
             put(x, 15, (40, 30, 30))
+    if "hidden_eyes" in marks:  # the Vow: his eyes vanish into a band of shadow
+        for y in range(13, 23):
+            for x in range(3, 29):
+                put(x, y, (26, 26, 30) if 14 <= y <= 21 else (60, 60, 64))
     if "adult_eyes" in marks:  # Adult Gon: blank, empty round white eyes (no pupils), under a heavy dark brow
         for cx in (10.5, 21.5):
             for y in range(14, 23):
@@ -2317,12 +2322,41 @@ def gon_hair(m, adult):
         long_hair(m, GON_HAIR, back_len=19, z=4.2, front=False)
 
 
+def _greyed(paint):
+    """The Vow: everything about Gon drains to grey."""
+    if getattr(paint, "swatch", None) or not callable(paint):
+        return paint
+
+    def p(face, img):
+        paint(face, img)
+        px = img.load()
+        w, h = img.size
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if a:
+                    l = int((0.3 * r + 0.59 * g + 0.11 * b) * 0.78)
+                    px[x, y] = (l, l, l + 4, a)
+    return p
+
+
 def gon(m, form):
     """Gon: the green jacket and shorts, white socks and boots, the fishing rod on his back. Jajanken: his fist blazes
     with yellow nen. Adult Gon: grown in an instant, his clothes torn to rags, a towering mane of hair, a dark aura."""
+    if form == "dark":  # the Vow: the boy's body, drained grey, eyes swallowed by shadow
+        M._GON_DARK = True
+        try:
+            gon(m, "base")
+        finally:
+            M._GON_DARK = False
+        for c in m.cubes:
+            c["paint"] = _greyed(c["paint"])
+        return
     adult = form == "adult"
     jaja = form == "jajanken"
     key = "gon_adult" if adult else ("gon_jaja" if jaja else "gon")
+    if form == "base" and getattr(M, "_GON_DARK", False):
+        key = "gon_dark"
     head = head_paint(GON_HAIR, (120, 70, 40), True, key)
     green = (50, 130, 70)
     if adult:
@@ -2449,7 +2483,7 @@ def megumi(m, form):
 FORMS.update({
     "gohan": ["base", "ssj2", "ultimate", "beast"],
     "bakugo": ["base", "cluster"],
-    "gon": ["base", "jajanken", "adult"],
+    "gon": ["base", "jajanken", "dark", "adult"],
     "akaza": ["base", "compass"],
     "megumi": ["base", "shadows"],
 })

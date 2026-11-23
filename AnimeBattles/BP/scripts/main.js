@@ -387,6 +387,17 @@ function fx(dim, kind, loc, color, size, life, extra) {
     dim.spawnParticle(`ab:${kind}`, loc, m);
   } catch (e) { /* chunk not loaded or particle missing */ }
 }
+// Alpha-blended smoke: unlike the glowing (additive) effects, dark colours such as black actually show.
+function smoke(dim, loc, color, size, life, count, alpha = 0.85, radius = 0, speed = 0.6) {
+  try {
+    const m = new MolangVariableMap();
+    m.setColorRGB("variable.color", color);
+    m.setFloat("variable.size", size * VFX_SCALE); m.setFloat("variable.life", life);
+    m.setFloat("variable.count", count); m.setFloat("variable.speed", speed);
+    m.setFloat("variable.radius", radius); m.setFloat("variable.alpha", alpha);
+    dim.spawnParticle("ab:smoke", loc, m);
+  } catch (e) { /* ignore */ }
+}
 // Our own effect names mapped onto Minecraft's recorded sounds (natural, not synthetic), and every sound played
 // quieter than before so fights never get loud.
 const SOUND_MAP = {
@@ -1015,7 +1026,14 @@ function transform(e, s, to, label, color, extraSound) {
   if (e.typeId === "ab:rengoku" || e.typeId === "ab:ace") every(3, 8, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + i * 0.3), 1.5 + i * 0.3, C.fire, 20, 0.5); });
   if (e.typeId === "ab:gohan") every(3, 8, (i) => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 3 ? C.silver : to === 1 ? C.kameBlue : C.gold, 1.2, 0.3, { count: 10, speed: 7 }); });
   if (e.typeId === "ab:bakugo") every(4, 5, () => { if (e.isValid) { fx(dim, "flash", V.up(e.location, 1), C.fire, 3, 0.2); burst(dim, V.up(e.location, 1), C.ember, 16, 3, 0.4, 0.5); } });
-  if (e.typeId === "ab:gon" && to === 2) { later(6, () => { if (e.isValid) { fx(dim, "shock", e.location, C.void, 8, 0.6); burst(dim, V.up(e.location, 1.5), C.void, 40, 4, 0.5, 0.7); } }); sound(dim, "mob.wither.spawn", e.location, 0.5, 0.8); }
+  if (e.typeId === "ab:gon" && to === 2) {  // the Vow: black nen bursts out of him, he goes grey — and five seconds later he is grown
+    later(4, () => { if (e.isValid) smoke(dim, e.location, C.black, 1.4, 1.6, 30 * fxLevel(), 0.9, 0.8, 3); });
+    sound(dim, "mob.wither.spawn", e.location, 0.5, 0.8);
+    later(100, () => { if (e.isValid && formOf(e) === 2) { const st = state(e); st.formSince = now(); transform(e, st, 3, def.forms[3].label, C.gold, def.formSound[3]); } });
+  }
+  if (e.typeId === "ab:gon" && to === 3) {  // grown in an instant: the black nen turns gold
+    later(4, () => { if (e.isValid) { fx(dim, "shock", e.location, C.gold, 9, 0.6); smoke(dim, e.location, C.gold, 1.6, 1.4, 30 * fxLevel(), 0.45, 1.0, 3); } });
+  }
   if (e.typeId === "ab:akaza" && to === 1) every(2, 6, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.1), 1.5 + i * 0.8, C.kameBlue, 24, 0.5); });
   if (e.typeId === "ab:megumi") every(3, 6, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.1), 1 + i * 0.6, C.black, 20, 0.5); });
   if (!calm) setExpr(e, 1, 34);
@@ -1056,11 +1074,12 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
-  if (e.typeId === "ab:gon" && form === 2) {  // Adult Gon: ominous black nen pouring off his whole body, rising like smoke
-    const dim = e.dimension;
-    fx(dim, "aura", e.location, C.black, 1.7, 1.0, { count: 14 * fxLevel(), speed: 2.4 });
-    for (let k = 0; k < 2; k++) fx(dim, "orb", V.add(e.location, { x: (Math.random() - 0.5) * 1.6, y: 0.4 + Math.random() * 2.6, z: (Math.random() - 0.5) * 1.6 }), C.black, 0.6 + Math.random() * 0.5, 0.9);
-    if (Math.random() < 0.5) fx(dim, "streak", V.up(e.location, 1 + Math.random() * 1.8), C.black, 1.3, 0.6, { count: 5, speed: 3 });
+  if (e.typeId === "ab:gon" && form === 2) {  // the Vow: ominous BLACK nen pouring off him without pause
+    smoke(e.dimension, e.location, C.black, 0.9, 1.4, 6 * fxLevel(), 0.85, 0.15, 1.2);
+  }
+  if (e.typeId === "ab:gon" && form === 3) {  // Adult Gon: the nen turns GOLD — a tall, mostly see-through aura
+    smoke(e.dimension, e.location, C.gold, 1.1, 1.2, 5 * fxLevel(), 0.3, 0.45, 1.6);
+    if (Math.random() < 0.5) fx(e.dimension, "aura", e.location, C.gold, 1.4, 0.8, { count: 4 * fxLevel(), speed: 2.2 });
   }
   if (e.typeId === "ab:gojo" && e.hasTag("ab_infinity") && Math.random() < 0.25) {
     fx(e.dimension, "orb", V.add(V.up(e.location, 1), V.mul(V.randSphere(), 0.9)), C.blue, 0.15, 0.4);
@@ -2112,7 +2131,7 @@ const SUKUNA = {
         const life = 200;
         const v = summonGiant(e, 6, t, { size: 2.8, behind: 3, life });
         const dim = e.dimension;
-        s.mahoUntil = now() + life; s.mahoVfx = v; s.adapt = {}; s.mahoTurns = 0;
+        s.mahoUntil = now() + life; s.mahoVfx = v; s.mahoAdapt = {}; s.mahoTurns = 0;
         every(30, 6, (i) => {  // it fights for ten seconds: the Sword of Extermination, then crushing blows, harder after every adaptation
           if (!e.isValid || now() > s.mahoUntil || !alive(t)) return;
           const bonus = 1 + 0.25 * (s.mahoTurns ?? 0);
@@ -4452,16 +4471,17 @@ const BAKUGO = {
 const GON = {
   name: "Gon", color: "§a", energy: 1000, regen: 18, energyName: "§eNEN",
   dodge: () => 0.12,
-  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow }, { label: "Adult Gon", power: 200, aura: C.black }],
-  thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn"],
+  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow },
+    { label: "The Vow — darkness", power: 150 }, { label: "Adult Gon", power: 200 }],
+  thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn", "beacon.activate"],
   abilities: [
     SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 180, cost: 40, charge: 2, pose: 5 }),
     SIG.rush("wild", "Wild Rush", { say: "§a§lHyaa!", color: C.white, hits: 4, dmg: 7, finisher: 18, cd: 150, cost: 60 }),
     SIG.rush("rock", "Jajanken: Rock", { say: "§e§lFirst comes rock... ROCK!", color: C.kiYellow, hits: 2, dmg: 8, finisher: 40, cd: 200, cost: 70, slam: true, weight: 8 }),
-    SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 80, charge: 8, cond: G(1, 2), weight: 6 }),
-    SIG.strike("scissors", "Jajanken: Scissors", { say: "§e§lScissors! §7— a blade of nen from his two fingers", color: C.kiYellow, blade: true, dmg: 28, cd: 180, cost: 90, size: 2.0, poses: [19], cond: G(1, 2) }),
-    SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(2) }),
-    { id: "adultrock", label: "Adult Gon: Jajanken Rock", cd: 480, cost: 260, min: 0, max: 18, weight: 7, cond: G(2),
+    SIG.ball("paper", "Jajanken: Paper", { say: "§e§lPaper!", color: C.kiYellow, count: 1, size: 1.8, dmg: 30, speed: 1.8, cd: 220, cost: 80, charge: 8, cond: G(1, 2, 3), weight: 6 }),
+    SIG.strike("scissors", "Jajanken: Scissors", { say: "§e§lScissors! §7— a blade of nen from his two fingers", color: C.kiYellow, blade: true, dmg: 28, cd: 180, cost: 90, size: 2.0, poses: [19], cond: G(1, 2, 3) }),
+    SIG.wave("nenburst", "Nen Burst", { say: "§8§l(a crushing, dark nen fills the air)", color: C.void, radius: 6, dmg: 34, cd: 300, cost: 150, cond: G(3) }),
+    { id: "adultrock", label: "Adult Gon: Jajanken Rock", cd: 480, cost: 260, min: 0, max: 18, weight: 7, cond: G(3),
       run(e, s, t) {  // "First comes rock..." — the nen gathers in his fist, then a giant fist of yellow nen
         busy(s, 26); announce(e, "§e§lFirst comes rock... JAJANKEN... ROCK!"); setPose(e, 22);
         fx(e.dimension, "aura", e.location, C.kiYellow, 2, 1.0, { count: 40, speed: 3 });
@@ -5048,10 +5068,10 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       const ss = isFighter(src) ? state(src) : undefined;
       const tech = ss && now() - (ss.curAbAt ?? 0) < 40 ? ss.curAb : "body";
       const key = src.id + ":" + tech;
-      const a = (s.adapt ??= {})[key] ?? { n: 0, at: -99 };
+      const a = (s.mahoAdapt ??= {})[key] ?? { n: 0, at: -99 };
       ev.damage *= [1, 0.5, 0.2, 0][Math.min(a.n, 3)];
       if (now() - a.at > 10 && a.n < 3) {  // the wheel turns: one step closer to full adaptation
-        a.n++; a.at = now(); s.adapt[key] = a; s.mahoTurns = (s.mahoTurns ?? 0) + 1;
+        a.n++; a.at = now(); s.mahoAdapt[key] = a; s.mahoTurns = (s.mahoTurns ?? 0) + 1;
         const mv = s.mahoVfx;
         system.run(() => {
           const at = mv && mv.isValid ? V.up(mv.location, 9.6) : V.up(v.location, 3);

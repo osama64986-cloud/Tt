@@ -267,8 +267,8 @@ FIGHTERS.update({
     "gohan": {"hp": 1000, "forms": [(22, 0.4), (32, 0.42), (40, 0.44), (50, 0.46)], "tex": ["base", "ssj2", "ultimate", "beast"],
               "geo": ["base", "ssj2", "ultimate", "beast"], "egg": ("#4e3278", "#c82424")},
     "bakugo": {"hp": 1000, "forms": [(20, 0.42), (28, 0.44)], "tex": ["base", "cluster"], "geo": ["base", "cluster"], "egg": ("#1e1e22", "#f0821e")},
-    "gon": {"hp": 1000, "forms": [(14, 0.42), (22, 0.44), (36, 0.44)], "tex": ["base", "jajanken", "adult"], "geo": ["base", "jajanken", "adult"],
-            "egg": ("#328246", "#181e1a"), "scale": 0.9, "form_scale": [0.9, 0.9, 1.35]},  # Adult Gon: suddenly a tall grown man
+    "gon": {"hp": 1000, "forms": [(14, 0.42), (22, 0.44), (30, 0.44), (36, 0.44)], "tex": ["base", "jajanken", "dark", "adult"],
+            "geo": ["base", "jajanken", "dark", "adult"], "egg": ("#328246", "#181e1a"), "scale": 0.9, "form_scale": [0.9, 0.9, 0.9, 1.35]},  # Adult Gon: suddenly a tall grown man
     "akaza": {"hp": 1000, "forms": [(22, 0.44), (28, 0.46)], "tex": ["base", "compass"], "geo": ["base", "compass"], "egg": ("#ee8caa", "#283c96")},
     "megumi": {"hp": 1000, "forms": [(14, 0.4), (20, 0.42)], "tex": ["base", "shadows"], "geo": ["base", "shadows"], "egg": ("#1c2034", "#286e6e")},
     "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42)], "tex": ["final", "golden"], "geo": ["final", "golden"],
