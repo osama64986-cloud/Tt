@@ -1,0 +1,122 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:summon",
+   "materials": {
+    "glow": "entity_alphablend",
+    "solid": "entity_alphatest"
+   },
+   "textures": {
+    "susanoo": "textures/entity/summon/susanoo",
+    "kurama": "textures/entity/summon/kurama",
+    "gamabunta": "textures/entity/summon/gamabunta",
+    "susanoo_ribs": "textures/entity/summon/susanoo_ribs",
+    "susanoo_armour": "textures/entity/summon/susanoo_armour",
+    "muzan_infant": "textures/entity/summon/muzan_infant",
+    "mahoraga": "textures/entity/summon/mahoraga",
+    "susanoo_madara": "textures/entity/summon/susanoo_madara",
+    "susanoo_itachi": "textures/entity/summon/susanoo_itachi",
+    "susanoo_kakashi": "textures/entity/summon/susanoo_kakashi",
+    "crow": "textures/entity/summon/crow",
+    "hound": "textures/entity/summon/hound",
+    "flame_tiger": "textures/entity/summon/flame_tiger",
+    "yoyo": "textures/entity/summon/yoyo",
+    "fire_fist": "textures/entity/summon/fire_fist",
+    "ofa_fist": "textures/entity/summon/ofa_fist",
+    "dog_black": "textures/entity/summon/dog_black",
+    "dog_white": "textures/entity/summon/dog_white",
+    "nen_fist": "textures/entity/summon/nen_fist"
+   },
+   "geometry": {
+    "susanoo": "geometry.ab.summon_susanoo",
+    "kurama": "geometry.ab.summon_kurama",
+    "gamabunta": "geometry.ab.summon_gamabunta",
+    "susanoo_ribs": "geometry.ab.summon_susanoo_ribs",
+    "susanoo_armour": "geometry.ab.summon_susanoo_armour",
+    "muzan_infant": "geometry.ab.summon_muzan_infant",
+    "mahoraga": "geometry.ab.summon_mahoraga",
+    "susanoo_madara": "geometry.ab.summon_susanoo_madara",
+    "susanoo_itachi": "geometry.ab.summon_susanoo_itachi",
+    "susanoo_kakashi": "geometry.ab.summon_susanoo_kakashi",
+    "crow": "geometry.ab.summon_crow",
+    "hound": "geometry.ab.summon_hound",
+    "flame_tiger": "geometry.ab.summon_flame_tiger",
+    "yoyo": "geometry.ab.summon_yoyo",
+    "fire_fist": "geometry.ab.summon_fire_fist",
+    "ofa_fist": "geometry.ab.summon_ofa_fist",
+    "dog_black": "geometry.ab.summon_dog_black",
+    "dog_white": "geometry.ab.summon_dog_white",
+    "nen_fist": "geometry.ab.summon_nen_fist"
+   },
+   "animations": {
+    "base": "animation.ab.summon_base",
+    "wings": "animation.ab.summon_wings",
+    "tails": "animation.ab.summon_tails",
+    "swing": "animation.ab.summon_swing",
+    "aim": "animation.ab.summon_aim",
+    "leap": "animation.ab.summon_leap",
+    "bite": "animation.ab.summon_bite",
+    "swipe": "animation.ab.summon_swipe",
+    "spin": "animation.ab.summon_spin",
+    "flap": "animation.ab.summon_flap",
+    "trot": "animation.ab.summon_trot",
+    "roll": "animation.ab.summon_roll",
+    "blade": "animation.ab.summon_blade",
+    "barrage": "animation.ab.summon_barrage"
+   },
+   "scripts": {
+    "animate": [
+     "base",
+     {
+      "wings": "query.property('ab:kind') == 0"
+     },
+     {
+      "tails": "query.property('ab:kind') == 1"
+     },
+     {
+      "flap": "query.property('ab:kind') == 10"
+     },
+     {
+      "trot": "query.property('ab:kind') == 11 || query.property('ab:kind') == 12 || query.property('ab:kind') == 16 || query.property('ab:kind') == 17"
+     },
+     {
+      "roll": "query.property('ab:kind') == 13"
+     },
+     {
+      "swing": "query.property('ab:pose') == 1"
+     },
+     {
+      "aim": "query.property('ab:pose') == 2"
+     },
+     {
+      "leap": "query.property('ab:pose') == 3"
+     },
+     {
+      "bite": "query.property('ab:pose') == 4"
+     },
+     {
+      "swipe": "query.property('ab:pose') == 5"
+     },
+     {
+      "spin": "query.property('ab:pose') == 6"
+     },
+     {
+      "barrage": "query.property('ab:pose') == 7"
+     },
+     {
+      "blade": "query.property('ab:kind') == 6"
+     }
+    ]
+   },
+   "render_controllers": [
+    {
+     "controller.render.ab.summon_glow": "query.property('ab:kind') != 2 && query.property('ab:kind') != 5 && query.property('ab:kind') != 6 && query.property('ab:kind') != 10 && query.property('ab:kind') != 11 && query.property('ab:kind') != 13 && query.property('ab:kind') != 16 && query.property('ab:kind') != 17"
+    },
+    {
+     "controller.render.ab.summon_solid": "query.property('ab:kind') == 2 || query.property('ab:kind') == 5 || query.property('ab:kind') == 6 || query.property('ab:kind') == 10 || query.property('ab:kind') == 11 || query.property('ab:kind') == 13 || query.property('ab:kind') == 16 || query.property('ab:kind') == 17"
+    }
+   ]
+  }
+ }
+}

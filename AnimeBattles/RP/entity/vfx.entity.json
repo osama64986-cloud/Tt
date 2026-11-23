@@ -1,0 +1,57 @@
+{
+ "format_version": "1.10.0",
+ "minecraft:client_entity": {
+  "description": {
+   "identifier": "ab:vfx",
+   "materials": {
+    "glow": "entity_alphablend",
+    "blend": "entity_alphablend"
+   },
+   "textures": {
+    "c0": "textures/entity/vfx/vfx_0",
+    "c1": "textures/entity/vfx/vfx_1",
+    "c2": "textures/entity/vfx/vfx_2",
+    "c3": "textures/entity/vfx/vfx_3",
+    "c4": "textures/entity/vfx/vfx_4",
+    "c5": "textures/entity/vfx/vfx_5",
+    "c6": "textures/entity/vfx/vfx_6",
+    "c7": "textures/entity/vfx/vfx_7",
+    "c8": "textures/entity/vfx/vfx_8",
+    "c9": "textures/entity/vfx/vfx_9",
+    "c10": "textures/entity/vfx/vfx_10",
+    "c11": "textures/entity/vfx/vfx_11",
+    "c12": "textures/entity/vfx/vfx_12",
+    "c13": "textures/entity/vfx/vfx_13",
+    "c14": "textures/entity/vfx/vfx_14",
+    "c15": "textures/entity/vfx/vfx_15",
+    "c16": "textures/entity/vfx/vfx_16"
+   },
+   "geometry": {
+    "beam": "geometry.ab.vfx_beam",
+    "orb": "geometry.ab.vfx_orb",
+    "slash": "geometry.ab.vfx_slash"
+   },
+   "animations": {
+    "beam": "animation.ab.vfx_beam",
+    "orb": "animation.ab.vfx_orb",
+    "slash": "animation.ab.vfx_slash"
+   },
+   "scripts": {
+    "animate": [
+     {
+      "beam": "query.property('ab:kind') == 0"
+     },
+     {
+      "orb": "query.property('ab:kind') == 1"
+     },
+     {
+      "slash": "query.property('ab:kind') == 2"
+     }
+    ]
+   },
+   "render_controllers": [
+    "controller.render.ab.vfx"
+   ]
+  }
+ }
+}
