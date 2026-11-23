@@ -2220,11 +2220,7 @@ def gohan(m, form):
         if face == "north":
             for y in range(int(h * 0.45)):
                 _put(px, w, h, int(w * 0.5 - y * 0.6), y, dark(gi, 0.6)); _put(px, w, h, int(w * 0.5 + y * 0.6), y, dark(gi, 0.6))
-    sparks = None
-    if form == "ssj2":
-        def sparks(face, px, w, h, base):
-            for i in range(0, h, 3):
-                _put(px, w, h, int(w * 0.5 + (i % 6 - 3) * w * 0.1), i, (120, 220, 255))
+    sparks = None  # SSJ2's lightning is an effect around his body (in the game), never dots on his clothes
     torso = layered(gi, [collar] + ([sparks] if sparks else []))
     arm = layered(gi, ([sparks] if sparks else []) + [region((0, 0.66, 1, 0.84), (40, 80, 200)), region((0, 0.84, 1, 1), SKIN)])
     leg = layered(gi, [region((0, 0.8, 1, 1), (110, 64, 40))])
@@ -2556,13 +2552,26 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
     if "makima_glow" in marks:
         for x, y in ((4, 18), (27, 18)):
             put(x, y, (250, 220, 120))
-    if "allmight_shadow" in marks:  # the deep shadow over his eyes with the two blue glints
-        for x in range(5, 27):
-            for y in range(15, 21):
-                put(x, y, (30, 30, 40))
-        if open_eyes:
-            for cx in (10, 21):
-                put(cx, 18, (90, 200, 255)); put(cx + 1, 18, (90, 200, 255))
+    if "allmight_shadow" in marks:  # deep-set eyes: each socket a darker shade of his skin, the big blue irises shining in it
+        sock, deep = tuple(int(c * 0.62) for c in skin), tuple(int(c * 0.45) for c in skin)
+        for cx in (10, 21):
+            for x in range(cx - 3, cx + 5):
+                for y in range(15, 22):
+                    edge = x in (cx - 3, cx + 4) or y in (15, 21)
+                    put(x, y, sock if edge else deep)
+            for x in range(cx - 4, cx + 6):  # clear any eye-white the base face drew under the socket
+                put(x, 22, skin)
+            for x in range(cx - 4, cx + 6):  # heavy golden brows over the sockets
+                put(x, 14, (200, 150, 40))
+            if open_eyes:
+                for x in (cx - 1, cx, cx + 1, cx + 2):
+                    for y in (17, 18):
+                        put(x, y, (70, 170, 255))
+                put(cx - 1, 19, (40, 110, 210)); put(cx + 2, 19, (40, 110, 210)); put(cx, 19, (40, 110, 210)); put(cx + 1, 19, (40, 110, 210))
+                put(cx, 17, (235, 250, 255))  # the shine
+            else:
+                for x in range(cx - 1, cx + 3):
+                    put(x, 18, (30, 24, 24))
     if "todoroki_scar" in marks:  # the burn scar round his left eye, and his two eye colours
         for x in range(17, 26):
             for y in range(13, 22):
@@ -2783,10 +2792,30 @@ def allmight(m, form):
 
 
 # ------------------------------------------------------------------ Shoto Todoroki — My Hero Academia
+def _split_shell_paint(neg, pos, **kw):
+    """A hair cap split exactly down the middle: the model's -x half one colour, the +x half the other."""
+    pn, pp = M.shell_paint(neg, **kw), M.shell_paint(pos, **kw)
+
+    def p(face, img):
+        w, h = img.size
+        if face in ("east", "west"):
+            (pp if face == "east" else pn)(face, img)
+            return
+        a = img.copy(); b = img.copy()
+        pn(face, a); pp(face, b)
+        left_is_neg = face in ("north", "up", "down")
+        for y in range(h):
+            for x in range(w):
+                src = a if ((x < w / 2) == left_is_neg) else b
+                img.putpixel((x, y), src.getpixel((x, y)))
+    return p
+
+
 @M.smooth_hair
 def todoroki_hair(m):
     white, red = (236, 236, 240), (200, 50, 50)
-    shell(m, white, hairline=30.6, sideburn=False, teeth=0.8)
+    m.box("hair", [-4, 24, -4], [4, 8, 8], M.shell_paint(red, hairline=30.6, sideburn=False, teeth=0.8), inflate=0.45)    # his left half: red
+    m.box("hair", [0, 24, -4], [4, 8, 8], M.shell_paint(white, hairline=30.6, sideburn=False, teeth=0.8), inflate=0.45)   # his right half: white
     hw, hr = M.hair_paint(white), M.hair_paint(red)
     for x in (-3.2, -1.8, -0.6):  # his left side red (the model's -x is his left)
         m.strand([x, 31.6, -0.5], [x * 0.1, 0.3, 0.6], 4.2, 3.4, hr, bone="hair", thick=0.8)

@@ -1099,6 +1099,7 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  if (((e.typeId === "ab:gohan" && form === 1) || (e.typeId === "ab:goku" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
   if (e.typeId === "ab:frieza" && form === 2 && Math.random() < 0.6) smoke(e.dimension, e.location, C.black, 0.8, 1.0, 3 * fxLevel(), 0.6, 0.2, 1.0);
   if (e.typeId === "ab:gon" && form === 2) {  // the Vow: ominous BLACK nen pouring off him without pause
     smoke(e.dimension, e.location, C.black, 0.9, 1.4, 6 * fxLevel(), 0.85, 0.15, 1.2);
@@ -4979,6 +4980,17 @@ function mahoragaTrail(v, t) {
     }
   });
   sound(dim, "mob.phantom.swoop", v.location, 1, 0.6);
+}
+// Super Saiyan 2 / 3 lightning: short jagged bolts flickering round the body (blue-white), several a second.
+function saiyanLightning(e) {
+  const dim = e.dimension;
+  const a = Math.random() * Math.PI * 2, r = 0.5 + Math.random() * 0.5;
+  let p = V.add(e.location, { x: Math.cos(a) * r, y: 0.3 + Math.random() * 1.8, z: Math.sin(a) * r });
+  for (let k = 0; k < 5; k++) {  // a zig-zag bolt
+    const q = V.add(p, { x: (Math.random() - 0.5) * 0.5, y: 0.22 + Math.random() * 0.15, z: (Math.random() - 0.5) * 0.5 });
+    for (let j = 1; j <= 2; j++) fx(dim, "orb", V.add(p, V.mul(V.sub(q, p), j / 2)), k % 2 ? C.white : C.kameBlue, 0.16, 0.12);
+    p = q;
+  }
 }
 function swingArc(e, t, kind, color) {
   if (!kind || kind === "punch") {
