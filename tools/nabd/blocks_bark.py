@@ -139,8 +139,27 @@ def even_oak():
     return best[1]
 
 
+BARK_CONTRAST = 0.40      # a touch crisper than the original 0.34: same drawing, clearer ridges
+
+OTHER_LOGS = {"spruce": ("log_spruce", 6), "jungle": ("log_jungle", 10), "acacia": ("log_acacia", 7),
+              "dark_oak": ("log_big_oak", 6), "cherry": ("cherry_log_side", 10), "mangrove": ("mangrove_log_side", 9),
+              "pale_oak": ("pale_oak_log_side", 7), "poplar": ("poplar_log_side", 9)}
+
+
 def build(out, flip, variations):
-    # the other logs keep their original bark; only oak (uneven) and birch change
-    out["log_oak"] = even_oak()
+    from . import painters as P
+    from .core import STATS, vramp
+    # keep each log's own drawing and direction exactly; only make the ridges a touch clearer
+    for key, (nm, ridges) in OTHER_LOGS.items():
+        if nm in out:
+            t = out[nm]
+            rgb = t.rgb.astype(float)
+            mean = rgb.reshape(-1, 3).mean(0)
+            t.rgb = np.clip(mean + (rgb - mean) * 1.18, 0, 255).astype(np.uint8)
+    oak = even_oak()
+    rgb = oak.rgb.astype(float)
+    mean = rgb.reshape(-1, 3).mean(0)
+    oak.rgb = np.clip(mean + (rgb - mean) * 1.18, 0, 255).astype(np.uint8)
+    out["log_oak"] = oak
     rgb, hgt = birch_bark("log_birch")
     out["log_birch"] = Tex(np.clip(rgb, 0, 255).astype(np.uint8), hgt, rough=210, bump=1.1)

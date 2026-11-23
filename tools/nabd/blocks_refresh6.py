@@ -298,3 +298,14 @@ def build(out, flip, variations):
                                                                          "door_birch_upper", "door_birch_lower"]:
         if nm in out:
             out[nm] = recolour(out[nm], nm)
+    # pale moss carpet sides hang down a wall: speckled moss with holes, in the game's own shape
+    for nm in ("pale_moss_carpet_side_base", "pale_moss_carpet_side_tip"):
+        if nm in out:
+            a = vanilla_alpha(nm)
+            r = rng_of(nm + "6")
+            ramp = make_ramp(vbase("pale_moss_block") if "pale_moss_block" in STATS else (150, 158, 140), 5, 0.42)
+            g = fbm(r, ((4, 1.0), (8, 0.5)))
+            idx = np.clip(2 + (g > 0.6) + (r.random((N, N)) > 0.85) - (g < 0.3) - (yy > 12), 0, 4)
+            rgb = np.array(ramp, float)[idx]
+            out[nm] = Tex(np.clip(rgb, 0, 255).astype(np.uint8), 0.3 + 0.1 * idx, alpha=a, rough=220, sss=60, bump=0.8)
+
