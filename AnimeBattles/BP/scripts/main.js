@@ -1987,7 +1987,7 @@ const divergent = {
 const YUJI = {
   name: "Itadori", color: "§d", energy: 600, regen: 10, energyName: "§dCE",
   dodge: () => 0.05,
-  forms: [{ label: "Vessel", power: 35 }],
+  forms: [{ label: "Vessel", power: 45 }],
   thresholds: [], formSound: [null],
   abilities: [
     SIG.rush("lariat", "Lariat", { say: "§d§lLARIAT!", color: C.white, dmg: 6, finisher: 22, hits: 2, poses: [11, 31] }),
@@ -2016,7 +2016,7 @@ const YUJI = {
 const YUJI_FINAL = {
   name: "Itadori", color: "§c", energy: 1200, regen: 22, energyName: "§dCE",
   dodge: () => 0.12,
-  forms: [{ label: "Modulo (2086)", power: 154, aura: C.blood }],
+  forms: [{ label: "Modulo (2086)", power: 138, aura: C.blood }],
   thresholds: [], formSound: [null],
   abilities: [
     SIG.rush("flowingred", "Flowing Red Scale", { say: "§c§lFlowing Red Scale! §7— his blood races", color: C.blood, dmg: 10, finisher: 34, hits: 5, poses: [5, 7, 6, 8, 9] }),
@@ -2270,8 +2270,8 @@ const LUFFY = {
     { label: "Gear 2", power: 70, aura: C.steam },
     { label: "Gear 3", power: 76 },
     { label: "Gear 4: Boundman", power: 110, aura: C.steam },
-    { label: "Gear 4: Snakeman", power: 115, aura: C.steam },
-    { label: "Gear 4: Tankman", power: 100, aura: C.steam },
+    { label: "Gear 4: Snakeman", power: 118, aura: C.steam },
+    { label: "Gear 4: Tankman", power: 122, aura: C.steam },
     { label: "Gear 5", power: 170, aura: C.nika },
   ],
   thresholds: [0.92, 0.82, 0.7, 0.5, 0.5, 0.5],
@@ -2384,8 +2384,8 @@ const ZORO = {
   name: "Zoro", color: "§a", energy: 1100, regen: 20, energyName: "§aSTAMINA",
   dodge: () => 0.12,
   forms: [
-    { label: "Three Sword Style", power: 95 },
-    { label: "King of Hell", power: 146, aura: C.haki },
+    { label: "Three Sword Style", power: 85 },
+    { label: "King of Hell", power: 120, aura: C.haki },
   ],
   thresholds: [0.6], transformCd: 100,
   formSound: [null, "mob.wither.spawn"],
@@ -2516,8 +2516,8 @@ const FRIEZA = {
   dodge: () => 0.12,
   forms: [
     { label: "Final Form", power: 220 },
-    { label: "Golden Frieza", power: 700, aura: C.gold },
-    { label: "Black Frieza", power: 1500, aura: C.void },  // manga: beyond Ultra Instinct Goku and Ultra Ego Vegeta together
+    { label: "Golden Frieza", power: 650, aura: C.gold },
+    { label: "Black Frieza", power: 1650, aura: C.void },  // manga: beyond Ultra Instinct Goku and Ultra Ego Vegeta together
   ],
   thresholds: [0.6, 0.4], transformCd: 100,
   formSound: [null, "beacon.power", "mob.wither.spawn"],
@@ -3400,7 +3400,7 @@ const SASUKE_WAR = {
   name: "Sasuke", color: "§5", energy: 1500, regen: 26, energyName: "§6CHAKRA",
   dodge: (e) => (formOf(e) === 2 ? 0.2 : 0.17),
   forms: [{ label: "Eternal Mangekyo — Susanoo", power: 150, aura: C.purple }, { label: "Perfect Susanoo", power: 175, aura: C.purple },
-    { label: "Rinnegan — Six Paths chakra", power: 210, aura: C.galick }],
+    { label: "Rinnegan — Six Paths chakra", power: 230, aura: C.galick }],
   thresholds: [0.6, 0.35], transformCd: 100, formSound: [null, "mob.wither.spawn", "beacon.activate"],
   abilities: [SAS.katana(), SAS.dragonFlame(), SAS.onslaught(), SAS.chidori({ dmg: 40 }), SAS.spear(), SAS.senbon(), SAS.nagashi(), SAS.kirin(), SAS.fireball({ size: 3 }), SAS.amaterasu(), SAS.kagutsuchi(),
     SAS.arrow({ say: "§5§lSusanoo: Yasaka Magatama!", dmg: 70 }), SAS.susSword({ cond: G(1, 2) }), SAS.indra(),
@@ -3421,7 +3421,7 @@ const ITACHI = {
   name: "Itachi", color: "§4", energy: 1300, regen: 22, energyName: "§6CHAKRA",
   dodge: (e) => [0.18, 0.2, 0.2][formOf(e)] ?? 0.18,  // he sees every move before it starts
   forms: [{ label: "Sharingan", power: 85 }, { label: "Mangekyo Sharingan", power: 120, aura: C.red },
-    { label: "Susanoo", power: 165, aura: C.red }],
+    { label: "Susanoo", power: 140, aura: C.red }],
   thresholds: [0.75, 0.5], transformCd: 110, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
   abilities: [
     SIG.ball("watershark", "Water Shark Bullet", { say: "§9§lWater Style: Water Shark Bullet", color: C.kameBlue, count: 1, size: 1.8, dmg: 26, speed: 1.6, cd: 200, cost: 100, charge: 8 }),
@@ -3523,13 +3523,13 @@ const ICHIGO = {
   name: "Ichigo", color: "§6", energy: 1600, regen: 28, energyName: "§bREIATSU",
   dodge: (e) => [0.12, 0.14, 0.15, 0.15, 0.17, 0.15, 0.16][formOf(e)] ?? 0.12,  // Bankai/Sonido speed
   forms: [
-    { label: "Shikai — Zangetsu", power: 90 },
-    { label: "Complete Fullbring", power: 125, aura: C.white },
-    { label: "Bankai — Tensa Zangetsu", power: 150, aura: C.black },
-    { label: "Hollow Mask", power: 200, aura: C.red },
-    { label: "Vasto Lorde", power: 250, aura: C.haki },
-    { label: "Final Getsuga Tensho (Mugetsu)", power: 300, aura: C.black },
-    { label: "True Bankai — Zangetsu", power: 360, aura: C.bigBang },
+    { label: "Shikai — Zangetsu", power: 55 },
+    { label: "Complete Fullbring", power: 70, aura: C.white },
+    { label: "Bankai — Tensa Zangetsu", power: 90, aura: C.black },
+    { label: "Hollow Mask", power: 110, aura: C.red },
+    { label: "Vasto Lorde", power: 140, aura: C.haki },
+    { label: "Final Getsuga Tensho (Mugetsu)", power: 210, aura: C.black },
+    { label: "True Bankai — Zangetsu", power: 225, aura: C.bigBang },
   ],
   thresholds: [0.85, 0.72, 0.6, 0.48, 0.36, 0.25], transformCd: 80,
   formSound: [null, "beacon.activate", "mob.wither.spawn", "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.wither.spawn", "beacon.power"],
@@ -3694,7 +3694,7 @@ const TANJIRO = {
   name: "Tanjiro", color: "§2", energy: 700, regen: 14, energyName: "§bBREATH",
   dodge: () => 0.1,
   forms: [{ label: "Water Breathing", power: 40 }, { label: "Hinokami Kagura (Sun Breathing)", power: 50, aura: C.fire },
-    { label: "Demon Slayer Mark — Crimson Blade", power: 62, aura: C.fire }],
+    { label: "Demon Slayer Mark — Crimson Blade", power: 66, aura: C.fire }],
   thresholds: [0.75, 0.45], transformCd: 100, formSound: [null, "mob.blaze.shoot", "mob.blaze.shoot"],
   abilities: [
     { id: "surface", label: "Water Surface Slash", cd: 90, cost: 40, min: 0, max: 12, weight: 4, cond: G(0),
@@ -3911,7 +3911,7 @@ const regenAbility = (label, say, pct, cond, cd = 600) => ({ id: "regen", label,
 const TANJIRO_DEMON = {
   name: "Tanjiro", color: "§4", energy: 900, regen: 18, energyName: "§4BLOOD",
   dodge: () => 0.12,
-  forms: [{ label: "Demon (feral)", power: 66, aura: C.blood }, { label: "Demon King — the sun conquered", power: 80, aura: C.fire }],
+  forms: [{ label: "Demon (feral)", power: 70, aura: C.blood }, { label: "Demon King — the sun conquered", power: 86, aura: C.fire }],
   thresholds: [0.55], transformCd: 100, formSound: [null, "mob.enderdragon.growl"],
   abilities: [
     { id: "claws", label: "Feral Claws", cd: 100, cost: 40, min: 0, max: 10, weight: 5,
@@ -3975,7 +3975,7 @@ const TANJIRO_DEMON = {
 const MUZAN = {
   name: "Muzan", color: "§4", energy: 1300, regen: 24, energyName: "§4BLOOD",
   dodge: (e) => (formOf(e) ? 0.16 : 0.13),
-  forms: [{ label: "Muzan Kibutsuji", power: 72, aura: C.blood }, { label: "Final Form — the Progenitor", power: 90, aura: C.blood }],
+  forms: [{ label: "Muzan Kibutsuji", power: 82, aura: C.blood }, { label: "Final Form — the Progenitor", power: 92, aura: C.blood }],
   thresholds: [0.65], transformCd: 100, formSound: [null, "mob.wither.spawn"],
   abilities: [
     { id: "whips", label: "Arm Whips", cd: 110, cost: 50, min: 0, max: 14, weight: 5,
@@ -4085,7 +4085,7 @@ const BROLY = {
   dodge: (e) => (formOf(e) >= 2 ? 0.1 : 0.06),
   ego: 3, egoMax: 0.24,  // the angrier he gets, the stronger: every blow he takes feeds his rage (+24% at most)
   forms: [{ label: "Base", power: 180 }, { label: "Wrathful", power: 340, aura: C.red },
-    { label: "Super Saiyan", power: 540, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 760, aura: BG }],
+    { label: "Super Saiyan", power: 540, aura: C.gold }, { label: "Legendary Super Saiyan — Full Power", power: 800, aura: BG }],
   thresholds: [0.85, 0.65, 0.45], transformCd: 120, formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.wither.spawn"],
   abilities: [
     SIG.wave("roar", "Gigantic Roar", { say: "§a§lRAAAAAAAGH! §7— the roar alone flattens the ground", color: BG, radius: 7, dmg: 18, cd: 220 }),
@@ -4243,8 +4243,8 @@ for (const [c, slot] of [[C.ofa, 16], [C.volt, 0], [C.ember, 11], [C.whip, 13], 
 const DEKU = {
   name: "Deku", color: "§a", energy: 1300, regen: 22, energyName: "§aOFA",
   dodge: (e) => [0.12, 0.15, 0.18][formOf(e)] ?? 0.12,
-  forms: [{ label: "Full Cowl 20%", power: 60, aura: C.ofa }, { label: "Full Cowl 45%", power: 90, aura: C.ofa },
-    { label: "Dark Deku — every quirk", power: 168, aura: C.whip }],
+  forms: [{ label: "Full Cowl 20%", power: 45, aura: C.ofa }, { label: "Full Cowl 45%", power: 65, aura: C.ofa },
+    { label: "Dark Deku — every quirk", power: 105, aura: C.whip }],
   thresholds: [0.75, 0.45], transformCd: 110, formSound: [null, "ambient.weather.thunder", "mob.wither.ambient"],
   abilities: [
     SIG.ball("airforce", "Air Force", { say: "§a§lAir Force!", color: C.white, count: 3, size: 0.7, dmg: 12, speed: 2.6, cd: 130, cost: 60, charge: 3, pose: 5 }),
@@ -4292,7 +4292,7 @@ const DEKU = {
 const KILLUA = {
   name: "Killua", color: "§b", energy: 1100, regen: 22, energyName: "§bAURA",
   dodge: (e) => (formOf(e) === 1 ? 0.32 : 0.18),  // Godspeed: Whirlwind reacts before he even thinks
-  forms: [{ label: "Assassin", power: 55 }, { label: "Godspeed", power: 110, aura: C.volt }],
+  forms: [{ label: "Assassin", power: 50 }, { label: "Godspeed", power: 85, aura: C.volt }],
   thresholds: [0.6], transformCd: 110, formSound: [null, "ambient.weather.thunder"],
   abilities: [
     SIG.wave("lightpalm", "Lightning Palm", { say: "§b§lLightning Palm! §7— Kanmuru", color: C.volt, radius: 3.6, dmg: 26, cd: 150, cost: 70, pose: 5 }),
@@ -4338,8 +4338,8 @@ const KILLUA = {
 const DENJI = {
   name: "Denji", color: "§6", energy: 1000, regen: 18, energyName: "§cBLOOD",
   dodge: () => 0.06,
-  forms: [{ label: "Devil Hunter", power: 30 }, { label: "Chainsaw Man", power: 110, aura: C.blood },
-    { label: "True Chainsaw Man", power: 150, aura: C.black }],
+  forms: [{ label: "Devil Hunter", power: 25 }, { label: "Chainsaw Man", power: 70, aura: C.blood },
+    { label: "True Chainsaw Man", power: 108, aura: C.black }],
   thresholds: [0.85, 0.4], transformCd: 90, formSound: [null, "mob.ravager.roar", "mob.warden.roar"],
   abilities: [
     SIG.rush("sawram", "Chainsaw Head Ram", { say: "§7§lVRRRRRM!", color: C.saw, hits: 3, dmg: 10, finisher: 28, cd: 200, cost: 80, poses: [9, 5, 7], cond: G(1, 2) }),
@@ -4377,7 +4377,7 @@ const DENJI = {
 const RENGOKU = {
   name: "Rengoku", color: "§6", energy: 1200, regen: 22, energyName: "§6BREATH",
   dodge: () => 0.12,
-  forms: [{ label: "Flame Breathing", power: 70, aura: C.fire }, { label: "Ninth Form: Rengoku", power: 95, aura: C.fire }],
+  forms: [{ label: "Flame Breathing", power: 56, aura: C.fire }, { label: "Ninth Form: Rengoku", power: 64, aura: C.fire }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
     { id: "unknowing", label: "First Form: Unknowing Fire", cd: 130, cost: 60, min: 0, max: 16, weight: 5,
@@ -4438,7 +4438,7 @@ const RENGOKU = {
 const ACE = {
   name: "Ace", color: "§6", energy: 1200, regen: 22, energyName: "§6FLAME",
   dodge: (e) => (formOf(e) === 1 ? 0.24 : 0.16),  // a Logia body: blows pass through flame
-  forms: [{ label: "Fire Fist", power: 70, aura: C.fire }, { label: "Flame Emperor", power: 115, aura: C.fire }],
+  forms: [{ label: "Fire Fist", power: 62, aura: C.fire }, { label: "Flame Emperor", power: 90, aura: C.fire }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
     SIG.ball("jujika", "Cross Fire", { say: "§6§lCross Fire! §7— Jujika", color: C.fire, count: 2, size: 1.2, dmg: 20, speed: 2.2, cd: 170, cost: 80, charge: 4, pose: 4 }),
@@ -4464,7 +4464,7 @@ const abFrom = (D, id, extra) => ({ ...D.abilities.find((a) => a.id === id), ...
 const GOHAN = {
   name: "Gohan", color: "§5", energy: 1200, regen: 20, energyName: "§bKI",
   dodge: (e) => [0.1, 0.14, 0.18, 0.24][formOf(e)] ?? 0.1,
-  forms: [{ label: "Base", power: 200 }, { label: "Super Saiyan 2", power: 360, aura: C.gold },
+  forms: [{ label: "Base", power: 160 }, { label: "Super Saiyan 2", power: 300, aura: C.gold },
     { label: "Ultimate (Mystic)", power: 560, aura: C.white }, { label: "Beast", power: 780, aura: C.silver }],
   thresholds: [0.85, 0.6, 0.35], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
   abilities: [
@@ -4492,7 +4492,7 @@ const GOHAN = {
 const BAKUGO = {
   name: "Bakugo", color: "§6", energy: 1100, regen: 22, energyName: "§6NITRO",
   dodge: () => 0.11,
-  forms: [{ label: "Explosion", power: 78, aura: C.fire }, { label: "Cluster", power: 104, aura: C.ember }],
+  forms: [{ label: "Explosion", power: 62, aura: C.fire }, { label: "Cluster", power: 84, aura: C.ember }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "random.explode"],
   abilities: [
     SIG.strike("blast", "Explosion", { say: "§6§lDIE!", color: C.fire, blast: true, dmg: 13, cd: 130, cost: 50, poses: [5] }),
@@ -4509,8 +4509,8 @@ const BAKUGO = {
 const GON = {
   name: "Gon", color: "§a", energy: 1000, regen: 18, energyName: "§eNEN",
   dodge: () => 0.12,
-  forms: [{ label: "Enhancer", power: 60 }, { label: "Jajanken", power: 95, aura: C.kiYellow },
-    { label: "The Vow — darkness", power: 150 }, { label: "Adult Gon", power: 200 }],
+  forms: [{ label: "Enhancer", power: 45 }, { label: "Jajanken", power: 65, aura: C.kiYellow },
+    { label: "The Vow — darkness", power: 95 }, { label: "Adult Gon", power: 110 }],
   thresholds: [0.75, 0.3], transformCd: 110, formSound: [null, "beacon.power", "mob.wither.spawn", "beacon.activate"],
   abilities: [
     SIG.ball("rod", "Fishing Rod Cast", { say: "§a§lFishing rod!", color: C.white, count: 1, size: 0.6, dmg: 12, speed: 2.6, cd: 180, cost: 40, charge: 2, pose: 5 }),
@@ -4537,7 +4537,7 @@ const GON = {
 const AKAZA = {
   name: "Akaza", color: "§d", energy: 1200, regen: 24, energyName: "§dBLOOD ART",
   dodge: (e) => (formOf(e) === 1 ? 0.24 : 0.14),  // Compass Needle: he reads every fighting spirit
-  forms: [{ label: "Upper Moon Three", power: 120, aura: C.blood }, { label: "Destructive Death: Compass Needle", power: 140, aura: C.kameBlue }],
+  forms: [{ label: "Upper Moon Three", power: 68, aura: C.blood }, { label: "Destructive Death: Compass Needle", power: 78, aura: C.kameBlue }],
   thresholds: [0.55], transformCd: 110, formSound: [null, "random.glass"],
   abilities: [
     SIG.ball("airtype", "Destructive Death: Air Type", { say: "§d§lDestructive Death: Air Type!", color: C.white, count: 6, size: 0.6, dmg: 9, spread: 2, speed: 3, cd: 120, cost: 60, charge: 2, pose: 5 }),
@@ -4554,7 +4554,7 @@ const AKAZA = {
 const MEGUMI = {
   name: "Megumi", color: "§3", energy: 1100, regen: 20, energyName: "§3CE",
   dodge: () => 0.12,
-  forms: [{ label: "Ten Shadows", power: 95 }, { label: "Ten Shadows: Unleashed", power: 112, aura: C.black }],
+  forms: [{ label: "Ten Shadows", power: 50 }, { label: "Ten Shadows: Unleashed", power: 72, aura: C.black }],
   thresholds: [0.65], transformCd: 120, formSound: [null, "mob.wither.ambient"],
   abilities: [
     { id: "dogs", label: "Divine Dogs", cd: 200, cost: 90, min: 0, max: 30, weight: 6,
@@ -4596,8 +4596,8 @@ const bindTarget = (t, ticks) => { if (isFighter(t)) { const ts2 = state(t); ts2
 const AIZEN = {
   name: "Aizen", color: "§5", energy: 1400, regen: 24, energyName: "§5REIATSU",
   dodge: () => 0.28,  // Kyoka Suigetsu: what you hit was an illusion
-  forms: [{ label: "Captain — Kyoka Suigetsu", power: 240 }, { label: "Hogyoku Fusion", power: 310, aura: C.purple },
-    { label: "Final Form — Hogyoku Chrysalis", power: 345, aura: C.void }],
+  forms: [{ label: "Captain — Kyoka Suigetsu", power: 120 }, { label: "Hogyoku Fusion", power: 155, aura: C.purple },
+    { label: "Final Form — Hogyoku Chrysalis", power: 180, aura: C.void }],
   thresholds: [0.7, 0.4], transformCd: 120, formSound: [null, "beacon.power", "mob.wither.spawn"],
   abilities: [
     SIG.strike("kyoka", "Kyoka Suigetsu", { say: "§5§l...when did you think I was standing there?", color: C.white, blade: true, hits: 2, dmg: 16, finisher: 22, behind: true, poses: [19, 28] }),
@@ -4626,7 +4626,7 @@ const AIZEN = {
 const BYAKUYA = {
   name: "Byakuya", color: "§d", energy: 1300, regen: 22, energyName: "§dREIATSU",
   dodge: () => 0.16,
-  forms: [{ label: "Shikai — Senbonzakura", power: 180 }, { label: "Bankai — Senbonzakura Kageyoshi", power: 230, aura: C.petal }],
+  forms: [{ label: "Shikai — Senbonzakura", power: 75 }, { label: "Bankai — Senbonzakura Kageyoshi", power: 95, aura: C.petal }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "beacon.power"],
   abilities: [
     SIG.ball("petals", "Scatter, Senbonzakura", { say: "§d§lScatter, Senbonzakura.", color: C.petal, count: 12, size: 0.4, dmg: 5, spread: 4, homing: true, speed: 1.6, cd: 160, cost: 80, charge: 4 }),
@@ -4642,7 +4642,7 @@ const BYAKUYA = {
 const POWER = {
   name: "Power", color: "§c", energy: 1100, regen: 22, energyName: "§cBLOOD",
   dodge: () => 0.1,
-  forms: [{ label: "Blood Fiend", power: 110 }, { label: "Blood Devil", power: 140, aura: C.blood }],
+  forms: [{ label: "Blood Fiend", power: 45 }, { label: "Blood Devil", power: 68, aura: C.blood }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "mob.ravager.roar"],
   abilities: [
     SIG.strike("hammer", "Blood Hammer", { say: "§c§lI AM THE GREATEST!", color: C.blood, blast: true, dmg: 34, slam: true, poses: [10], cd: 180, cost: 90 }),
@@ -4658,7 +4658,7 @@ const POWER = {
 const MAKIMA = {
   name: "Makima", color: "§6", energy: 1300, regen: 24, energyName: "§6CONTROL",
   dodge: () => 0.12,
-  forms: [{ label: "Public Safety", power: 180 }, { label: "The Control Devil", power: 200, aura: C.gold }],
+  forms: [{ label: "Public Safety", power: 100 }, { label: "The Control Devil", power: 115, aura: C.gold }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "mob.evocation_illager.prepare_summon"],
   abilities: [
     { id: "bang", label: "Bang", cd: 140, cost: 90, min: 0, max: 40, weight: 6,
@@ -4693,7 +4693,7 @@ const MAKIMA = {
 const ALLMIGHT = {
   name: "All Might", color: "§9", energy: 1300, regen: 22, energyName: "§aOFA",
   dodge: () => 0.12,
-  forms: [{ label: "Symbol of Peace", power: 180, aura: C.white }, { label: "United States of Smash", power: 215, aura: C.ofa }],
+  forms: [{ label: "Symbol of Peace", power: 95, aura: C.white }, { label: "United States of Smash", power: 110, aura: C.ofa }],
   thresholds: [0.45], transformCd: 120, formSound: [null, "ambient.weather.thunder"],
   abilities: [
     SIG.ball("texas", "Texas Smash", { say: "§9§lTEXAS SMASH!", color: C.white, count: 1, size: 1.8, dmg: 26, speed: 2.6, cd: 140, cost: 70, charge: 3, pose: 5, radius: 3 }),
@@ -4729,7 +4729,7 @@ const ALLMIGHT = {
 const TODOROKI = {
   name: "Todoroki", color: "§b", energy: 1200, regen: 22, energyName: "§bQUIRK",
   dodge: () => 0.12,
-  forms: [{ label: "Half-Cold Half-Hot", power: 100, aura: C.kameBlue }, { label: "Flashfire Fist", power: 130, aura: C.fire }],
+  forms: [{ label: "Half-Cold Half-Hot", power: 58, aura: C.kameBlue }, { label: "Flashfire Fist", power: 80, aura: C.fire }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "mob.blaze.shoot"],
   abilities: [
     SIG.ball("icespikes", "Ice Spikes", { say: "§b§lIce!", color: C.kameBlue, count: 4, size: 0.7, dmg: 9, spread: 3, speed: 2.4, cd: 120, cost: 60, charge: 3 }),
@@ -4756,7 +4756,7 @@ const TODOROKI = {
 const HISOKA = {
   name: "Hisoka", color: "§d", energy: 1200, regen: 22, energyName: "§dNEN",
   dodge: () => 0.2,  // Texture Surprise: the wound you saw was painted on
-  forms: [{ label: "The Magician", power: 125 }, { label: "Serious", power: 150, aura: C.nika }],
+  forms: [{ label: "The Magician", power: 80 }, { label: "Serious", power: 92, aura: C.nika }],
   thresholds: [0.5], transformCd: 120, formSound: [null, "mob.witch.ambient"],
   abilities: [
     SIG.ball("cards", "Playing Cards", { say: "§d§l♠ ♥ ♦ ♣", color: C.white, count: 4, size: 0.5, dmg: 9, spread: 2, speed: 3, cd: 120, cost: 60, charge: 2, pose: 5 }),
@@ -4782,7 +4782,7 @@ const HISOKA = {
 const KURAPIKA = {
   name: "Kurapika", color: "§9", energy: 1200, regen: 22, energyName: "§9NEN",
   dodge: () => 0.14,
-  forms: [{ label: "Chain User", power: 105 }, { label: "Emperor Time — Scarlet Eyes", power: 150, aura: C.red }],
+  forms: [{ label: "Chain User", power: 75 }, { label: "Emperor Time — Scarlet Eyes", power: 92, aura: C.red }],
   thresholds: [0.6], transformCd: 120, formSound: [null, "beacon.activate"],
   abilities: [
     SIG.ball("dowsing", "Dowsing Chain", { say: "§9§lDowsing Chain", color: C.silver, count: 1, size: 0.7, dmg: 20, homing: true, speed: 2.0, cd: 150, cost: 70, charge: 3 }),
@@ -4818,11 +4818,11 @@ const FIGHTERS = { "ab:goku": GOKU, "ab:vegeta": VEGETA, "ab:gojo": GOJO, "ab:yu
 // It also makes their blows land better (they hit the gaps), so a much smarter fighter can beat a slightly
 // stronger one. Against a far stronger opponent no amount of cleverness is enough.
 const IQ = {
-  "ab:goku": 7, "ab:vegeta": 8, "ab:broly": 3, "ab:frieza": 8, "ab:gojo": 9, "ab:sukuna": 9, "ab:yuji": 6, "ab:yuji_final": 7,
+  "ab:goku": 8, "ab:vegeta": 8, "ab:broly": 3, "ab:frieza": 8, "ab:gojo": 9, "ab:sukuna": 9, "ab:yuji": 6, "ab:yuji_final": 7,
   "ab:luffy": 6, "ab:zoro": 6, "ab:ichigo": 6, "ab:naruto_kid": 3, "ab:naruto_teen": 5, "ab:naruto_war": 7, "ab:naruto_adult": 8,
   "ab:sasuke_kid": 6, "ab:sasuke": 7, "ab:sasuke_war": 8, "ab:sasuke_adult": 9, "ab:tanjiro": 7, "ab:tanjiro_demon": 3,
-  "ab:muzan": 8, "ab:madara": 9, "ab:itachi": 10, "ab:kakashi": 10,
-  "ab:deku": 8, "ab:killua": 9, "ab:denji": 3, "ab:rengoku": 7, "ab:ace": 6, "ab:gohan": 8, "ab:bakugo": 8, "ab:gon": 4, "ab:akaza": 7, "ab:megumi": 8, "ab:aizen": 10, "ab:byakuya": 8, "ab:power": 2, "ab:makima": 10, "ab:allmight": 8, "ab:todoroki": 7, "ab:hisoka": 9, "ab:kurapika": 9,
+  "ab:muzan": 7, "ab:madara": 9, "ab:itachi": 10, "ab:kakashi": 9,
+  "ab:deku": 8, "ab:killua": 9, "ab:denji": 4, "ab:rengoku": 7, "ab:ace": 6, "ab:gohan": 8, "ab:bakugo": 8, "ab:gon": 4, "ab:akaza": 7, "ab:megumi": 8, "ab:aizen": 10, "ab:byakuya": 8, "ab:power": 2, "ab:makima": 10, "ab:allmight": 8, "ab:todoroki": 7, "ab:hisoka": 9, "ab:kurapika": 9,
 };
 const iqOf = (e) => IQ[e.typeId] ?? 6;
 const isMeleeAb = (a) => (a.max ?? 99) <= 9;
