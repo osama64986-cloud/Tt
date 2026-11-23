@@ -3217,14 +3217,17 @@ def luffy_body(m, form):  # noqa: F811
         return
     hair = (22, 20, 26)
     luffy_head(m, hair, "luffy_g4")
-    if form == "g4b":  # BOUNDMAN
-        m.box("body", [-6.5, 15, -4], [13, 9.5, 8], layered(skin, [abs_chest]))
-        m.box("body", [-4.6, 11, -2.8], [9.2, 4.2, 5.6], layered(skin, [abs_chest]))
-        for x0 in (-7, 3.5):  # haki creeping over the shoulders
-            m.box("body", [x0, 18, -4.3], [3.5, 6.5, 8.6], haki_glow)
-        m.box("body", [-6.6, 23, -4.2], [13.2, 1.5, 8.4], solid((120, 24, 34)))  # torn shirt collar
-        both_arms(m, [5.4, 15, -3.2], [5.6, 8, 6.4], haki_glow)          # upper arm
-        both_arms(m, [4.6, 2, -4.8], [8.2, 13, 9.6], haki_glow)          # colossal forearm + fist
+    if form == "g4b":  # BOUNDMAN: a giant inflated upper body and huge LONG arms, haki-black from the shoulders down
+        m.box("body", [-7.5, 14, -4.5], [15, 10.5, 9], layered(skin, [abs_chest]))
+        m.box("body", [-5, 10.5, -3], [10, 4, 6], layered(skin, [abs_chest]))
+        m.box("body", [-6.6, 23.5, -4.2], [13.2, 1.5, 8.4], solid((120, 24, 34)))  # torn shirt collar
+        knuckles = layered((26, 20, 26), [lines((("north",), [[(0.25, 0.15), (0.25, 0.5)], [(0.5, 0.15), (0.5, 0.5)], [(0.75, 0.15), (0.75, 0.5)]]), (200, 40, 50)),
+                                          lines((SIDES, [[(0.2, 0.8), (0.5, 0.95)], [(0.6, 0.7), (0.9, 0.85)]]), (200, 40, 50))])
+        both_arms(m, [7.0, 19.5, -4.2], [6.5, 6.5, 8.4], haki_glow)      # huge haki shoulder
+        both_arms(m, [8.0, 12.5, -3.2], [5.6, 8.0, 6.4], haki_glow)      # upper arm, out wide from the body
+        both_arms(m, [7.6, 11.6, -3.6], [6.4, 1.6, 7.2], solid((150, 30, 40)))  # the elbow crease
+        both_arms(m, [6.6, 3.0, -5.0], [8.6, 9.0, 10.0], haki_glow)      # colossal forearm
+        both_arms(m, [6.9, -0.6, -5.4], [8.0, 3.8, 9.2], knuckles)        # the giant fist, knuckles down by the ground
         m.box("body", [-5, 10, -3.2], [10, 2.2, 6.4], solid(SASH))
         m.strand([-4.2, 10.3, -2.6], [-0.2, -1, -0.1], 7, 2, solid(SASH), bone="body", segs=3, thick=0.25)
         both_legs(m, [-0.6, 5.5, -2.7], [5.2, 6.5, 5.4], solid(SHORTS))
