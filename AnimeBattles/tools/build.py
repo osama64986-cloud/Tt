@@ -685,6 +685,11 @@ def build_entities():
         "rightArm": {"rotation": [-32, 8, -8]}, "leftArm": {"rotation": [-32, -8, 8]}}}
     an["animations"]["animation.ab.jaw"] = {"loop": True, "override_previous_animation": False, "bones": {
         "jaw": {"rotation": ["query.property('ab:expr') == 1 ? 34 : 12", 0, 0]}}}
+    try:  # hand-tuned combat animations (strikes, boxing combos, barrages) override the defaults, if present
+        import combat_anims
+        combat_anims.apply(an["animations"])
+    except ImportError:
+        pass
     json.dump(an, open(an_path, "w"), indent=1)
     for name, cfg in FIGHTERS.items():
         with open(os.path.join(BP, "entities", f"{name}.json"), "w") as f:

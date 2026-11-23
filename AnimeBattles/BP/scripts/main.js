@@ -5130,6 +5130,16 @@ function updateFighter(e, tick) {
     sound(e.dimension, "mob.blaze.shoot", e.location, 1, 0.6);
   }
   aura(e, s, def);
+  if (team) {  // inside the arena the ring wall holds: a fighter knocked to the wall is kept in the ring
+    const a = arenaAt();
+    if (a && a.dim === e.dimension.id) {
+      const dx = e.location.x - a.x, dz = e.location.z - a.z, d = Math.hypot(dx, dz);
+      if (d > ARENA.R - 1.2 && d < ARENA.OUT + 10) {
+        const k = (ARENA.R - 2.4) / d;
+        try { e.teleport({ x: a.x + dx * k, y: Math.max(a.y, Math.min(e.location.y, a.y + 6)), z: a.z + dz * k }); } catch (err) { /* ignore */ }
+      }
+    }
+  }
   if (s.expr && tick >= s.exprUntil) {
     s.expr = 0;
     try { e.setProperty("ab:expr", 0); } catch (e2) { /* ignore */ }
@@ -5899,7 +5909,9 @@ function buildArena(p) {
   const per = 220, steps = Math.ceil(cols.length / per);
   every(1, steps * 2 + 2, (i) => {
     if (i < steps) {  // 1) clear the air above and lay the foundation
-      for (const [x, z] of cols.slice(i * per, (i + 1) * per)) { fill(x, z, 1, CLEAR, "minecraft:air"); fill(x, z, -4, -1, AR.base); }
+      for (const [x, z] of cols.slice(i * per, (i + 1) * per)) {  // clear the air; stone foundation with a BEDROCK layer right under the floor
+        fill(x, z, 1, CLEAR, "minecraft:air"); fill(x, z, -4, -2, AR.base); fill(x, z, -1, -1, "minecraft:bedrock");
+      }
       if (i % 3 === 0) fx(dim, "aura", { x: c.x + 0.5, y: c.y + 1, z: c.z + 0.5 }, C.white, 2, 0.6, { count: 10, speed: 3 });
       return;
     }
