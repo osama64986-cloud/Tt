@@ -4624,7 +4624,7 @@ const AIZEN = {
 const BYAKUYA = {
   name: "Byakuya", color: "§d", energy: 1300, regen: 22, energyName: "§dREIATSU",
   dodge: () => 0.16,
-  forms: [{ label: "Shikai — Senbonzakura", power: 200 }, { label: "Bankai — Senbonzakura Kageyoshi", power: 270, aura: C.petal }],
+  forms: [{ label: "Shikai — Senbonzakura", power: 180 }, { label: "Bankai — Senbonzakura Kageyoshi", power: 230, aura: C.petal }],
   thresholds: [0.55], transformCd: 120, formSound: [null, "beacon.power"],
   abilities: [
     SIG.ball("petals", "Scatter, Senbonzakura", { say: "§d§lScatter, Senbonzakura.", color: C.petal, count: 12, size: 0.4, dmg: 5, spread: 4, homing: true, speed: 1.6, cd: 160, cost: 80, charge: 4 }),

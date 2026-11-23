@@ -10,7 +10,7 @@ Every character has their real transformations, signature techniques and fightin
 
 ## ⚔️ Features
 
-- **35 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
+- **43 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
 - **Smart fighters.** Every fighter reads the battle:
   - uses ranged attacks from afar and close-range techniques up close;
   - punishes openings, dodges big attacks and finishes weakened enemies;
@@ -76,17 +76,25 @@ Every character has their real transformations, signature techniques and fightin
 
 **My Hero Academia**
 - **Izuku Midoriya (Deku)**: The heir of One For All. Full Cowl at 20% and 45%, crackling with green lightning, then Dark Deku with every quirk he inherited. His Detroit Smash drives a giant fist of green wind straight into the enemy; he also has Delaware, St. Louis and Manchester Smash, Air Force, Fa Jin, Blackwhip, Smokescreen and the United States of Smash.
+- **All Might**: The Symbol of Peace: Texas, Detroit, Carolina, Oklahoma and New Hampshire Smash, and the last ember of One For All: United States of Smash.
+- **Shoto Todoroki**: Half-Cold Half-Hot: a wall of ice racing along the ground, then Flashfire Fist: Jet Burn, Phosphor and Flashfreeze Heatwave.
 - **Katsuki Bakugo**: Explosions from his palms. AP Shot, Stun Grenade, Howitzer Impact, Cluster and the Max Cannon of his grenade gauntlets.
 
 **Hunter x Hunter**
 - **Killua Zoldyck**: The assassin prodigy. Steel yo-yos, razor Assassin Claws, Rhythm Echo, Lightning Palm, Thunderbolt and Narukami, then Godspeed, where his body counters every attack with lightning before he even thinks.
 - **Gon Freecss**: Jajanken: Rock, Paper, Scissors. Then the vow that turns him into Adult Gon, towering, with a mane of hair; his Rock is a giant fist of nen driven into the enemy.
+- **Hisoka**: The magician: razor-sharp playing cards and Bungee Gum, with the properties of both rubber and gum, dragging you into his fist.
+- **Kurapika**: Five chains of nen: Dowsing Chain, Chain Jail, Holy Chain, Judgment Chain, and Emperor Time with his scarlet eyes.
 
 **Chainsaw Man**
 - **Denji (Chainsaw Man)**: Pull the cord and the devil comes out. Chainsaws burst from his head and arms; he rams with his head saw, spins into a whirl of blades, whips his chain to reel enemies in and drinks blood to heal, all the way to the black True Chainsaw Man.
+- **Power**: The Blood Fiend: a blood hammer, spear and scythe, a rain of blood, and she drinks blood to heal.
+- **Makima**: The Control Devil: she points a finger — Bang — and you are crushed; Kneel presses you into the ground; chains of control, contract devils, and her wounds go to someone else.
 
 **Bleach**
 - **Ichigo Kurosaki**: Shikai, Fullbring, Bankai, the Hollow mask, Vasto Lorde, the Final Getsuga Tensho and True Bankai.
+- **Sosuke Aizen**: Kyoka Suigetsu's complete hypnosis (what you hit was an illusion), Hado #63 Raikoho, Hado #90 Kurohitsugi's black coffin, then the Hogyoku: fusion, and a final form with butterfly wings.
+- **Byakuya Kuchiki**: Scatter, Senbonzakura: a thousand blades of cherry petals, Senka, Byakurai, then Bankai: Senbonzakura Kageyoshi, Gokei and Senkei.
 
 **Demon Slayer**
 - **Tanjiro Kamado**: Water Breathing, then Hinokami Kagura, the dance of the Sun.
@@ -120,7 +128,7 @@ As soon as two fighters are on opposite teams, the battle begins.
 | `/scriptevent ab:cinema off` | Turns off the cinematic camera |
 | `/scriptevent ab:fx low` | Lighter effects for weaker devices |
 
-Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan, deku, killua, denji, rengoku, ace, gohan, bakugo, gon, akaza, megumi.
+Fighter names for `ab:vs`: goku, vegeta, broly, frieza, gojo, yuji, yuji_final, sukuna, luffy, zoro, naruto_kid, naruto_teen, naruto_war, naruto_adult, sasuke_kid, sasuke, sasuke_war, sasuke_adult, itachi, kakashi, madara, ichigo, tanjiro, tanjiro_demon, muzan, deku, killua, denji, rengoku, ace, gohan, bakugo, gon, akaza, megumi, aizen, byakuya, power, makima, allmight, todoroki, hisoka, kurapika.
 
 ## 📦 Installation
 
