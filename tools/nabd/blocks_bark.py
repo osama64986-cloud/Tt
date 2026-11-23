@@ -111,18 +111,36 @@ def birch_bark(name):
     return rgb, hgt
 
 
-LOGS = ["log_oak", "log_spruce", "log_jungle", "log_acacia", "log_big_oak", "mangrove_log_side",
-        "cherry_log_side", "pale_oak_log_side", "poplar_log_side"]
+def detail_balance(rgb):
+    """how evenly the detail is spread: compare the busiest and calmest quarter"""
+    l = rgb.astype(float) @ [0.3, 0.59, 0.11]
+    e = np.abs(np.diff(l, axis=1, append=l[:, :1])) + np.abs(np.diff(l, axis=0, append=l[:1]))
+    q = [e[:8, :8].mean(), e[:8, 8:].mean(), e[8:, :8].mean(), e[8:, 8:].mean(),
+         e[:, :8].mean(), e[:, 8:].mean()]
+    return max(q) / max(1e-6, min(q)), e.mean()
+
+
+def even_oak():
+    """The oak bark in its original style (same painter, same tones, same number
+    of ridges), with the layout picked so both halves carry the same amount of
+    detail - no busy half next to a bare one."""
+    from . import painters as P
+    from .core import vramp
+    br = vramp("log_oak", 5, contrast=0.34)
+    ref = P.bark("log_oak", br, ridges=8)
+    _, ref_e = detail_balance(ref.rgb)
+    best = None
+    for k in range(400):
+        t = P.bark(f"log_oak_even{k}", br, ridges=8)
+        bal, e = detail_balance(t.rgb)
+        score = bal + 2.0 * abs(e - ref_e) / ref_e
+        if best is None or score < best[0]:
+            best = (score, t)
+    return best[1]
 
 
 def build(out, flip, variations):
-    for nm in LOGS:
-        if nm not in out:
-            continue
-        ramp = make_ramp(shift(vbase(nm), dv=0.02), 6, 0.5)
-        rgb, hgt = bark_plates(nm, ramp)
-        if grain_is_horizontal(nm):
-            rgb, hgt = np.ascontiguousarray(rgb.transpose(1, 0, 2)), hgt.T
-        out[nm] = Tex(rgb, hgt, rough=220, bump=1.3)
+    # the other logs keep their original bark; only oak (uneven) and birch change
+    out["log_oak"] = even_oak()
     rgb, hgt = birch_bark("log_birch")
     out["log_birch"] = Tex(np.clip(rgb, 0, 255).astype(np.uint8), hgt, rough=210, bump=1.1)
