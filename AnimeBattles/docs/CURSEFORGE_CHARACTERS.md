@@ -11,8 +11,8 @@
 - **Gojo Satoru** — The honoured one. Infinity stops every attack. He uses Blue, Red and Hollow Purple, and his Domain Expansion, Unlimited Void, raises a real dome around the fight.
 - **Yuji Itadori** — The vessel with superhuman strength. Divergent Fist and Black Flash; land one and he enters "the zone".
 - **Yuji Itadori (Final)** — Shinjuku Yuji, a master of Black Flash with Reverse Cursed Technique and his own Domain Expansion.
-- **Ryomen Sukuna** — The King of Curses. Dismantle, Cleave, the Mahoraga wheel, and Malevolent Shrine, which rises behind him as he slices everything in range.
-- **Megumi Fushiguro** — The Ten Shadows. Divine Dogs that burst out of the ground and bite, Nue, Toad, Max Elephant, the Chimera Shadow Garden domain, and Mahoraga as his last resort.
+- **Ryomen Sukuna** — The King of Curses. Dismantle, Cleave, Mahoraga (which adapts to every technique that hits him), and Malevolent Shrine, which rises behind him as he slices everything in range.
+- **Megumi Fushiguro** — The Ten Shadows. Divine Dogs that burst out of the ground and bite, Nue, Toad, Max Elephant, the Chimera Shadow Garden domain, and Mahoraga as his last resort, whose wheel turns each time a technique hits: it adapts until that technique no longer works.
 
 **One Piece**
 - **Monkey D. Luffy** — Every Gear from 2 to 5. Jet Pistol, Gear 4's Kong Gun, and Gear 5 where he turns the battlefield into a cartoon.

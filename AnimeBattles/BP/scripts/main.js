@@ -2107,18 +2107,23 @@ const SUKUNA = {
     SIG.wave("maxelephant", "Max Elephant", { cond: G(1), say: "§9§lTen Shadows: Max Elephant! §7— a flood pours down", color: C.blue, radius: 6, dmg: 30, cd: 400, cost: 220 }),
     SIG.slash("dismantlebarrage", "Dismantle Barrage", { say: "§c§lDismantle. §7— cut after cut after cut", color: C.red, count: 6, dmg: 9, size: 1.6, cd: 240 }),
     { id: "mahoraga", label: "Ten Shadows: Mahoraga", cd: 1200, cost: 600, min: 0, max: 26, weight: 7, cond: G(1, 2),
-      run(e, s, t) {  // the strongest shikigami of the Ten Shadows, wheel turning above its head
+      run(e, s, t) {  // the strongest shikigami of the Ten Shadows: it ADAPTS — every turn of its wheel, one technique stops working
         busy(s, 34); setPose(e, 21); announce(e, "§f§lWith this treasure I summon... §lEight-Handled Sword Divergent Sila Divine General MAHORAGA!");
-        const v = summonGiant(e, 6, t, { size: 2.8, behind: 3, life: 70 });
+        const life = 200;
+        const v = summonGiant(e, 6, t, { size: 2.8, behind: 3, life });
         const dim = e.dimension;
-        later(14, () => {  // the Sword of Extermination
-          vset(v, "ab:pose", 1);
-          if (alive(t)) { flyingSlash(e, t, { color: C.white, dmg: 50 * powerOf(e) / 100, range: 20, roll: 80, size: 3.4 }); shake(dim, t.location, 0.5, 0.4); }
-        });
-        later(36, () => {  // the wheel turns: it has adapted — a heavy blow
-          vset(v, "ab:pose", 5);
-          sound(dim, "random.anvil_land", e.location, 2, 0.5);
-          if (alive(t)) { hitArea(e, V.up(t.location, 1), 4, 34 * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.6 }); fx(dim, "shock", t.location, C.white, 8, 0.5); }
+        s.mahoUntil = now() + life; s.mahoVfx = v; s.adapt = {}; s.mahoTurns = 0;
+        every(30, 6, (i) => {  // it fights for ten seconds: the Sword of Extermination, then crushing blows, harder after every adaptation
+          if (!e.isValid || now() > s.mahoUntil || !alive(t)) return;
+          const bonus = 1 + 0.25 * (s.mahoTurns ?? 0);
+          if (i % 2 === 0) {
+            vset(v, "ab:pose", 1);
+            flyingSlash(e, t, { color: C.white, dmg: 40 * bonus * powerOf(e) / 100, range: 20, roll: 80, size: 3.4 }); shake(dim, t.location, 0.5, 0.4);
+          } else {
+            vset(v, "ab:pose", 5);
+            sound(dim, "random.anvil_land", t.location, 1.4, 0.5);
+            hitArea(e, V.up(t.location, 1), 4, 30 * bonus * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.6 }); fx(dim, "shock", t.location, C.white, 8, 0.5);
+          }
         });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },
@@ -4900,6 +4905,7 @@ function updateFighter(e, tick) {
   let r = Math.random() * ok.reduce((n, a) => n + wt(a), 0);
   const pick = ok.find((a) => (r -= wt(a)) <= 0) ?? ok[0];
   (s.lastUsed ??= {})[pick.id] = tick;
+  s.curAb = pick.id; s.curAbAt = now();  // what it is hitting with (Mahoraga adapts to each technique)
   s.energy -= pick.cost;
   s.cd[pick.id] = tick + pick.cd;
   if (ctx.dist > pick.max) {
@@ -5037,6 +5043,22 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       const gap = Math.max(attackerP, defenderP) / Math.max(1, Math.min(attackerP, defenderP));
       ev.damage *= 1 + 0.035 * (iqOf(src) - iqOf(v)) * clamp((1.3 - gap) / 0.3, 0, 1);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
+    }
+    if (now() < (s.mahoUntil ?? 0) && src && src.isValid && src.id !== v.id) {  // Mahoraga adapts to whatever hit its summoner
+      const ss = isFighter(src) ? state(src) : undefined;
+      const tech = ss && now() - (ss.curAbAt ?? 0) < 40 ? ss.curAb : "body";
+      const key = src.id + ":" + tech;
+      const a = (s.adapt ??= {})[key] ?? { n: 0, at: -99 };
+      ev.damage *= [1, 0.5, 0.2, 0][Math.min(a.n, 3)];
+      if (now() - a.at > 10 && a.n < 3) {  // the wheel turns: one step closer to full adaptation
+        a.n++; a.at = now(); s.adapt[key] = a; s.mahoTurns = (s.mahoTurns ?? 0) + 1;
+        const mv = s.mahoVfx;
+        system.run(() => {
+          const at = mv && mv.isValid ? V.up(mv.location, 9.6) : V.up(v.location, 3);
+          ring(v.dimension, at, 3.5, C.gold, 28, 0.5); fx(v.dimension, "flash", at, C.gold, 3, 0.2);
+          sound(v.dimension, "random.anvil_use", at, 1.2, 0.6);
+        });
+      }
     }
     ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
