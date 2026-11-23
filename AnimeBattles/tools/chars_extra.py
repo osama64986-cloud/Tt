@@ -526,6 +526,31 @@ def v2_fox(m, eight):
             SC.obox(m, "body", [0, 13 + i * 1.9, 3.4], [1.1, 1.1, 1.1], BONE, (0, 1, 0), 45)
 
 
+def sage_toad(m, x, who):
+    """Fukasaku / Shima, the two small elder Sage Toads of Mount Myoboku, sitting on Naruto's shoulder: a squat green toad
+    with big yellow eyes and a little cloak; Fukasaku has white brows and a white beard, Shima purple lips."""
+    skin = (150, 162, 98) if who == "fukasaku" else (140, 154, 96)
+    cloak = (96, 66, 44) if who == "fukasaku" else (120, 84, 120)
+    y = 24.0
+    k = 1.3
+    _box = m.box
+
+    def box(bone, frm, size, paint):  # every part 30% bigger, scaled about the toad's seat on the shoulder
+        _box(bone, [x + (frm[0] - x) * k, y + (frm[1] - y) * k, frm[2] * k], [v * k for v in size], paint)
+    box("body", [x - 1.6, y, -1.4], [3.2, 2.2, 2.8], layered(skin, [region((0, 0.6, 1, 1), light(skin, 0.15), faces=("north",))]))   # body
+    box("body", [x - 1.7, y + 0.2, -0.2], [3.4, 2.0, 1.6], solid(cloak))                                                            # cloak over the back
+    box("body", [x - 1.4, y + 2.2, -1.2], [2.8, 1.6, 2.4], solid(skin))                                                            # head
+    for ex in (-0.75, 0.75):  # big yellow eyes with a bar pupil
+        box("body", [x + ex - 0.45, y + 3.4, -1.25], [0.9, 0.7, 0.6], solid((246, 214, 70)))
+        box("body", [x + ex - 0.35, y + 3.6, -1.35], [0.7, 0.2, 0.2], solid((20, 16, 14)))
+    if who == "fukasaku":
+        for ex in (-0.75, 0.75):
+            box("body", [x + ex - 0.55, y + 3.85, -1.3], [1.1, 0.3, 0.5], solid((244, 244, 240)))   # white brows
+        box("body", [x - 0.9, y + 1.6, -1.6], [1.8, 0.8, 0.5], solid((244, 244, 240)))             # white beard
+    else:
+        box("body", [x - 0.7, y + 2.5, -1.3], [1.4, 0.35, 0.2], solid((150, 70, 150)))             # purple lips
+
+
 def naruto(m, char, form):
     kid = char == "naruto_kid"
     if char == "naruto_war" or (char == "naruto_adult" and form == "link"):
@@ -572,6 +597,8 @@ def naruto(m, char, form):
                 m.box("body", [x0, 7.0, -2.6], [2.8, 17.2, 0.5], layered(red, [hem]))
             both_arms(m, [3.6, 18.6, -2.6], [4.8, 5.6, 5.2], layered(red, [region((0, 0.75, 1, 1), BLACK)]))
             m.box("body", [-5.0, 13.6, 2.6], [10.0, 2.4, 2.4], layered(WHITE, [region((0, 0, 0.12, 1), (170, 40, 40)), region((0.88, 0, 1, 1), (170, 40, 40))]))
+            sage_toad(m, 6.4, "fukasaku")   # the two Great Sage Toads riding his shoulders (Pain arc)
+            sage_toad(m, -6.4, "shima")
         return
     # adult: the Seventh Hokage
     baryon = form == "baryon"
