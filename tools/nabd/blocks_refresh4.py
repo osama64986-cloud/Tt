@@ -21,6 +21,8 @@ def igneous(name, base, grains, *, contrast=0.30, count=34, blobs=4, flow=1):
     ramp = make_ramp(base, 7, contrast, sat=1.05, warm=0.0)
     m = fbm(r, ((3, 1.0), (6, 0.6), (12, 0.3)), sx=flow, sy=1)
     idx = 3 + (m > 0.62) + (m > 0.82) - (m < 0.32) - (m < 0.14)
+    w = r.random((N, N))
+    idx = idx + (w > 0.86) - (w < 0.14)                  # fine crystalline grain everywhere
     rgb = paint_idx(idx, ramp).astype(float)
     hgt = 0.4 + 0.2 * m
     # a few larger soft blobs of a second tone
@@ -51,23 +53,25 @@ def igneous(name, base, grains, *, contrast=0.30, count=34, blobs=4, flow=1):
 
 
 def stones(out):
-    g = shift(vbase("stone_granite"), dv=0.02, ds=0.02)
+    g = shift(vbase("stone_granite"), dv=0.0, ds=0.02)
     out["stone_granite"] = igneous("granite4", g, [
-        (shift(g, dv=-0.20, ds=0.04), 4, False),          # dark mica
-        (shift(g, dv=0.12, ds=-0.10), 3, True),           # pale feldspar
-        (shift(g, dh=-0.02, ds=0.08, dv=0.05), 3, True),  # rosy grains
-    ], contrast=0.28, count=30)
-    d = shift(vbase("stone_diorite"), dv=0.03)
+        (shift(g, dv=-0.22, ds=0.04), 5, False),          # dark mica
+        (shift(g, dv=0.12, ds=-0.10), 4, True),           # pale feldspar
+        (shift(g, dh=-0.02, ds=0.10, dv=0.06), 4, True),  # rosy grains
+        (shift(g, dv=-0.10, dh=0.02), 3, False),
+    ], contrast=0.30, count=70, blobs=0)
+    d = shift(vbase("stone_diorite"), dv=0.02)
     out["stone_diorite"] = igneous("diorite4", d, [
-        (shift(d, dv=-0.30), 5, False),                   # the grey-black flecks diorite is known for
-        (shift(d, dv=-0.16), 4, False),
-        ((248, 248, 246), 2, True),
-    ], contrast=0.22, count=28, blobs=6)
-    a = shift(vbase("stone_andesite"), dv=0.03)
+        (shift(d, dv=-0.32), 5, False),                   # the grey-black flecks diorite is known for
+        (shift(d, dv=-0.18), 6, False),
+        ((250, 250, 248), 3, True),
+    ], contrast=0.20, count=55, blobs=7)
+    a = shift(vbase("stone_andesite"), dv=0.02)
     out["stone_andesite"] = igneous("andesite4", a, [
-        (shift(a, dv=-0.14), 4, False),
-        (shift(a, dv=0.10), 3, True),
-    ], contrast=0.26, count=20, blobs=2, flow=4)        # andesite has a soft sideways flow
+        (shift(a, dv=-0.16), 5, False),
+        (shift(a, dv=0.12), 4, True),
+        (shift(a, dv=-0.08, dh=0.05, ds=0.03), 3, False),
+    ], contrast=0.30, count=45, blobs=0, flow=5)        # andesite has a soft sideways flow
 
 
 # ------------------------------------------------------------------ glowstone
@@ -78,16 +82,16 @@ def glowstone(name, base):
     follows the heat, so it glows from inside in every graphics mode."""
     r = rng_of(name)
     hot = [(110, 62, 30), (170, 98, 40), (214, 142, 58), (240, 186, 86), (252, 222, 130), (255, 244, 196)]
-    ids, f1, f2, pts = voronoi(r, 11)
+    ids, f1, f2, pts = voronoi(r, 15)
     edge = f2 - f1
     n = len(pts)
     off = r.choice([-1, 0, 0, 1], size=n)
-    heat = np.clip(edge / 2.6, 0, 1)
+    heat = np.clip((edge - 0.9) / 1.6, 0, 1)
     idx = np.clip((heat * 4.2).astype(int) + 1 + off[ids], 1, 5)
     up = (np.roll(ids, 1, 0) != ids) | (np.roll(ids, 1, 1) != ids)
     down = (np.roll(ids, -1, 0) != ids) | (np.roll(ids, -1, 1) != ids)
     idx[up & (edge > 0.4)] = np.minimum(idx[up & (edge > 0.4)] + 1, 5)
-    gap = edge < 0.85
+    gap = edge < 1.05
     idx[gap] = 0
     idx[down & ~gap & (edge < 1.0)] = np.maximum(idx[down & ~gap & (edge < 1.0)] - 1, 1)
     w = r.random((N, N))

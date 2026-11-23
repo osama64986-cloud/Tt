@@ -222,6 +222,52 @@ def grass_blades(ramp, height, count, seed, top_part=None, w=N):
     return Tex(rgb, hgt, alpha=alpha, rough=210, sss=150, bump=0.8)
 
 
+def tall_grass(ramp, seed, w=N):
+    """Tall grass as one plant through both halves: long, thin, slightly wavy
+    blades rising from a dense tuft at the foot, most of them reaching well into
+    the top half, a few bending over at the tip; short blades fill the base.
+    Returns the 32-px-tall picture; the caller cuts it in two."""
+    r = rng_of(seed)
+    H = 2 * N
+    rgb = np.zeros((H, w, 3), np.uint8)
+    alpha = np.zeros((H, w), np.uint8)
+    hgt = np.zeros((H, w))
+    nr = len(ramp) - 1
+
+    def blade(x0, ln, lean, wave, phase, dark, bend):
+        for k in range(ln):
+            t = k / max(1, ln - 1)
+            y = H - 1 - k
+            x = x0 + lean * t ** 1.6 + wave * np.sin(t * 5.0 + phase) * t
+            if bend and t > 0.82:                          # the tip droops sideways
+                x += bend * (t - 0.82) * 14
+                if t > 0.92:
+                    y += int((t - 0.92) * 20)
+            xi = int(round(x))
+            if not 0 <= xi < w or not 0 <= y < H:
+                return
+            tone = int(round(1.6 + t * (nr - 1.4))) - dark
+            rgb[y, xi] = ramp[max(0, min(nr, tone))]
+            alpha[y, xi] = 255
+            hgt[y, xi] = 0.3 + 0.6 * t
+
+    long_roots = np.sort(r.uniform(1.5, 14.5, 14))
+    for n_, x0 in enumerate(long_roots):
+        spread = (x0 - 8.0) / 5.5
+        ln = int(r.uniform(28, 33) * (1.0 - 0.12 * abs(spread)))
+        lean = spread * r.uniform(1.5, 3.5) + r.uniform(-0.8, 0.8)
+        bend = (1 if spread > 0 else -1) * (r.random() < 0.35)
+        blade(x0, ln, lean, r.uniform(0.3, 0.8), r.uniform(0, 6), n_ % 2, bend)
+    for x0 in r.uniform(3, 13, 5):                          # short blades thicken the foot
+        blade(x0, int(r.uniform(6, 12)), (x0 - 8) / 5 * 2.0, 0.3, r.uniform(0, 6), 0, 0)
+    return Tex(rgb, hgt, alpha=alpha, rough=210, sss=150, bump=0.8)
+
+
+def _half(t, top):
+    sl = slice(0, N) if top else slice(N, 2 * N)
+    return Tex(t.rgb[sl], t.height[sl], alpha=t.alpha[sl], rough=210, sss=150, bump=0.8)
+
+
 def grasses(out):
     from .blocks_plants import grey_ramp
     from .core import vramp
@@ -229,10 +275,10 @@ def grasses(out):
     out["tallgrass"] = grass_blades(tg, N, 7, "grass2")
     out["tallgrass_carried"] = grass_blades(vramp("tallgrass_carried", 5, contrast=0.4), N, 7, "grass2")
     dg = grey_ramp("double_plant_grass_bottom")
-    out["double_plant_grass_bottom"] = grass_blades(dg, 2 * N, 8, "dgrass2", top_part=False)
-    out["double_plant_grass_top"] = grass_blades(dg, 2 * N, 8, "dgrass2", top_part=True)
-    out["double_plant_grass_carried"] = grass_blades(vramp("double_plant_grass_carried", 5, contrast=0.4), 2 * N, 8,
-                                                     "dgrass2", top_part=True)
+    tall = tall_grass(dg, "dgrass3")
+    out["double_plant_grass_bottom"] = _half(tall, False)
+    out["double_plant_grass_top"] = _half(tall, True)
+    out["double_plant_grass_carried"] = _half(tall_grass(vramp("double_plant_grass_carried", 5, contrast=0.4), "dgrass3"), True)
 
 
 def suspicious(out):
