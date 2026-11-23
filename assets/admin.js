@@ -64,7 +64,7 @@
   function explain(status, msg) {
     if (status === 401) return "المفتاح غير صحيح أو منتهي. سوّ مفتاح جديد.";
     if (status === 403 && /rate limit/i.test(msg)) return "وصلت حد الطلبات في GitHub، انتظر شوي وحاول مرة ثانية.";
-    if (status === 403) return "المفتاح ما عنده الصلاحيات الكافية (Contents و Actions: Read and write).";
+    if (status === 403) return "المفتاح ما عنده صلاحية الرفع. شوف المربع الأحمر فوق، بيه الحل خطوة خطوة.";
     if (status === 404) return "ما لقينا المستودع أو الملف. تأكد من اسم المستودع وإن المفتاح مسموح له عليه.";
     if (status === 422 && /workflow/i.test(msg)) return "ما لقينا ملف النشر publish.yml على فرع main. تأكد إنك دمجت التحديثات في main.";
     return `خطأ من GitHub (${status}) ${msg}`;
@@ -84,7 +84,7 @@
         if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText).sha);
         else {
           let m = ""; try { m = JSON.parse(xhr.responseText).message; } catch { /* ignore */ }
-          reject(new Error(explain(xhr.status, m)));
+          const er = new Error(explain(xhr.status, m)); er.status = xhr.status; reject(er);
         }
       };
       xhr.onerror = () => reject(new Error("انقطع الاتصال أثناء الرفع. تأكد من الإنترنت وحاول مرة ثانية."));
@@ -176,6 +176,7 @@
       }
     } catch (e) {
       j.fail(`✖ ${e.message}`);
+      if (e.status === 403 || e.status === 404) checkWrite().then((ok) => { if (!ok) $("#permWarn").scrollIntoView({ behavior: "smooth" }); });
     } finally {
       busy = false;
     }
@@ -331,6 +332,7 @@
     show("dashView");
     $("#whoami").textContent = auth.login || "";
     loadMod();
+    checkWrite();
     $("#feedbackLink").href = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/.test(auth.repo)
       ? `https://github.com/${auth.repo}/issues?q=${encodeURIComponent("is:issue is:open label:feedback")}` : "#";
     $("#tokenInput").value = "";
@@ -341,6 +343,28 @@
     } catch (e) {
       if (e.status === 401) { logout(); showLogin(e.message); return; }
       $("#itemList").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+    }
+  }
+
+  /**
+   * A fine-grained token can sign in (the repo shows the OWNER's push right, not the token's)
+   * while having only read access. Creating one tiny blob proves "Contents: write" without
+   * changing anything visible (an unreferenced blob is never part of a branch).
+   */
+  async function checkWrite() {
+    const box = $("#permWarn");
+    try {
+      await gh(`/repos/${auth.repo}/git/blobs`, { method: "POST", body: { content: "bmFiZC13cml0ZS1jaGVjaw==", encoding: "base64" } });
+      box.hidden = true;
+      return true;
+    } catch (e) {
+      if (e.status === 403 || e.status === 404) {
+        $("#permRepo").textContent = auth.repo.split("/")[1] || "Tt";
+        $("#permNewToken").href = tokenUrl(auth.repo);
+        box.hidden = false;
+        return false;
+      }
+      return true; // offline / rate limit: do not block, the upload shows its own error
     }
   }
 
@@ -640,6 +664,11 @@
     if (!useLink && !file && !(editing && !data.mods.find((m) => m.id === editing)?.external)) return err("اختر الملف اللي تبي ترفعه.");
     if (!useLink && file && file.size > MAX_FILE) return err("الملف أكبر من 95MB. ارفعه على Releases أو MediaFire واستخدم «رابط خارجي».");
     if (form.screenshots.files.length > 6) return err("أقصى شي 6 صور إضافية.");
+
+    const ext = file ? (file.name.split(".").pop() || "").toLowerCase() : "";
+    if (!useLink && file && !["jar", "zip", "mcaddon", "mcpack", "mcworld", "mctemplate", "rar", "7z"].includes(ext))
+      return err("هذا النوع من الملفات ما ينقبل. المقبول: .mcaddon .mcpack .mcworld .mctemplate .jar .zip");
+    if (!(await checkWrite())) { editor.close(); $("#permWarn").scrollIntoView({ behavior: "smooth" }); return; }
 
     const files = [];
     try {

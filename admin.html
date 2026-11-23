@@ -102,6 +102,19 @@
         </div>
       </div>
       <p class="error" id="tokenWarn" hidden></p>
+      <div class="perm-warn" id="permWarn" role="alert" hidden>
+        <b>⚠️ مفتاحك يقدر يقرأ بس، وما يقدر يرفع مودات.</b>
+        <p>هذا سبب إن الرفع يوقف. الحل (دقيقة وحدة، نفس المفتاح يبقى):</p>
+        <ol>
+          <li>افتح <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer">صفحة مفاتيحك بـ GitHub ↗</a> واضغط على اسم المفتاح.</li>
+          <li>اضغط <b>Edit</b> (تعديل).</li>
+          <li>عند <b>Repository access</b> تأكد إن <b id="permRepo">Tt</b> مختار.</li>
+          <li>انزل لـ <b>Permissions</b> ← <b>Repository permissions</b>، وخلّي:
+            <b>Contents</b> = <b>Read and write</b>، و <b>Actions</b> = <b>Read and write</b>.</li>
+          <li>انزل لتحت واضغط <b>Update</b>، وارجع هنا واضغط ⟳ أو حدّث الصفحة.</li>
+        </ol>
+        <p class="muted">أو سوّ مفتاح جديد من <a id="permNewToken" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">هذا الرابط ↗</a> (الإعدادات معبّاية لحالها).</p>
+      </div>
       <details class="help fb-help">
         <summary>💬 شلون أنشر آراء الناس على الموقع؟</summary>
         <ol>
@@ -156,7 +169,7 @@
       </div>
       <div data-source="upload">
         <label class="dropzone" id="dropzone">
-          <input type="file" name="file" accept=".jar,.zip,.mcaddon,.mcpack,.mcworld,.mctemplate,.rar,.7z">
+          <input type="file" name="file">
           <span class="dz-icon" aria-hidden="true">📦</span>
           <span class="dz-text" id="dzText">اضغط هنا واختار الملف، أو اسحبه وحطه هنا</span>
           <small>.mcaddon · .mcpack · .mcworld · .jar · .zip</small>
