@@ -2997,6 +2997,62 @@
      ]
     }
    }
+  },
+  "animation.ab.summon_blade": {
+   "loop": "hold_on_last_frame",
+   "animation_length": 0.9,
+   "bones": {
+    "sword": {
+     "scale": {
+      "0.0": [
+       1,
+       0.02,
+       1
+      ],
+      "0.2": [
+       1,
+       0.02,
+       1
+      ],
+      "0.75": [
+       1,
+       1.06,
+       1
+      ],
+      "0.9": [
+       1,
+       1,
+       1
+      ]
+     }
+    }
+   }
+  },
+  "animation.ab.summon_barrage": {
+   "loop": true,
+   "bones": {
+    "rightArm": {
+     "rotation": [
+      "-85 + math.sin(query.life_time * 1800.0) * 30",
+      "math.sin(query.life_time * 1800.0) * 8",
+      0
+     ]
+    },
+    "leftArm": {
+     "rotation": [
+      "-85 - math.sin(query.life_time * 1800.0) * 30",
+      "-math.sin(query.life_time * 1800.0) * 8",
+      0
+     ]
+    },
+    "body": {
+     "rotation": [
+      6,
+      "math.sin(query.life_time * 1800.0) * 10",
+      0
+     ]
+    }
+   }
   }
  }
 }

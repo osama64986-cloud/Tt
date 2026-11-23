@@ -14,7 +14,7 @@ PUR, PUR_D, PUR_L = (146, 78, 228), (86, 40, 160), (222, 196, 255)
 def _bones(pivots):
     parents = {"body": "root", "head": "body", "rightArm": "body", "leftArm": "body",
                "rightWing": "body", "leftWing": "body", "tails": "body", "jaw": "head", "wheel": "head",
-               "rightWingTip": "rightWing", "leftWingTip": "leftWing", "rightLeg": "body", "leftLeg": "body"}
+               "rightWingTip": "rightWing", "leftWingTip": "leftWing", "rightLeg": "body", "leftLeg": "body", "sword": "rightArm"}
     return S.bones_from(pivots, parents)
 
 
@@ -336,7 +336,7 @@ def mahoraga():
     the Sword of Extermination on its right forearm. Faces -z."""
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 20, 0], "head": [0, 41, 0], "rightArm": [10.6, 37, 0], "leftArm": [-10.6, 37, 0],
-                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 42, -2], "wheel": [0, 55, 0]})
+                      "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 20, 6], "jaw": [0, 42, -2], "wheel": [0, 55, 0], "sword": [10.6, 24, 0]})
     SKC, MUS, RID = (232, 232, 236), (176, 176, 186), (150, 150, 162)
     BLKC = (30, 30, 34)
 
@@ -457,9 +457,44 @@ def mahoraga():
         m.box(bone, [cx - 2.5, 20.6, -2.5], [5.0, 6.6, 5.0], SKIN_)                                # forearm
         m.box(bone, [cx - 2.8, 18.8, -2.8], [5.6, 2.0, 5.6], solid(BLKC))                          # black wrist band
         m.box(bone, [cx - 2.4, 15.0, -2.4], [4.8, 3.8, 4.8], SKIN_)                                # fist
-    # the Sword of Extermination grows from the right forearm, blade forward
-    m.box("rightArm", [10.6 - 1.6, 21.4, -4.6], [3.2, 2.8, 2.2], solid((54, 54, 60)))
-    blade(m, "rightArm", [10.6, 22.6, -5.6], [0, -0.2, -1], 24, 3.2, 0.8, smooth((220, 226, 236)), width_dir=[0, 1, 0])
+    # the Sword of Extermination: a FLAT painted blade (two crossed sheets, so it reads from every side) that slides out
+    # of the inside of the right forearm and runs down past the fist; the "sword" bone grows it out when Mahoraga appears
+    L, W, top = 24.0, 5.2, 24.0
+
+    def blade_paint(face, img):
+        w, h = img.size
+        if w < 2 or h < 2:
+            return
+        px = img.load()
+        ink, steel, spine, edge, fuller = (34, 34, 44), (204, 210, 224), (150, 156, 172), (248, 250, 255), (112, 118, 134)
+        gold, black = (196, 160, 80), (40, 38, 46)
+        for y in range(h):
+            t = y / (h - 1)
+            if t < 0.14:  # the ornate root of the blade (inside the arm / at the wrist): black and gold
+                for x in range(w):
+                    px[x, y] = gold + (255,) if (y in (0, int(h * 0.07), int(h * 0.14) - 1) or x in (0, w - 1)) else black + (255,)
+                continue
+            frac = 1.0 if t < 0.72 else max(0.0, 1 - (t - 0.72) / 0.28)  # the edge sweeps in to the point
+            xe = max(0, int(round((w - 1) * frac)))
+            for x in range(w):
+                if x > xe:
+                    px[x, y] = (0, 0, 0, 0)
+                    continue
+                if x == 0 or x == xe or y == h - 1:
+                    c = ink
+                elif x == 1:
+                    c = spine
+                elif x >= xe - 1:
+                    c = edge
+                elif x == max(2, int(w * 0.36)) and t < 0.7:
+                    c = fuller
+                else:
+                    c = steel
+                px[x, y] = c + (255,)
+
+    m.box("sword", [10.6, top - L, -W / 2], [0, L, W], blade_paint)                  # sheet seen from the side
+    m.box("sword", [10.6 - W / 2, top - L, 0], [W, L, 0], blade_paint)                # sheet seen from the front
+    m.box("rightArm", [10.6 - 1.7, 13.8, -1.7], [3.4, 1.2, 3.4], layered((40, 38, 46), []))   # where the blade leaves the fist
     return m
 
 

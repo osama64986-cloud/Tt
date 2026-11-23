@@ -934,7 +934,7 @@ def build_summons():
                 "properties": {
                     "ab:kind": {"type": "int", "range": [0, len(names) - 1], "default": 0, "client_sync": True},
                     "ab:size": {"type": "float", "range": [0, 8], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 6], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 7], "default": 0, "client_sync": True},
                 },
             },
             "components": {
@@ -963,12 +963,13 @@ def build_summons():
                 "animations": {"base": "animation.ab.summon_base", "wings": "animation.ab.summon_wings", "tails": "animation.ab.summon_tails",
                                "swing": "animation.ab.summon_swing", "aim": "animation.ab.summon_aim", "leap": "animation.ab.summon_leap",
                                "bite": "animation.ab.summon_bite", "swipe": "animation.ab.summon_swipe", "spin": "animation.ab.summon_spin",
-                               "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot", "roll": "animation.ab.summon_roll"},
+                               "flap": "animation.ab.summon_flap", "trot": "animation.ab.summon_trot", "roll": "animation.ab.summon_roll", "blade": "animation.ab.summon_blade", "barrage": "animation.ab.summon_barrage"},
                 "scripts": {"animate": ["base", {"wings": f"{K} == 0"}, {"tails": f"{K} == 1"}, {"flap": f"{K} == {names.index('crow')}"},
                                         {"trot": f"{K} == {names.index('hound')} || {K} == {names.index('flame_tiger')} || {K} == {names.index('dog_black')} || {K} == {names.index('dog_white')}"}, {"roll": f"{K} == {names.index('yoyo')}"},
                                         {"swing": "query.property('ab:pose') == 1"}, {"aim": "query.property('ab:pose') == 2"},
                                         {"leap": "query.property('ab:pose') == 3"}, {"bite": "query.property('ab:pose') == 4"},
-                                        {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}]},
+                                        {"swipe": "query.property('ab:pose') == 5"}, {"spin": "query.property('ab:pose') == 6"}, {"barrage": "query.property('ab:pose') == 7"},
+                                        {"blade": f"{K} == {names.index('mahoraga')}"}]},
                 "render_controllers": [{"controller.render.ab.summon_glow": " && ".join(f"{K} != {i}" for i, n in enumerate(names) if n in summons.SOLID)},
                                        {"controller.render.ab.summon_solid": " || ".join(f"{K} == {i}" for i, n in enumerate(names) if n in summons.SOLID)}],
             }
@@ -1030,6 +1031,14 @@ def build_summons():
         "leftArm": {"rotation": {"0.0": [-60, 0, -30], "0.25": [-110, 0, -50], "0.45": [-40, 0, 45], "0.6": [-20, 0, 20]}},
         "body": {"rotation": {"0.0": [0, -10, 0], "0.45": [0, 22, 0], "0.6": [0, 10, 0]}},
         "jaw": {"rotation": [20, 0, 0]}}}
+    # Mahoraga: the Sword of Extermination slides out of the inside of its forearm when it appears
+    an["animations"]["animation.ab.summon_blade"] = {"loop": "hold_on_last_frame", "animation_length": 0.9, "bones": {
+        "sword": {"scale": {"0.0": [1, 0.02, 1], "0.2": [1, 0.02, 1], "0.75": [1, 1.06, 1], "0.9": [1, 1, 1]}}}}
+    # Mahoraga: a storm of punches, fists driving in one after the other
+    an["animations"]["animation.ab.summon_barrage"] = {"loop": True, "bones": {
+        "rightArm": {"rotation": ["-85 + math.sin(query.life_time * 1800.0) * 30", "math.sin(query.life_time * 1800.0) * 8", 0]},
+        "leftArm": {"rotation": ["-85 - math.sin(query.life_time * 1800.0) * 30", "-math.sin(query.life_time * 1800.0) * 8", 0]},
+        "body": {"rotation": [6, "math.sin(query.life_time * 1800.0) * 10", 0]}}}
     an["animations"]["animation.ab.summon_spin"] = {"loop": "hold_on_last_frame", "animation_length": 0.8, "bones": {
         "root": {"rotation": {"0.0": [0, 0, 0], "0.8": [0, 360, 0]}},
         "tails": {"rotation": {"0.0": [0, 0, 0], "0.4": [20, 0, 0], "0.8": [0, 0, 0]}}}}

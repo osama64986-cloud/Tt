@@ -2138,10 +2138,16 @@ const SUKUNA = {
           if (i % 2 === 0) {
             vset(v, "ab:pose", 1);
             flyingSlash(e, t, { color: C.white, dmg: 40 * bonus * powerOf(e) / 100, range: 20, roll: 80, size: 3.4 }); shake(dim, t.location, 0.5, 0.4);
-          } else {
-            vset(v, "ab:pose", 5);
-            sound(dim, "random.anvil_land", t.location, 1.4, 0.5);
-            hitArea(e, V.up(t.location, 1), 4, 30 * bonus * powerOf(e) / 100, new Set(), { knock: 3, lift: 0.6 }); fx(dim, "shock", t.location, C.white, 8, 0.5);
+          } else {  // a storm of punches: six blows, the last one sends the enemy sliding
+            vset(v, "ab:pose", 7);
+            every(3, 6, (k) => {
+              if (!alive(t) || !e.isValid) return false;
+              const c = aim(t);
+              deal(e, t, (k === 5 ? 14 : 6) * bonus * powerOf(e) / 100);
+              fx(dim, "shock_v", c, C.white, 2.6, 0.25); burst(dim, c, C.white, 10, 2, 0.4, 0.4);
+              sound(dim, "ab.impact", c, 0.8, 0.8 + k * 0.05);
+              if (k === 5) { launch(e, t, 1.1); later(4, () => vset(v, "ab:pose", 0)); }
+            });
           }
         });
         later(12, () => { if (e.isValid) setPose(e, 0); });
