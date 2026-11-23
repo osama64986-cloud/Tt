@@ -2081,7 +2081,8 @@ M.FACE32.update({
     "bakugo_cluster": dict(eye="narrow", brow="sharp", mouth="clench", marks=["bakugo_mask", "scorch"]),
     "gon": dict(eye="round", brow="angled", mouth="smile", marks=[]),
     "gon_jaja": dict(eye="round", brow="sharp", mouth="clench", marks=[]),
-    "gon_adult": dict(eye="round", brow="sharp", mouth="none", marks=["adult_eyes"]),
+    "gon_adult": dict(eye="anime", brow="sharp", mouth="neutral", marks=[]),               # settled: his eyes clear and sharp
+    "gon_vow": dict(eye="round", brow="sharp", mouth="none", marks=["adult_eyes"]),        # mid-transformation: empty white eyes
     "gon_dark": dict(eye="round", brow="sharp", mouth="none", marks=["hidden_eyes"]),
     "akaza": dict(eye="narrow", brow="none", mouth="smirk", marks=["akaza_lines", "akaza_eyes"]),
     "akaza_compass": dict(eye="narrow", brow="none", mouth="clench", marks=["akaza_lines", "akaza_eyes"]),
@@ -2335,10 +2336,10 @@ def _greyed(paint):
 def gon(m, form):
     """Gon: the green jacket and shorts, white socks and boots, the fishing rod on his back. Jajanken: his fist blazes
     with yellow nen. Adult Gon: grown in an instant, his clothes torn to rags, a towering mane of hair, a dark aura."""
-    if form == "dark":  # the Vow: the boy's body, drained grey, eyes swallowed by shadow
+    if form == "dark":  # the Vow: already the grown body, but drained GREY, the eyes empty, black nen pouring off him
         M._GON_DARK = True
         try:
-            gon(m, "base")
+            gon(m, "adult")
         finally:
             M._GON_DARK = False
         for c in m.cubes:
@@ -2347,8 +2348,8 @@ def gon(m, form):
     adult = form == "adult"
     jaja = form == "jajanken"
     key = "gon_adult" if adult else ("gon_jaja" if jaja else "gon")
-    if form == "base" and getattr(M, "_GON_DARK", False):
-        key = "gon_dark"
+    if adult and getattr(M, "_GON_DARK", False):
+        key = "gon_vow"
     head = head_paint(GON_HAIR, (120, 70, 40), True, key)
     green = (50, 130, 70)
     if adult:
