@@ -1,8 +1,13 @@
-# Nabd 1.0.76 — the big update
+# Nabd 1.0.77 — the big update
 
 ### Textures
 - Lanterns (normal, soul, copper) redrawn on the game's lantern layout: a full pane of glass with a flickering flame, iron bands and a raised cap.
 - Light blocks redrawn: sea lantern, ochre/verdant/pearlescent froglights, shroomlight, redstone lamp (on/off), jack o'lantern and both campfire flames.
+- Campfire logs: proper ash-and-coal bed under the fire, charred glowing logs when lit (normal and soul).
+- Copper bulbs (all oxidation stages, lit/powered), beacon core, glow lichen and the respawn anchor's glowing well.
+- Nether stems: cut ends with proper growth rings instead of a glowing square.
+- All glass redrawn (clear, 16 stained, tinted) with the game's see-through levels; pane edges fixed.
+- Full audit against the game: sculk catalyst and sculk vein, daylight detector, end portal frame and eye, grindstone, bell, stonecutter, pitcher crop, loom and birch door corrected.
 - Tall grass is one continuous plant through both halves.
 - Glowstone redrawn as glowing crystal clusters (hot centres, amber rims, real light).
 - Granite, diorite and andesite: speckled stone with mineral grains; andesite with a soft sideways flow.

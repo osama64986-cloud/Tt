@@ -234,6 +234,205 @@ def flames(name, cols, frames=8):
     return stack_frames(out)
 
 
+# ------------------------------------------------------------------ campfire logs
+BARK = [(64, 50, 30), (86, 66, 38), (112, 86, 52), (140, 108, 64), (156, 122, 74)]
+END = [(150, 116, 68), (176, 140, 88), (196, 160, 104)]
+ASH = [(24, 26, 30), (32, 36, 44), (46, 54, 68), (62, 72, 90), (92, 100, 116)]
+
+
+def campfire_log(name, lit, ember=None, frame=0):
+    """The campfire's map: rows 0-3 the log's bark (lengthwise), rows 4-7 x0-3 the
+    cut end (rows 4-7 across the whole width once lit: the charred underside),
+    rows 8-15 the bed of ash and coals under the fire.  Lit: the bark chars and
+    cracks with embers, the bed glows from a hot heart in its middle."""
+    r = rng_of(name)
+    rf = rng_of(f"{name}_{frame}")
+    rgb = np.zeros((N, N, 3), float)
+    alpha = np.zeros((N, N), np.uint8)
+    emis = np.zeros((N, N))
+    hgt = np.full((N, N), 0.5)
+    g = fbm(r, ((2, 1.0), (16, 0.8)), sx=8, sy=1)                # lengthwise grain
+    for y in range(0, 4):
+        for x in range(N):
+            k = 2 + (g[y, x] > 0.62) - (g[y, x] < 0.32) + (1 if y == 0 else 0) - (1 if y == 3 else 0)
+            rgb[y, x] = BARK[max(0, min(4, k))]
+            alpha[y, x] = 255
+    for y in range(4, 8):                                         # cut end with rings
+        for x in range(0, 4):
+            d = max(abs(x - 1.5), abs(y - 5.5))
+            rgb[y, x] = END[2] if d < 1 else (END[1] if d < 1.6 else END[0])
+            alpha[y, x] = 255
+    for y in range(8, N):                                         # ash bed
+        for x in range(N):
+            k = 1 + int(r.random() < 0.45) + int(r.random() < 0.18) - int(r.random() < 0.2)
+            rgb[y, x] = ASH[k] if r.random() > 0.04 else ASH[4]
+            alpha[y, x] = 255
+    hgt[8:] = 0.3
+    if lit:
+        e = ember
+        # charred bark with ember cracks
+        char = (rf.random((8, N)) < 0.35) | (g[:8] < 0.38)
+        for y in range(0, 8):
+            for x in range(N):
+                if y >= 4 or char[y, x]:
+                    rgb[y, x] = ASH[int(rf.integers(0, 3))]
+                    alpha[y, x] = 255
+                    if rf.random() < (0.22 if y >= 4 else 0.12):
+                        k = int(rf.integers(1, 4))
+                        rgb[y, x] = e[k]
+                        emis[y, x] = 150 + 30 * k
+        for y in range(4, 8):                                     # bark ends stay on the outer columns
+            rgb[y, 0] = BARK[2]
+            rgb[y, 15] = BARK[1]
+        # glowing heart of the bed
+        for y in range(8, N):
+            for x in range(N):
+                d = np.hypot((x - 7.5) / 1.2, y - 11.0)
+                heat = 1 - d / 5.2 + (rf.random() - 0.5) * 0.5
+                if heat > 0.1:
+                    k = int(np.clip(heat * 4, 0, 4))
+                    rgb[y, x] = e[k]
+                    emis[y, x] = 140 + 28 * k
+                    hgt[y, x] = 0.4
+    t = Tex(np.clip(rgb, 0, 255).astype(np.uint8), hgt, alpha=alpha, rough=200, bump=0.8)
+    t.emis = emis
+    return t
+
+
+# ------------------------------------------------------------------ copper bulb
+def copper_bulb(base, lit, powered):
+    """A copper casing with a rivetted rim around a glass dome; inside, a
+    four-petalled filament that glows warm white-gold when lit and shows dull
+    amber when not; powered bulbs carry a red dot at the heart."""
+    ramp = make_ramp(base, 5, 0.42)
+    rgb = np.array(ramp[2], float) * np.ones((N, N, 3))
+    tex = fbm(rng_of("bulb_metal"), ((4, 1.0), (8, 0.5)))
+    rgb = rgb * (0.94 + 0.12 * tex[..., None])
+    rim = (xx < 2) | (yy < 2) | (xx > 13) | (yy > 13)
+    rgb[rim] = ramp[3]
+    rgb[(xx == 0) | (yy == 0)] = ramp[4]
+    rgb[(xx == 15) | (yy == 15)] = ramp[1]
+    for (x, y) in ((1, 1), (14, 1), (1, 14), (14, 14)):           # rivets
+        rgb[y, x] = ramp[4]
+    glass = (xx >= 3) & (xx <= 12) & (yy >= 3) & (yy <= 12)
+    rgb[(xx == 2) & ~(yy < 2) & ~(yy > 13)] = ramp[0]             # deep groove round the glass
+    rgb[(yy == 2) & ~(xx < 2) & ~(xx > 13)] = ramp[0]
+    rgb[(xx == 13) & (yy >= 2) & (yy <= 13)] = ramp[3]
+    rgb[(yy == 13) & (xx >= 2) & (xx <= 13)] = ramp[3]
+    if lit:
+        gl = [(232, 150, 70), (250, 196, 104), (255, 226, 150), (255, 246, 206), (255, 255, 240)]
+    else:
+        gl = [(92, 54, 36), (116, 70, 44), (138, 88, 54), (158, 106, 66), (176, 124, 80)]
+    dx, dy = np.abs(xx - 7.5), np.abs(yy - 7.5)
+    petal = np.minimum(dx, dy)                                     # a plus shape with rounded arms
+    t = 1 - np.clip(petal / 3.0, 0, 1) * 0.7 - np.hypot(dx, dy) / 14
+    idx = np.clip((t * 5).astype(int), 0, 4)
+    rgb[glass] = np.array(gl, float)[idx][glass]
+    corner_glint = glass & (xx == 4) & (yy == 4)
+    rgb[corner_glint] = np.minimum(rgb[corner_glint] + 30, 255)
+    emis = np.where(glass, 120 + 30 * idx, 0) if lit else np.zeros((N, N))
+    if powered:
+        rgb[7:9, 7:9] = (255, 50, 36)
+        rgb[7, 7] = (255, 140, 120)
+        emis[7:9, 7:9] = 240
+    t_ = Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.where(glass, 0.45, 0.8), rough=np.where(glass, 40, 110),
+             metal=np.where(glass, 0, 210), bump=0.8)
+    t_.emis = emis
+    return t_
+
+
+# ------------------------------------------------------------------ beacon
+def beacon():
+    """The beacon's core: a faceted crystal of light in a clear frame - bright
+    white at its heart, cooling through aqua to teal at the edges, with facet
+    lines running to the corners."""
+    rgb = np.zeros((N, N, 3), float)
+    dx, dy = np.abs(xx - 7.5), np.abs(yy - 7.5)
+    d = np.maximum(dx, dy) / 7.5
+    star = np.minimum(dx, dy) / 7.5
+    t = 1 - d * 0.75 - star * 0.5
+    cols = [(32, 150, 150), (54, 196, 192), (118, 232, 226), (190, 250, 246), (246, 255, 255)]
+    idx = np.clip((t * 5).astype(int), 0, 4)
+    rgb = np.array(cols, float)[idx]
+    diag = (np.abs(dx - dy) < 0.6) & (d > 0.35)
+    rgb[diag] = np.minimum(rgb[diag] + 22, 255)                    # facet edges to the corners
+    frame = (xx == 0) | (yy == 0) | (xx == 15) | (yy == 15)
+    rgb[frame] = (226, 252, 252)
+    rgb[(xx == 15) | (yy == 15)] = (170, 226, 226)
+    t_ = Tex(np.clip(rgb, 0, 255).astype(np.uint8), 0.5 + 0.08 * idx, rough=20, bump=0.5)
+    t_.emis = np.where(frame, 60, 130 + 30 * idx)
+    return t_
+
+
+# ------------------------------------------------------------------ glow lichen
+def glow_lichen():
+    """Glow lichen: loose crusts of grey-green lichen spreading over the face,
+    dotted with small pale berries that glow."""
+    r = rng_of("glow_lichen5")
+    m = fbm(r, ((4, 1.0), (8, 0.6), (16, 0.3)))
+    w = r.random((N, N))
+    body = (m > 0.48) & (w < 0.82) | (w > 0.97)
+    ramp = [(76, 104, 92), (98, 130, 114), (124, 156, 138), (150, 180, 160)]
+    idx = np.clip(((m - 0.48) * 9).astype(int) + (w > 0.6), 0, 3)
+    rgb = np.array(ramp, float)[idx]
+    alpha = np.where(body, 255, 0).astype(np.uint8)
+    emis = np.zeros((N, N))
+    for _ in range(9):
+        x, y = int(r.integers(0, N)), int(r.integers(0, N))
+        if body[y, x]:
+            rgb[y, x] = (228, 240, 196)
+            emis[y, x] = 230
+            for ox, oy in ((1, 0), (0, 1)):
+                xx_, yy_ = (x + ox) % N, (y + oy) % N
+                if body[yy_, xx_]:
+                    rgb[yy_, xx_] = (176, 200, 150)
+                    emis[yy_, xx_] = 120
+    t = Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.where(body, 0.6, 0), alpha=alpha, rough=220, sss=80, bump=0.6)
+    t.emis = emis
+    return t
+
+
+# ------------------------------------------------------------------ respawn anchor top
+def anchor_top(frames, alpha, lit):
+    """Top of the respawn anchor: a crying-obsidian rim flecked with glowing
+    purple tears around a well; when charged the well holds a slowly turning
+    spiral of violet light."""
+    r = rng_of("anchor_top5")
+    ob = [(20, 10, 36), (34, 20, 58), (52, 32, 84), (72, 46, 112)]
+    tears = r.random((N, N)) < 0.12
+    out = []
+    for f in range(frames):
+        rgb = np.zeros((N, N, 3), float)
+        emis = np.zeros((N, N))
+        rimm = (xx < 2) | (yy < 2) | (xx > 13) | (yy > 13)
+        k = (r.random((N, N)) * 3).astype(int)
+        rgb[rimm] = np.array(ob, float)[k][rimm]
+        rgb[(xx == 0) | (yy == 0)] = ob[3]
+        tear = rimm & tears
+        rgb[tear] = (150, 60, 230)
+        emis[tear] = 200
+        lip = (~rimm) & ((xx == 2) | (yy == 2) | (xx == 13) | (yy == 13))
+        rgb[lip] = (14, 6, 24)
+        well = (~rimm) & ~lip
+        if lit:
+            a = np.arctan2(yy - 7.5, xx - 7.5)
+            rr = np.hypot(xx - 7.5, yy - 7.5)
+            ph = f / frames * 2 * np.pi
+            sp = 0.5 + 0.5 * np.sin(2 * a + rr * 1.4 - ph)
+            v = np.clip(sp * (1 - rr / 7) + (1 - rr / 5.5) * 0.5, 0, 1)
+            cols = [(60, 16, 120), (110, 34, 200), (156, 70, 240), (206, 140, 255), (246, 220, 255)]
+            idx = np.clip((v * 5).astype(int), 0, 4)
+            rgb[well] = np.array(cols, float)[idx][well]
+            emis[well] = (140 + 28 * idx)[well]
+        else:
+            rgb[well] = (10, 4, 18)
+        t = Tex(np.clip(rgb, 0, 255).astype(np.uint8), np.where(well, 0.15, 0.8), alpha=np.full((N, N), alpha, np.uint8),
+                rough=50, bump=0.8)
+        t.emis = emis
+        out.append(t)
+    return stack_frames(out) if frames > 1 else out[0]
+
+
 def build(out, flip, variations):
     out["sea_lantern"] = sea_lantern(5)
     for nm, rim, core in (("ochre", (226, 170, 84), (255, 250, 214)),
@@ -247,4 +446,21 @@ def build(out, flip, variations):
     out["pumpkin_face_on"] = jack(out["pumpkin_side"], True)
     out["pumpkin_face_off"] = jack(out["pumpkin_side"], False)
     out["campfire"] = flames("campfire5", [(196, 60, 20), (240, 120, 30), (255, 180, 50), (255, 226, 120), (255, 250, 210)])
+    fire = [(110, 40, 10), (200, 90, 10), (232, 150, 30), (250, 206, 90), (255, 244, 180)]
+    soul = [(20, 70, 90), (20, 140, 160), (50, 200, 210), (130, 236, 240), (220, 255, 255)]
+    out["campfire_log"] = campfire_log("campfire_log5", False)
+    out["campfire_log_lit"] = stack_frames([campfire_log("campfire_log5", True, fire, f) for f in range(4)])
+    out["soul_campfire_log_lit"] = stack_frames([campfire_log("campfire_log5", True, soul, f) for f in range(4)])
+    for pre, key in (("", "copper_block"), ("exposed_", "exposed_copper"), ("weathered_", "weathered_copper"),
+                     ("oxidized_", "oxidized_copper")):
+        for lit in (False, True):
+            for pw in (False, True):
+                nm = pre + "copper_bulb" + ("_lit" if lit else "") + ("_powered" if pw else "")
+                out[nm] = copper_bulb(vbase(key), lit, pw)
+    out["beacon"] = beacon()
+    out["glow_lichen"] = glow_lichen()
+    from .core import STATS
+    a_lo = STATS["respawn_anchor_top"]["alpha"][0]
+    out["respawn_anchor_top"] = anchor_top(STATS["respawn_anchor_top"]["size"][1] // N, a_lo, True)
+    out["respawn_anchor_top_off"] = anchor_top(1, 255, False)
     out["soul_campfire"] = flames("soul_campfire5", [(20, 80, 120), (30, 150, 180), (70, 210, 220), (160, 240, 245), (230, 255, 255)])
