@@ -4683,9 +4683,18 @@ const MAKIMA = {
         });
         later(14, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.strike("chains", "Chains of Control", { say: "§7§l(chains lash out of her hands)", color: C.silver, blade: true, hits: 3, dmg: 10, finisher: 16, launch: 1, poses: [5, 6, 5], cd: 180, cost: 90 }),
+    { id: "dominate", label: "Control: Domination", cd: 300, cost: 160, min: 0, max: 26, weight: 6,
+      run(e, s, t) {  // chains of control latch onto the enemy: it loses itself and strikes its own body
+        busy(s, 14); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lYou're mine now.");
+        later(4, () => {
+          if (!alive(t) || !e.isValid) return;
+          for (let k = 1; k < 10; k++) fx(e.dimension, "orb_solid", V.add(V.up(e.location, 1.2), V.mul(V.sub(aim(t), V.up(e.location, 1.2)), k / 10)), C.silver, 0.35, 0.8);
+          bindTarget(t, 40);
+          every(8, 3, () => { if (alive(t)) { deal(e, t, 12 * powerOf(e) / 100); fx(t.dimension, "shock_v", aim(t), C.gold, 2, 0.3); } });
+        });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
     SIG.ball("devils", "Contract Devils", { say: "§6§lCome.", color: C.blood, count: 3, size: 1.2, dmg: 18, homing: true, speed: 1.3, cd: 280, cost: 150, charge: 8, cond: G(1) }),
-    regenAbility("Contract: the wounds go elsewhere", "§6§l(her injuries pass to someone in Japan)", 0.12),
   ],
 };
 
@@ -5382,6 +5391,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
         });
       }
     }
+    if (v.typeId === "ab:makima") ev.damage *= 0.65;  // her contract with the Prime Minister: her injuries pass to Japanese citizens
     ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
