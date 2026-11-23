@@ -839,7 +839,7 @@ ICH_HAIR = (255, 132, 40)
 SHIHAK = (30, 30, 36)
 MASK_W = (238, 236, 228)
 FUR = (196, 44, 40)
-TENSA = dict(wrap=(30, 30, 36), diamond=(120, 20, 24), tsuba="cross", metal=(40, 40, 46),
+TENSA = dict(wrap=(30, 30, 36), diamond=(120, 20, 24), tsuba="manji", metal=(70, 70, 80),
              blade=(28, 28, 34), edge=(150, 150, 170), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
 FULLBRING = dict(wrap=(30, 30, 36), diamond=(236, 236, 236), tsuba="cross", metal=(236, 236, 236),
                  blade=(232, 232, 236), edge=(40, 40, 46), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
@@ -879,18 +879,10 @@ def long_hair(m, col, back_len=15, z=4.0, front=True, bone="hair"):
 
 def cleaver(m, bone, cx, cy, L=17.0, W=3.8, blade=(212, 216, 228), edge=(246, 248, 255), spine=(36, 36, 42),
             core=None, grip=(236, 236, 236), chain=False, cloth=True):
-    """Zangetsu's Shikai: a huge guardless cleaver, the hilt in line with its black spine, the edge below.
-    With `core` it is the True Bankai blade: silver edges round a black core and a long chain."""
-    m.box(bone, [cx - 0.45, cy - 0.45, -2.0], [0.9, 0.9, 4.8], M.wrap_paint(grip, dark(grip, 0.55) if grip[0] > 120 else (120, 20, 24)))
-    top = cy + 0.7
-    ex = [region((0, 0, 1, 0.14), spine, faces=("east", "west")), region((0, 0.84, 1, 1), edge, faces=("east", "west"))]
-    if core:
-        ex.append(region((0.04, 0.3, 0.92, 0.62), core, faces=("east", "west")))
-    paint = layered(blade, ex)
-    m.box(bone, [cx - 0.4, top - W, -2.0 - L], [0.8, W, L], paint)
-    for k, f in enumerate((0.72, 0.46, 0.22)):  # the slanted cut of the tip, edge side longest
-        m.box(bone, [cx - 0.38, top - W, -2.0 - L - (k + 1) * 1.0], [0.76, W * f, 1.0],
-              layered(blade, [region((0, 0.7, 1, 1), edge, faces=("east", "west"))]))
+    """Zangetsu's Shikai as a flat pixel-art sprite: a huge guardless cleaver with a cloth-wrapped hilt.
+    With `core` it is the True Bankai blade (silver edges round a black core) and a chain."""
+    hilt = 3.6
+    M.flat_blade(m, bone, (cx, cy, -1.2), (0, 0.1, -1), hilt, L, W, M.zangetsu_shape(blade, edge, spine, core, grip, hilt / (hilt + L)), grip=0.6)
     if cloth:  # the long white cloth trailing from the hilt
         m.strand([cx, cy, 2.6], [0, -0.35, 1], 8, 1.0, solid((236, 236, 236)), bone=bone, segs=3, thick=0.4)
     if chain:

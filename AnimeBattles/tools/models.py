@@ -704,7 +704,7 @@ def export(m, identifier):
     # Sculpted cubes painted with a plain swatch share one small colour tile per (colour, face) through per-face
     # UVs, so hundreds of them cost almost no texture; everything else keeps its own box-UV area.
     sw = [i for i, c in enumerate(m.cubes) if getattr(c["paint"], "swatch", None)]
-    if not sw:
+    if not sw and not any(c.get("hires") for c in m.cubes):
         return _export_box(m, identifier)
     keys = sorted({m.cubes[i]["paint"].swatch for i in sw})
     tile = 2
@@ -712,9 +712,10 @@ def export(m, identifier):
     regular = [c for i, c in enumerate(m.cubes) if i not in set(sw)]
     dummy = {"bone": "root", "frm": [0, 0, 0], "size": [A / (2 * S), B / S, 0], "rot": None, "pivot": None, "inflate": 0.0,
              "paint": lambda face, img: None}
-    tex, uvs = pack(regular + [dummy])
+    proxies = [dict(c, size=[v * c["hires"] for v in c["size"]]) if c.get("hires") else c for c in regular]
+    tex, uvs = pack(proxies + [dummy])
     img = Image.new("RGBA", (tex, tex), (0, 0, 0, 0))
-    for c, (u, v) in zip(regular, uvs):
+    for c, (u, v) in zip(proxies, uvs):
         for face, (x, y, w, h) in face_rects(u, v, c["size"]).items():
             if w <= 0 or h <= 0:
                 continue
@@ -742,6 +743,11 @@ def export(m, identifier):
         if swc:
             cube["uv"] = {face: {"uv": [tile_at[(swc[0], swc[1], face)][0] / S, tile_at[(swc[0], swc[1], face)][1] / S],
                                  "uv_size": [tile / S, tile / S]} for face in SWATCH_FACES}
+        elif c.get("hires"):  # a high-resolution sprite: per-face UVs into its enlarged area
+            u, v = reg_uv[id(c)]
+            big = [x * c["hires"] for x in c["size"]]
+            cube["uv"] = {face: {"uv": [x / S, y / S], "uv_size": [w / S, h / S]}
+                          for face, (x, y, w, h) in face_rects(u, v, big).items() if w > 0 and h > 0}
         else:
             u, v = reg_uv[id(c)]
             cube["uv"] = [u / S, v / S]
@@ -4551,3 +4557,121 @@ def build(char, form):  # noqa: F811
     if char in chars_extra.FORMS:
         return chars_extra.build(char, form)
     return _build_v8(char, form)
+
+
+
+# ================================================================ FLAT (2D) SWORD SPRITES
+# Swords drawn like pixel-art item sprites: two crossed flat sheets (so the sword reads from every side) carrying a
+# painted picture of the sword at 4x the normal texture resolution: hilt wrap, guard, curved blade, edge, hamon, point.
+INK = (26, 24, 30)
+
+
+def _sprite(shape):
+    """shape(xf, u) -> colour or None, with xf in [0,1] across the sprite and u in [0,1] from pommel (0) to tip (1).
+    Adds a dark outline round the silhouette."""
+    def p(face, img):
+        w, h = img.size
+        if w < 2 or h < 2 or face in ("up", "down"):
+            return
+        px = img.load()
+        grid = [[shape((x + 0.5) / w, 1 - (y + 0.5) / h) for x in range(w)] for y in range(h)]
+        for y in range(h):
+            for x in range(w):
+                c = grid[y][x]
+                if c is None:
+                    continue
+                edge = any(not (0 <= x + dx < w and 0 <= y + dy < h) or grid[y + dy][x + dx] is None
+                           for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                px[x, y] = (INK if edge else c) + (255,)
+    return p
+
+
+def katana_shape(st, hf):
+    """A katana seen flat: kashira, diamond-wrapped tsuka, the guard (round / four-lobed / three rings / manji),
+    habaki, then a gently curved blade with spine, body, hamon and bright edge, ending in a kissaki."""
+    metal, wrap, dia = st["metal"], st["wrap"], st["diamond"]
+    blade, edge, hamon = st["blade"], st["edge"], st.get("hamon")
+    tsuba = st.get("tsuba", "round")
+    g0, g1 = hf, hf + 0.022
+
+    def f(xf, u):
+        dx = xf - 0.5
+        if u < hf * 0.07:
+            return metal if abs(dx) < 0.17 else None                               # kashira
+        if u < hf:
+            if abs(dx) > 0.14:
+                return None
+            k = ((u - hf * 0.07) / (hf * 0.93)) * 9                                # diamond wrap
+            dd = abs(dx) / 0.14 + abs((k % 1) - 0.5) * 2
+            return dia if dd < 0.75 else wrap
+        if u < g1:                                                                  # the guard
+            r = abs(dx)
+            if tsuba == "round":
+                return metal if r < 0.42 else None
+            if tsuba == "cross":
+                return metal if r < 0.46 and not (0.2 < r < 0.3 and u < (g0 + g1) / 2) else None
+            if tsuba == "trio":
+                return metal if r < 0.44 and int(r * 20) % 3 != 2 else None
+            if tsuba == "manji":
+                return metal if r < 0.44 else None
+            return metal if r < 0.4 else None
+        t = (u - g1) / (1 - g1)
+        if t < 0.03:
+            return metal if abs(dx) < 0.17 else None                               # habaki
+        cx = 0.5 + 0.07 * t * t                                                     # the curve of the blade
+        half = 0.15 if t < 0.9 else 0.15 * (1 - (t - 0.9) / 0.1)                   # kissaki
+        lo, hi = cx - 0.15, cx - 0.15 + 2 * half
+        if not (lo <= xf <= hi):
+            return None
+        q = (xf - lo) / max(1e-6, 0.3)
+        if q < 0.18:
+            return dark(blade, 0.72)                                                # spine
+        if q > 0.78:
+            return edge                                                             # edge
+        if hamon and abs(q - (0.62 + 0.06 * math.sin(t * 60))) < 0.06:
+            return hamon                                                            # wavy hamon
+        return blade
+    return f
+
+
+def flat_blade(m, bone, hand, direction, hilt, blade_len, width, shape, grip=1.2, res=4):
+    """Two crossed flat sheets along `direction`, the guard `grip` units in front of the fist."""
+    d = norm(direction)
+    hx, hy, hz = hand[0] + d[0] * grip, hand[1] + d[1] * grip, hand[2] + d[2] * grip
+    rot, piv = _rot_for(d), [hx, hy, hz]
+    T = hilt + blade_len
+    paint = _sprite(shape)
+    m.box(bone, [hx - width / 2, hy - hilt, hz], [width, T, 0], paint, rot=rot, pivot=piv)
+    m.cubes[-1]["hires"] = res
+    m.box(bone, [hx, hy - hilt, hz - width / 2], [0, T, width], paint, rot=rot, pivot=piv)
+    m.cubes[-1]["hires"] = res
+
+
+katana2_3d = katana2
+
+
+def katana2(m, bone, hand, direction, length, st, grip=1.2):  # noqa: F811
+    hilt = 4.4
+    flat_blade(m, bone, hand, direction, hilt, length + 1.3, 2.6, katana_shape(st, hilt / (hilt + length + 1.3)), grip=grip)
+
+
+def zangetsu_shape(blade, edge, spine, core=None, grip=(236, 236, 236), hf=0.18):
+    """Zangetsu's Shikai seen flat: a cloth-wrapped hilt (no guard) in line with the spine, then a huge cleaver with a
+    dark spine, bright edge and the slanted cut of its tip (edge side longest). With `core`: True Bankai."""
+    def f(xf, u):
+        if u < hf:
+            if not (0.06 <= xf <= 0.34):
+                return None
+            return grip if int(u * 60) % 3 else dark(grip, 0.7)                     # wrapped cloth
+        t = (u - hf) / (1 - hf)
+        cut = 0.86 + 0.14 * xf                                                      # slanted tip
+        if t > cut or xf < 0.04 or xf > 0.98:
+            return None
+        if xf < 0.16:
+            return spine
+        if xf > 0.86:
+            return edge
+        if core and 0.32 < xf < 0.66:
+            return core
+        return blade
+    return f
