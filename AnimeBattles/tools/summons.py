@@ -4,7 +4,8 @@
 import math
 
 import models as M
-from models import dark, layered, light, _put, solid
+from models import dark, layered, light, _put, solid, lines, SIDES
+from chars_extra import region
 import sculpt as S
 from sculpt import blob, box_at, chakra, curve_tube, tube, blade, spline, flesh, stripes, speckle, rim, alpha, smooth
 
@@ -169,68 +170,109 @@ def susanoo_ribs():
 
 
 # ------------------------------------------------------------------ Kurama (Nine-Tails Chakra Mode avatar)
+def _seg_box(m, bone, p, d, w, L, paint):
+    """One square segment of length L along direction d from point p (the hair-strand rotation)."""
+    d = M.norm(d)
+    ax, az = math.degrees(math.asin(max(-1, min(1, d[2])))), math.degrees(math.atan2(-d[0], d[1]))
+    m.box(bone, [p[0] - w / 2, p[1], p[2] - w / 2], [w, L, w], paint, rot=[round(ax, 2), 0, round(az, 2)],
+          pivot=[round(p[0], 3), round(p[1], 3), round(p[2], 3)])
+    return [p[k] + d[k] * L * 0.8 for k in range(3)]
+
+
 def kurama():
+    """Kurama, the Nine-Tailed Fox, in the mod's clean block style (opaque, like Mahoraga): an orange fox with a LONG
+    muzzle and black nose, a black mask round red slit eyes running back over the crown to the ears, big pointed ears
+    black inside, white fangs, a neck ruff, clean black lines on the limbs, and exactly nine thick tails fanned out
+    behind in three rows, each tapering in six segments to a lighter tip. Faces -z."""
     m = M.Model()
     m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 36, -16], "rightArm": [10, 30, -12], "leftArm": [-10, 30, -12],
                       "rightWing": [0, 30, 0], "leftWing": [0, 30, 0], "tails": [0, 24, 14], "jaw": [0, 33.6, -22]})
-    G, D, INK = (255, 178, 38), (228, 112, 22), (40, 18, 10)
-    fur = chakra(G, 215, (255, 236, 150))
-    deep = chakra(D, 220, (255, 200, 90))
-    seal = fur
-    ink = alpha(smooth(INK), 240)
-    blob(m, "body", [0, 30, -8], [12, 10, 10], seal, slices=6)                                     # chest
-    blob(m, "body", [0, 24, 8], [10, 9, 11.5], seal, slices=6, axis="z")                          # belly and hips
-    tube(m, "body", [[0, 31, -13], [0, 35.5, -18]], [6.5, 6], fur)                                  # neck
-    # head
-    blob(m, "head", [0, 38.5, -20.5], [9, 7.6, 8], fur, slices=5)
-    for s in (1, -1):  # fur tufts on the cheeks
-        for k in range(2):
-            blade(m, "head", [s * 7.5, 36 - k * 2.4, -20 + k], [s * 1, -0.35, 0.3], 6, 3.4, 1.6, deep)
-    tooth = smooth((250, 246, 232))
-    gum, tongue = smooth((120, 20, 26)), smooth((214, 70, 84))
-    blob(m, "head", [0, 36.6, -30], [4.4, 2.6, 6.2], fur, slices=5, axis="z")                       # upper jaw / muzzle
-    blob(m, "head", [0, 37.6, -27], [3.6, 1.8, 4.0], fur, slices=3, axis="z")                       # bridge of the nose
-    box_at(m, "head", [0, 36.4, -36.4], [3.2, 2.2, 1.8], ink)                                        # nose
-    blob(m, "head", [0, 34.6, -29], [3.6, 0.5, 5.4], gum, slices=2, axis="z")                       # roof of the mouth
-    for side in (1, -1):  # upper teeth following the curve of the muzzle, long fangs at the front
-        for k in range(6):
-            z = -34.6 + k * 1.7
-            x = side * (1.3 + k * 0.42)
-            L = 2.2 if k == 1 else 1.3
-            S.blade(m, "head", [x, 34.6, z], [0, -1, 0], L, 0.8, 0.7, tooth)
-    blob(m, "jaw", [0, 32.4, -28.4], [3.5, 1.1, 5.6], deep, slices=4, axis="z")                    # lower jaw
-    blob(m, "jaw", [0, 33.0, -28.4], [2.6, 0.45, 4.4], tongue, slices=2, axis="z")                 # tongue
-    for side in (1, -1):
-        for k in range(5):
-            z = -33.4 + k * 1.7
-            x = side * (1.2 + k * 0.4)
-            S.blade(m, "jaw", [x, 33.1, z], [0, 1, 0], 1.6 if k == 0 else 1.1, 0.75, 0.65, tooth)
-    for s in (1, -1):
-        box_at(m, "head", [s * 4.3, 39.6, -27.1], [3.8, 2.1, 0.8], alpha(smooth((214, 28, 20)), 250))        # red eyes
-        box_at(m, "head", [s * 4.3, 39.6, -27.6], [0.7, 2.1, 0.4], ink)                                    # slit pupils
-        blade(m, "head", [s * 2.4, 41.8, -26.6], [s * 1, 0.45, 0.2], 6.5, 0.9, 0.6, ink, taper=False)    # brow markings
-        blade(m, "head", [s * 3, 37.9, -26.9], [s * 1, -0.35, 0.3], 5.5, 0.9, 0.6, ink, taper=False)     # under-eye markings
-        ear = curve_tube(m, "head", [[s * 5.5, 44, -18], [s * 7.6, 52, -17], [s * 9, 60, -15]], 3.9, 0.6, fur, n=2, flat=0.55)
-        tube(m, "head", ear[-3:], [1.4, 1.0, 0.5], ink, flat=0.6)                                        # black ear tips
-    for s, bone in ((1, "rightArm"), (-1, "leftArm")):  # front legs (arms), paws and claws
-        tube(m, bone, [[s * 10, 30, -12], [s * 13, 20, -16], [s * 12.5, 8, -20]], [5.6, 4.5, 3.9], seal)
-        blob(m, bone, [s * 12.5, 4, -22.5], [4.6, 3, 5.6], fur, slices=3)
+    OR, SH, LI, BLK = (240, 140, 40), (206, 104, 26), (255, 196, 110), (34, 24, 22)
+    WHT, RED = (248, 244, 232), (200, 34, 30)
+
+    def stripes_on(faces, fys, col=BLK):
+        def p(face, px, w, h, base):
+            if face in faces:
+                for fy in fys:
+                    for x in range(w):
+                        _put(px, w, h, x, int(h * fy), col); _put(px, w, h, x, int(h * fy) + 1, col)
+        return p
+    fur = solid(OR)
+    body = layered(OR, [stripes_on(("east", "west"), (0.3, 0.55))])
+    # body: deep chest, long barrel, neck ruff
+    m.box("body", [-11, 18, -19], [22, 20, 17], body)
+    m.box("body", [-10, 15, -3], [20, 17, 20], layered(OR, [stripes_on(("east", "west"), (0.35, 0.6))]))
+    m.box("body", [-9.5, 14, -17], [19, 5, 30], solid(SH))                                  # the paler belly underneath
+    m.box("body", [-10, 30, -24], [20, 10, 7], solid(SH))                                   # neck ruff
+    for s_ in (1, -1):
+        m.box("body", [s_ * 9 - 2, 31, -25], [4, 7, 4], solid(OR), rot=[0, 0, -s_ * 25], pivot=[s_ * 9, 33, -23])
+
+    # head: skull with the black mask, the long muzzle, nose, eyes, brows, cheek tufts and ears
+    def skull_paint(face, px, w, h, base):
+        if face == "north":  # black mask patches round the eyes
+            for y in range(int(h * 0.28), int(h * 0.58)):
+                for x in range(w):
+                    if 0.06 < x / w < 0.42 or 0.58 < x / w < 0.94:
+                        _put(px, w, h, x, y, BLK)
+        if face == "up":  # two black lines running back from the eyes over the crown to the ears
+            for y in range(h):
+                for fx in (0.22, 0.26, 0.74, 0.78):
+                    _put(px, w, h, int(w * fx), y, BLK)
+    m.box("head", [-8, 31, -31], [16, 14, 14], layered(OR, [skull_paint]))
+    m.box("head", [-4.2, 32.6, -40], [8.4, 6.0, 9.5], layered(OR, [lines((("up",), [[(0.5, 0), (0.5, 1)]]), SH)]))   # muzzle
+    m.box("head", [-3.2, 33.2, -43], [6.4, 4.8, 3.2], fur)                                 # muzzle tip
+    m.box("head", [-1.7, 36.4, -43.8], [3.4, 2.2, 1.6], solid(BLK))                       # nose
+    m.box("head", [-3.0, 32.4, -42.6], [6.0, 0.6, 10.0], solid((150, 24, 30)))            # mouth line / gum
+    for s_ in (1, -1):
+        ex = s_ * 4.2
+        m.box("head", [ex - 2.2, 37.2, -31.6], [4.4, 2.6, 0.7], solid(WHT))               # sclera
+        m.box("head", [ex - 1.2, 37.2, -31.9], [2.4, 2.6, 0.7], solid(RED))               # red iris
+        m.box("head", [ex - 0.3, 37.2, -32.1], [0.6, 2.6, 0.6], solid(BLK))               # slit pupil
+        m.box("head", [ex - 2.8, 40.2, -31.8], [5.6, 1.0, 1.0], solid(BLK), rot=[0, 0, s_ * 14], pivot=[ex, 40.6, -31.3])  # brow
+        m.box("head", [s_ * 2.4 - 0.45, 30.0, -42.2], [0.9, 3.0, 0.9], solid(WHT))        # the long fangs
+        for k in range(4):
+            m.box("head", [s_ * (2.9 - k * 0.1) - 0.3, 31.4, -40.5 + k * 2.2], [0.6, 1.2, 0.6], solid(WHT))
+        m.box("head", [s_ * 8.6 - 2, 31.5, -28], [4, 6, 7], fur, rot=[0, 0, -s_ * 22], pivot=[s_ * 8, 34, -24])  # cheek tufts
+        def ear_shape(xf, u):  # a tall triangle: orange rim, black inside, black tip
+            half = 0.5 * (1 - u) ** 0.9
+            dd = abs(xf - 0.5)
+            if dd > half:
+                return None
+            return BLK if u > 0.78 or (dd < half * 0.55 and u < 0.85) else OR
+        ear = M._sprite(ear_shape)
+        m.box("head", [s_ * 5.0 - 4.5, 44.0, -23.0], [9.0, 13.0, 0], ear, rot=[-10, 0, -s_ * 16], pivot=[s_ * 5.0, 44.0, -23.0])
+        m.cubes[-1]["hires"] = 2
+        m.box("head", [s_ * 5.0 - 4.0, 43.6, -24.2], [8.0, 3.0, 2.4], fur, rot=[0, 0, -s_ * 16], pivot=[s_ * 5.0, 44.0, -23.0])
+    m.box("jaw", [-3.6, 29.4, -41.5], [7.2, 3.0, 11.0], solid(SH))                         # lower jaw
+    m.box("jaw", [-3.0, 32.2, -41.0], [6.0, 0.4, 10.0], solid((190, 60, 70)))             # tongue
+    for s_ in (1, -1):
+        m.box("jaw", [s_ * 2.2 - 0.4, 32.0, -41.2], [0.8, 2.0, 0.8], solid(WHT))          # lower fangs
+
+    # legs: blocky, clean black lines, black claws
+    leg = layered(OR, [stripes_on(SIDES, (0.25, 0.5))])
+    for s_, bone in ((1, "rightArm"), (-1, "leftArm")):
+        m.box(bone, [s_ * 11 - 3.5, 6, -22], [7, 26, 8], leg)                              # foreleg
+        m.box(bone, [s_ * 11 - 4, 0, -26], [8, 6, 11], fur)                                 # paw
         for k in (-1, 0, 1):
-            blade(m, bone, [s * 12.5 + k * 2, 2.6, -27.6], [0, -0.45, -1], 3, 1.1, 0.9, ink)
-    for s_ in (1, -1):  # the black seal bands of the chakra cloak: shoulders, forelegs, flanks
-        for y, z, r in ((27, -12.5, 6.0), (19, -16.3, 4.8), (12, -18.7, 4.2)):
-            blob(m, "rightArm" if s_ > 0 else "leftArm", [s_ * (10.6 + (27 - y) * 0.2), y, z], [r * 1.02, 0.55, r * 1.02], ink, slices=1)
-        for z in (-2, 4, 10):
-            box_at(m, "body", [s_ * 10.6, 26, z], [0.8, 9, 1.0], ink)
-    for s in (1, -1):  # hind legs
-        blob(m, "body", [s * 9, 20, 12], [5, 8, 7], seal, slices=4)
-        tube(m, "body", [[s * 10, 14, 16], [s * 10.5, 6, 12], [s * 10, 1.8, 8]], [4, 3.3, 3], fur)
-        blob(m, "body", [s * 10, 1.8, 5.5], [3.7, 1.8, 4.6], fur, slices=2)
-    for k in range(9):  # nine tails: thick at the root, curling up and forward at the tip, banded fur
-        a = math.radians(-72 + 144 * k / 8)
-        b = [0, 23, 17]
-        ctrl = [b, [math.sin(a) * 8, 29, 25], [math.sin(a) * 15, 40, 28], [math.sin(a) * 19, 51, 23], [math.sin(a) * 20, 58, 14]]
-        curve_tube(m, "tails", ctrl, 4.8, 1.3, [fur, deep], n=2)
+            m.box(bone, [s_ * 11 + k * 2.4 - 0.5, 0, -27.6], [1.0, 1.6, 1.8], solid(BLK))  # claws
+    for s_ in (1, -1):
+        m.box("body", [s_ * 10 - 4.5, 8, 4], [9, 14, 13], layered(OR, [stripes_on(("east", "west"), (0.4,))]))  # haunch
+        m.box("body", [s_ * 10 - 2.5, 2, 12], [5, 8, 5], leg)                              # hind shin
+        m.box("body", [s_ * 10 - 3, 0, 6], [6, 3, 9], fur)                                  # hind paw
+        for k in (-1, 0, 1):
+            m.box("body", [s_ * 10 + k * 2 - 0.5, 0, 4.4], [1.0, 1.4, 1.6], solid(BLK))
+
+    # nine thick tails, three rows of three, each curling up and out and tapering to a lighter tip
+    tail_c = solid(OR)
+    tip_c = solid(LI)
+    for row, (up, back) in enumerate(((1.0, 0.35), (0.6, 0.8), (0.2, 1.0))):
+        for k, yaw in enumerate((-1, 0, 1)):
+            spread = yaw * (0.55 + row * 0.25)
+            p = [yaw * 2.5, 27 - row * 2.5, 16]
+            d = [spread, up, back]
+            for i, w in enumerate((8.0, 7.4, 6.6, 5.6, 4.6, 3.4)):
+                p = _seg_box(m, "tails", p, d, w, 7.5, tip_c if i == 5 else tail_c)
+                d = [d[0] + spread * 0.3, d[1] + 0.18, d[2] - 0.25]
     return m
 
 
