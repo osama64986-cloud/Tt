@@ -2215,14 +2215,33 @@ const SUKUNA = {
     id: "fuga", label: "Fuga", cd: 700, cost: 500, min: 5, max: 40, weight: 4, technique: true,
     cond: () => true,
     run(e, s, t) {
+      // ■ Open: flame gathers in his hands and is drawn into a bow and arrow of fire; one arrow, then a dome of flame
       busy(s, 44); face(e, aim(t)); announce(e, "§6§l■ Open — Fuga");
       setPose(e, 20); slow(e, 30, 8);
-      chargeOrb(e, t, 26, C.fire, 0.3, 1.4, 20);
+      every(2, 13, (i) => {
+        if (!e.isValid) return false;
+        const d = V.norm(V.sub(alive(t) ? aim(t) : V.add(e.location, e.getViewDirection()), V.up(e.location, 1.4))), side = sideOf(d);
+        const c = V.add(V.up(e.location, 1.4), V.mul(d, 0.8));
+        for (let k = -4; k <= 4; k++) {  // the bow's arc of fire
+          const a = k / 4;
+          fx(e.dimension, "orb", V.add(V.add(c, V.mul(side, a * 1.3)), V.mul(d, (1 - a * a) * 0.5)), C.fire, 0.35, 0.25);
+        }
+        fx(e.dimension, "orb", V.sub(c, V.mul(d, 0.3 * i / 13)), C.flash, 0.4, 0.25);  // the arrow drawn back
+      });
       later(26, () => {
         if (!e.isValid) return;
-        const tt = alive(t) ? t : e;
-        beam(e, tt, { color: C.fire, width: 0.9 + formOf(e) * 0.4, length: 40, dmg: 120 * powerOf(e) / 100, ticks: 5, blast: 5 + formOf(e), carve: 2, pitch: 0.5 });
-        later(6, () => { if (alive(tt)) { try { tt.setOnFire(8, true); } catch (err) { /* ignore */ } } });
+        const start = V.up(e.location, 1.4);
+        const tgt = alive(t) ? aim(t) : V.add(start, V.mul(e.getViewDirection(), 20));
+        projectile(e, start, V.norm(V.sub(tgt, start)), { speed: 1.6, maxDist: 48, radius: 1.2, size: 0.8, color: C.fire, trail: true,
+          explode: { radius: 4, dmg: 70 * powerOf(e) / 100, color: C.fire, carve: 2, knock: 2.5 },
+          onEnd(p) {  // the arrow detonates into a huge dome of fire that keeps burning
+            const dim = e.dimension;
+            every(3, 10, (i) => {
+              sphereFx(dim, p, 3 + i * 0.6, i % 2 ? C.flash : C.fire, 26, 0.6, "orb", 0.5);
+              if (i % 3 === 0 && e.isValid) hitArea(e, p, 9, 18 * powerOf(e) / 100, new Set(), { knock: 1, lift: 0.3 });
+            });
+            shake(dim, p, 0.7, 1.0); sound(dim, "random.explode", p, 2, 0.5);
+          } });
         later(10, () => setPose(e, 0));
       });
     },
@@ -4554,7 +4573,23 @@ const AKAZA = {
     SIG.strike("flowingflash", "Leg Type: Flowing Flash", { say: "§b§lLeg Type: Flowing Flash!", color: C.kameBlue, hits: 2, dmg: 13, finisher: 15, cd: 180, cost: 90, poses: [8, 12], launch: 1 }),
     SIG.wave("chaotic", "Destructive Death: Chaotic Type", { say: "§b§lDestructive Death: Chaotic Type!", color: C.kameBlue, radius: 5.5, dmg: 30, cd: 240, cost: 110 }),
     SIG.rush("annihilation", "Destructive Death: Annihilation Type", { say: "§d§lAnnihilation Type!", color: C.blood, hits: 4, dmg: 10, finisher: 45, slam: true, cd: 260, cost: 140 }),
-    SIG.ball("afterglow", "Final Form: Blue Silver Chaotic Afterglow", { say: "§b§lFinal Form: Blue Silver Chaotic Afterglow!", color: C.kameBlue, count: 12, size: 0.6, dmg: 7, spread: 4, speed: 2.8, cd: 380, cost: 250, charge: 6, cond: G(1) }),
+    { id: "afterglow", label: "Final Form: Blue Silver Chaotic Afterglow", cd: 380, cost: 250, min: 0, max: 7, weight: 6, cond: G(1),
+      run(e, s, t) {  // a storm of hundreds of blows thrown in every direction at once, blue-silver light everywhere
+        busy(s, 26); setPose(e, 7); announce(e, "§b§lFinal Form: Blue Silver Chaotic Afterglow!");
+        const dim = e.dimension, hit = new Set();
+        every(2, 12, (i) => {
+          if (!e.isValid) return false;
+          for (let k = 0; k < 4; k++) {
+            const a = Math.random() * Math.PI * 2, r = 1.5 + Math.random() * 4, y = 0.4 + Math.random() * 2.2;
+            const p = V.add(e.location, { x: Math.cos(a) * r, y, z: Math.sin(a) * r });
+            fx(dim, "flash", p, k % 2 ? C.silver : C.kameBlue, 1.2, 0.15);
+          }
+          ring(dim, V.up(e.location, 0.15), 2 + (i % 4), C.kameBlue, 20, 0.35);
+          if (i % 3 === 0) { hit.clear(); hitArea(e, V.up(e.location, 1), 6, 9 * powerOf(e) / 100, hit, { knock: 0.8, lift: 0.2 }); }
+          sound(dim, "random.anvil_land", e.location, 0.3, 1.9);
+        });
+        later(26, () => { if (e.isValid) setPose(e, 0); });
+      } },
     regenAbility("Upper Moon Regeneration", "§d§l(his wounds close in an instant)", 0.08),
   ],
 };
@@ -4598,6 +4633,7 @@ const MEGUMI = {
 
 // ------------------------------------------------------------------ 1.20: eight more fighters
 C.petal = { red: 1.0, green: 0.62, blue: 0.82 };
+const GUM = { red: 1.0, green: 0.47, blue: 0.78 };  // Bungee Gum pink
 SLOT.set(C.petal, 14);
 const bindTarget = (t, ticks) => { if (isFighter(t)) { const ts2 = state(t); ts2.stunUntil = Math.max(ts2.stunUntil ?? 0, now() + ticks); } };
 
@@ -4785,16 +4821,22 @@ const HISOKA = {
     { id: "bungee", label: "Bungee Gum", cd: 220, cost: 110, min: 0, max: 26, weight: 6,
       run(e, s, t) {  // the gum sticks — then contracts, dragging the enemy straight into his fist
         busy(s, 14); face(e, aim(t)); setPose(e, 4); announce(e, "§d§lBungee Gum has the properties of both rubber and gum ♥");
-        later(4, () => {
+        busy(s, 36);
+        every(2, 20, () => {  // the pink gum stays stuck between his finger and the enemy
+          if (!alive(t) || !e.isValid) return false;
+          const a = V.up(e.location, 1.2), b = aim(t);
+          for (let k = 1; k < 8; k++) fx(e.dimension, "orb", V.add(a, V.mul(V.sub(b, a), k / 8)), GUM, 0.3, 0.15);
+        });
+        for (const at of [6, 18, 30]) later(at, () => {  // and contracts — yank after yank into his fist
           if (!alive(t) || !e.isValid) return;
-          for (let k = 1; k < 8; k++) fx(e.dimension, "orb", V.add(V.up(e.location, 1.2), V.mul(V.sub(aim(t), V.up(e.location, 1.2)), k / 8)), C.nika, 0.4, 0.4);
           const dir = V.norm(V.sub(t.location, e.location));
           try { t.tryTeleport(V.add(e.location, V.mul(dir, 1.6)), { checkForBlocks: true }); } catch (err) { /* ignore */ }
-          later(2, () => { if (alive(t)) { setPose(e, 5); deal(e, t, 26 * powerOf(e) / 100); bindTarget(t, 10); fx(t.dimension, "shock_v", aim(t), C.nika, 2.6, 0.3); } });
+          later(2, () => { if (alive(t)) { setPose(e, 5); deal(e, t, 11 * powerOf(e) / 100); bindTarget(t, 6); fx(t.dimension, "shock_v", aim(t), GUM, 2.4, 0.3); } });
+          later(6, () => { if (e.isValid) setPose(e, 4); });
         });
-        later(12, () => { if (e.isValid) setPose(e, 0); });
+        later(36, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.ball("slingshot", "Bungee Gum Slingshot", { say: "§d§lBoing ♦", color: C.nika, count: 1, size: 1.6, dmg: 30, speed: 2.2, cd: 220, cost: 110, charge: 6, cond: G(1) }),
+    SIG.ball("slingshot", "Bungee Gum Slingshot", { say: "§d§lBoing ♦", color: GUM, count: 1, size: 1.6, dmg: 30, speed: 2.2, cd: 220, cost: 110, charge: 6, cond: G(1) }),
     SIG.rush("bloodlust", "Bloodlust", { say: "§d§l(he can't stop smiling)", color: C.purple, hits: 5, dmg: 7, finisher: 22, cd: 200, cost: 100, cond: G(1) }),
   ],
 };
@@ -4819,7 +4861,22 @@ const KURAPIKA = {
         });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.beam("judgment", "Judgment Chain", { say: "§c§lJudgment Chain.", color: C.red, dmg: 46, width: 0.4, charge: 6, cd: 300, cost: 160, cond: G(1) }),
+    { id: "judgment", label: "Judgment Chain", cd: 300, cost: 160, min: 0, max: 22, weight: 5, cond: G(1),
+      run(e, s, t) {  // the chain on his little finger shoots out and plunges into the heart
+        busy(s, 16); face(e, aim(t)); setPose(e, 4); announce(e, "§c§lJudgment Chain.");
+        later(4, () => {
+          if (!alive(t) || !e.isValid) return;
+          const { pos } = handPos(e, t), b = V.up(t.location, 1.25);
+          const n = Math.max(6, Math.round(V.dist(pos, b) * 2.2));
+          for (let k = 1; k <= n; k++) later(Math.floor(k / 3), () => { if (e.isValid) fx(e.dimension, "orb_solid", V.add(pos, V.mul(V.sub(b, pos), k / n)), C.silver, k % 2 ? 0.28 : 0.2, 0.9); });
+          later(Math.ceil(n / 3) + 1, () => {
+            if (!alive(t)) return;
+            deal(e, t, 46 * powerOf(e) / 100); bindTarget(t, 24);
+            sphereFx(t.dimension, b, 0.8, C.red, 10, 0.3, "orb", 0.4); sound(t.dimension, "random.chestclosed", b, 1, 0.6);
+          });
+        });
+        later(16, () => { if (e.isValid) setPose(e, 0); });
+      } },
     SIG.rush("allchains", "Emperor Time: all five chains", { say: "§c§lEmperor Time.", color: C.red, hits: 5, dmg: 8, finisher: 24, cd: 240, cost: 120, cond: G(1) }),
     regenAbility("Holy Chain", "§9§l(the thumb's chain heals him)", 0.1),
   ],
