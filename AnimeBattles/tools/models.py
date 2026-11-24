@@ -4720,3 +4720,35 @@ def luffy_body(m, form):  # noqa: F811
     for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
         round_limb(m, bone, [x0, 0, -2.6], [5, 3.2, 5.2], haki_glow)
     steam_wreath(m, 23.4, 6.8, 4.8, 8, 4.0)
+
+
+# ================================================================ ears always match the face
+# Ears used to be painted plain SKIN, so a golden (Kurama Mode), grey (Gon's Vow) or pale (demon) face kept normal ears.
+# After every model is built, the ears take the skin colour sampled from the face itself.
+_build_ears_prev = build
+
+
+def _face_skin(head_cube):
+    img = Image.new("RGBA", [int(round(v * S)) for v in (head_cube["size"][0], head_cube["size"][1])], (0, 0, 0, 0))
+    head_cube["paint"]("north", img)
+    w, h = img.size
+    votes = {}
+    for y in range(int(h * 0.6), h):  # the most common colour of the lower half of the face is its skin
+        for x in range(w):
+            r, g, b, a = img.getpixel((x, y))
+            if a > 200:
+                key = (r // 8 * 8, g // 8 * 8, b // 8 * 8)
+                votes[key] = votes.get(key, 0) + 1
+    return max(votes, key=votes.get) if votes else None
+
+
+def build(char, form):  # noqa: F811
+    m = _build_ears_prev(char, form)
+    heads = [c for c in m.cubes if c["bone"] == "head" and c["size"] == [8, 8, 8]]
+    if heads:
+        skin = _face_skin(heads[0])
+        if skin and skin != tuple(v // 8 * 8 for v in SKIN) and sum(skin) > 300:  # a dark result is a mask or cloth, not skin
+            for c in m.cubes:
+                if c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5]:
+                    c["paint"] = solid(skin, shadow=0.3)
+    return m
