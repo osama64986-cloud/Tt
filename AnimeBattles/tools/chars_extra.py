@@ -2639,10 +2639,11 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
             put(x, 16, (60, 30, 80))
     if "power_eyes" in marks and open_eyes:  # yellow eyes with red cross-shaped pupils
         for cx in (10, 21):
-            for x in range(cx - 1, cx + 3):
+            for x in range(cx - 1, cx + 2):  # a 3x3 orange-yellow iris with a symmetric red plus in the middle
                 for y in (17, 18, 19):
-                    put(x, y, (250, 200, 60))
-            put(cx, 18, (220, 30, 30)); put(cx + 1, 18, (220, 30, 30)); put(cx, 17, (220, 30, 30)); put(cx, 19, (220, 30, 30))
+                    put(x, y, (240, 150, 40))
+            for x, y in ((cx, 18), (cx - 1, 18), (cx + 1, 18), (cx, 17), (cx, 19)):
+                put(x, y, (200, 20, 30))
     if "blood_drip" in marks:
         for x, y in ((8, 24), (8, 25), (23, 23), (23, 24), (23, 25)):
             put(x, y, (170, 20, 26))
@@ -2891,10 +2892,11 @@ def power_hair(m, devil):
                    + [([s * 4.0, 30.6, -0.6], [s * 0.08, -1, 0], 11.0, 2.2) for s in (1, -1)]
                    + [([x, 31.4, -4.1], [x * 0.05, -0.75, -0.45], 3.4, 1.8) for x in (-2.2, -0.6, 1.0, 2.6)])
     horn, tip = SC.swatch((214, 34, 40)), SC.swatch((150, 16, 24))
-    for s in (1, -1):  # her two short, pointed red horns at the front of her head, curving slightly outward
-        L = 3.2 if not devil else 5.0
-        SC.blade(m, "hair", [s * 1.9, 32.2, -2.4], [s * 0.3, 1, -0.25], L, 1.5, 1.2, horn)
-        SC.blade(m, "hair", [s * (1.9 + 0.3 * L * 0.8), 32.2 + L * 0.8, -2.4 - 0.25 * L * 0.8], [s * 0.5, 1, -0.2], L * 0.35, 0.7, 0.6, tip)
+    for s in (1, -1):  # two short, straight red cone horns pointing up from the front of her head
+        H = 1.0 if not devil else 1.6
+        for i, (w, c) in enumerate(((1.4, (200, 24, 34)), (1.0, (200, 24, 34)), (0.6, (226, 46, 56)))):
+            m.box("hair", [s * 1.9 - w / 2, 32.0 + i * H, -2.6 - w / 2], [w, H + 0.1, w], solid(c, outline=False),
+                  rot=[0, 0, -s * 10], pivot=[s * 1.9, 32.0, -2.6])
 
 
 def power(m, form):
@@ -2902,11 +2904,20 @@ def power(m, form):
     Public Safety white shirt, black tie and dark trousers. Blood Devil: bigger horns, blood running down."""
     devil = form == "devil"
     head = head_paint(POW_HAIR, (230, 60, 40), True, "power_devil" if devil else "power")
-    shirt, jacket, pants = (240, 196, 196), (44, 112, 160), (70, 32, 50)
-    tie = lambda f, px, w, h, b: [_put(px, w, h, w // 2 + d, y, (60, 30, 40)) for y in range(int(h * 0.05), int(h * 0.75)) for d in (0, 1) if d == 0 or y > h * 0.2] if f == "north" else None
+    shirt, jacket, pants = (238, 238, 235), (44, 112, 160), (30, 30, 35)
+
+    def tie(face, px, w, h, base):  # a 2 px black tie with a knot under the collar
+        if face != "north":
+            return
+        for y in range(int(h * 0.04), int(h * 0.72)):
+            for x in (w // 2 - 1, w // 2):
+                _put(px, w, h, x, y, (25, 25, 30))
+        for x in range(w // 2 - 2, w // 2 + 2):
+            for y in range(int(h * 0.04), int(h * 0.04) + 2):
+                _put(px, w, h, x, y, (25, 25, 30))
     base_body(m, layered(shirt, [tie]), layered(jacket, [region((0, 0.86, 1, 1), SKIN)]),
-              layered(pants, [region((0, 0.82, 1, 1), (190, 40, 50))]), head)
-    for x0 in (-4.6, 2.6):  # the open blue jacket over her pink shirt
+              layered(pants, [region((0, 0.8, 1, 0.84), (50, 50, 55)), region((0, 0.84, 1, 1), (190, 40, 50))]), head)
+    for x0 in (-4.6, 2.6):  # the open blue jacket over her white shirt
         m.box("body", [x0, 11.6, -2.6], [2.0, 12.6, 5.2], layered(jacket, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(jacket, 0.75))]))
     m.box("body", [-4.6, 11.6, 2.1], [9.2, 12.6, 0.5], solid(jacket))
     m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((40, 26, 34)))
