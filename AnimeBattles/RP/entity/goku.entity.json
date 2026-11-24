@@ -16,6 +16,10 @@
     "ssj_shout": "textures/entity/goku/ssj_shout",
     "ssj_hurt": "textures/entity/goku/ssj_hurt",
     "ssj_blink": "textures/entity/goku/ssj_blink",
+    "ssj2": "textures/entity/goku/ssj2",
+    "ssj2_shout": "textures/entity/goku/ssj2_shout",
+    "ssj2_hurt": "textures/entity/goku/ssj2_hurt",
+    "ssj2_blink": "textures/entity/goku/ssj2_blink",
     "ssj3": "textures/entity/goku/ssj3",
     "ssj3_shout": "textures/entity/goku/ssj3_shout",
     "ssj3_hurt": "textures/entity/goku/ssj3_hurt",
@@ -36,6 +40,7 @@
    "geometry": {
     "base": "geometry.ab.goku_base",
     "ssj": "geometry.ab.goku_ssj",
+    "ssj2": "geometry.ab.goku_ssj2",
     "ssj3": "geometry.ab.goku_ssj3",
     "ssg": "geometry.ab.goku_ssg",
     "ssb": "geometry.ab.goku_ssb",

@@ -189,9 +189,9 @@ def validate_json():
 FIGHTERS = {
     "goku": {
         "hp": 1000,
-        "forms": [(14, 0.33), (20, 0.36), (27, 0.38), (34, 0.4), (42, 0.42), (58, 0.46)],
-        "tex": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
-        "geo": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
+        "forms": [(14, 0.33), (20, 0.36), (24, 0.37), (27, 0.38), (34, 0.4), (42, 0.42), (58, 0.46)],
+        "tex": ["base", "ssj", "ssj2", "ssj3", "ssg", "ssb", "ui"],
+        "geo": ["base", "ssj", "ssj2", "ssj3", "ssg", "ssb", "ui"],
         "egg": ("#f6801a", "#223aaa"),
     },
     "vegeta": {

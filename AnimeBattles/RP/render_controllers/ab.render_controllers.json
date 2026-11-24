@@ -13,6 +13,10 @@
       "Texture.ssj_shout",
       "Texture.ssj_hurt",
       "Texture.ssj_blink",
+      "Texture.ssj2",
+      "Texture.ssj2_shout",
+      "Texture.ssj2_hurt",
+      "Texture.ssj2_blink",
       "Texture.ssj3",
       "Texture.ssj3_shout",
       "Texture.ssj3_hurt",
@@ -35,6 +39,7 @@
      "Array.geos": [
       "Geometry.base",
       "Geometry.ssj",
+      "Geometry.ssj2",
       "Geometry.ssj3",
       "Geometry.ssg",
       "Geometry.ssb",

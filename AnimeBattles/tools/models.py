@@ -615,6 +615,7 @@ def build(char, form):
         hair, iris, brows, hair_fn, style = {
             "base": ((26, 24, 34), (40, 34, 40), True, goku_hair_base, "goku"),
             "ssj": ((255, 208, 40), (0, 172, 160), True, goku_hair_ssj, "goku"),
+            "ssj2": ((255, 218, 60), (0, 172, 160), True, goku_hair_ssj, "goku"),   # stiffer, brighter gold; lightning in game
             "ssj3": ((255, 198, 30), (0, 172, 160), False, goku_hair_ssj3, "goku"),
             "ssg": ((228, 46, 96), (210, 30, 60), True, goku_hair_base, "goku"),   # Super Saiyan God: crimson hair, red eyes, base silhouette
             "ssb": ((40, 176, 255), (30, 126, 236), True, goku_hair_ssj, "goku"),
@@ -645,7 +646,7 @@ def build(char, form):
 
 
 FORMS = {
-    "goku": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
+    "goku": ["base", "ssj", "ssj2", "ssj3", "ssg", "ssb", "ui"],
     "vegeta": ["base", "ssj", "ssj2", "ssg", "ssb", "ue"],
     "gojo": ["blindfold", "eyes"],
 }

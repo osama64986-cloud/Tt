@@ -1034,7 +1034,7 @@ function transform(e, s, to, label, color, extraSound) {
   const hpc = health(e);  // the surge of a new form restores a little strength
   if (hpc) try { hpc.setCurrentValue(Math.min(hpc.effectiveMax, hpc.currentValue + hpc.effectiveMax * 0.06)); } catch (err) { /* ignore */ }
   // Ultra Instinct awakens in silence; the composed ones (gods, angels, Aizen, the Kuchiki head...) never scream or crater the floor
-  const calm = (e.typeId === "ab:goku" && to === 5) || CALM.has(e.typeId);
+  const calm = (e.typeId === "ab:goku" && to === 6) || CALM.has(e.typeId);
   if (e.typeId === "ab:beerus") {  // he cracks his neck; a purple shock ring spreads across the ground with a low hum
     every(3, 6, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.1), 1.5 + i * 1.4, to === 2 ? C.ego : C.hakai, 30, 0.5); });
     sound(dim, "mob.wither.ambient", e.location, 0.6, 0.4);
@@ -1109,7 +1109,7 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
-  if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && form === 2) || (e.typeId === "ab:vegeta" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
+  if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && (form === 2 || form === 3)) || (e.typeId === "ab:vegeta" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
   if (((e.typeId === "ab:naruto_teen" && form === 3) || (e.typeId === "ab:naruto_adult" && form === 1)) && Math.random() < 0.35) {
     implode(e.dimension, V.up(e.location, 1), NATURE, 3, 4);  // Sage Mode: no flame — natural energy drawn quietly inward
   }
@@ -1265,23 +1265,24 @@ function heldFist(e, t, dmg, kind, col) {
 
 const GOKU = {
   name: "Goku", color: "§6", energy: 1000, regen: 15, energyName: "§bKI",
-  dodge: (e, s) => (formOf(e) === 5 ? 0.6 : 0.1),
+  dodge: (e, s) => (formOf(e) === 6 ? 0.6 : 0.1),
   forms: [
     { label: "Base", power: 170 },
     { label: "Super Saiyan", power: 250, aura: C.gold },
+    { label: "Super Saiyan 2", power: 295, aura: C.gold },
     { label: "Super Saiyan 3", power: 340, aura: C.gold },
     { label: "Super Saiyan God", power: 480, aura: C.red },
     { label: "Super Saiyan Blue", power: 640, aura: C.ssbBlue },
     { label: "Ultra Instinct", power: 1000, aura: C.silver },
   ],
-  thresholds: [0.9, 0.75, 0.6, 0.45, 0.3],
+  thresholds: [0.92, 0.8, 0.66, 0.52, 0.4, 0.28],
   transformCd: 80,
-  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.power", "beacon.activate"],
+  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.power", "beacon.activate"],
   abilities: [
     SIG.wave("kiai", "Kiai", { say: "§e§lHAA! §7— a shout that blows everything away", color: C.white, radius: 6, dmg: 12, cd: 200 }),
     SIG.ball("kivolley", "Ki Barrage", { say: "§e§lHaa-haa-haa-haa! §7— a storm of ki blasts", color: C.kiYellow, count: 8, size: 0.8, dmg: 7, spread: 2, cd: 180 }),
-    SIG.beam("godkame", "God Kamehameha", { cond: (e) => formOf(e) === 3, say: "§c§lThe power of a god... §4§lKAMEHAMEHA!", color: C.red, aura: C.red, width: 2.4, dmg: 120, charge: 16, cd: 520 }),
-    SIG.beam("uikame", "Ultra Instinct Kamehameha", { cond: (e) => formOf(e) === 5, say: "§f§l(silent) §7— a silver Kamehameha", color: C.silver, aura: C.silver, width: 3.0, dmg: 190, charge: 12, cd: 600, cost: 500 }),
+    SIG.beam("godkame", "God Kamehameha", { cond: (e) => formOf(e) === 4, say: "§c§lThe power of a god... §4§lKAMEHAMEHA!", color: C.red, aura: C.red, width: 2.4, dmg: 120, charge: 16, cd: 520 }),
+    SIG.beam("uikame", "Ultra Instinct Kamehameha", { cond: (e) => formOf(e) === 6, say: "§f§l(silent) §7— a silver Kamehameha", color: C.silver, aura: C.silver, width: 3.0, dmg: 190, charge: 12, cd: 600, cost: 500 }),
     { id: "dragonthrow", label: "Dragon Throw", cd: 220, cost: 80, min: 0, max: 6, weight: 4,
       run(e, s, t) {  // grabs the tail/arm, spins round and hurls
         busy(s, 20); announce(e, "§6§lDragon Throw!");
@@ -1303,9 +1304,9 @@ const GOKU = {
         for (const x of list) if (canHit(e, teamOf(e), x) && isFighter(x)) { const xs = state(x); xs.stunUntil = Math.max(xs.stunUntil, now() + 24); }
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.beam("superkame", "10x Kaioken Kamehameha", { cond: (e) => formOf(e) === 4, say: "§c§lKaioken times TEN! §b§lKAMEHAMEHA!", color: C.ssbBlue, aura: C.kaioken, width: 2.8, dmg: 150, charge: 18, cd: 700, cost: 520 }),
+    SIG.beam("superkame", "10x Kaioken Kamehameha", { cond: (e) => formOf(e) === 5, say: "§c§lKaioken times TEN! §b§lKAMEHAMEHA!", color: C.ssbBlue, aura: C.kaioken, width: 2.8, dmg: 150, charge: 18, cd: 700, cost: 520 }),
     SIG.rush("meteor", "Meteor Smash", { cond: (e) => formOf(e) >= 1, say: "§6§lMeteor Smash!", color: C.gold, dmg: 8, finisher: 30, hits: 5, poses: [5, 6, 7, 9, 10], slam: true }),
-    SIG.rush("silverdragon", "Silver Dragon Flash", { cond: (e) => formOf(e) === 5, say: "§f§l(silence) §7— Silver Dragon Flash", color: C.silver, dmg: 14, finisher: 46, hits: 6, poses: [5, 7, 6, 9, 8, 5], cd: 260 }),
+    SIG.rush("silverdragon", "Silver Dragon Flash", { cond: (e) => formOf(e) === 6, say: "§f§l(silence) §7— Silver Dragon Flash", color: C.silver, dmg: 14, finisher: 46, hits: 6, poses: [5, 7, 6, 9, 8, 5], cd: 260 }),
     {
       id: "ki", label: "Ki Blast", cd: 60, cost: 40, min: 3, max: 32, weight: 3,
       run(e, s, t) {
@@ -1373,12 +1374,12 @@ const GOKU = {
     },
     {
       id: "kaioken", label: "Kaioken", cd: 900, cost: 120, min: 0, max: 48, weight: 2,
-      cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 4) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
+      cond: (e, s, c) => (formOf(e) === 0 || formOf(e) === 5) && s.kaiokenUntil < now() && c.tPower >= c.power * 0.85,
       run(e, s) {
         busy(s, 10); s.kaiokenUntil = now() + 240;
         burst(e.dimension, V.up(e.location, 1), C.kaioken, 40, 5, 0.5, 0.7);
         sound(e.dimension, "mob.enderdragon.growl", e.location, 1, 1.4);
-        announce(e, formOf(e) === 4 ? "§9Super Saiyan Blue §c§lKaioken!" : "§c§lKaioken!");
+        announce(e, formOf(e) === 5 ? "§9Super Saiyan Blue §c§lKaioken!" : "§c§lKaioken!");
       },
     },
     {
@@ -4255,7 +4256,7 @@ const TRANSFORM_LINES = {
   "ab:broly": [null, "§4§lRAAAAAGH! §7— the wrath of the Legendary Saiyan", "§e§lSuper Saiyan! §7— his hair blazes gold-green", "§a§lLEGENDARY SUPER SAIYAN! §7— full power"],
   "ab:madara": [null, "§9§lPerfect Susanoo. §7— now, dance with me", "§f§lSix Paths... §7— I am the Ten-Tails' jinchuriki"],
   "ab:muzan": [null, "§4§lI am the Progenitor of all demons. §7— his hair turns white, mouths open all over his body"],
-  "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
+  "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§lThis is a Super Saiyan who has ascended past a Super Saiyan! §7— Super Saiyan 2", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
     "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
   "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§e§lSuper Saiyan 2! §7— lightning crackles round him", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
   "ab:frieza": [null, "§6§lThis is Golden Frieza!"],
@@ -5646,7 +5647,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       ev.damage *= broken ? 0.8 : 0.35;
       system.run(() => guardFx(v, src, broken));
     }
-    if (now() >= s.busyUntil || (v.typeId === "ab:goku" && formOf(v) === 5)) {
+    if (now() >= s.busyUntil || (v.typeId === "ab:goku" && formOf(v) === 6)) {
       const chance = def.dodge(v, s);
       if (chance > 0 && Math.random() < chance) {
         ev.cancel = true;
@@ -5762,7 +5763,7 @@ function fistClash(a, b) {
 }
 function dodgeFx(v, src) {
   if (!v.isValid) return;
-  const ui = (v.typeId === "ab:goku" && formOf(v) === 5) || v.typeId === "ab:whis";
+  const ui = (v.typeId === "ab:goku" && formOf(v) === 6) || v.typeId === "ab:whis";
   if (v.typeId === "ab:whis" && src && src.isValid && isFighter(src) && Math.random() < 0.3) {  // a single finger tap back
     later(3, () => { if (v.isValid && alive(src)) { deal(v, src, 10 * powerOf(v) / 100); launch(v, src, 1.1); fx(v.dimension, "flash", V.up(src.location, 1.2), C.white, 1.6, 0.15); } });
   }
