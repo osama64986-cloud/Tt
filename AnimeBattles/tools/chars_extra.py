@@ -2677,11 +2677,18 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
                 for x in range(cx - 1, cx + 3):
                     put(x, 18, (30, 24, 24))
     if "todoroki_scar" in marks:  # the burn scar round his left eye, and his two eye colours
-        for x in range(17, 26):
-            for y in range(13, 22):
-                e2 = (x - 21) ** 2 / 20 + (y - 17.5) ** 2 / 18
-                if e2 < 1 and not (20 <= x <= 22 and y == 18):  # a solid burn patch; only the eye itself shows through
-                    put(x, y, (150, 64, 50) if e2 > 0.7 else (170, 80, 60))
+        # an irregular burn round his left eye, from the brow down onto the cheek and out toward the temple. It is drawn
+        # only over SKIN pixels, so the eye itself (white, lashes, turquoise iris) and the brow stay a normal eye.
+        rows = {12: (20, 24), 13: (18, 26), 14: (17, 27), 15: (17, 28), 16: (16, 28), 17: (16, 28), 18: (16, 28),
+                19: (17, 28), 20: (17, 27), 21: (18, 26), 22: (19, 25), 23: (21, 24), 24: (22, 23)}
+        sk = tuple(skin)
+        for y, (x0, x1) in rows.items():
+            for x in range(x0, x1 + 1):
+                cur = px[min(W - 1, int(x * k)), min(H - 1, int(y * k))][:3]
+                if min(cur) > 215 or sum(cur) < 170 or (cur[2] > cur[0] + 30):
+                    continue  # the eye itself: white, lashes/brow, turquoise iris
+                edge = (x in (x0, x1) or y in (12, 24)) and (x * 5 + y) % 3 == 0
+                put(x, y, (160, 74, 64) if edge else (190, 104, 90))
         if open_eyes:
             put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))
             put(21, 18, (40, 170, 190)); put(22, 18, (40, 170, 190))
