@@ -137,23 +137,23 @@ M.FACE32.update({
     "sasuke_ms": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ms"]),
     "sasuke_ems": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems"]),
     "sasuke_rinne": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems", "rinnegan"]),
-    "sasuke_adult": dict(eye="narrow", brow="flat", mouth="neutral", marks=["rinnegan"]),
+    "sasuke_adult": dict(eye="narrow", brow="fine", mouth="neutral", marks=["rinnegan"]),
     "sasuke_adult_sh": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["ems", "rinnegan"]),
     "ichigo": dict(eye="narrow", brow="sharp", mouth="corner"),
     "ichigo_hollow": dict(eye="narrow", brow="sharp", mouth="none", marks=["hollow_mask"]),
-    "ichigo_mugetsu": dict(eye="narrow", brow="flat", mouth="neutral"),
+    "ichigo_mugetsu": dict(eye="narrow", brow="fine", mouth="neutral"),
     "ichigo_vasto": dict(eye="narrow", brow="sharp", mouth="none", marks=["vasto_mask"]),
     "tanjiro": dict(eye="anime", brow="angled", mouth="smile", marks=["tanjiro_scar"]),
     "tanjiro_mark": dict(eye="anime", brow="sharp", mouth="neutral", marks=["tanjiro_mark"]),
     "tanjiro_demon": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark"]),
     "tanjiro_demon_sun": dict(eye="narrow", brow="sharp", mouth="clench", marks=["tanjiro_mark", "slit_eyes", "fangs", "jaw_mark", "temple_mark"]),
-    "muzan": dict(eye="narrow", brow="flat", mouth="neutral", marks=["slit_eyes"]),
+    "muzan": dict(eye="narrow", brow="fine", mouth="neutral", marks=["slit_eyes"]),
     "broly": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar"]),
     "broly_wrath": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "glow_eyes", "veins"]),
     "broly_ssj": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "veins"]),
     "broly_lssj": dict(eye="narrow", brow="sharp", mouth="none", marks=["broly_face", "cheek_scar", "blank_eyes", "veins"]),
-    "madara_edo": dict(eye="narrow", brow="flat", mouth="smirk", marks=["madara_face", "edo_cracks", "rinnegan_both"]),
-    "madara_sixpaths": dict(eye="narrow", brow="flat", mouth="smirk", marks=["madara_face", "rinnegan_both", "third_eye"]),
+    "madara_edo": dict(eye="narrow", brow="fine", mouth="smirk", marks=["madara_face", "edo_cracks", "rinnegan_both"]),
+    "madara_sixpaths": dict(eye="narrow", brow="fine", mouth="smirk", marks=["madara_face", "rinnegan_both", "third_eye"]),
     "muzan_final": dict(eye="narrow", brow="sharp", mouth="clench", marks=["slit_eyes", "fangs", "brow_scales", "face_veins"]),
 })
 
@@ -166,8 +166,8 @@ def face32(px, W, H, spec, hair, iris, skin):
     k = W / 32.0
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -189,13 +189,21 @@ def face32(px, W, H, spec, hair, iris, skin):
         for y in range(16, 20):
             for x in (5, 6, 25, 26):
                 put(x, y, (232, 100, 30))
+        if M.EXPR not in ("blink", "hurt"):
+            for cx in (10, 21):
+                for x in range(cx - 1, cx + 3):
+                    for y in (18, 19, 20):
+                        put(x, y, (240, 200, 40))
+                for x in range(cx - 1, cx + 2):
+                    put(x, 19, (16, 12, 14))               # the toad's horizontal bar pupil
     if "whiskers" in marks:
         wc = (40, 18, 14) if "fox" in marks else (110, 64, 50)
-        for y0, slope in ((22, -1), (24, 0), (26, 1)):
+        rows = ((21, -1), (24, 0), (27, 1)) if "fox" in marks else ((22, -1), (24, 0), (26, 1))
+        for y0, slope in rows:
             for j in range(5):
                 yy = y0 + (slope if j >= 3 else 0)
                 put(2 + j, yy, wc); put(29 - j, yy, wc)
-                if "fox" in marks:
+                if "fox" in marks and j < 3:          # thick at the outer end, thin toward the nose
                     put(2 + j, yy + 1, wc); put(29 - j, yy + 1, wc)
     if "sharingan" in marks and M.EXPR not in ("blink", "hurt"):  # red iris, three tomoe around the pupil
         for cx in (10, 21):
@@ -213,8 +221,11 @@ def face32(px, W, H, spec, hair, iris, skin):
         for i in range(-2, 3):
             put(15 + i, 21 + i, (30, 24, 36)); put(16 - i, 21 + i, (30, 24, 36))
     if "cs1" in marks:  # the black flame marks spreading over the left side of his face
-        for x, y in ((24, 12), (25, 13), (26, 14), (23, 15), (27, 16), (25, 24), (26, 25), (24, 26), (27, 27), (25, 28), (26, 29), (28, 23), (29, 24)):
-            put(x, y, (20, 16, 22))
+        for x, y in ((28, 31), (29, 31), (27, 30), (28, 30), (27, 29), (26, 28), (27, 28), (26, 27), (25, 26), (26, 26),
+                     (25, 25), (25, 24), (26, 23),
+                     (30, 28), (30, 27), (29, 26), (30, 26), (29, 25), (29, 24), (28, 23), (29, 23), (28, 22), (29, 21),
+                     (28, 16), (27, 15), (28, 15), (27, 14), (26, 13), (27, 13), (26, 12)):
+            put(x, y, (20, 16, 22))  # black flame tongues climbing his left side: jaw, cheek, temple
     if "ms" in marks and open_eyes:  # Sasuke's Mangekyo: a three-bladed pinwheel
         for cx in (10, 21):
             for x, y in ((cx, 19), (cx + 1, 19), (cx, 20), (cx + 1, 20), (cx - 1, 18), (cx + 2, 18), (cx + 2, 21), (cx - 1, 21), (cx - 2, 19), (cx + 3, 20)):
@@ -360,12 +371,16 @@ def face32(px, W, H, spec, hair, iris, skin):
             put(x, 26, B if x % 2 else (250, 250, 244)); put(x, 27, (40, 30, 30)); put(x, 28, B if x % 2 == 0 else (250, 250, 244))
     if "tanjiro_scar" in marks or "tanjiro_mark" in marks:  # the flame scar on the left forehead
         big = "tanjiro_mark" in marks
-        col = (170, 40, 40) if big else (150, 70, 60)
-        pts = [(20, 13), (21, 12), (22, 12), (23, 13), (21, 14), (22, 14), (23, 14), (24, 13)]
+        col = (170, 40, 40) if big else (182, 56, 48)
+        pts = [(19, 12), (20, 12), (21, 12), (22, 12), (23, 12), (24, 12), (25, 12),
+               (19, 13), (20, 13), (21, 13), (22, 13), (23, 13), (24, 13), (25, 13),
+               (20, 14), (21, 14), (22, 14), (23, 14)]
         if big:
             pts += [(19, 11), (20, 11), (24, 12), (25, 12), (22, 11), (21, 10), (25, 14), (20, 14)]
         for x, y in pts:
             put(x, y, col)
+        for x, y in ((21, 13), (22, 13), (23, 13), (22, 12), (21, 14)):
+            put(x, y, (132, 30, 34))                                       # darker core
 
 
 M.face32 = face32
@@ -1405,9 +1420,9 @@ def madara(m, form):
 
 # ------------------------------------------------------------------ Itachi and Kakashi (faces)
 M.FACE32.update({
-    "itachi": dict(eye="narrow", brow="flat", mouth="neutral", marks=["sharingan", "itachi_lines"]),
-    "itachi_ms": dict(eye="narrow", brow="flat", mouth="neutral", marks=["itachi_ms", "itachi_lines"]),
-    "kakashi": dict(eye="narrow", brow="flat", mouth="none", marks=["kakashi_mask", "kakashi_band"]),
+    "itachi": dict(eye="narrow", brow="fine", mouth="neutral", marks=["sharingan", "itachi_lines"]),
+    "itachi_ms": dict(eye="narrow", brow="fine", mouth="neutral", marks=["itachi_ms", "itachi_lines"]),
+    "kakashi": dict(eye="narrow", brow="fine", mouth="none", marks=["kakashi_mask", "kakashi_band"]),
     "kakashi_sh": dict(eye="narrow", brow="sharp", mouth="none", marks=["kakashi_mask", "kakashi_scar", "kakashi_sharingan"]),
     "kakashi_dms": dict(eye="narrow", brow="sharp", mouth="none", marks=["kakashi_mask", "kakashi_scar", "kakashi_ms_both"]),
 })
@@ -1421,14 +1436,14 @@ def face32_more(px, W, H, spec, hair, iris, skin):
     open_eyes = M.EXPR not in ("blink", "hurt")
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
     if "itachi_lines" in marks:  # the long tear-trough lines running down from the inner corners of his eyes
-        for i in range(5):
-            put(8 - i // 3, 22 + i, (150, 104, 84)); put(23 + i // 3, 22 + i, (150, 104, 84))
+        for x, y in ((13, 22), (13, 23), (12, 24), (12, 25), (12, 26)):
+            put(x, y, (150, 104, 84)); put(31 - x, y, (150, 104, 84))
     if "itachi_ms" in marks and open_eyes:  # Itachi's Mangekyo: a black three-bladed shuriken on red
         for cx in (10, 21):
             for x, y in ((cx, 19), (cx + 1, 19), (cx, 20), (cx + 1, 20), (cx - 1, 17), (cx, 18), (cx + 2, 18), (cx + 3, 19),
@@ -1595,7 +1610,7 @@ M.FACE32.update({
     "deku": dict(eye="round", brow="angled", mouth="clench", marks=["freckles"]),
     "deku_cowl": dict(eye="round", brow="sharp", mouth="clench", marks=["freckles", "cowl_veins"]),
     "deku_dark": dict(eye="narrow", brow="sharp", mouth="none", marks=["freckles", "deku_scars", "dark_mask"]),
-    "killua": dict(eye="narrow", brow="flat", mouth="smirk", marks=["cat_mouth"]),
+    "killua": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
     "killua_god": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["bolt_eyes"]),
     "denji": dict(eye="narrow", brow="angled", mouth="big_grin", marks=["shark_teeth"]),
     "chainsaw": dict(eye="round", brow="none", mouth="none", marks=["chainsaw_face"]),
@@ -1615,8 +1630,8 @@ def face32_new5(px, W, H, spec, hair, iris, skin):
     open_eyes = M.EXPR not in ("blink", "hurt")
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -1672,8 +1687,11 @@ def face32_new5(px, W, H, spec, hair, iris, skin):
         for cx in (10, 21):
             for x in range(cx - 1, cx + 3):
                 for y in (17, 18, 19, 20):
-                    put(x, y, (250, 190, 40) if y < 19 else (230, 90, 30))
-            put(cx, 18, (255, 250, 230))
+                    put(x, y, (250, 190, 40))
+            for x in (cx, cx + 1):
+                for y in (18, 19):
+                    put(x, y, (226, 80, 30))
+            put(cx - 1, 17, (255, 250, 230))
     if "flame_aura_face" in marks:
         for x, y in ((2, 8), (3, 9), (29, 8), (28, 9), (1, 12), (30, 12)):
             put(x, y, (255, 150, 40))
@@ -2127,7 +2145,7 @@ M.FACE32.update({
     "gon_dark": dict(eye="round", brow="sharp", mouth="none", marks=["hidden_eyes"]),
     "akaza": dict(eye="narrow", brow="none", mouth="smirk", marks=["akaza_lines", "akaza_eyes"]),
     "akaza_compass": dict(eye="narrow", brow="none", mouth="clench", marks=["akaza_lines", "akaza_eyes"]),
-    "megumi": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
+    "megumi": dict(eye="narrow", brow="fine", mouth="neutral", marks=[]),
     "megumi_shadow": dict(eye="narrow", brow="sharp", mouth="neutral", marks=["shadow_eyes"]),
 })
 _face32_prev4 = M.face32
@@ -2140,8 +2158,8 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
     open_eyes = M.EXPR not in ("blink", "hurt")
 
     def put(x, y, c):
-        for dx in range(max(1, int(k))):
-            for dy in range(max(1, int(k))):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -2179,17 +2197,19 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
         for y in range(13, 23):
             for x in range(3, 29):
                 put(x, y, (26, 26, 30) if 14 <= y <= 21 else (60, 60, 64))
-    if "adult_eyes" in marks:  # Adult Gon: blank, empty round white eyes (no pupils), under a heavy dark brow
-        for cx in (10.5, 21.5):
-            for y in range(14, 23):
-                for x in range(int(cx) - 4, int(cx) + 5):
-                    d = math.hypot(x + 0.5 - cx, y + 0.5 - 18.5)
-                    if d <= 3.3:
-                        put(x, y, (246, 246, 242))
-                    elif d <= 4.1:
-                        put(x, y, (24, 20, 22))
-        for x in range(5, 27):  # the dark shadow over the (empty, pupil-less) eyes
-            put(x, 13, (40, 30, 34))
+    if "adult_eyes" in marks:  # the Vow: blank, empty WHITE round eyes with a solid black rim, no pupils
+        ring = ["..####..", ".#WWWW#.", "#WWWWWW#", "#WWWWWW#", "#WWWWWW#", "#WWWWWW#", ".#WWWW#.", "..####.."]
+        for x in range(5, 27):
+            put(x, 13, (40, 30, 34))                       # the heavy shadow line over the eyes
+        if open_eyes:
+            for y in range(14, 23):                        # clear the base eye and brow tails under the rings
+                for x in range(5, 16):
+                    put(x, y, tuple(skin)); put(31 - x, y, tuple(skin))
+            for r, row in enumerate(ring):                 # rows 14-21; left ring x7-14, right ring x17-24
+                for c, ch in enumerate(row):
+                    if ch != ".":
+                        col = (250, 250, 250) if ch == "W" else (18, 16, 20)
+                        put(7 + c, 14 + r, col); put(24 - c, 14 + r, col)
     if "akaza_lines" in marks:  # the dark blue tattoo lines across his face
         ln = (40, 60, 150)
         for x in range(2, 30):
@@ -2358,7 +2378,7 @@ def gon_hair(m, adult):
         long_hair(m, GON_HAIR, back_len=19, z=4.2, front=False)
 
 
-def _greyed(paint):
+def _greyed(paint, keep_white=False):
     """The Vow: everything about Gon drains to grey."""
     if getattr(paint, "swatch", None) or not callable(paint):
         return paint
@@ -2371,6 +2391,8 @@ def _greyed(paint):
             for x in range(w):
                 r, g, b, a = px[x, y]
                 if a:
+                    if keep_white and face == "north" and min(r, g, b) >= 240:
+                        continue                           # the Vow's empty eyes stay pure white
                     l = int((0.3 * r + 0.59 * g + 0.11 * b) * 0.78)
                     px[x, y] = (l, l, l + 4, a)
     return p
@@ -2386,7 +2408,7 @@ def gon(m, form):
         finally:
             M._GON_DARK = False
         for c in m.cubes:
-            c["paint"] = _greyed(c["paint"])
+            c["paint"] = _greyed(c["paint"], keep_white=c["bone"] == "head")
         return
     adult = form == "adult"
     jaja = form == "jajanken"
@@ -2594,24 +2616,24 @@ def build(char, form):  # noqa: F811
 # 1.20: Aizen, Byakuya (Bleach) · Power, Makima (Chainsaw Man) · All Might, Todoroki (MHA) · Hisoka, Kurapika (HxH)
 # ==================================================================================
 M.FACE32.update({
-    "aizen": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
+    "aizen": dict(eye="narrow", brow="fine", mouth="smirk", marks=[]),
     "aizen_hogyoku": dict(eye="narrow", brow="none", mouth="neutral", marks=["purple_eyes", "hogyoku_lines"]),
     "aizen_final": dict(eye="narrow", brow="none", mouth="none", marks=["purple_eyes", "hogyoku_lines", "aizen_mask"]),
-    "aizen_hatched": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
-    "byakuya": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
+    "aizen_hatched": dict(eye="narrow", brow="fine", mouth="smirk", marks=[]),
+    "byakuya": dict(eye="narrow", brow="fine", mouth="neutral", marks=[]),
     "byakuya_bankai": dict(eye="narrow", brow="sharp", mouth="neutral", marks=[]),
     "power": dict(eye="round", brow="angled", mouth="big_grin", marks=["shark_teeth", "power_eyes"]),
     "power_devil": dict(eye="round", brow="sharp", mouth="big_grin", marks=["shark_teeth", "power_eyes", "blood_drip"]),
-    "makima": dict(eye="round", brow="flat", mouth="smile", marks=["makima_eyes"]),
-    "makima_devil": dict(eye="round", brow="flat", mouth="neutral", marks=["makima_eyes", "makima_glow"]),
-    "allmight": dict(eye="round", brow="sharp", mouth="big_grin", marks=["allmight_shadow"]),
-    "allmight_uss": dict(eye="round", brow="sharp", mouth="clench", marks=["allmight_shadow", "blood_drip"]),
+    "makima": dict(eye="round", brow="fine", brow_col=(150, 60, 44), mouth="smile", marks=["makima_eyes"]),
+    "makima_devil": dict(eye="round", brow="fine", brow_col=(150, 60, 44), mouth="neutral", marks=["makima_eyes", "makima_glow"]),
+    "allmight": dict(eye="round", brow="sharp", mouth="none", marks=["allmight_shadow"]),
+    "allmight_uss": dict(eye="round", brow="sharp", mouth="none", marks=["allmight_shadow", "am_blood"]),
     "todoroki": dict(eye="narrow", brow="flat", mouth="neutral", marks=["todoroki_scar"]),
     "todoroki_flash": dict(eye="narrow", brow="sharp", mouth="clench", marks=["todoroki_scar"]),
-    "hisoka": dict(eye="narrow", brow="sharp", mouth="smirk", marks=["hisoka_marks"]),
-    "hisoka_serious": dict(eye="narrow", brow="sharp", mouth="big_grin", marks=["hisoka_marks"]),
-    "kurapika": dict(eye="round", brow="flat", mouth="neutral", marks=[]),
-    "kurapika_scarlet": dict(eye="round", brow="sharp", mouth="clench", marks=["scarlet_eyes"]),
+    "hisoka": dict(eye="narrow", brow="arch", mouth="smirk", marks=["hisoka_marks"]),
+    "hisoka_serious": dict(eye="narrow", brow="arch", mouth="big_grin", marks=["hisoka_marks"]),
+    "kurapika": dict(eye="round", brow="fine", mouth="neutral", marks=[]),
+    "kurapika_scarlet": dict(eye="round", brow="angled", mouth="clench", marks=[]),
 })
 _face32_prev5 = M.face32
 
@@ -2623,8 +2645,8 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
     open_eyes = M.EXPR not in ("blink", "hurt")
 
     def put(x, y, c):
-        for dx in range(max(1, int(k))):
-            for dy in range(max(1, int(k))):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -2645,64 +2667,83 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
             for x, y in ((cx, 18), (cx - 1, 18), (cx + 1, 18), (cx, 17), (cx, 19)):
                 put(x, y, (200, 20, 30))
     if "blood_drip" in marks:
-        for x, y in ((8, 24), (8, 25), (23, 23), (23, 24), (23, 25)):
-            put(x, y, (170, 20, 26))
+        for x, y in ((9, 29), (9, 30), (22, 29), (22, 30), (22, 31)):
+            put(x, y, (170, 20, 26))  # blood at the corners of her grin
     if "makima_eyes" in marks and open_eyes:  # golden eyes with concentric rings
         for cx in (10, 21):
             for x in range(cx - 2, cx + 4):
                 for y in range(16, 21):
                     d = max(abs(x - (cx + 0.5)), abs(y - 18))
-                    put(x, y, (240, 205, 80) if d >= 2 else ((196, 40, 44) if d >= 1 else (250, 226, 110)))  # yellow, a red ring, yellow
+                    put(x, y, (236, 190, 64) if d >= 2 else ((206, 96, 52) if d >= 1 else (250, 226, 120)))  # yellow, a red-orange ring, yellow
+        for cx in (10, 21):
+            for x in range(cx - 2, cx + 4):
+                put(x, 16, (20, 12, 14) if x in (cx - 2, cx + 3) else (196, 140, 50))   # lid shadow on the iris
+        for x in range(7, 14):
+            put(x, 15, (20, 12, 14)); put(31 - x, 15, (20, 12, 14))                  # heavy calm upper lid
     if "makima_glow" in marks:
         for x, y in ((4, 18), (27, 18)):
             put(x, y, (250, 220, 120))
-    if "allmight_shadow" in marks:  # deep-set eyes: each socket a darker shade of his skin, the big blue irises shining in it
-        sock, deep = tuple(int(c * 0.62) for c in skin), tuple(int(c * 0.45) for c in skin)
+    if "allmight_shadow" in marks:  # two deep, dark eye slots with a blue glint; the huge clenched grin; laugh lines
+        SOCK, SOCK_E, BROW = (44, 40, 56), (96, 72, 62), (200, 150, 40)
         for cx in (10, 21):
-            for x in range(cx - 3, cx + 5):
+            for x in range(cx - 4, cx + 5):
                 for y in range(15, 22):
-                    edge = x in (cx - 3, cx + 4) or y in (15, 21)
-                    put(x, y, sock if edge else deep)
-            for x in range(cx - 4, cx + 6):  # clear any eye-white the base face drew under the socket
-                put(x, 22, skin)
-            for x in range(cx - 4, cx + 6):  # heavy golden brows over the sockets
-                put(x, 14, (200, 150, 40))
+                    put(x, y, tuple(skin))                         # wipe the base round eye
+            for x in range(cx - 3, cx + 5):
+                for y in range(16, 21):
+                    put(x, y, SOCK_E if (y == 20 or x in (cx - 3, cx + 4)) else SOCK)
+            for x in range(cx - 4, cx + 6):
+                put(x, 15, BROW)                                   # heavy golden brow ridge
             if open_eyes:
-                for x in (cx - 1, cx, cx + 1, cx + 2):
-                    for y in (17, 18):
-                        put(x, y, (70, 170, 255))
-                put(cx - 1, 19, (40, 110, 210)); put(cx + 2, 19, (40, 110, 210)); put(cx, 19, (40, 110, 210)); put(cx + 1, 19, (40, 110, 210))
-                put(cx, 17, (235, 250, 255))  # the shine
-            else:
-                for x in range(cx - 1, cx + 3):
-                    put(x, 18, (30, 24, 24))
-    if "todoroki_scar" in marks:  # the burn scar round his left eye, and his two eye colours
-        # an irregular burn round his left eye, from the brow down onto the cheek and out toward the temple. It is drawn
-        # only over SKIN pixels, so the eye itself (white, lashes, turquoise iris) and the brow stay a normal eye.
-        rows = {12: (20, 24), 13: (18, 26), 14: (17, 27), 15: (17, 28), 16: (16, 28), 17: (16, 28), 18: (16, 28),
-                19: (17, 28), 20: (17, 27), 21: (18, 26), 22: (19, 25), 23: (21, 24), 24: (22, 23)}
-        sk = tuple(skin)
+                put(cx + 1, 18, (70, 170, 255)); put(cx, 19, (40, 110, 210)); put(cx + 1, 19, (40, 110, 210))
+                put(cx, 18, (235, 250, 255))                        # glint
+        for x, y in ((5, 20), (5, 21), (6, 22), (6, 23), (26, 20), (26, 21), (25, 22), (25, 23)):
+            put(x, y, (170, 139, 117))                             # laugh lines
+        if M.EXPR in (None, "blink"):                              # shout/hurt keep their own mouths
+            T, GAP, LINE, INK = (250, 250, 246), (196, 196, 204), (70, 40, 44), (20, 12, 14)
+            for x in range(8, 24):
+                put(x, 24, INK); put(x, 28, INK); put(x, 26, LINE)
+                put(x, 25, GAP if x % 3 == 1 else T); put(x, 27, GAP if x % 3 == 1 else T)
+            for y in (25, 26, 27):
+                put(7, y, INK); put(24, y, INK)
+            put(6, 24, INK); put(25, 24, INK); put(5, 23, INK); put(26, 23, INK)   # corners turned up
+    if "am_blood" in marks:  # USS: blood from the corners of the mouth
+        for x, y in ((24, 28), (24, 29), (25, 30), (25, 31), (7, 28), (7, 29)):
+            put(x, y, (170, 20, 26))
+    if "todoroki_scar" in marks:  # his left side (x >= 16): red hair band, red brow, a burn patch round a NORMAL eye
+        get = lambda x, y: px[min(W - 1, int(x * k)), min(H - 1, int(y * k))][:3]
+        brow_c = dark(hair, 0.8) if sum(hair) > 360 else (28, 22, 26)
+        brow_px = [(31 - x, y) for y in range(11, 17) for x in range(2, 16) if get(x, y) == tuple(brow_c)]  # mirror of his right brow
+        for y in range(0, 12):                                                  # face-painted hair: red on his left half
+            for x in range(16, 32):
+                put(x, y, (200, 50, 50))
+        rows = {12: (21, 25), 13: (19, 27), 14: (18, 28), 15: (18, 29), 16: (17, 29), 17: (17, 29), 18: (17, 29),
+                19: (18, 29), 20: (18, 29), 21: (18, 28), 22: (19, 28), 23: (20, 27), 24: (22, 27), 25: (24, 26)}
+        notch = {(18, 14), (17, 18), (18, 22), (25, 12), (29, 15), (29, 20), (27, 23)}   # ragged edge
         for y, (x0, x1) in rows.items():
             for x in range(x0, x1 + 1):
-                cur = px[min(W - 1, int(x * k)), min(H - 1, int(y * k))][:3]
-                if min(cur) > 215 or sum(cur) < 170 or (cur[2] > cur[0] + 30):
-                    continue  # the eye itself: white, lashes/brow, turquoise iris
-                edge = (x in (x0, x1) or y in (12, 24)) and (x * 5 + y) % 3 == 0
+                if (x, y) in notch or (17 <= y <= 20 and 18 <= x <= 26):
+                    continue                     # never paint inside the eye box: lashes, white and iris stay intact
+                edge = x in (x0, x1) or y in (12, 25) or (x + 1, y) in notch or (x - 1, y) in notch
                 put(x, y, (160, 74, 64) if edge else (190, 104, 90))
+        for x, y in brow_px:                                                    # his left brow: red, over the scar
+            put(x, y, (176, 36, 44))
         if open_eyes:
-            put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))
-            put(21, 18, (40, 170, 190)); put(22, 18, (40, 170, 190))
+            put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))           # right eye grey
+            for x in (20, 21, 22):                                              # left eye turquoise, whole iris
+                put(x, 18, (24, 110, 120)); put(x, 20, (40, 190, 190))
+            put(22, 19, (40, 190, 190)); put(21, 19, (16, 60, 70)); put(20, 19, (252, 252, 252))
     if "hisoka_marks" in marks:  # a star on one cheek, a teardrop on the other
         star = ["..#..", "#####", ".###.", ".#.#.", "#...#"]
         for r, row in enumerate(star):
             for c, ch in enumerate(row):
                 if ch == "#":
-                    put(5 + c, 21 + r, (70, 110, 200))
+                    put(22 + c, 21 + r, (70, 110, 200))
         tear = [".#.", ".#.", "###", "###", ".#."]
         for r, row in enumerate(tear):
             for c, ch in enumerate(row):
                 if ch == "#":
-                    put(23 + c, 21 + r, (220, 60, 140))
+                    put(6 + c, 21 + r, (220, 60, 140))
     if "scarlet_eyes" in marks and open_eyes:
         for cx in (10, 21):
             for x in (cx, cx + 1):
@@ -3149,7 +3190,7 @@ def kurapika(m, form):
     """Kurapika in the Kurta clan's blue tabard with gold trim over a white robe, a blonde bob; on his right hand the
     five chains of his nen. Emperor Time: his eyes burn scarlet and the chains glow."""
     scarlet = form == "emperor"
-    head = head_paint(KUR_HAIR, (60, 120, 200) if not scarlet else (230, 20, 40), True, "kurapika_scarlet" if scarlet else "kurapika")
+    head = head_paint(KUR_HAIR, (120, 96, 76) if not scarlet else (230, 20, 40), True, "kurapika_scarlet" if scarlet else "kurapika")
     white, blue, gold = (238, 238, 232), (40, 70, 160), (230, 190, 70)
     tab = lambda f, px, w, h, b: [[_put(px, w, h, x, y, gold if (x in (int(w * 0.18), int(w * 0.82)) or y == int(h * 0.12)) else blue) for x in range(int(w * 0.18), int(w * 0.83))] for y in range(int(h * 0.12), h)] if f in ("north", "south") else None
     base_body(m, layered(white, [tab]), arm_paint(white, sleeve_to=0.86), layered(white, [region((0, 0.86, 1, 1), (60, 50, 40))]), head)
@@ -3203,8 +3244,8 @@ def face32_new21(px, W, H, spec, hair, iris, skin):
     open_eyes = M.EXPR not in ("blink", "hurt")
 
     def put(x, y, c):
-        for dx in range(max(1, int(k))):
-            for dy in range(max(1, int(k))):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)

@@ -1983,8 +1983,8 @@ def face32(px, W, H, spec, hair, iris, skin):
     k = W / 32.0
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -2009,7 +2009,7 @@ def face32(px, W, H, spec, hair, iris, skin):
         put(x, 12, sr[1])
         if x % 4 in (1, 2):
             put(x, 13, sr[1])
-    brow_c = dark(hair, 0.8) if sum(hair) > 360 else (28, 22, 26)
+    brow_c = spec.get("brow_col") or (dark(hair, 0.8) if sum(hair) > 360 else (28, 22, 26))
     e = spec["eye"]
     # ---- eyes (left side drawn, mirrored)
     if e == "band":
@@ -2041,8 +2041,10 @@ def face32(px, W, H, spec, hair, iris, skin):
                 both(x, y, white)
         for y in range(17, 21):
             for x in range(9, 12):
-                both(x, y, (14, 12, 14))
-        both(10, 17, white)
+                both(x, y, dark(iris, 0.55) if y == 17 else iris)
+        for y in (19, 20):
+            both(10, y, dark(iris, 0.3))                # pupil
+        put(9, 18, white); put(20, 18, white)            # catchlight
         for x in range(7, 13):
             both(x, 15, ink)
     elif e == "g5":
@@ -2106,6 +2108,13 @@ def face32(px, W, H, spec, hair, iris, skin):
     elif b == "thin":
         for x in range(6, 13):
             both(x, 13 if 7 < x < 12 else 14, (240, 240, 248))
+    elif b == "arch":  # thin, high, arched brow (Hisoka)
+        for x, y in ((6, 15), (7, 14), (8, 13), (9, 13), (10, 13), (11, 13), (12, 14)):
+            both(x, y, brow_c)
+    elif b == "fine":  # slim 1-px brow, slight taper at the outer end
+        for x in range(7, 13):
+            both(x, 14, brow_c)
+        both(6, 15, brow_c)
     elif b == "none":
         for x in range(6, 14):
             both(x, 14, sr[1])
@@ -2154,10 +2163,8 @@ def face32(px, W, H, spec, hair, iris, skin):
                 put(21 + d, 22 + d, (196, 120, 110))
             put(6, 24, (196, 120, 110)); put(7, 25, (196, 120, 110))
         if mk == "luffy_scar":
-            for x in range(19, 25):
-                put(x, 23, (180, 96, 86))
-            for x in (20, 22, 24):
-                put(x, 22, (180, 96, 86)); put(x, 24, (180, 96, 86))
+            for x, y in ((19, 23), (20, 24), (21, 24), (22, 24), (23, 24), (24, 23), (21, 23), (21, 25), (23, 23), (23, 25)):
+                put(x, y, (160, 74, 64))  # a short curved scar with two stitches
         if mk == "second_eyes":
             for x in range(8, 13):
                 both(x, 23, ink)
@@ -2247,8 +2254,8 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     t = (18, 12, 16)
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -2808,8 +2815,8 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     ink, t, white, red = (20, 12, 14), (16, 10, 14), (250, 250, 250), (210, 28, 38)
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -3184,8 +3191,8 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     t = (16, 10, 14)
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -3385,8 +3392,8 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     k = W / 32.0
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -3851,8 +3858,8 @@ def face32(px, W, H, spec, hair, iris, skin):  # noqa: F811
     sr = ramp(skin)
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
@@ -3984,8 +3991,8 @@ def _frieza_head_orig(skin, golden):
         k = w / 32.0
 
         def put(x, y, c):
-            for dx in range(int(k)):
-                for dy in range(int(k)):
+            for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+                for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                     xx, yy = int(x * k) + dx, int(y * k) + dy
                     if 0 <= xx < w and 0 <= yy < h:
                         px[xx, yy] = c + (255,)
@@ -4149,8 +4156,8 @@ def _expr_put(px, W, H):
     k = W / 32.0
 
     def put(x, y, c):
-        for dx in range(int(k)):
-            for dy in range(int(k)):
+        for dx in range(max(1, int((x + 1) * k) - int(x * k))):
+            for dy in range(max(1, int((y + 1) * k) - int(y * k))):
                 xx, yy = int(x * k) + dx, int(y * k) + dy
                 if 0 <= xx < W and 0 <= yy < H:
                     px[xx, yy] = c + (255,)
