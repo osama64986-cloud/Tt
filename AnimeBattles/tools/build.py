@@ -219,7 +219,7 @@ FIGHTERS.update({
                "egg": ("#10080c", "#e28c96"), "form_scale": [1.0, 1.0, 1.15]},
     "luffy": {"hp": 1000, "forms": [(10, 0.34), (16, 0.42), (22, 0.36), (42, 0.4), (40, 0.44), (36, 0.3), (58, 0.42)],
               "tex": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"], "geo": ["base", "g2", "g3", "g4b", "g4s", "g4t", "g5"],
-              "egg": ("#ce2226", "#eece68"), "gigant": True},
+              "egg": ("#ce2226", "#eece68"), "gigant": True, "form_scale": [1, 1, 1, 1, 1, 1.35, 1]},  # Tankman: far bigger than a man
 })
 
 FIGHTERS.update({

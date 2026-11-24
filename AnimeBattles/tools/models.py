@@ -4842,3 +4842,102 @@ def steam_wreath(m, y, rx, rz, n, s, bone="body", back=0.0):  # noqa: F811
             yy -= 3.5
             z += 1.5
         cloud(m, bone, (x, yy, z), s * (0.85 + 0.3 * (k % 3) / 2))
+
+
+# ---------------------------------------------------------------- Gear 4 Tankman, rebuilt from the reference art
+_luffy_body_tank2_prev = luffy_body
+
+
+def _haki_ball_paint(face, img):
+    """Tankman's haki belly: glossy dark maroon-black, deeper at the bottom, a faint red sheen on top faces."""
+    w, h = img.size
+    px = img.load()
+    base = {"up": (78, 20, 40), "north": (58, 14, 30), "west": (54, 13, 28), "east": (40, 10, 22), "south": (34, 9, 19), "down": (22, 6, 12)}[face]
+    for y in range(h):
+        for x in range(w):
+            c = base
+            if face == "up" and (x * 3 + y * 5) % 17 == 0:
+                c = (120, 30, 54)
+            px[x, y] = c + (255,)
+
+
+def luffy_body(m, form):  # noqa: F811
+    """Gear 4 Tankman (reference art): Luffy's body blown up into a gigantic round belly coated black-maroon in Armament
+    Haki, glossy, with bright red rim highlights down both sides and white glints. His skin covers only the top of the
+    ball — big pecs, the X scar — and spills over the haki in a splash of drips. His head is sunk into fat puffed
+    cheeks, his haki arms stick out to the sides with rolled cream cuffs, tiny red legs poke out underneath above the
+    yellow sash, steam clouds coil round his shoulders, the straw hat hangs on his back."""
+    if form != "g4t":
+        return _luffy_body_tank2_prev(m, form)
+    import sculpt as SC
+    luffy_head(m, (22, 20, 26), "luffy_g4")
+    for s_ in (1, -1):  # fat puffed cheeks bulging out of the face
+        m.box("head", [s_ * 4.6 - 1.1, 24.0, -3.9], [2.2, 2.6, 4.2], solid(SKIN))
+    Rh, Rv, cy = 12.5, 10.6, 12.9          # a slightly squashed sphere: wide and round
+    R = Rv
+    yb = cy + 5.2                          # where the skin ends and the haki begins
+
+    def rad(y):                            # horizontal radius of the ball at height y
+        t = (y - cy) / Rv
+        return Rh * math.sqrt(max(0.0, 1 - t * t))
+
+    def surf(az, t, out=0.4):              # a point just outside the ball: az 0 = straight ahead (-z), t from -1 to 1
+        # each slice is three squares turned 0/30/60 degrees; their union reaches r / cos(angle to the farthest normal)
+        deg = math.degrees(az)
+        k = max(1 / math.cos(math.radians(abs(((deg - rot + 45) % 90) - 45))) for rot in (0, 30, 60))
+        r = (Rh * math.sqrt(max(0.0, 1 - t * t)) + 0.5) * k + out
+        return [math.sin(az) * r, cy + t * Rv, -math.cos(az) * r]
+    n = 14
+    skin_sw, haki_sw = SC.swatch(SKIN), SC.swatch((78, 18, 40))
+    for k in range(n):
+        y0 = cy - Rv + k * (2 * Rv / n)
+        yc = y0 + Rv / n
+        r = rad(yc) + 0.5
+        for rot in ([0, 0, 0], [0, 30, 0], [0, 60, 0]):  # a 12-sided slice: rounder than a square
+            m.box("body", [-r, y0, -r], [2 * r, 2 * Rv / n + 0.05, 2 * r], skin_sw if yc > yb else haki_sw, rot=rot, pivot=[0, yc, 0])
+    m.box("body", [-5.6, cy + Rv - 2.2, -5.6], [11.2, 2.6, 11.2], skin_sw)                 # fat shoulders round the sunk head
+    for i in range(15):  # the skin spilling down over the haki in a splash of drips (front and sides)
+        a = math.radians(-80 + i * (160 / 14))
+        L = 1.4 + 1.8 * ((i * 7) % 5) / 4
+        p0 = surf(a, (yb - L / 2 - cy) / Rv, 0.2)
+        m.box("body", [p0[0] - 0.9, yb - L, p0[2] - 0.9], [1.8, L + 0.6, 1.8], skin_sw, rot=[0, -math.degrees(a), 0], pivot=[p0[0], yb, p0[2]])
+    # big pecs and the X scar on the skin cap
+    rf = rad(yb + 2.2) + 0.5
+    for s_ in (1, -1):
+        m.box("body", [s_ * 3.2 - 3.0, yb + 1.0, -rf - 0.4], [6.0, 3.0, 1.0], solid(SKIN))
+        m.box("body", [s_ * 3.2 - 3.0, yb + 0.9, -rf - 0.5], [6.0, 0.35, 0.3], solid(dark(SKIN, 0.75)))
+    for s_ in (1, -1):
+        m.box("body", [-0.2, yb + 0.2, -rf - 0.6], [0.45, 4.6, 0.3], solid((168, 104, 86)), rot=[0, 0, s_ * 45], pivot=[0, yb + 2.5, -rf - 0.45])
+    # glossy haki: bright red rim lines down both sides, a big white glint and small sparkles
+    rim, rim2 = SC.swatch((226, 30, 58)), SC.swatch((160, 20, 44))
+    for s_ in (1, -1):
+        SC.curve_tube(m, "body", [surf(s_ * 1.05, 0.35), surf(s_ * 1.2, -0.1), surf(s_ * 1.1, -0.6)], 0.42, 0.28, [rim, rim], n=2)
+        SC.curve_tube(m, "body", [surf(s_ * 0.8, 0.25), surf(s_ * 0.92, -0.2), surf(s_ * 0.85, -0.55)], 0.26, 0.18, [rim2, rim2], n=2)
+    glint = solid((255, 250, 248))
+    gp = surf(-0.55, 0.15, 0.5)
+    m.box("body", [gp[0] - 1.0, gp[1] - 0.7, gp[2] - 0.3], [2.0, 1.4, 0.6], glint, rot=[0, 30, 0], pivot=gp)
+    for az, t in ((-1.0, -0.2), (0.6, -0.5), (0.95, 0.1), (-0.3, -0.7), (0.25, -0.25), (-0.75, -0.55)):
+        q = surf(az, t, 0.35)
+        m.box("body", [q[0] - 0.35, q[1] - 0.35, q[2] - 0.2], [0.7, 0.7, 0.4], glint)
+    # haki arms held out to the sides: rolled cream cuff, a thick black-red forearm, a big fist
+    cuff = layered((236, 222, 190), [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (200, 40, 40))])
+    for bone, s_ in (("rightArm", 1), ("leftArm", -1)):
+        x0 = s_ * 10.0
+        m.box(bone, [x0 - 2.0 if s_ > 0 else x0 - 2.6, 20.0, -2.4], [4.6, 4.6, 4.8], cuff)                    # rolled cream cuff
+        m.box(bone, [x0 + 2.4 if s_ > 0 else x0 - 9.4, 19.2, -3.0], [7.0, 6.2, 6.0], haki_glow)             # haki forearm
+        m.box(bone, [x0 + 9.2 if s_ > 0 else x0 - 15.2, 18.4, -3.8], [6.0, 7.6, 7.6], haki_glow)            # big fist
+        m.box(bone, [x0 + 9.0 if s_ > 0 else x0 - 15.4, 22.6, -4.0], [6.4, 0.8, 8.0], solid((150, 24, 44)))  # red knuckle band
+    # tiny legs underneath: red trousers, cream fur at the ankles, black haki feet; the yellow sash under the belly
+    m.box("body", [-4.4, cy - Rv - 0.9, -4.4], [8.8, 1.4, 8.8], solid((236, 196, 60)))
+    for bone, x0 in (("rightLeg", 0.4), ("leftLeg", -3.4)):
+        m.box(bone, [x0, 1.2, -1.4], [3.0, 1.6, 2.8], solid((190, 34, 38)))
+        m.box(bone, [x0 - 0.2, 0.7, -1.6], [3.4, 0.8, 3.2], solid((240, 236, 226)))
+        m.box(bone, [x0, 0, -2.2], [3.0, 0.8, 3.6], solid((26, 14, 20)))
+    # steam coiling round his shoulders, the straw hat hanging on his back
+    steam_wreath(m, cy + Rv + 0.4, 8.8, 7.0, 9, 3.0, back=1.5)
+    weave = layered(STRAW, [lines((SIDES + ("up",), [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), dark(STRAW, 0.75))])
+    hz = rad(cy + 4) + 0.6
+    for rz in (0, 45):
+        m.box("body", [-6, cy + 2, hz], [12, 12, 0.5], weave, rot=[-12, 0, rz], pivot=[0, cy + 8, hz])
+    m.box("body", [-3.2, cy + 4.8, hz + 0.4], [6.4, 6.4, 2.4], weave, rot=[-12, 0, 0], pivot=[0, cy + 8, hz])
+    m.box("body", [-3.3, cy + 4.8, hz + 0.3], [6.6, 1.1, 2.6], solid((200, 30, 34)), rot=[-12, 0, 0], pivot=[0, cy + 8, hz])

@@ -99,6 +99,9 @@
     },
     "minecraft:movement": {
      "value": 0.34
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:form_1": {
@@ -107,6 +110,9 @@
     },
     "minecraft:movement": {
      "value": 0.42
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:form_2": {
@@ -115,6 +121,9 @@
     },
     "minecraft:movement": {
      "value": 0.36
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:form_3": {
@@ -123,6 +132,9 @@
     },
     "minecraft:movement": {
      "value": 0.4
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:form_4": {
@@ -131,6 +143,9 @@
     },
     "minecraft:movement": {
      "value": 0.44
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:form_5": {
@@ -139,6 +154,9 @@
     },
     "minecraft:movement": {
      "value": 0.3
+    },
+    "minecraft:scale": {
+     "value": 1.35
     }
    },
    "ab:form_6": {
@@ -147,6 +165,9 @@
     },
     "minecraft:movement": {
      "value": 0.42
+    },
+    "minecraft:scale": {
+     "value": 1
     }
    },
    "ab:normal_size": {
