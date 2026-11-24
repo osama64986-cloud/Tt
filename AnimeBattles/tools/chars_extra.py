@@ -2652,7 +2652,7 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
             for x in range(cx - 2, cx + 4):
                 for y in range(16, 21):
                     d = max(abs(x - (cx + 0.5)), abs(y - 18))
-                    put(x, y, (230, 190, 90) if d >= 2 else ((140, 90, 40) if d >= 1 else (250, 220, 120)))
+                    put(x, y, (240, 205, 80) if d >= 2 else ((196, 40, 44) if d >= 1 else (250, 226, 110)))  # yellow, a red ring, yellow
     if "makima_glow" in marks:
         for x, y in ((4, 18), (27, 18)):
             put(x, y, (250, 220, 120))
@@ -2933,7 +2933,7 @@ MAK_HAIR = (190, 92, 70)
 
 @M.smooth_hair
 def makima_hair(m):
-    _shell_strands(m, MAK_HAIR, [([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 4.0, 2.0) for x in (-2.8, -1.0, 1.0, 2.8)]
+    _shell_strands(m, MAK_HAIR, [([x, 31.6, -4.1], [x * 0.05, -0.8, -0.4], 2.4, 2.0) for x in (-2.8, -1.0, 1.0, 2.8)]  # bangs stop above the eyes
                    + [([s * 3.9, 30.6, -0.8], [s * 0.05, -1, 0], 6.0, 2.0) for s in (1, -1)])
     hp = M.hair_paint(MAK_HAIR)
     for k in range(5):  # the long braid down her back

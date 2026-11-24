@@ -4693,11 +4693,14 @@ const MAKIMA = {
         later(14, () => { if (e.isValid) setPose(e, 0); });
       } },
     { id: "dominate", label: "Control: Domination", cd: 300, cost: 160, min: 0, max: 26, weight: 6,
-      run(e, s, t) {  // chains of control latch onto the enemy: it loses itself and strikes its own body
+      run(e, s, t) {  // her ringed eyes lock onto the enemy: the same rings close round its head, and it strikes its own body
         busy(s, 14); face(e, aim(t)); setPose(e, 4); announce(e, "§6§lYou're mine now.");
+        const eye = V.up(e.location, 1.65);
+        for (let k = 0; k < 3; k++) later(k * 2, () => { if (e.isValid) ring(e.dimension, eye, 0.3 + k * 0.25, k % 2 ? C.red : C.gold, 12, 0.18); });
         later(4, () => {
           if (!alive(t) || !e.isValid) return;
-          for (let k = 1; k < 10; k++) fx(e.dimension, "orb_solid", V.add(V.up(e.location, 1.2), V.mul(V.sub(aim(t), V.up(e.location, 1.2)), k / 10)), C.silver, 0.35, 0.8);
+          const head = V.up(t.location, 1.7);
+          every(3, 6, (i) => { if (alive(t)) { ring(t.dimension, head, 1.6 - i * 0.22, i % 2 ? C.red : C.gold, 18, 0.25); } });
           bindTarget(t, 40);
           every(8, 3, () => { if (alive(t)) { deal(e, t, 12 * powerOf(e) / 100); fx(t.dimension, "shock_v", aim(t), C.gold, 2, 0.3); } });
         });
