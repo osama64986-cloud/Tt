@@ -1,11 +1,14 @@
 # Anime Multiverse Clash — Characters
 
 **Dragon Ball**
-- **Goku** — The strongest fighter in the mod. Climbs from base form through Super Saiyan, Super Saiyan 3, God, Blue and finally Ultra Instinct, where his body dodges and counters on its own.
-- **Vegeta** — The proud Saiyan Prince. Galick Gun, Big Bang Attack and Final Flash, all the way up to Ultra Ego, where every blow he takes makes him stronger.
+- **Goku** — The strongest fighter in the mod. Climbs from base form through Super Saiyan, Super Saiyan 2, Super Saiyan 3, God, Blue and finally Ultra Instinct, where his body dodges and counters on its own.
+- **Vegeta** — The proud Saiyan Prince. Galick Gun, Big Bang Attack and Final Flash, through Super Saiyan 2 and all the way up to Ultra Ego, where every blow he takes makes him stronger.
 - **Broly** — The Legendary Super Saiyan. The angrier he gets the stronger he becomes, an unstoppable rage that can overpower Vegeta.
 - **Frieza** — The Emperor of the Universe. Death Beams, the Death Ball and telekinesis, then Golden Frieza.
-- **Son Gohan** — The scholar who becomes a beast. Masenko and Kamehameha through Super Saiyan 2 and Ultimate, then Beast, with towering silver hair, Piccolo's Special Beam Cannon and the Beast Kamehameha.
+- **Son Gohan** — The scholar who becomes a beast. Masenko and Kamehameha through Super Saiyan, Super Saiyan 2 and Ultimate, then Beast, with towering silver hair, Piccolo's Special Beam Cannon and the Beast Kamehameha.
+
+- **Beerus** — The God of Destruction. Hakai (an open palm and the target crumbles into purple motes), the Sphere of Destruction, Destruction Before Creation and a god's fist that sends shock rings rolling across the ground.
+- **Whis** — The Angel, and the strongest fighter in the mod. He barely bothers to attack: he dodges almost everything, rewinds time three seconds, puts you to sleep with one chop to the neck, and shields himself in a barrier of light.
 
 **Jujutsu Kaisen**
 - **Gojo Satoru** — The honoured one. Infinity stops every attack. He uses Blue, Red and Hollow Purple, and his Domain Expansion, Unlimited Void, raises a real dome around the fight.
