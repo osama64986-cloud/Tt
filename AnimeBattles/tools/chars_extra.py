@@ -1130,11 +1130,19 @@ def tanjiro_demon(m, form):
     uni = UNIFORM
     blood = (118, 14, 22)
 
-    def stains(face, px, w, h, base):  # his corps uniform soaked with blood
-        for y in range(h):
-            for x in range(w):
-                if ((x * 7 + y * 5) % 23 < 3 and (x + y) % 3) or ((x // 3 + y // 4) % 9 == 0 and y > h // 3):
-                    _put(px, w, h, x, y, blood)
+    def stains(face, px, w, h, base):  # his corps uniform soaked with blood: a few solid blotches, not speckles
+        if face in ("up", "down"):
+            return
+        seed = {"north": 0, "south": 1, "east": 2, "west": 3}[face]
+        for k, (fx, fy, fr) in enumerate(((0.3, 0.35, 0.22), (0.7, 0.7, 0.18), (0.55, 0.15, 0.12))):
+            if (k + seed) % 3 == 2:
+                continue
+            cx, cy, r = fx * w, fy * h, fr * min(w, h) + 1
+            for y in range(h):
+                for x in range(w):
+                    dx, dy = (x + 0.5 - cx) / r, (y + 0.5 - cy) / (r * 1.5)
+                    if dx * dx + dy * dy < 1 - 0.25 * (((x * 3 + y) % 4) == 0):
+                        _put(px, w, h, x, y, blood)
     base_body(m, layered(uni, [stains, region((0.47, 0, 0.53, 1), dark(uni, 0.8), faces=("north",))]),
               arm_paint(uni, sleeve_to=0.88),
               layered(uni, [stains, region((0, 0.42, 1, 0.84), (214, 206, 196)), region((0, 0.94, 1, 1), (150, 40, 44))]),
@@ -1796,10 +1804,8 @@ def killua(m, form):
     head = head_paint(KIL_HAIR if not god else (214, 236, 255), (60, 130, 220), True, "killua_god" if god else "killua")
     navy, white = (40, 44, 92), (240, 240, 236)
 
-    def zig(face, px, w, h, base):  # Godspeed: lightning zigzags over the body
-        if god:
-            for i in range(0, h, 2):
-                _put(px, w, h, int(w * 0.5 + (i % 6 - 3) * w * 0.08), i, (170, 230, 255))
+    def zig(face, px, w, h, base):  # Godspeed's lightning is a moving effect round him in the game, not dots on his clothes
+        return
     torso = layered(white, [zig, region((0, 0, 1, 0.08), navy)])
     arm = layered(navy, [zig, region((0, 0, 1, 0.28), white), region((0, 0.86, 1, 1), SKIN)])
     leg = layered(white, [region((0, 0.5, 1, 0.82), SKIN), region((0, 0.82, 1, 1), (110, 70, 160))])

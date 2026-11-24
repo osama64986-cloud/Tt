@@ -3435,9 +3435,7 @@ def hood_paint(face, img):
     for y in range(h):
         for x in range(w):
             k = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
-            if (x + y) % 13 == 0 and face in ("north", "west", "up"):
-                k = 4
-            px[x, y] = t[k] + (255,)
+            px[x, y] = t[k] + (255,)  # plain fabric: no diagonal streaks
     if face == "north":  # opening
         for y in range(int(h * 0.12), h):
             for x in range(int(w * 0.12), int(w * 0.88)):
@@ -3502,13 +3500,7 @@ def yuji_modulo(m):  # noqa: F811
 SILVER = (34, 34, 42)  # Modulo jacket: black (as requested)
 
 
-def silver_jacket(face, px, w, h, base):  # noqa: F811 — black parka: subtle sheen, zipper, toggles
-    t = tones(SILVER)
-    if face in ("north", "west"):
-        for y in range(h):
-            for x in range(w):
-                if (x + y) % 13 == 0:
-                    _put(px, w, h, x, y, t[3])
+def silver_jacket(face, px, w, h, base):  # noqa: F811 — black parka: zipper and toggles (no diagonal streaks)
     if face == "north":
         for y in range(h):
             _put(px, w, h, w // 2, y, (120, 122, 134))
