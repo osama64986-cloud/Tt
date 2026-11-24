@@ -4752,3 +4752,47 @@ def build(char, form):  # noqa: F811
                 if c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5]:
                     c["paint"] = solid(skin, shadow=0.3)
     return m
+
+
+# ---------------------------------------------------------------- Black Frieza, closer to the manga (critic review)
+_build_black_prev = build
+
+
+def _black_face(paint):
+    """Black Frieza's face is black too: the lavender skin below the dome turns near-black, eyes and mouth stay."""
+    import colorsys
+
+    def p(face, img):
+        paint(face, img)
+        if face != "north":
+            return
+        px = img.load()
+        w, h = img.size
+        for y in range(int(h * 0.3), h):
+            for x in range(w):
+                r, g, b, a = px[x, y]
+                if not a:
+                    continue
+                hh, ss, vv = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                if 0.68 < hh < 0.86 and ss > 0.18 and vv > 0.45:
+                    k = vv ** 1.4
+                    edge = x < w * 0.06 or x > w * 0.94 or y > h * 0.94
+                    px[x, y] = ((70, 70, 82) if edge else (int(22 + 26 * k), int(22 + 24 * k), int(28 + 30 * k))) + (a,)
+    return p
+
+
+def build(char, form):  # noqa: F811
+    m = _build_black_prev(char, form)
+    if char != "frieza" or form != "black":
+        return m
+    blk = solid((35, 35, 42))
+    for c in m.cubes:
+        if c["bone"] == "head" and c["size"] == [8, 8, 8]:
+            c["paint"] = _black_face(c["paint"])
+        elif (c["bone"] in ("rightLeg", "leftLeg") and c["frm"][1] == 0 and c["size"][1] < 2) or \
+                (c["bone"] in ("rightArm", "leftArm") and c["size"][1] <= 2.1 and c["frm"][1] < 12):  # hands, feet, toes: black
+            c["paint"] = blk
+    purple = solid((150, 80, 170))
+    m.box("head", [-4.25, 27.6, -2.2], [8.5, 4.6, 6.5], purple)           # the dome covers the back and sides of the head
+    both_arms(m, [3.4, 20.1, -2.8], [4.8, 4.0, 5.6], purple)              # purple shoulder caps
+    return m

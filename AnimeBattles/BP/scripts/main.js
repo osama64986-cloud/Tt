@@ -2526,7 +2526,7 @@ const FRIEZA = {
   forms: [
     { label: "Final Form", power: 220 },
     { label: "Golden Frieza", power: 650, aura: C.gold },
-    { label: "Black Frieza", power: 1650, aura: C.void },  // manga: beyond Ultra Instinct Goku and Ultra Ego Vegeta together
+    { label: "Black Frieza", power: 1650, aura: { red: 0.66, green: 0.3, blue: 0.86 } },  // black smoke core (aura()), violet edge  // manga: beyond Ultra Instinct Goku and Ultra Ego Vegeta together
   ],
   thresholds: [0.6, 0.4], transformCd: 100,
   formSound: [null, "beacon.power", "mob.wither.spawn"],
