@@ -4798,3 +4798,47 @@ def build(char, form):  # noqa: F811
     m.box("head", [-4.25, 27.6, -2.2], [8.5, 4.6, 6.5], purple)           # the dome covers the back and sides of the head
     both_arms(m, [3.4, 20.1, -2.8], [4.8, 4.0, 5.6], purple)              # purple shoulder caps
     return m
+
+
+# ---------------------------------------------------------------- Armament haki: black with a dark maroon sheen (critic review)
+def haki_glow(face, img):  # noqa: F811
+    """Armament haki as in the anime: solid glossy black, a dark red-maroon sheen on top faces and one edge row,
+    a few dark-red flame tongues licking up the sides — no bright red neon outlines."""
+    w, h = img.size
+    px = img.load()
+    t = tones((20, 15, 18))
+    sheen, flame = (90, 20, 30), (110, 22, 34)
+    for y in range(h):
+        for x in range(w):
+            k = 2 if face in ("north", "west", "up") else 1
+            c = t[k]
+            if face == "up" and (x + y) % 5 == 0:
+                c = sheen
+            elif face != "down" and y == 0:
+                c = sheen
+            px[x, y] = c + (255,)
+    if face in ("north", "west", "east", "south") and w >= 6 and h >= 8:
+        for f0 in (0.2, 0.55, 0.85):  # flame tongues rising from the bottom, pointed tips
+            cx = int(w * f0)
+            ht = int(h * (0.35 + 0.2 * ((cx * 7) % 3) / 2))
+            for dy in range(ht):
+                half = max(0, int((1 - dy / ht) * max(1, w // 10)))
+                for dx in range(-half, half + 1):
+                    xx, yy = cx + dx, h - 1 - dy
+                    if 0 <= xx < w:
+                        px[xx, yy] = flame + (255,)
+        for dx in range(2):
+            for dy in range(2):
+                px[2 + dx, 2 + dy] = (150, 60, 80, 255)  # a small shine
+
+
+def steam_wreath(m, y, rx, rz, n, s, bone="body", back=0.0):  # noqa: F811
+    """Gear 4 steam round the shoulders. The clouds in front sit lower and further back, so the face and Luffy's
+    grin stay clear (critic review)."""
+    for k in range(n):
+        a = k * 2 * math.pi / n
+        x, z, yy = math.cos(a) * rx, math.sin(a) * rz + back, y + (k % 2) * 0.8
+        if y > 18 and z < -1:
+            yy -= 3.5
+            z += 1.5
+        cloud(m, bone, (x, yy, z), s * (0.85 + 0.3 * (k % 3) / 2))
