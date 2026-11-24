@@ -2671,10 +2671,16 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
             put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))
             put(21, 18, (40, 170, 190)); put(22, 18, (40, 170, 190))
     if "hisoka_marks" in marks:  # a star on one cheek, a teardrop on the other
-        for x, y in ((7, 22), (6, 23), (7, 23), (8, 23), (7, 24), (6, 25), (8, 25)):
-            put(x, y, (70, 110, 200))
-        for x, y in ((24, 21), (24, 22), (23, 23), (24, 23), (25, 23), (24, 24)):
-            put(x, y, (220, 60, 140))
+        star = ["..#..", "#####", ".###.", ".#.#.", "#...#"]
+        for r, row in enumerate(star):
+            for c, ch in enumerate(row):
+                if ch == "#":
+                    put(5 + c, 21 + r, (70, 110, 200))
+        tear = [".#.", ".#.", "###", "###", ".#."]
+        for r, row in enumerate(tear):
+            for c, ch in enumerate(row):
+                if ch == "#":
+                    put(23 + c, 21 + r, (220, 60, 140))
     if "scarlet_eyes" in marks and open_eyes:
         for cx in (10, 21):
             for x in (cx, cx + 1):
@@ -3024,31 +3030,75 @@ def todoroki(m, form):
 HIS_HAIR = (220, 70, 120)
 
 
+SUIT_ART = {  # 5x5 card suits
+    "spade": ["..#..", ".###.", "#####", "#####", "..#.."],
+    "club": [".###.", ".###.", "#####", "#####", "..#.."],
+    "heart": [".#.#.", "#####", "#####", ".###.", "..#.."],
+    "diamond": ["..#..", ".###.", "#####", ".###.", "..#.."],
+}
+
+
+def _suit_drawer(face_name, items):
+    """Detail drawer: solid 5x5 card suits at (fx, fy) on one face, scaled to the texture resolution."""
+    def p(face, px, w, h, base):
+        if face != face_name:
+            return
+        k = max(1, w // 16)
+        for kind, fx, fy, col in items:
+            art = SUIT_ART[kind]
+            x0, y0 = int(w * fx) - 2 * k, int(h * fy) - 2 * k
+            for r, row in enumerate(art):
+                for c, ch in enumerate(row):
+                    if ch == "#":
+                        for dx in range(k):
+                            for dy in range(k):
+                                _put(px, w, h, x0 + c * k + dx, y0 + r * k + dy, col)
+    return p
+
+
 @M.smooth_hair
 def hisoka_hair(m):
-    _shell_strands(m, HIS_HAIR, [([x, 31.8, -2.0 + k * 2.0], [x * 0.15, 0.7, 0.8], 5.6, 3.0) for x in (-2.2, 0, 2.2) for k in range(3)])
+    # slicked straight back from a high forehead, spikes sweeping back off the crown, one loose strand at the temple
+    shell(m, HIS_HAIR, hairline=31.5, sideburn=False, teeth=0.25)
+    hp = M.hair_paint(HIS_HAIR)
+    for x in (-2.6, -0.9, 0.9, 2.6):
+        for k in range(2):
+            m.strand([x, 32.0, -1.5 + k * 2.4], [x * 0.12, 0.65 - k * 0.25, 1.0], 5.8 - k * 0.6, 2.8, hp, bone="hair", thick=0.8)
+    m.strand([-3.3, 31.4, -3.9], [-0.1, -1, -0.15], 3.2, 1.0, hp, bone="hair", thick=0.6)
 
 
 def hisoka(m, form):
-    """Hisoka: pink-red hair slicked up and back, a star and a teardrop painted on his cheeks, a loose light top
-    covered in card suits, a belt, white trousers. Serious: his magenta aura (Bungee Gum) clings to his hands."""
+    """Hisoka: pink-red hair slicked back from a high forehead, a star and a teardrop painted on his cheeks, a loose
+    light top with a deep V neck and a big spade and club, a heart and a diamond on his trousers, a belt, pointed
+    jester shoes. Serious: his magenta aura (Bungee Gum) clings to his hands."""
     serious = form == "serious"
     head = head_paint(HIS_HAIR, (230, 180, 60), True, "hisoka_serious" if serious else "hisoka")
-    top, pants = (226, 214, 236), (240, 238, 232)
+    top, pants, ink, red = (232, 222, 240), (240, 238, 232), (40, 30, 60), (210, 40, 80)
 
-    def suits(face, px, w, h, base):  # ♠ ♥ ♦ ♣ scattered over his top
-        cols = [(40, 40, 60), (220, 40, 80), (220, 40, 80), (40, 40, 60)]
-        for i, (fx, fy) in enumerate(((0.25, 0.25), (0.7, 0.3), (0.3, 0.65), (0.72, 0.7))):
-            cx, cy = int(w * fx), int(h * fy)
-            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (0, -1)):
-                _put(px, w, h, cx + dx, cy + dy, cols[i])
-    base_body(m, layered(top, [suits]), layered(top, [suits, region((0, 0.82, 1, 1), SKIN)]),
-              layered(pants, [region((0, 0.86, 1, 1), (60, 40, 80))]), head)
+    def vee(face, px, w, h, base):
+        if face != "north":
+            return
+        for y in range(int(h * 0.42)):
+            half = (w * 0.22) * (1 - y / (h * 0.42))
+            for x in range(w):
+                if abs(x + 0.5 - w / 2) < half:
+                    _put(px, w, h, x, y, SKIN)
+    torso = layered(top, [vee, _suit_drawer("north", [("spade", 0.27, 0.6, ink), ("club", 0.73, 0.6, ink)]),
+                          _suit_drawer("south", [("diamond", 0.5, 0.45, red)])])
+    arm = layered(top, [region((0, 0.82, 1, 1), SKIN)])
+    leg_r = layered(pants, [region((0, 0.86, 1, 1), (60, 40, 80)), _suit_drawer("north", [("heart", 0.5, 0.35, red)])])
+    leg_l = layered(pants, [region((0, 0.86, 1, 1), (60, 40, 80)), _suit_drawer("north", [("diamond", 0.5, 0.35, red)])])
+    base_body(m, torso, arm, leg_r, head)
+    for c in m.cubes:  # the other trouser leg carries the diamond
+        if c["bone"] == "leftLeg":
+            c["paint"] = leg_l
     m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.2, 5.0], solid((90, 60, 140)))
+    for leg_, x in (("rightLeg", 1.9), ("leftLeg", -1.9)):  # pointed jester toes curling up
+        m.box(leg_, [x - 0.6, 0.2, -3.6], [1.2, 1.0, 1.8], solid((60, 40, 80)), rot=[-30, 0, 0], pivot=[x, 0.4, -2.2])
     if serious:
-        gum = SC.swatch((230, 80, 200), 190)
-        for s, arm_ in ((1, "rightArm"), (-1, "leftArm")):
-            SC.curve_tube(m, arm_, [[s * 6, 11, -1], [s * 8, 12, -5], [s * 7, 14, -9]], 0.4, 0.2, [gum, gum], n=2)
+        gum = SC.swatch((255, 120, 200), 190)
+        for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
+            SC.curve_tube(m, arm_, [[s_ * 6, 11, -1], [s_ * 8, 12, -5], [s_ * 7, 14, -9]], 0.4, 0.2, [gum, gum], n=2)
     hisoka_hair(m)
 
 
