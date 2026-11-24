@@ -2181,10 +2181,14 @@ def face32_new19(px, W, H, spec, hair, iris, skin):
         for x in range(2, 30):
             if x not in (14, 15, 16, 17):
                 put(x, 13, ln)
-        for y in range(22, 30):
+        for y in range(20, 30):  # down the cheeks from the corners of the eyes
             put(5, y, ln); put(26, y, ln)
         for x in (6, 7, 24, 25):
             put(x, 25, ln)
+        for x in (6, 7, 8, 23, 24, 25):  # flicks along the lower lids
+            put(x, 20, ln)
+        for x in range(13, 19):  # the band across his chin
+            put(x, 30, ln)
     if "akaza_eyes" in marks and open_eyes:  # yellow irises on dark blue sclera
         for cx in (10, 21):
             for x in range(cx - 2, cx + 3):
@@ -2424,38 +2428,93 @@ def akaza_hair(m):
     spiky_crown(m, AKA_HAIR, up=0.6, n=10, L=3.6, spread=1.0, bangs=((-2.4, -0.3, 2.8), (-0.6, -0.05, 3.0), (1.2, 0.15, 2.8), (2.8, 0.4, 2.6)))
 
 
-def akaza(m, form):
-    """Akaza: pale skin covered in dark blue stripe tattoos, short pink hair, a sleeveless pink-purple vest open over
-    his chest, light hakama trousers, bare feet. Compass Needle: a snowflake of light glows under his feet."""
-    compass = form == "compass"
-    skin = (240, 214, 200)
-    head = head_paint(AKA_HAIR, (250, 220, 70), True, "akaza_compass" if compass else "akaza")
-    ln = (40, 60, 150)
+def compass_paint(face, img):
+    """Akaza's Destructive Death: Compass Needle, seen from above: a light-blue snowflake of twelve needles,
+    each with two pairs of branches, inside two thin rings."""
+    if face != "up":
+        return
+    w, h = img.size
+    px = img.load()
+    cx, cy = (w - 1) / 2, (h - 1) / 2
+    R = min(w, h) / 2 - 1
+    ice, glow = (150, 226, 255, 255), (70, 150, 230, 255)
+    def dot(x, y, c):  # a 2x2 stroke so the needles read from a distance
+        x, y = int(round(x)), int(round(y))
+        for dx in (0, 1):
+            for dy in (0, 1):
+                if 0 <= x + dx < w and 0 <= y + dy < h:
+                    px[x + dx, y + dy] = c
+    def seg(a, r0, r1, c, thick=0.0):
+        n = int(abs(r1 - r0) * 3) + 2
+        for i in range(n + 1):
+            r = r0 + (r1 - r0) * i / n
+            x, y = cx + math.cos(a) * r, cy + math.sin(a) * r
+            dot(x, y, c)
+            if thick:
+                dot(x + math.cos(a + math.pi / 2) * thick, y + math.sin(a + math.pi / 2) * thick, c)
+    for k in range(720):  # the two rings
+        a = 2 * math.pi * k / 720
+        dot(cx + math.cos(a) * R, cy + math.sin(a) * R, glow)
+        dot(cx + math.cos(a) * R * 0.93, cy + math.sin(a) * R * 0.93, ice)
+        dot(cx + math.cos(a) * R * 0.22, cy + math.sin(a) * R * 0.22, ice)
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        L = R * (0.9 if k % 2 == 0 else 0.68)
+        seg(a, R * 0.22, L, ice, 0.6)
+        for f in (0.45, 0.68):  # the branches of each needle
+            if f * R > L:
+                continue
+            bx, by = cx + math.cos(a) * R * f, cy + math.sin(a) * R * f
+            for s_ in (-1, 1):
+                b = a + s_ * 0.75
+                for i in range(int(R * 0.16)):
+                    dot(bx + math.cos(b) * i, by + math.sin(b) * i, ice)
+        tx, ty = cx + math.cos(a) * L, cy + math.sin(a) * L  # a diamond at the tip
+        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+            dot(tx + dx, ty + dy, (230, 250, 255, 255))
 
-    def stripes(face, px, w, h, base):  # the rings of tattoo round his arms and legs
-        for y in range(1, h, max(2, h // 6)):
+
+def akaza(m, form):
+    """Akaza: an Upper Moon demon, so his skin is pale grey all over (face included), covered in dark blue tattoo
+    rings; short pink hair, a sleeveless pink-purple vest open over his chest, light hakama, bare striped feet.
+    Compass Needle: a light-blue snowflake of twelve needles glows on the ground under his feet."""
+    compass = form == "compass"
+    skin = (218, 208, 216)
+    head = skin_swap(head_paint(AKA_HAIR, (250, 220, 70), True, "akaza_compass" if compass else "akaza"), skin)
+    ln = (36, 56, 150)
+
+    def rings(face, px, w, h, base):  # seven thin tattoo rings round the arm, the lowest one at the wrist
+        if face in ("up", "down"):
+            return
+        for k in range(7):
+            y = int(h * (0.08 + 0.13 * k))
             for x in range(w):
-                _put(px, w, h, x, y, ln)
+                _put(px, w, h, x, y + (1 if (x * 4 // max(1, w)) % 2 and k % 2 else 0), ln)
     def chest(face, px, w, h, base):
-        if face == "north":
-            for fy in (0.22, 0.42, 0.62):  # three thin tattoo lines across the chest and stomach
-                for x in range(int(w * 0.3), int(w * 0.7)):
+        if face == "north":  # the lines that cross his chest and stomach, ending in short hooks at the sides
+            for fy in (0.2, 0.36, 0.52, 0.68, 0.84):
+                y = int(h * fy)
+                for x in range(int(w * 0.12), int(w * 0.88)):
+                    _put(px, w, h, x, y, ln)
+                _put(px, w, h, int(w * 0.12), y - 1, ln); _put(px, w, h, int(w * 0.88) - 1, y - 1, ln)
+        elif face in ("east", "west", "south"):
+            for fy in (0.2, 0.36, 0.52, 0.68, 0.84):
+                for x in range(w):
                     _put(px, w, h, x, int(h * fy), ln)
     vest = (196, 110, 160)
     torso = layered(skin, [chest])
-    arm = layered(skin, [stripes])
-    leg = layered((236, 230, 240), [region((0, 0.0, 1, 0.12), (120, 160, 220)), region((0, 0.86, 1, 1), skin)])
+    arm = layered(skin, [rings])
+    leg = layered((236, 230, 240), [region((0, 0.0, 1, 0.12), (120, 160, 220)), region((0, 0.82, 1, 1), skin),
+                                    lines((SIDES, [[(0, 0.88), (1, 0.88)], [(0, 0.95), (1, 0.95)]]), ln)])
     base_body(m, torso, arm, leg, head)
     for x0 in (-4.6, 2.6):  # the open vest
         m.box("body", [x0, 12.0, -2.6], [2.0, 12.2, 5.2], layered(vest, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(vest, 0.7))]))
     m.box("body", [-4.6, 12.0, 2.1], [9.2, 12.2, 0.5], solid(vest))
     m.box("body", [-4.4, 11.2, -2.5], [8.8, 1.4, 5.0], solid((120, 160, 220)))
     akaza_hair(m)
-    if compass:  # the snowflake compass at his feet
-        snow = SC.swatch((120, 200, 255), 190)
-        for k in range(6):
-            a = 2 * math.pi * k / 6
-            SC.blade(m, "body", [0, 0.2, 0], [math.cos(a), 0, math.sin(a)], 8.0, 1.0, 0.2, snow)
+    if compass:  # the snowflake compass on the ground at his feet
+        m.box("root", [-12, 0.15, -12], [24, 0, 24], compass_paint)
+        m.cubes[-1]["hires"] = 4
 
 
 # ------------------------------------------------------------------ Megumi Fushiguro — Jujutsu Kaisen
