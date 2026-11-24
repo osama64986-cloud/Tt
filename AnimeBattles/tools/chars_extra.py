@@ -1169,30 +1169,37 @@ def muzan_hair(m, col, long_=False):
 
 def muzan(m, form):
     final = form == "final"
-    if not final:  # Asakusa disguise: white fedora, embroidered black tuxedo, white tie over a black shirt, white trousers
-        tux = (30, 28, 34)
+    if not final:  # Asakusa disguise: white fedora, a plain black suit with a white shirt and dark tie, dark trousers
+        tux, skin = (26, 25, 31), (245, 228, 215)   # pale but warm: a gentleman, not a corpse
 
         def suit(face, px, w, h, base):
-            for y in range(h):
+            if face != "north":
+                return
+            for y in range(int(h * 0.62)):  # the shirt's V between the lapels, the tie with its knot
+                half = (w * 0.2) * (1 - y / (h * 0.62))
                 for x in range(w):
-                    if (x + 2 * y) % 7 == 0:
-                        _put(px, w, h, x, y, (52, 48, 58))     # embroidery
-            if face == "north":
-                for y in range(int(h * 0.62)):
-                    for x in range(w // 2 - 2, w // 2 + 2):
-                        _put(px, w, h, x, y, (16, 14, 18))      # black shirt
-                    _put(px, w, h, w // 2, y, WHITE); _put(px, w, h, w // 2 - 1, y, WHITE)   # white tie
-                for y in (int(h * 0.68), int(h * 0.82)):
-                    _put(px, w, h, w // 2 - 3, y, (120, 72, 40))  # brown buttons
-        hands = layered(MUZAN_SKIN, [region((0, 0.92, 1, 1), (120, 160, 210))])   # blue nails
-        base_body(m, layered(tux, [suit]), layered(tux, [region((0, 0.86, 1, 1), MUZAN_SKIN), region((0, 0.82, 1, 0.86), WHITE)]),
-                  layered((232, 230, 224), [region((0, 0.9, 1, 1), (24, 22, 26))]),
-                  skin_swap(head_paint((20, 18, 24), (214, 24, 34), True, "muzan"), MUZAN_SKIN))
-        m.box("body", [-4.5, 6.0, 2.2], [9.0, 18.2, 0.5], layered(tux, [suit]))                        # tailcoat
-        m.box("body", [-2.4, 22.6, -2.4], [4.8, 1.8, 4.8], solid(WHITE))                                # collar
+                    d = abs(x + 0.5 - w / 2)
+                    if d < half:
+                        _put(px, w, h, x, y, (240, 238, 234))
+                    elif d < half + 1:
+                        _put(px, w, h, x, y, (60, 56, 66))  # lapel edge
+            for y in range(int(h * 0.04), int(h * 0.5)):
+                for x in (w // 2 - 1, w // 2):
+                    _put(px, w, h, x, y, (60, 14, 24))
+            for x in range(w // 2 - 2, w // 2 + 2):
+                _put(px, w, h, x, int(h * 0.05), (60, 14, 24))
+            for y in (int(h * 0.68), int(h * 0.82)):
+                _put(px, w, h, w // 2, y, (120, 72, 40))  # brown buttons
+        base_body(m, layered(tux, [suit]), layered(tux, [region((0, 0.86, 1, 1), skin), region((0, 0.82, 1, 0.86), WHITE)]),
+                  layered((40, 38, 45), [region((0, 0.9, 1, 1), (18, 16, 20))]),
+                  skin_swap(head_paint((20, 18, 24), (184, 20, 46), True, "muzan"), skin))
+        m.box("body", [-4.5, 6.0, 2.2], [9.0, 18.2, 0.5], solid(tux))                                   # long jacket tails
+        m.box("body", [-2.4, 22.6, -2.4], [4.8, 1.8, 4.8], solid(WHITE))                                # shirt collar
         muzan_hair(m, (20, 18, 24))
-        m.box("hat", [-5.6, 31.4, -5.6], [11.2, 0.6, 11.2], solid((236, 234, 228)))                   # fedora brim
-        m.box("hat", [-4.3, 31.8, -4.3], [8.6, 3.4, 8.6], layered((236, 234, 228), [region((0, 0.68, 1, 1), (104, 42, 30))]))  # crown, ribbon
+        hat = (238, 236, 230)
+        m.box("hat", [-5.6, 30.8, -5.6], [11.2, 0.5, 11.2], solid(hat), rot=[-8, 0, 0], pivot=[0, 31.0, 0])   # brim, dipping at the front
+        m.box("hat", [-4.3, 31.2, -4.3], [8.6, 2.4, 8.6], layered(hat, [region((0, 0.55, 1, 1), (40, 26, 30))]))  # crown and dark band
+        m.box("hat", [-3.6, 33.6, -3.6], [7.2, 0.9, 7.2], layered(hat, [region((0.42, 0, 0.58, 1), dark(hat, 0.82), faces=("up",))]))  # pinched top, centre crease
         return
     # Final form (manga): long white hair, mouths all over his limbs, a dark red scaled mass over the lower body,
     # bone-bladed whips from his arms, nine red spine-whips from his back
@@ -1883,6 +1890,7 @@ def rengoku_hair(m):
     spikes = [(0, -1.8, 0.0, 0.9, -0.2, 5.0), (2.4, -1.2, 0.6, 0.9, 0.0, 5.0), (-2.4, -1.2, -0.6, 0.9, 0.0, 5.0),
               (3.4, 1.0, 1.0, 0.7, 0.4, 5.4), (-3.4, 1.0, -1.0, 0.7, 0.4, 5.4), (1.4, 1.8, 0.4, 0.8, 0.8, 5.6),
               (-1.4, 1.8, -0.4, 0.8, 0.8, 5.6), (0, 3.2, 0, 0.4, 1.0, 6.0), (2.6, 3.0, 0.8, 0.3, 1.0, 5.4), (-2.6, 3.0, -0.8, 0.3, 1.0, 5.4)]
+    spikes = [(x, z, dx, dy, dz, L * 1.2) for x, z, dx, dy, dz, L in spikes]  # a bigger, longer mane
     for x, z, dx, dy, dz, L in spikes:
         m.strand([x, 32.0, z], [dx, dy, dz], L, 3.4, hp, bone="hair", thick=0.8)
         n = SC.norm([dx, dy, dz])
@@ -1890,8 +1898,13 @@ def rengoku_hair(m):
         m.strand(tip, [dx, dy, dz], L * 0.45, 1.8, tp, bone="hair", segs=3, thick=0.7)  # red flame tips
     for s_ in (1, -1):  # the two long bangs framing his face
         m.strand([s_ * 2.0, 31.8, -4.2], [s_ * 0.3, -1, -0.15], 5.0, 2.2, hp, bone="hair", thick=0.7)
-        m.strand([s_ * 4.1, 30.6, -1.0], [s_ * 0.3, -1, 0.2], 5.0, 2.4, hp, bone="hair", thick=0.7)
-    m.strand([0, 30.0, 4.2], [0, -0.7, 0.7], 5.0, 3.0, hp, bone="hair", thick=0.7)
+        m.strand([s_ * 4.1, 30.6, -1.0], [s_ * 0.3, -1, 0.2], 7.0, 2.6, hp, bone="hair", thick=0.7)
+    for x in (-3.0, -1.0, 1.0, 3.0):  # long hair falling down his back to the shoulder blades, red at the ends
+        L = 9.5 - abs(x) * 0.5
+        d = [x * 0.1, -1, 0.42]
+        m.strand([x, 29.6, 4.0], d, L, 3.2, hp, bone="hair", thick=0.8)
+        nn = SC.norm(d)
+        m.strand([x + nn[0] * L * 0.8, 29.6 + nn[1] * L * 0.8, 4.0 + nn[2] * L * 0.8], d, L * 0.35, 1.8, tp, bone="hair", segs=3, thick=0.7)
 
 
 def rengoku(m, form):
