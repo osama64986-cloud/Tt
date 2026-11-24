@@ -1025,6 +1025,7 @@ function punches(src, target, count, dmg, color) {
 }
 
 // ------------------------------------------------------------------ transformations
+const NATURE = { red: 0.95, green: 0.62, blue: 0.3 };
 const CALM = new Set(["ab:whis", "ab:beerus", "ab:aizen", "ab:byakuya", "ab:makima", "ab:itachi", "ab:kurapika", "ab:hisoka", "ab:kakashi"]);
 function transform(e, s, to, label, color, extraSound) {
   const dim = e.dimension;
@@ -1108,7 +1109,10 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
-  if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
+  if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && form === 2) || (e.typeId === "ab:vegeta" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
+  if (((e.typeId === "ab:naruto_teen" && form === 3) || (e.typeId === "ab:naruto_adult" && form === 1)) && Math.random() < 0.35) {
+    implode(e.dimension, V.up(e.location, 1), NATURE, 3, 4);  // Sage Mode: no flame — natural energy drawn quietly inward
+  }
   if (e.typeId === "ab:frieza" && form === 2 && Math.random() < 0.6) smoke(e.dimension, e.location, C.black, 0.8, 1.0, 3 * fxLevel(), 0.6, 0.2, 1.0);
   if (e.typeId === "ab:gon" && form === 2) {  // the Vow: ominous BLACK nen pouring off him without pause
     smoke(e.dimension, e.location, C.black, 0.9, 1.4, 6 * fxLevel(), 0.85, 0.15, 1.2);
@@ -1444,23 +1448,24 @@ const GOKU = {
 const VEGETA = {
   name: "Vegeta", color: "§9", energy: 1000, regen: 14, energyName: "§bKI",
   dodge: () => 0.08,
-  ego: 4,
+  ego: 5,
   forms: [
     { label: "Base", power: 160 },
     { label: "Super Saiyan", power: 240, aura: C.gold },
+    { label: "Super Saiyan 2", power: 285, aura: C.gold },
     { label: "Super Saiyan God", power: 460, aura: C.red },
     { label: "Super Saiyan Blue", power: 600, aura: C.ssbBlue },
     { label: "Ultra Ego", power: 820, aura: C.ego },
   ],
-  thresholds: [0.85, 0.7, 0.5, 0.35],
+  thresholds: [0.88, 0.75, 0.6, 0.45, 0.3],
   transformCd: 80,
-  formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.power", "mob.wither.spawn"],
+  formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "beacon.power", "mob.wither.spawn"],
   abilities: [
-    SIG.beam("finalgalick", "Final Galick Cannon", { cond: (e) => formOf(e) >= 3, say: "§9§lFINAL GALICK CANNON!", color: C.galick, aura: C.ssbBlue, width: 2.8, dmg: 150, charge: 18, pose: 1, cd: 600, cost: 480 }),
+    SIG.beam("finalgalick", "Final Galick Cannon", { cond: (e) => formOf(e) >= 4, say: "§9§lFINAL GALICK CANNON!", color: C.galick, aura: C.ssbBlue, width: 2.8, dmg: 150, charge: 18, pose: 1, cd: 600, cost: 480 }),
     SIG.beam("atomic", "Atomic Blast", { cond: (e) => formOf(e) >= 1, say: "§e§lAtomic Blast!", color: C.kiYellow, width: 1.8, dmg: 70, charge: 10, pose: 1, cd: 300 }),
-    SIG.drop("galaxy", "Galaxy Breaker", { cond: (e) => formOf(e) >= 3, say: "§9§lGALAXY BREAKER!", color: C.ssbBlue, dmg: 140, cd: 700, cost: 480 }),
+    SIG.drop("galaxy", "Galaxy Breaker", { cond: (e) => formOf(e) >= 4, say: "§9§lGALAXY BREAKER!", color: C.ssbBlue, dmg: 140, cd: 700, cost: 480 }),
     SIG.wave("barrier", "Energy Barrier", { say: "§e§lHaaa! §7— a dome of ki bursts out of him", color: C.kiYellow, radius: 5, dmg: 16, cd: 240 }),
-    { id: "finalimpact", label: "Final Impact", cd: 300, cost: 200, min: 0, max: 16, weight: 5, cond: (e) => formOf(e) >= 3,
+    { id: "finalimpact", label: "Final Impact", cd: 300, cost: 200, min: 0, max: 16, weight: 5, cond: (e) => formOf(e) >= 4,
       run(e, s, t) {  // all his ki packed into one punch
         busy(s, 18); setPose(e, 22); announce(e, "§9§lFINAL IMPACT!");
         chargeOrb(e, t, 8, C.ssbBlue, 0.4, 1.4, 22);
@@ -1472,8 +1477,8 @@ const VEGETA = {
           later(8, () => { if (e.isValid) setPose(e, 0); });
         });
       } },
-    SIG.beam("gammaburst", "Gamma Burst Flash", { cond: (e) => formOf(e) >= 3, say: "§e§lGamma Burst Flash!", color: C.flash, aura: C.ssbBlue, width: 2.6, dmg: 140, charge: 16, pose: 1, cd: 600, cost: 460 }),
-    SIG.rush("egorush", "Ultra Ego: Destruction Barrage", { cond: (e) => formOf(e) === 4, say: "§5§lThe more you hit me, the stronger I get!", color: C.ego, dmg: 12, finisher: 40, hits: 6, poses: [5, 6, 5, 6, 9, 10] }),
+    SIG.beam("gammaburst", "Gamma Burst Flash", { cond: (e) => formOf(e) >= 4, say: "§e§lGamma Burst Flash!", color: C.flash, aura: C.ssbBlue, width: 2.6, dmg: 140, charge: 16, pose: 1, cd: 600, cost: 460 }),
+    SIG.rush("egorush", "Ultra Ego: Destruction Barrage", { cond: (e) => formOf(e) === 5, say: "§5§lThe more you hit me, the stronger I get!", color: C.ego, dmg: 12, finisher: 40, hits: 6, poses: [5, 6, 5, 6, 9, 10] }),
     {
       id: "barrage", label: "Ki Barrage", cd: 80, cost: 60, min: 3, max: 32, weight: 3,
       run(e, s, t) {
@@ -1545,7 +1550,7 @@ const VEGETA = {
     },
     {
       id: "hakai", label: "Hakai", cd: 700, cost: 450, min: 2, max: 12, weight: 4,
-      cond: (e) => formOf(e) === 4,
+      cond: (e) => formOf(e) === 5,
       run(e, s, t) {
         busy(s, 24); face(e, aim(t)); setPose(e, 4);
         announce(e, "§5§lHakai!");
@@ -2955,7 +2960,7 @@ const NARUTO_TEEN = {
   dodge: (e) => (formOf(e) === 3 ? 0.14 : 0.1),  // Sage Mode senses every attack coming
   forms: [{ label: "Shippuden", power: 50 }, { label: "Version 1 — Three Tails", power: 60, aura: C.fire },
     { label: "Four-Tails (Version 2)", power: 70, aura: C.blood },
-    { label: "Sage Mode", power: 88, aura: C.kiYellow }, { label: "Eight-Tails Form", power: 106, aura: C.blood }],
+    { label: "Sage Mode", power: 88 }, { label: "Eight-Tails Form", power: 106, aura: C.blood }],  // Sage Mode has no flame aura
   thresholds: [0.85, 0.7, 0.5, 0.3], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "mob.enderdragon.growl", "beacon.power", "mob.enderdragon.growl"],
   abilities: [
     SIG.ball("kunai", "Shadow Clone Kunai Barrage", { cond: G(0, 3), say: "§6§lMulti Shadow Clone — kunai!", color: C.silver, count: 8, size: 0.4, dmg: 4, spread: 2, cd: 160, charge: 2, speed: 2 }),
@@ -3058,7 +3063,7 @@ const NARUTO_ADULT = {
   dodge: (e) => (formOf(e) === 1 ? 0.17 : 0.14),
   forms: [
     { label: "Seventh Hokage", power: 150 },
-    { label: "Sage Mode", power: 175, aura: C.kiYellow },
+    { label: "Sage Mode", power: 175 },
     { label: "Kurama Link Mode", power: 210, aura: C.gold },
     { label: "Baryon Mode", power: 290, aura: C.blood },
   ],
@@ -4252,7 +4257,7 @@ const TRANSFORM_LINES = {
   "ab:muzan": [null, "§4§lI am the Progenitor of all demons. §7— his hair turns white, mouths open all over his body"],
   "ab:goku": [null, "§e§lHAAAAAAA! §6§lSuper Saiyan!", "§e§l...and this is to go even further beyond!", "§c§lThe power of a god... §4§lSuper Saiyan God!",
     "§b§lSuper Saiyan God Super Saiyan!", "§7§l(silence) §f§lUltra Instinct"],
-  "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
+  "ab:vegeta": [null, "§e§lI am the Prince of all Saiyans!", "§e§lSuper Saiyan 2! §7— lightning crackles round him", "§c§lA god's red ki... §4§lSuper Saiyan God!", "§b§lSuper Saiyan Blue!", "§5§lUltra Ego! §7— destruction is my pride"],
   "ab:frieza": [null, "§6§lThis is Golden Frieza!"],
   "ab:zoro": [null, "§0§lI am... §4§lthe King of Hell."],
 };

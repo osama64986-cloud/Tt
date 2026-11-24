@@ -16,6 +16,10 @@
     "ssj_shout": "textures/entity/vegeta/ssj_shout",
     "ssj_hurt": "textures/entity/vegeta/ssj_hurt",
     "ssj_blink": "textures/entity/vegeta/ssj_blink",
+    "ssj2": "textures/entity/vegeta/ssj2",
+    "ssj2_shout": "textures/entity/vegeta/ssj2_shout",
+    "ssj2_hurt": "textures/entity/vegeta/ssj2_hurt",
+    "ssj2_blink": "textures/entity/vegeta/ssj2_blink",
     "ssg": "textures/entity/vegeta/ssg",
     "ssg_shout": "textures/entity/vegeta/ssg_shout",
     "ssg_hurt": "textures/entity/vegeta/ssg_hurt",
@@ -32,6 +36,7 @@
    "geometry": {
     "base": "geometry.ab.vegeta_base",
     "ssj": "geometry.ab.vegeta_ssj",
+    "ssj2": "geometry.ab.vegeta_ssj2",
     "ssg": "geometry.ab.vegeta_ssg",
     "ssb": "geometry.ab.vegeta_ssb",
     "ue": "geometry.ab.vegeta_ue"

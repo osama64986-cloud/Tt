@@ -197,9 +197,9 @@ FIGHTERS = {
     "vegeta": {
         "scale": 0.94,  # canon: noticeably shorter than Goku
         "hp": 1000,
-        "forms": [(13, 0.33), (19, 0.36), (31, 0.39), (40, 0.41), (52, 0.43)],
-        "tex": ["base", "ssj", "ssg", "ssb", "ue"],
-        "geo": ["base", "ssj", "ssg", "ssb", "ue"],
+        "forms": [(13, 0.33), (19, 0.36), (23, 0.37), (31, 0.39), (40, 0.41), (52, 0.43)],
+        "tex": ["base", "ssj", "ssj2", "ssg", "ssb", "ue"],
+        "geo": ["base", "ssj", "ssj2", "ssg", "ssb", "ue"],
         "egg": ("#223496", "#eeeee4"),
     },
     "gojo": {

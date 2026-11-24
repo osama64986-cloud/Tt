@@ -626,6 +626,7 @@ def build(char, form):
         hair, iris = {
             "base": ((22, 22, 32), (36, 30, 36)),
             "ssj": ((255, 208, 40), (0, 172, 160)),
+            "ssj2": ((255, 220, 66), (0, 172, 160)),
             "ssg": ((214, 38, 78), (204, 28, 54)),
             "ssb": ((40, 176, 255), (30, 126, 236)),
             "ue": ((164, 48, 222), (214, 56, 186)),
@@ -645,7 +646,7 @@ def build(char, form):
 
 FORMS = {
     "goku": ["base", "ssj", "ssj3", "ssg", "ssb", "ui"],
-    "vegeta": ["base", "ssj", "ssg", "ssb", "ue"],
+    "vegeta": ["base", "ssj", "ssj2", "ssg", "ssb", "ue"],
     "gojo": ["blindfold", "eyes"],
 }
 
