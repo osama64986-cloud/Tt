@@ -1668,6 +1668,79 @@
     "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
    ]
   },
+  "controller.render.ab.beerus": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.bored",
+      "Texture.bored_shout",
+      "Texture.bored_hurt",
+      "Texture.bored_blink",
+      "Texture.serious",
+      "Texture.serious_shout",
+      "Texture.serious_hurt",
+      "Texture.serious_blink",
+      "Texture.full",
+      "Texture.full_shout",
+      "Texture.full_hurt",
+      "Texture.full_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.bored",
+      "Geometry.serious",
+      "Geometry.full"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
+  "controller.render.ab.whis": {
+   "arrays": {
+    "textures": {
+     "Array.skins": [
+      "Texture.attendant",
+      "Texture.attendant_shout",
+      "Texture.attendant_hurt",
+      "Texture.attendant_blink",
+      "Texture.angel",
+      "Texture.angel_shout",
+      "Texture.angel_hurt",
+      "Texture.angel_blink"
+     ]
+    },
+    "geometries": {
+     "Array.geos": [
+      "Geometry.attendant",
+      "Geometry.angel"
+     ]
+    }
+   },
+   "geometry": "Array.geos[query.property('ab:form')]",
+   "materials": [
+    {
+     "*": "Material.default"
+    },
+    {
+     "shroud*": "Material.shroud"
+    }
+   ],
+   "textures": [
+    "Array.skins[query.property('ab:form') * 4 + (query.property('ab:expr') > 0 ? query.property('ab:expr') : (math.mod(query.life_time + query.property('ab:form') * 0.37, 3.7) < 0.13 ? 3 : 0))]"
+   ]
+  },
   "controller.render.ab.vfx": {
    "arrays": {
     "textures": {

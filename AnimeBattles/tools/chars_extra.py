@@ -3100,3 +3100,197 @@ def build(char, form):  # noqa: F811
         _NEW20[char](m, form)
         return m
     return _build_prev20(char, form)
+
+
+# ==================================================================================
+# 1.21: Beerus (God of Destruction) and Whis (Angel) — Dragon Ball Super
+M.FACE32.update({
+    "beerus": dict(eye="narrow", brow="none", mouth="neutral", marks=["beerus_eyes"]),
+    "beerus_serious": dict(eye="narrow", brow="none", mouth="clench", marks=["beerus_eyes", "beerus_fangs"]),
+    "beerus_full": dict(eye="narrow", brow="none", mouth="clench", marks=["beerus_eyes", "beerus_fangs", "beerus_glow"]),
+    "whis": dict(eye="narrow", brow="none", mouth="smile", marks=["whis_eyes"]),
+    "whis_angel": dict(eye="narrow", brow="none", mouth="neutral", marks=["whis_eyes", "whis_glow"]),
+})
+_face32_prev21 = M.face32
+
+
+def face32_new21(px, W, H, spec, hair, iris, skin):
+    _face32_prev21(px, W, H, spec, hair, iris, skin)
+    marks = spec.get("marks", [])
+    k = W / 32.0
+    open_eyes = M.EXPR not in ("blink", "hurt")
+
+    def put(x, y, c):
+        for dx in range(max(1, int(k))):
+            for dy in range(max(1, int(k))):
+                xx, yy = int(x * k) + dx, int(y * k) + dy
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c + (255,)
+    if "beerus_eyes" in marks:  # almond cat eyes: pale yellow with a small dark pupil, thick black liner flicking outward
+        glow = "beerus_glow" in marks
+        for side, cx in ((-1, 10), (1, 21)):
+            if open_eyes:
+                for x in range(cx - 2, cx + 3):
+                    for y in (17, 18):
+                        put(x, y, (255, 250, 200) if glow else (236, 222, 140))
+                put(cx, 17, (20, 16, 24)); put(cx, 18, (20, 16, 24))
+            for x in range(cx - 3, cx + 4):
+                put(x, 16, (16, 12, 20))
+            for x in range(cx - 2, cx + 3):
+                put(x, 19, (16, 12, 20))
+            ox = cx + 4 * side if side > 0 else cx - 4
+            put(ox, 16, (16, 12, 20)); put(ox + side, 15, (16, 12, 20))  # the liner's flick
+        put(15, 21, (90, 70, 100)); put(16, 21, (90, 70, 100))  # the cat nose
+    if "beerus_fangs" in marks:
+        put(13, 25, (250, 250, 250)); put(18, 25, (250, 250, 250))
+    if "whis_eyes" in marks:  # calm violet eyes under heavy lids, lavender lips
+        glow = "whis_glow" in marks
+        for cx in (10, 21):
+            for x in range(cx - 3, cx + 3):
+                put(x, 16, (40, 40, 60))
+            if open_eyes:
+                for x in range(cx - 2, cx + 2):
+                    put(x, 17, (230, 235, 255) if glow else (245, 245, 250))
+                put(cx - 1, 18, (150, 90, 190)); put(cx, 18, (150, 90, 190))
+                put(cx - 1, 17, (190, 140, 230) if glow else (110, 60, 150)); put(cx, 17, (110, 60, 150))
+        for x in range(14, 18):
+            put(x, 25, (150, 110, 170))
+
+
+M.face32 = face32_new21
+
+BEERUS_SKIN = (150, 125, 160)
+BEERUS_GOLD = (235, 190, 40)
+
+
+def _strip_ears(m):
+    m.cubes[:] = [c for c in m.cubes if not (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5])]
+
+
+def _diamonds(cols, at_y, size_):
+    """Detail drawer: a column of diamonds down the centre of a face."""
+    def p(face, px, w, h, base):
+        if face != "north":
+            return
+        for (fy, col) in zip(at_y, cols):
+            cy, r = int(h * fy), max(1, int(w * size_))
+            for y in range(cy - r, cy + r + 1):
+                half = r - abs(y - cy)
+                for x in range(w // 2 - half, w // 2 + half + (0 if w % 2 else 0)):
+                    _put(px, w, h, x, y, col)
+    return p
+
+
+def beerus(m, form):
+    """Beerus: a hairless purple sphynx cat in Egyptian dress — huge pointed ears, gold earrings and bands, a striped
+    turquoise-and-black usekh collar with an orange gem, a black front sash with white and orange diamonds, baggy
+    blue harem pants gathered at gold ankle cuffs, pointed brown slippers, a thin tail. Serious: fangs bared;
+    Full Power: glowing eyes and the purple aura of destruction."""
+    key = {"bored": "beerus", "serious": "beerus_serious", "full": "beerus_full"}[form]
+    skin, sh = BEERUS_SKIN, (110, 88, 128)
+    head = skin_swap(head_paint(skin, (236, 222, 140), False, key), skin)
+    gold, pants, black, turq, orange = BEERUS_GOLD, (30, 145, 205), (34, 32, 38), (40, 190, 200), (240, 130, 25)
+
+    def chest(face, px, w, h, base):  # a slim, toned chest
+        if face == "north":
+            for y in range(int(h * 0.3), int(h * 0.36)):
+                for x in range(int(w * 0.15), int(w * 0.45)):
+                    _put(px, w, h, x, y, sh); _put(px, w, h, w - 1 - x, y, sh)
+            for y in range(int(h * 0.45), int(h * 0.85)):
+                _put(px, w, h, w // 2, y, sh)
+    torso = layered(skin, [chest])
+    arm = layered(skin, [region((0, 0.76, 1, 0.86), gold), region((0, 0.3, 1, 0.36), gold)])
+    leg = layered(pants, [lines((SIDES, [[(0.3, 0), (0.25, 0.8)], [(0.7, 0), (0.75, 0.8)]]), dark(pants, 0.7)),
+                          region((0, 0.8, 1, 0.88), gold), region((0, 0.88, 1, 1), (120, 100, 80))])
+    base_body(m, torso, arm, leg, head)
+    _strip_ears(m)
+    both_legs(m, [-0.5, 2.6, -2.5], [4.9, 9.6, 5.0], layered(pants, [lines((SIDES, [[(0.5, 0), (0.45, 1)]]), dark(pants, 0.75))]))  # baggy
+    both_legs(m, [0.4, 0, -3.6], [3.2, 1.2, 1.8], solid((120, 100, 80)))  # pointed slippers
+    usekh = layered(turq, [lines((SIDES, [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), black, 2),
+                           region((0, 0, 1, 0.12), gold), region((0, 0.88, 1, 1), gold), _diamonds([orange], [0.5], 0.16)])
+    m.box("body", [-4.8, 20.4, -2.8], [9.6, 3.6, 5.6], usekh)                            # the usekh collar
+    m.box("body", [-4.5, 11.0, -2.6], [9.0, 1.8, 5.2], layered(black, [region((0, 0, 1, 0.25), gold), region((0, 0.75, 1, 1), gold)]))
+    sash = layered(black, [region((0, 0, 0.12, 1), gold), region((0.88, 0, 1, 1), gold),
+                           _diamonds([(245, 245, 245), orange, (245, 245, 245)], [0.2, 0.5, 0.8], 0.2)])
+    m.box("body", [-1.9, 3.2, -2.9], [3.8, 8.0, 0.4], sash)                              # the front sash panel
+    def ear_shape(xf, u):  # a tall triangle, pink inside
+        half = 0.5 * (1 - u) ** 0.85
+        d = abs(xf - 0.5)
+        if d > half:
+            return None
+        return (200, 150, 178) if d < half * 0.55 and u < 0.8 else skin
+    ear = M._sprite(ear_shape)
+    for s_ in (1, -1):  # the huge pointed ears, pink inside, gold rings at the base
+        m.box("head", [s_ * 2.5 - 2.6, 30.6, 0.2], [5.2, 8.4, 0], ear, rot=[-8, 0, -s_ * 18], pivot=[s_ * 2.5, 30.6, 0.2])
+        m.cubes[-1]["hires"] = 4
+        m.box("head", [s_ * 2.5 - 2.2, 30.4, -0.2], [4.4, 1.4, 0.8], solid(skin), rot=[0, 0, -s_ * 18], pivot=[s_ * 2.5, 30.6, 0.2])
+        m.box("head", [s_ * 4.2 - 0.35, 25.0, -0.5], [0.7, 1.6, 0.7], solid(gold))        # earrings
+    tail = SC.swatch(skin)
+    SC.curve_tube(m, "body", [[0, 12.5, 2.2], [0.5, 9, 5.5], [1.6, 4, 6.5], [2.6, 2.0, 4.6]], 0.45, 0.3, [tail, tail], n=2)
+    if form == "full":  # wisps of destruction energy round his shoulders
+        au = SC.swatch((150, 60, 210), 180)
+        for k in range(5):
+            a = math.pi * (0.15 + 0.7 * k / 4)
+            SC.blade(m, "body", [math.cos(a) * 5.0, 21, math.sin(a) * 2.4 + 2.2], [math.cos(a) * 0.25, 1, 0.2], 4.4, 1.3, 0.4, au)
+
+
+WHIS_SKIN = (130, 190, 205)
+
+
+@M.smooth_hair
+def whis_hair(m):
+    # pure white hair combed straight up into one tall smooth column
+    col = (245, 245, 250)
+    hp = M.hair_paint(col)
+    m.box("hair", [-4.2, 30.4, -3.6], [8.4, 2.2, 7.8], hp)
+    m.box("hair", [-3.4, 32.4, -2.4], [6.8, 3.4, 6.0], hp)
+    m.box("hair", [-2.8, 35.6, -1.8], [5.6, 3.4, 4.8], hp)
+    m.box("hair", [-2.2, 38.8, -1.2], [4.4, 2.4, 3.6], hp)
+    m.box("hair", [-1.4, 41.0, -0.6], [2.8, 1.0, 2.2], hp)
+
+
+def whis(m, form):
+    """Whis: a tall teal-skinned angel. White hair combed up into a tall column, violet eyes, a light-blue halo ring
+    floating round his neck, a long maroon robe with a black chest cuirass and a diamond emblem, a blue sash, and his
+    long silver staff topped by a floating dark orb. Angel: the halo and the orb glow, silver light round him."""
+    angel = form == "angel"
+    skin = WHIS_SKIN
+    head = skin_swap(head_paint((245, 245, 250), (150, 90, 190), False, "whis_angel" if angel else "whis"), skin)
+    robe, black, sash = (125, 25, 45), (30, 30, 36), (90, 130, 200)
+    cuirass = lambda f, px, w, h, b: [[_put(px, w, h, x, y, (240, 240, 240) if (y == int(h * 0.55) or x in (0, w - 1)) else black)
+                                       for x in range(w)] for y in range(int(h * 0.06), int(h * 0.56))] if f in ("north", "south") else None
+    torso = layered(robe, [cuirass, _diamonds([(240, 130, 25)], [0.28], 0.13)])
+    arm = layered(robe, [region((0, 0.0, 1, 0.3), black), region((0, 0.88, 1, 1), skin)])
+    leg = layered(robe, [region((0, 0.9, 1, 1), (20, 20, 26))])
+    base_body(m, torso, arm, leg, head)
+    m.box("body", [-4.4, 11.2, -2.5], [8.8, 1.6, 5.0], solid(sash))                        # the sash
+    m.box("body", [-4.7, 2.0, -2.7], [9.4, 9.2, 5.4], layered(robe, [lines((SIDES, [[(0.5, 0), (0.5, 1)]]), dark(robe, 0.7))]))  # robe skirt
+    for s_ in (1, -1):  # white shoulder pads of the cuirass
+        m.box("body", [s_ * 4.6 - 1.6, 22.0, -2.6], [3.2, 1.6, 5.2], layered(black, [region((0, 0.7, 1, 1), (240, 240, 240))]))
+    halo = SC.swatch((150, 225, 255) if angel else (90, 190, 235), 235)
+    for k in range(16):  # the halo ring round his neck
+        a = 2 * math.pi * k / 16
+        x, z = math.cos(a) * 6.2, math.sin(a) * 5.2
+        m.box("body", [x - 0.8, 23.6, z - 0.8], [1.6, 0.8, 1.6], halo, rot=[0, -math.degrees(a), 0], pivot=[x, 24.0, z])
+    staff = SC.swatch((205, 205, 215))
+    m.box("rightArm", [5.75, -4.0, -0.3], [0.6, 36.0, 0.6], solid((205, 205, 215)))         # the long silver staff
+    for k in range(10):  # its ring head
+        a = 2 * math.pi * k / 10
+        x, y = 6.05 + math.cos(a) * 1.8, 34.0 + math.sin(a) * 1.8
+        m.box("rightArm", [x - 0.3, y - 0.3, -0.3], [0.6, 0.6, 0.6], staff)
+    SC.blob(m, "rightArm", [6.05, 34.0, 0.0], [1.1, 1.1, 1.1], SC.swatch((20, 30, 60)))      # the floating dark orb
+    SC.blob(m, "rightArm", [6.05, 34.0, 0.0], [0.55, 0.55, 0.55], SC.swatch((90, 230, 255) if angel else (60, 160, 220), 240))
+    whis_hair(m)
+
+
+FORMS.update({"beerus": ["bored", "serious", "full"], "whis": ["attendant", "angel"]})
+_build_prev21 = build
+_NEW21 = {"beerus": beerus, "whis": whis}
+
+
+def build(char, form):  # noqa: F811
+    if char in _NEW21:
+        m = M.Model()
+        _NEW21[char](m, form)
+        return m
+    return _build_prev21(char, form)

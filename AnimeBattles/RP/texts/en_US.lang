@@ -88,3 +88,7 @@ entity.ab:hisoka.name=Hisoka Morow
 item.spawn_egg.entity.ab:hisoka.name=Spawn Hisoka Morow
 entity.ab:kurapika.name=Kurapika
 item.spawn_egg.entity.ab:kurapika.name=Spawn Kurapika
+entity.ab:beerus.name=Beerus
+item.spawn_egg.entity.ab:beerus.name=Spawn Beerus
+entity.ab:whis.name=Whis
+item.spawn_egg.entity.ab:whis.name=Spawn Whis

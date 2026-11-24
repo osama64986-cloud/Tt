@@ -139,6 +139,12 @@
   },
   "ab_egg_kurapika": {
    "textures": "textures/items/egg_kurapika"
+  },
+  "ab_egg_beerus": {
+   "textures": "textures/items/egg_beerus"
+  },
+  "ab_egg_whis": {
+   "textures": "textures/items/egg_whis"
   }
  }
 }

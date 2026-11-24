@@ -282,6 +282,10 @@ FIGHTERS.update({
     "kurapika": {"hp": 1000, "forms": [(16, 0.42), (24, 0.44)], "tex": ["base", "emperor"], "geo": ["base", "emperor"], "egg": ("#2846a0", "#f6d878")},
     "frieza": {"hp": 1000, "forms": [(26, 0.37), (44, 0.42), (70, 0.46)], "tex": ["final", "golden", "black"], "geo": ["final", "golden", "black"],
                "egg": ("#eeeef6", "#7e40be"), "scale": 0.92},
+    "beerus": {"hp": 1000, "forms": [(60, 0.44), (72, 0.46), (84, 0.48)], "tex": ["bored", "serious", "full"], "geo": ["bored", "serious", "full"],
+               "egg": ("#967da0", "#1e91cd")},
+    "whis": {"hp": 1000, "forms": [(90, 0.5), (110, 0.52)], "tex": ["attendant", "angel"], "geo": ["attendant", "angel"],
+             "egg": ("#82bece", "#7d192d"), "scale": 1.1},
 })
 
 TEAM_FILTER = {
@@ -592,6 +596,8 @@ CHAR_ANIMS = {
     "goku": [("head_scratch", "animation.ab.head_scratch", "query.property('ab:form') == 0 && " + IDLE_COND)],
     "frieza": [("tail_sway", "animation.ab.tail_sway", "1.0"), ("hover", "animation.ab.hover", "query.property('ab:pose') != 24"), ("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
     "vegeta": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "beerus": [("arms_crossed", "animation.ab.arms_crossed", IDLE_COND)],
+    "whis": [("hover", "animation.ab.hover", "query.property('ab:pose') != 24")],
     "gojo": [("cool_idle", "animation.ab.cool_idle", IDLE_COND)],
 }
 
