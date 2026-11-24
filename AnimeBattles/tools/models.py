@@ -1846,10 +1846,10 @@ def vest_front(face, px, w, h, base):
 
 def hat(m, straw=STRAW):
     weave = layered(straw, [lines((SIDES + ("up",), [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), dark(straw, 0.75))])
-    m.box("hat", [-3.9, 31.4, -3.9], [7.8, 3, 7.8], weave)
-    m.box("hat", [-4.0, 31.4, -4.0], [8.0, 1.1, 8.0], solid((200, 30, 34)))
-    m.box("hat", [-7.5, 31.2, -7.5], [15, 0.5, 15], weave)
-    m.box("hat", [-7.5, 31.2, -7.5], [15, 0.5, 15], weave, rot=[0, 45, 0], pivot=[0, 31.2, 0])
+    # block style: one flat square brim, one square crown on top, the red band round the crown's base
+    m.box("hat", [-6.5, 31.2, -6.5], [13, 0.8, 13], weave)
+    m.box("hat", [-3.8, 32.0, -3.8], [7.6, 3.2, 7.6], weave)
+    m.box("hat", [-3.9, 32.0, -3.9], [7.8, 1.0, 7.8], solid((200, 30, 34)))
 
 
 def luffy_hair(m, c, g5=False):

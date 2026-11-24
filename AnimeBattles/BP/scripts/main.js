@@ -1061,10 +1061,10 @@ function transform(e, s, to, label, color, extraSound) {
   if (e.typeId === "ab:rengoku" || e.typeId === "ab:ace") every(3, 8, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + i * 0.3), 1.5 + i * 0.3, C.fire, 20, 0.5); });
   if (e.typeId === "ab:gohan") every(3, 8, (i) => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 4 ? C.silver : to === 2 ? C.kameBlue : C.gold, 1.2, 0.3, { count: 10, speed: 7 }); });
   if (e.typeId === "ab:bakugo") every(4, 5, () => { if (e.isValid) { fx(dim, "flash", V.up(e.location, 1), C.fire, 3, 0.2); burst(dim, V.up(e.location, 1), C.ember, 16, 3, 0.4, 0.5); } });
-  if (e.typeId === "ab:gon" && to === 2) {  // the Vow: black nen bursts out of him, he goes grey — and five seconds later he is grown
+  if (e.typeId === "ab:gon" && to === 2) {  // the Vow: black nen bursts out of him, he goes grey — and about two seconds later he is normal again, his aura gold
     later(4, () => { if (e.isValid) smoke(dim, e.location, C.black, 1.4, 1.6, 30 * fxLevel(), 0.9, 0.8, 3); });
     sound(dim, "mob.wither.spawn", e.location, 0.5, 0.8);
-    later(100, () => { if (e.isValid && formOf(e) === 2) { const st = state(e); st.formSince = now(); transform(e, st, 3, def.forms[3].label, C.gold, def.formSound[3]); } });
+    later(45, () => { if (e.isValid && formOf(e) === 2) { const st = state(e); st.formSince = now(); transform(e, st, 3, def.forms[3].label, C.gold, def.formSound[3]); } });
   }
   if (e.typeId === "ab:gon" && to === 3) {  // grown in an instant: the black nen turns gold
     later(4, () => { if (e.isValid) { fx(dim, "shock", e.location, C.gold, 9, 0.6); smoke(dim, e.location, C.gold, 1.6, 1.4, 30 * fxLevel(), 0.45, 1.0, 3); } });
@@ -1108,7 +1108,15 @@ function aura(e, s, def) {
   const form = formOf(e);
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
-  if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  if (c) {
+    if (c.red + c.green + c.blue < 1.0) {  // a dark aura (black, haki, blood, destruction) would vanish as glowing light:
+      smoke(e.dimension, e.location, c, 0.9, 1.1, 4 * fxLevel(), 0.7, 0.15, 1.2);  // draw it as dark smoke instead,
+      const edge = { red: Math.min(1, c.red * 2 + 0.1), green: Math.min(1, c.green * 2 + 0.05), blue: Math.min(1, c.blue * 2 + 0.1) };
+      fx(e.dimension, "aura", e.location, edge, 1.0, 0.5, { count: 2 * fxLevel(), speed: 1.5 });  // with a brighter rim
+    } else fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
+  }
+  if (e.typeId === "ab:deku" && form <= 1 && Math.random() < 0.7) saiyanLightning(e, C.ofa);       // Full Cowl: green lightning crackling over him
+  if (e.typeId === "ab:killua" && form === 1 && Math.random() < 0.7) saiyanLightning(e, C.volt);   // Godspeed
   if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && (form === 2 || form === 3)) || (e.typeId === "ab:vegeta" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
   if (((e.typeId === "ab:naruto_teen" && form === 3) || (e.typeId === "ab:naruto_adult" && form === 1)) && Math.random() < 0.35) {
     implode(e.dimension, V.up(e.location, 1), NATURE, 3, 4);  // Sage Mode: no flame — natural energy drawn quietly inward
@@ -5184,13 +5192,13 @@ function mahoragaTrail(v, t) {
   sound(dim, "mob.phantom.swoop", v.location, 1, 0.6);
 }
 // Super Saiyan 2 / 3 lightning: short jagged bolts flickering round the body (blue-white), several a second.
-function saiyanLightning(e) {
+function saiyanLightning(e, col = C.kameBlue) {
   const dim = e.dimension;
   const a = Math.random() * Math.PI * 2, r = 0.5 + Math.random() * 0.5;
   let p = V.add(e.location, { x: Math.cos(a) * r, y: 0.3 + Math.random() * 1.8, z: Math.sin(a) * r });
   for (let k = 0; k < 5; k++) {  // a zig-zag bolt
     const q = V.add(p, { x: (Math.random() - 0.5) * 0.5, y: 0.22 + Math.random() * 0.15, z: (Math.random() - 0.5) * 0.5 });
-    for (let j = 1; j <= 2; j++) fx(dim, "orb", V.add(p, V.mul(V.sub(q, p), j / 2)), k % 2 ? C.white : C.kameBlue, 0.16, 0.12);
+    for (let j = 1; j <= 2; j++) fx(dim, "orb", V.add(p, V.mul(V.sub(q, p), j / 2)), k % 2 ? C.white : col, 0.16, 0.12);
     p = q;
   }
 }

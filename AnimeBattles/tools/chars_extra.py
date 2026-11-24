@@ -1738,14 +1738,7 @@ def deku(m, form):
             for x in (int(w * 0.25), int(w * 0.75)):
                 if face in ("north", "south"):
                     _put(px, w, h, x, y, accent)
-        if cowl:
-            for i in range(0, h, 2):
-                _put(px, w, h, int(w * 0.5 + math.sin(i * 0.9) * w * 0.3), i, bolt)
-            if form == "cowl45":  # 45%: twice the lightning, and red strain lines where the power tears at his body
-                for i in range(1, h, 2):
-                    _put(px, w, h, int(w * 0.3 + math.sin(i * 1.3 + 1) * w * 0.25), i, bolt)
-                for i in range(0, h, 5):
-                    _put(px, w, h, int(w * 0.7 + math.sin(i * 0.7) * w * 0.2), i, (220, 60, 60))
+        # Full Cowl's green lightning is a moving effect round him in the game, not dots painted on the suit
     torso = layered(suit, [suit_lines, region((0, 0, 1, 0.1), accent)])
     arm = layered(suit, [suit_lines, region((0, 0.7, 1, 1), (238, 238, 232) if not dark_form else (60, 62, 60)), region((0, 0.7, 1, 0.74), (200, 40, 40))])
     leg = layered(suit, [suit_lines, region((0, 0.66, 1, 1), (210, 40, 40)), region((0, 0.92, 1, 1), (40, 30, 30)),
