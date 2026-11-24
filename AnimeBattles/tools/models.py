@@ -4678,3 +4678,45 @@ def zangetsu_shape(blade, edge, spine, core=None, grip=(236, 236, 236), hf=0.18)
             return core
         return blade
     return f
+
+
+# ================================================================ Luffy Gear 4 TANKMAN (final)
+_luffy_body_tank_prev = luffy_body
+
+
+def _tank_belly(face, img):
+    """The haki-coated belly: glossy near-black with a few dark-red flame lines (no bright outline on every slice)."""
+    w, h = img.size
+    px = img.load()
+    t = tones(HAKI_BLACK)
+    for y in range(h):
+        for x in range(w):
+            c = t[2 if face in ("north", "west", "up") else 1]
+            if face in SIDES and (x + y) % 10 == 0 and (x // 10) % 2 == 0:
+                c = (96, 16, 30)  # a flame line
+            px[x, y] = c + (255,)
+
+
+def luffy_body(m, form):  # noqa: F811
+    """Tankman: his body blown up into a huge, round, FAT belly. The upper chest is his skin, the stretched red vest pulled
+    open over it; the great belly below is coated black in Armament Haki (dark-red flame lines); thick haki arms stand
+    out from the sides, stubby haki legs, the steam scarf round his neck."""
+    if form != "g4t":
+        return _luffy_body_tank_prev(m, form)
+    luffy_head(m, (22, 20, 26), "luffy_g4")
+    R, cy = 10.5, 12.5
+    vest = (196, 38, 44)
+    for k in range(11):  # stacked round slices (each a square plus the same square turned 45 degrees)
+        y0 = cy - R + k * (2 * R / 11)
+        yc = y0 + R / 11
+        r = math.sqrt(max(0.0, R * R - (yc - cy) ** 2)) + 0.6
+        paint = layered(SKIN, [abs_chest]) if yc > cy + 2.5 else _tank_belly
+        for rot in ([0, 0, 0], [0, 45, 0]):
+            m.box("body", [-r, y0, -r], [2 * r, 2 * R / 11 + 0.05, 2 * r], paint, rot=rot, pivot=[0, yc, 0])
+    for s_ in (1, -1):  # the red vest stretched open over the top of the belly
+        m.box("body", [s_ * 4.4 - 2.2, cy + 3.5, -10.2], [4.4, 6.5, 1.0], solid(vest), rot=[-24, 0, 0], pivot=[s_ * 4.4, cy + 6.5, -9.6])
+    for bone, x0 in (("rightArm", 9.2), ("leftArm", -15.2)):  # thick haki arms out to the sides, big fists
+        round_limb(m, bone, [x0, 11.5, -3.0], [6.0, 9.5, 6.0], haki_glow)
+    for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
+        round_limb(m, bone, [x0, 0, -2.6], [5, 3.2, 5.2], haki_glow)
+    steam_wreath(m, 23.4, 6.8, 4.8, 8, 4.0)
