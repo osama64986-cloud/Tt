@@ -4892,9 +4892,9 @@ const KURAPIKA = {
 const SUN = { red: 1, green: 0.72, blue: 0.25 };
 const BEERUS = {
   name: "Beerus", color: "§5", energy: 2200, regen: 36, energyName: "§5DESTRUCTION",
-  dodge: () => 0.22,  // his imperfect Ultra Instinct: he leans out of the way without looking
-  forms: [{ label: "Lord Beerus", power: 950 }, { label: "God of Destruction", power: 1200, aura: C.hakai },
-    { label: "Full Power", power: 1400, aura: C.ego }],
+  dodge: () => 0.18,  // his imperfect Ultra Instinct: he leans out of the way without looking
+  forms: [{ label: "Lord Beerus", power: 950 }, { label: "God of Destruction", power: 1100, aura: C.hakai },
+    { label: "Full Power", power: 1300, aura: C.ego }],
   thresholds: [0.7, 0.4], transformCd: 120, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
   abilities: [
     { id: "hakai", label: "Hakai", cd: 900, cost: 500, min: 0, max: 16, weight: 6, cond: G(1, 2),
@@ -5371,7 +5371,7 @@ function updateFighter(e, tick) {
   // opponent's current form outclasses theirs (answered quickly), when badly hurt, or after a long even exchange.
   const outmatched = ctx.tPower > ctx.power * 1.02;
   const inForm = tick - (s.formSince ?? s.combatSince);
-  const hold = outmatched ? 20 : 200;
+  const hold = outmatched ? 20 : 100;
   if (!s.cloneUntil && form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.transformUntil &&
       tick - s.combatSince > (outmatched ? 20 : 40) && inForm >= hold && (outmatched || tick >= s.nextTransform) &&
       (outmatched || ctx.hp < def.thresholds[form] || (inForm > 400 && ctx.tPower > ctx.power * 0.8))) {
@@ -5578,7 +5578,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     const defenderP = powerOf(v);
     if (attackerP > 0) {
       // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
-      ev.damage *= clamp(Math.pow(attackerP / defenderP, 2.2), 0.08, 4);
+      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.08, 4);
       // the smarter fighter hits the gaps — that counts fully between near equals and fades to nothing once one side is
       // 30% stronger: against a far stronger opponent no amount of cleverness is enough
       const gap = Math.max(attackerP, defenderP) / Math.max(1, Math.min(attackerP, defenderP));
@@ -5606,7 +5606,9 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       ev.damage *= 0.15;
       system.run(() => { if (v.isValid) sphereFx(v.dimension, V.up(v.location, 1), 2.6, C.white, 16, 0.35, "orb", 0.25); });
     }  // her contract with the Prime Minister: her injuries pass to Japanese citizens
-    ev.damage /= TOUGHNESS;  // fighters are tough: battles last, nobody folds in a few hits
+    // fighter vs fighter: damage is measured against the pair's own power, so every tier fights at the same pace
+    // (equals ~20-40 s, a far weaker fighter falls in about 5-15 blows); players and mobs still use TOUGHNESS
+    ev.damage /= attackerP > 0 ? Math.sqrt(attackerP * defenderP) / DUEL_PACE : TOUGHNESS;
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
       system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
@@ -5677,6 +5679,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
   } catch (e) { warn("hurt", e); }
 });
 const TOUGHNESS = 6.5;
+const DUEL_PACE = 100;
 // Launch: a heavy blow drives the target back about seven blocks ALONG THE GROUND (no flying): fast at first,
 // then slowing, dust ploughed up behind, a dust shockwave where it stops (or where it hits a wall).
 const DUST = { red: 0.6, green: 0.55, blue: 0.48 };
