@@ -2679,8 +2679,9 @@ def face32_new20(px, W, H, spec, hair, iris, skin):
     if "todoroki_scar" in marks:  # the burn scar round his left eye, and his two eye colours
         for x in range(17, 26):
             for y in range(13, 22):
-                if (x - 21) ** 2 / 20 + (y - 17.5) ** 2 / 18 < 1 and not (19 <= x <= 22 and 17 <= y <= 19):
-                    put(x, y, (170, 60, 60))
+                e2 = (x - 21) ** 2 / 20 + (y - 17.5) ** 2 / 18
+                if e2 < 1 and not (20 <= x <= 22 and y == 18):  # a solid burn patch; only the eye itself shows through
+                    put(x, y, (150, 64, 50) if e2 > 0.7 else (170, 80, 60))
         if open_eyes:
             put(10, 18, (120, 130, 140)); put(11, 18, (120, 130, 140))
             put(21, 18, (40, 170, 190)); put(22, 18, (40, 170, 190))
@@ -3024,10 +3025,10 @@ def todoroki_hair(m):
     hw, hr = M.hair_paint(white), M.hair_paint(red)
     for x in (-3.2, -1.8, -0.6):  # his left side red (the model's -x is his left)
         m.strand([x, 31.6, -0.5], [x * 0.1, 0.3, 0.6], 4.2, 3.4, hr, bone="hair", thick=0.8)
-        m.strand([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 3.6, 1.8, hr, bone="hair", thick=0.8)
+        m.strand([x, 31.6, -4.1], [x * 0.05, -0.8, -0.4], 2.2, 1.8, hr, bone="hair", thick=0.8)
     for x in (0.6, 1.8, 3.2):
         m.strand([x, 31.6, -0.5], [x * 0.1, 0.3, 0.6], 4.2, 3.4, hw, bone="hair", thick=0.8)
-        m.strand([x, 31.2, -4.1], [x * 0.05, -0.8, -0.4], 3.6, 1.8, hw, bone="hair", thick=0.8)
+        m.strand([x, 31.6, -4.1], [x * 0.05, -0.8, -0.4], 2.2, 1.8, hw, bone="hair", thick=0.8)
     for s, hp in ((1, hw), (-1, hr)):
         m.strand([s * 2.2, 31.0, 3.6], [s * 0.1, -0.6, 0.6], 4.0, 3.0, hp, bone="hair", thick=0.8)
 
