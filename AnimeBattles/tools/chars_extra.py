@@ -2581,6 +2581,7 @@ M.FACE32.update({
     "aizen": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
     "aizen_hogyoku": dict(eye="narrow", brow="none", mouth="neutral", marks=["purple_eyes", "hogyoku_lines"]),
     "aizen_final": dict(eye="narrow", brow="none", mouth="none", marks=["purple_eyes", "hogyoku_lines", "aizen_mask"]),
+    "aizen_hatched": dict(eye="narrow", brow="flat", mouth="smirk", marks=[]),
     "byakuya": dict(eye="narrow", brow="flat", mouth="neutral", marks=[]),
     "byakuya_bankai": dict(eye="narrow", brow="sharp", mouth="neutral", marks=[]),
     "power": dict(eye="round", brow="angled", mouth="big_grin", marks=["shark_teeth", "power_eyes"]),
@@ -2692,30 +2693,113 @@ def _shell_strands(m, col, strands, hairline=30.6):
 AIZEN_HAIR = (150, 96, 58)
 
 
+def _long_hair_paint(col):
+    """Waist-length hair: strand streaks running down, a jagged torn bottom edge (transparent notches)."""
+    sh, hi = dark(col, 0.86), tuple(min(255, int(v * 1.06)) for v in col)
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        for x in range(w):
+            cut = int(h * (0.04 + 0.1 * ((x * 7919 // max(1, w)) % 5) / 4)) if face in SIDES else 0
+            for y in range(h):
+                if face in SIDES and y >= h - cut:
+                    continue
+                c = col
+                if (x * 3 + y // 9) % 7 == 0:
+                    c = sh
+                elif (x * 5 + y // 6) % 11 == 0:
+                    c = hi
+                px[x, y] = c + (255,)
+    return p
+
+
+def _plate_shape(col, rim):
+    """One of the jagged dark violet plates that rise behind Aizen's head in his hatched form."""
+    def f(xf, u):
+        half = 0.48 * (1 - 0.6 * u) if u < 0.85 else 0.48 * 0.49 * (1 - (u - 0.85) / 0.15)
+        k = (u * 4.5) % 1
+        if k < 0.3:  # torn notches, alternating sides
+            if (int(u * 4.5) % 2 == 0 and xf > 0.5 + half * 0.35) or (int(u * 4.5) % 2 == 1 and xf < 0.5 - half * 0.35):
+                return None
+        if abs(xf - 0.5) > half:
+            return None
+        return rim if abs(xf - 0.5) > half * 0.7 else col
+    return f
+
+
 @M.smooth_hair
 def aizen_hair(m, final):
-    if final:
+    if not final:
+        _shell_strands(m, AIZEN_HAIR, [([x, 32.0, -2.5 + abs(x) * 0.2], [x * 0.05, 0.35, 1], 6.0, 3.4) for x in (-2.6, -0.9, 0.9, 2.6)]
+                       + [([0.6, 31.2, -4.2], [0.15, -1, -0.25], 4.0, 1.4)])  # slicked back, one strand on the forehead
         return
-    _shell_strands(m, AIZEN_HAIR, [([x, 32.0, -2.5 + abs(x) * 0.2], [x * 0.05, 0.35, 1], 6.0, 3.4) for x in (-2.6, -0.9, 0.9, 2.6)]
-                   + [([0.6, 31.2, -4.2], [0.15, -1, -0.25], 4.0, 1.4)])  # slicked back, one strand on the forehead
+    # hatched form: wild hair falling to his waist, one lock across his face
+    col = AIZEN_HAIR_LONG
+    shell(m, col, hairline=31.0, sideburn=False, teeth=0.8)
+    m.box("hair", [-4.4, 13.0, 4.0], [8.8, 18.6, 1.8], _long_hair_paint(col))
+    hp = M.hair_paint(col)
+    for x in (-3.4, -1.2, 1.2, 3.4):
+        m.strand([x, 16.0, 4.9], [x * 0.06, -1, 0.25], 6.0 + abs(x) * 0.6, 2.6, hp, bone="hair", thick=0.9)
+    for s_ in (1, -1):  # long side locks down past the shoulders
+        m.strand([s_ * 4.4, 29.0, -0.4], [s_ * 0.12, -1, 0.15], 13.0, 2.4, hp, bone="hair", thick=0.9)
+        m.strand([s_ * 4.3, 30.4, 2.0], [s_ * 0.2, -1, 0.3], 15.0, 2.6, hp, bone="hair", thick=0.9)
+    for x in (-3.0, -1.0, 1.0, 3.0):  # rough top
+        m.strand([x, 32.0, 0.6], [x * 0.12, 0.4, 1], 4.0, 2.6, hp, bone="hair", thick=0.9)
+    m.box("hair", [0.7, 25.2, -4.45], [1.1, 6.0, 0.45], solid(col))  # the lock over one eye
+
+
+AIZEN_HAIR_LONG = (135, 100, 55)
 
 
 def aizen(m, form):
-    """Aizen in the white Arrancar coat over a black hakama, slicked-back brown hair, Kyoka Suigetsu at his side.
-    Hogyoku: his body turns white, the Hogyoku glowing purple in his chest. Final: a white chrysalis body with three
-    pairs of dark butterfly wings."""
+    """Aizen. Base: the white Arrancar coat over a black hakama, slicked-back brown hair, Kyoka Suigetsu at his
+    side. Hogyoku: the Hogyoku fused into his chest, a black cross cut into the coat round its violet glow.
+    Final (the hatched form): waist-length wild hair, a pure white body-suit with a deep V at the chest and the
+    black cross seam over the Hogyoku, two torn dark violet plates rising behind his head."""
     hog = form in ("hogyoku", "final")
     final = form == "final"
-    key = {"base": "aizen", "hogyoku": "aizen_hogyoku", "final": "aizen_final"}[form]
-    skin = (232, 228, 236) if hog else SKIN
-    head = head_paint(AIZEN_HAIR if not final else (230, 226, 236), (110, 70, 40) if not hog else (170, 60, 220), True, key)
-    coat, sash = (238, 238, 240), (30, 30, 36)
+    key = {"base": "aizen", "hogyoku": "aizen_hogyoku", "final": "aizen_hatched"}[form]
+    hair = AIZEN_HAIR_LONG if final else AIZEN_HAIR
+    head = head_paint(hair, (110, 70, 40) if not hog else (150, 70, 200), True, key)
+    coat, sash, ink, core = (238, 238, 240), (30, 30, 36), (18, 18, 22), (170, 70, 230)
     lap = lambda f, px, w, h, b: [_put(px, w, h, int(w * 0.5 + (y - h * 0.1) * 0.25) if y < h * 0.45 else w // 2, y, (190, 190, 196)) for y in range(h)] if f == "north" else None
-    torso = layered(coat if not hog else skin, [lap] if not hog else [])
-    arm = layered(coat if not hog else skin, [region((0, 0.86, 1, 1), skin)])
-    leg = layered((34, 34, 40) if not hog else skin, [region((0, 0.88, 1, 1), (20, 20, 24))])
+
+    def cross(face, px, w, h, base):  # the black cross seam round the Hogyoku, a line down to the belt
+        if face != "north":
+            return
+        cx, cy, r = w // 2, int(h * 0.3), max(2, w // 4)
+        for d in range(-r, r + 1):
+            _put(px, w, h, cx + d, cy, ink); _put(px, w, h, cx, cy + d, ink)
+        for y in range(cy + r, h):
+            _put(px, w, h, cx, y, ink)
+        _put(px, w, h, cx, cy, core); _put(px, w, h, cx - 1, cy, core)
+
+    def vee(face, px, w, h, base):  # the deep V of skin at the chest
+        if face != "north":
+            return
+        for y in range(int(h * 0.55)):
+            half = (w * 0.26) * (1 - y / (h * 0.55))
+            for x in range(w):
+                if abs(x + 0.5 - w / 2) < half:
+                    _put(px, w, h, x, y, SKIN)
+
+    def side_shade(face, px, w, h, base):
+        if face in ("east", "west"):
+            for y in range(h):
+                for x in range(w):
+                    if (x + y) % 3 == 0:
+                        _put(px, w, h, x, y, (205, 210, 224))
+    if final:
+        suit = (250, 250, 252)
+        torso = layered(suit, [vee, cross])
+        arm = layered(suit, [region((0, 0.88, 1, 1), SKIN)])
+        leg = layered(suit, [region((0, 0.9, 1, 1), (230, 230, 236))])
+    else:
+        torso = layered(coat, [lap] + ([cross] if hog else []))
+        arm = layered(coat, [region((0, 0.86, 1, 1), SKIN)])
+        leg = layered((34, 34, 40), [region((0, 0.88, 1, 1), (20, 20, 24))])
     base_body(m, torso, arm, leg, head)
-    if not hog:
+    if not final:
         m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.6, 5.0], solid(sash))                         # black sash
         m.box("body", [-4.6, 3.0, 2.1], [9.2, 21.2, 0.5], solid(coat))                         # long coat tails
         for x0 in (-4.6, 2.6):
@@ -2724,16 +2808,13 @@ def aizen(m, form):
         kyoka = dict(wrap=(60, 90, 70), diamond=(200, 190, 140), tsuba="round", metal=(150, 140, 90),
                      blade=(206, 214, 226), edge=(248, 250, 255), hamon=None, saya=(40, 60, 50), saya_band=(200, 190, 140))
         M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, kyoka)
-    else:
-        orb = SC.swatch((170, 70, 230), 230)
-        SC.blob(m, "body", [0, 19.5, -2.3], [1.1, 1.1, 0.6], orb)                               # the Hogyoku in his chest
-        for k in range(4):
-            m.box("body", [-0.2 + (k - 1.5) * 1.6, 14 + k, -2.25], [0.3, 4, 0.2], solid((150, 110, 190)))
-    if final:  # three pairs of dark butterfly wings
-        wing = SC.swatch((60, 30, 90), 210)
+    if hog:
+        SC.blob(m, "body", [0, 20.4, -2.2], [0.8, 0.8, 0.45], SC.swatch(core, 235))              # the Hogyoku
+    if final:  # two torn dark violet plates rising from behind his shoulders
+        plate = M._sprite(_plate_shape((78, 82, 112), (118, 124, 160)))
         for s_ in (1, -1):
-            for k, (up, L) in enumerate(((0.9, 12), (0.3, 13), (-0.4, 10))):
-                SC.blade(m, "body", [s_ * 1.6, 21 - k * 2, 2.4], [s_ * 1, up, 0.4], L, 4.2, 0.4, wing, width_dir=[0, 1, 0.2])
+            m.box("body", [s_ * 3.2 - 3.0, 21.0, 6.3], [6.0, 15.0, 0], plate, rot=[-14, 0, -s_ * 22], pivot=[s_ * 3.2, 21.0, 6.3])
+            m.cubes[-1]["hires"] = 4
     aizen_hair(m, final)
 
 
