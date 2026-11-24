@@ -10,7 +10,7 @@ Every character has their real transformations, signature techniques and fightin
 
 ## ⚔️ Features
 
-- **43 anime fighters from 9 anime**, each with their full set of transformations, climbing one form at a time just like in the anime.
+- **45 anime fighters from 9 anime** (now with Beerus and Whis, the strongest of all), each with their full set of transformations, climbing one form at a time just like in the anime.
 - **Smart fighters.** Every fighter reads the battle:
   - uses ranged attacks from afar and close-range techniques up close;
   - punishes openings, dodges big attacks and finishes weakened enemies;
