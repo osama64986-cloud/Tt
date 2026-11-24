@@ -264,8 +264,8 @@ FIGHTERS.update({
               "egg": ("#e2622e", "#c4c8d0")},
     "rengoku": {"hp": 1000, "forms": [(20, 0.4), (26, 0.42)], "tex": ["flame", "ninth"], "geo": ["flame", "ninth"], "egg": ("#fac832", "#dc3c1e")},
     "ace": {"hp": 1000, "forms": [(20, 0.4), (30, 0.42)], "tex": ["base", "flame"], "geo": ["base", "flame"], "egg": ("#ec8228", "#1c1a20")},
-    "gohan": {"hp": 1000, "forms": [(22, 0.4), (32, 0.42), (40, 0.44), (50, 0.46)], "tex": ["base", "ssj2", "ultimate", "beast"],
-              "geo": ["base", "ssj2", "ultimate", "beast"], "egg": ("#4e3278", "#c82424")},
+    "gohan": {"hp": 1000, "forms": [(22, 0.4), (27, 0.41), (32, 0.42), (40, 0.44), (50, 0.46)], "tex": ["base", "ssj", "ssj2", "ultimate", "beast"],
+              "geo": ["base", "ssj", "ssj2", "ultimate", "beast"], "egg": ("#4e3278", "#c82424")},
     "bakugo": {"hp": 1000, "forms": [(20, 0.42), (28, 0.44)], "tex": ["base", "cluster"], "geo": ["base", "cluster"], "egg": ("#1e1e22", "#f0821e")},
     "gon": {"hp": 1000, "forms": [(14, 0.42), (22, 0.44), (30, 0.44), (36, 0.44)], "tex": ["base", "jajanken", "dark", "adult"],
             "geo": ["base", "jajanken", "dark", "adult"], "egg": ("#328246", "#181e1a"), "scale": 0.9, "form_scale": [0.9, 0.9, 1.35, 1.35]},  # Adult Gon: suddenly a tall grown man

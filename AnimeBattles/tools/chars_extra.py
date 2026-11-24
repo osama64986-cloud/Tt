@@ -2101,6 +2101,7 @@ def build(char, form):
 # ==================================================================================
 M.FACE32.update({
     "gohan": dict(eye="anime", brow="angled", mouth="neutral", marks=["glasses"]),
+    "gohan_ssj": dict(eye="narrow", brow="angled", mouth="neutral", marks=[]),
     "gohan_ssj2": dict(eye="narrow", brow="sharp", mouth="clench", marks=[]),
     "gohan_ult": dict(eye="narrow", brow="sharp", mouth="neutral", marks=[]),
     "gohan_beast": dict(eye="narrow", brow="sharp", mouth="clench", marks=["beast_eyes"]),
@@ -2227,6 +2228,8 @@ GOHAN_BLACK, GOHAN_GOLD, GOHAN_BEAST = (24, 24, 34), (255, 214, 70), (226, 228, 
 def gohan_hair(m, form):
     if form == "base":
         spiky_crown(m, GOHAN_BLACK, up=0.7, n=8, L=3.8, spread=0.9, bangs=((-1.2, -0.2, 2.6), (1.4, 0.25, 2.4)))
+    elif form == "ssj":  # teen Super Saiyan: gold, spiky but lower than SSJ2, two bangs
+        spiky_crown(m, GOHAN_GOLD, up=0.85, n=9, L=4.6, spread=0.75, bangs=((-1.0, -0.15, 3.0), (1.3, 0.2, 2.8)))
     elif form == "ssj2":  # gold, swept up, one bang hanging down
         spiky_crown(m, GOHAN_GOLD, up=1.0, n=9, L=5.4, spread=0.6, bangs=((0.6, 0.05, 3.6),))
     elif form == "ultimate":  # black, wild and spiky, a single bang
@@ -2241,9 +2244,9 @@ def gohan_hair(m, form):
 def gohan(m, form):
     """Gohan in Piccolo's colours: a purple gi with a red sash, blue wristbands, brown boots. Base: glasses.
     Super Saiyan 2: gold with sparks of lightning. Ultimate: black spiky hair. Beast: towering silver hair, red eyes."""
-    key = {"base": "gohan", "ssj2": "gohan_ssj2", "ultimate": "gohan_ult", "beast": "gohan_beast"}[form]
-    hair = {"base": GOHAN_BLACK, "ssj2": GOHAN_GOLD, "ultimate": GOHAN_BLACK, "beast": GOHAN_BEAST}[form]
-    iris = {"base": (40, 40, 50), "ssj2": (40, 160, 160), "ultimate": (40, 40, 50), "beast": (220, 30, 40)}[form]
+    key = {"base": "gohan", "ssj": "gohan_ssj", "ssj2": "gohan_ssj2", "ultimate": "gohan_ult", "beast": "gohan_beast"}[form]
+    hair = {"base": GOHAN_BLACK, "ssj": GOHAN_GOLD, "ssj2": GOHAN_GOLD, "ultimate": GOHAN_BLACK, "beast": GOHAN_BEAST}[form]
+    iris = {"base": (40, 40, 50), "ssj": (40, 160, 160), "ssj2": (40, 160, 160), "ultimate": (40, 40, 50), "beast": (220, 30, 40)}[form]
     head = head_paint(hair, iris, True, key)
     gi = (78, 50, 120)
 
@@ -2556,7 +2559,7 @@ def megumi(m, form):
 
 
 FORMS.update({
-    "gohan": ["base", "ssj2", "ultimate", "beast"],
+    "gohan": ["base", "ssj", "ssj2", "ultimate", "beast"],
     "bakugo": ["base", "cluster"],
     "gon": ["base", "jajanken", "dark", "adult"],
     "akaza": ["base", "compass"],

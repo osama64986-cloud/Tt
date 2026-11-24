@@ -12,6 +12,10 @@
     "base_shout": "textures/entity/gohan/base_shout",
     "base_hurt": "textures/entity/gohan/base_hurt",
     "base_blink": "textures/entity/gohan/base_blink",
+    "ssj": "textures/entity/gohan/ssj",
+    "ssj_shout": "textures/entity/gohan/ssj_shout",
+    "ssj_hurt": "textures/entity/gohan/ssj_hurt",
+    "ssj_blink": "textures/entity/gohan/ssj_blink",
     "ssj2": "textures/entity/gohan/ssj2",
     "ssj2_shout": "textures/entity/gohan/ssj2_shout",
     "ssj2_hurt": "textures/entity/gohan/ssj2_hurt",
@@ -27,6 +31,7 @@
    },
    "geometry": {
     "base": "geometry.ab.gohan_base",
+    "ssj": "geometry.ab.gohan_ssj",
     "ssj2": "geometry.ab.gohan_ssj2",
     "ultimate": "geometry.ab.gohan_ultimate",
     "beast": "geometry.ab.gohan_beast"

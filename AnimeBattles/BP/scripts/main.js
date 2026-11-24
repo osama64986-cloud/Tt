@@ -1049,7 +1049,7 @@ function transform(e, s, to, label, color, extraSound) {
   }
   if (e.typeId === "ab:deku") every(3, 8, () => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 2 ? C.whip : C.ofa, 1.2, 0.3, { count: 10, speed: 7 }); });
   if (e.typeId === "ab:rengoku" || e.typeId === "ab:ace") every(3, 8, (i) => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + i * 0.3), 1.5 + i * 0.3, C.fire, 20, 0.5); });
-  if (e.typeId === "ab:gohan") every(3, 8, (i) => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 3 ? C.silver : to === 1 ? C.kameBlue : C.gold, 1.2, 0.3, { count: 10, speed: 7 }); });
+  if (e.typeId === "ab:gohan") every(3, 8, (i) => { if (e.isValid) fx(dim, "streak", V.up(e.location, 1), to === 4 ? C.silver : to === 2 ? C.kameBlue : C.gold, 1.2, 0.3, { count: 10, speed: 7 }); });
   if (e.typeId === "ab:bakugo") every(4, 5, () => { if (e.isValid) { fx(dim, "flash", V.up(e.location, 1), C.fire, 3, 0.2); burst(dim, V.up(e.location, 1), C.ember, 16, 3, 0.4, 0.5); } });
   if (e.typeId === "ab:gon" && to === 2) {  // the Vow: black nen bursts out of him, he goes grey — and five seconds later he is grown
     later(4, () => { if (e.isValid) smoke(dim, e.location, C.black, 1.4, 1.6, 30 * fxLevel(), 0.9, 0.8, 3); });
@@ -1099,7 +1099,7 @@ function aura(e, s, def) {
   const c = def.forms[form]?.aura;
   if (s.kaiokenUntil > now()) fx(e.dimension, "aura", e.location, C.kaioken, 1.0, 0.6, { count: 6 * fxLevel(), speed: 1.5 });
   if (c) fx(e.dimension, "aura", e.location, c, 1.0, 0.6, { count: 5 * fxLevel(), speed: 1.5 });
-  if (((e.typeId === "ab:gohan" && form === 1) || (e.typeId === "ab:goku" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
+  if (((e.typeId === "ab:gohan" && form === 2) || (e.typeId === "ab:goku" && form === 2)) && Math.random() < 0.7) saiyanLightning(e);  // SSJ2 / SSJ3 lightning
   if (e.typeId === "ab:frieza" && form === 2 && Math.random() < 0.6) smoke(e.dimension, e.location, C.black, 0.8, 1.0, 3 * fxLevel(), 0.6, 0.2, 1.0);
   if (e.typeId === "ab:gon" && form === 2) {  // the Vow: ominous BLACK nen pouring off him without pause
     smoke(e.dimension, e.location, C.black, 0.9, 1.4, 6 * fxLevel(), 0.85, 0.15, 1.2);
@@ -4463,16 +4463,16 @@ const abFrom = (D, id, extra) => ({ ...D.abilities.find((a) => a.id === id), ...
 // Son Gohan: the scholar who becomes a beast. Piccolo's Special Beam Cannon is his last word.
 const GOHAN = {
   name: "Gohan", color: "§5", energy: 1200, regen: 20, energyName: "§bKI",
-  dodge: (e) => [0.1, 0.14, 0.18, 0.24][formOf(e)] ?? 0.1,
-  forms: [{ label: "Base", power: 160 }, { label: "Super Saiyan 2", power: 300, aura: C.gold },
+  dodge: (e) => [0.1, 0.12, 0.14, 0.18, 0.24][formOf(e)] ?? 0.1,
+  forms: [{ label: "Base", power: 160 }, { label: "Super Saiyan", power: 230, aura: C.gold }, { label: "Super Saiyan 2", power: 300, aura: C.gold },
     { label: "Ultimate (Mystic)", power: 560, aura: C.white }, { label: "Beast", power: 780, aura: C.silver }],
-  thresholds: [0.85, 0.6, 0.35], transformCd: 90, formSound: [null, "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
+  thresholds: [0.9, 0.72, 0.5, 0.3], transformCd: 80, formSound: [null, "mob.blaze.shoot", "mob.enderdragon.growl", "beacon.power", "beacon.activate"],
   abilities: [
     SIG.ball("kiblast", "Ki Barrage", { say: "§e§lKi barrage", color: C.kiYellow, count: 8, size: 0.5, dmg: 6, spread: 3, speed: 2.4, cd: 120, cost: 60, charge: 3 }),
     SIG.beam("masenko", "Masenko", { say: "§e§lMasenko... HA!", color: C.kiYellow, dmg: 42, width: 1.4, charge: 10, cd: 220, cost: 140, pose: 23 }),
     SIG.beam("kame", "Kamehameha", { say: "§b§lKa... me... ha... me... HA!", color: C.kameBlue, dmg: 55, width: 1.8, charge: 14, cd: 300, cost: 180 }),
-    SIG.wave("rage", "Rage Burst", { say: "§e§lRAAAAH!", color: C.gold, radius: 5, dmg: 24, cd: 220, cost: 100, cond: G(1, 2, 3) }),
-    SIG.rush("ultrush", "Ultimate Rush", { say: "§f§lUltimate rush", color: C.white, hits: 6, dmg: 8, finisher: 30, cd: 180, cost: 100, cond: G(2, 3) }),
+    SIG.wave("rage", "Rage Burst", { say: "§e§lRAAAAH!", color: C.gold, radius: 5, dmg: 24, cd: 220, cost: 100, cond: G(1, 2, 3, 4) }),
+    SIG.rush("ultrush", "Ultimate Rush", { say: "§f§lUltimate rush", color: C.white, hits: 6, dmg: 8, finisher: 30, cd: 180, cost: 100, cond: G(3, 4) }),
     ((b) => ({ ...b, run(e, s, t) {  // Piccolo's technique: a thin beam with a spiral of ki coiling round it
       b.run(e, s, t);
       later(16, () => {
@@ -4483,8 +4483,8 @@ const GOHAN = {
           fx(e.dimension, "orb", p, C.gold, 0.5, 0.4);
         }
       });
-    } }))(SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 360, cost: 220, cond: G(3), pose: 4 })),
-    SIG.beam("beastkame", "Beast Kamehameha", { say: "§f§lKAMEHAMEHA! §7— Beast", color: C.white, dmg: 95, width: 2.6, charge: 18, cd: 600, cost: 400, cond: G(3), carve: 2 }),
+    } }))(SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 360, cost: 220, cond: G(4), pose: 4 })),
+    SIG.beam("beastkame", "Beast Kamehameha", { say: "§f§lKAMEHAMEHA! §7— Beast", color: C.white, dmg: 95, width: 2.6, charge: 18, cd: 600, cost: 400, cond: G(4), carve: 2 }),
   ],
 };
 

@@ -1165,6 +1165,10 @@
       "Texture.base_shout",
       "Texture.base_hurt",
       "Texture.base_blink",
+      "Texture.ssj",
+      "Texture.ssj_shout",
+      "Texture.ssj_hurt",
+      "Texture.ssj_blink",
       "Texture.ssj2",
       "Texture.ssj2_shout",
       "Texture.ssj2_hurt",
@@ -1182,6 +1186,7 @@
     "geometries": {
      "Array.geos": [
       "Geometry.base",
+      "Geometry.ssj",
       "Geometry.ssj2",
       "Geometry.ultimate",
       "Geometry.beast"
