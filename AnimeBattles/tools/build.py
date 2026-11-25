@@ -151,7 +151,14 @@ def build_icons():
     if os.path.exists(custom):
         icon = Image.open(custom).convert("RGBA")
     icon.save(os.path.join(ROOT, "docs", "curseforge_logo.png"))
-    small_icon = icon.resize((256, 256), Image.LANCZOS)
+    if os.path.exists(custom):  # tight square crop round the logo so the title fills the small pack icon, crisp at 512
+        w, h = icon.size
+        m = int(min(w, h) * 0.06)
+        icon_small_src = icon.crop((m, m, w - m, h - m))
+        from PIL import ImageFilter
+        small_icon = icon_small_src.resize((512, 512), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
+    else:
+        small_icon = icon.resize((256, 256), Image.LANCZOS)
     small_icon.save(os.path.join(RP, "pack_icon.png"))
     small_icon.save(os.path.join(BP, "pack_icon.png"))
 
