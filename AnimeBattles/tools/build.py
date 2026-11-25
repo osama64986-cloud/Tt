@@ -147,6 +147,9 @@ def build_icons():
             d.text(((S_ - w) / 2, y), text, font=f_, fill=col)
     except OSError:
         pass
+    custom = os.path.join(ROOT, "docs", "mod_icon.png")  # the official logo chosen by the author, when present
+    if os.path.exists(custom):
+        icon = Image.open(custom).convert("RGBA")
     icon.save(os.path.join(ROOT, "docs", "curseforge_logo.png"))
     small_icon = icon.resize((256, 256), Image.LANCZOS)
     small_icon.save(os.path.join(RP, "pack_icon.png"))
