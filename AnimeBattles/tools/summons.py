@@ -731,3 +731,103 @@ SUMMONS = [("susanoo", _ghost(susanoo_perfect)), ("kurama", kurama), ("gamabunta
            ("crow", crow), ("hound", hound), ("flame_tiger", flame_tiger), ("yoyo", yoyo), ("fire_fist", fire_fist), ("ofa_fist", ofa_fist),
            ("dog_black", divine_dog_black), ("dog_white", divine_dog_white), ("nen_fist", nen_fist)]
 SOLID = {"gamabunta", "muzan_infant", "mahoraga", "crow", "hound", "yoyo", "dog_black", "dog_white"}   # opaque flesh; the rest are glowing chakra
+
+
+# ------------------------------------------------------------------ 1.22: Kaido's dragon, Netero's Bodhisattva, Aki's Fox Devil
+def kaido_dragon():
+    """Kaido's true form: an azure Eastern dragon. A long serpentine body of sky-blue scales coiling up from the ground,
+    cream belly plates underneath, a black flame-like mane along its spine, branching orange-brown antlers, long black
+    whiskers, yellow eyes and a jaw full of fangs. Faces -z; the jaw opens for Bolo Breath."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 24, 0], "head": [0, 34, -8], "jaw": [0, 33.6, -14], "tails": [0, 10, 26],
+                      "rightArm": [5, 26, 2], "leftArm": [-5, 26, 2]})
+    BLUE, BLUE_D, BELLY, MANE = S.swatch((110, 180, 236)), S.swatch((70, 130, 200)), S.swatch((236, 200, 130)), S.swatch((26, 24, 30))
+    HORN, WHITE, YEL = S.swatch((196, 120, 70)), S.swatch((246, 244, 236)), S.swatch((255, 214, 60))
+    path = [[0, 33.0, -8.0], [3.0, 29.0, 0.0], [-4.0, 22.0, 8.0], [5.0, 14.0, 16.0], [-2.0, 8.0, 24.0], [4.0, 5.0, 32.0], [8.0, 7.0, 40.0]]
+    pts = curve_tube(m, "body", path, 3.6, 0.9, [BLUE, BLUE_D], n=3)
+    curve_tube(m, "body", [[p[0], p[1] - 1.8, p[2]] for p in path[:-1]], 2.6, 0.8, [BELLY, BELLY], n=3)   # the belly plates
+    for k in range(1, len(pts) - 2, 2):                                                    # the mane of black flame along its spine
+        p = pts[k]
+        blade(m, "body", [p[0], p[1] + 2.6, p[2]], [0.0, 1, 0.45], 3.6 - k * 0.05, 1.6, 0.5, MANE)
+    blob(m, "head", [0, 36.0, -12.0], [3.6, 3.0, 4.0], BLUE, slices=4)                    # the skull
+    blob(m, "head", [0, 35.0, -18.0], [2.6, 1.8, 4.0], BLUE, slices=3, axis="z")           # the long snout
+    blob(m, "head", [0, 35.4, -21.8], [1.6, 1.3, 0.9], BLUE_D, slices=2)                   # the nose
+    for sx in (1, -1):
+        box_at(m, "head", [sx * 2.4, 37.0, -15.0], [0.9, 0.6, 0.6], YEL)                    # eyes
+        box_at(m, "head", [sx * 2.3, 37.7, -15.0], [1.4, 0.4, 1.0], MANE)                   # the heavy brow
+        curve_tube(m, "head", [[sx * 1.8, 38.2, -11.0], [sx * 3.4, 42.0, -8.0], [sx * 5.6, 45.0, -4.0], [sx * 6.6, 46.6, 0.0]], 0.7, 0.2, [HORN, HORN], n=2)
+        curve_tube(m, "head", [[sx * 3.4, 42.0, -8.0], [sx * 5.8, 42.6, -9.0], [sx * 7.4, 44.4, -8.4]], 0.45, 0.15, [HORN, HORN], n=1)
+        curve_tube(m, "head", [[sx * 2.0, 34.6, -21.0], [sx * 5.0, 34.0, -20.0], [sx * 9.0, 31.0, -15.0], [sx * 12.0, 27.0, -10.0]], 0.22, 0.12, [MANE, MANE], n=3)  # whiskers
+        blade(m, "head", [sx * 1.6, 34.0, -20.4], [0, -1, -0.2], 1.0, 0.4, 0.3, WHITE)      # fangs
+        blade(m, "jaw", [sx * 1.4, 33.4, -19.4], [0, 1, -0.1], 0.9, 0.4, 0.3, WHITE)
+        tube(m, "rightArm" if sx > 0 else "leftArm", [[sx * 3.0, 26.0, 2.0], [sx * 6.0, 23.0, -1.0], [sx * 7.0, 20.0, -3.0]], [1.0, 0.8, 0.6], BLUE)
+        for c in (-1, 0, 1):
+            blade(m, "rightArm" if sx > 0 else "leftArm", [sx * 7.0 + c * 0.5, 20.0, -3.0], [c * 0.3, -0.6, -1], 1.4, 0.4, 0.3, WHITE)
+    blob(m, "jaw", [0, 33.0, -17.6], [2.2, 0.8, 3.6], BELLY, slices=2, axis="z")           # the lower jaw
+    for k in range(5):                                                                       # the mane behind its head
+        blade(m, "head", [(k - 2) * 1.4, 37.6, -7.6], [(k - 2) * 0.2, 0.6, 1], 4.0, 1.4, 0.5, MANE)
+    return m
+
+
+def guanyin():
+    """Netero's 100-Type Guanyin Bodhisattva: a towering golden Buddha of nen behind him — a calm face with long ears
+    and a topknot, a halo, hands joined in prayer before the chest, two great arms with open palms (the First Hand
+    comes down from above), and a fan of many more hands spread behind it like a thousand-armed aureole."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 20, 0], "head": [0, 30, 0], "rightArm": [8, 27, 0], "leftArm": [-8, 27, 0]})
+    G, G2, G3 = S.swatch((255, 206, 70), 215), S.swatch((255, 232, 140), 205), S.swatch((214, 160, 40), 220)
+    blob(m, "body", [0, 20.0, 0.0], [7.0, 9.0, 4.6], G, slices=5)                         # the robed body
+    blob(m, "body", [0, 8.0, -1.0], [10.0, 3.6, 7.0], G3, slices=3)                        # folded legs on the lotus
+    for k in range(10):                                                                     # the lotus petals
+        a = 2 * math.pi * k / 10
+        blade(m, "body", [math.cos(a) * 9.0, 5.0, math.sin(a) * 6.0 - 1.0], [math.cos(a) * 0.5, 1, math.sin(a) * 0.5], 4.0, 3.0, 0.5, G2)
+    blob(m, "head", [0, 33.4, 0.0], [3.6, 4.2, 3.6], G2, slices=4)                         # the calm face
+    blob(m, "head", [0, 38.4, 0.4], [1.8, 1.6, 1.8], G3, slices=2)                         # the topknot
+    for sx in (1, -1):
+        box_at(m, "head", [sx * 3.8, 32.0, 0.0], [0.8, 3.6, 1.2], G)                         # long ears
+        box_at(m, "head", [sx * 1.4, 34.2, -3.5], [1.4, 0.3, 0.3], G3)                       # closed eyes
+    for k in range(20):                                                                     # the halo
+        a = 2 * math.pi * k / 20
+        box_at(m, "head", [math.cos(a) * 6.6, 34.0 + math.sin(a) * 6.6, 4.2], [1.4, 1.4, 0.5], G3)
+    for k in range(14):                                                                     # the fan of hands behind it
+        a = math.pi * (0.08 + 0.84 * k / 13)
+        d = [math.cos(a), math.sin(a) * 0.9 + 0.1, 0]
+        base = [d[0] * 5.0, 24.0 + d[1] * 4.0, 4.0]
+        end = [d[0] * 15.0, 22.0 + d[1] * 13.0, 5.0]
+        tube(m, "body", [base, end], [0.9, 0.7], G2, knuckles=False)
+        blob(m, "body", end, [1.3, 1.6, 0.4], G, slices=2)
+    for k in range(2):                                                                      # hands joined in prayer
+        box_at(m, "body", [0.0, 23.0 + k * 1.6, -5.0], [1.6, 2.4, 1.2], G2)
+    for bone, sx in (("rightArm", 1), ("leftArm", -1)):                                    # the two great arms: open palms
+        tube(m, bone, [[sx * 8.0, 27.0, 0.0], [sx * 10.0, 19.0, -2.0], [sx * 10.5, 11.0, -4.0]], [2.0, 1.7, 1.4], G)
+        blob(m, bone, [sx * 10.6, 7.6, -4.8], [3.0, 3.8, 1.2], G2, slices=3)
+        for f in range(4):
+            box_at(m, bone, [sx * 10.6 + (f - 1.5) * 1.3, 3.0, -4.8], [1.0, 3.2, 1.0], G2)
+    return m
+
+
+def fox_devil():
+    """Aki's Fox Devil ('Kon!'): a giant white fox head with pointed ears, red markings round slit eyes and a long
+    snout whose jaws open wide to bite."""
+    m = M.Model()
+    m.bones = _bones({"root": [0, 0, 0], "body": [0, 6, 0], "head": [0, 10, 0], "jaw": [0, 10.4, -5]})
+    W, W2, RED, BLK, PINK = S.swatch((246, 244, 240)), S.swatch((222, 218, 214)), S.swatch((210, 40, 40)), S.swatch((24, 20, 22)), S.swatch((230, 140, 150))
+    tube(m, "body", [[0, 0, 4.0], [0, 6.0, 2.0], [0, 10.0, 0.0]], [3.6, 3.4, 3.4], W2)       # the neck rising out of nowhere
+    blob(m, "head", [0, 12.0, -1.5], [5.0, 4.4, 5.0], W, slices=4)
+    blob(m, "head", [0, 11.4, -8.0], [2.6, 2.0, 4.0], W, slices=3, axis="z")
+    blob(m, "head", [0, 12.0, -12.0], [1.1, 0.9, 0.7], BLK, slices=2)                       # the nose
+    for sx in (1, -1):
+        blade(m, "head", [sx * 3.0, 15.4, -0.4], [sx * 0.3, 1, 0.2], 5.0, 3.0, 1.0, W, width_dir=[0, 0, 1])   # ears
+        blade(m, "head", [sx * 3.0, 15.6, -0.9], [sx * 0.3, 1, 0.2], 3.6, 1.8, 0.4, PINK, width_dir=[0, 0, 1])
+        box_at(m, "head", [sx * 2.4, 13.8, -5.6], [1.6, 0.5, 0.4], BLK)                         # slit eyes
+        box_at(m, "head", [sx * 2.6, 14.6, -5.2], [2.2, 0.5, 0.4], RED)                         # red markings
+        box_at(m, "head", [sx * 3.6, 12.6, -4.8], [0.6, 1.6, 0.4], RED)
+        for k in range(3):
+            blade(m, "head", [sx * (0.8 + k * 0.6), 10.4, -10.4 + k * 1.4], [0, -1, 0], 1.0, 0.4, 0.3, W)   # fangs
+    blob(m, "jaw", [0, 9.6, -7.6], [2.2, 0.9, 3.6], W2, slices=2, axis="z")
+    blob(m, "jaw", [0, 10.2, -7.6], [1.8, 0.3, 3.0], S.swatch((180, 60, 70)), slices=1, axis="z")
+    return m
+
+
+SUMMONS += [("kaido_dragon", kaido_dragon), ("guanyin", _ghost(guanyin, 0.62)), ("fox_devil", fox_devil)]
+SOLID |= {"kaido_dragon", "fox_devil"}

@@ -145,6 +145,78 @@
   },
   "ab_egg_whis": {
    "textures": "textures/items/egg_whis"
+  },
+  "ab_egg_giyu": {
+   "textures": "textures/items/egg_giyu"
+  },
+  "ab_egg_shinobu": {
+   "textures": "textures/items/egg_shinobu"
+  },
+  "ab_egg_tengen": {
+   "textures": "textures/items/egg_tengen"
+  },
+  "ab_egg_mitsuri": {
+   "textures": "textures/items/egg_mitsuri"
+  },
+  "ab_egg_muichiro": {
+   "textures": "textures/items/egg_muichiro"
+  },
+  "ab_egg_gyomei": {
+   "textures": "textures/items/egg_gyomei"
+  },
+  "ab_egg_obanai": {
+   "textures": "textures/items/egg_obanai"
+  },
+  "ab_egg_sanemi": {
+   "textures": "textures/items/egg_sanemi"
+  },
+  "ab_egg_piccolo": {
+   "textures": "textures/items/egg_piccolo"
+  },
+  "ab_egg_cell": {
+   "textures": "textures/items/egg_cell"
+  },
+  "ab_egg_toji": {
+   "textures": "textures/items/egg_toji"
+  },
+  "ab_egg_mahito": {
+   "textures": "textures/items/egg_mahito"
+  },
+  "ab_egg_kaido": {
+   "textures": "textures/items/egg_kaido"
+  },
+  "ab_egg_shanks": {
+   "textures": "textures/items/egg_shanks"
+  },
+  "ab_egg_pain": {
+   "textures": "textures/items/egg_pain"
+  },
+  "ab_egg_minato": {
+   "textures": "textures/items/egg_minato"
+  },
+  "ab_egg_kenpachi": {
+   "textures": "textures/items/egg_kenpachi"
+  },
+  "ab_egg_ulquiorra": {
+   "textures": "textures/items/egg_ulquiorra"
+  },
+  "ab_egg_endeavor": {
+   "textures": "textures/items/egg_endeavor"
+  },
+  "ab_egg_shigaraki": {
+   "textures": "textures/items/egg_shigaraki"
+  },
+  "ab_egg_netero": {
+   "textures": "textures/items/egg_netero"
+  },
+  "ab_egg_meruem": {
+   "textures": "textures/items/egg_meruem"
+  },
+  "ab_egg_aki": {
+   "textures": "textures/items/egg_aki"
+  },
+  "ab_egg_reze": {
+   "textures": "textures/items/egg_reze"
   }
  }
 }

@@ -4681,48 +4681,6 @@ def zangetsu_shape(blade, edge, spine, core=None, grip=(236, 236, 236), hf=0.18)
     return f
 
 
-# ================================================================ Luffy Gear 4 TANKMAN (final)
-_luffy_body_tank_prev = luffy_body
-
-
-def _tank_belly(face, img):
-    """The haki-coated belly: glossy near-black with a few dark-red flame lines (no bright outline on every slice)."""
-    w, h = img.size
-    px = img.load()
-    t = tones(HAKI_BLACK)
-    for y in range(h):
-        for x in range(w):
-            c = t[2 if face in ("north", "west", "up") else 1]
-            if face in SIDES and (x + y) % 10 == 0 and (x // 10) % 2 == 0:
-                c = (96, 16, 30)  # a flame line
-            px[x, y] = c + (255,)
-
-
-def luffy_body(m, form):  # noqa: F811
-    """Tankman: his body blown up into a huge, round, FAT belly. The upper chest is his skin, the stretched red vest pulled
-    open over it; the great belly below is coated black in Armament Haki (dark-red flame lines); thick haki arms stand
-    out from the sides, stubby haki legs, the steam scarf round his neck."""
-    if form != "g4t":
-        return _luffy_body_tank_prev(m, form)
-    luffy_head(m, (22, 20, 26), "luffy_g4")
-    R, cy = 10.5, 12.5
-    vest = (196, 38, 44)
-    for k in range(11):  # stacked round slices (each a square plus the same square turned 45 degrees)
-        y0 = cy - R + k * (2 * R / 11)
-        yc = y0 + R / 11
-        r = math.sqrt(max(0.0, R * R - (yc - cy) ** 2)) + 0.6
-        paint = layered(SKIN, [abs_chest]) if yc > cy + 2.5 else _tank_belly
-        for rot in ([0, 0, 0], [0, 45, 0]):
-            m.box("body", [-r, y0, -r], [2 * r, 2 * R / 11 + 0.05, 2 * r], paint, rot=rot, pivot=[0, yc, 0])
-    for s_ in (1, -1):  # the red vest stretched open over the top of the belly
-        m.box("body", [s_ * 4.4 - 2.2, cy + 3.5, -10.2], [4.4, 6.5, 1.0], solid(vest), rot=[-24, 0, 0], pivot=[s_ * 4.4, cy + 6.5, -9.6])
-    for bone, x0 in (("rightArm", 9.2), ("leftArm", -15.2)):  # thick haki arms out to the sides, big fists
-        round_limb(m, bone, [x0, 11.5, -3.0], [6.0, 9.5, 6.0], haki_glow)
-    for bone, x0 in (("rightLeg", -0.6), ("leftLeg", -4.4)):
-        round_limb(m, bone, [x0, 0, -2.6], [5, 3.2, 5.2], haki_glow)
-    steam_wreath(m, 23.4, 6.8, 4.8, 8, 4.0)
-
-
 # ================================================================ ears always match the face
 # Ears used to be painted plain SKIN, so a golden (Kurama Mode), grey (Gon's Vow) or pale (demon) face kept normal ears.
 # After every model is built, the ears take the skin colour sampled from the face itself.
@@ -4844,99 +4802,646 @@ def steam_wreath(m, y, rx, rz, n, s, bone="body", back=0.0):  # noqa: F811
 
 
 # ---------------------------------------------------------------- Gear 4 Tankman, rebuilt from the reference art
+# Voxel-art build: no rotated slices. Every big part is a solid on a 1-unit voxel grid (a pixel-art sphere for the
+# belly, round haki arms, the steam ribbon, the straw-hat disc) merged into axis-aligned boxes. Only the faces that can
+# be seen are kept, and they are painted as ONE picture in model space: glossy black-maroon haki with a red rim and
+# white glints, the skin cap with big pecs, the X scar and the splashy edge where the skin meets the haki. A face that
+# shows a single colour uses a shared 4x4 colour tile; only faces with detail get their own texture rectangle.
 _luffy_body_tank2_prev = luffy_body
+_export_vox_prev = export
+_FACE_AXES = {"north": (0, 1), "south": (0, 1), "east": (2, 1), "west": (2, 1), "up": (0, 2), "down": (0, 2)}
 
 
-def _haki_ball_paint(face, img):
-    """Tankman's haki belly: glossy dark maroon-black, deeper at the bottom, a faint red sheen on top faces."""
-    w, h = img.size
-    px = img.load()
-    base = {"up": (78, 20, 40), "north": (58, 14, 30), "west": (54, 13, 28), "east": (40, 10, 22), "south": (34, 9, 19), "down": (22, 6, 12)}[face]
-    for y in range(h):
-        for x in range(w):
-            c = base
-            if face == "up" and (x * 3 + y * 5) % 17 == 0:
-                c = (120, 30, 54)
-            px[x, y] = c + (255,)
+def _face_px(size, face):
+    a, b = _FACE_AXES[face]
+    return int(round(size[a] * S)), int(round(size[b] * S))
+
+
+def _shelf_pack(rects):
+    """rects: (key, w, h) in pixels -> texture size and the top-left corner of every rectangle."""
+    order = sorted(rects, key=lambda r: (-r[2], -r[1]))
+    for tex in (256, 512, 1024, 2048):
+        x = y = shelf = 0
+        out, ok = {}, True
+        for key, bw, bh in order:
+            if x + bw > tex:
+                x, y, shelf = 0, y + shelf, 0
+            if bw > tex or y + bh > tex:
+                ok = False
+                break
+            out[key] = (x, y)
+            x += bw
+            shelf = max(shelf, bh)
+        if ok:
+            return tex, out
+    raise RuntimeError("texture too small")
+
+
+def export(m, identifier):  # noqa: F811
+    """Models with voxel parts get per-face UVs. A voxel cube lists the faces that can be seen (`faces`); those in
+    `flat` show one colour and share a small colour tile, the others get their own painted rectangle; hidden faces are
+    left out. The top face is written turned 180 degrees and the bottom face mirrored (negative uv_size, as Blockbench
+    writes box UV), so every face is painted the same way round as box UV. Models without voxel parts go through the
+    previous exporter unchanged."""
+    if not any(c.get("faces") for c in m.cubes):
+        return _export_vox_prev(m, identifier)
+    sw_of = lambda c: getattr(c["paint"], "swatch", None)  # noqa: E731
+    keys = sorted({sw_of(c) for c in m.cubes if sw_of(c)})
+    flats = sorted({rgb for c in m.cubes for rgb in c.get("flat", {}).values()})
+    tile, ft, per_row = 2, 4, 32
+    rects = []
+    for i, c in enumerate(m.cubes):
+        if sw_of(c):
+            continue
+        if c.get("faces"):
+            for f in c["faces"]:
+                fw, fh = _face_px(c["size"], f)
+                if fw > 0 and fh > 0 and f not in c.get("flat", {}):
+                    rects.append(((i, f), fw, fh))
+        else:
+            size = [v * c["hires"] for v in c["size"]] if c.get("hires") else c["size"]
+            w, h, d = [int(round(s * S)) for s in size]
+            rects.append(((i, None), 2 * d + 2 * w, d + h))
+    if keys:
+        rects.append((("swatch", None), tile * len(SWATCH_FACES), tile * len(keys)))
+    if flats:
+        rects.append((("flat", None), ft * min(per_row, len(flats)), ft * ((len(flats) + per_row - 1) // per_row)))
+    tex, at = _shelf_pack(rects)
+    img = Image.new("RGBA", (tex, tex), (0, 0, 0, 0))
+    for (i, f), (u, v) in at.items():
+        if i in ("swatch", "flat"):
+            continue
+        c = m.cubes[i]
+        if f is not None:
+            fw, fh = _face_px(c["size"], f)
+            fimg = Image.new("RGBA", (fw, fh), (0, 0, 0, 0))
+            c["paint"](f, fimg)
+            img.paste(fimg, (u, v))
+            continue
+        size = [v_ * c["hires"] for v_ in c["size"]] if c.get("hires") else c["size"]
+        for face, (x, y, w, h) in face_rects(u, v, size).items():
+            if w <= 0 or h <= 0:
+                continue
+            fimg = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            c["paint"](face, fimg)
+            img.paste(fimg, (x, y))
+    tile_at = {}
+    if keys:
+        au, av = at[("swatch", None)]
+        for r, (base, a) in enumerate(keys):
+            t = tones(base)
+            for f, face in enumerate(SWATCH_FACES):
+                x0, y0 = au + f * tile, av + r * tile
+                for yy in range(tile):
+                    for xx in range(tile):
+                        img.putpixel((x0 + xx, y0 + yy), t[SWATCH_TONE[face]] + (a,))
+                tile_at[(base, a, face)] = (x0, y0)
+    flat_at = {}
+    if flats:
+        au, av = at[("flat", None)]
+        for n, rgb in enumerate(flats):
+            x0, y0 = au + (n % per_row) * ft, av + (n // per_row) * ft
+            for yy in range(ft):
+                for xx in range(ft):
+                    img.putpixel((x0 + xx, y0 + yy), tuple(rgb) + (255,))
+            flat_at[rgb] = (x0 + 1, y0 + 1)            # sample the middle of the tile: no bleeding from neighbours
+    bone_list = getattr(m, "bones", BONES)
+    bones = {b["name"]: dict(b, cubes=[]) for b in bone_list}
+    for i, c in enumerate(m.cubes):
+        fx, fy, fz = c["frm"]
+        sx, sy, sz = c["size"]
+        cube = {"origin": [round(-(fx + sx), 3), round(fy, 3), round(fz, 3)], "size": c["size"]}
+        swc = sw_of(c)
+        if swc:
+            cube["uv"] = {face: {"uv": [tile_at[(swc[0], swc[1], face)][0] / S, tile_at[(swc[0], swc[1], face)][1] / S],
+                                 "uv_size": [tile / S, tile / S]} for face in (c.get("faces") or SWATCH_FACES)}
+        elif c.get("faces"):
+            uvd = {}
+            for f in c["faces"]:
+                if f in c.get("flat", {}):
+                    x, y = flat_at[c["flat"][f]]
+                    uvd[f] = {"uv": [x / S, y / S], "uv_size": [2 / S, 2 / S]}
+                    continue
+                if (i, f) not in at:
+                    continue
+                (x, y), (fw, fh) = at[(i, f)], _face_px(c["size"], f)
+                if f == "up":
+                    uvd[f] = {"uv": [(x + fw) / S, (y + fh) / S], "uv_size": [-fw / S, -fh / S]}
+                elif f == "down":
+                    uvd[f] = {"uv": [(x + fw) / S, y / S], "uv_size": [-fw / S, fh / S]}
+                else:
+                    uvd[f] = {"uv": [x / S, y / S], "uv_size": [fw / S, fh / S]}
+            cube["uv"] = uvd
+        elif c.get("hires"):
+            u, v = at[(i, None)]
+            big = [x_ * c["hires"] for x_ in c["size"]]
+            cube["uv"] = {face: {"uv": [x / S, y / S], "uv_size": [w / S, h / S]}
+                          for face, (x, y, w, h) in face_rects(u, v, big).items() if w > 0 and h > 0}
+        else:
+            u, v = at[(i, None)]
+            cube["uv"] = [u / S, v / S]
+        if c["inflate"]:
+            cube["inflate"] = c["inflate"]
+        if c["rot"]:
+            px_, py_, pz_ = c["pivot"]
+            cube["pivot"] = [round(-px_, 3), py_, pz_]
+            rx, ry, rz = c["rot"]
+            cube["rotation"] = [round(-rx, 3), round(-ry, 3), round(rz, 3)]
+        bones[c["bone"]]["cubes"].append(cube)
+    out_bones = []
+    for b in bone_list:
+        bb = bones[b["name"]]
+        if not bb["cubes"]:
+            del bb["cubes"]
+        out_bones.append(bb)
+    geo = {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": identifier, "texture_width": tex // S, "texture_height": tex // S,
+                        "visible_bounds_width": 4, "visible_bounds_height": 4.5, "visible_bounds_offset": [0, 1.75, 0]},
+        "bones": out_bones}]}
+    head = None
+    c0 = m.cubes[0] if m.cubes else None
+    if c0 is not None and not sw_of(c0) and not c0.get("faces") and not c0.get("hires"):
+        head = face_rects(*at[(0, None)], c0["size"])["north"]
+    return geo, img, head
+
+
+# ---------------------------------------------------------------- voxel solids
+_VOX_NEIGHBOUR = {"north": (0, 0, -1), "south": (0, 0, 1), "west": (-1, 0, 0), "east": (1, 0, 0), "down": (0, -1, 0), "up": (0, 1, 0)}
+
+
+def vox_cells(inside, lo, hi):
+    """The 1-unit cells (i, j, k) inside the bounds whose centres lie inside the solid."""
+    rng = [range(math.floor(lo[a]), math.ceil(hi[a])) for a in range(3)]
+    return {(i, j, k) for i in rng[0] for j in rng[1] for k in rng[2] if inside(i + 0.5, j + 0.5, k + 0.5)}
+
+
+def vox_boxes(cells):
+    """Cells -> axis-aligned boxes: in each layer the columns with the same z-runs merge sideways, then identical
+    rectangles in consecutive layers merge upwards. Returns (i0, j0, k0, i1, j1, k1)."""
+    layers = {}
+    for i, j, k in cells:
+        layers.setdefault(j, {}).setdefault(i, []).append(k)
+    by_rect = {}
+    for j, cols in layers.items():
+        runs = {}
+        for i, ks in cols.items():
+            ks.sort()
+            iv, s0, p = [], ks[0], ks[0]
+            for kk in ks[1:]:
+                if kk != p + 1:
+                    iv.append((s0, p + 1))
+                    s0 = kk
+                p = kk
+            iv.append((s0, p + 1))
+            runs[i] = iv
+        open_ = {}
+        for i in range(min(runs), max(runs) + 2):
+            cur = set(runs.get(i, []))
+            for iv in list(open_):
+                if iv not in cur:
+                    by_rect.setdefault((open_[iv], i, iv[0], iv[1]), []).append(j)
+                    del open_[iv]
+            for iv in cur:
+                open_.setdefault(iv, i)
+    boxes = []
+    for (i0, i1, k0, k1), js in by_rect.items():
+        js.sort()
+        j0 = p = js[0]
+        for jj in js[1:] + [None]:
+            if jj is not None and jj == p + 1:
+                p = jj
+                continue
+            boxes.append((i0, j0, k0, i1, p + 1, k1))
+            if jj is not None:
+                j0 = p = jj
+    return sorted(boxes, key=lambda b: (b[1], b[2], b[0]))
+
+
+def _vox_open_cells(filled, b, face):
+    """The cells of box b whose `face` side looks onto an empty cell."""
+    i0, j0, k0, i1, j1, k1 = b
+    di, dj, dk = _VOX_NEIGHBOUR[face]
+    if face in ("north", "south"):
+        k = k0 if face == "north" else k1 - 1
+        cs = ((i, j, k) for i in range(i0, i1) for j in range(j0, j1))
+    elif face in ("west", "east"):
+        i = i0 if face == "west" else i1 - 1
+        cs = ((i, j, k) for j in range(j0, j1) for k in range(k0, k1))
+    else:
+        j = j0 if face == "down" else j1 - 1
+        cs = ((i, j, k) for i in range(i0, i1) for k in range(k0, k1))
+    return [c for c in cs if not filled((c[0] + di, c[1] + dj, c[2] + dk))]
+
+
+def _vox_texels(face, cell):
+    """Model-space centres of the texels on one side of one cell."""
+    i, j, k = cell
+    o = [(a + 0.5) / S for a in range(S)]
+    if face in ("north", "south"):
+        z = k if face == "north" else k + 1
+        return [(i + u, j + v, z) for u in o for v in o]
+    if face in ("west", "east"):
+        x = i if face == "west" else i + 1
+        return [(x, j + v, k + u) for u in o for v in o]
+    y = j if face == "down" else j + 1
+    return [(i + u, y, k + v) for u in o for v in o]
+
+
+_VOX_PAINT_CACHE = {}
+
+
+def vox_paint(fn, frm, size):
+    """A painter that colours every texel of a face from the model-space point it sits on: fn(x, y, z, face) -> rgb.
+    Box-UV orientation: north/up/down run from +x on the left, south from -x, east from the back, west from the front;
+    up/down have the back at the top."""
+    fx, fy, fz = frm
+    sx, sy, sz = size
+
+    def p(face, img):
+        key = (fn.__name__, tuple(frm), tuple(size), face, img.size)
+        if key in _VOX_PAINT_CACHE:
+            img.paste(_VOX_PAINT_CACHE[key], (0, 0))
+            return
+        w, h = img.size
+        px = img.load()
+        for jy in range(h):
+            v = (jy + 0.5) / S
+            for ix in range(w):
+                u = (ix + 0.5) / S
+                if face == "north":
+                    q = (fx + sx - u, fy + sy - v, fz)
+                elif face == "south":
+                    q = (fx + u, fy + sy - v, fz + sz)
+                elif face == "east":
+                    q = (fx + sx, fy + sy - v, fz + sz - u)
+                elif face == "west":
+                    q = (fx, fy + sy - v, fz + u)
+                elif face == "up":
+                    q = (fx + sx - u, fy + sy, fz + sz - v)
+                else:
+                    q = (fx + sx - u, fy, fz + sz - v)
+                px[ix, jy] = fn(q[0], q[1], q[2], face) + (255,)
+        _VOX_PAINT_CACHE[key] = img.copy()
+    return p
+
+
+def vox_solid(m, bone, inside, lo, hi, fn, solid_also=None):
+    """Voxelise a solid, merge it into boxes and add them with only the faces that can be seen, painted in model space
+    by fn. A face whose visible texels are all one colour is marked flat (it shares a colour tile).
+    solid_also(i, j, k): cells of other parts that hide faces too (the head on top of the belly)."""
+    cells = vox_cells(inside, lo, hi)
+    filled = (lambda c: c in cells or solid_also(*c)) if solid_also else cells.__contains__
+    for b in vox_boxes(cells):
+        faces, flat = [], {}
+        for f in _VOX_NEIGHBOUR:
+            open_cells = _vox_open_cells(filled, b, f)
+            if not open_cells:
+                continue
+            faces.append(f)
+            cols = {fn(x, y, z, f) for c in open_cells for (x, y, z) in _vox_texels(f, c)}
+            if len(cols) == 1:
+                flat[f] = tuple(cols.pop())
+        if not faces:
+            continue
+        i0, j0, k0, i1, j1, k1 = b
+        frm, size = [i0, j0, k0], [i1 - i0, j1 - j0, k1 - k0]
+        m.box(bone, frm, size, vox_paint(fn, frm, size))
+        m.cubes[-1]["faces"] = tuple(faces)
+        m.cubes[-1]["flat"] = flat
+    return cells
+
+
+# ---------------------------------------------------------------- Tankman's palette and shapes
+TK_R, TK_RY, TK_CY = 14.0, 11.0, 14.5                        # the belly: a pixel-art ball, wider than tall
+TK_RY_UP, TK_P = 12.5, 2.6                                    # its top rises flatter: broad fat shoulders
+TK_EDGE = 18.2                                                # where the skin cap ends and the haki begins
+TK_HAKI = [(16, 7, 13), (28, 9, 20), (42, 12, 28), (62, 16, 37), (88, 24, 50)]
+TK_CRIMSON = [(116, 18, 42), (168, 26, 56)]
+TK_RIM = (240, 52, 82)
+TK_WHITE = (255, 252, 252)
+TK_PINK = (244, 196, 210)
+TK_SCAR, TK_SCAR_EDGE = (252, 230, 214), (180, 108, 92)
+TK_ARM_Y, TK_ARM_Z = 24.0, 0.0                               # the arms come out of the tops of the shoulders
+TK_HAT_Y, TK_HAT_Z = 14.5, 14.0
+_TK_NRM = {"north": (0, 0, -1), "south": (0, 0, 1), "east": (1, 0, 0), "west": (-1, 0, 0), "up": (0, 1, 0), "down": (0, -1, 0)}
+_TK_FLIP = {"east": "west", "west": "east"}
+
+
+def _tk_wrap(a):
+    return (a + math.pi) % (2 * math.pi) - math.pi
+
+
+def _tk_ring_rho(y):
+    """Horizontal radius of the belly at height y."""
+    if y >= TK_CY:
+        return TK_R * math.sqrt(max(0.0, 1 - min(1.0, abs((y - TK_CY) / TK_RY_UP) ** TK_P)))
+    return TK_R * math.sqrt(max(0.0, 1 - min(1.0, ((y - TK_CY) / TK_RY) ** 2)))
+
+
+# the splash: rounded skin drips hanging into the haki (angle, half width, length), mirror-symmetric, irregular
+_TK_DRIPS = []
+for _deg, _w, _L in ((0, 1.5, 2.9), (17, 1.2, 1.6), (33, 1.45, 2.6), (50, 1.15, 1.3), (66, 1.4, 2.4), (83, 1.2, 1.7),
+                     (100, 1.4, 2.5), (117, 1.15, 1.4), (134, 1.45, 2.3), (151, 1.2, 1.6), (167, 1.4, 2.2)):
+    for _sgn in ((1,) if _deg == 0 else (1, -1)):
+        _TK_DRIPS.append((_sgn * math.radians(_deg), _w, _L))
+_TK_DRIPS.append((math.pi, 1.4, 2.0))
+
+
+def _tk_is_skin(a, y):
+    """Skin above the splash line; below it only the rounded drips (and a droplet under the longest)."""
+    if y >= TK_EDGE:
+        return True
+    rho = _tk_ring_rho(TK_EDGE)
+    for da, w, L in _TK_DRIPS:
+        d = abs(_tk_wrap(a - da)) * rho
+        if d > w + 0.6:
+            continue
+        bottom = TK_EDGE - L
+        if y >= bottom + w and d < w:
+            return True
+        if d * d + (y - bottom - w) ** 2 < w * w:
+            return True
+        if L > 2.35 and d * d + (y - (bottom - 1.15)) ** 2 < 0.62:
+            return True
+    return False
+
+
+def tk_body_rgb(x, y, z, face):
+    """Colour of the belly at a model-space point."""
+    a = math.atan2(x, -z)
+    skin = tones(SKIN)
+    if _tk_is_skin(a, y):
+        e = 0.26
+        edge = not (_tk_is_skin(a + e / 11.0, y) and _tk_is_skin(a - e / 11.0, y))
+        if face not in ("up", "down"):
+            edge = edge or not _tk_is_skin(a, y - e)
+        return skin[1] if edge else _tk_skin_rgb(x, y, z, a, face, skin)
+    return _tk_haki_rgb(x, y, z, a, face)
+
+
+def _tk_skin_rgb(x, y, z, a, face, skin):
+    s = a * max(6.0, _tk_ring_rho(y))                         # arc length across the chest, 0 in the middle
+    if abs(a) < math.radians(75):
+        for sgn in (1, -1):                                   # the X scar: two pale lines crossing on the chest
+            x0, y0, x1, y1 = -2.6 * sgn, 23.0, 2.6 * sgn, 19.6
+            dx, dy = x1 - x0, y1 - y0
+            t = max(0.0, min(1.0, ((s - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy)))
+            d = math.hypot(s - (x0 + t * dx), y - (y0 + t * dy))
+            if d < 0.2:
+                return TK_SCAR
+            if d < 0.36:
+                return TK_SCAR_EDGE
+        # two big round pecs: a W-shaped crease under them, the cleavage, shadow below, light on the upper bulge
+        if abs(s) < 9.2:
+            under = 19.45 + 1.05 * ((abs(s) - 4.5) / 4.5) ** 2
+            if abs(y - under) < 0.2:
+                return skin[1]
+            if under - 0.75 < y < under - 0.2:
+                return mix(skin[1], skin[2], 0.55)
+            if abs(s) < 0.2 and under < y < 22.9:
+                return skin[1]
+            if ((abs(s) - 4.6) / 2.9) ** 2 + ((y - 21.9) / 1.05) ** 2 < 1:
+                return skin[3]
+    return skin[2]
+
+
+def _tk_haki_rgb(x, y, z, a, face):
+    """Glossy haki: clean bands from a lighter maroon sheen under the skin to near-black; the bright red rim of the
+    reference is a ring just inside the outline seen from the front (and the back), down both sides and round the
+    bottom, with a shorter streak inside it on each side; white glints."""
+    H = TK_HAKI
+    Y = (y - TK_CY) / TK_RY
+    c = H[4] if Y > 0.27 else H[3] if Y > 0.08 else H[2] if Y > -0.3 else H[1] if Y > -0.62 else H[0]
+    zr, xr = abs(z) / TK_R, abs(x) / TK_R
+    lo_, hi_ = (0.3, 0.38) if face in ("east", "west") else (0.29, 0.41)   # seen face-on from the side: thinner
+    if lo_ < zr < hi_ and Y < 0.3 and not (Y < -0.55 and xr < 0.24):
+        return TK_RIM
+    if 0.41 <= zr < 0.47 and -0.75 < Y < 0.22 and xr > 0.6:
+        c = TK_CRIMSON[0]                                     # a soft red glow just inside the rim
+    if 0.6 < zr < 0.67 and xr > 0.5 and -0.42 < Y < 0.1:
+        return TK_CRIMSON[1]
+    rho = max(4.0, _tk_ring_rho(y))
+    s = a * rho
+    gs, gy0 = math.radians(41) * rho, TK_CY + 0.1 * TK_RY      # one big oval glint high on his right
+    e = ((s - gs) / 1.45) ** 2 + ((y - gy0) / 0.9) ** 2
+    if e < 1:
+        return TK_WHITE if e < 0.55 else TK_PINK
+    for sa, sy in ((-56, 0.1), (-66, -0.12), (-20, -0.55), (-34, -0.72), (25, -0.66), (48, -0.06), (60, -0.4),
+                   (36, 0.26), (-44, 0.24), (8, -0.8), (112, -0.2), (-120, 0.0), (150, -0.5), (-160, -0.3),
+                   (95, 0.15), (-95, -0.55), (180, 0.1)):
+        ds = _tk_wrap(a - math.radians(sa)) * rho
+        if abs(ds) + abs(y - (TK_CY + sy * TK_RY)) < 0.42:
+            return TK_WHITE
+    return c
+
+
+def _tk_body_in(x, y, z):
+    if y > 23.75 and abs(x) < 4.25 and abs(z) < 4.25:          # the head sinks into this socket
+        return False
+    if y > 23.75 and abs(x) < 6.0 and z < -4.0:               # open in front of the face, down to the chin
+        return False
+    return x * x + z * z < _tk_ring_rho(y) ** 2
+
+
+def _tk_arm_paint(fn):
+    """Mirror helper: the left arm is painted as the right one seen in a mirror."""
+    def g(x, y, z, face):
+        return fn(-x, y, z, _TK_FLIP.get(face, face))
+    g.__name__ = fn.__name__ + "_l"
+    return g
+
+
+TK_CUFF_X, TK_FORE_X = (9.0, 13.0), (13.0, 17.0)            # where the cuff and the forearm run along x
+
+
+def _tk_cuff_in(x, y, z):
+    return TK_CUFF_X[0] <= x < TK_CUFF_X[1] and (y - TK_ARM_Y) ** 2 + (z - TK_ARM_Z) ** 2 < 3.6 ** 2
+
+
+def _tk_fore_in(x, y, z):
+    return TK_FORE_X[0] <= x < TK_FORE_X[1] and (y - TK_ARM_Y) ** 2 + (z - TK_ARM_Z) ** 2 < 3.05 ** 2
+
+
+TK_FIST = (20.5, 23.5, -0.5, 3.5, 4.0, 4.0)                  # centre and half sizes of the right fist
+
+
+def _tk_fist_in(x, y, z):
+    cx, cy, cz, hx, hy, hz = TK_FIST
+    return x >= TK_FORE_X[1] and (abs(x - cx) / hx) ** 4 + (abs(y - cy) / hy) ** 4 + (abs(z - cz) / hz) ** 4 < 1
+
+
+def tk_cuff_rgb(x, y, z, face):
+    """The rolled cream sleeve with two red stripes round it."""
+    cream = tones((240, 228, 196))
+    ax = abs(x)
+    if face in ("east", "west"):
+        return cream[1] if math.hypot(y - TK_ARM_Y, z - TK_ARM_Z) > 2.2 else cream[2]
+    if abs(ax - (TK_CUFF_X[0] + 1.75)) < 0.3 or abs(ax - (TK_CUFF_X[0] + 3.0)) < 0.3:
+        return (204, 40, 46)
+    if ax < TK_CUFF_X[0] + 0.3 or ax > TK_CUFF_X[1] - 0.3:
+        return cream[1]
+    return cream[3] if face == "up" else cream[2]
+
+
+TK_ARM = [(16, 10, 18), (32, 22, 36), (54, 40, 58), (82, 64, 86)]   # haki arms: black with a grey-violet sheen
+
+
+def _tk_arm_haki(face, dy, dz):
+    """Haki on an arm: black, a grey-violet sheen along the top, a bright red line along the lower front edge."""
+    A = TK_ARM
+    ang = math.degrees(math.atan2(dy, -dz))                  # 0 = facing forward, 90 = up, -90 = down
+    if -57 < ang < -40:
+        return TK_RIM
+    if -150 < ang <= -57:
+        return A[0]
+    if ang > 50 and ang < 140:
+        return A[3]
+    return A[2] if 0 <= ang <= 50 else A[1]
+
+
+def tk_fore_rgb(x, y, z, face):
+    ax = abs(x)
+    if abs(ax - 15.0) + abs(y - 26.4) + abs(z + 1.6) < 0.55:
+        return TK_WHITE
+    return _tk_arm_haki(face, y - TK_ARM_Y, z - TK_ARM_Z)
+
+
+def tk_fist_rgb(x, y, z, face):
+    ax = abs(x)
+    cx, cy, cz, hx, hy, hz = TK_FIST
+    if abs(ax - 19.0) + abs(y - 26.6) + abs(z + 3.4) < 0.55:
+        return TK_WHITE
+    if face in ("east", "west"):                              # the flat of the fist: dark, knuckles round its rim
+        dy, dz = (y - cy) / hy, (z - cz) / hz
+        if max(abs(dy), abs(dz)) > 0.78:
+            return TK_ARM[2] if dy > 0 else TK_ARM[0]
+        return TK_ARM[1]
+    if face == "north":                                       # four knuckles across the front, the fingers curled
+        k = (ax - (cx - hx)) / (2 * hx) * 4
+        if y > cy - 0.25 and 0.15 < k < 3.85:
+            if abs(k - int(k) - 0.5) > 0.4:
+                return TK_ARM[0]
+            return TK_RIM if y > cy + 2.4 else TK_ARM[2]
+        if abs(y - (cy - 0.6)) < 0.2:
+            return TK_ARM[0]
+    return _tk_arm_haki(face, (y - cy) / hy, (z - cz) / hz)
+
+
+TK_STEAM = [(12.0, 23.0, -2.0), (13.0, 26.5, 1.5), (11.5, 31.0, 4.5), (7.5, 35.5, 6.0), (2.5, 37.5, 6.5),
+            (-2.5, 37.5, 6.5), (-7.5, 35.5, 6.0), (-11.5, 31.0, 4.5), (-13.0, 26.5, 1.5), (-12.0, 23.0, -2.0),
+            (-14.5, 19.5, -1.0), (-14.0, 17.0, 2.0)]
+
+
+def _tk_puff_chain(pts, step=1.9, radii=(2.4, 1.7, 2.1, 1.5, 2.5, 1.8, 2.0, 1.6)):
+    """Cloud puffs strung along a path: centres every `step` units, sizes cycling so the ribbon billows."""
+    out = []
+    for n in range(len(pts) - 1):
+        a, b = pts[n], pts[n + 1]
+        k = max(1, int(round(math.dist(a, b) / step)))
+        for t in range(k):
+            out.append(tuple(a[i] + (b[i] - a[i]) * t / k for i in range(3)))
+    out.append(tuple(pts[-1]))
+    return [(c, radii[i % len(radii)] * (0.75 if i in (0, len(out) - 1) else 1.0)) for i, c in enumerate(out)]
+
+
+_TK_PUFFS = []
+
+
+def _tk_steam_near(x, y, z):
+    """Signed distance to the steam (negative inside) and the height of the nearest puff's centre."""
+    if not _TK_PUFFS:
+        _TK_PUFFS.extend(_tk_puff_chain(TK_STEAM))
+    best, cy_ = 9.0, y
+    for c, r in _TK_PUFFS:
+        d = math.dist((x, y, z), c) - r
+        if d < best:
+            best, cy_ = d, c[1]
+    return best, cy_
+
+
+def _tk_steam_in(x, y, z):
+    return _tk_steam_near(x, y, z)[0] < 0
+
+
+def tk_steam_rgb(x, y, z, face):
+    """Lavender-white steam, a cool lavender-blue shade on its underside."""
+    if face == "up":
+        return (252, 252, 255)
+    if face == "down":
+        return (170, 180, 226)
+    return (206, 210, 242) if y < _tk_steam_near(x, y, z)[1] - 0.9 else (240, 240, 250)
+
+
+def tk_hat_rgb(x, y, z, face):
+    """Straw: woven rings on the brim, a darker rim."""
+    st = tones(STRAW)
+    r = math.hypot(x, y - TK_HAT_Y)
+    if face in ("north", "south"):
+        if r > 6.0 or abs(r - 4.5) < 0.24:
+            return st[1]
+        return st[2]
+    return st[1] if face != "up" else st[2]
+
+
+def tk_sash_rgb(x, y, z, face):
+    sash = tones(SASH)
+    return sash[1] if face == "down" else (sash[3] if face == "up" else sash[2])
 
 
 def luffy_body(m, form):  # noqa: F811
-    """Gear 4 Tankman (reference art): Luffy's body blown up into a gigantic round belly coated black-maroon in Armament
-    Haki, glossy, with bright red rim highlights down both sides and white glints. His skin covers only the top of the
-    ball — big pecs, the X scar — and spills over the haki in a splash of drips. His head is sunk into fat puffed
-    cheeks, his haki arms stick out to the sides with rolled cream cuffs, tiny red legs poke out underneath above the
-    yellow sash, steam clouds coil round his shoulders, the straw hat hangs on his back."""
+    """Gear 4 Tankman (reference art), in clean voxel blocks: Luffy's body blown up into a gigantic round belly coated in
+    glossy black-maroon Armament Haki with bright red rim lines and white glints. His skin covers only the top: big
+    pecs, the X scar, and a splashy edge of drips where it meets the haki. His head is sunk into a fat roll, cheeks
+    puffed and teeth gritted; haki arms stick out to the sides from rolled cream cuffs, with big fists; tiny red legs
+    with dark feet poke out under the yellow sash; steam coils over his head and the straw hat hangs on his back."""
     if form != "g4t":
         return _luffy_body_tank2_prev(m, form)
-    import sculpt as SC
     luffy_head(m, (22, 20, 26), "luffy_g4")
-    for s_ in (1, -1):  # fat puffed cheeks bulging out of the face
-        m.box("head", [s_ * 4.6 - 1.1, 24.0, -3.9], [2.2, 2.6, 4.2], solid(SKIN))
-    Rh, Rv, cy = 12.5, 10.6, 12.9          # a slightly squashed sphere: wide and round
-    R = Rv
-    yb = cy + 5.2                          # where the skin ends and the haki begins
+    skin = tones(SKIN)
 
-    def rad(y):                            # horizontal radius of the ball at height y
-        t = (y - cy) / Rv
-        return Rh * math.sqrt(max(0.0, 1 - t * t))
+    def cheek(face, img):
+        """A round puffed cheek: lit in the middle, shaded towards its lower and outer edges."""
+        w, h = img.size
+        px = img.load()
+        for yy in range(h):
+            for xx in range(w):
+                c = skin[2]
+                if face == "up":
+                    c = skin[3]
+                elif face == "down" or yy >= h - 1:
+                    c = skin[1]
+                elif face in ("north", "south") and (xx == 0 or xx == w - 1) and h > 4:
+                    c = skin[1]
+                elif face == "north" and 1 <= yy <= h // 2 and w // 3 <= xx < w - w // 3:
+                    c = skin[3]
+                px[xx, yy] = c + (255,)
+    for s_ in (1, -1):  # fat cheeks puffed out at the sides of the gritted teeth, rounded at the front
+        m.box("head", [2.75 if s_ > 0 else -5.75, 23.75, -4.5], [3.0, 2.75, 3.75], cheek)
+        m.box("head", [3.25 if s_ > 0 else -5.25, 24.0, -5.0], [2.0, 2.25, 0.5], cheek)
 
-    def surf(az, t, out=0.4):              # a point just outside the ball: az 0 = straight ahead (-z), t from -1 to 1
-        # each slice is three squares turned 0/30/60 degrees; their union reaches r / cos(angle to the farthest normal)
-        deg = math.degrees(az)
-        k = max(1 / math.cos(math.radians(abs(((deg - rot + 45) % 90) - 45))) for rot in (0, 30, 60))
-        r = (Rh * math.sqrt(max(0.0, 1 - t * t)) + 0.5) * k + out
-        return [math.sin(az) * r, cy + t * Rv, -math.cos(az) * r]
-    n = 14
-    skin_sw, haki_sw = SC.swatch(SKIN), SC.swatch((78, 18, 40))
-    for k in range(n):
-        y0 = cy - Rv + k * (2 * Rv / n)
-        yc = y0 + Rv / n
-        r = rad(yc) + 0.5
-        for rot in ([0, 0, 0], [0, 30, 0], [0, 60, 0]):  # a 12-sided slice: rounder than a square
-            m.box("body", [-r, y0, -r], [2 * r, 2 * Rv / n + 0.05, 2 * r], skin_sw if yc > yb else haki_sw, rot=rot, pivot=[0, yc, 0])
-    m.box("body", [-5.6, cy + Rv - 2.2, -5.6], [11.2, 2.6, 11.2], skin_sw)                 # fat shoulders round the sunk head
-    for i in range(15):  # the skin spilling down over the haki in a splash of drips (front and sides)
-        a = math.radians(-80 + i * (160 / 14))
-        L = 1.4 + 1.8 * ((i * 7) % 5) / 4
-        p0 = surf(a, (yb - L / 2 - cy) / Rv, 0.2)
-        m.box("body", [p0[0] - 0.9, yb - L, p0[2] - 0.9], [1.8, L + 0.6, 1.8], skin_sw, rot=[0, -math.degrees(a), 0], pivot=[p0[0], yb, p0[2]])
-    # big pecs and the X scar on the skin cap
-    rf = rad(yb + 2.2) + 0.5
-    for s_ in (1, -1):
-        m.box("body", [s_ * 3.2 - 3.0, yb + 1.0, -rf - 0.4], [6.0, 3.0, 1.0], solid(SKIN))
-        m.box("body", [s_ * 3.2 - 3.0, yb + 0.9, -rf - 0.5], [6.0, 0.35, 0.3], solid(dark(SKIN, 0.75)))
-    for s_ in (1, -1):
-        m.box("body", [-0.2, yb + 0.2, -rf - 0.6], [0.45, 4.6, 0.3], solid((168, 104, 86)), rot=[0, 0, s_ * 45], pivot=[0, yb + 2.5, -rf - 0.45])
-    # glossy haki: bright red rim lines down both sides, a big white glint and small sparkles
-    rim, rim2 = SC.swatch((226, 30, 58)), SC.swatch((160, 20, 44))
-    for s_ in (1, -1):
-        SC.curve_tube(m, "body", [surf(s_ * 1.05, 0.35), surf(s_ * 1.2, -0.1), surf(s_ * 1.1, -0.6)], 0.42, 0.28, [rim, rim], n=2)
-        SC.curve_tube(m, "body", [surf(s_ * 0.8, 0.25), surf(s_ * 0.92, -0.2), surf(s_ * 0.85, -0.55)], 0.26, 0.18, [rim2, rim2], n=2)
-    glint = solid((255, 250, 248))
-    gp = surf(-0.55, 0.15, 0.5)
-    m.box("body", [gp[0] - 1.0, gp[1] - 0.7, gp[2] - 0.3], [2.0, 1.4, 0.6], glint, rot=[0, 30, 0], pivot=gp)
-    for az, t in ((-1.0, -0.2), (0.6, -0.5), (0.95, 0.1), (-0.3, -0.7), (0.25, -0.25), (-0.75, -0.55)):
-        q = surf(az, t, 0.35)
-        m.box("body", [q[0] - 0.35, q[1] - 0.35, q[2] - 0.2], [0.7, 0.7, 0.4], glint)
-    # haki arms held out to the sides: rolled cream cuff, a thick black-red forearm, a big fist
-    cuff = layered((236, 222, 190), [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), (200, 40, 40))])
-    for bone, s_ in (("rightArm", 1), ("leftArm", -1)):
-        x0 = s_ * 10.0
-        m.box(bone, [x0 - 2.0 if s_ > 0 else x0 - 2.6, 20.0, -2.4], [4.6, 4.6, 4.8], cuff)                    # rolled cream cuff
-        m.box(bone, [x0 + 2.4 if s_ > 0 else x0 - 9.4, 19.2, -3.0], [7.0, 6.2, 6.0], haki_glow)             # haki forearm
-        m.box(bone, [x0 + 9.2 if s_ > 0 else x0 - 15.2, 18.4, -3.8], [6.0, 7.6, 7.6], haki_glow)            # big fist
-        m.box(bone, [x0 + 9.0 if s_ > 0 else x0 - 15.4, 22.6, -4.0], [6.4, 0.8, 8.0], solid((150, 24, 44)))  # red knuckle band
-    # tiny legs underneath: red trousers, cream fur at the ankles, black haki feet; the yellow sash under the belly
-    m.box("body", [-4.4, cy - Rv - 0.9, -4.4], [8.8, 1.4, 8.8], solid((236, 196, 60)))
-    for bone, x0 in (("rightLeg", 0.4), ("leftLeg", -3.4)):
-        m.box(bone, [x0, 1.2, -1.4], [3.0, 1.6, 2.8], solid((190, 34, 38)))
-        m.box(bone, [x0 - 0.2, 0.7, -1.6], [3.4, 0.8, 3.2], solid((240, 236, 226)))
-        m.box(bone, [x0, 0, -2.2], [3.0, 0.8, 3.6], solid((26, 14, 20)))
-    # steam coiling round his shoulders, the straw hat hanging on his back
-    steam_wreath(m, cy + Rv + 0.4, 8.8, 7.0, 9, 3.0, back=1.5)
+    def head_in(i, j, k):  # the head hides these faces
+        return j >= 24 and -4 <= i < 4 and -4 <= k < 4
+    vox_solid(m, "body", _tk_body_in, (-15, 3, -15), (15, 28, 15), tk_body_rgb, solid_also=head_in)
+    for bone, mir in (("rightArm", False), ("leftArm", True)):
+        for inside, fn in ((_tk_cuff_in, tk_cuff_rgb), (_tk_fore_in, tk_fore_rgb), (_tk_fist_in, tk_fist_rgb)):
+            if mir:
+                vox_solid(m, bone, (lambda f: (lambda x, y, z: f(-x, y, z)))(inside), (-25, 18, -6), (-7, 30, 5), _tk_arm_paint(fn))
+            else:
+                vox_solid(m, bone, inside, (7, 18, -6), (25, 30, 5), fn)
+    # tiny legs under the belly: red trousers, white fur cuffs, dark feet; the yellow sash round the waist
+    for bone, x0 in (("rightLeg", 0.5), ("leftLeg", -3.5)):
+        m.box(bone, [x0, 1.5, -1.5], [3.0, 7.0, 3.0], solid((196, 38, 42)))
+        m.box(bone, [x0 - 0.25, 0.75, -1.75], [3.5, 1.0, 3.5], fur_cuff)
+        m.box(bone, [x0, 0, -2.75], [3.0, 0.75, 4.0], solid((40, 22, 28)))
+    vox_solid(m, "body", lambda x, y, z: 3 <= y < 4 and x * x + z * z < 5.6 ** 2, (-7, 3, -7), (7, 4, 7), tk_sash_rgb)
+    m.box("body", [-6.75, 2.25, -1.0], [1.5, 2.0, 2.0], solid(SASH))            # the knot at his left hip
+    m.box("body", [-6.5, 0.5, -0.75], [1.0, 1.75, 0.5], solid(dark(SASH, 0.9)))
+    m.box("body", [-6.0, 0.25, 0.25], [1.0, 2.0, 0.5], solid(dark(SASH, 0.9)))
+    # the straw hat hanging on his back
+    vox_solid(m, "body", lambda x, y, z: TK_HAT_Z <= z < TK_HAT_Z + 1 and x * x + (y - TK_HAT_Y) ** 2 < 6.6 ** 2,
+              (-8, 7, 13), (8, 22, 16), tk_hat_rgb)
     weave = layered(STRAW, [lines((SIDES + ("up",), [[(0, 0.33), (1, 0.33)], [(0, 0.66), (1, 0.66)]]), dark(STRAW, 0.75))])
-    hz = rad(cy + 4) + 0.6
-    for rz in (0, 45):
-        m.box("body", [-6, cy + 2, hz], [12, 12, 0.5], weave, rot=[-12, 0, rz], pivot=[0, cy + 8, hz])
-    m.box("body", [-3.2, cy + 4.8, hz + 0.4], [6.4, 6.4, 2.4], weave, rot=[-12, 0, 0], pivot=[0, cy + 8, hz])
-    m.box("body", [-3.3, cy + 4.8, hz + 0.3], [6.6, 1.1, 2.6], solid((200, 30, 34)), rot=[-12, 0, 0], pivot=[0, cy + 8, hz])
+    m.box("body", [-3.5, TK_HAT_Y - 3.5, TK_HAT_Z + 1], [7.0, 7.0, 3.0], weave)
+    m.box("body", [-3.75, TK_HAT_Y - 3.75, TK_HAT_Z + 1], [7.5, 7.5, 1.0], solid((200, 30, 34)))
+    # steam coiling up from his right shoulder, over the back of his head, down round his left arm
+    vox_solid(m, "body", _tk_steam_in, (-18, 14, -6), (18, 41, 10), tk_steam_rgb)

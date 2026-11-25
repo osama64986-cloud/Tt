@@ -3416,3 +3416,17 @@ def build(char, form):  # noqa: F811
         _NEW21[char](m, form)
         return m
     return _build_prev21(char, form)
+
+
+# ==================================================================================
+# 1.22: twenty-four more fighters live in their own module, chained here like every block above
+import chars_new22  # noqa: E402
+
+FORMS.update(chars_new22.FORMS)
+_build_prev22 = build
+
+
+def build(char, form):  # noqa: F811
+    if char in chars_new22.FORMS:
+        return chars_new22.build(char, form)
+    return _build_prev22(char, form)

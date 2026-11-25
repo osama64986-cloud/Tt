@@ -66,3 +66,14 @@
 
 Every fighter is smart: they choose their technique for the moment, punish openings, dodge, retreat and heal. The
 stronger fighter usually wins, but a much smarter one can beat a slightly stronger opponent.
+
+**New in 1.22**
+- **Demon Slayer Hashira:** Giyu Tomioka (Water Breathing, Dead Calm), Shinobu Kocho (Insect Breathing, wisteria poison), Tengen Uzui (Sound Breathing, Musical Score), Mitsuri Kanroji (Love Breathing whip-sword), Muichiro Tokito (Mist Breathing, Obscuring Clouds), Gyomei Himejima (Stone Breathing, the strongest Hashira), Obanai Iguro (Serpent Breathing), Sanemi Shinazugawa (Wind Breathing).
+- **Piccolo** (Special Beam Cannon, Hellzone Grenade, Orange Piccolo) and **Perfect Cell** (Solar Kamehameha).
+- **Toji Fushiguro** (Inverted Spear of Heaven breaks Infinity) and **Mahito** (Idle Transfiguration).
+- **Kaido** (Thunder Bagua, turns into the Azure Dragon) and **Shanks** (Divine Departure, Conqueror's Haki).
+- **Pain** (Shinra Tensei, Chibaku Tensei) and **Minato** (Flying Raijin, Rasengan).
+- **Kenpachi Zaraki** (Kendo, Nozarashi, Bankai) and **Ulquiorra** (Cero Oscuras, Lanza del Relampago, Segunda Etapa).
+- **Endeavor** (Prominence Burn, Hell Spider) and **Tomura Shigaraki** (Decay).
+- **Isaac Netero** (100-Type Guanyin Bodhisattva, Zero Hand) and **Meruem**.
+- **Aki Hayakawa** (Fox Devil, Curse Devil, Future Devil) and **Reze** (Bomb Devil).
