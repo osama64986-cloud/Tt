@@ -2991,12 +2991,15 @@ def power(m, form):
         m.box("body", [x0, 11.6, -2.6], [2.0, 12.6, 5.2], layered(jacket, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(jacket, 0.75))]))
     m.box("body", [-4.6, 11.6, 2.1], [9.2, 12.6, 0.5], solid(jacket))
     m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((40, 26, 34)))
-    if devil:  # her blood made into a great scythe
-        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 0.5, -1), (0, 1, 0.5), 3.0, 17.0, 7.0, WP.blood_scythe_shape(17.0, 7.0),
-                 (110, 10, 20), grip=0.2, shift=0.0, t=0.3)
-    else:  # her blood made into a hammer
-        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 0.5, -1), (0, 1, 0.5), 2.4, 14.0, 5.2, WP.blood_hammer_shape(14.0, 5.2, 4.6),
-                 (110, 10, 20), grip=0.2, t=0.3)
+    if devil:  # her blood made into a great scythe: the shaft upright in her fist, the crescent over her shoulder
+        L, W = 24.0, 10.0
+        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 1, -0.45), (-1, 0, 0.5), 6.5, L, W, WP.blood_scythe_shape(L, W),
+                 (84, 6, 16), grip=0.2, shift=-(0.5 - WP.SCY_SHAFT) * W, t=0.3)
+    else:  # her blood made into a hammer: a haft and a solid block of a head
+        d, L, head = (0, 1, -0.6), 14.0, 3.4
+        g, d_, up_, _s = WP.broad(m, "rightArm", (6, 13.1, -0.4), d, (0, 0, -1), 3.0, L, 1.2,
+                                  WP.blood_hammer_shape(L, 1.2, head), (110, 10, 20), grip=0.2, t=0.3)
+        WP.blood_hammer_head(m, "rightArm", WP._add(g, d_, L - 3.0 - head / 2), d_, (0, 0, -1), 5.6, head, 3.4)
     power_hair(m, devil)
 
 

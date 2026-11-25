@@ -195,6 +195,18 @@ TSUBA_R = {"round": 1.15, "wheel": 1.15, "flame": 1.3, "manji": 1.3, "cross": 1.
            "oval": 1.25, "fullbring": 1.6, "none": 0.0}
 
 
+# ------------------------------------------------------------------ sharp points
+EDGE_HI = (255, 255, 255)
+
+
+def kissaki(s, point=0.3, bulge=0.8):
+    """The point of a single-edged blade, s 0..1 over the tip section: returns (spine, edge) as fractions across the
+    blade from its spine. The spine dips slightly and the edge sweeps up in a full convex curve (fukura); they meet
+    in a sharp point `point` of the way across from the spine."""
+    s = max(0.0, min(1.0, s))
+    return point * s ** 2.2, point + (1 - point) * max(0.0, 1 - s * s) ** bulge
+
+
 # ------------------------------------------------------------------ katana, seen from the side
 GLYPHS = [  # 悪 鬼 滅 殺, as tiny 5x7 pictures (Rengoku's engraving)
     ["#####", "#.#.#", "#####", "..#..", "#####", "#.#.#", "#.#.#"],
@@ -222,7 +234,7 @@ def katana_shape(st, hilt, blade, W):
     u_g1 = (hilt + (0.3 if style != "none" else 0.0)) / T
     u_hb = u_g1 + 0.5 / T
     curve = 0.0 if st.get("straight") else 0.32 / W
-    tip_t = 1 - min(0.3, 1.3 / blade)
+    tip_t = 1 - min(0.3, 1.6 / blade)
     rng = random.Random(7)
     petals = []
     if st.get("petals") is not None:                # Senbonzakura: the blade scatters into cherry petals
@@ -263,8 +275,10 @@ def katana_shape(st, hilt, blade, W):
             if abs(dx) < tr * 0.95 and u < reach and abs(dx) > bw * 0.45:
                 return mix((255, 120, 30), (255, 220, 90), (u - u_g1) / (0.55 / T))
         t = (u - u_hb) / (1 - u_hb)
-        cx = 0.5 - curve * max(0.0, t) ** 2                               # the blade curves toward its spine (xf 0)
-        w = bw * (1 - 0.14 * max(0.0, t))
+        w = bw * (1 - 0.2 * max(0.0, t))
+        # the blade curves toward its spine (xf 0); it also leans slightly so that the point ends on the sheet's axis,
+        # where the crossed sheet's point is too (one sharp point seen from any side, not two)
+        cx = 0.5 - curve * max(0.0, t) ** 2 + (curve + 0.16 * bw) * max(0.0, t)
         lo = cx - w / 2
         if u < u_hb:                                                      # habaki
             return habaki if lo - 0.05 / W <= xf <= lo + w + 0.05 / W else None
@@ -277,16 +291,18 @@ def katana_shape(st, hilt, blade, W):
                     return (255, 214, 232) if a_ < -0.08 else (244, 140, 186)
             if t > st["petals"] + 0.04:
                 return None
-        hi_ = lo + w
-        if t > tip_t:                                                     # kissaki: the edge sweeps up to the spine
-            s_ = (t - tip_t) / (1 - tip_t)
-            hi_ = lo + w * math.sqrt(max(0.0, 1 - s_ * s_))
-        if not (lo <= xf <= hi_):
+        lo_, hi_ = lo, lo + w
+        if t > tip_t:                                                     # kissaki: edge and spine meet in a point
+            a_, b_ = kissaki((t - tip_t) / (1 - tip_t))
+            lo_, hi_ = lo + w * a_, lo + w * b_
+        if not (lo_ <= xf <= hi_):
             return None
         q = (xf - lo) / w
-        if q < 0.16:
+        if (xf - lo_) / w < 0.16:
             return spine
-        if hi_ - xf < 0.1 / W:
+        if hi_ - xf < 0.07 / W:
+            return EDGE_HI                                                # the bright honed cutting line
+        if hi_ - xf < 0.17 / W:
             return ecol                                                   # the cutting edge
         if t > tip_t and abs(t - tip_t) * blade < 0.08:
             return lt(bcol, 0.35)                                         # yokote line
@@ -639,46 +655,99 @@ def _blood(xf, u, base=BLOOD):
 
 
 def blood_hammer_shape(L, W, head=4.2):
-    """Power's blood hammer (u from the butt): a long haft, a heavy square head with drips running off it."""
-    hd = head / L
-
+    """Power's blood hammer haft (u from the butt): a long dark-red haft with a bright wet streak, a knob at the butt,
+    running on into the head (the head itself is a solid block, blood_hammer_head)."""
     def f(xf, u):
         dx = (xf - 0.5) * W
         Lu = u * L
-        if Lu < L - head:
-            if abs(dx) > 0.36 + (0.12 if Lu < 0.6 else 0.0):
-                return None
-            return lt(BLOOD, 0.3) if dx < -0.1 else dk(BLOOD, 0.8)
-        s = (Lu - (L - head)) / head
-        if abs(dx) > W / 2 - 0.05 or (abs(dx) > W / 2 - 0.5 and (s < 0.06 or s > 0.94)):
+        if Lu > L - head * 0.5:
             return None
-        if abs(s - 0.5) < 0.04:
-            return dk(BLOOD, 0.6)
-        return _blood(0.5 + dx / W * 0.9 + 0.2 * (s - 0.5), u)
-    _ = hd
+        if Lu < 0.7:
+            return (96, 6, 16) if abs(dx) < 0.5 else None                     # the butt knob
+        if abs(dx) > 0.36:
+            return None
+        if int(Lu / 0.9) % 3 == 0 and Lu < L - head - 6:
+            return (110, 8, 20)                                                # clotted rings on the grip
+        return lt(BLOOD, 0.3) if dx < -0.12 else (dk(BLOOD, 0.7) if dx > 0.16 else BLOOD)
     return f
+
+
+SCY_SHAFT = 0.07                     # where the shaft runs across the scythe's picture (xf)
 
 
 def blood_scythe_shape(L, W):
-    """Power's blood scythe (u from the butt): the long snath and, at its top, a great crescent blade sweeping out to
-    the +xf side and hooking back down toward the hands to a point."""
-    R = W * 0.78
+    """Power's blood scythe (u from the butt): a long dark-red shaft running up the xf=SCY_SHAFT side, a hooked spike
+    at its butt, and at its top a great crescent blade sweeping out toward xf 1 and curving back down toward the hands
+    to a needle point. The crescent lies between two circles: the outer one is its convex back (a dark spine), the
+    inner one its concave cutting edge (a bright honed line with a lighter bevel behind it)."""
+    ys = SCY_SHAFT * W
+    top = L - 0.2
+    oc, R = (1.0, top - 7.5), 7.6                        # the back of the blade (y measured from the shaft's axis)
+    a_tip = math.radians(-24)                            # the point, on the back's circle, below its centre
+    tip = (oc[0] + R * math.cos(a_tip), oc[1] + R * math.sin(a_tip))
+    root, Ri = (0.3, top - 3.2), 6.6                     # the inner (cutting) curve: from the shaft root to the point
+    mx, my = (tip[0] + root[0]) / 2, (tip[1] + root[1]) / 2
+    dx, dy = tip[0] - root[0], tip[1] - root[1]
+    dd = math.hypot(dx, dy)
+    h = math.sqrt(max(0.0, Ri * Ri - dd * dd / 4))
+    ic = (mx + h * dy / dd, my - h * dx / dd)            # its centre, on the shaft's side of the chord
+    shaft, shaft_hi, shaft_dk = (122, 14, 26), (196, 52, 62), (70, 6, 14)
+    deep, bevel, edge, spine = (168, 16, 30), (214, 54, 66), (255, 196, 200), (84, 4, 14)
 
     def f(xf, u):
-        y = (xf - 0.5) * W          # across: the blade sweeps toward +y (xf 1 side)
+        y = xf * W - ys                                  # across, from the shaft's axis
         Lu = u * L
-        if abs(y) < 0.36 and Lu < L - 0.2:
-            return lt(BLOOD, 0.3) if y < -0.1 else dk(BLOOD, 0.8)
-        if y < 0.2:
-            return None
-        cz = L - R                                       # the crescent: inside the outer circle, outside the inner one
-        o = math.hypot(y - 0.15 * R, Lu - cz)
-        i = math.hypot(y - 0.05 * R, Lu - (cz - 0.38 * R))
-        if o < R and i > R * 0.92 and Lu > cz - R * 0.75:
-            k = (R - o) / (R * 0.35)
-            return (255, 150, 160) if i < R * 0.99 else (lt(BLOOD, 0.25) if k < 0.3 else BLOOD)
+        o = math.hypot(y - oc[0], Lu - oc[1])
+        i = math.hypot(y - ic[0], Lu - ic[1])
+        if y > 0.2 and o < R and i > Ri and math.atan2(Lu - oc[1], y - oc[0]) > a_tip:
+            d_in, d_out = i - Ri, R - o
+            q = d_in / max(1e-6, d_in + d_out)           # 0 at the cutting edge, 1 at the back
+            if d_in < 0.17:
+                return edge
+            if q < 0.3:
+                return bevel
+            if d_out < 0.3:
+                return spine
+            if abs(q - 0.62) < 0.05:
+                return dk(deep, 0.8)                     # a groove running along the blade
+            return deep
+        if top - 4.4 < Lu < top - 2.6 and -0.55 < y < 0.75:
+            return shaft_dk if int((Lu - (top - 4.4)) / 0.45) % 2 else (150, 20, 34)   # the clotted binding
+        if abs(y) < 0.34 and 0.0 < Lu < top - 0.4:
+            return shaft_hi if y < -0.12 else (shaft_dk if y > 0.2 else shaft)
+        if Lu <= 1.4 and -0.34 < y < 0.34 + 0.6 * (1.4 - Lu) / 1.4 and Lu > 0.0:
+            return shaft_dk                              # the butt spike
+        if top - 0.4 <= Lu < top + 0.15 and abs(y) < 0.34 * (top + 0.15 - Lu) / 0.55:
+            return shaft                                 # the shaft's tip, tapered
         return None
     return f
+
+
+def blood_hammer_head(m, bone, centre, d, up, across, along, depth):
+    """Power's blood hammer head as a real block (so it is a hammer from every side): deep red, a bright wet rim on
+    each face, a darker band round its middle and blood drips running down the faces."""
+    import sculpt as SC
+    base, hi, dkc = (170, 16, 30), (236, 92, 102), (96, 6, 16)
+
+    def paint(face, img):
+        w, h = img.size
+        px = img.load()
+        for yy in range(h):
+            for xx in range(w):
+                fx, fy = (xx + 0.5) / w, (yy + 0.5) / h
+                c = base
+                if fx < 0.12 or fy < 0.12:
+                    c = hi
+                elif fx > 0.88 or fy > 0.88:
+                    c = dkc
+                elif face in ("north", "south", "east", "west") and abs(fy - 0.5) < 0.07:
+                    c = dkc
+                elif face in ("north", "south", "east", "west") and fy > 0.57 and int(fx * 5) % 2 == 0 and \
+                        fy < 0.6 + 0.3 * ((int(fx * 5) * 37) % 7) / 7:
+                    c = (130, 10, 22)
+                px[xx, yy] = c + (255,)
+    SC.obox(m, bone, centre, [across, along, depth], paint, d, 0, _frame(d, up)[1])
+    m.cubes[-1]["hires"] = 2
 
 
 # ------------------------------------------------------------------ Hisoka's playing cards

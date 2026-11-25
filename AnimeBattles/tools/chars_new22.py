@@ -6,6 +6,7 @@ strand hair, flat 2D sword sprites). Imported at the very end of chars_extra.py,
 import math
 
 import models as M
+import weapons as WP
 import sculpt as SC
 from models import SIDES, SKIN, _put, both_arms, both_legs, base_body, dark, head_paint, layered, light, lines, mix, shell, solid
 from chars_extra import _shell_strands, _strip_ears, akatsuki_cloud, arm_paint, region, skin_swap
@@ -270,16 +271,25 @@ def nichirin_shape(st, hf):
         t = (u - g1) / (1 - g1)
         if t < 0.035:
             return metal if abs(dx) < 0.16 else None
-        cx = 0.5 + curve * t * t + wave * math.sin(t * math.pi * 7) * min(1.0, t * 6)
-        half = (0.09 if thin else 0.14) * (1.0 if t < 0.88 else max(0.0, 1 - (t - 0.88) / 0.12))
+        half = (0.09 if thin else 0.14) * (1 - 0.18 * t)
+        lean = 0.0 if thin else curve + 0.2 * 0.14 * 2 * 0.82     # the point ends on the axis, where the crossed sheet's is
+        cx = 0.5 - curve * t * t + lean * t + wave * math.sin(t * math.pi * 7) * min(1.0, t * 6)
         if thin and t < 0.2:
             half *= 0.75 + t
-        if abs(xf - cx) > half:
+        lo, wd = cx - half, 2 * half
+        a, b = 0.0, 1.0
+        tip = 0.82 if thin else 0.88
+        if t > tip:                                    # the point: a long needle (Shinobu) or a katana's kissaki
+            s_ = (t - tip) / (1 - tip)
+            a, b = (0.5 * s_, 1 - 0.5 * s_) if thin else WP.kissaki(s_)
+        if not (lo + wd * a <= xf <= lo + wd * b):
             return None
-        q = (xf - (cx - half)) / max(1e-6, 2 * half)
-        if q < 0.22:
+        q = (xf - lo) / max(1e-6, wd)
+        if q - a < 0.2:
             return spine
-        if q > 0.74:
+        if b - q < 0.09:
+            return WP.EDGE_HI                          # the bright honed cutting line
+        if b - q < 0.26:
             return edge
         if st.get("kanji") and 0.08 < t < 0.2 and 0.35 < q < 0.65 and int(t * 60) % 2 == 0:
             return st["kanji"]
@@ -872,8 +882,10 @@ def cleaver_shape(blade=(150, 156, 172), edge=(236, 240, 248), spine=(40, 40, 48
             return None
         if xf < 0.2:
             return spine
-        if xf > 0.84:
-            return edge
+        if xf > 0.93:
+            return edge                                                         # the honed cutting line
+        if xf > 0.8:
+            return mix(blade, edge, 0.45)                                       # the bevel
         return blade
     return f
 
@@ -898,7 +910,8 @@ def tengen(m, form):
     links = (SC.swatch((170, 170, 180)), SC.swatch((100, 100, 112)))
     for bone, hx in (("rightArm", 6.0), ("leftArm", -6.0)):
         d = M.norm((0, 0.2, -1))
-        M.flat_blade(m, bone, (hx, 12.2, -1.2), d, 4.4, 13.0, 4.0, cleaver_shape(), grip=0.8)
+        WP.broad(m, bone, (hx, 12.2, -1.2), d, (0, 1, 0), 4.4, 17.4, 4.0, cleaver_shape(), (70, 72, 82), grip=0.8,
+                 shift=-(0.5 - 0.25) * 4.0, t=0.25)              # a broad blade: one sheet with real thickness
         g = [hx + d[0] * 0.8, 12.2 + d[1] * 0.8, -1.2 + d[2] * 0.8]
         m.box(bone, [g[0] - 1.2, g[1], g[2] - 1.2], [2.4, 0, 2.4], tsuba_paint(TSUBA["round"], (224, 186, 70), (150, 110, 40)),
               rot=M._rot_for(d), pivot=list(g))
@@ -2143,13 +2156,19 @@ def gryphon_shape(haki=False):
                 return gold_d                                                     # the quillons curling forward
             return None
         t = (u - 0.25) / 0.75
-        cx = 0.45 + 0.1 * t * t
-        half = 0.09 * (1 if t < 0.86 else (1 - t) / 0.14)
-        if abs(xf - cx) > half:
+        half = 0.09 * (1 - 0.2 * t)
+        cx = 0.5 - 0.1 * t * t + (0.1 + 0.25 * 0.144) * t                   # a saber curving toward its spine, its point on the axis
+        a, b = WP.kissaki((t - 0.84) / 0.16, point=0.25) if t > 0.84 else (0.0, 1.0)
+        q = (xf - (cx - half)) / (2 * half)
+        if not (a <= q <= b):
             return None
         if haki:
-            return (200, 30, 40) if xf > cx + half * 0.5 else (24, 20, 26)
-        return (250, 250, 255) if xf > cx + half * 0.4 else (196, 200, 212)
+            return (255, 90, 90) if b - q < 0.12 else (200, 30, 40) if q > 0.55 else (24, 20, 26)
+        if q - a < 0.2:
+            return (120, 124, 138)                                                # the spine
+        if b - q < 0.12:
+            return WP.EDGE_HI                                                     # the honed edge
+        return (226, 230, 240) if q > 0.55 else (190, 196, 210)
     return f
 
 
@@ -2522,30 +2541,52 @@ def jagged_shape(blade=(150, 152, 160), edge=(214, 216, 224), spine=(70, 70, 78)
         if u < hf + 0.02:
             return (60, 60, 66) if abs(xf - 0.5) < 0.34 else None
         t = (u - hf - 0.02) / (1 - hf - 0.02)
-        cx = 0.5 + 0.05 * t * t
-        half = 0.14 * (1 if t < 0.9 else (1 - t) / 0.1)
-        nick = 0.05 if (int(t * 23) % 4 == 1) else 0.0
-        if xf < cx - half or xf > cx + half - nick:
-            return None
+        half = 0.14 * (1 - 0.18 * t)
+        cx = 0.5 - 0.05 * t * t + (0.05 + 0.4 * 0.14 * 0.82) * t        # its point ends on the axis
+        a, b = WP.kissaki((t - 0.88) / 0.12) if t > 0.88 else (0.0, 1.0)
+        nick = 0.12 if (int(t * 23) % 4 == 1 and t < 0.86) else 0.0      # chips out of the edge
         q = (xf - (cx - half)) / (2 * half)
-        return spine if q < 0.2 else edge if q > 0.72 else blade
+        if not (a <= q <= b - nick):
+            return None
+        if q - a < 0.2:
+            return spine
+        if b - nick - q < 0.09:
+            return WP.EDGE_HI
+        return edge if q > 0.72 else blade
     return f
 
 
 def nozarashi_shape(col=(70, 70, 80), edge=(220, 220, 226), red=False):
-    """Nozarashi, the Shikai: a huge wedge-shaped cleaver blade on a long hilt, a tassel at the end."""
+    """Nozarashi, the Shikai: a huge cleaver blade on a long hilt. A straight dark spine runs on from the hilt (xf
+    0.3); the blade flares out below it in a curved beard to its full width, runs straight, then the edge sweeps back
+    up to a sharp point on the spine. A bright honed edge with a lighter bevel behind it."""
     hf = 0.28
+    sp = 0.24                                                            # the back of the spine
 
     def f(xf, u):
         if u < hf:
-            return ((120, 20, 24) if red else (40, 36, 40)) if abs(xf - 0.3) < 0.06 else None
+            if abs(xf - 0.3) >= 0.06:
+                return None
+            return ((150, 30, 34) if red else (70, 64, 60)) if int(u * 60) % 3 == 0 else ((120, 20, 24) if red else (40, 36, 40))
         t = (u - hf) / (1 - hf)
-        top = 0.3 + 0.58 * min(1, t / 0.35)
-        if t > 0.96 - 0.3 * max(0, xf - 0.3):
+        if t < 0.3:
+            top = 0.38 + 0.54 * (1 - (1 - t / 0.3) ** 2)                 # the curved beard flaring out
+        else:
+            top = 0.92
+        a, b = 0.0, 1.0
+        if t > 0.66:
+            a, b = WP.kissaki((t - 0.66) / 0.34, point=0.12, bulge=0.9)
+        wd = top - sp
+        q = (xf - sp) / wd
+        if not (a <= q <= b):
             return None
-        if xf < 0.24 or xf > top:
-            return None
-        return edge if xf > top - 0.08 else col
+        if q - a < 0.1:
+            return (34, 34, 42)                                          # the spine
+        if (b - q) * wd < 0.03:
+            return WP.EDGE_HI                                            # the honed cutting line
+        if (b - q) * wd < 0.1:
+            return edge                                                  # the bevel
+        return WP.lt(col, 0.12) if q < 0.3 else col
     return f
 
 
@@ -2633,7 +2674,8 @@ def kenpachi(m, form):
     if form == "patch":
         M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.15, -1), 4.0, 17.0, 2.6, jagged_shape(), grip=1.0)
     else:
-        M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.2, -1), 5.0, 17.0, 6.0, nozarashi_shape(red=bank), grip=1.0)
+        WP.broad(m, "rightArm", (6, 12.2, -1.2), (0, 0.2, -1), (0, 1, 0), 5.0, 22.0, 6.0, nozarashi_shape(red=bank),
+                 (44, 44, 52), grip=1.0, shift=-(0.5 - 0.3) * 6.0, t=0.3)
 
 
 @M.smooth_hair
