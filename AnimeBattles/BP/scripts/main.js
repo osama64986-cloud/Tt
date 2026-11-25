@@ -392,9 +392,10 @@ function smoke(dim, loc, color, size, life, count, alpha = 0.85, radius = 0, spe
   try {
     const m = new MolangVariableMap();
     m.setColorRGB("variable.color", color);
-    m.setFloat("variable.size", size * VFX_SCALE); m.setFloat("variable.life", life);
-    m.setFloat("variable.count", count); m.setFloat("variable.speed", speed);
-    m.setFloat("variable.radius", radius); m.setFloat("variable.alpha", alpha);
+    // smoke must never wall off the view of the fight: small puffs, see-through, few of them
+    m.setFloat("variable.size", Math.min(size, 0.8) * 0.5 * VFX_SCALE); m.setFloat("variable.life", Math.min(life, 1.0));
+    m.setFloat("variable.count", Math.max(1, Math.ceil(count * 0.4))); m.setFloat("variable.speed", speed);
+    m.setFloat("variable.radius", radius); m.setFloat("variable.alpha", Math.min(alpha, 0.85) * 0.45);
     dim.spawnParticle("ab:smoke", loc, m);
   } catch (e) { /* ignore */ }
 }
