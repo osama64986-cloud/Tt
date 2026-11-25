@@ -6320,7 +6320,11 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       paceMul = 1 - (1 - CLOSE_PACE) * closeness;
       // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch. Between
       // near-equals a form ahead still tells, but less brutally: the other side has its own transformation to answer with.
-      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3 - 2 * closeness), 0.08, 4 - 2 * closeness);
+      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3 - closeness), 0.08, 4 - 1.5 * closeness);
+      // ...and between true near-equals (within ~20% potential) the one with the greater full potential keeps a steady
+      // edge through the whole duel, whatever the forms, so the stronger usually wins and IQ only tips the closest ones
+      const pr = Math.max(pa, pd) / Math.min(pa, pd);
+      ev.damage *= Math.pow(pa / pd, 2.5 * clamp((1.2 - pr) / 0.2, 0, 1));
       // the smarter fighter hits the gaps — that counts fully between near equals and fades to nothing once one side is
       // 30% stronger: against a far stronger opponent no amount of cleverness is enough
       const gap = Math.max(attackerP, defenderP) / Math.max(1, Math.min(attackerP, defenderP));
@@ -6344,7 +6348,7 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
         });
       }
     }
-    if (v.typeId === "ab:makima") ev.damage *= 0.65;
+    if (v.typeId === "ab:makima") ev.damage *= 0.75;
     if (v.typeId === "ab:whis" && now() < (s.barrierUntil ?? 0)) {  // the Angelic Barrier: blows ripple off the sphere of light
       ev.damage *= 0.15;
       system.run(() => { if (v.isValid) sphereFx(v.dimension, V.up(v.location, 1), 2.6, C.white, 16, 0.35, "orb", 0.25); });
