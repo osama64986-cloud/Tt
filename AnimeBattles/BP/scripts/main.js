@@ -5443,15 +5443,169 @@ const NETERO = {
   ],
 };
 const MERUEM = {
-  name: "Meruem", color: "§2", energy: 1400, regen: 24, energyName: "§2AURA", dodge: () => 0.3,
+  name: "Meruem", color: "§2", energy: 1400, regen: 24, energyName: "§2AURA",
+  // the King's speed; inside his En, or reading the fight like a gungi board, he slips nearly everything
+  dodge: (e) => { const s = state(e); return now() < (s.enUntil ?? 0) || now() < (s.gungiUntil ?? 0) ? 0.55 : 0.3; },
   forms: [{ label: "The King", power: 140 }, { label: "Reborn", power: 170, aura: C.purple }],
   thresholds: [0.5], transformCd: 140, formSound: [null, "mob.wither.spawn"],
   abilities: [
-    SIG.strike("tail", "Tail Strike", { say: "§2§l...", color: C.purple, blade: true, hits: 1, dmg: 26, launch: 1.6, cd: 160, cost: 80, poses: [9] }),
-    SIG.rush("kingspeed", "The King's Speed", { say: "§2§lYou are beneath me", color: C.purple, hits: 6, dmg: 6, finisher: 18 }),
-    SIG.wave("en", "En", { say: "§2§lEn §7— his aura covers everything", color: C.purple, radius: 7, dmg: 20, cd: 240 }),
-    SIG.ball("aurablast", "Aura Blast", { say: "§2§l...", color: C.purple, count: 1, size: 1.6, dmg: 40, speed: 1.6, radius: 3.5, cd: 280, cost: 150, cond: G(1) }),
-    regenAbility("Absorbed Power", "§2§lHe has absorbed his guards' power", 0.12, G(1), 700),
+    { id: "tail", label: "Tail Strike", cd: 150, cost: 70, min: 0, max: 10, weight: 7,
+      run(e, s, t) {  // the tail lashes faster than the eye can follow: a sweep that cuts, then the spike drives through
+        busy(s, 20); announce(e, "§2§l...");
+        if (!teleportNear(e, t, false, 2.2) || !alive(t)) return;
+        const dim = e.dimension;
+        face(e, aim(t)); setPose(e, 33);
+        later(3, () => {
+          if (!alive(t) || !e.isValid) return;
+          const c = aim(t);
+          const v = slashVfx(dim, c, V.norm(V.sub(c, V.up(e.location, 0.5))), C.purple, 2.4, 160); later(4, () => killVfx(v));
+          deal(e, t, 12 * powerOf(e) / 100); burst(dim, c, C.purple, 16, 3, 0.4, 0.4);
+        });
+        later(10, () => {
+          if (!alive(t) || !e.isValid) return;
+          face(e, aim(t)); setPose(e, 9);
+          const c = aim(t);
+          deal(e, t, 20 * powerOf(e) / 100);
+          fx(dim, "shock_v", c, C.purple, 3.2, 0.3); fx(dim, "flash", c, C.white, 2.2, 0.15); burst(dim, c, C.blood, 10, 2, 0.35, 0.5);
+          sound(dim, "ab.whoosh", c, 1, 0.7);
+          launch(e, t, 1.5);
+        });
+        later(18, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    { id: "kingspeed", label: "The King's Speed", cd: 200, cost: 110, min: 0, max: 22, weight: 6,
+      run(e, s, t) {  // gone before the eye can follow: blows from every side, each from a new afterimage, the last with the tail
+        const n = 7;
+        busy(s, n * 3 + 12); announce(e, "§2§lYou are beneath me.");
+        every(3, n, (i) => {
+          if (!alive(t) || !e.isValid) return false;
+          afterimage(e); teleportNear(e, t, i % 2 === 0, 1.3); face(e, aim(t));
+          const last = i === n - 1, c = aim(t);
+          setPose(e, last ? 33 : [5, 6, 7, 9][i % 4]);
+          deal(e, t, (last ? 22 : 5) * powerOf(e) / 100);
+          fx(t.dimension, "shock_v", c, C.purple, last ? 4.2 : 2.2, 0.25);
+          burst(t.dimension, c, C.purple, last ? 24 : 10, last ? 4 : 2.5, 0.4, 0.4);
+          if (last) { launch(e, t, 1.4); later(6, () => { if (e.isValid) setPose(e, 0); }); }
+        });
+      } },
+    { id: "en", label: "En", cd: 420, cost: 120, min: 0, max: 14, weight: 5,
+      run(e, s, t) {  // his aura spreads in a vast sphere: nothing inside escapes his senses — its pressure crushes, he slips every blow
+        busy(s, 14); setPose(e, 22); announce(e, "§2§lEn §7— nothing within his aura escapes him");
+        const dim = e.dimension;
+        s.enUntil = now() + 220;
+        for (let k = 0; k < 5; k++) later(k * 2, () => { if (e.isValid) ring(dim, V.up(e.location, 0.2 + k * 0.5), 3 + k * 2.4, C.purple, 40, 0.45); });
+        sphereFx(dim, V.up(e.location, 1), 7, C.purple, 36, 0.6, "orb", 0.7);
+        later(6, () => {
+          if (!e.isValid) return;
+          hitArea(e, V.up(e.location, 1), 12, 10 * powerOf(e) / 100, new Set(), { knock: 0.6, lift: 0.1 });
+          if (alive(t) && V.dist(t.location, e.location) < 12) { slow(t, 50, 2); fx(dim, "shock", t.location, C.purple, 4, 0.4); }
+        });
+        every(20, 10, () => {  // the sphere stays: a faint pulse round him while it lasts
+          if (!e.isValid || now() > s.enUntil) return false;
+          ring(dim, V.up(e.location, 0.3), 6, C.purple, 24, 0.3);
+        });
+        later(14, () => { if (e.isValid) setPose(e, 0); });
+      } },
+    SIG.strike("enhance", "Aura Enhancement", { say: "§2§lOne blow. §7— his aura poured into a single strike", color: C.purple, blast: true, hits: 1, dmg: 34, launch: 2.0, cd: 220, cost: 120, poses: [5] }),
+    { id: "synthesis", label: "Aura Synthesis", cd: 520, cost: 160, min: 0, max: 8, weight: 6,
+      run(e, s, t) {  // he devours a nen user's aura and makes their power his own
+        busy(s, 26); announce(e, "§2§lAura Synthesis §7— your power is mine now");
+        if (!teleportNear(e, t, false, 1.2) || !alive(t)) return;
+        const dim = e.dimension;
+        setPose(e, 4); bindTarget(t, 20);
+        every(3, 6, () => {
+          if (!alive(t) || !e.isValid) return false;
+          const from = aim(t), to = V.up(e.location, 1.3);
+          for (let k = 0; k < 5; k++) fx(dim, "orb", V.add(from, V.mul(V.sub(to, from), Math.random())), C.purple, 0.5, 0.4);
+          deal(e, t, 5 * powerOf(e) / 100, true);
+          if (isFighter(t)) { const ts = state(t); ts.energy = Math.max(0, ts.energy - 40); }
+          s.energy = Math.min(MERUEM.energy, s.energy + 40);
+          const h = health(e);
+          if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.012));
+        });
+        later(20, () => {
+          if (!e.isValid) return;
+          setPose(e, 0);
+          s.ego = 0.12;  // the absorbed aura is his for a while: a little stronger
+          fx(dim, "aura", e.location, C.purple, 1.4, 0.8, { count: 24 * fxLevel(), speed: 2 });
+          later(300, () => { s.ego = 0; });
+        });
+      } },
+    { id: "gungi", label: "Gungi Genius", cd: 480, cost: 60, min: 0, max: 40, weight: 4,
+      run(e, s, t) {  // the mind that mastered gungi in days reads the fight like a board: every move foreseen, the opening found
+        busy(s, 18); announce(e, "§2§lI can see every move you will make.");
+        s.gungiUntil = now() + 240;
+        if (!alive(t)) return;
+        const dim = e.dimension;
+        for (let gx = -2; gx <= 2; gx++) for (let gz = -2; gz <= 2; gz++) {  // a board of light under the foe
+          if ((gx + gz) % 2 === 0) fx(dim, "orb", V.add(t.location, { x: gx * 0.8, y: 0.1, z: gz * 0.8 }), C.gold, 0.3, 0.8);
+        }
+        later(8, () => {
+          if (!alive(t) || !e.isValid) return;
+          afterimage(e); teleportNear(e, t, true, 1.3); face(e, aim(t)); setPose(e, 9);
+          deal(e, t, 18 * powerOf(e) / 100); bindTarget(t, 12);
+          fx(dim, "flash", aim(t), C.gold, 2.4, 0.15); burst(dim, aim(t), C.purple, 14, 3, 0.4, 0.4);
+          later(6, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "absorb", label: "Absorbing the Royal Guards", cd: 1200, cost: 0, min: 0, max: 60, weight: 9,
+      cond: (e, s, c) => formOf(e) === 0 && c.hp < 0.6 && !s.cloneUntil && now() >= s.transformUntil,
+      run(e, s) {  // Pouf and Youpi give themselves to him: he devours their cells and is reborn stronger
+        busy(s, 34); setPose(e, 22); announce(e, "§5§lPouf... Youpi... §7— he devours his Royal Guards");
+        const dim = e.dimension;
+        every(2, 8, (i) => {  // the two guards' auras pour into him from either side: Pouf's pale violet, Youpi's red
+          if (!e.isValid) return false;
+          const c = V.up(e.location, 1.2), k = 1 - i / 8;
+          for (const [sx, col] of [[1, C.death], [-1, C.red]]) {
+            const p = V.add(c, { x: sx * 3 * k, y: 0.6 * k, z: 0 });
+            fx(dim, "orb", p, col, 0.9, 0.4); burst(dim, p, col, 4, 1, 0.3, 0.3);
+          }
+        });
+        later(16, () => {
+          if (!e.isValid || formOf(e) !== 0) return;
+          const h = health(e);
+          if (h) h.setCurrentValue(Math.min(h.effectiveMax, h.currentValue + h.effectiveMax * 0.2));
+          s.formSince = now();
+          transform(e, s, 1, MERUEM.forms[1].label, C.purple, MERUEM.formSound[1]);
+        });
+      } },
+    { id: "rageblast", label: "Rage Blast", cd: 600, cost: 380, min: 0, max: 42, weight: 6, cond: G(1),
+      run(e, s, t) {  // Youpi's rage, now the King's own: his aura swells into a vast blast that tears through everything ahead
+        busy(s, 40); face(e, aim(t)); setExpr(e, 1, 36); announce(e, "§4§lRage Blast!");
+        const dim = e.dimension;
+        every(2, 9, (i) => {
+          if (!e.isValid) return false;
+          smoke(dim, e.location, C.red, 1.2, 1.2, 8 * fxLevel(), 0.6, 0.5 + i * 0.1, 1.6);
+          implode(dim, V.up(e.location, 1), C.red, 4, 8);
+        });
+        chargeOrb(e, t, 18, C.red, 0.4, 2.6, 2);
+        later(18, () => {
+          if (!e.isValid) return;
+          explosion(e, V.up(e.location, 1), { radius: 5, dmg: 28 * powerOf(e) / 100, color: C.red, carve: 1, knock: 2.4 });
+          beam(e, alive(t) ? t : e, { color: C.red, width: 3.6, length: 46, dmg: 95 * powerOf(e) / 100, carve: 2, blast: 6, ticks: 7 });
+          later(16, () => { if (e.isValid) setPose(e, 0); });
+        });
+      } },
+    { id: "beelzebub", label: "Beelzebub", cd: 520, cost: 200, min: 0, max: 30, weight: 5, cond: G(1),
+      run(e, s, t) {  // Pouf's power, absorbed: he splits off copies of himself and a swarm of tiny winged clones whose scales
+        // carry the Spiritual Message, reading and dulling the enemy's mind
+        busy(s, 18); setPose(e, 27); announce(e, "§d§lBeelzebub §7— Pouf's power, now the King's");
+        const dim = e.dimension;
+        burst(dim, V.up(e.location, 1.2), C.death, 30, 3, 0.4, 0.8);
+        later(6, () => { if (e.isValid) shadowClones(e, s, 2, 200); });
+        every(2, 8, () => {
+          if (!e.isValid) return false;
+          const { pos } = handPos(e, alive(t) ? t : e);
+          const p = V.add(pos, { x: (Math.random() - 0.5) * 1.6, y: Math.random(), z: (Math.random() - 0.5) * 1.6 });
+          const tgt = alive(t) ? aim(t) : V.add(p, e.getViewDirection());
+          projectile(e, p, V.norm(V.sub(tgt, p)), { speed: 1.1, maxDist: 34, radius: 1, size: 0.35, color: C.death, trail: true,
+            homing: alive(t) ? t : undefined, homingStrength: 0.15, explode: { radius: 1.4, dmg: 5 * powerOf(e) / 100, color: C.death, knock: 0.3 } });
+        });
+        later(18, () => {
+          if (alive(t)) { slow(t, 50, 2); fx(t.dimension, "aura", t.location, C.death, 1.0, 0.8, { count: 16 * fxLevel(), speed: 1 }); }
+          if (e.isValid) setPose(e, 0);
+        });
+      } },
+    regenAbility("Absorbed Power", "§2§lHis guards' cells knit his body back together", 0.12, G(1), 700),
   ],
 };
 

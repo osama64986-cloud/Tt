@@ -298,7 +298,7 @@ FIGHTERS.update({
     "cell": {"hp": 1000, "forms": [(30, 0.42), (36, 0.44)], "tex": ['perfect', 'super'], "geo": ['perfect', 'super'], "egg": ('#4a9a5a', '#1a1a1a'), "scale": 1.06},
     "toji": {"hp": 1000, "forms": [(22, 0.46), (24, 0.48)], "tex": ['sorcerer', 'resurrected'], "geo": ['sorcerer', 'resurrected'], "egg": ('#1a1a1a', '#c8c8d0'), "scale": 1.06},
     "mahito": {"hp": 1000, "forms": [(20, 0.42), (24, 0.44)], "tex": ['spirit', 'true'], "geo": ['spirit', 'true'], "egg": ('#7a8aa0', '#3a4a60')},
-    "kaido": {"hp": 1000, "forms": [(30, 0.38), (34, 0.4)], "tex": ['human', 'hybrid'], "geo": ['human', 'hybrid'], "egg": ('#3a2a5a', '#d0d0d0'), "scale": 1.6},
+    "kaido": {"hp": 1000, "forms": [(30, 0.38), (34, 0.4)], "tex": ['human', 'hybrid'], "geo": ['human', 'hybrid'], "egg": ('#3a2a5a', '#d0d0d0'), "scale": 2.1},  # a giant: about twice a man's height
     "shanks": {"hp": 1000, "forms": [(28, 0.42), (32, 0.44)], "tex": ['captain', 'conqueror'], "geo": ['captain', 'conqueror'], "egg": ('#b02020', '#1a1a1a'), "scale": 1.05},
     "pain": {"hp": 1000, "forms": [(22, 0.4), (25, 0.42)], "tex": ['deva', 'six'], "geo": ['deva', 'six'], "egg": ('#1a1a2a', '#c82020')},
     "minato": {"hp": 1000, "forms": [(24, 0.5), (30, 0.52)], "tex": ['hokage', 'kcm'], "geo": ['hokage', 'kcm'], "egg": ('#f0e060', '#f0f0f0')},

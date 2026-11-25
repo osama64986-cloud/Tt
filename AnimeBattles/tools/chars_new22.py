@@ -326,7 +326,7 @@ TSUBA = {
 }
 
 
-def nichirin(m, st, bone="rightArm", hand=(6, 12.2, -1.2), direction=(0, 0.1, -1), length=14.0, grip=1.2, hilt=4.4, width=2.6):
+def nichirin(m, st, bone="rightArm", hand=(6, 12.2, -1.2), direction=(0, 0.1, -1), length=14.0, grip=1.2, hilt=4.4, width=3.0):
     """A Nichirin sword in the hand: the flat sprite plus the guard plate face-on."""
     L = length + 1.3
     M.flat_blade(m, bone, hand, direction, hilt, L, width, nichirin_shape(st, hilt / (hilt + L)), grip=grip)
@@ -852,21 +852,25 @@ def tengen_wrap(m):
 
 
 def cleaver_shape(blade=(150, 156, 172), edge=(236, 240, 248), spine=(40, 40, 48), wrap=(170, 30, 40), wrap2=(240, 220, 220)):
-    """One of Tengen's Nichirin cleavers seen flat: a red-wrapped hilt, a round guard, a broad straight blade with a
-    slanted tip."""
+    """One of Tengen's Nichirin cleavers seen flat: a ring at the pommel for the chain, a hilt wrapped in red with pale
+    diamonds, a round gold guard, a broad straight blade with a dark spine, a bright edge and a slanted tip."""
     hf = 0.26
 
     def f(xf, u):
+        if u < 0.04:
+            r = math.hypot((xf - 0.25) / 0.13, (u - 0.02) / 0.02)
+            return (170, 170, 180) if 0.4 < r < 1.0 else None                     # the ring for the chain
         if u < hf:
-            if abs(xf - 0.25) > 0.11:
+            if abs(xf - 0.25) > 0.1:
                 return None
-            return wrap if int(u * 50) % 3 else wrap2
-        if u < hf + 0.03:
-            return (200, 170, 70) if abs(xf - 0.28) < 0.2 else None
-        t = (u - hf - 0.03) / (1 - hf - 0.03)
-        if t > 0.86 + 0.14 * (1 - xf) or xf < 0.12 or xf > 0.96:
+            k = (u - 0.04) / (hf - 0.04) * 6
+            return wrap2 if abs(xf - 0.25) / 0.1 + abs((k % 1) - 0.5) * 2 < 0.7 else wrap
+        if u < hf + 0.035:
+            return (224, 186, 70) if abs(xf - 0.3) < 0.26 else None                # the round guard, edge on
+        t = (u - hf - 0.035) / (1 - hf - 0.035)
+        if t > 0.86 + 0.14 * (1 - xf) or xf < 0.1 or xf > 0.96:
             return None
-        if xf < 0.22:
+        if xf < 0.2:
             return spine
         if xf > 0.84:
             return edge
@@ -891,10 +895,26 @@ def tengen(m, form):
     for s_ in (1, -1):                                         # gold cuff earrings
         m.box("head", [s_ * 4.1 - 0.35, 25.4, -0.6], [0.7, 0.9, 0.9], solid(gold))
     tengen_wrap(m)
+    links = (SC.swatch((170, 170, 180)), SC.swatch((100, 100, 112)))
     for bone, hx in (("rightArm", 6.0), ("leftArm", -6.0)):
-        M.flat_blade(m, bone, (hx, 12.2, -1.2), (0, 0.2, -1), 4.0, 12.0, 3.6, cleaver_shape(), grip=0.8)
-        for k in range(5):                                      # the chain from the pommel
-            m.box(bone, [hx - 0.25, 12.0 - k * 0.6, 2.4 + k * 0.4], [0.5, 0.5, 0.5], SC.swatch((150, 150, 160) if k % 2 else (90, 90, 100)))
+        d = M.norm((0, 0.2, -1))
+        M.flat_blade(m, bone, (hx, 12.2, -1.2), d, 4.4, 13.0, 4.0, cleaver_shape(), grip=0.8)
+        g = [hx + d[0] * 0.8, 12.2 + d[1] * 0.8, -1.2 + d[2] * 0.8]
+        m.box(bone, [g[0] - 1.2, g[1], g[2] - 1.2], [2.4, 0, 2.4], tsuba_paint(TSUBA["round"], (224, 186, 70), (150, 110, 40)),
+              rot=M._rot_for(d), pivot=list(g))
+        m.cubes[-1]["hires"] = 4
+        s_ = 1 if hx > 0 else -1                                # the chain from the pommel, sagging to meet the other
+        pts = SC.spline([[hx, 11.5, 2.4], [s_ * 4.6, 6.8, 3.2], [s_ * 2.0, 4.6, 3.6], [s_ * 0.2, 4.4, 3.6]], 4)
+        acc, k = 0.0, 0
+        for i in range(len(pts) - 1):
+            a, b = pts[i], pts[i + 1]
+            L = math.dist(a, b)
+            while acc <= L:
+                p = [a[j] + (b[j] - a[j]) * acc / max(L, 1e-6) for j in range(3)]
+                SC.box_at(m, bone, p, [0.6, 0.6, 0.3] if k % 2 else [0.3, 0.6, 0.6], links[k % 2])
+                acc += 0.55
+                k += 1
+            acc -= L
     if sc:  # the Musical Score: notes of light round him
         note = SC.swatch((255, 230, 120), 220)
         for k in range(5):
@@ -934,11 +954,11 @@ def whip_shape(col=(240, 120, 170), edge=(255, 210, 230), hf=0.12):
         if u < hf:
             return (240, 236, 240) if abs(xf - 0.5) < 0.05 else None
         t = (u - hf) / (1 - hf)
-        cx = 0.5 + 0.4 * math.sin(t * math.pi * 1.6) * t
-        half = 0.034 * (1 - 0.6 * t) + 0.01
+        cx = 0.5 + 0.38 * math.sin(t * math.pi * 1.6) * t
+        half = 0.05 * (1 - 0.5 * t) + 0.012
         if abs(xf - cx) > half:
             return None
-        return edge if xf > cx else col
+        return edge if xf > cx + half * 0.3 else col
     return f
 
 
@@ -958,7 +978,7 @@ def mitsuri(m, form):
     white = layered((246, 246, 248), [region((0, 0.95, 1, 1), (220, 220, 226))])
     haori(m, white, white, sleeve_len=11.0, lining=(230, 230, 236))
     mitsuri_hair(m)
-    M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.15, -1), 2.2, 20.0, 6.0, whip_shape(), grip=0.8, res=3)
+    M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.15, -1), 2.4, 21.0, 7.0, whip_shape(), grip=0.8, res=3)
     nichirin_guard = M.norm((0, 0.15, -1))
     g = [6 + nichirin_guard[0] * 0.8, 12.2 + nichirin_guard[1] * 0.8, -1.2 + nichirin_guard[2] * 0.8]
     m.box("rightArm", [g[0] - 1.1, g[1], g[2] - 1.1], [2.2, 0, 2.2], tsuba_paint(TSUBA["clover"], (236, 110, 170), (255, 220, 120)),
@@ -1051,15 +1071,21 @@ def kanji_patches(face, px, w, h, base):
 
 
 def flail_shape():
-    """Gyomei's hand-axe seen flat: a dark wooden haft and a crescent blade."""
+    """Gyomei's hand-axe seen flat: a ring at the butt for the chain, an iron-banded haft and a broad crescent blade
+    with a bright cutting edge."""
     def f(xf, u):
-        if u < 0.6:
-            return (90, 70, 50) if abs(xf - 0.3) < 0.07 else None
-        t = (u - 0.6) / 0.4
-        r = math.hypot((xf - 0.25) / 0.75, (t - 0.5) / 0.55)
-        if r > 1 or xf < 0.25:
-            return (90, 70, 50) if abs(xf - 0.3) < 0.07 and t < 0.85 else None
-        return (230, 234, 240) if r > 0.8 else (110, 114, 126)
+        if u < 0.05:
+            r = math.hypot((xf - 0.3) / 0.12, (u - 0.025) / 0.025)
+            return (150, 150, 160) if 0.4 < r < 1.0 else None
+        if u < 0.55:
+            if abs(xf - 0.3) > 0.07:
+                return None
+            return (60, 62, 70) if int(u * 30) % 5 == 0 else (96, 74, 52)
+        t = (u - 0.55) / 0.45
+        r = math.hypot((xf - 0.3) / 0.66, (t - 0.5) / 0.58)
+        if xf < 0.3 or r > 1:
+            return (96, 74, 52) if abs(xf - 0.3) < 0.07 and t < 0.9 else None
+        return (236, 240, 246) if r > 0.84 else (120, 124, 136)
     return f
 
 
@@ -1104,7 +1130,9 @@ def gyomei(m, form):
     SC.blob(m, "rightArm", [6.0, 3.6, -2.2], [1.9, 1.9, 1.9], ball, slices=5)
     for d in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1), (0.7, 0.7, 0), (-0.7, 0.7, 0), (0.7, -0.7, 0), (-0.7, -0.7, 0)):
         SC.blade(m, "rightArm", [6.0 + d[0] * 1.6, 3.6 + d[1] * 1.6, -2.2 + d[2] * 1.6], d, 1.2, 0.8, 0.8, SC.swatch((60, 62, 70)))
-    M.flat_blade(m, "leftArm", (-6.0, 12.2, -1.2), (0, 0.3, -1), 1.0, 7.0, 3.4, flail_shape(), grip=0.2)
+    M.flat_blade(m, "leftArm", (-6.0, 12.2, -1.2), (0, 0.3, -1), 1.4, 9.0, 5.2, flail_shape(), grip=0.2)
+    for k in range(10):   # the chain from the axe's butt, hanging toward the flail's chain in his other hand
+        SC.box_at(m, "leftArm", [-6.0 + k * 0.45, 11.4 - k * 0.65 + (k * k) * 0.035, 0.6 + k * 0.1], [0.5, 0.7, 0.5] if k % 2 else [0.7, 0.5, 0.7], chain)
 
 
 @M.smooth_hair
@@ -1218,6 +1246,7 @@ def sanemi(m, form):
 # DRAGON BALL — Piccolo, Perfect Cell
 # ==================================================================================
 PIC_SKIN, PIC_ORANGE = (112, 178, 64), (236, 146, 52)
+CELL_FACE = (238, 232, 242)   # Perfect Cell's face: a pale lavender-white, not human skin
 M.FACE32.update({
     "piccolo": dict(eye="narrow", brow="none", mouth="corner", marks=["namek_face"]),
     "piccolo_battle": dict(eye="narrow", brow="none", mouth="neutral", marks=["namek_face"]),
@@ -1246,25 +1275,60 @@ def _namek_face(F):  # a heavy hairless brow ridge, dark lids, black pupils in w
 
 
 @mark("cell_face")
-def _cell_face(F):  # pale face framed by the black of his carapace, purple stripes down the cheeks, magenta eyes
-    B = (34, 30, 46)
-    for y in range(12, 31):
-        for x in (0, 1, 2):
+def _cell_face(F):
+    """Perfect Cell's face: the green crest spotted black over the brow, a black border, the pale lavender-white face,
+    purple-pink markings round the eyes and two stripes down each cheek, magenta eyes under black lids, and the black of
+    his carapace closing round the sides of the face, the jaw and under the chin."""
+    G, SP, B = (126, 200, 70), (30, 70, 34), (36, 32, 48)
+    for y in range(11, 16):                                     # a clean forehead: no brow shading
+        for x in range(32):
+            F.put(x, y, F.skin)
+    for y in range(0, 9):                                       # the crest over the brow
+        for x in range(32):
+            F.put(x, y, G)
+    for x0, y0 in ((3, 2), (9, 5), (14, 1), (20, 4), (26, 2), (6, 7), (23, 7), (17, 6)):
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (2, 0)):
+            F.put(x0 + dx, y0 + dy, SP)
+    for x in range(32):                                         # a black border dipping between the eyes
+        F.put(x, 9, B)
+        F.put(x, 10, B if abs(x - 15.5) > 3 else F.skin)
+    for y in range(11, 13):
+        F.both(15, y, B)
+    for y in range(9, 32):                                      # black down the sides, widening over the jaw
+        half = 2 if y < 22 else 3 + (y - 22) // 2
+        for x in range(min(half, 9)):
             F.both(x, y, B)
-    for x in range(3, 29):
-        F.put(x, 12, B)
+    for x in range(9, 13):                                      # under the chin
+        F.both(x, 31, B)
+    P, Pd = (196, 92, 170), (150, 60, 140)
     for x in range(5, 14):
-        F.both(x, 15, F.sr[1])
-    P = (150, 70, 170)
-    for y in range(21, 30):
-        F.both(6, y, P); F.both(7, y, P)
+        F.both(x, 15, P)                                        # purple-pink over the eyes
+    F.both(4, 16, P); F.both(14, 16, Pd)
+    for x in (5, 6):
+        for y in (17, 18, 19, 20, 21):
+            F.both(x, y, P)                                     # at the outer corners
+    for y in range(22, 29):                                     # two stripes down each cheek
+        F.both(7, y, P); F.both(10, y, Pd if y > 26 else P)
+    for x in range(6, 12):
+        F.both(x, 22, P)
     if F.open:
-        for x in (9, 10, 11):
-            F.both(x, 18, (170, 50, 150)); F.both(x, 19, (220, 90, 200)); F.both(x, 20, (240, 140, 220))
-        F.both(10, 19, (40, 10, 40))
+        for y in range(17, 21):
+            for x in range(7, 13):
+                F.both(x, y, (250, 248, 252))
+        for y, c in ((17, (150, 40, 130)), (18, (200, 70, 180)), (19, (230, 110, 210)), (20, (240, 150, 226))):
+            for x in (9, 10, 11):
+                F.both(x, y, c)
+        F.both(10, 18, (40, 10, 40)); F.both(10, 19, (40, 10, 40))
+        for x in range(7, 14):
+            F.both(x, 16, INK)
+    else:
+        for x in range(7, 13):
+            F.both(x, 19, INK)
+    F.put(16, 23, F.sr[1]); F.put(16, 24, F.sr[1])
     if F.mouth_free:
         for x in range(13, 19):
-            F.put(x, 27, (120, 60, 110))
+            F.put(x, 27, (120, 70, 110))
+        F.put(19, 26, (120, 70, 110))
 
 
 @mark("cell_glow")
@@ -1366,36 +1430,59 @@ def cell_skin(base=(126, 200, 70), spot=(44, 110, 40), seed=0):
 
 @fighter("cell", ["perfect", "super"])
 def cell(m, form):
-    """Perfect Cell: a pale face framed by the green crest of his carapace — two tall prongs and the black dome between
-    them — purple stripes down his cheeks, magenta eyes; black shoulders and chest plate, green spotted hide on his
-    arms, belly and thighs, white hands, black shins, yellow-orange feet; his black wings folded down his back like a
-    long split cape. Super Perfect: the same body with a golden glow in the eyes (and the SSJ2-like lightning aura)."""
+    """Perfect Cell: a pale white face (a faint lavender-grey, not human skin) framed by black, the black reaching round
+    his jaw and under the chin; purple-pink markings round the eyes and two stripes down each cheek; magenta eyes; the
+    green crest of his head spotted black and edged in black — two tall prongs and the black dome between them; black
+    shoulders and chest plate, green spotted hide on his upper arms, belly and thighs, black forearms and shins, white
+    hands, yellow-orange feet; his dark purple wings folded down his back. Super Perfect: a golden glow in the eyes."""
     sup = form == "super"
-    G, SP, BLK = (126, 200, 70), (44, 110, 40), (40, 36, 58)
-    face = head_paint(G, (220, 90, 200), False, "cell_super" if sup else "cell")
-    head = plain_head((236, 234, 230), face)
+    G, SP, BLK = (126, 200, 70), (30, 70, 34), (36, 32, 48)
+    face = skin_swap(head_paint(G, (220, 90, 200), False, "cell_super" if sup else "cell"), CELL_FACE)
+    green = cell_skin(G, SP, 2)
 
-    def crest(face_, img):  # the green carapace on the top, sides and back of the head
+    def head(face_, img):
         if face_ == "north":
-            head(face_, img)
+            face(face_, img)
             return
-        cell_skin(G, SP, 2)(face_, img)
+        green(face_, img)
+        if face_ in ("east", "west", "south", "down"):         # the black carapace round the jaw and the back of the neck
+            px = img.load()
+            w, h = img.size
+            top = 0 if face_ == "down" else int(h * (0.62 if face_ != "south" else 0.78))
+            for y in range(top, h):
+                for x in range(w):
+                    px[x, y] = BLK + (255,)
+            if face_ in ("east", "west"):
+                for y in range(int(h * 0.3), top):              # a black border behind the face
+                    for dx in range(max(1, w // 8)):
+                        x = (w - 1 - dx) if face_ == "east" else dx
+                        px[x, y] = BLK + (255,)
     torso = painter_on(cell_skin(G, SP, 1), [region((0, 0, 1, 0.42), BLK), lines((("north",), [[(0.5, 0.42), (0.5, 1)]]), SP)])
-    arm = painter_on(cell_skin(G, SP, 3), [region((0, 0, 1, 0.24), BLK), region((0, 0.86, 1, 1), (240, 240, 236))])
+    arm = painter_on(cell_skin(G, SP, 3), [region((0, 0, 1, 0.24), BLK), region((0, 0.52, 1, 0.86), BLK), region((0, 0.86, 1, 1), (240, 240, 236))])
     leg = painter_on(cell_skin(G, SP, 4), [region((0, 0.42, 1, 0.9), BLK), region((0, 0.9, 1, 1), (240, 188, 40))])
-    base_body(m, torso, arm, leg, crest)
+    base_body(m, torso, arm, leg, head)
     _strip_ears(m)
     both_arms(m, [3.6, 20.4, -2.4], [4.8, 3.9, 4.8], solid(BLK))                              # black shoulder caps
     m.box("body", [-1.2, 10.6, -2.3], [2.4, 2.6, 0.5], solid(BLK))                           # the dark codpiece
     both_legs(m, [0.2, 0, -3.2], [3.5, 1.2, 1.4], solid((240, 188, 40)))                      # pointed feet
-    green, rim = SC.swatch(G), SC.swatch((30, 28, 40))
-    for s_ in (1, -1):  # the crest: two tall prongs rising from the top of his head, edged in black
+    spotted, rim = cell_skin(G, SP, 5), SC.swatch((30, 28, 40))
+    for s_ in (1, -1):  # the crest: two tall prongs rising from the top of his head, spotted, edged in black
         SC.blade(m, "head", [s_ * 2.7, 31.4, 0.4], [s_ * 0.2, 1, 0.12], 7.0, 4.4, 2.4, rim, width_dir=[0, 0, 1])
-        SC.blade(m, "head", [s_ * 2.7, 31.6, 0.2], [s_ * 0.2, 1, 0.12], 6.4, 3.6, 2.8, green, width_dir=[0, 0, 1])
+        SC.blade(m, "head", [s_ * 2.7, 31.6, 0.2], [s_ * 0.2, 1, 0.12], 6.4, 3.6, 2.8, spotted, width_dir=[0, 0, 1])
     SC.blob(m, "head", [0, 32.3, 0.9], [2.0, 1.5, 2.4], SC.swatch((44, 42, 60)), slices=3)    # the black dome
-    wing = layered((40, 36, 60), [region((0, 0, 0.12, 1), (70, 64, 100)), region((0.88, 0, 1, 1), (70, 64, 100))])
-    for s_ in (1, -1):  # the folded wings down his back
-        m.box("body", [s_ * 2.6 - 2.5, 3.0, 2.2], [5.0, 20.6, 0.6], wing, rot=[4, 0, s_ * 6], pivot=[s_ * 2.6, 23.4, 2.5])
+
+    def wing_shape(xf, u):  # one folded wing: broad at the shoulder, tapering to a point at the back of the knee
+        half = 0.47 * min(1.0, (u / 0.55) ** 0.7)
+        d = abs(xf - 0.5)
+        if d > half:
+            return None
+        if d > half - 0.07 or abs(xf - 0.5 - 0.12 * (u - 0.5)) < 0.025:
+            return (104, 78, 140)                               # the rim and the long vein
+        return (58, 40, 84) if u > 0.12 else (78, 56, 110)
+    wing = M._sprite(wing_shape)
+    for s_ in (1, -1):  # the folded wings down his back, the left one over the right
+        m.box("body", [s_ * 2.4 - 2.6, 2.0, 2.3 + (0.15 if s_ < 0 else 0)], [5.2, 21.6, 0], wing, rot=[-7, 0, s_ * 7], pivot=[s_ * 2.4, 23.6, 2.4])
+        m.cubes[-1]["hires"] = 2
 
 
 # ==================================================================================
@@ -1407,6 +1494,9 @@ M.FACE32.update({
     "mahito": dict(eye="narrow", brow="fine", mouth="smile", marks=["mahito_face"]),
     "mahito_true": dict(eye="narrow", brow="none", mouth="none", marks=["mahito_true"]),
 })
+
+
+MAH_SKIN = (234, 226, 224)   # Mahito: pale, slightly grey skin
 
 
 @mark("toji_scar")
@@ -1434,25 +1524,35 @@ def _black_sclera(F):  # resurrected: the whites of his eyes turn pitch black
 
 
 @mark("mahito_face")
-def _mahito_face(F):  # a patchwork face: stitched seams, heterochromia (left eye dark blue, right eye grey)
-    S, T = (120, 90, 100), (90, 60, 70)
-    seam = [(22, 12), (21, 13), (20, 14), (19, 15), (18, 16), (17, 21), (16, 22), (15, 23), (14, 24), (13, 25), (12, 26), (11, 27), (10, 28)]
-    for x, y in seam:
-        F.put(x, y, S)
-    for x, y in seam[::2]:
-        F.put(x - 1, y - 1, T); F.put(x + 1, y + 1, T)
-    for x in range(18, 27):                      # the seam under his left eye
-        F.put(x, 23, S)
-        if x % 2 == 0:
-            F.put(x, 22, T); F.put(x, 24, T)
+def _mahito_face(F):
+    """A patchwork face: the patch of skin round his left eye a cooler grey, sewn on with a stitched seam that runs
+    down to the cheek and across the bridge of the nose; heterochromia: right eye grey-blue, left eye teal."""
+    S, T, P = (150, 118, 128), (110, 84, 96), mix(F.skin, (190, 196, 214), 0.35)
+    for y in range(12, 25):                       # the patch round his left eye
+        for x in range(18, 30):
+            if (x - 23.5) ** 2 / 36 + (y - 18.5) ** 2 / 42 < 1:
+                if F.get(x, y) == F.sr[2] or F.get(x, y) == F.sr[1]:
+                    F.put(x, y, P)
+    seam = []
+    for i in range(64):                           # its seam
+        a = i / 64 * 2 * math.pi
+        seam.append((int(round(23.5 + 6 * math.cos(a))), int(round(18.5 + 6.5 * math.sin(a)))))
+    seam += [(x, 22) for x in range(9, 18)]       # across the bridge of the nose to his right cheek
+    for x, y in dict.fromkeys(seam):
+        if 11 <= y <= 31 and not (17 <= y <= 21 and 19 <= x <= 28):
+            F.put(x, y, S)
+    for x, y in ((23, 11), (29, 15), (30, 19), (29, 23), (23, 26), (18, 23), (17, 15)):
+        F.put(x, y, T)                            # stitches across the round seam
+    for x in range(10, 18, 2):
+        F.put(x, 21, T); F.put(x, 23, T)          # and across the straight one
     if F.open:
-        for y, c in ((18, (130, 136, 146)), (19, (170, 176, 186)), (20, (190, 196, 206))):
+        for y, c in ((18, (96, 110, 134)), (19, (140, 158, 184)), (20, (170, 186, 208))):
             for x in (9, 10, 11):
-                F.put(x, y, c)
-        for y, c in ((18, (20, 40, 110)), (19, (40, 70, 170)), (20, (70, 100, 200))):
+                F.put(x, y, c)                    # right eye: grey-blue
+        for y, c in ((18, (20, 90, 96)), (19, (40, 150, 150)), (20, (90, 196, 190))):
             for x in (20, 21, 22):
-                F.put(x, y, c)
-        F.put(10, 19, (40, 40, 50)); F.put(21, 19, (10, 16, 50))
+                F.put(x, y, c)                    # left eye: teal
+        F.put(10, 19, (30, 34, 46)); F.put(21, 19, (10, 40, 44))
 
 
 @mark("mahito_true")
@@ -1476,6 +1576,9 @@ def isoh_shape():
     """The Inverted Spear of Heaven seen flat: a dark red-brown hilt, a chunky steel guard, a straight blade forked
     into two prongs with a rectangular hole near the base."""
     def f(xf, u):
+        if u < 0.04:
+            r = math.hypot((xf - 0.42) / 0.14, (u - 0.02) / 0.02)
+            return (190, 190, 176) if 0.4 < r < 1.0 else None                     # the pommel ring
         if u < 0.34:
             return (110, 40, 30) if abs(xf - 0.42) < 0.08 else None
         if u < 0.42:
@@ -1565,13 +1668,17 @@ def toji(m, form):
         m.box("body", [-4.4, 11.4, -2.5], [8.8, 1.2, 5.0], solid((36, 40, 66)))              # the dark sash
         m.box("body", [-0.8, 6.4, -2.75], [1.6, 5.2, 0.4], solid((36, 40, 66)))              # its knot hanging in front
         inventory_curse(m)
-        M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 3.2, 7.0, 2.4, isoh_shape(), grip=0.6)
+        M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 4.0, 9.0, 3.0, isoh_shape(), grip=0.6)
+        links = (SC.swatch((170, 170, 180)), SC.swatch((100, 100, 112)))
+        for k in range(7):   # the Chain of a Thousand Miles from its pommel ring
+            SC.box_at(m, "rightArm", [6.0, 11.2 - k * 0.6, 2.8 + k * 0.25], [0.3, 0.6, 0.6] if k % 2 else [0.6, 0.6, 0.3], links[k % 2])
     toji_hair(m)
 
 
 @M.smooth_hair
 def mahito_hair(m, true=False):
-    """Long greyish-blue hair in three big strands tied at the ends: one over his right shoulder, two down his back."""
+    """Long grey-blue hair swept to one side: bangs swept across from a parting on his left, long locks in front of his
+    shoulders, a long fall down his back."""
     col = (150, 166, 196)
     hp = M.hair_paint(col)
     if true:  # the Instant Spirit Body: a crest of blade-like spikes
@@ -1579,15 +1686,17 @@ def mahito_hair(m, true=False):
         for k, (x, z) in enumerate(((0, -3.0), (-1.6, -1.6), (1.6, -1.6), (-2.6, 0.4), (2.6, 0.4), (0, -0.6), (-1.4, 2.0), (1.4, 2.0))):
             SC.blade(m, "head", [x, 31.6, z], [x * 0.16, 1, z * 0.1 + 0.25], 5.0 - abs(x) * 0.4, 1.6, 0.6, crest, width_dir=[0, 0, 1])
         return
-    shell(m, col, hairline=30.4, sideburn=False, teeth=0.8)
-    for x, tilt in ((-2.8, -0.35), (-1.0, -0.1), (1.0, 0.1), (2.8, 0.35)):
-        m.strand([x, 31.6, -4.2], [tilt, -1, -0.35], 3.4, 2.2, hp, bone="hair", thick=0.7)
-    tie = solid((60, 60, 80))
-    m.strand([3.6, 29.8, -2.4], [0.25, -1, -0.35], 12.0, 2.8, hp, bone="hair", thick=0.7)        # over his right shoulder
-    m.box("hair", [4.9, 19.4, -5.8], [1.6, 0.8, 1.6], tie)
-    for x in (-1.8, 1.8):                                                                         # two down his back
-        m.strand([x, 29.6, 4.0], [x * 0.06, -1, 0.25], 11.0, 2.8, hp, bone="hair", thick=0.7)
-        m.box("hair", [x - 0.8, 19.8, 5.8], [1.6, 0.8, 1.6], tie)
+    shell(m, col, hairline=30.6, sideburn=False, teeth=0.8)
+    for x, y in ((1.8, 31.8), (0.4, 31.9), (-1.0, 31.8), (-2.4, 31.6)):   # bangs swept from the parting on his left
+        m.strand([x, y, -4.2], [-0.85, -0.45, -0.25], 4.2, 2.2, hp, bone="hair", thick=0.7, bend=(0, -0.2, 0))
+    m.strand([3.2, 31.6, -4.0], [0.3, -1, -0.2], 3.0, 2.0, hp, bone="hair", thick=0.7)
+    m.strand([-4.0, 30.4, -2.6], [-0.15, -1, -0.25], 12.0, 2.8, hp, bone="hair", thick=0.7)   # long locks in front of the shoulders
+    m.strand([4.1, 30.2, -2.0], [0.1, -1, -0.15], 8.0, 2.4, hp, bone="hair", thick=0.7)
+    for s_ in (1, -1):
+        m.strand([s_ * 4.2, 30.4, 1.0], [s_ * 0.1, -1, 0.2], 9.0, 2.6, hp, bone="hair", thick=0.6)
+    m.box("hair", [-4.2, 15.2, 3.9], [8.4, 13.6, 1.2], gradient_hair(col, light(col, 0.12), 0.7))   # the long fall down his back
+    for x in (-2.8, 0.0, 2.8):
+        m.strand([x, 16.4, 4.6], [x * 0.04, -1, 0.15], 4.0, 2.8, hp, bone="hair", segs=2, thick=0.6)
 
 
 def quilt(col, line):
@@ -1606,9 +1715,9 @@ def quilt(col, line):
 
 @fighter("mahito", ["spirit", "true"])
 def mahito(m, form):
-    """Mahito: a human-looking cursed spirit — long greyish-blue hair in three tied strands, a stitched patchwork face,
-    one dark blue and one grey eye, stitches across his arms, a black quilted shawl whose left sleeve hangs in three
-    strips, black trousers and white shoes. True form (Instant Spirit Body of Distorted Killing): a tall grey-blue body
+    """Mahito: a human-looking cursed spirit — long grey-blue hair swept to one side, pale skin, a stitched patchwork
+    face, heterochromia (right eye grey-blue, left eye teal), stitches across his arms, a black patchwork shawl whose left
+    sleeve hangs in three strips, baggy black trousers with pale wrappings round the shins, black shoes. True form (Instant Spirit Body of Distorted Killing): a tall grey-blue body
     with a crest of blades, a dark plate over the lower face, black legs, blades on his forearms and a long curved
     tail."""
     true = form == "true"
@@ -1636,7 +1745,7 @@ def mahito(m, form):
         SC.curve_tube(m, "body", [[0, 11.5, 2.2], [0.6, 7.0, 7.0], [1.4, 4.0, 12.0], [2.2, 6.0, 16.0], [2.6, 10.0, 17.0]], 1.2, 0.2, [tail, tail], n=3)
         mahito_hair(m, True)
         return
-    head = head_paint((150, 166, 196), (40, 70, 170), True, "mahito")
+    head = skin_swap(head_paint((150, 166, 196), (40, 150, 150), True, "mahito"), MAH_SKIN)
     blk = (30, 30, 38)
 
     def stitches(face, px, w, h, base):
@@ -1649,7 +1758,12 @@ def mahito(m, form):
             if x % 2 == 0:
                 _put(px, w, h, x, y - 1, S); _put(px, w, h, x, y + 1, S)
     shawl = layered(blk, [quilt(blk, (54, 52, 66))])
-    base_body(m, shawl, layered(SKIN, [stitches, region((0, 0, 1, 0.3), blk)]), layered(blk, [region((0, 0.88, 1, 1), (240, 240, 244))]), head)
+    wrap, wline = (226, 224, 218), (186, 184, 178)
+    leg = layered(blk, [region((0, 0.56, 1, 0.9), wrap), lines((SIDES, [[(0, 0.62), (1, 0.66)], [(0, 0.72), (1, 0.76)], [(0, 0.82), (1, 0.86)]]), wline),
+                        region((0, 0.9, 1, 1), (22, 22, 26))])
+    base_body(m, shawl, layered(MAH_SKIN, [stitches, region((0, 0, 1, 0.3), blk)]), leg, head)
+    both_legs(m, [-0.7, 6.4, -2.7], [5.1, 5.8, 5.4], layered(blk, [lines((SIDES, [[(0.3, 0), (0.25, 1)], [(0.7, 0), (0.75, 1)]]), (50, 50, 60)),
+                                                                  region((0, 0.86, 1, 1), (44, 44, 52))]))   # the baggy trousers, gathered above the wraps
     m.box("body", [-4.6, 9.0, -2.6], [9.2, 15.2, 5.2], layered(blk, [quilt(blk, (54, 52, 66))]))     # the loose quilted shawl
     for k in range(3):  # its left sleeve hanging in three strips
         m.box("leftArm", [-8.5, 18.4 - k * 2.6, -2.5], [4.6, 1.6, 5.0], shawl)
@@ -1738,176 +1852,296 @@ def scale_paint(base, line, size=4):
     return layered(base, [f])
 
 
-def kanabo(m, bone="rightArm", hand=(6.0, 12.2, -1.2), L=19.0):
-    """Hassaikai, Kaido's kanabo: a long black iron club thickening toward the end, studded with rows of spikes."""
-    x, y, z = hand
-    iron, stud = solid((40, 40, 46)), SC.swatch((150, 150, 160))
-    m.box(bone, [x - 0.5, y - 0.5, z - 5.0], [1.0, 1.0, 6.0], solid((70, 50, 40)))             # the grip
-    m.box(bone, [x - 1.1, y - 1.1, z - L], [2.2, 2.2, L - 5.0], iron)                           # the head of the club
-    m.box(bone, [x - 1.3, y - 1.3, z - L - 0.4], [2.6, 2.6, 0.6], iron)
-    for k in range(7):
-        zz = z - 6.5 - k * (L - 7.5) / 6
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            SC.box_at(m, bone, [x + dx * 1.35, y + dy * 1.35, zz], [0.6 + abs(dy) * 0.0, 0.6, 0.6], stud)
-    m.box(bone, [x - 0.15, y - 0.15, z - L - 2.4], [0.3, 0.3, 2.0], solid((150, 150, 160)))       # the ring at the end
+def fish_scales(fill, line, glint, size=6):
+    """Clean dragon-scale tattoo: staggered rows of overlapping round scales, each filled, outlined at its lower rim,
+    with a small glint at the top."""
+    def f(face, px, w, h, b):
+        if face in ("up", "down"):
+            return
+        r = size / 2
+        rows = int(h / r) + 2
+        for j in range(rows):
+            cy = j * r
+            for i in range(-1, int(w / size) + 2):
+                cx = i * size + (r if j % 2 else 0)
+                for y in range(int(cy), int(cy + r) + 1):
+                    for x in range(int(cx - r), int(cx + r) + 1):
+                        d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+                        if d <= r:
+                            c = line if d > r - 1.1 else (glint if (y == int(cy) and abs(x + 0.5 - cx) < 1) else fill)
+                            _put(px, w, h, x, y, c if face in ("north", "east") else dark(c, 0.9))
+    return f
+
+
+def stud_rows(base, stud, glint):
+    """Rows of round iron studs on a club's faces."""
+    def f(face, px, w, h, b):
+        if face not in SIDES:
+            return
+        for y in range(2, h - 1, 5):
+            for x in range(1 + (y // 5 % 2) * 2, w - 1, 4):
+                for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                    _put(px, w, h, x + dx, y + dy, stud)
+                _put(px, w, h, x, y, glint)
+    return layered(base, [f])
+
+
+def kanabo_shape(hf=0.24):
+    """Hassaikai seen flat: a ring at the pommel, a long dark wrapped grip with pale bands, then the iron club itself,
+    thickening toward the end, its edges set with rows of short blunt studs, a flat end cap."""
+    iron, iron_d, stud, stud_l = (62, 62, 72), (40, 40, 48), (136, 136, 148), (204, 204, 214)
+
+    def f(xf, u):
+        dx = xf - 0.5
+        if u < 0.035:
+            r = math.hypot(dx / 0.13, (u - 0.0175) / 0.0175)
+            return (150, 150, 160) if 0.45 < r < 1.0 else None                  # the ring
+        if u < hf:
+            if abs(dx) > 0.075:
+                return None
+            k = (u - 0.035) / (hf - 0.035) * 10
+            return (200, 190, 170) if (k % 1) < 0.14 else (52, 36, 32)          # wrapped grip with pale bands
+        if u < hf + 0.02:
+            return (150, 150, 160) if abs(dx) < 0.2 else None                   # the collar
+        t = (u - hf - 0.02) / (1 - hf - 0.02)
+        half = 0.2 + 0.14 * t
+        if t > 0.985:
+            return iron_d if abs(dx) < half else None
+        row = (t * 9) % 1
+        if abs(dx) > half:                                                      # studs sticking out of the edges
+            return stud if (abs(dx) < half + 0.07 and 0.3 < row < 0.7 and t > 0.04) else None
+        if 0.3 < row < 0.7 and int(t * 9) % 1 == 0:
+            for cx in (-0.55, 0.0, 0.55):
+                if abs(dx - cx * half) < 0.06 + 0.02 * t:
+                    return stud_l if row < 0.45 else stud
+        return iron_d if abs(dx) > half * 0.8 else iron
+    return f
+
+
+def kanabo(m, bone="rightArm", hand=(8.4, 7.2, -0.8), direction=(0, 0.22, -1), L=30.0, W=6.4):
+    """Hassaikai, Kaido's kanabo, in his fist: the flat high-resolution sprite of the club (two crossed sheets) round a
+    tapering iron core, so it has weight from every side."""
+    hilt = L * 0.24
+    M.flat_blade(m, bone, hand, direction, hilt, L - hilt, W, kanabo_shape(hilt / L), grip=hilt * 0.55, res=3)
+    d = M.norm(direction)
+    g = [hand[i] + d[i] * hilt * 0.55 for i in range(3)]
+    rot = M._rot_for(d)
+    core = stud_rows((58, 58, 68), (130, 130, 144), (206, 206, 216))
+    body = L - hilt
+    for k in range(3):                                   # the core thickens toward the end of the club
+        cw = W * (0.36 + 0.1 * k)
+        y0 = g[1] + body * (0.04 + 0.32 * k)
+        m.box(bone, [g[0] - cw / 2, y0, g[2] - cw / 2], [cw, body * 0.32 + 0.2, cw], core, rot=rot, pivot=list(g))
 
 
 @fighter("kaido", ["human", "hybrid"])
 def kaido(m, form):
-    """Kaido of the Beasts: huge and top-heavy — a wild black mane, two great grey-white horns curving forward and up,
-    a heavy brow, small yellow eyes, a long Fu Manchu moustache and a spiked goatee; bare chest with the X scar right
-    of his abs, the red scale tattoo down his left arm ending in a white skull, spiked bracelets, the blue-purple
-    feathered coat on his shoulders, the shimenawa rope belt with its white shide, lavender flaps with gold chains,
-    grey-green trousers in black boots, the kanabo Hassaikai. Hybrid: azure dragon scales over his arms and face,
-    lavender horns and antlers, clawed hands, and a long dragon tail."""
+    """Kaido of the Beasts, a giant (built bulky here and scaled up in game): a huge, top-heavy torso with great pecs and
+    abs, the X scar on his belly, massive shoulders and arms, fists like boulders; the head sunk between the shoulders,
+    two great grey-white horns, a long wild black mane down to his waist, a heavy brow, small yellow eyes, the long Fu
+    Manchu moustache and the goatee; the red dragon-scale tattoo down his left arm ending in a white skull, spiked
+    bracelets; the dark violet coat draped over his shoulders, pale lavender inside; the pale lavender-white trousers
+    under a lavender waist-cloth with gold chains, tied with the thick shimenawa rope and its white zigzag shide; black
+    boots; the kanabo Hassaikai. Hybrid: azure dragon scales over his arms and face, lavender horns and antlers,
+    clawed hands and a long dragon tail."""
     hyb = form == "hybrid"
     skin = KAI_SKIN
     face_skin = (176, 188, 228) if hyb else skin
     head = skin_swap(head_paint((26, 24, 30), (236, 200, 40), True, "kaido_hybrid" if hyb else "kaido"), face_skin)
+    sh = dark(skin, 0.78)
+    R, O = (176, 56, 44), (236, 140, 60)
 
     def chest(face, px, w, h, base):
+        if face == "south":                                    # the broad back: spine and shoulder blades
+            for y in range(int(h * 0.1), h):
+                _put(px, w, h, w // 2, y, sh)
+            for i in range(int(h * 0.3)):
+                _put(px, w, h, int(w * 0.2) + i // 3, int(h * 0.12) + i, sh)
+                _put(px, w, h, int(w * 0.8) - i // 3, int(h * 0.12) + i, sh)
+            return
         if face != "north":
             return
-        sh = dark(skin, 0.8)
-        for x in range(2, w - 2):
-            _put(px, w, h, x, int(h * 0.34), sh)
-        for y in range(int(h * 0.36), h):
+        for x in range(2, w - 2):                              # the great pecs
+            yy = int(h * 0.36 - ((x - w / 2) / (w / 2)) ** 2 * h * 0.1)
+            _put(px, w, h, x, yy, sh)
+            _put(px, w, h, x, yy + 1, dark(skin, 0.86))
+        for y in range(int(h * 0.06), int(h * 0.34)):
             _put(px, w, h, w // 2, y, sh)
-        for y in (int(h * 0.52), int(h * 0.68), int(h * 0.84)):
-            for x in range(w // 2 - 4, w // 2 + 4):
-                _put(px, w, h, x, y, sh)
-        X = (150, 96, 70)                                      # the X scar right of his abs (his right = image left)
-        for i in range(8):
-            _put(px, w, h, 3 + i, int(h * 0.3) + i * 2, X); _put(px, w, h, 10 - i, int(h * 0.3) + i * 2, X)
-        R, O = (170, 60, 46), (236, 140, 60)                    # the scale tattoo on his left pec
-        for j in range(3):
-            for i in range(3):
-                cx, cy = w - 5 - i * 3 - (j % 2), 2 + j * 3
-                for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
-                    _put(px, w, h, cx + dx, cy + dy, R)
-                _put(px, w, h, cx - 1, cy, O); _put(px, w, h, cx, cy - 1, O)
+        for y in range(int(h * 0.38), h):                      # the abs
+            _put(px, w, h, w // 2, y, sh)
+        for fy in (0.52, 0.66, 0.8):
+            for x in range(int(w * 0.32), int(w * 0.68)):
+                _put(px, w, h, x, int(h * fy), sh)
+        for y in range(int(h * 0.4), h):                       # the obliques
+            t = (y - h * 0.4) / (h * 0.6)
+            _put(px, w, h, int(w * (0.26 - 0.08 * t)), y, sh)
+            _put(px, w, h, int(w * (0.74 + 0.08 * t)), y, sh)
+        X = (150, 90, 66)                                      # the X scar on the right of his belly (image left)
+        cx, cy, n = int(w * 0.36), int(h * 0.7), max(4, w // 7)
+        for i in range(-n, n + 1):
+            _put(px, w, h, cx + i, cy + i, X); _put(px, w, h, cx + i, cy - i, X)
+        if not hyb:                                            # the scale tattoo over his left pec and shoulder
+            for j in range(4):
+                for i in range(4 - j // 2):
+                    x0, y0 = w - 4 - i * 4 - (j % 2) * 2, 1 + j * 3
+                    for dx, dy in ((0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)):
+                        _put(px, w, h, x0 + dx, y0 + dy, R)
+                    _put(px, w, h, x0, y0 - 1, O); _put(px, w, h, x0 + 1, y0 - 1, O)
 
     def tattoo_arm(face, px, w, h, base):
-        if face not in ("north", "west", "east"):
+        if face not in ("north", "west", "east", "south"):
             return
-        R, O = (170, 60, 46), (236, 140, 60)
-        for j in range(0, int(h * 0.62), 3):
-            for i in range(0, w, 3):
-                cx, cy = i + (j // 3 % 2), j
-                for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        for j in range(0, int(h * 0.78), 3):
+            for i in range(0, w, 4):
+                cx, cy = i + (j // 3 % 2) * 2, j
+                for dx, dy in ((0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)):
                     _put(px, w, h, cx + dx, cy + dy, R)
-                _put(px, w, h, cx + 2, cy, O); _put(px, w, h, cx, cy + 2, O)
-        if face == "north":                                    # the white skull on the forearm
-            sk = [".###.", "#####", "#.#.#", "#####", ".#.#."]
-            for r, row in enumerate(sk):
-                for c, ch in enumerate(row):
-                    if ch == "#":
-                        _put(px, w, h, w // 2 - 2 + c, int(h * 0.66) + r, (244, 244, 240))
-                    elif ch == ".":
-                        pass
-    bracelet = [region((0, 0.8, 1, 0.88), (30, 30, 34))]
+                _put(px, w, h, cx, cy - 1, O); _put(px, w, h, cx + 1, cy - 1, O)
+
+    def skull(face, px, w, h, base):
+        if face != "north":
+            return
+        sk = [".###.", "#####", "#.#.#", "#####", ".#.#."]
+        for r, row in enumerate(sk):
+            for c, ch in enumerate(row):
+                if ch == "#":
+                    for k in range(2):
+                        for kk in range(2):
+                            _put(px, w, h, w // 2 - 5 + c * 2 + k, int(h * 0.2) + r * 2 + kk, (244, 244, 240))
+
+    def muscle(face, px, w, h, base):                         # a soft line under the deltoid / along the forearm
+        if face in ("north", "south"):
+            for y in range(int(h * 0.25), int(h * 0.85)):
+                _put(px, w, h, w // 2, y, dark(skin, 0.86))
     if hyb:
-        arm_r = scale_paint(KAI_BLUE, (120, 136, 196))
-        arm_l = arm_r
+        scales = scale_paint(KAI_BLUE, (120, 136, 196))
+        arm_r = arm_l = upper_r = upper_l = fore_r = fore_l = scales
     else:
-        arm_r = layered(skin, bracelet)
-        arm_l = layered(skin, [tattoo_arm] + bracelet)
-    legs = layered((104, 116, 96), [region((0, 0.6, 1, 1), (26, 26, 30))])
-    base_body(m, layered(skin, [chest]), arm_r, legs, head)
-    for c in m.cubes:
-        if c["bone"] == "leftArm":
-            c["paint"] = arm_l
-    both_arms(m, [3.6, 15.0, -2.4], [4.8, 9.2, 4.8], arm_r)                                    # thick shoulders and arms
-    m.box("leftArm", [-8.4, 15.0, -2.4], [4.8, 9.2, 4.8], arm_l)
-    m.cubes[:] = [c for i, c in enumerate(m.cubes) if not (c["bone"] == "leftArm" and c["size"] == [4.75, 9.25, 4.75] and c["paint"] is arm_r)]
-    m.box("body", [-4.6, 17.0, -2.5], [9.2, 7.2, 5.0], layered(skin, [chest]))                 # the broad chest
-    for bone, x in (("rightArm", 6.0), ("leftArm", -6.0)):  # spiked bracelets
-        m.box(bone, [x - 2.5, 13.8, -2.5], [5.0, 1.2, 5.0], solid((30, 30, 34)))
-        for k in range(4):
-            a = k * math.pi / 2
-            SC.blade(m, bone, [x + math.cos(a) * 2.5, 14.4, math.sin(a) * 2.5], [math.cos(a), 0, math.sin(a)], 0.9, 0.6, 0.4, SC.swatch((230, 190, 60)))
-    both_legs(m, [-0.6, 3.4, -2.7], [5.0, 8.8, 5.4], layered((104, 116, 96), [lines((SIDES, [[(0.3, 0), (0.24, 1)], [(0.7, 0), (0.76, 1)]]), (84, 94, 78))]))
-    both_legs(m, [-0.2, 0, -2.4], [4.3, 4.0, 4.8], solid((28, 28, 32)))                       # black boots
-    # the shimenawa: a thick laid rope round his waist, white zigzag shide hanging in front
-    rope = layered((236, 230, 210), [lines((SIDES, [[(x, 0), (x + 0.25, 1)] for x in (-0.2, 0.05, 0.3, 0.55, 0.8)]), (196, 186, 160))])
-    m.box("body", [-5.0, 10.4, -3.0], [10.0, 2.6, 6.0], rope)
+        upper_r, fore_r = layered(skin, [muscle]), layered(skin, [muscle])
+        tat = layered(skin, [fish_scales(R, (120, 30, 26), (240, 150, 80), 16)])
+        upper_l, fore_l = tat, painter_on(tat, [skull])
+    trousers = (214, 208, 230)
+    legs = layered(trousers, [lines((SIDES, [[(0.3, 0), (0.24, 1)], [(0.7, 0), (0.76, 1)]]), dark(trousers, 0.86))])
+    base_body(m, layered(skin, [chest]), solid(skin), legs, head)
+    m.cubes[:] = [c for c in m.cubes if c["bone"] not in ("rightArm", "leftArm", "body", "rightLeg", "leftLeg")]
+    # the giant body: a huge chest, traps rising to the sunk head, massive arms with fists like boulders
+    m.box("body", [-6.4, 10.6, -3.6], [12.8, 14.4, 7.2], layered(skin, [chest]))
+    m.box("body", [-4.6, 23.6, -1.8], [9.2, 2.6, 4.6], solid(skin))                           # the trapezius
+    for bone, s_, up, fo in (("rightArm", 1, upper_r, fore_r), ("leftArm", -1, upper_l, fore_l)):
+        def B(x0, y0, z0, sx, sy, sz, p, bone=bone, s_=s_):
+            m.box(bone, [x0 if s_ > 0 else -(x0 + sx), y0, z0], [sx, sy, sz], p)
+        B(5.6, 18.0, -3.8, 6.6, 7.2, 7.6, up)                  # the deltoid
+        B(6.0, 12.6, -3.2, 5.8, 6.2, 6.4, up)                  # the upper arm
+        B(5.8, 8.0, -3.4, 6.2, 5.0, 6.8, fo)                   # the forearm
+        B(6.0, 5.4, -3.0, 5.8, 2.8, 6.0, solid(skin if not hyb else KAI_BLUE))   # the fist
+        B(5.7, 10.4, -3.5, 6.4, 1.6, 7.0, solid((30, 30, 34)))  # the spiked bracelet
+        for k in range(6):
+            a = k * math.pi / 3
+            SC.blade(m, bone, [s_ * 8.9 + math.cos(a) * 3.3, 11.2, -0.0 + math.sin(a) * 3.6], [math.cos(a), 0, math.sin(a)], 1.4, 0.8, 0.6, SC.swatch((230, 190, 60)))
+    for bone, s_ in (("rightLeg", 1), ("leftLeg", -1)):
+        m.box(bone, [-0.6 if s_ > 0 else -5.8, 3.6, -3.3], [6.4, 8.8, 6.6], legs)                # baggy trousers
+        m.box(bone, [-0.3 if s_ > 0 else -5.1, 0, -3.0], [5.4, 4.0, 6.0], layered((28, 28, 32), [region((0, 0, 1, 0.15), (60, 60, 68))]))  # black boots
+    # the waist-cloth: lavender flaps front and back with gold chains, tied by the shimenawa rope with its white shide
+    lav = layered((172, 150, 214), [region((0, 0.9, 1, 1), (130, 108, 176)), lines((("north", "south"), [[(0.5, 0), (0.5, 0.9)]]), (150, 128, 194))])
+    m.box("body", [-3.4, 3.6, -3.9], [6.8, 7.6, 0.6], lav)
+    m.box("body", [-6.6, 4.4, 3.3], [13.2, 6.8, 0.6], lav)
+    rope = layered((236, 230, 210), [lines((SIDES + ("up",), [[(x, 0), (x + 0.22, 1)] for x in (-0.2, 0.0, 0.2, 0.4, 0.6, 0.8)]), (190, 180, 150))])
+    m.box("body", [-7.0, 9.4, -4.2], [14.0, 3.0, 8.4], rope)
+    SC.blob(m, "body", [2.6, 10.8, -4.6], [1.5, 1.5, 0.9], SC.swatch((236, 230, 210)), slices=2)   # the knot
     shide = M._sprite(lambda xf, u: (250, 250, 250) if abs(xf - (0.5 + 0.22 * (1 if int((1 - u) * 4) % 2 else -1) * (((1 - u) * 4) % 1 - 0.5) * 2)) < 0.2 else None)
-    for x in (-1.6, 1.6):
-        m.box("body", [x - 1.0, 5.6, -3.15], [2.0, 4.8, 0], shide)
+    for x in (-2.2, 2.2):
+        m.box("body", [x - 1.1, 4.2, -4.35], [2.2, 5.4, 0], shide)
         m.cubes[-1]["hires"] = 3
-    lav = layered((170, 150, 210), [region((0, 0.9, 1, 1), (130, 110, 170))])
-    for s_ in (1, -1):  # lavender flaps with golden chains, red ribbons between them
-        m.box("body", [s_ * 3.4 - 1.8, 5.8, -3.1], [3.6, 4.8, 0.5], lav)
-        gc = SC.swatch((230, 190, 60))
-        SC.curve_tube(m, "body", [[s_ * 3.4 - 1.4, 6.0, -3.35], [s_ * 3.4, 4.8, -3.4], [s_ * 3.4 + 1.4, 6.0, -3.35]], 0.3, 0.3, [gc, gc], n=2)
-    for x in (-0.6, 0.0, 0.6):
-        m.box("body", [x - 0.15, 7.0, -3.2], [0.3, 3.4, 0.2], solid((200, 40, 40)))
-    # the feathered blue-purple coat draped on his shoulders
-    fur = (66, 58, 140)
+    gc = SC.swatch((230, 190, 60))
+    for s_ in (1, -1):
+        SC.curve_tube(m, "body", [[s_ * 6.0, 9.6, -4.3], [s_ * 4.8, 6.6, -4.4], [s_ * 2.6, 5.8, -4.4]], 0.32, 0.32, [gc, gc], n=2)
+    # the coat draped over his shoulders: dark violet, pale lavender inside, the hem cut in feather points
+    fur, lining = (70, 58, 140), (196, 184, 228)
 
     def feathers(face, px, w, h, base):
-        if face not in SIDES:
+        if face in ("up", "down"):
             return
+        if face == "north":                                    # the inside of the coat
+            for y in range(h):
+                for x in range(w):
+                    _put(px, w, h, x, y, lining)
         for x in range(w):
-            cut = int(h * 0.06 * (1 + math.sin(x * 1.7)))
+            cut = int(h * 0.05 * (1 + math.sin(x * 1.3)))
             for y in range(h - cut, h):
                 px[x, y] = (0, 0, 0, 0)
-            if x % 5 == 0:
+            if face != "north" and x % 6 == 0:
                 for y in range(int(h * 0.1), h - cut - 2):
                     _put(px, w, h, x, y, light(fur, 0.12))
     coat = layered(fur, [feathers])
-    m.box("body", [-7.6, 2.0, 2.4], [15.2, 22.8, 1.0], coat)
+    m.box("body", [-12.4, 2.4, 3.9], [24.8, 23.4, 1.0], coat)
     for s_ in (1, -1):
-        m.box("body", [s_ * 7.0 - 0.6, 2.0, -2.8], [1.2, 22.8, 5.4], coat)
-        m.box("body", [s_ * 5.6 - 2.2, 21.6, -3.4], [4.4, 3.8, 6.8], layered(fur, [lines((SIDES + ("up",), [[(x, 0), (x, 1)] for x in (0.2, 0.45, 0.7, 0.9)]), light(fur, 0.15))]))
-    m.box("body", [-4.2, 23.6, 1.6], [8.4, 2.6, 2.4], layered(fur, []))                       # the collar behind his neck
-    # horns
+        m.box("body", [s_ * 12.4 - 0.5, 2.4, -0.6], [1.0, 23.4, 4.5], coat)
+        m.box("body", [s_ * 9.0 - 4.0, 24.2, -4.4], [8.0, 3.2, 8.8], layered(fur, [lines((SIDES + ("up",), [[(x, 0), (x, 1)] for x in (0.2, 0.45, 0.7, 0.9)]), light(fur, 0.15))]))
+    m.box("body", [-5.0, 25.0, 2.2], [10.0, 3.6, 2.6], layered(fur, [region((0, 0, 1, 1), lining, faces=("north",))]))   # the collar behind his neck
+    # horns: two great curved horns from above the temples, out, then up and a little forward
     hc = (200, 180, 220) if hyb else (226, 224, 214)
-    hs = SC.swatch(hc)
+    hs, hd = SC.swatch(hc), SC.swatch(dark(hc, 0.86))
     for s_ in (1, -1):
-        SC.curve_tube(m, "head", [[s_ * 4.0, 29.4, -0.4], [s_ * 6.4, 30.4, -1.6], [s_ * 7.6, 33.6, -1.4], [s_ * 7.2, 37.4, -0.2]], 1.1, 0.15, [hs, hs], n=3)
+        SC.curve_tube(m, "head", [[s_ * 3.6, 30.2, -1.0], [s_ * 6.6, 31.4, -2.0], [s_ * 8.4, 34.6, -2.4], [s_ * 8.4, 38.6, -1.4], [s_ * 7.6, 41.4, 0.2]],
+                      1.35, 0.16, [hs, hd], n=3, knuckles=False)
         if hyb:  # the dragon's antlers branching from the crown
             ant = SC.swatch((176, 150, 206))
             SC.curve_tube(m, "head", [[s_ * 1.6, 32.0, 0.6], [s_ * 2.4, 35.0, 1.4], [s_ * 3.0, 38.4, 1.2]], 0.55, 0.12, [ant, ant], n=2)
             SC.curve_tube(m, "head", [[s_ * 2.4, 35.0, 1.4], [s_ * 4.0, 36.4, 2.4]], 0.35, 0.1, [ant, ant], n=1)
-    # hair: a wild black mane of flat locks swept back to his mid-back
+    # hair: a wild black mane: spikes off the crown, long heavy locks down his back to the waist
     col = (26, 24, 30)
     hp = M.hair_paint(col)
     shell(m, col, hairline=31.2, sideburn=True, teeth=0.6)
     for k, x in enumerate((-3.4, -1.7, 0.0, 1.7, 3.4)):
-        m.strand([x, 31.6, 1.0], [x * 0.12, -0.6, 1], 10.0 + (k % 2) * 2, 3.0, hp, bone="hair", thick=0.6)
-        m.strand([x * 1.1, 30.4, 4.0], [x * 0.1, -1, 0.35], 11.0, 3.0, hp, bone="hair", thick=0.6)
+        m.strand([x, 32.0, 0.6], [x * 0.2, 0.7, 0.8], 5.0 + (k % 2) * 1.5, 3.2, hp, bone="hair", thick=0.6, bend=(0, -0.35, 0.1))
+    m.box("hair", [-5.4, 9.0, 4.1], [10.8, 22.4, 1.6], hp)                                     # the heavy mane down his back
+    for k, x in enumerate((-5.0, -2.5, 0.0, 2.5, 5.0)):
+        m.strand([x, 30.0 - abs(x) * 0.6, 4.6], [x * 0.08, -1, 0.3], 22.0 - abs(x) * 1.2, 3.4, hp, bone="hair", thick=0.6)
     for s_ in (1, -1):
-        m.strand([s_ * 4.2, 30.6, -1.6], [s_ * 0.4, -1, -0.1], 6.0, 2.6, hp, bone="hair", thick=0.6)
-        m.strand([s_ * 3.0, 32.2, -1.2], [s_ * 0.6, 0.9, 0.1], 3.6, 2.6, hp, bone="hair", thick=0.6)
+        m.strand([s_ * 4.3, 30.6, -1.2], [s_ * 0.5, -1, 0.1], 9.0, 3.0, hp, bone="hair", thick=0.6)   # the locks at the sides
+        m.strand([s_ * 4.2, 31.6, 1.8], [s_ * 0.9, 0.2, 0.6], 6.0, 3.0, hp, bone="hair", thick=0.6)
+        m.strand([s_ * 3.0, 32.2, -1.2], [s_ * 0.6, 0.9, 0.1], 4.0, 2.6, hp, bone="hair", thick=0.6)
     # the long Fu Manchu moustache and the spiked goatee
     mo = SC.swatch((24, 22, 28))
     for s_ in (1, -1):
-        SC.curve_tube(m, "head", [[s_ * 1.2, 25.4, -4.3], [s_ * 2.6, 24.4, -4.6], [s_ * 3.2, 20.0, -5.0], [s_ * 3.0, 14.0, -4.4]], 0.32, 0.18, [mo, mo], n=3)
-    SC.blade(m, "head", [0, 24.4, -4.2], [0, -1, -0.25], 3.0, 1.6, 0.6, mo, width_dir=[1, 0, 0])
+        SC.curve_tube(m, "head", [[s_ * 1.2, 25.4, -4.3], [s_ * 2.6, 24.4, -4.7], [s_ * 3.2, 20.0, -5.4], [s_ * 3.0, 15.0, -5.2]], 0.36, 0.18, [mo, mo], n=3)
+    SC.blade(m, "head", [0, 24.4, -4.2], [0, -1, -0.3], 3.4, 1.8, 0.6, mo, width_dir=[1, 0, 0])
     if hyb:
         tail, belly = SC.swatch(KAI_BLUE), SC.swatch((240, 214, 150))
-        pts = [[0, 10.0, 2.6], [0.4, 6.0, 7.0], [1.6, 2.0, 12.0], [3.4, 1.0, 17.0], [5.6, 2.4, 21.0]]
-        SC.curve_tube(m, "body", pts, 2.2, 0.3, [tail, tail], n=3)
-        SC.curve_tube(m, "body", [[p[0], p[1] - 0.9, p[2]] for p in pts], 1.6, 0.2, [belly, belly], n=3)
+        pts = [[0, 10.0, 3.6], [0.4, 6.0, 8.0], [1.6, 2.0, 13.0], [3.4, 1.0, 18.0], [5.6, 2.4, 22.0]]
+        SC.curve_tube(m, "body", pts, 2.4, 0.3, [tail, tail], n=3)
+        SC.curve_tube(m, "body", [[p[0], p[1] - 0.9, p[2]] for p in pts], 1.8, 0.2, [belly, belly], n=3)
         for k in range(6):  # black mane flames along the tail's spine
             p = pts[min(4, k)]
-            SC.blade(m, "body", [p[0], p[1] + 1.6, p[2] + 0.5], [0.1, 1, 0.5], 2.2, 1.2, 0.4, SC.swatch((30, 28, 34)))
+            SC.blade(m, "body", [p[0], p[1] + 1.8, p[2] + 0.5], [0.1, 1, 0.5], 2.4, 1.3, 0.4, SC.swatch((30, 28, 34)))
         claw = SC.swatch((240, 236, 220))
-        for bone, x in (("rightArm", 6.0), ("leftArm", -6.0)):
+        for bone, s_ in (("rightArm", 1), ("leftArm", -1)):
             for k in range(4):
-                SC.blade(m, bone, [x + (k - 1.5) * 0.9, 12.0, -2.1], [0, -1, -0.6], 1.4, 0.5, 0.4, claw)
+                SC.blade(m, bone, [s_ * (6.6 + k * 1.5), 5.6, -3.0], [0, -1, -0.6], 1.8, 0.6, 0.5, claw)
     kanabo(m)
 
 
 def gryphon_shape(haki=False):
-    """Gryphon seen flat: a dark teal-wrapped hilt, a silver ring guard, a slender gently curved saber blade."""
+    """Gryphon seen flat: a gold pommel, a black grip bound with gold, a gold cross-guard whose quillons curl toward the
+    blade, a slender gently curved saber blade."""
+    gold, gold_d = (232, 192, 80), (170, 130, 40)
+
     def f(xf, u):
+        if u < 0.035:
+            return gold if abs(xf - 0.45) < 0.11 else None
         if u < 0.2:
-            return (40, 90, 100) if abs(xf - 0.45) < 0.08 else None
+            if abs(xf - 0.45) > 0.075:
+                return None
+            return gold_d if int(u * 60) % 4 == 0 else (30, 28, 32)
         if u < 0.25:
-            r = math.hypot((xf - 0.45) / 0.4, (u - 0.225) / 0.04)
-            return (226, 226, 230) if 0.55 < r < 1.0 or abs(xf - 0.45) < 0.1 else None
+            dx = xf - 0.45
+            if abs(dx) < 0.12:
+                return gold
+            if abs(dx) < 0.42 and u < 0.225:
+                return gold if u > 0.205 else None
+            if 0.34 < abs(dx) < 0.44:
+                return gold_d                                                     # the quillons curling forward
+            return None
         t = (u - 0.25) / 0.75
         cx = 0.45 + 0.1 * t * t
         half = 0.09 * (1 if t < 0.86 else (1 - t) / 0.14)
@@ -2178,7 +2412,7 @@ def minato(m, form):
         haori(m, back, front, sleeve_len=6.0, lining=(230, 230, 232))
         m.box("body", [-0.2, 12.6, -2.7], [0.4, 9.0, 0.2], solid((240, 140, 40)))           # the thin orange rope
         minato_hair(m)
-    M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.15, -1), 2.2, 4.4, 2.4, kunai_shape(), grip=0.6)
+    M.flat_blade(m, "rightArm", (6, 12.2, -1.2), (0, 0.15, -1), 2.6, 5.4, 3.0, kunai_shape(), grip=0.6)
 
 
 # ==================================================================================
@@ -2255,6 +2489,24 @@ def _ulq_face(F):  # green cat-slit eyes, teal lines running down from them, a b
     if F.mouth_free:
         for x in range(13, 19):
             F.put(x, 26, (24, 22, 28)); F.put(x, 27, (150, 120, 120))
+
+
+def murcielago_hilt():
+    """Murcielago's hilt standing out of its sheath, seen flat: a small oval guard, a dark green grip wrapped over pale
+    diamonds, a silver pommel."""
+    def f(xf, u):
+        dx = xf - 0.5
+        if u < 0.1:
+            return (150, 150, 160) if abs(dx) < 0.18 else None
+        if u < 0.17:
+            return (60, 60, 70) if abs(dx) < 0.42 else None
+        if u > 0.95:
+            return (190, 190, 200) if abs(dx) < 0.17 else None
+        if abs(dx) > 0.15:
+            return None
+        k = (u - 0.17) / 0.78 * 5
+        return (200, 220, 200) if abs(dx) / 0.15 + abs((k % 1) - 0.5) * 2 < 0.7 else (30, 80, 56)
+    return f
 
 
 def jagged_shape(blade=(150, 152, 160), edge=(214, 216, 224), spine=(70, 70, 78), wrap=(40, 36, 40), dia=(170, 160, 140)):
@@ -2424,6 +2676,7 @@ def ulquiorra(m, form):
         SC.blob(m, "head", [-2.6, 31.2, -0.4], [2.6, 1.6, 3.6], bone_w, slices=3)                 # the broken helmet on his left
         SC.curve_tube(m, "head", [[-4.2, 31.4, -0.8], [-6.2, 32.4, -1.4], [-7.2, 34.0, -1.0]], 0.8, 0.2, [bone_w, bone_w], n=2)
         M.sheath(m, (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 11, dict(saya=(40, 40, 46), saya_band=(60, 150, 110)))
+        M.flat_blade(m, "body", (-4.6, 12.4, -1.6), (-0.05, 0.55, -1), 0.4, 4.8, 2.0, murcielago_hilt(), grip=0.0)
         ulquiorra_hair(m)
         return
     seg = form == "segunda"
@@ -2668,7 +2921,8 @@ def shigaraki(m, form):
 # HUNTER x HUNTER — Isaac Netero, Meruem
 # ==================================================================================
 NET_SKIN = (238, 204, 172)
-MER_G, MER_D, MER_FACE = (110, 170, 130), (40, 94, 72), (196, 224, 204)
+MER_SKIN, MER_PLATE, MER_FACE = (174, 184, 170), (126, 138, 124), (198, 206, 194)   # pale grey-green, the plate lines
+MER_BLACK, MER_BLACK_L = (30, 32, 34), (72, 76, 78)
 M.FACE32.update({
     "netero": dict(eye="narrow", brow="none", mouth="none", marks=["netero_face"]),
     "netero_serious": dict(eye="narrow", brow="none", mouth="none", marks=["netero_face", "netero_open"]),
@@ -2709,29 +2963,62 @@ def _netero_face(F):  # an old face: forehead lines, narrow smiling eyes, a long
 
 
 @mark("meruem_face")
-def _meruem_face(F):  # the King: a mint face under the dark green helmet, which comes to a point between his eyes
-    D = MER_D
-    for y in range(12, 17):
+def _meruem_face(F):
+    """The King's face: pale grey-green skin under the smooth helmet of his head, the helmet's rim dipping to a point
+    above the nose, the bases of the two antenna crests on the forehead, deep teal eyes with heavy black lids and dark
+    marks running from their outer corners down into the black segmented plates over his cheeks, jaw and neck."""
+    H, Hd, Hl = MER_SKIN, MER_PLATE, light(MER_SKIN, 0.14)
+    B, Bl = MER_BLACK, MER_BLACK_L
+    for y in range(0, 14):                                  # the helmet over the forehead
         for x in range(32):
-            if abs(x - 15.5) < 16 - (y - 12) * 2.6:
-                F.put(x, y, D)
-    for y in range(12, 31):
-        for x in (0, 1):
-            F.both(x, y, D)
-    for x in range(4, 14):
-        F.both(x, 17, (60, 110, 86))
+            F.put(x, y, Hl if y < 2 else H)
+    for x in range(32):                                     # its rim: a ridge dipping to a point above the nose
+        y = 11 + max(0, 3 - int(abs(x - 15.5) // 1.5))
+        F.put(x, y, Hd)
+    for x0 in (10, 20):                                     # the antenna crests rising from the forehead
+        for y in range(0, 10):
+            F.put(x0, y, Hd); F.put(x0 + 1, y, Hl)
+    sh = F.sr[1]
+    for x in range(5, 14):                                  # brow ridge shadow
+        F.both(x, 16, sh)
     if F.open:
-        for x in (9, 10, 11):
-            F.both(x, 18, (110, 40, 120)); F.both(x, 19, (170, 70, 180)); F.both(x, 20, (200, 120, 210))
-        F.both(10, 19, (30, 6, 30))
-    for x, y in ((6, 22), (7, 23), (25, 22), (24, 23)):
-        F.put(x, y, (120, 170, 140))
+        for y in range(18, 22):                             # pale sclera
+            for x in range(7, 13):
+                F.both(x, y, (226, 232, 222))
+        for y, c in ((18, (16, 60, 56)), (19, (30, 110, 100)), (20, (40, 136, 120)), (21, (30, 110, 100))):
+            for x in (9, 10, 11):
+                F.both(x, y, c)                             # deep teal irises
+        F.both(10, 19, (8, 24, 22)); F.both(10, 20, (8, 24, 22))
+        F.put(9, 19, (230, 246, 238)); F.put(20, 19, (230, 246, 238))
+        for x in range(6, 12):
+            F.both(x, 17, INK)                              # heavy black upper lids, slanting down to the nose
+        for x in (11, 12, 13):
+            F.both(x, 18, INK)
+        F.both(13, 17, F.sr[1]); F.both(12, 17, F.sr[1])
+        F.both(5, 18, INK); F.both(14, 19, INK)
+        for x in range(7, 13):
+            F.both(x, 15, sh)
+    else:
+        for x in range(6, 14):
+            F.both(x, 19, INK)
+    for x, y in ((6, 22), (5, 22), (5, 23), (4, 23), (4, 24), (6, 21)):  # dark marks from the outer corners
+        F.both(x, y, B)
+    for y in range(18, 32):                                 # black segmented plates: cheeks, jaw, neck
+        half = 2 if y < 21 else 3 if y < 24 else 4 + (y - 24) // 2
+        for x in range(0, min(half, 9)):
+            F.both(x, y, Bl if (y % 3 == 0 and x < half - 1) else B)
+    F.put(16, 23, F.sr[1]); F.put(16, 24, F.sr[1]); F.put(15, 24, F.sr[0])
+    if F.mouth_free:
+        for x in range(13, 19):
+            F.put(x, 27, (96, 106, 98))
 
 
 @mark("meruem_glow")
-def _meruem_glow(F):
+def _meruem_glow(F):  # reborn: the irises burn a brighter teal
     if F.open:
-        F.both(9, 18, (255, 220, 255))
+        for x in (9, 10, 11):
+            F.both(x, 20, (110, 230, 200))
+        F.both(10, 19, (8, 24, 22))
 
 
 @fighter("netero", ["chairman", "bodhisattva"])
@@ -2766,34 +3053,150 @@ def netero(m, form):
 
 @fighter("meruem", ["king", "awakened"])
 def meruem(m, form):
-    """Meruem, the Chimera Ant King: a slender green body, a mint face under a dark green helmet that comes to a point
-    between his purple eyes, two long tendrils sweeping back from the crown, a segmented belly, dark joints, and a long
-    segmented tail ending in a spearhead. Awakened (after the Royal Guard): his eyes glow, the tail grows larger."""
+    """Meruem, the Chimera Ant King: pale grey-green skin; a smooth helmet-like head with two long antenna crests running
+    from the forehead back over the skull and far behind it; black segmented plates over the cheeks, jaw and neck; deep
+    teal eyes with black lids and dark marks; a lean, muscular body with the lines of armour plating (pectoral and
+    abdominal plates, shoulder and forearm plates, knee joints); a long segmented tail from the base of his spine that
+    curves down to the ground, sweeps back and rises again to a broad pointed spike. The King: the dark grey hooded
+    cloak he wore when he first left the palace, hood down. Reborn (after absorbing Pouf and Youpi): no cloak, the
+    irises burn brighter, the tail heavier."""
     awake = form == "awakened"
-    face = skin_swap(head_paint(MER_D, (170, 70, 180), False, "meruem_awake" if awake else "meruem"), MER_FACE)
-    head = plain_head(MER_D, face)
+    face = skin_swap(head_paint(MER_SKIN, (30, 110, 100), False, "meruem_awake" if awake else "meruem"), MER_FACE)
+    P, B, Bl = MER_PLATE, MER_BLACK, MER_BLACK_L
 
-    def belly(face_, px, w, h, base):
-        if face_ != "north":
+    def head(face_, img):
+        if face_ == "north":
+            face(face_, img)
             return
-        for y in range(int(h * 0.4), h, max(2, h // 8)):
-            for x in range(2, w - 2):
-                _put(px, w, h, x, y, MER_D)
-        for x in range(2, w - 2):
-            _put(px, w, h, x, int(h * 0.36), (70, 120, 96))
-    base_body(m, layered(MER_G, [belly]), layered(MER_G, [region((0, 0.42, 1, 0.5), MER_D), region((0, 0.9, 1, 1), MER_D)]),
-              layered(MER_G, [region((0, 0.42, 1, 0.5), MER_D), region((0, 0.88, 1, 1), MER_D)]), head)
+        M.pixel_mat(img, MER_BLACK if face_ == "down" else MER_SKIN, face_)
+        if face_ in ("down", "up"):
+            if face_ == "up":                                       # the seam down the middle of the helmet
+                px = img.load()
+                w, h = img.size
+                for y in range(h):
+                    px[w // 2, y] = P + (255,)
+            return
+        px = img.load()
+        w, h = img.size
+        if face_ in ("east", "west"):     # the jaw plates reach round to below the ear, segmented
+            for y in range(int(h * 0.5), h):
+                t = (y - h * 0.5) / (h * 0.5)
+                reach = int(w * (0.3 + 0.4 * t))
+                for dx in range(reach):
+                    x = (w - 1 - dx) if face_ == "east" else dx
+                    px[x, y] = (Bl if (y - int(h * 0.5)) % 6 == 5 and dx < reach - 2 else B) + (255,)
+            for x in range(w):                                      # the helmet's lower rim
+                px[x, int(h * 0.46)] = P + (255,)
+        if face_ == "south":
+            for y in range(h):
+                px[w // 2, y] = P + (255,)
+            for x in range(w):
+                px[x, int(h * 0.62)] = P + (255,)
+            for y in range(int(h * 0.86), h):                       # the black of the neck
+                for x in range(int(w * 0.25), int(w * 0.75)):
+                    px[x, y] = B + (255,)
+
+    def torso_plates(face_, px, w, h, base):
+        if face_ == "north":
+            for y in range(0, max(2, int(h * 0.08))):               # the black segmented collar under the jaw
+                for x in range(int(w * 0.34), int(w * 0.66) + 1):
+                    _put(px, w, h, x, y, B)
+            for x in range(1, w - 1):                               # the lower edge of the pectoral plates
+                yy = int(h * 0.36 - ((x - w / 2) / (w / 2)) ** 2 * h * 0.08)
+                _put(px, w, h, x, yy, P)
+            for y in range(int(h * 0.1), int(h * 0.97)):            # the centre line
+                _put(px, w, h, w // 2, y, P)
+            for fy in (0.5, 0.64, 0.78):                            # the abdominal plates
+                for x in range(int(w * 0.3), int(w * 0.7) + 1):
+                    _put(px, w, h, x, int(h * fy), P)
+            for y in range(int(h * 0.4), int(h * 0.96)):            # the obliques
+                t = (y - h * 0.4) / (h * 0.56)
+                _put(px, w, h, int(w * (0.28 - 0.1 * t)), y, P)
+                _put(px, w, h, int(w * (0.72 + 0.1 * t)) - 1, y, P)
+            for i in range(int(w * 0.22)):                          # the shoulder plates
+                _put(px, w, h, i, int(h * 0.13) - i // 3, P)
+                _put(px, w, h, w - 1 - i, int(h * 0.13) - i // 3, P)
+        elif face_ == "south":
+            for y in range(int(h * 0.04), h):                       # the segmented spine
+                _put(px, w, h, w // 2, y, P)
+                _put(px, w, h, w // 2 - 1, y, P)
+            for y in range(int(h * 0.12), h, max(3, h // 9)):
+                for x in range(int(w * 0.4), int(w * 0.6) + 1):
+                    _put(px, w, h, x, y, P)
+            for i in range(int(h * 0.3)):                           # the shoulder blades
+                _put(px, w, h, int(w * 0.12) + i // 2, int(h * 0.1) + i, P)
+                _put(px, w, h, int(w * 0.88) - i // 2, int(h * 0.1) + i, P)
+        elif face_ in ("east", "west"):
+            for y in range(int(h * 0.4), h):
+                _put(px, w, h, w // 2, y, P)
+
+    def arm_plates(face_, px, w, h, base):
+        if face_ not in SIDES:
+            return
+        for x in range(w):                                          # shoulder plate, elbow joint, forearm plate, wrist
+            _put(px, w, h, x, int(h * 0.3) + (1 if abs(x - w / 2) < w / 4 else 0), P)
+            for y in (int(h * 0.52), int(h * 0.53)):
+                _put(px, w, h, x, y, P)
+            _put(px, w, h, x, int(h * 0.84), P)
+        if face_ in ("north", "south"):
+            for y in range(int(h * 0.55), int(h * 0.84)):
+                _put(px, w, h, w // 2, y, P)
+
+    def leg_plates(face_, px, w, h, base):
+        if face_ not in SIDES:
+            return
+        for x in range(w):
+            _put(px, w, h, x, int(h * 0.08), P)                     # hip plate
+            for y in (int(h * 0.47), int(h * 0.5)):                 # the knee joint
+                _put(px, w, h, x, y, P)
+            for y in range(int(h * 0.9), h):                        # dark feet
+                _put(px, w, h, x, y, dark(MER_SKIN, 0.72))
+        if face_ == "north":
+            for y in range(int(h * 0.12), int(h * 0.46)):
+                _put(px, w, h, w // 2, y, P)
+            for y in range(int(h * 0.53), int(h * 0.88)):           # the shin plate's ridge
+                _put(px, w, h, w // 2, y, light(MER_SKIN, 0.2))
+    base_body(m, layered(MER_SKIN, [torso_plates]), layered(MER_SKIN, [arm_plates]), layered(MER_SKIN, [leg_plates]), head)
     _strip_ears(m)
-    m.box("body", [-2.6, 22.4, -2.6], [5.2, 2.0, 5.2], solid(MER_D))                               # the collar of his carapace
-    dk = SC.swatch(MER_D)
-    for s_ in (1, -1):  # two long tendrils sweeping back from the crown
-        SC.curve_tube(m, "head", [[s_ * 1.6, 32.0, -0.6], [s_ * 2.8, 33.4, 2.6], [s_ * 3.4, 32.2, 6.6], [s_ * 3.6, 29.0, 9.6]], 0.55, 0.12, [dk, dk], n=3)
-    SC.blade(m, "head", [0, 31.8, -3.2], [0, 1, 0.6], 2.2, 2.0, 0.8, dk, width_dir=[0, 0, 1])     # the helmet's crest
-    tl, tip = SC.swatch(MER_G), SC.swatch((170, 210, 180))
+    m.box("body", [-2.2, 23.2, -2.2], [4.4, 1.0, 4.4], solid(MER_BLACK))                       # the black neck plates
+    m.box("head", [-3.4, 25.2, 3.9], [6.8, 6.2, 0.8], layered(MER_SKIN, [lines((("south",), [[(0.5, 0), (0.5, 1)]]), P)]))  # the back of the helmet
+    skin, plate = SC.swatch(MER_SKIN), SC.swatch(MER_PLATE)
+    for s_ in (1, -1):  # the two antenna crests: from the top of the forehead, back along the skull and far behind the head
+        SC.curve_tube(m, "head", [[s_ * 1.5, 31.0, -4.1], [s_ * 1.6, 32.6, -3.0], [s_ * 1.8, 33.1, -0.4], [s_ * 2.1, 33.2, 2.8],
+                                   [s_ * 2.6, 32.6, 6.2], [s_ * 3.1, 31.2, 9.6], [s_ * 3.5, 29.4, 12.6]], 0.8, 0.18, skin, n=2, knuckles=False)
+    # the tail, on its own bone so it lashes in the tail strike: thick at the base of the spine, down to the ground, back
+    # along it and rising to the spike; a dark ring between the segments of its shell
+    m.bones = M.BONES + [{"name": "tail", "parent": "body", "pivot": [0, 11.4, 1.8]}]
     big = 1.15 if awake else 1.0
-    pts = [[0, 11.2, 2.4], [0.4, 7.0, 6.0], [1.0, 2.6, 9.6], [1.6, 1.4, 14.0], [2.0, 3.6, 18.0]]
-    SC.curve_tube(m, "body", pts, 1.2 * big, 0.6, [tl, dk], n=3)
-    SC.blade(m, "body", pts[-1], [0.1, 0.5, 1], 3.0 * big, 1.6, 0.6, tip, width_dir=[1, 0, 0])
+    ctrl = [[0, 11.4, 1.8], [0.2, 8.6, 4.8], [0.8, 5.4, 7.8], [1.8, 2.6, 11.2], [3.0, 1.6, 15.0], [4.4, 2.0, 18.8],
+            [5.4, 4.0, 21.8], [5.8, 7.2, 23.4]]
+    pts = SC.spline(ctrl, 2)
+    n = len(pts) - 1
+    for i in range(n):
+        a, b = pts[i], pts[i + 1]
+        r = (1.65 - 1.05 * (i + 0.5) / n) * big
+        SC.tube(m, "tail", [a, b], [r, r], skin, knuckles=False)
+        if 0 < i:
+            dd = M.norm([b[k] - a[k] for k in range(3)])
+            for sp in (0, 45):
+                SC.obox(m, "tail", a, [2 * r * 1.02, 0.45, 2 * r * 1.02], plate, dd, sp)
+    d = M.norm([pts[-1][i] - pts[-2][i] for i in range(3)])
+    tip = SC.swatch(light(MER_SKIN, 0.1))
+    SC.box_at(m, "tail", pts[-1], [1.5 * big, 1.5 * big, 1.5 * big], plate, rot=[45, 45, 0])
+    w2 = M.norm([0, d[2], -d[1]])                                                   # across the spike, upright
+    SC.blade(m, "tail", pts[-1], d, 5.0 * big, 2.8 * big, 0.7, tip, width_dir=[1, 0, 0])      # the broad pointed spike
+    SC.blade(m, "tail", pts[-1], d, 5.0 * big, 1.4 * big, 0.6, plate, width_dir=w2)
+    if awake:
+        return
+    cl, ln = (62, 62, 68), (98, 98, 106)
+    cloak = layered(cl, [lines((("south", "east", "west"), [[(x, 0.05), (x, 1)] for x in (0.2, 0.42, 0.62, 0.84)]), dark(cl, 0.8))])
+    m.box("body", [-8.4, 3.2, 2.3], [16.8, 21.6, 0.6], cloak)                                   # the cloak behind
+    for s_ in (1, -1):
+        m.box("body", [s_ * 8.1 - 0.3, 3.2, -2.6], [0.6, 21.6, 5.2], cloak)                     # its sides round the arms
+        m.box("body", [s_ * 6.1 - 2.4, 22.4, -2.9], [4.8, 2.4, 5.8], layered(cl, [region((0, 0.8, 1, 1), dark(cl, 0.8))]))  # over the shoulders
+        m.box("body", [s_ * 7.2 - 1.2, 6.0, -3.0], [2.4, 17.0, 0.4], layered(cl, [region((0.85 if s_ > 0 else 0, 0, 1 if s_ > 0 else 0.15, 1), ln, faces=("north",))]))  # the front edges
+    m.box("body", [-4.0, 22.4, 1.8], [8.0, 3.4, 2.8], layered(cl, [lines((SIDES + ("up",), [[(0, 0.3), (1, 0.4)], [(0, 0.65), (1, 0.7)]]), dark(cl, 0.75)),
+                                                                  region((0, 0, 1, 0.25), ln, faces=("up",))]))  # the hood, down on his back
 
 
 # ==================================================================================
