@@ -292,17 +292,20 @@ function spawnSummon(dim, kind, at, dir, size, life) {
   v.setProperty("ab:size", 0);
   vfxAlive.set(v.id, now() + life + 30);
   every(1, 10, (i) => vset(v, "ab:size", (size * (i + 1)) / 10));           // it grows out of the chakra
-  fx(dim, "aura", V.up(at, 3), SUMMON_COLOR[kind], 2 + size, 1.1, { count: 50 * fxLevel(), speed: 3 });
-  burst(dim, V.up(at, 2), SUMMON_COLOR[kind], 30, 3 + size, 0.5, 0.7);
+  fx(dim, "aura", V.up(at, 3), SUMMON_COLOR[kind], 1 + size * 0.4, 1.0, { count: 30 * fxLevel(), speed: 3 });
+  burst(dim, V.up(at, 2), SUMMON_COLOR[kind], 20, 3 + size, 0.4, 0.6);
   if (size >= 3) shake(dim, at, 0.3, 0.5);
   return v;
 }
+// Summons are drawn at SUMMON_SCALE of their nominal size: still towering over the fighters, but no longer a wall
+// between the camera and the fight.
+const SUMMON_SCALE = 0.75;
 function summonGiant(e, kind, t, o = {}) {
   try {
     let dir = alive(t) ? V.sub(t.location, e.location) : e.getViewDirection();
     dir = V.norm({ x: dir.x, y: 0, z: dir.z });
     const at = o.at ?? V.add(e.location, V.mul(dir, -(o.behind ?? 2.5)));
-    const life = o.life ?? 60, size = o.size ?? 3;
+    const life = o.life ?? 60, size = (o.size ?? 3) * SUMMON_SCALE;
     const v = spawnSummon(e.dimension, kind, at, dir, size, life);
     if (o.pose) later(o.poseAt ?? 0, () => vset(v, "ab:pose", o.pose));
     later(life, () => fadeVfx(v, size, 8));
@@ -375,11 +378,14 @@ function shake(dim, loc, power = 0.25, secs = 0.3) {
 
 // ------------------------------------------------------------------ effects
 const VFX_SCALE = 1.3;  // every technique drawn bigger and clearer
+// ...but never so big that it walls off the camera: the glowing, camera-facing particles are capped (blocks, before
+// VFX_SCALE). Flat ground rings may stay wide; a white star or orb the size of a house hides the whole fight.
+const FX_MAX = { flash: 3.2, orb: 2.2, orb_solid: 2.4, shock_v: 4, burst: 0.6, aura: 2.4, streak: 2.6, shock: 16 };
 function fx(dim, kind, loc, color, size, life, extra) {
   try {
     const m = new MolangVariableMap();
     m.setColorRGB("variable.color", color);
-    m.setFloat("variable.size", size * VFX_SCALE);
+    m.setFloat("variable.size", Math.min(size, FX_MAX[kind] ?? size) * VFX_SCALE);
     m.setFloat("variable.life", life);
     m.setFloat("variable.count", extra?.count ?? 1);
     m.setFloat("variable.speed", extra?.speed ?? 0);
@@ -542,6 +548,19 @@ function state(e) {
   return s;
 }
 
+// A fighter's full potential: the last form at full ego/rage. Two fighters with close potential are near-equals,
+// whatever forms they happen to be in at the moment.
+const potentialCache = new Map();
+function potentialOf(e) {
+  const def = FIGHTERS[e.typeId];
+  if (!def) return powerOf(e);
+  let p = potentialCache.get(e.typeId);
+  if (p === undefined) {
+    p = Math.max(...def.forms.map((f) => f.power)) * (def.ego ? 1 + (def.egoMax ?? 0.1) : 1);
+    potentialCache.set(e.typeId, p);
+  }
+  return p;
+}
 function powerOf(e) {
   const def = FIGHTERS[e.typeId];
   if (def) {
@@ -820,6 +839,11 @@ function drawInside(e, center, R) {
 }
 // A cinematic flash of colour over the screens of players watching nearby (no text).
 function screenFade(dim, loc, r, fin, hold, fout, rgb) {
+  const top = Math.max(...rgb);
+  if (top > 150) {  // a bright fade is only a quick flicker, and never pure white: the fight must stay visible
+    rgb = rgb.map((c) => Math.round(c * 150 / top));
+    fin = Math.min(fin, 0.05); hold = Math.min(hold, 0.03); fout = Math.min(fout, 0.2);
+  }
   try {
     dim.runCommand(`camera @a[x=${Math.floor(loc.x)},y=${Math.floor(loc.y)},z=${Math.floor(loc.z)},r=${Math.round(r)}] fade time ${fin} ${hold} ${fout} color ${rgb[0]} ${rgb[1]} ${rgb[2]}`);
   } catch (e) { /* ignore */ }
@@ -832,18 +856,21 @@ function solidAt(dim, p) {
 }
 function explosion(src, pos, o) {
   const dim = src.dimension;
+  // the fireball stays a tasteful size (the blast radius is shown by the ground ring and the debris, not by a
+  // sphere swallowing the fighters), and the white flash is a short spark
+  const ballMax = Math.min(0.3 + o.radius * 0.55, 3.2);
   const ball = spawnVfx(dim, 1, pos, { slot: o.slot ?? slotOf(o.color), size: 0.3, life: 40 });
-  every(1, 5, (i) => vset(ball, "ab:size", (0.3 + o.radius * 0.28 * (i + 1))));
-  later(7, () => fadeVfx(ball, 0.3 + o.radius * 1.4, 5));
+  every(1, 5, (i) => vset(ball, "ab:size", 0.3 + (ballMax - 0.3) * (i + 1) / 5));
+  later(7, () => fadeVfx(ball, ballMax, 5));
   fx(dim, "shock", V.up(pos, -o.radius * 0.4), o.color, o.radius * 3.2, 0.6);
-  fx(dim, "flash", pos, C.white, o.radius * 1.8, 0.25);
+  fx(dim, "flash", pos, C.white, Math.min(o.radius * 0.6, 2.4), 0.2);
   fx(dim, "streak", pos, o.color, 1.6 + o.radius * 0.2, 0.5, { count: Math.ceil((14 + o.radius * 4) * fxLevel()), speed: 8 + o.radius * 2 });
   if (o.radius >= 3) shake(dim, pos, Math.min(0.6, 0.12 * o.radius), 0.4);
   burst(dim, pos, o.color, 26 + o.radius * 6, o.radius * 3, 0.5 + o.radius * 0.08, 0.8);
-  burst(dim, pos, C.white, 10 + o.radius * 2, o.radius * 1.5, 0.4, 0.5);
+  burst(dim, pos, C.white, 6 + o.radius, o.radius * 1.5, 0.3, 0.4);
   sphereFx(dim, pos, o.radius * 0.6, o.color, 10 + o.radius * 3, 0.9, "orb", 0.5);
   sound(dim, "random.explode", pos, 1 + o.radius * 0.3, o.radius > 4 ? 0.6 : 0.9);
-  fx(dim, "orb", pos, C.white, o.radius * 1.1, 0.15);
+  fx(dim, "orb", pos, C.white, Math.min(o.radius * 0.4, 1.6), 0.15);
   every(2, 5, (i) => ring(dim, V.up(pos, -o.radius * 0.3), o.radius * (0.4 + i * 0.35), o.color, 14 + o.radius * 2, 0.45));
   fx(dim, "aura", V.up(pos, -1), { red: 0.35, green: 0.33, blue: 0.3 }, 1.2, 1.2, { count: (10 + o.radius * 3) * fxLevel(), speed: 1 });
   hitArea(src, pos, o.radius, o.dmg, new Set(), { knock: o.knock ?? 1.2, lift: 0.45 });
@@ -956,7 +983,8 @@ function projectile(src, start, dir, o) {
   const hit = new Set();
   const team = teamOf(src);
   const sub = Math.max(1, Math.ceil(o.speed));
-  const ball = o.size >= 0.7 ? spawnVfx(dim, 1, start, { slot: o.slot ?? slotOf(o.color), size: o.size * 0.62, life: 400 }) : undefined;
+  // the giant balls (Spirit Bomb, Hollow Purple, Supernova) stay big, but never big enough to swallow the arena
+  const ball = o.size >= 0.7 ? spawnVfx(dim, 1, start, { slot: o.slot ?? slotOf(o.color), size: Math.min(o.size, 5) * 0.62, life: 400 }) : undefined;
   const id = system.runInterval(() => {
     try {
       if (done || !src.isValid) { system.clearRun(id); killVfx(ball); return; }
@@ -1323,7 +1351,8 @@ const GOKU = {
     { id: "solarflare", label: "Solar Flare", cd: 320, cost: 60, min: 0, max: 14, weight: 4,
       run(e, s, t) {  // a blinding flash: everyone looking at him loses sight of him
         busy(s, 10); setPose(e, 3); announce(e, "§e§lSOLAR FLARE! §7— Taiyoken!");
-        fx(e.dimension, "flash", V.up(e.location, 1.8), C.white, 12, 0.5);
+        fx(e.dimension, "flash", V.up(e.location, 1.8), C.white, 3, 0.35);
+        burst(e.dimension, V.up(e.location, 1.8), C.white, 24, 5, 0.3, 0.4);
         let list = []; try { list = e.dimension.getEntities({ location: e.location, maxDistance: 14 }); } catch (err) { /* ignore */ }
         for (const x of list) if (canHit(e, teamOf(e), x) && isFighter(x)) { const xs = state(x); xs.stunUntil = Math.max(xs.stunUntil, now() + 24); }
         later(10, () => { if (e.isValid) setPose(e, 0); });
@@ -2886,9 +2915,10 @@ const summonToad = (cond) => ({ id: "gamabunta", label: "Summoning: Gamabunta", 
     later(8, () => {
       if (!e.isValid) return;
       const c = alive(t) ? t.location : e.location;
-      fx(dim, "aura", V.up(c, 2), C.white, 5, 1.2, { count: 60 * fxLevel(), speed: 3 });   // the summoning smoke
       const toDir = V.norm({ x: c.x - e.location.x, y: 0, z: c.z - e.location.z });
-      const toad = summonGiant(e, 2, t, { at: V.sub(c, V.mul(toDir, 3)), size: 4, life: 64, pose: 3 });
+      const toadAt = V.sub(c, V.mul(toDir, 6));  // it lands a few blocks short of the target, not on top of the fight
+      fx(dim, "aura", V.up(toadAt, 2), C.white, 2.4, 1.0, { count: 30 * fxLevel(), speed: 3 });   // the summoning smoke
+      const toad = summonGiant(e, 2, t, { at: toadAt, size: 4, life: 64, pose: 3 });
       later(18, () => {  // the dosu comes down
         vset(toad, "ab:pose", 1);
         if (alive(t)) { flyingSlash(e, t, { color: C.white, dmg: 30 * powerOf(e) / 100, range: 14, roll: 80, size: 3 }); shake(dim, t.location, 0.4, 0.3); }
@@ -2896,7 +2926,7 @@ const summonToad = (cond) => ({ id: "gamabunta", label: "Summoning: Gamabunta", 
       later(34, () => {  // Water Style: Water Gun — straight from its mouth
         vset(toad, "ab:pose", 4);
         if (!alive(t) || !toad?.isValid) return;
-        const mouth = V.up(toad.location, 4.4);
+        const mouth = V.up(toad.location, 4.4 * SUMMON_SCALE);
         projectile(e, mouth, V.norm(V.sub(aim(t), mouth)), { speed: 1.6, maxDist: 30, radius: 1.8, size: 2.6, color: C.kameBlue, trail: true,
           explode: { radius: 3.6, dmg: 30 * powerOf(e) / 100, color: C.kameBlue, knock: 2.4 } });
       });
@@ -4275,7 +4305,7 @@ const MADARA = {
       run(e, s, t) {  // the moon turns red: everyone caught in the dream
         busy(s, 30); setPose(e, 23); announce(e, "§4§lINFINITE TSUKUYOMI! §7— the moon blazes red; the world sleeps");
         const dim = e.dimension;
-        fx(dim, "flash", V.up(e.location, 12), C.red, 30, 1.2);
+        fx(dim, "orb", V.up(e.location, 14), C.red, 2.2, 1.6);  // the red moon, high above
         ring(dim, V.up(e.location, 0.5), 16, C.red, 60, 0.8);
         let list = []; try { list = dim.getEntities({ location: e.location, maxDistance: 32 }); } catch (err) { /* ignore */ }
         for (const x of list) if (canHit(e, teamOf(e), x)) {
@@ -4944,8 +4974,10 @@ const SUN = { red: 1, green: 0.72, blue: 0.25 };
 const BEERUS = {
   name: "Beerus", color: "§5", energy: 2200, regen: 36, energyName: "§5DESTRUCTION",
   dodge: () => 0.18,  // his imperfect Ultra Instinct: he leans out of the way without looking
-  forms: [{ label: "Lord Beerus", power: 950 }, { label: "God of Destruction", power: 1100, aura: C.hakai },
-    { label: "Full Power", power: 1300, aura: C.ego }],
+  // Ladder: Whis > Beerus > Black Frieza > Ultra Instinct Goku / Ultra Ego Vegeta. Even relaxed, Beerus outclasses Goku and
+  // Vegeta (they still train under Whis to close that gap); Black Frieza dreams of beating him but has not done it yet.
+  forms: [{ label: "Lord Beerus", power: 1400 }, { label: "God of Destruction", power: 1700, aura: C.hakai },
+    { label: "Full Power", power: 2000, aura: C.ego }],
   thresholds: [0.7, 0.4], transformCd: 120, formSound: [null, "mob.wither.ambient", "mob.wither.spawn"],
   abilities: [
     { id: "hakai", label: "Hakai", cd: 900, cost: 500, min: 0, max: 16, weight: 6, cond: G(1, 2),
@@ -5285,7 +5317,7 @@ const KAIDO = {
         const dragon = summonGiant(e, KIND_KAIDO_DRAGON, t, { size: 3.2, behind: 4, life: 70 });
         for (const k of [16, 32, 48]) later(k, () => {
           if (!alive(t) || !dragon?.isValid) return;
-          const mouth = V.up(dragon.location, 6);
+          const mouth = V.up(dragon.location, 6 * SUMMON_SCALE);
           projectile(e, mouth, V.norm(V.sub(aim(t), mouth)), { speed: 1.4, maxDist: 40, radius: 1.8, size: 1.8, color: C.fire, trail: true,
             explode: { radius: 3.5, dmg: 24 * powerOf(e) / 100, color: C.fire, knock: 2, carve: 1 } });
         });
@@ -6068,7 +6100,12 @@ function updateFighter(e, tick) {
   // opponent's current form outclasses theirs (answered quickly), when badly hurt, or after a long even exchange.
   const outmatched = ctx.tPower > ctx.power * 1.02;
   const inForm = tick - (s.formSince ?? s.combatSince);
-  const hold = outmatched ? 20 : 100;
+  // Against a near-equal (close full potential) the climb is a duel of its own: each form is held a few seconds and
+  // fought in before the next answer, so the transformations are spread over the fight instead of a race in the
+  // first ten seconds. Against a far stronger opponent the answer comes at once.
+  const pMine = potentialOf(e), pTheirs = isFighter(target) ? potentialOf(target) : ctx.tPower;
+  const nearEqual = Math.max(pMine, pTheirs) / Math.max(1, Math.min(pMine, pTheirs)) < 1.3;
+  const hold = outmatched ? (nearEqual ? 80 : 20) : 100;
   if (!s.cloneUntil && form < def.forms.length - 1 && def.thresholds[form] !== undefined && tick >= s.transformUntil &&
       tick - s.combatSince > (outmatched ? 20 : 40) && inForm >= hold && (outmatched || tick >= s.nextTransform) &&
       (outmatched || ctx.hp < def.thresholds[form] || (inForm > 400 && ctx.tPower > ctx.power * 0.8))) {
@@ -6273,14 +6310,23 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     const s = state(v);
     const attackerP = src && src.isValid && isFighter(src) ? powerOf(src) : 0;
     const defenderP = powerOf(v);
+    let closeness = 0, paceMul = 1;
     if (attackerP > 0) {
-      // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch.
-      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3), 0.08, 4);
+      // Near-equals duel: blows between fighters of about the same full potential land softer, so the fight becomes a
+      // long back-and-forth with forms and signature moves on show. The effect fades out by a 1.7x gap in potential:
+      // a far weaker fighter still falls in about 5-15 blows.
+      const pa = potentialOf(src), pd = potentialOf(v);
+      closeness = clamp((CLOSE_GAP - Math.max(pa, pd) / Math.min(pa, pd)) / (CLOSE_GAP - 1), 0, 1);
+      paceMul = 1 - (1 - CLOSE_PACE) * closeness;
+      // Power decides the fight: a stronger fighter's blows land harder, a weaker one's barely scratch. Between
+      // near-equals a form ahead still tells, but less brutally: the other side has its own transformation to answer with.
+      ev.damage *= clamp(Math.pow(attackerP / defenderP, 3 - 2 * closeness), 0.08, 4 - 2 * closeness);
       // the smarter fighter hits the gaps — that counts fully between near equals and fades to nothing once one side is
       // 30% stronger: against a far stronger opponent no amount of cleverness is enough
       const gap = Math.max(attackerP, defenderP) / Math.max(1, Math.min(attackerP, defenderP));
       ev.damage *= 1 + 0.035 * (iqOf(src) - iqOf(v)) * clamp((1.3 - gap) / 0.3, 0, 1);
       if (now() < (s.transformUntil ?? 0)) ev.damage *= 0.25;  // the transformation aura pushes blows back
+      ev.damage *= paceMul;
     }
     if (now() < (s.mahoUntil ?? 0) && src && src.isValid && src.id !== v.id) {  // Mahoraga adapts to whatever hit its summoner
       const ss = isFighter(src) ? state(src) : undefined;
@@ -6304,8 +6350,16 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       system.run(() => { if (v.isValid) sphereFx(v.dimension, V.up(v.location, 1), 2.6, C.white, 16, 0.35, "orb", 0.25); });
     }  // her contract with the Prime Minister: her injuries pass to Japanese citizens
     // fighter vs fighter: damage is measured against the pair's own power, so every tier fights at the same pace
-    // (equals ~20-40 s, a far weaker fighter falls in about 5-15 blows); players and mobs still use TOUGHNESS
+    // (near-equals duel ~40-90 s thanks to CLOSE_PACE, a far weaker fighter falls in about 5-15 blows); players and mobs still use TOUGHNESS
     ev.damage /= attackerP > 0 ? Math.sqrt(attackerP * defenderP) / DUEL_PACE : TOUGHNESS;
+    // No one-shots between fighters: one blow takes at most a slice of the health bar — 12% between exact equals,
+    // 20% against a far weaker fighter (who still falls in about 5-15 blows). Only Hakai may erase someone outright.
+    const erasing = attackerP > 0 && state(src).curAb === "hakai" && now() - (state(src).curAbAt ?? 0) < 40 &&
+      defenderP < attackerP * 0.4 && formOf(v) >= def.forms.length - 1;  // the same rule as Hakai's own erasure
+    if (attackerP > 0 && !erasing) {
+      const hb = health(v);
+      if (hb) ev.damage = Math.min(ev.damage, hb.effectiveMax * (MAX_HIT + (MAX_HIT_MISMATCH - MAX_HIT) * (1 - closeness)));
+    }
     if ((v.typeId === "ab:sasuke" && formOf(v) === 2) || v.typeId === "ab:sasuke_war" || (v.typeId === "ab:sasuke_adult" && formOf(v) === 1)) {  // Susanoo takes part of every blow
       ev.damage *= 0.85;
       system.run(() => { if (v.isValid) fx(v.dimension, "flash", V.up(v.location, 1.2), C.purple, 2.2, 0.2); });
@@ -6326,14 +6380,14 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
     if (def.infinity && v.hasTag("ab_infinity")) {
       // Infinity stops everything, but holding back stronger attacks costs more cursed energy.
       const attackerPower = src && src.isValid ? powerOf(src) : 50;
-      const cost = ev.damage * 1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5));
+      const cost = ev.damage / paceMul * 1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5));  // a duel's softer blows still tax it
       s.energy -= cost;
       if (s.energy >= 0) {
         ev.cancel = true;
         system.run(() => { if (v.isValid) ring(v.dimension, V.up(v.location, 1), 1.1, C.blue, 12, 0.2); });
         return;
       }
-      const over = -s.energy / (1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5)));
+      const over = -s.energy * paceMul / (1.2 * Math.max(1, Math.pow(attackerPower / 100, 1.5)));
       s.energy = 0;
       s.infinityBrokenUntil = now() + 120;
       ev.damage = over;
@@ -6347,7 +6401,8 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
       system.run(() => guardFx(v, src, broken));
     }
     if (now() >= s.busyUntil || (v.typeId === "ab:goku" && formOf(v) === 6)) {
-      const chance = def.dodge(v, s);
+      // between near-equals the attacker can keep up with the dodger: evasion counts for less, blows trade both ways
+      const chance = def.dodge(v, s) * (1 - 0.6 * closeness);
       if (chance > 0 && Math.random() < chance) {
         ev.cancel = true;
         system.run(() => dodgeFx(v, src));
@@ -6382,6 +6437,10 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
 });
 const TOUGHNESS = 6.5;
 const DUEL_PACE = 100;
+const CLOSE_PACE = 0.35;  // damage multiplier between exact equals (fades to 1 at CLOSE_GAP)
+const CLOSE_GAP = 1.7;    // power ratio from which a fight is a mismatch and runs at full pace
+const MAX_HIT = 0.12;     // largest share of the health bar one blow can take between exact equals
+const MAX_HIT_MISMATCH = 0.2;  // ...and against a far weaker fighter
 // Launch: a heavy blow drives the target back about seven blocks ALONG THE GROUND (no flying): fast at first,
 // then slowing, dust ploughed up behind, a dust shockwave where it stops (or where it hits a wall).
 const DUST = { red: 0.6, green: 0.55, blue: 0.48 };
