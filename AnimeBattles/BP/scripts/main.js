@@ -456,8 +456,20 @@ function aim(e) { return V.up(e.location, 1.0); }
 function face(e, loc) {
   try { e.teleport(e.location, { facingLocation: loc }); } catch (e2) { /* ignore */ }
 }
+// Pose numbers (ab:pose -> animation, see tools/build.py): 1 beam release, 2 beam charge, 3 arms raised, 4 aim,
+// 5-12 strikes (jab_r, jab_l, kick, roundhouse, uppercut, axe kick, rush, left roundhouse), 13-36 special poses,
+// 37 two-handed cleave, 38 thrust, 39 prayer, 40 tail strike, 41 palm, 42 beam firing, 43 rising cut,
+// 44 sword flurry, 45 horizontal sweep, 46 palm on the ground.
+const POSE = { CLEAVE: 37, THRUST: 38, PRAYER: 39, TAIL: 40, PALM: 41, BEAM_FIRE: 42, RISING: 43, BLADE_RUSH: 44, SWEEP: 45, GROUND: 46, CUT: 19 };
+// How a generic pose reads on a fighter's own body: Kaido's "uppercut" is his kanabo coming down,
+// Meruem's is his tail, Mahito's aim is a hand laid on the soul.
+const POSE_STYLE = {
+  "ab:kaido": { 9: POSE.CLEAVE },
+  "ab:meruem": { 9: POSE.TAIL },
+  "ab:mahito": { 4: POSE.PALM },
+};
 function setPose(e, pose) {
-  try { e.setProperty("ab:pose", pose); } catch (e2) { /* ignore */ }
+  try { e.setProperty("ab:pose", POSE_STYLE[e.typeId]?.[pose] ?? pose); } catch (e2) { /* ignore */ }
 }
 function formOf(e) {
   try { return e.getProperty("ab:form") ?? 0; } catch (e2) { return 0; }
@@ -1146,6 +1158,9 @@ const SIG = {
       if (o.aura) every(2, Math.ceil(ch / 2), () => { if (e.isValid) fx(e.dimension, "aura", e.location, o.aura, 1.7, 0.6, { count: 16, speed: 2.5 }); });
       later(ch, () => {
         if (!e.isValid) return;
+        // release: out of the cupped charge the palms snap forward and he braces against the recoil
+        const fire = o.fire ?? ((o.pose ?? 2) <= 2 ? POSE.BEAM_FIRE : 0);
+        if (fire) setPose(e, fire);
         beam(e, alive(t) ? t : e, { color: o.color, width: o.width ?? 1.6, length: o.length ?? 44, dmg: o.dmg * powerOf(e) / 100, carve: o.carve ?? 1, blast: o.blast ?? 4, ticks: 7 });
         later(14, () => { if (e.isValid) setPose(e, 0); });
       });
@@ -1199,7 +1214,7 @@ const SIG = {
       busy(s, n * 4 + 10); announce(e, o.say);
       every(4, n, (i) => {
         if (!e.isValid) return false;
-        setPose(e, i % 2 ? 28 : (o.pose ?? 19));
+        setPose(e, o.poses ? o.poses[i % o.poses.length] : i % 2 ? 28 : (o.pose ?? 19));
         flyingSlash(e, t, { color: o.color, dmg: o.dmg * powerOf(e) / 100, range: o.range ?? 28, roll: (o.roll ?? 0) + i * 40, carve: true, size: o.size ?? 1.8 });
       });
       later(n * 4 + 8, () => { if (e.isValid) setPose(e, 0); });
@@ -1884,7 +1899,7 @@ function stretch(e, s, t, o) {
 }
 function slashVfx(dim, pos, dir, color, size, roll) {
   const v = spawnVfx(dim, 2, pos, { slot: slotOf(color), size, dir, life: 30 });
-  vset(v, "ab:len", ((roll ?? Math.random() * 360) / 4.5) % 80);
+  vset(v, "ab:len", ((((roll ?? Math.random() * 360) % 360) + 360) % 360) / 4.5);
   return v;
 }
 // Flying Dismantle slash: a thin glowing blade that cuts everything it passes.
@@ -5050,10 +5065,10 @@ const N22 = {
 const KIND_KAIDO_DRAGON = 19, KIND_GUANYIN = 20, KIND_FOX_DEVIL = 21;
 // a breathing-style form: dash in with the blade, the coloured trail of the style behind every cut
 const breath = (id, label, col, o) => SIG.strike(id, label, { color: col, blade: true, hits: o.hits ?? 1, dmg: o.dmg, cd: o.cd ?? 160, cost: o.cost ?? 80,
-  poses: o.poses ?? [9], launch: o.launch, behind: o.behind, finisher: o.finisher, cond: o.cond, say: o.say, weight: o.weight });
+  poses: o.poses ?? [POSE.CUT, POSE.RISING], launch: o.launch, behind: o.behind, finisher: o.finisher, cond: o.cond, say: o.say, weight: o.weight });
 const whipLashAbility = (id, label, col, dmg) => ({ id, label, cd: 160, cost: 70, min: 0, max: 10, weight: 6,
   run(e, s, t) {  // her thin, flexible sword whips out like a lash
-    busy(s, 14); setPose(e, 9); announce(e, "§d§lLove Breathing: Cat-Legged Winds of Love");
+    busy(s, 14); setPose(e, POSE.SWEEP); announce(e, "§d§lLove Breathing: Cat-Legged Winds of Love");
     every(3, 4, () => { if (e.isValid && alive(t)) whipLash(e, t, col, dmg / 4 * powerOf(e) / 100, { bend: 2.0 }); });
     later(14, () => { if (e.isValid) setPose(e, 0); });
   } });
@@ -5070,10 +5085,10 @@ const GIYU = {
   forms: [{ label: "Water Hashira", power: 60 }, { label: "Demon Slayer Mark", power: 70, aura: N22.water }],
   thresholds: [0.45], transformCd: 120, formSound: [null, "random.splash"],
   abilities: [
-    breath("surface", "First Form: Water Surface Slash", N22.water, { say: "§9§lWater Breathing, First Form: Water Surface Slash", dmg: 16, launch: 1.1 }),
-    breath("tide", "Fourth Form: Striking Tide", N22.water, { say: "§9§lFourth Form: Striking Tide", hits: 4, dmg: 6, finisher: 12, poses: [9, 10, 9, 10] }),
-    SIG.wave("whirlpool", "Sixth Form: Whirlpool", { say: "§9§lSixth Form: Whirlpool", color: N22.water, radius: 5.5, dmg: 18, cd: 240 }),
-    SIG.slash("waterwheel", "Second Form: Water Wheel", { say: "§9§lSecond Form: Water Wheel", color: N22.water, count: 1, dmg: 18, size: 2.2, cd: 200 }),
+    breath("surface", "First Form: Water Surface Slash", N22.water, { say: "§9§lWater Breathing, First Form: Water Surface Slash", dmg: 16, launch: 1.1, poses: [POSE.SWEEP] }),
+    breath("tide", "Fourth Form: Striking Tide", N22.water, { say: "§9§lFourth Form: Striking Tide", hits: 4, dmg: 6, finisher: 12, poses: [POSE.CUT, POSE.RISING, POSE.CUT, POSE.CLEAVE] }),
+    SIG.wave("whirlpool", "Sixth Form: Whirlpool", { say: "§9§lSixth Form: Whirlpool", color: N22.water, radius: 5.5, dmg: 18, cd: 240, pose: 24 }),
+    SIG.slash("waterwheel", "Second Form: Water Wheel", { say: "§9§lSecond Form: Water Wheel", color: N22.water, count: 1, dmg: 18, size: 2.2, cd: 200, poses: [POSE.CLEAVE] }),
     deadCalm("deadcalm", "Eleventh Form: Dead Calm", "§9§lEleventh Form: Dead Calm. §7— the water is still"),
   ],
 };
@@ -5086,13 +5101,13 @@ const SHINOBU = {
       run(e, s, t) {  // one blinding thrust of her stinger sword — and the wisteria poison keeps working
         busy(s, 10); announce(e, "§d§lInsect Breathing, Butterfly Dance: Caprice... §5§lBee Sting!");
         if (!teleportNear(e, t, false, 1.4) || !alive(t)) return;
-        setPose(e, 9); deal(e, t, 12 * powerOf(e) / 100); fx(e.dimension, "flash", aim(t), N22.insect, 1.6, 0.15);
+        setPose(e, POSE.THRUST); deal(e, t, 12 * powerOf(e) / 100); fx(e.dimension, "flash", aim(t), N22.insect, 1.6, 0.15);
         every(15, 5, () => { if (alive(t)) { deal(e, t, 3 * powerOf(e) / 100, true); fx(t.dimension, "aura", t.location, N22.insect, 0.8, 0.5, { count: 6, speed: 0.5 }); } });
         later(8, () => { if (e.isValid) setPose(e, 0); });
       } },
-    breath("centipede", "Dance of the Centipede: Hundred-Legged Zigzag", N22.insect, { say: "§d§lDance of the Centipede!", hits: 6, dmg: 4, finisher: 10, poses: [9, 10, 9, 10, 9, 10] }),
-    breath("dragonfly", "Dance of the Dragonfly: Compound Eye Hexagon", N22.insect, { say: "§d§lCompound Eye Hexagon", hits: 6, dmg: 5, cd: 260, cost: 120, cond: G(1) }),
-    breath("caprice", "Butterfly Dance: Caprice", N22.insect, { say: "§d§lButterfly Dance: Caprice", dmg: 10, behind: true }),
+    breath("centipede", "Dance of the Centipede: Hundred-Legged Zigzag", N22.insect, { say: "§d§lDance of the Centipede!", hits: 6, dmg: 4, finisher: 10, poses: [POSE.CUT, POSE.RISING, POSE.CUT, POSE.RISING, POSE.CUT, POSE.THRUST] }),
+    breath("dragonfly", "Dance of the Dragonfly: Compound Eye Hexagon", N22.insect, { say: "§d§lCompound Eye Hexagon", hits: 6, dmg: 5, cd: 260, cost: 120, cond: G(1), poses: [POSE.THRUST, POSE.CUT, POSE.THRUST, POSE.RISING, POSE.THRUST, POSE.SWEEP] }),
+    breath("caprice", "Butterfly Dance: Caprice", N22.insect, { say: "§d§lButterfly Dance: Caprice", dmg: 10, behind: true, poses: [POSE.THRUST] }),
   ],
 };
 const TENGEN = {
@@ -5104,11 +5119,11 @@ const TENGEN = {
       run(e, s, t) {  // the dual cleavers come down and the gunpowder in his blades explodes on impact
         busy(s, 12); announce(e, "§6§lSound Breathing, First Form: Roar!");
         if (!teleportNear(e, t, false, 1.6) || !alive(t)) return;
-        setPose(e, 9);
+        setPose(e, POSE.CLEAVE);
         later(3, () => { if (alive(t)) explosion(e, aim(t), { radius: 3, dmg: 18 * powerOf(e) / 100, color: N22.sound, knock: 2 }); });
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.rush("resounding", "Fourth Form: Constant Resounding Slashes", { say: "§6§lConstant Resounding Slashes!", color: N22.sound, hits: 6, dmg: 5, finisher: 16 }),
+    SIG.rush("resounding", "Fourth Form: Constant Resounding Slashes", { say: "§6§lConstant Resounding Slashes!", color: N22.sound, hits: 6, dmg: 5, finisher: 16, poses: [19, 28, POSE.CLEAVE, 28, 19, POSE.CLEAVE] }),
     SIG.ball("bombs", "Gunpowder Bombs", { say: "§6§lFlashy!", color: N22.bomb, count: 5, size: 0.5, dmg: 6, spread: 4, speed: 1.6, radius: 2.4, cd: 200, cost: 90 }),
     { id: "score", label: "Musical Score", cd: 400, cost: 150, min: 0, max: 20, weight: 5, cond: G(1),
       run(e, s) {  // he has decoded the rhythm of the enemy's attacks: for a while he reads every blow
@@ -5123,9 +5138,9 @@ const MITSURI = {
   forms: [{ label: "Love Hashira", power: 58 }, { label: "Demon Slayer Mark", power: 68, aura: N22.love }],
   thresholds: [0.45], transformCd: 120, formSound: [null, "random.levelup"],
   abilities: [
-    SIG.slash("catlove", "Fifth Form: Swaying Love — Wildclaw", { say: "§d§lLove Breathing: Swaying Love, Wildclaw!", color: N22.love, count: 4, dmg: 7, size: 1.4, cd: 180 }),
-    breath("firstlove", "First Form: Shivers of First Love", N22.love, { say: "§d§lShivers of First Love!", hits: 5, dmg: 5, finisher: 12, poses: [9, 10, 9, 10, 9] }),
-    SIG.wave("lovepangs", "Second Form: Love Pangs", { say: "§d§lLove Pangs!", color: N22.love, radius: 6, dmg: 16, cd: 240 }),
+    SIG.slash("catlove", "Fifth Form: Swaying Love — Wildclaw", { say: "§d§lLove Breathing: Swaying Love, Wildclaw!", color: N22.love, count: 4, dmg: 7, size: 1.4, cd: 180, poses: [POSE.CUT, POSE.RISING, POSE.SWEEP, POSE.CUT] }),
+    breath("firstlove", "First Form: Shivers of First Love", N22.love, { say: "§d§lShivers of First Love!", hits: 5, dmg: 5, finisher: 12, poses: [POSE.CUT, POSE.RISING, POSE.CUT, POSE.RISING, POSE.SWEEP] }),
+    SIG.wave("lovepangs", "Second Form: Love Pangs", { say: "§d§lLove Pangs!", color: N22.love, radius: 6, dmg: 16, cd: 240, pose: 24 }),
     whipLashAbility("whipsword", "Her Whip-Thin Sword", N22.love, 14),
   ],
 };
@@ -5138,12 +5153,12 @@ const MUICHIRO = {
       run(e, s, t) {  // the form only he created: he vanishes into a mist and cuts from where he isn't
         busy(s, 16); announce(e, "§b§lMist Breathing, Seventh Form: Obscuring Clouds");
         smoke(e.dimension, e.location, N22.mist, 1.6, 1.4, 30 * fxLevel(), 0.6, 1.4, 1.0);
-        every(4, 3, () => { if (alive(t) && teleportNear(e, t, true, 1.4)) { setPose(e, 9); deal(e, t, 8 * powerOf(e) / 100); swingArc(e, t, "slash", N22.mist); } });
+        every(4, 3, (i) => { if (alive(t) && teleportNear(e, t, true, 1.4)) { setPose(e, [POSE.CUT, POSE.RISING, POSE.SWEEP][i]); deal(e, t, 8 * powerOf(e) / 100); swingArc(e, t, "slash", N22.mist); } });
         later(16, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.slash("seaclouds", "Fourth Form: Shifting Flow Slash", { say: "§b§lShifting Flow Slash", color: N22.mist, count: 3, dmg: 7, size: 1.4, cd: 180 }),
-    breath("lingering", "Second Form: Eight-Layered Mist", N22.mist, { say: "§b§lEight-Layered Mist", hits: 8, dmg: 3, finisher: 10, poses: [9, 10, 9, 10, 9, 10, 9, 10] }),
-    breath("distant", "First Form: Low Clouds, Distant Haze", N22.mist, { say: "§b§lLow Clouds, Distant Haze", dmg: 15, launch: 1.2 }),
+    SIG.slash("seaclouds", "Fourth Form: Shifting Flow Slash", { say: "§b§lShifting Flow Slash", color: N22.mist, count: 3, dmg: 7, size: 1.4, cd: 180, poses: [POSE.SWEEP, POSE.CUT, POSE.RISING] }),
+    breath("lingering", "Second Form: Eight-Layered Mist", N22.mist, { say: "§b§lEight-Layered Mist", hits: 8, dmg: 3, finisher: 10, poses: [POSE.CUT, POSE.RISING, POSE.CUT, POSE.RISING, POSE.SWEEP, POSE.CUT, POSE.RISING, POSE.CLEAVE] }),
+    breath("distant", "First Form: Low Clouds, Distant Haze", N22.mist, { say: "§b§lLow Clouds, Distant Haze", dmg: 15, launch: 1.2, poses: [POSE.THRUST] }),
   ],
 };
 const GYOMEI = {
@@ -5152,9 +5167,9 @@ const GYOMEI = {
   thresholds: [0.45], transformCd: 120, formSound: [null, "dig.stone"],
   abilities: [
     SIG.ball("serpentinite", "First Form: Serpentinite Bipolar", { say: "§7§lStone Breathing, First Form: Serpentinite Bipolar", color: N22.stone, count: 2, size: 1.3, dmg: 18, speed: 1.4, radius: 3, carve: 1, cd: 200, cost: 100 }),
-    SIG.rush("volcanic", "Fourth Form: Volcanic Rock, Rapid Conquest", { say: "§7§lVolcanic Rock, Rapid Conquest!", color: N22.stone, hits: 6, dmg: 6, finisher: 20 }),
+    SIG.rush("volcanic", "Fourth Form: Volcanic Rock, Rapid Conquest", { say: "§7§lVolcanic Rock, Rapid Conquest!", color: N22.stone, hits: 6, dmg: 6, finisher: 20, poses: [POSE.CLEAVE, POSE.RISING, POSE.CLEAVE, POSE.SWEEP, POSE.RISING, POSE.CLEAVE] }),
     SIG.drop("arcs", "Fifth Form: Arcs of Justice", { say: "§7§lFifth Form: Arcs of Justice", color: N22.stone, size: 2.2, radius: 5, dmg: 70, grow: 0.1, cd: 500, cost: 260, cond: G(1) }),
-    SIG.wave("skin", "Second Form: Upper Smash", { say: "§7§lUpper Smash", color: N22.stone, radius: 5, dmg: 18, cd: 220 }),
+    SIG.wave("skin", "Second Form: Upper Smash", { say: "§7§lUpper Smash", color: N22.stone, radius: 5, dmg: 18, cd: 220, pose: POSE.CLEAVE }),
   ],
 };
 const OBANAI = {
@@ -5162,10 +5177,10 @@ const OBANAI = {
   forms: [{ label: "Serpent Hashira", power: 58 }, { label: "Demon Slayer Mark", power: 68, aura: N22.serpent }],
   thresholds: [0.45], transformCd: 120, formSound: [null, "mob.cat.hiss"],
   abilities: [
-    breath("winding", "First Form: Winding Serpent Slash", N22.serpent, { say: "§5§lSerpent Breathing, First Form: Winding Serpent Slash", dmg: 15, behind: true }),
-    SIG.slash("twinhead", "Fifth Form: Slithering Serpent", { say: "§5§lSlithering Serpent", color: N22.serpent, count: 2, dmg: 9, size: 1.6, cd: 180 }),
-    breath("coil", "Fourth Form: Twin-Headed Reptile", N22.serpent, { say: "§5§lTwin-Headed Reptile", hits: 4, dmg: 6, finisher: 12 }),
-    breath("venom", "Second Form: Venom Fangs of the Narrow Head", N22.serpent, { say: "§5§lVenom Fangs of the Narrow Head", hits: 2, dmg: 10, cd: 220, cond: G(1) }),
+    breath("winding", "First Form: Winding Serpent Slash", N22.serpent, { say: "§5§lSerpent Breathing, First Form: Winding Serpent Slash", dmg: 15, behind: true, poses: [POSE.SWEEP] }),
+    SIG.slash("twinhead", "Fifth Form: Slithering Serpent", { say: "§5§lSlithering Serpent", color: N22.serpent, count: 2, dmg: 9, size: 1.6, cd: 180, poses: [POSE.CUT, POSE.RISING] }),
+    breath("coil", "Fourth Form: Twin-Headed Reptile", N22.serpent, { say: "§5§lTwin-Headed Reptile", hits: 4, dmg: 6, finisher: 12, poses: [POSE.CUT, POSE.RISING, POSE.SWEEP, POSE.THRUST] }),
+    breath("venom", "Second Form: Venom Fangs of the Narrow Head", N22.serpent, { say: "§5§lVenom Fangs of the Narrow Head", hits: 2, dmg: 10, cd: 220, cond: G(1), poses: [POSE.THRUST, POSE.RISING] }),
   ],
 };
 const SANEMI = {
@@ -5173,10 +5188,10 @@ const SANEMI = {
   forms: [{ label: "Wind Hashira", power: 64 }, { label: "Demon Slayer Mark", power: 74, aura: N22.wind }],
   thresholds: [0.45], transformCd: 120, formSound: [null, "mob.enderdragon.flap"],
   abilities: [
-    SIG.wave("dustwhirl", "First Form: Dust Whirlwind Cutter", { say: "§a§lWind Breathing, First Form: Dust Whirlwind Cutter!", color: N22.wind, radius: 5.5, dmg: 18, cd: 200 }),
-    SIG.slash("gale", "Third Form: Clean Storm Wind Tree", { say: "§a§lClean Storm Wind Tree!", color: N22.wind, count: 3, dmg: 8, size: 1.6, cd: 180 }),
-    SIG.rush("blackwind", "Seventh Form: Gale, Sudden Gusts", { say: "§a§lGale, Sudden Gusts!", color: N22.wind, hits: 6, dmg: 5, finisher: 18 }),
-    breath("idaten", "Ninth Form: Idaten Typhoon", N22.wind, { say: "§a§lNinth Form: Idaten Typhoon!", dmg: 30, launch: 1.6, cd: 300, cost: 150, cond: G(1) }),
+    SIG.wave("dustwhirl", "First Form: Dust Whirlwind Cutter", { say: "§a§lWind Breathing, First Form: Dust Whirlwind Cutter!", color: N22.wind, radius: 5.5, dmg: 18, cd: 200, pose: 24 }),
+    SIG.slash("gale", "Third Form: Clean Storm Wind Tree", { say: "§a§lClean Storm Wind Tree!", color: N22.wind, count: 3, dmg: 8, size: 1.6, cd: 180, poses: [POSE.RISING, POSE.CUT, POSE.SWEEP] }),
+    SIG.rush("blackwind", "Seventh Form: Gale, Sudden Gusts", { say: "§a§lGale, Sudden Gusts!", color: N22.wind, hits: 6, dmg: 5, finisher: 18, poses: [POSE.CUT, POSE.RISING, POSE.SWEEP, POSE.CUT, POSE.RISING, POSE.CLEAVE] }),
+    breath("idaten", "Ninth Form: Idaten Typhoon", N22.wind, { say: "§a§lNinth Form: Idaten Typhoon!", dmg: 30, launch: 1.6, cd: 300, cost: 150, cond: G(1), poses: [POSE.CLEAVE] }),
   ],
 };
 
@@ -5193,10 +5208,10 @@ const PICCOLO = {
         const from = V.up(e.location, 1.4), d = V.norm(V.sub(aim(t), from)), side = sideOf(d), up = { x: 0, y: 1, z: 0 };
         for (let k = 0; k < 40 * fxLevel(); k++) { const a = k * 0.7; fx(e.dimension, "orb", V.add(V.add(from, V.mul(d, k * 0.9)), V.add(V.mul(side, Math.cos(a) * 0.9), V.mul(up, Math.sin(a) * 0.9))), C.kiYellow, 0.5, 0.4); }
       });
-    } }))(SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 320, cost: 200, pose: 4 })),
+    } }))(SIG.beam("sbc", "Special Beam Cannon", { say: "§e§lSpecial Beam Cannon! §7— Makankosappo", color: C.kiYellow, dmg: 70, width: 0.6, length: 48, charge: 16, cd: 320, cost: 200, pose: 25, fire: 4 })),
     SIG.ball("hellzone", "Hellzone Grenade", { say: "§a§lHellzone Grenade!", color: C.kiYellow, count: 10, size: 0.6, dmg: 6, spread: 6, homing: true, speed: 1.4, cd: 280, cost: 160, charge: 6 }),
     SIG.ball("lightgrenade", "Light Grenade", { say: "§a§lLight Grenade!", color: C.ofa, count: 1, size: 1.6, dmg: 34, speed: 1.4, radius: 3.5, cd: 240, cost: 140, charge: 8 }),
-    SIG.strike("giantfist", "Giant Fist", { say: "§6§lHe stretches into a giant!", color: C.fire, blast: true, hits: 1, dmg: 40, launch: 1.6, cd: 260, cost: 140, poses: [5], cond: G(2) }),
+    SIG.strike("giantfist", "Giant Fist", { say: "§6§lHe stretches into a giant!", color: C.fire, blast: true, hits: 1, dmg: 40, launch: 1.6, cd: 260, cost: 140, poses: [16], cond: G(2) }),
     regenAbility("Regeneration", "§a§lA Namekian regrows what he loses", 0.12, null, 700),
   ],
 };
@@ -5223,15 +5238,15 @@ const TOJI = {
       run(e, s, t) {  // the cursed tool that cancels any technique it touches: Infinity breaks
         busy(s, 10); announce(e, "§7§lInverted Spear of Heaven");
         if (!teleportNear(e, t, false, 1.4) || !alive(t)) return;
-        setPose(e, 9);
+        setPose(e, POSE.THRUST);
         try { if (t.hasTag("ab_infinity")) t.removeTag("ab_infinity"); } catch (err) { /* ignore */ }
         const ts = state(t); ts.infinityBrokenUntil = now() + 100;
         deal(e, t, 20 * powerOf(e) / 100, true); fx(e.dimension, "flash", aim(t), C.silver, 2, 0.15);
         later(8, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.strike("playfulcloud", "Playful Cloud", { say: "§7§lPlayful Cloud §7— three-section staff", color: C.silver, hits: 5, dmg: 6, finisher: 14, poses: [9, 10, 9, 10, 9] }),
-    SIG.strike("splitsoul", "Split Soul Katana", { say: "§7§lSplit Soul Katana — it cuts the soul", color: C.white, blade: true, hits: 1, dmg: 22, launch: 1.2, cd: 220, cost: 110, poses: [9] }),
-    SIG.rush("killer", "Heavenly Restriction", { say: "§7§l...", color: C.silver, hits: 6, dmg: 5, finisher: 16 }),
+    SIG.strike("playfulcloud", "Playful Cloud", { say: "§7§lPlayful Cloud §7— three-section staff", color: C.silver, hits: 5, dmg: 6, finisher: 14, poses: [POSE.SWEEP, POSE.CUT, POSE.RISING, POSE.SWEEP, POSE.CLEAVE] }),
+    SIG.strike("splitsoul", "Split Soul Katana", { say: "§7§lSplit Soul Katana — it cuts the soul", color: C.white, blade: true, hits: 1, dmg: 22, launch: 1.2, cd: 220, cost: 110, poses: [POSE.SWEEP] }),
+    SIG.rush("killer", "Heavenly Restriction", { say: "§7§l...", color: C.silver, hits: 6, dmg: 5, finisher: 16, poses: [5, POSE.CUT, 6, POSE.THRUST, POSE.RISING, POSE.CLEAVE] }),
   ],
 };
 const MAHITO = {
@@ -5287,13 +5302,13 @@ const SHANKS = {
       run(e, s, t) {  // Kamusari: one stroke of Gryphon coated in Conqueror's haki — black-red lightning, no contact
         busy(s, 16); announce(e, "§4§lDivine Departure! §7— Kamusari");
         if (!alive(t)) return;
-        setPose(e, 9);
+        setPose(e, POSE.CUT);
         flyingSlash(e, t, { color: N22.conq, dmg: 44 * powerOf(e) / 100, range: 18, roll: 20, size: 3 });
         every(2, 5, () => { if (alive(t)) fx(t.dimension, "streak", aim(t), C.black, 1.2, 0.3, { count: 6, speed: 5 }); });
         later(12, () => { if (e.isValid) setPose(e, 0); });
       } },
     { id: "shankshaki", label: "Conqueror's Haki", cd: 420, cost: 160, min: 0, max: 30, weight: 6, run(e, s) { conqueror(e, s); } },
-    breath("gryphon", "Gryphon", N22.conq, { say: "§c§lGryphon", hits: 3, dmg: 9, finisher: 14 }),
+    breath("gryphon", "Gryphon", N22.conq, { say: "§c§lGryphon", hits: 3, dmg: 9, finisher: 14, poses: [POSE.CUT, POSE.RISING, POSE.SWEEP] }),
     SIG.strike("hakipunch", "Armament Haki", { say: "§c§l...", color: C.haki, blast: true, hits: 1, dmg: 22, launch: 1.2, cd: 160, cost: 80, poses: [5] }),
   ],
 };
@@ -5306,7 +5321,7 @@ const PAIN = {
   abilities: [
     { id: "shinra", label: "Shinra Tensei", cd: 260, cost: 140, min: 0, max: 8, weight: 8,
       run(e, s) {  // Almighty Push: everything round him is blown away
-        busy(s, 12); setPose(e, 22); announce(e, "§5§lShinra Tensei.");
+        busy(s, 12); setPose(e, POSE.PALM); announce(e, "§5§lShinra Tensei.");
         const dim = e.dimension;
         fx(dim, "shock", e.location, C.white, 14, 0.5); ring(dim, V.up(e.location, 0.4), 7, C.white, 40, 0.5);
         hitArea(e, V.up(e.location, 1), 7.5, 22 * powerOf(e) / 100, new Set(), { knock: 4.5, lift: 0.5 });
@@ -5347,7 +5362,7 @@ const MINATO = {
         later(2, () => {
           if (!alive(t) || !teleportNear(e, t, true, 1.3)) return;
           fx(e.dimension, "flash", V.up(e.location, 1), C.kiYellow, 2, 0.15);
-          setPose(e, 5); deal(e, t, 18 * powerOf(e) / 100); explosion(e, aim(t), { radius: 1.8, dmg: 0, color: C.blue, knock: 2 });
+          setPose(e, 36); deal(e, t, 18 * powerOf(e) / 100); explosion(e, aim(t), { radius: 1.8, dmg: 0, color: C.blue, knock: 2 });
         });
         later(10, () => { if (e.isValid) setPose(e, 0); });
       } },
@@ -5363,10 +5378,10 @@ const KENPACHI = {
   forms: [{ label: "Eyepatch On", power: 110 }, { label: "Shikai: Nozarashi", power: 160, aura: C.gold }, { label: "Bankai", power: 210, aura: C.blood }],
   thresholds: [0.7, 0.35], transformCd: 120, formSound: [null, "mob.enderdragon.growl", "mob.wither.spawn"],
   abilities: [
-    breath("kendo", "Kendo", C.gold, { say: "§e§lKendo. §7— both hands on the hilt", dmg: 30, launch: 1.6, cd: 260, cost: 140, poses: [9] }),
-    SIG.rush("berserk", "Berserk", { say: "§e§lMore! Let's have more fun!", color: C.gold, hits: 6, dmg: 6, finisher: 18 }),
-    SIG.slash("nozarashi", "Nozarashi", { say: "§e§lDrink, Nozarashi", color: C.gold, count: 1, dmg: 28, size: 3, cd: 220, cost: 120, cond: G(1, 2) }),
-    breath("bankaiken", "Bankai Strike", C.blood, { say: "§4§l...", dmg: 40, launch: 2, hits: 2, cd: 300, cost: 160, cond: G(2) }),
+    breath("kendo", "Kendo", C.gold, { say: "§e§lKendo. §7— both hands on the hilt", dmg: 30, launch: 1.6, cd: 260, cost: 140, poses: [POSE.CLEAVE] }),
+    SIG.rush("berserk", "Berserk", { say: "§e§lMore! Let's have more fun!", color: C.gold, hits: 6, dmg: 6, finisher: 18, poses: [POSE.CUT, POSE.RISING, POSE.CLEAVE, POSE.SWEEP, POSE.CUT, POSE.CLEAVE] }),
+    SIG.slash("nozarashi", "Nozarashi", { say: "§e§lDrink, Nozarashi", color: C.gold, count: 1, dmg: 28, size: 3, cd: 220, cost: 120, cond: G(1, 2), poses: [POSE.CLEAVE] }),
+    breath("bankaiken", "Bankai Strike", C.blood, { say: "§4§l...", dmg: 40, launch: 2, hits: 2, cd: 300, cost: 160, cond: G(2), poses: [POSE.CLEAVE, POSE.RISING] }),
   ],
 };
 const ULQUIORRA = {
@@ -5388,7 +5403,7 @@ const ENDEAVOR = {
   forms: [{ label: "Flame Hero", power: 95 }, { label: "Prominence Burn", power: 108, aura: C.fire }],
   thresholds: [0.45], transformCd: 140, formSound: [null, "mob.blaze.shoot"],
   abilities: [
-    SIG.beam("prominence", "Prominence Burn", { say: "§6§lPROMINENCE BURN!", color: C.fire, dmg: 80, width: 2.4, charge: 14, cd: 420, cost: 260, cond: G(1), carve: 2 }),
+    SIG.beam("prominence", "Prominence Burn", { say: "§6§lPROMINENCE BURN!", color: C.fire, dmg: 80, width: 2.4, charge: 14, cd: 420, cost: 260, cond: G(1), carve: 2, pose: 22, fire: 27 }),
     { id: "hellspider", label: "Hell Spider", cd: 200, cost: 100, min: 0, max: 16, weight: 6,
       run(e, s, t) {  // thin threads of flame from his fingertips, slicing down like a net
         busy(s, 12); setPose(e, 4); announce(e, "§6§lHell Spider!");
@@ -5408,7 +5423,7 @@ const SHIGARAKI = {
   abilities: [
     { id: "decay", label: "Decay", cd: 300, cost: 160, min: 0, max: 14, weight: 8,
       run(e, s, t) {  // all five fingers on the ground: the decay spreads through the earth in a widening wave
-        busy(s, 20); setPose(e, 26); announce(e, "§7§lDecay.");
+        busy(s, 20); setPose(e, POSE.GROUND); announce(e, "§7§lDecay.");
         const dim = e.dimension, c = e.location, hit = new Set();
         every(3, 8, (i) => {
           ring(dim, V.up(c, 0.1), 1.5 + i * 1.3, N22.decay, 30 + i * 4, 0.6);
@@ -5418,7 +5433,7 @@ const SHIGARAKI = {
         });
         later(22, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.strike("touch", "Five-Finger Touch", { say: "§7§l...", color: N22.decay, hits: 1, dmg: 20, cd: 180, cost: 90, poses: [4] }),
+    SIG.strike("touch", "Five-Finger Touch", { say: "§7§l...", color: N22.decay, hits: 1, dmg: 20, cd: 180, cost: 90, poses: [POSE.PALM] }),
     SIG.ball("crumble", "Crumbling Debris", { say: "§7§lCrumbling debris", color: N22.decay, count: 5, size: 0.7, dmg: 6, spread: 4, speed: 1.6, cd: 160, cost: 70 }),
     SIG.rush("allforone", "All For One's Power", { say: "§7§lAll For One", color: C.black, hits: 5, dmg: 7, finisher: 20, cond: G(1) }),
   ],
@@ -5432,14 +5447,14 @@ const NETERO = {
   abilities: [
     { id: "guanyin", label: "100-Type Guanyin Bodhisattva", cd: 360, cost: 200, min: 0, max: 30, weight: 8,
       run(e, s, t) {  // a prayer faster than sound: the golden Bodhisattva rises behind him and its palms rain down
-        busy(s, 24); setPose(e, 35); announce(e, "§e§l100-Type Guanyin Bodhisattva");
+        busy(s, 24); setPose(e, POSE.PRAYER); announce(e, "§e§l100-Type Guanyin Bodhisattva");
         const g = summonGiant(e, KIND_GUANYIN, t, { size: 3, behind: 4, life: 46 });
         every(3, 8, () => { if (!alive(t)) return false; deal(e, t, 7 * powerOf(e) / 100); fx(t.dimension, "flash", V.up(t.location, 1 + Math.random() * 2), C.gold, 2.4, 0.15); shake(t.dimension, t.location, 0.2, 0.2); });
         later(26, () => { if (e.isValid) setPose(e, 0); });
       } },
-    SIG.beam("zerohand", "Zero Hand", { say: "§e§lZero Hand. §7— the 100th hand", color: C.gold, dmg: 100, width: 3, charge: 16, cd: 700, cost: 400, cond: G(1), carve: 2 }),
-    SIG.strike("first", "First Hand", { say: "§e§lFirst Hand", color: C.gold, blast: true, hits: 1, dmg: 24, launch: 1.4, cd: 160, cost: 70, poses: [5] }),
-    SIG.rush("prayer", "Prayer", { say: "§e§l(he bows in prayer)", color: C.gold, hits: 6, dmg: 5, finisher: 14 }),
+    SIG.beam("zerohand", "Zero Hand", { say: "§e§lZero Hand. §7— the 100th hand", color: C.gold, dmg: 100, width: 3, charge: 16, cd: 700, cost: 400, cond: G(1), carve: 2, pose: POSE.PRAYER, fire: POSE.PALM }),
+    SIG.strike("first", "First Hand", { say: "§e§lFirst Hand", color: C.gold, blast: true, hits: 1, dmg: 24, launch: 1.4, cd: 160, cost: 70, poses: [POSE.PALM] }),
+    SIG.rush("prayer", "Prayer", { say: "§e§l(he bows in prayer)", color: C.gold, hits: 6, dmg: 5, finisher: 14, poses: [POSE.PRAYER, POSE.PALM, POSE.PRAYER, POSE.PALM, POSE.PRAYER, POSE.PALM] }),
   ],
 };
 const MERUEM = {
@@ -5628,10 +5643,10 @@ const AKI = {
       run(e, s, t) {  // three stabs of the nail sword — and the Curse Devil crushes what it marked
         busy(s, 16); announce(e, "§5§lCurse Devil.");
         if (!teleportNear(e, t, false, 1.3) || !alive(t)) return;
-        every(4, 3, () => { if (alive(t)) { setPose(e, 9); deal(e, t, 6 * powerOf(e) / 100); fx(t.dimension, "flash", aim(t), C.purple, 1.4, 0.15); } });
+        every(4, 3, (i) => { if (alive(t)) { setPose(e, [POSE.THRUST, POSE.CUT, POSE.THRUST][i]); deal(e, t, 6 * powerOf(e) / 100); fx(t.dimension, "flash", aim(t), C.purple, 1.4, 0.15); } });
         later(16, () => { if (alive(t)) { deal(e, t, 50 * powerOf(e) / 100, true); bindTarget(t, 20); fx(t.dimension, "shock", t.location, C.black, 8, 0.5); } if (e.isValid) setPose(e, 0); });
       } },
-    breath("katana", "Katana", C.silver, { say: "§9§l...", hits: 2, dmg: 8 }),
+    breath("katana", "Katana", C.silver, { say: "§9§l...", hits: 2, dmg: 8, poses: [POSE.CUT, POSE.RISING] }),
   ],
 };
 const REZE = {
@@ -5710,6 +5725,15 @@ const MOVES = {
   tail: { pose: 33, t: 6, dmg: 16, kb: 1.8, lift: 0.3, strong: true, arc: "left" },  // Frieza's tail lash
   blink: { tp: "behind", t: 3 },
   blinkfront: { tp: "front", t: 3 },
+  // one-sword and heavy-weapon technique (the cut hand is always the sword hand)
+  rising: { pose: 43, t: 5, dmg: 14, kb: 0.4, lift: 0.9, strong: true, arc: "up", sword: true },       // low-to-high launcher
+  sweep: { pose: 45, t: 5, dmg: 13, kb: 1.6, strong: true, arc: "right", sword: true },                // flat cut from the hip
+  thrust: { pose: 38, t: 4, dmg: 11, kb: 0.9, arc: "punch", sword: true },                             // lunging stab
+  cleave: { pose: 37, t: 7, dmg: 20, kb: 0.4, lift: -0.5, strong: true, arc: "down", sword: true, ground: true },  // two-handed, into the ground
+  bladerush: { pose: 44, t: 16, dmg: 3.5, hits: 8, kb: 0.1, arc: "right", sword: true },              // sword flurry, 10 cuts/s
+  smash: { pose: 37, t: 7, dmg: 21, kb: 0.5, lift: -0.6, strong: true, arc: "down", ground: true },   // club / flail brought down overhead
+  palm: { pose: 41, t: 4, dmg: 12, kb: 1.8, strong: true, arc: "punch" },                              // open-palm strike
+  tailstrike: { pose: 40, t: 6, dmg: 17, kb: 2, lift: 0.3, strong: true, arc: "left" },                // spin, the tail cracks across
 };
 const COMBOS = {
   "ab:goku": [["jab_r", "jab_l", "jab_r", "rush", "kick_r", "axe"], ["rush", "kick_l", "kick_r", "upper", "axe"], ["jab_l", "jab_r", "rush", "rush", "kick_l"]],
@@ -5728,8 +5752,8 @@ const COMBOS = {
   "ab:sasuke_kid": [["jab_r", "jab_l", "kick", "upper"], ["kick_r", "jab_r", "blink", "axe"], ["jab_l", "kick_l", "kick_r"]],
   "ab:sasuke_war": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
   "ab:sasuke_adult": [["cut_r", "cut_l", "kick_r", "upper"], ["jab_r", "jab_l", "blink", "axe"], ["cut_l", "cut_r", "kick_l", "cut_x"]],
-  "ab:ichigo": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "blink", "cut_r", "kick_r", "cut_x"], ["cut_r", "cut_l", "axe", "cut_x"]],
-  "ab:tanjiro": [["cut_r", "cut_l", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick", "cut_x"], ["cut_r", "cut_l", "cut_l", "kick_r"]],
+  "ab:ichigo": [["cut_r", "rising", "cut_r", "cleave"], ["sweep", "blink", "cut_r", "cut_x"], ["bladerush", "rising", "cleave"]],
+  "ab:tanjiro": [["cut_r", "rising", "cut_r", "cut_x"], ["thrust", "cut_r", "kick", "sweep"], ["cut_r", "sweep", "rising", "cleave"]],
   "ab:tanjiro_demon": [["jab_r", "jab_l", "kick", "upper"], ["jab_l", "jab_r", "blink", "axe"], ["kick_r", "jab_r", "jab_l", "kick_l"]],
   "ab:muzan": [["jab_r", "jab_l", "kick_r", "upper"], ["blink", "jab_r", "kick_l", "axe"], ["jab_l", "jab_r", "kick", "kick_r"]],
   "ab:broly": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["jab_l", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
@@ -5739,7 +5763,7 @@ const COMBOS = {
   "ab:deku": [["kick", "kick_r", "kick_l", "axe"], ["jab_r", "jab_l", "upper"], ["blink", "kick_r", "kiburst"]],
   "ab:killua": [["blink", "jab_r", "jab_l", "kick_r"], ["blink", "kick", "upper"], ["jab_l", "jab_r", "rush"]],
   "ab:denji": [["jab_r", "jab_l", "upper"], ["rush", "kick"], ["jab_r", "kick_r", "axe"]],
-  "ab:rengoku": [["jab_r", "kick", "kick_r"], ["blink", "jab_l", "upper", "axe"], ["kick_l", "jab_r", "kiburst"]],
+  "ab:rengoku": [["cut_r", "rising", "sweep"], ["blink", "thrust", "cut_r", "cleave"], ["cut_r", "sweep", "kiburst"]],
   "ab:gohan": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["blink", "jab_r", "upper", "axe"], ["rush", "kick_l", "kick_r", "kiburst"]],
   "ab:bakugo": [["jab_r", "kiburst", "kick_l"], ["blink", "jab_l", "upper", "kiburst"], ["kick_r", "jab_r", "axe"]],
   "ab:gon": [["jab_r", "jab_l", "kick", "upper"], ["jab_l", "jab_r", "kick_r"], ["rush", "kick_l", "axe"]],
@@ -5755,30 +5779,30 @@ const COMBOS = {
   "ab:kurapika": [["jab_r", "jab_l", "kick"], ["blink", "kick_r", "upper"], ["jab_l", "jab_r", "kick_l"]],
   "ab:beerus": [["jab_r", "kick", "kick_r"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "chop", "kiburst"]],
   "ab:whis": [["jab_r", "blink"], ["blink", "jab_l"], ["kick_r", "blink"]],
-  "ab:giyu": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:shinobu": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:tengen": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:mitsuri": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:muichiro": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:gyomei": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:obanai": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:sanemi": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:piccolo": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:cell": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:toji": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:mahito": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:kaido": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:shanks": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:pain": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:minato": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:kenpachi": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:ulquiorra": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:endeavor": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:shigaraki": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:netero": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:meruem": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
-  "ab:aki": [["cut_r", "cut_l", "cut_x"], ["blink", "cut_r", "cut_x"], ["cut_l", "cut_r", "kick"]],
-  "ab:reze": [["jab_r", "jab_l", "kick"], ["blink", "upper", "axe"], ["jab_l", "jab_r", "kick_r", "kiburst"]],
+  "ab:giyu": [["cut_r", "rising", "cut_r", "sweep"], ["thrust", "cut_r", "rising", "cleave"], ["bladerush", "sweep", "cleave"]],
+  "ab:shinobu": [["thrust", "cut_r", "thrust", "kick"], ["blink", "thrust", "rising", "thrust"], ["kick_l", "thrust", "sweep", "thrust"]],
+  "ab:tengen": [["cut_r", "cut_l", "cut_r", "cleave"], ["bladerush", "cut_l", "cleave"], ["cut_l", "cut_r", "kick_r", "cleave"]],
+  "ab:mitsuri": [["sweep", "cut_r", "sweep", "rising"], ["cut_r", "rising", "kick_l", "sweep"], ["bladerush", "sweep", "rising"]],
+  "ab:muichiro": [["cut_r", "rising", "blink", "sweep"], ["blink", "thrust", "cut_r", "cleave"], ["bladerush", "blink", "rising"]],
+  "ab:gyomei": [["jab_r", "jab_l", "smash"], ["smash", "kick_r", "smash"], ["jab_l", "jab_r", "upper", "smash"]],
+  "ab:obanai": [["cut_r", "thrust", "sweep"], ["blink", "cut_r", "rising", "thrust"], ["thrust", "cut_r", "thrust", "kick_l"]],
+  "ab:sanemi": [["cut_r", "rising", "cut_r", "sweep"], ["bladerush", "rising", "cleave"], ["kick_r", "cut_r", "sweep", "cleave"]],
+  "ab:piccolo": [["jab_r", "jab_l", "kick_r", "upper"], ["rush", "kick_l", "kiburst"], ["jab_l", "jab_r", "kick", "axe"]],
+  "ab:cell": [["jab_r", "jab_l", "rush", "kick_r", "kiburst"], ["kick_l", "kick_r", "upper", "axe"], ["blink", "jab_l", "jab_r", "kick", "kiburst"]],
+  "ab:toji": [["cut_r", "thrust", "jab_r", "sweep"], ["blink", "jab_l", "jab_r", "rising", "cleave"], ["thrust", "kick_r", "cut_r", "sweep"]],
+  "ab:mahito": [["jab_r", "jab_l", "palm", "kick_r"], ["blink", "palm", "upper"], ["rush", "kick_l", "palm"]],
+  "ab:kaido": [["smash", "jab_l", "kick_r", "smash"], ["jab_r", "jab_l", "rush", "smash"], ["rush", "kick_l", "smash"]],
+  "ab:shanks": [["cut_r", "rising", "sweep"], ["thrust", "cut_r", "kick", "sweep"], ["blink", "cut_r", "rising", "cut_r"]],
+  "ab:pain": [["jab_r", "jab_l", "kick_r", "palm"], ["blink", "jab_r", "kick", "palm"], ["kick_l", "jab_r", "jab_l", "upper"]],
+  "ab:minato": [["blink", "jab_r", "jab_l", "kick_r"], ["jab_l", "jab_r", "blink", "kick_l", "axe"], ["rush", "blinkfront", "upper"]],
+  "ab:kenpachi": [["cleave", "rising", "cleave"], ["cut_r", "sweep", "cleave"], ["bladerush", "rising", "cleave"]],
+  "ab:ulquiorra": [["jab_r", "blink", "kick_r", "upper"], ["blink", "jab_l", "kick_l", "axe"], ["kick", "jab_r", "kiburst"]],
+  "ab:endeavor": [["jab_r", "jab_l", "jab_r", "upper", "kiburst"], ["rush", "kick_r", "kiburst"], ["jab_l", "jab_r", "kick", "axe"]],
+  "ab:shigaraki": [["jab_r", "palm", "kick_l"], ["blink", "palm", "kick_r"], ["jab_l", "jab_r", "palm"]],
+  "ab:netero": [["palm", "jab_r", "jab_l", "kick_r"], ["rush", "palm", "axe"], ["blink", "jab_l", "palm", "upper"]],
+  "ab:meruem": [["jab_r", "jab_l", "tailstrike", "kick_r"], ["blink", "tailstrike", "jab_l", "axe"], ["rush", "kick_l", "tailstrike"]],
+  "ab:aki": [["cut_r", "rising", "thrust"], ["blink", "cut_r", "sweep"], ["thrust", "cut_r", "kick", "rising"]],
+  "ab:reze": [["jab_r", "jab_l", "kick_r", "kiburst"], ["kick", "kick_l", "upper", "kiburst"], ["jab_l", "jab_r", "rush", "kiburst"]],
   "ab:ace": [["jab_r", "jab_l", "kick_r", "kiburst"], ["kick", "upper", "axe"], ["blink", "jab_r", "kick_l"]],
   "ab:frieza": [["jab_r", "tail", "rush", "kiburst"], ["kick", "jab_l", "jab_r", "axe"], ["rush", "kick_r", "kiburst"]],
 };
@@ -5897,6 +5921,9 @@ function swingArc(e, t, kind, color) {
   });
 }
 
+// The blade streak drawn across the target follows the cut: X for the cross-cut, vertical for the cleave,
+// flat for the sweep, the opposite diagonal for the rising cut, alternating diagonals in a flurry.
+const CUT_ROLLS = { 1: () => [45, -45], 28: () => [-35], 37: () => [90], 38: () => [0], 43: () => [-55], 44: (h) => [h % 2 ? -35 : 35], 45: () => [0] };
 function comboStep(e, t, mv, last) {
   if (!e.isValid || !alive(t)) { if (e.isValid) setPose(e, 0); return; }
   if (mv.tp) {
@@ -5938,7 +5965,7 @@ function comboStep(e, t, mv, last) {
       }
       if (mv.sword) {  // a visible blade streak across the target for every sword cut
         const sd = V.norm(V.sub(aim(t), aim(e)));
-        for (const roll of mv.pose === 1 ? [45, -45] : [mv.pose === 28 ? -35 : 35]) {
+        for (const roll of CUT_ROLLS[mv.pose]?.(h) ?? [35]) {
           const sc = e.typeId === "ab:tanjiro" ? (formOf(e) ? C.fire : C.kameBlue) : (formOf(e) && (e.typeId === "ab:zoro" || e.typeId === "ab:ichigo") ? C.haki : color);
           const v = slashVfx(t.dimension, aim(t), sd, sc, 1.0, roll);
           later(4, () => killVfx(v));

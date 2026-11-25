@@ -374,6 +374,221 @@ def slash_frames():
             (0.1, settle, "out"), (0.15, ready, "io")]
 
 
+# =================================================================================================
+# Weapon and technique poses (poses 37+). The same beats as the strikes above: anticipation pre-loaded
+# into frame 0, contact at ~0.05 s (damage lands on the tick the pose is set), overshoot, then a settle
+# that is HELD (hold_on_last_frame) for as long as the technique keeps the pose.
+#
+# Swords: on the blocky models the blade is fixed to the hand at ~84 deg from the arm, pointing forward
+# when the arm hangs. So a cut is read from the ARM path and the torso, and the blade angle follows:
+#   arm hanging + body leaning in  -> blade level, pointing at the target (thrust, cleave finish)
+#   arm raised overhead            -> blade back over the shoulder (wind-up)
+#   arm out to the side (Z ~ 85)   -> blade level and flat: a horizontal cut is the TORSO turning
+# Two-handed grips: the arms yaw inward until the hands meet on the hilt (right arm -Y, left arm +Y).
+# =================================================================================================
+NEUTRAL = {"root": (0, 0, 0), "body": (0, 0, 0), "rightArm": (0, 0, 0), "leftArm": (0, 0, 0),
+           "rightForearm": (0, 0, 0), "leftForearm": (0, 0, 0), "rightLeg": (0, 0, 0), "leftLeg": (0, 0, 0),
+           "rightShin": (0, 0, 0), "leftShin": (0, 0, 0)}
+N = {"rot": NEUTRAL}
+WIDE = dict(rightLeg=(16, 0, 7), leftLeg=(-18, 0, -7), rightShin=(14, 0, 0), leftShin=(18, 0, 0))   # a planted, wide base
+# sword at the ready: both hands on the hilt in front of the belly, blade angled up at the opponent's eyes
+READY2H = pose(N, root=(2, 0, 0), body=(4, 8, 0), rightArm=(-44, -26, 0), leftArm=(-42, 44, 0),
+               rightForearm=(-22, 0, 0), leftForearm=(-30, 0, 0), **WIDE, pos=(0, -0.4, 0))
+# one-handed ready: blade hand forward and low, the free hand up as a guard
+READY1H = pose(READY2H, leftArm=(-58, 10, -6), leftForearm=(-60, 0, 0))
+
+
+def held(frames, length):
+    """A technique pose: plays once, then holds its last frame for as long as the server keeps the pose."""
+    return strike(frames, length)
+
+
+def add_bone(anim, bone, chans):
+    """Extra bones the timeline does not know (tails): constant vectors or {time: vec} dicts."""
+    anim["bones"][bone] = chans
+    return anim
+
+
+# --- cleave (pose 37): two-handed overhead cleave that buries the weapon in the ground (7 ticks) ----
+def cleave():
+    raised = pose(N, root=(-6, 0, 0), body=(-10, 6, 0), rightArm=(-172, -14, 0), leftArm=(-172, 16, 0),
+                  rightForearm=(-30, 0, 0), leftForearm=(-30, 0, 0),
+                  rightLeg=(14, 0, 5), leftLeg=(-16, 0, -5), rightShin=(6, 0, 0), leftShin=(10, 0, 0),
+                  pos=(0, 0.5, 0), look=(-6, 0, 0))
+    apex = pose(raised, root=(-8, 0, 0), body=(-15, 4, 0), rightArm=(-186, -10, 0), leftArm=(-186, 12, 0),
+                pos=(0, 0.8, 0))
+    drive = pose(raised, root=(4, 0, 0), body=(6, 0, 0), rightArm=(-112, -18, 0), leftArm=(-112, 24, 0),
+                 rightForearm=(-10, 0, 0), leftForearm=(-10, 0, 0), pos=(0, 0, 0),
+                 scale={"rightArm": (1, 1.14, 1), "leftArm": (1, 1.14, 1)})
+    hit = pose(N, root=(14, 0, 0), body=(24, -4, 0), rightArm=(-36, -24, 0), leftArm=(-36, 34, 0),
+               rightForearm=(-6, 0, 0), leftForearm=(-10, 0, 0),
+               rightLeg=(28, 0, 7), leftLeg=(-36, 0, -7), rightShin=(20, 0, 0), leftShin=(36, 0, 0),
+               pos=(0, -1.6, 0), look=(8, 0, 0), scale={"rightArm": (1, 1.05, 1), "leftArm": (1, 1.05, 1)})
+    crush = pose(hit, root=(16, 0, 0), body=(29, -4, 0), rightArm=(-26, -24, 0), leftArm=(-26, 34, 0), pos=(0, -2.1, 0))
+    hold = pose(crush, root=(15, 0, 0), body=(26, -4, 0), rightArm=(-30, -24, 0), leftArm=(-30, 34, 0), pos=(0, -1.9, 0))
+    return held([(0.0, raised, "lin"), (0.025, apex, "out"), (0.05, drive, "in"), (0.072, hit, "in"),
+                 (0.11, crush, "out"), (0.2, hold, "lin"), (0.35, READY2H, "io")], 0.35)
+
+
+# --- thrust (pose 38): a lunging stab, the whole body behind the point (4 ticks) --------------------
+def thrust():
+    chamber = pose(N, root=(-2, 12, 0), body=(2, 26, 0), rightArm=(-14, 12, 10), rightForearm=(-40, 0, 0),
+                   leftArm=(-74, -10, -6), leftForearm=(-20, 0, 0),
+                   rightLeg=(14, 0, 5), leftLeg=(-12, 0, -5), rightShin=(16, 0, 0), leftShin=(8, 0, 0), pos=(0, -0.4, 0))
+    mid = pose(chamber, root=(8, 0, 0), body=(6, 4, 0), rightArm=(-40, -4, 2), rightForearm=(-16, 0, 0),
+               leftArm=(-44, 6, -14), scale={"rightArm": STRETCH})
+    hit = pose(N, root=(18, -14, 0), body=(14, -26, 0), rightArm=(-58, -8, 0), rightForearm=(0, 0, 0),
+               leftArm=(-14, 10, -30), leftForearm=(-30, 0, 0),             # free arm flung back for balance
+               rightLeg=(34, 0, 5), leftLeg=(-40, 0, -5), rightShin=(4, 0, 0), leftShin=(40, 0, 0),
+               pos=(0, -1.8, 0), look=(6, 0, 0), scale={"rightArm": (1, 1.1, 1)})
+    over = pose(hit, root=(20, -16, 0), body=(16, -30, 0), rightArm=(-62, -8, 0), pos=(0, -2.0, 0))
+    hold = pose(hit, root=(17, -12, 0), body=(13, -24, 0), rightArm=(-56, -8, 0), pos=(0, -1.8, 0), scale={})
+    return held([(0.0, chamber, "lin"), (0.025, mid, "in"), (0.05, hit, "in"), (0.08, over, "out"),
+                 (0.14, hold, "out"), (0.25, READY1H, "io")], 0.25)
+
+
+# --- prayer (pose 39): Netero's gassho - the palms clap together and the head bows -------------------
+def prayer():
+    open_ = pose(N, rightArm=(-46, 40, 22), leftArm=(-46, -40, -22), rightForearm=(-20, 0, 0), leftForearm=(-20, 0, 0),
+                 rightLeg=(2, 0, 3), leftLeg=(-2, 0, -3))
+    clap = pose(open_, body=(10, 0, 0), rightArm=(-70, -30, 0), leftArm=(-70, 30, 0),
+                rightForearm=(-36, 0, 0), leftForearm=(-36, 0, 0), pos=(0, -0.4, 0), look=(14, 0, 0))
+    settle = pose(clap, body=(8, 0, 0), rightArm=(-66, -27, 0), leftArm=(-66, 27, 0), pos=(0, -0.3, 0), look=(12, 0, 0))
+    return held([(0.0, open_, "lin"), (0.045, clap, "in"), (0.08, settle, "out"), (0.3, settle, "lin")], 0.3)
+
+
+# --- tail_strike (pose 40): Meruem spins on the spot and the tail cracks across the target (6 ticks) --
+def tail_strike():
+    arms = dict(rightArm=(-36, 0, 46), leftArm=(-36, 0, -46), rightForearm=(-20, 0, 0), leftForearm=(-20, 0, 0))
+    load = pose(N, body=(6, 24, 0), rightLeg=(12, 0, 6), leftLeg=(-14, 0, -6), rightShin=(14, 0, 0), leftShin=(18, 0, 0),
+                pos=(0, -0.8, 0), **arms)
+    turn = pose(load, body=(10, 8, 0), pos=(0, -1.0, 0))
+    hit = pose(load, body=(14, -12, 0), rightArm=(-20, 0, 62), leftArm=(-50, 0, -30), pos=(0, -1.2, 0))
+    over = pose(hit, body=(10, -18, 0), pos=(0, -0.9, 0))
+    land = pose(G, rightLeg=(12, 0, 6), pos=(0, -0.3, 0))
+    a = held([(0.0, load, "lin"), (0.03, turn, "in"), (0.06, hit, "in"), (0.12, over, "out"),
+              (0.22, land, "io"), (0.3, G, "out")], 0.3)
+    # the hips spin a full turn: back to the target at contact, the tail (when the model has one) leads it
+    a["bones"]["root"]["rotation"] = {"0.0": [0, 0, 0], "0.03": [0, 80, 0], "0.06": [0, 190, 0], "0.09": [0, 250, 0],
+                                      "0.12": [0, 290, 0], "0.22": [0, 345, 0], "0.3": [0, 360, 0]}
+    a["bones"]["head"]["rotation"] = {"0.0": [0, -20, 0], "0.06": [0, 30, 0], "0.12": [0, 0, 0], "0.3": [0, 0, 0]}
+    return add_bone(a, "tail", {"rotation": {"0.0": [-10, -50, 0], "0.03": [20, -30, 0], "0.06": [60, 40, 0],
+                                             "0.12": [50, 70, 0], "0.22": [20, 20, 0], "0.3": [10, 0, 0]}})
+
+
+# --- palm (pose 41): an open palm driven straight out - Shinra Tensei, Netero's First Hand (4 ticks) --
+def palm():
+    load = pose(N, root=(0, 6, 0), body=(2, 26, 0), rightArm=(-62, -12, 10), rightForearm=(-80, 0, 0),
+                leftArm=(-40, 0, -12), leftForearm=(-40, 0, 0), rightLeg=(12, 0, 5), leftLeg=(-12, 0, -5), pos=(0, -0.3, 0))
+    mid = pose(load, root=(2, 0, 0), body=(4, 6, 0), rightArm=(-84, -6, 2), rightForearm=(-30, 0, 0), scale={"rightArm": STRETCH})
+    hit = pose(N, root=(4, -8, 0), body=(5, -24, 0), rightArm=(-98, -4, 0), leftArm=(-18, 0, -22), leftForearm=(-20, 0, 0),
+               rightLeg=(14, 0, 5), leftLeg=(-16, 0, -5), rightShin=(10, 0, 0), leftShin=(12, 0, 0),
+               pos=(0, -0.5, 0), look=(2, 0, 0), scale={"rightArm": (1, 1.07, 1)})
+    over = pose(hit, root=(5, -10, 0), body=(6, -28, 0), rightArm=(-100, -4, 0))
+    hold = pose(hit, root=(3, -6, 0), body=(4, -20, 0), rightArm=(-94, -4, 0), scale={})
+    return held([(0.0, load, "lin"), (0.025, mid, "in"), (0.05, hit, "in"), (0.08, over, "out"), (0.3, hold, "io")], 0.3)
+
+
+# --- beam_fire (pose 42): the palms snap forward out of the charge and the body braces against the recoil
+def beam_fire():
+    cup = pose(N, root=(-2, 10, 0), body=(-4, 24, 0), rightArm=(-52, -30, 0), leftArm=(-52, 30, 0),
+               rightForearm=(-50, 0, 0), leftForearm=(-50, 0, 0), **WIDE, pos=(0, -1.0, 0))
+    thrust_ = pose(N, root=(6, 0, 0), body=(6, 0, 0), rightArm=(-96, -14, 0), leftArm=(-96, 14, 0),
+                   rightLeg=(26, 0, 9), leftLeg=(-26, 0, -9), rightShin=(10, 0, 0), leftShin=(26, 0, 0),
+                   pos=(0, -1.4, 0), scale={"rightArm": STRETCH, "leftArm": STRETCH})
+    brace = pose(thrust_, root=(3, 0, 0), body=(2, 0, 0), rightArm=(-91, -12, 0), leftArm=(-91, 12, 0),
+                 pos=(0, -1.6, 0), scale={})
+    frames = [(0.0, cup, "lin"), (0.03, thrust_, "in"), (0.07, brace, "out")]
+    t, k = 0.07, 0
+    while t < 0.75 - 1e-9:  # the recoil: the beam shoves him back, he leans into it again
+        t = round(t + 0.05, 3)
+        k += 1
+        push = pose(brace, root=(2 if k % 2 else 5, 0, 0), body=(1 if k % 2 else 4, 0, 0),
+                    rightArm=(-89 if k % 2 else -93, -12, 0), leftArm=(-89 if k % 2 else -93, 12, 0),
+                    pos=(0, -1.7 if k % 2 else -1.5, 0))
+        frames.append((t, push, "io"))
+    frames.append((0.8, brace, "io"))
+    return held(frames, 0.8)
+
+
+# --- rising (pose 43): an upward diagonal cut from the low left to high over the right shoulder ------
+def rising():
+    low = pose(N, root=(6, -10, 0), body=(10, -30, 0), rightArm=(-18, -52, 0), rightForearm=(-10, 0, 0),
+               leftArm=(-34, 24, -10), leftForearm=(-40, 0, 0), **WIDE, pos=(0, -1.2, 0))
+    drive = pose(low, root=(2, -2, 0), body=(4, -8, 0), rightArm=(-72, -20, 0), pos=(0, -0.4, 0),
+                 scale={"rightArm": STRETCH})
+    hit = pose(low, root=(-6, 8, 0), body=(-8, 22, 0), rightArm=(-142, 26, 12), leftArm=(-40, 0, -26),
+               rightLeg=(10, 0, 5), leftLeg=(-12, 0, -5), rightShin=(4, 0, 0), leftShin=(6, 0, 0),
+               pos=(0, 0.8, 0), look=(-8, 0, 0), scale={"rightArm": (1, 1.06, 1)})
+    over = pose(hit, root=(-8, 10, 0), body=(-12, 28, 0), rightArm=(-168, 34, 16), pos=(0, 1.2, 0))
+    settle = pose(hit, root=(-2, 4, 0), body=(-2, 12, 0), rightArm=(-118, 18, 8), pos=(0, 0.2, 0), scale={})
+    return held([(0.0, low, "lin"), (0.025, drive, "in"), (0.05, hit, "in"), (0.09, over, "out"),
+                 (0.16, settle, "io"), (0.25, READY1H, "io")], 0.25)
+
+
+# --- blade_rush (pose 44): a looping sword flurry, 0.2 s per X of two cuts (10 cuts/s = the hit rate) -
+def blade_rush():
+    L = 0.2
+    base = dict(**WIDE, leftArm=(-50, 14, -14), leftForearm=(-50, 0, 0), pos=(0, -0.8, 0))
+    hr = pose(N, root=(2, 6, 0), body=(-4, 24, 0), rightArm=(-150, 26, 14), rightForearm=(-20, 0, 0), **base)
+    ll = pose(N, root=(6, -6, 0), body=(8, -24, 0), rightArm=(-38, -52, 0), rightForearm=(0, 0, 0),
+              scale={"rightArm": (1, 1.1, 1)}, **base)
+    hl = pose(N, root=(2, -4, 0), body=(-4, -16, 0), rightArm=(-150, -30, -10), rightForearm=(-20, 0, 0), **base)
+    lr = pose(N, root=(6, 6, 0), body=(8, 24, 0), rightArm=(-40, 40, 6), rightForearm=(0, 0, 0),
+              scale={"rightArm": (1, 1.1, 1)}, **base)
+    a = strike([(0.0, hr, "lin"), (0.05, ll, "in"), (0.1, hl, "out"), (0.15, lr, "in"), (0.2, hr, "out")], L)
+    a["loop"] = True
+    return a
+
+
+# --- sweep (pose 45): a flat horizontal cut, drawn from the left hip and carried round by the hips ----
+def sweep():
+    draw = pose(N, root=(2, -24, 0), body=(6, -40, 0), rightArm=(-28, -58, 0), rightForearm=(-30, 0, 0),
+                leftArm=(-22, 30, -8), leftForearm=(-50, 0, 0), **WIDE, pos=(0, -1.0, 0))
+    drive = pose(draw, root=(2, -14, 0), body=(4, -24, 0), rightArm=(-30, -10, 60), rightForearm=(-10, 0, 0),
+                 scale={"rightArm": STRETCH})
+    hit = pose(draw, root=(2, -4, 0), body=(3, -2, 0), rightArm=(-12, 0, 84), rightForearm=(0, 0, 0),
+               leftArm=(-30, 0, -30), pos=(0, -1.2, 0), scale={"rightArm": (1, 1.06, 1)})
+    over = pose(hit, root=(2, 10, 0), body=(2, 28, 0), rightArm=(-12, 18, 86), pos=(0, -1.1, 0))
+    settle = pose(over, root=(2, 8, 0), body=(2, 22, 0), rightArm=(-24, 14, 70), pos=(0, -0.8, 0), scale={})
+    return held([(0.0, draw, "lin"), (0.025, drive, "in"), (0.05, hit, "in"), (0.09, over, "out"),
+                 (0.16, settle, "io"), (0.25, READY1H, "io")], 0.25)
+
+
+# --- ground_touch (pose 46): down on one knee, the palm flat on the ground (Shigaraki's Decay) -------
+def ground_touch():
+    stand = pose(N, rightArm=(-40, 0, 10), leftArm=(-10, 0, -8), pos=(0, 0, 0))
+    down = pose(N, root=(10, 0, 0), body=(52, 0, 0), rightArm=(-74, -6, 0), leftArm=(-34, 10, -20),
+                rightForearm=(0, 0, 0), leftForearm=(-40, 0, 0),
+                rightLeg=(46, 0, 8), leftLeg=(-54, 0, -6), rightShin=(80, 0, 0), leftShin=(70, 0, 0),
+                pos=(0, -3.2, 0), look=(-18, 0, 0))
+    press = pose(down, body=(56, 0, 0), rightArm=(-78, -6, 0), pos=(0, -4.2, 0))
+    return held([(0.0, stand, "lin"), (0.06, down, "in"), (0.1, press, "out"), (0.4, press, "lin")], 0.4)
+
+
+# --- pose_point (pose 4, overrides the static one): the arm snaps out to aim, the other hand braces it -
+def point():
+    load = pose(N, root=(0, 8, 0), body=(2, 22, 0), rightArm=(-60, -14, 6), rightForearm=(-70, 0, 0),
+                leftArm=(-40, 20, -10), leftForearm=(-50, 0, 0), rightLeg=(12, 0, 5), leftLeg=(-12, 0, -5))
+    out = pose(N, root=(3, -6, 0), body=(3, -22, 0), rightArm=(-96, -4, 0), leftArm=(-78, 44, 0), leftForearm=(-50, 0, 0),
+               rightLeg=(14, 0, 5), leftLeg=(-14, 0, -5), rightShin=(8, 0, 0), leftShin=(12, 0, 0),
+               pos=(0, -0.4, 0), scale={"rightArm": (1, 1.06, 1)})
+    over = pose(out, body=(4, -26, 0), rightArm=(-99, -4, 0))
+    hold = pose(out, rightArm=(-93, -4, 0), scale={})
+    return held([(0.0, load, "lin"), (0.04, out, "in"), (0.07, over, "out"), (0.2, hold, "io")], 0.2)
+
+
+# --- pose_cup (pose 2, overrides the static one): the beam charge - knees bent, cupped hands, trembling -
+def cup():
+    base = pose(N, root=(-2, 10, 0), body=(-4, 24, 0), rightArm=(-52, -30, 0), leftArm=(-52, 30, 0),
+                rightForearm=(-50, 0, 0), leftForearm=(-50, 0, 0), **WIDE, pos=(0, -1.0, 0), look=(4, 0, 0))
+    a = pose(base, rightArm=(-50, -31, 0), leftArm=(-50, 31, 0), pos=(0, -1.15, 0))
+    b = pose(base, rightArm=(-54, -29, 0), leftArm=(-54, 29, 0), pos=(0, -0.9, 0))
+    an = strike([(0.0, base, "lin"), (0.05, a, "io"), (0.1, b, "io"), (0.15, base, "io")], 0.15)
+    an["loop"] = True
+    return an
+
+
 ANIMS = {
     "jab_r": jab_r,
     "jab_l": jab_l,
@@ -385,7 +600,21 @@ ANIMS = {
     "elbow": lambda: strike(mirrored(round_r()), 0.3),                 # pose 12 = LEFT roundhouse
     "slash": lambda: strike(slash_frames(), 0.15),
     "slash_l": lambda: strike(mirrored(slash_frames(), keep_last_guard=False), 0.15),  # pose 28
+    "pose_cup": cup,             # pose 2  (beam charge)
+    "pose_point": point,         # pose 4  (aim / one-hand technique)
+    "cleave": cleave,            # pose 37
+    "thrust": thrust,            # pose 38
+    "prayer": prayer,            # pose 39
+    "tail_strike": tail_strike,  # pose 40
+    "palm": palm,                # pose 41
+    "beam_fire": beam_fire,      # pose 42
+    "rising": rising,            # pose 43
+    "blade_rush": blade_rush,    # pose 44
+    "sweep": sweep,              # pose 45
+    "ground_touch": ground_touch,  # pose 46
 }
+# technique poses appended to build.EXTRA_POSES (poses 37..46, in this order)
+NEW_POSES = ["cleave", "thrust", "prayer", "tail_strike", "palm", "beam_fire", "rising", "blade_rush", "sweep", "ground_touch"]
 
 
 def apply(animations: dict) -> None:

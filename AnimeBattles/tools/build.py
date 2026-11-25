@@ -373,7 +373,7 @@ def behavior_entity(name, cfg):
                 "is_summonable": True,
                 "properties": {
                     "ab:form": {"type": "int", "range": [0, n - 1], "default": 0, "client_sync": True},
-                    "ab:pose": {"type": "int", "range": [0, 40], "default": 0, "client_sync": True},
+                    "ab:pose": {"type": "int", "range": [0, 48], "default": 0, "client_sync": True},
                     "ab:expr": {"type": "int", "range": [0, 3], "default": 0, "client_sync": True},
                     "ab:stance": {"type": "bool", "default": False, "client_sync": True},
                 },
@@ -408,7 +408,9 @@ def behavior_entity(name, cfg):
     }
 
 
-EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip", "scratch", "seal", "rasengan"]  # poses 13..36
+EXTRA_POSES = ["pistol", "gatling", "bazooka", "giant_fist", "whip", "giant_up", "slash", "fuga", "handsign", "powerup", "finger_up", "spin", "two_fingers", "void_sign", "arms_wide", "slash_l", "dodge", "pump", "cross", "tie_bandana", "tail_whip", "scratch", "seal", "rasengan",  # poses 13..36
+               # weapon / technique poses 37..46, animated in combat_anims.py
+               "cleave", "thrust", "prayer", "tail_strike", "palm", "beam_fire", "rising", "blade_rush", "sweep", "ground_touch"]
 
 
 def extra_animations():
@@ -720,6 +722,8 @@ def build_entities():
         combat_anims.apply(an["animations"])
     except ImportError:
         pass
+    missing = [k for k in EXTRA_POSES if f"animation.ab.{k}" not in an["animations"]]
+    assert not missing, f"poses without an animation: {missing}"
     json.dump(an, open(an_path, "w"), indent=1)
     for name, cfg in FIGHTERS.items():
         with open(os.path.join(BP, "entities", f"{name}.json"), "w") as f:

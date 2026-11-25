@@ -58,7 +58,17 @@
     "tail_whip": "animation.ab.tail_whip",
     "scratch": "animation.ab.scratch",
     "seal": "animation.ab.seal",
-    "rasengan": "animation.ab.rasengan"
+    "rasengan": "animation.ab.rasengan",
+    "cleave": "animation.ab.cleave",
+    "thrust": "animation.ab.thrust",
+    "prayer": "animation.ab.prayer",
+    "tail_strike": "animation.ab.tail_strike",
+    "palm": "animation.ab.palm",
+    "beam_fire": "animation.ab.beam_fire",
+    "rising": "animation.ab.rising",
+    "blade_rush": "animation.ab.blade_rush",
+    "sweep": "animation.ab.sweep",
+    "ground_touch": "animation.ab.ground_touch"
    },
    "scripts": {
     "animate": [
@@ -181,6 +191,36 @@
      },
      {
       "rasengan": "query.property('ab:pose') == 36"
+     },
+     {
+      "cleave": "query.property('ab:pose') == 37"
+     },
+     {
+      "thrust": "query.property('ab:pose') == 38"
+     },
+     {
+      "prayer": "query.property('ab:pose') == 39"
+     },
+     {
+      "tail_strike": "query.property('ab:pose') == 40"
+     },
+     {
+      "palm": "query.property('ab:pose') == 41"
+     },
+     {
+      "beam_fire": "query.property('ab:pose') == 42"
+     },
+     {
+      "rising": "query.property('ab:pose') == 43"
+     },
+     {
+      "blade_rush": "query.property('ab:pose') == 44"
+     },
+     {
+      "sweep": "query.property('ab:pose') == 45"
+     },
+     {
+      "ground_touch": "query.property('ab:pose') == 46"
      }
     ]
    },
