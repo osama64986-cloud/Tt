@@ -7,6 +7,7 @@ import models as M
 from models import dark, layered, light, _put, solid, lines, SIDES
 from chars_extra import region
 import sculpt as S
+import weapons as WP
 from sculpt import blob, box_at, chakra, curve_tube, tube, blade, spline, flesh, stripes, speckle, rim, alpha, smooth
 
 PUR, PUR_D, PUR_L = (146, 78, 228), (86, 40, 160), (222, 196, 255)
@@ -369,6 +370,24 @@ def muzan_infant():
 
 
 # ------------------------------------------------------------------ Mahoraga (Ten Shadows, Sukuna)
+def _wing_shape(flip):
+    """One of Mahoraga's head wings: a long feathered wing (u from the root to the tip), its leading edge smooth, the
+    trailing edge scalloped into feathers, grey feather lines over the white."""
+    def f(xf, u):
+        y = xf - 0.5 if flip > 0 else 0.5 - xf
+        top = 0.42 - 0.3 * u * u                         # the leading edge
+        k = (u * 6.0) % 1.0
+        bot = -0.2 - 0.25 * math.sin(math.pi * min(1.0, u * 1.2)) + 0.12 * k     # scalloped feather tips
+        if u < 0.06 and abs(y) > 0.2:
+            return None
+        if not (bot < y < top):
+            return None
+        if abs(k - 0.02) < 0.04 and y < top - 0.08:
+            return (176, 176, 188)                       # the line between two feathers
+        return (246, 246, 250) if y > (top + bot) / 2 else (226, 226, 234)
+    return f
+
+
 def mahoraga():
     """Eight-Handled Sword Divergent Sila Divine General Mahoraga, built in the mod's clean block style (like the
     fighters): a tall, athletic, pale-white body whose muscles are PAINTED on (pecs, abs, arms) instead of lumpy blobs;
@@ -476,8 +495,7 @@ def mahoraga():
         for k, (up, L, w) in enumerate(((0.8, 13.0, 3.0), (0.32, 11.0, 2.6))):
             base = [s_ * 1.2, 47.0 - k * 1.4, -3.6]
             d = [s_ * 1.0, up, -0.2]
-            blade(m, "head", base, d, L, w, 0.9, smooth((236, 236, 240)), width_dir=[0, 0.35, 1])
-            blade(m, "head", [base[0] + s_ * 0.6, base[1] + 0.25, base[2] - 0.5], d, L * 0.85, w * 0.2, 0.3, smooth(RID), width_dir=[0, 0.35, 1])
+            WP.extruded(m, "head", base, d, [0, 1, 0.15], L, w * 1.5, _wing_shape(s_ * (1 if k == 0 else -1)), RID, t=0.4, step=1.0, res=2)
     # the golden eight-handled wheel lying FLAT above its head on a short post
     GOLD, GOLD2 = layered((176, 142, 74), []), layered((204, 172, 104), [])
     m.box("head", [-0.6, 51.6, -0.6], [1.2, 3.2, 1.2], GOLD)                                     # post
@@ -499,43 +517,44 @@ def mahoraga():
         m.box(bone, [cx - 2.5, 20.6, -2.5], [5.0, 6.6, 5.0], SKIN_)                                # forearm
         m.box(bone, [cx - 2.8, 18.8, -2.8], [5.6, 2.0, 5.6], solid(BLKC))                          # black wrist band
         m.box(bone, [cx - 2.4, 15.0, -2.4], [4.8, 3.8, 4.8], SKIN_)                                # fist
-    # the Sword of Extermination grows out of the SKIN on the back of the right forearm, just above the wrist: the blade
-    # runs down alongside the fist and past it (it never sits in the hand). Two crossed painted sheets; the "sword" bone
-    # grows it out of the arm when Mahoraga appears.
-    L, W, top = 22.0, 5.0, 23.0
-    bx = 10.6 + 3.1  # the outer (back) side of the forearm
+    # the Sword of Extermination grows OUT OF THE SKIN of the right forearm, just above the wrist: no hilt, nothing held.
+    # A long, wide, single-edged blade (straight spine toward the arm, the edge outward, the point where the edge
+    # sweeps up to the spine), extruded like an item sprite. Its root is painted as the arm's own pale flesh with the
+    # muscle ridges running onto the steel and a ragged seam where the skin parts, and two lips of flesh close round it.
+    # The "sword" bone grows it out of the arm when Mahoraga appears.
+    L, Wd, root = 21.0, 4.8, 24.6
+    steel, spine_c, edge_c, fuller = (168, 178, 198), (110, 118, 138), (244, 248, 255), (130, 140, 160)
 
-    def blade_paint(face, img):
-        w, h = img.size
-        if w < 2 or h < 2:
-            return
-        px = img.load()
-        ink, steel, spine, edge, fuller = (34, 34, 44), (204, 210, 224), (150, 156, 172), (248, 250, 255), (112, 118, 134)
-        for y in range(h):
-            t = y / (h - 1)
-            frac = 1.0 if t < 0.72 else max(0.0, 1 - (t - 0.72) / 0.28)  # the edge sweeps in to the point
-            xe = max(0, int(round((w - 1) * frac)))
-            for x in range(w):
-                if x > xe:
-                    px[x, y] = (0, 0, 0, 0)
-                    continue
-                if x == 0 or x == xe or y == h - 1 or y == 0:
-                    c = ink
-                elif x == 1:
-                    c = spine
-                elif x >= xe - 1:
-                    c = edge
-                elif x == max(2, int(w * 0.36)) and t < 0.7:
-                    c = fuller
-                else:
-                    c = steel
-                px[x, y] = c + (255,)
+    def sword_shape(xf, u):
+        Lu = u * L
+        if Lu < 2.6:                                     # the root: a mound of flesh tapering into the forearm
+            if xf > 0.5 + 0.5 * Lu / 2.6:
+                return None
+        elif Lu > L - 5.5:                               # the point: the edge sweeps up to the straight spine
+            k = (Lu - (L - 5.5)) / 5.5
+            if xf > 0.04 + 0.94 * math.sqrt(max(0.0, 1 - k * k)):
+                return None
+        if xf > 0.98:
+            return None
+        seam = 2.3 + 0.45 * math.sin(xf * 13.0) + 0.25 * math.sin(xf * 31.0)
+        if Lu < seam - 0.18:
+            return MUS if abs((xf * 5.0 + Lu * 0.6) % 1.0 - 0.5) < 0.07 else SKC        # flesh, with its ridges
+        if Lu < seam:
+            return (84, 70, 78)                                                        # where the skin splits
+        hi_ = 0.98 if Lu <= L - 5.5 else 0.04 + 0.94 * math.sqrt(max(0.0, 1 - ((Lu - (L - 5.5)) / 5.5) ** 2))
+        if xf < 0.1:
+            return spine_c
+        if abs(xf - 0.24) < 0.025 and Lu < L - 6.5:
+            return fuller
+        if xf > hi_ - 0.12:
+            return edge_c if xf > hi_ - 0.05 else light(steel, 0.35)
+        return steel
 
-    m.box("sword", [bx, top - L, -W / 2], [0, L, W], blade_paint)                     # sheet seen from the side
-    m.cubes[-1]["hires"] = 2
-    m.box("sword", [bx - W / 2 + 0.4, top - L, 0], [W - 0.8, L, 0], blade_paint)      # sheet seen from the front
-    m.cubes[-1]["hires"] = 2
-    m.box("rightArm", [10.6 + 2.4, 21.6, -1.4], [1.0, 2.6, 2.8], layered((176, 176, 186), []))  # the split in the skin it grows from
+    WP.extruded(m, "sword", [13.0 + Wd / 2 - 0.6, root, 0], (0, -1, 0), (-1, 0, 0), L, Wd, sword_shape,
+                lambda u: SKC if u * L < 2.4 else spine_c, t=0.6, step=0.75, res=3)
+    for z in (-0.55, 0.55):  # lips of flesh closing round the root of the blade
+        box_at(m, "sword", [13.6, 23.0, z], [1.8, 2.6, 0.6], SKIN_)
+    box_at(m, "sword", [13.3, 21.0, 0], [1.2, 2.2, 1.4], SKIN_)
     return m
 
 

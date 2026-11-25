@@ -3938,7 +3938,7 @@ def zoro_body(m, king=False):
     katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 15, SWORDS["kitetsu"])
     katana2(m, "head", (-2.4, 25.3, -4.75), (1, 0, -0.1), 14, SWORDS["wado"], grip=0.4)
     for i, key in enumerate(("wado", "kitetsu", "enma")):  # the three empty scabbards tied at the left hip
-        sheath(m, (-4.3 - i * 0.55, 13.6 - i * 0.35, -0.6 + i * 0.8), (-0.18, -0.5, 1), 14, SWORDS[key])
+        weapons.saya(m, "body", (-4.3 - i * 0.55, 13.6 - i * 0.35, -0.6 + i * 0.8), (-0.18, -0.5, 1), 14, SWORDS[key])
 
 
 def zoro_hair(m, c):
@@ -5445,3 +5445,191 @@ def luffy_body(m, form):  # noqa: F811
     m.box("body", [-3.75, TK_HAT_Y - 3.75, TK_HAT_Z + 1], [7.5, 7.5, 1.0], solid((200, 30, 34)))
     # steam coiling up from his right shoulder, over the back of his head, down round his left arm
     vox_solid(m, "body", _tk_steam_in, (-18, 14, -6), (18, 41, 10), tk_steam_rgb)
+
+
+# ================================================================ weapon sprites v2 for the original fighters
+import weapons  # noqa: E402
+
+katana2 = weapons.katana_v1_call
+
+
+
+# ================================================================ Black Frieza (Dragon Ball Super manga, ch. 87)
+# Built on its own instead of recolouring Golden Frieza: a SLIM Frieza body that is glossy black all over (face, hands
+# and feet included), lit with cool blue-grey highlights; a deep purple head dome and shoulder caps; purple oval gems
+# on the forearms and shins; red eyes with white sclerae; the long black tail. No chest gem, no purple face.
+BF_BLACK = (24, 22, 30)
+BF_PURPLE = (92, 34, 150)
+
+
+def _gloss(base, hl=(118, 124, 156), band=(0.16, 0.3), rim=True):
+    """Glossy lacquer: the face's tone, a bright highlight streak down one side (north/west/up), a soft second sheen,
+    a dark rim. No noise."""
+    t = tones(base)
+
+    def p(face, img):
+        w, h = img.size
+        px = img.load()
+        k = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
+        for y in range(h):
+            for x in range(w):
+                u = (x + 0.5) / w
+                c = t[k]
+                if face in ("north", "west", "up", "south", "east"):
+                    if band[0] < u < band[1] and face in ("north", "west", "up"):
+                        c = mix(c, hl, 0.75 if face != "up" else 0.5)
+                    elif band[1] < u < band[1] + 0.12 and face in ("north", "west"):
+                        c = mix(c, hl, 0.3)
+                    elif face in ("south", "east") and 0.7 < u < 0.8:
+                        c = mix(c, hl, 0.22)
+                if rim and (x == 0 or y == 0 or x == w - 1 or y == h - 1):
+                    c = dark(t[k], 0.7)
+                px[x, y] = c + (255,)
+    return p
+
+
+def _bf_gem(face, img):
+    """Deep purple bio-gem, glossy: a white-violet glint up at one corner."""
+    w, h = img.size
+    px = img.load()
+    t = tones(BF_PURPLE)
+    k = {"up": 3, "north": 2, "west": 2, "east": 1, "south": 1, "down": 0}[face]
+    for y in range(h):
+        for x in range(w):
+            c = t[k]
+            u, v = (x + 0.5) / w, (y + 0.5) / h
+            if face in ("north", "west", "up") and 0.12 < u < 0.4 and 0.1 < v < 0.35:
+                c = (214, 176, 246)
+            elif face in ("north", "west", "up") and u < 0.5 and v < 0.5:
+                c = mix(c, (180, 120, 230), 0.45)
+            px[x, y] = c + (255,)
+
+
+def _bf_dome_front(face, img):
+    _bf_gem(face, img)
+    if face != "north":
+        return
+    w, h = img.size
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            dx = (x + 0.5 - w / 2) / (w / 2)
+            if (y + 0.5) / h > 0.3 + 0.7 * (1 - dx * dx) ** 0.5:
+                px[x, y] = (0, 0, 0, 0)
+
+
+def _bf_cuff(faces):
+    """A glossy black bracer carrying a purple oval gem."""
+    base = _gloss(BF_BLACK)
+
+    def p(face, img):
+        base(face, img)
+        if face not in faces:
+            return
+        w, h = img.size
+        px = img.load()
+        t = tones(BF_PURPLE)
+        for y in range(h):
+            for x in range(w):
+                dx = (x + 0.5 - w / 2) / (w * 0.36)
+                dy = (y + 0.5 - h / 2) / (h * 0.42)
+                r = dx * dx + dy * dy
+                if r < 1:
+                    c = t[2] if r < 0.72 else t[0]
+                    if -0.75 < dx < -0.15 and -0.8 < dy < -0.2:
+                        c = (214, 176, 246)
+                    px[x, y] = c + (255,)
+    return p
+
+
+def _bf_head(face, img):
+    """The face: frieza_head_x's eyes, brows and mouth (with expressions) over a glossy black skin; the sclerae stay
+    white and the irises red."""
+    frieza_head_x(BF_BLACK, False)(face, img)
+    w, h = img.size
+    px = img.load()
+    gl = _gloss(BF_BLACK, band=(0.12, 0.2))
+    tmp = Image.new("RGBA", (w, h))
+    gl(face, tmp)
+    tp = tmp.load()
+    t = tones(BF_BLACK)
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a and max(r, g, b) < 70 and abs(r - b) < 30 and (r, g, b) not in ((20, 12, 18),):
+                if face != "north" or (x < w * 0.2 or x > w * 0.8 or y < h * 0.4):
+                    px[x, y] = tp[x, y]
+    if face == "north":  # a slim purple-grey lip line and a glint on each cheek
+        k = w / 32.0
+        for xx in range(int(13 * k), int(19 * k)):
+            for yy in range(int(26 * k), int(27 * k)):
+                px[xx, yy] = (70, 46, 96, 255)
+        for cx in (7, 24):
+            for xx in range(int(cx * k), int((cx + 1) * k)):
+                for yy in range(int(21 * k), int(23 * k)):
+                    px[xx, yy] = mix(t[2], (118, 124, 156), 0.5) + (255,)
+
+
+def black_frieza():
+    m = Model()
+    blk = _gloss(BF_BLACK)
+    m.box("head", [-4, 24, -4], [8, 8, 8], _bf_head)
+    m.box("head", [-4.3, 28.4, -4.4], [8.6, 3.9, 8.8], _bf_dome_front)          # the deep purple dome: crown, sides, back
+    m.box("head", [-3.5, 32.3, -3.6], [7.0, 0.6, 7.2], _bf_gem)                 # its rounded top
+    m.box("head", [-3.9, 25.6, 1.2], [7.8, 2.9, 3.2], _bf_gem)                  # down the back of the skull
+    # slim torso: a broad chest tapering to a narrow waist, painted pecs and abs (no chest gem)
+    def chest(face, px, w, h, base):
+        if face != "north":
+            return
+        t = tones(BF_BLACK)
+        for x in range(2, w - 2):
+            if abs(x - w // 2) > 1:
+                _put(px, w, h, x, int(h * 0.4) - abs(x - w // 2) // 4, (70, 74, 96))
+        for y in range(int(h * 0.48), h - 2):
+            _put(px, w, h, w // 2, y, (60, 62, 84))
+        for row in (0.62, 0.78):
+            for x in range(w // 2 - 4, w // 2 + 5):
+                if x != w // 2:
+                    _put(px, w, h, x, int(h * row), t[1])
+    m.box("body", [-3.7, 17.2, -1.9], [7.4, 6.8, 3.8], _gloss_detail(chest))
+    m.box("body", [-3.1, 12.0, -1.7], [6.2, 5.4, 3.4], blk)                     # narrow waist
+    m.box("body", [-3.5, 11.0, -1.8], [7.0, 1.4, 3.6], blk)                     # hips
+    for s_, arm in ((1, "rightArm"), (-1, "leftArm")):
+        x0 = 4.5 if s_ > 0 else -7.5
+        m.box(arm, [x0, 12.0, -1.5], [3.0, 11.0, 3.0], blk)                     # slim arm
+        m.box(arm, [x0 - 0.5, 19.8, -2.1], [4.0, 3.9, 4.2], _bf_gem)            # purple shoulder cap
+        m.box(arm, [x0 - 0.1, 23.6, -1.7], [3.2, 0.6, 3.4], _bf_gem)
+        m.box(arm, [x0 - 0.2, 13.6, -1.7], [3.4, 3.8, 3.4], _bf_cuff(("north", "east" if s_ > 0 else "west")))  # forearm gem
+        m.box(arm, [x0 + 0.1, 11.2, -1.4], [2.8, 1.2, 2.8], blk)                # black hand
+    for s_, leg in ((1, "rightLeg"), (-1, "leftLeg")):
+        x0 = 0.3 if s_ > 0 else -3.5
+        m.box(leg, [x0, 1.0, -1.6], [3.2, 11.0, 3.2], blk)
+        m.box(leg, [x0 - 0.25, 2.4, -1.85], [3.7, 5.2, 3.7], _bf_cuff(("north",)))   # shin gem
+        m.box(leg, [x0 - 0.1, 0, -2.4], [3.4, 1.2, 4.0], blk)                        # foot
+        m.box(leg, [x0 + 0.1, 0, -3.5], [1.3, 0.9, 1.2], blk)                        # two toes
+        m.box(leg, [x0 + 1.8, 0, -3.5], [1.3, 0.9, 1.2], blk)
+    # the long black tail, thick at the root, tapering and curling up at its tip
+    import sculpt as SC_
+    m.bones = BONES + [{"name": "tail", "parent": "body", "pivot": [0, 12.4, 1.6]}]
+    SC_.curve_tube(m, "tail", [[0, 12.4, 1.6], [0, 9.2, 5.0], [0.6, 6.0, 8.4], [2.4, 4.4, 10.4], [4.6, 5.6, 10.6], [5.6, 8.0, 9.4]],
+                   1.35, 0.35, [SC_.swatch(BF_BLACK), SC_.swatch((40, 40, 54))], n=3)
+    return m
+
+
+def _gloss_detail(detail):
+    g = _gloss(BF_BLACK)
+
+    def p(face, img):
+        g(face, img)
+        w, h = img.size
+        detail(face, img.load(), w, h, BF_BLACK)
+    return p
+
+
+_build_bf_prev = build
+
+
+def build(char, form):  # noqa: F811
+    if char == "frieza" and form == "black":
+        return black_frieza()
+    return _build_bf_prev(char, form)

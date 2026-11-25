@@ -5,6 +5,7 @@ import math
 
 import models as M
 import sculpt as SC
+import weapons as WP
 from models import (SIDES, SKIN, _put, both_arms, both_legs, base_body, dark, head_paint, layered, light,
                     lines, ramp, shell, solid, tones)
 
@@ -860,8 +861,9 @@ def sasuke(m, char, form):
                 m.strand([s_ * 0.6, 12.4, 2.8], [s_ * 1, 0.2, 0.3], 3.4, 2.0, solid(PURPLE_ROPE), bone="body", segs=2, thick=0.8)
             m.box("body", [-4.5, 6.5, -2.6], [9.0, 5.0, 5.2], layered((40, 44, 90), [lambda f, px, w, h, b: [px.__setitem__((x, y), (0, 0, 0, 0)) for y in range(h) for x in range(w // 3, 2 * w // 3)] if f == "north" else None]))  # cloth over the hips
         # Kusanagi, sheathed across the small of his back
-        m.box("body", [-6.0, 13.8, 2.6], [12.0, 0.8, 0.8], solid((30, 30, 36) if not adult else (40, 30, 34)))
-        m.box("body", [-8.6, 13.7, 2.5], [2.6, 1.0, 1.0], solid((60, 60, 70)))
+        kusa = dict(wrap=(34, 34, 40), diamond=(120, 120, 132), metal=(150, 150, 160), saya=(28, 28, 34) if not adult else (44, 32, 36),
+                    saya_band=(150, 150, 160), sageo=(110, 70, 160))
+        WP.saya(m, "body", (-6.6, 13.9, 2.9), (1, 0.04, 0), 12.4, kusa, up=(0, 1, 0), hilt=3.4, hst=kusa)
     sasuke_hair(m, hair, "cs2" if cs2 else ("kid" if kid else "adult" if adult else "war" if war else "teen"))
     if cs2:
         hand_wings(m, size=1.0 if kid else 1.35)
@@ -881,9 +883,10 @@ ICH_HAIR = (255, 132, 40)
 SHIHAK = (30, 30, 36)
 MASK_W = (238, 236, 228)
 FUR = (196, 44, 40)
-TENSA = dict(wrap=(30, 30, 36), diamond=(120, 20, 24), tsuba="manji", metal=(70, 70, 80),
+TENSA = dict(wrap=(30, 30, 36), diamond=(120, 20, 24), tsuba="manji", metal=(66, 66, 76), tsuba_hi=(120, 122, 136), kind="black",
+             spine=(10, 10, 14), habaki=(90, 90, 100),
              blade=(28, 28, 34), edge=(150, 150, 170), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
-FULLBRING = dict(wrap=(30, 30, 36), diamond=(236, 236, 236), tsuba="cross", metal=(236, 236, 236),
+FULLBRING = dict(wrap=(30, 30, 36), diamond=(236, 236, 236), tsuba="fullbring", metal=(30, 30, 36), tsuba_hi=(80, 80, 92), habaki=(30, 30, 36),
                  blade=(232, 232, 236), edge=(40, 40, 46), hamon=None, saya=(30, 30, 30), saya_band=(200, 200, 200))
 
 
@@ -921,20 +924,25 @@ def long_hair(m, col, back_len=15, z=4.0, front=True, bone="hair"):
 
 def cleaver(m, bone, cx, cy, L=17.0, W=3.8, blade=(212, 216, 228), edge=(246, 248, 255), spine=(36, 36, 42),
             core=None, grip=(236, 236, 236), chain=False, cloth=True):
-    """Zangetsu's Shikai as a flat pixel-art sprite: a huge guardless cleaver with a cloth-wrapped hilt.
-    With `core` it is the True Bankai blade (silver edges round a black core) and a chain."""
+    """Zangetsu's Shikai: a huge guardless cleaver, an extruded sprite (the picture on a solid core). The cloth-wrapped
+    grip runs in line with the spine THROUGH the fist. With `core` it is the True Bankai blade (silver edges round a
+    black core) with its chain."""
     hilt = 3.6
-    M.flat_blade(m, bone, (cx, cy, -1.2), (0, 0.1, -1), hilt, L, W, M.zangetsu_shape(blade, edge, spine, core, grip, hilt / (hilt + L)), grip=0.6)
-    if cloth:  # the long white cloth trailing from the hilt
-        m.strand([cx, cy, 2.6], [0, -0.35, 1], 8, 1.0, solid((236, 236, 236)), bone=bone, segs=3, thick=0.4)
-    if chain:
-        for i in range(9):
-            m.box(bone, [cx - 0.3, cy - 0.3 - i * 0.7, 2.8 + i * 0.35], [0.6, 0.6, 0.6], solid((60, 60, 70) if i % 2 else (110, 110, 124)))
+    shape = WP.zangetsu_shape(blade, edge, spine, core, grip, hilt, L, W)
+    gx = 0.03 + 0.35 / W                                       # where the grip runs across the picture
+    hand = (cx, 13.1, -0.4)
+    side = lambda u: dark(grip, 0.8) if u * (hilt + L) < hilt else (core or dark(blade, 0.7))
+    WP.broad(m, bone, hand, (0, 0.1, -1), (0, 1, 0), hilt, hilt + L, W, shape, side, grip=1.7, shift=-(0.5 - gx) * W, t=0.3)
+    pommel = (cx, 13.1 - 0.1 * 1.9, -0.4 + 1.9)
+    if cloth:  # the long white cloth trailing from the end of the grip
+        m.strand([cx, pommel[1], pommel[2]], [0, -0.35, 1], 8, 1.0, solid((236, 236, 236)), bone=bone, segs=3, thick=0.4)
+    if chain:  # the broken chain hanging from the pommel
+        WP.chain(m, bone, pommel, (0, -1, 0.45), 6.0, (150, 152, 166), width=0.7)
 
 
 def tensa_chain(m, bone, x, y, z):
-    for i in range(6):
-        m.box(bone, [x - 0.3, y - i * 0.6, z + i * 0.18], [0.6, 0.6, 0.6], solid((60, 60, 70) if i % 2 else (110, 110, 124)))
+    """The short broken chain hanging from Tensa Zangetsu's pommel."""
+    WP.chain(m, bone, (x, 13.0, 2.4), (0, -1, 0.35), 4.2, (150, 152, 166), width=0.6)
 
 
 def ichigo(m, form):
@@ -1076,10 +1084,14 @@ def ichigo(m, form):
 
 # ------------------------------------------------------------------ Tanjiro (Demon Slayer)
 TAN_HAIR = (124, 36, 40)
-NICHIRIN = dict(wrap=(34, 36, 56), diamond=(170, 40, 50), tsuba="round", metal=(30, 30, 34),
-                blade=(36, 36, 42), edge=(120, 124, 140), hamon=None, saya=(30, 30, 34), saya_band=(200, 200, 200))
-# Demon Slayer Mark: the blade glows crimson, Rengoku's flame guard
-CRIMSON = dict(NICHIRIN, metal=(214, 92, 36), blade=(190, 40, 30), edge=(255, 150, 90))
+# Tanjiro's Nichirin blade is jet black (only the cutting edge shows steel); black silk over white rayskin; at first a
+# black round guard with six spokes, from the Entertainment District on Rengoku's flame guard
+NICHIRIN = dict(wrap=(26, 26, 32), diamond=(214, 214, 206), tsuba="wheel", metal=(38, 38, 44), tsuba_hi=(96, 98, 110),
+                blade=(32, 32, 38), spine=(14, 14, 18), edge=(186, 192, 206), hamon=(54, 56, 66), kind="black",
+                habaki=(200, 164, 84), saya=(22, 22, 26), saya_band=(150, 150, 160), sageo=(64, 64, 74))
+FLAME_TSUBA = dict(tsuba="flame", metal=(232, 104, 34), tsuba_hi=(255, 206, 80), tsuba_accent=(150, 24, 16))
+# Demon Slayer Mark: gripped hard enough, the black blade turns crimson
+CRIMSON = dict(NICHIRIN, **FLAME_TSUBA, blade=(178, 28, 24), spine=(104, 12, 10), hamon=(222, 62, 44), edge=(255, 176, 130), kind="steel")
 UNIFORM = (86, 44, 50)
 
 
@@ -1110,9 +1122,9 @@ def tanjiro(m, form):
         m.box("body", [x0, 12.8, -2.75], [1.0, 11.4, 0.4], solid((214, 204, 176)))
     for s_ in (1, -1):  # hanafuda earrings
         m.box("head", [s_ * 4.0 - (0.5 if s_ > 0 else 0.1), 24.6, -0.4], [0.6, 1.6, 0.8], layered(WHITE, [region((0.2, 0.3, 0.8, 0.7), (200, 40, 30))]))
-    st = CRIMSON if mark else dict(NICHIRIN, edge=(255, 150, 60), metal=(214, 92, 36)) if form == "hinokami" else NICHIRIN
+    st = CRIMSON if mark else dict(NICHIRIN, **FLAME_TSUBA) if form == "hinokami" else NICHIRIN
     M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, st)
-    M.sheath(m, (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, st)                                                     # the empty scabbard at his left hip
+    WP.saya(m, "body", (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, st)                                                   # the empty scabbard at his left hip
     shell(m, TAN_HAIR, hairline=30.6, sideburn=False, teeth=0.8)
     hp = M.hair_paint(TAN_HAIR)
     for x, z, lean in ((0, -2.0, 0), (2.2, -1.2, 0.5), (-2.2, -1.2, -0.5), (3.0, 1.2, 0.9), (-3.0, 1.2, -0.9), (0, 2.4, 0), (1.6, 3.0, 0.4), (-1.6, 3.0, -0.4)):
@@ -1166,7 +1178,7 @@ def tanjiro_demon(m, form):
     for x, tilt in ((-2.6, -0.3), (-0.6, 0), (1.6, 0.2), (3.2, 0.4)):
         m.strand([x, 31.8, -4.1], [tilt, -0.6, -0.5], 2.6, 2.0, hp, bone="hair", segs=3, thick=0.7)
     if sun:  # the Demon King's blood: flesh tendrils with bone tips burst from his back
-        flesh_p = SC.smooth((150, 24, 34), [SC.speckle((96, 10, 20), 7)])
+        flesh_p = SC.smooth((150, 24, 34))
         tip = SC.smooth((236, 226, 210))
         for k, (dx, up) in enumerate(((5, 7), (-5, 7), (8, 2), (-8, 2))):
             pts = SC.curve_tube(m, "body", [[dx * 0.2, 19 - k % 2, 2.6], [dx * 0.7, 21 + up * 0.5, 6], [dx * 1.2, 22 + up, 8], [dx * 1.5, 20 + up * 1.4, 5]], 1.1, 0.5, flesh_p, n=2)
@@ -1238,17 +1250,19 @@ def muzan(m, form):
                 if x % 2:
                     _put(px, w, h, x, y0 - 1, (246, 242, 230)); _put(px, w, h, x, y0 + 2, (246, 242, 230))
 
-    def scales(face, px, w, h, base):
-        for y in range(h):
+    def scales(face, px, w, h, base):  # rows of overlapping flesh plates: clean arcs, not a checker of dots
+        if face not in SIDES:
+            return
+        for y0 in range(3, h, 5):
             for x in range(w):
-                if (x + (y // 2) % 2) % 2 == 0:
-                    _put(px, w, h, x, y, (150, 26, 36))
+                k = (x + (y0 // 5) * 3) % 6
+                _put(px, w, h, x, y0 + (1 if k in (0, 5) else 0), (150, 26, 36))
     torso = layered(MUZAN_SKIN, [lines((("north",), [[(0.5, 0.1), (0.5, 0.9)], [(0.2, 0.3), (0.8, 0.3)]]), (196, 170, 170)), region((0, 0.8, 1, 1), scale_c)])
     base_body(m, torso, layered(MUZAN_SKIN, [mouths, region((0, 0.92, 1, 1), (120, 160, 210))]), layered(scale_c, [scales]),
               skin_swap(head_paint((236, 236, 240), (214, 24, 34), True, "muzan_final"), MUZAN_SKIN))
     both_legs(m, [-0.6, 0.0, -2.6], [4.9, 12.2, 5.2], layered(scale_c, [scales, mouths]))
     muzan_hair(m, (236, 236, 240), long_=True)
-    pink, bone_c, red = SC.smooth((232, 128, 150), [SC.speckle((190, 80, 104), 7)]), SC.smooth((238, 232, 220)), SC.smooth((170, 22, 34), [SC.speckle((110, 10, 20), 7)])
+    pink, bone_c, red = SC.smooth((232, 128, 150)), SC.smooth((238, 232, 220)), SC.smooth((170, 22, 34))
     for s_, arm in ((1, "rightArm"), (-1, "leftArm")):  # the arms become long spiked flesh whips
         pts = SC.curve_tube(m, arm, [[s_ * 6, 12, -0.5], [s_ * 7.5, 7, -3], [s_ * 9, 2, -1], [s_ * 11, 0.6, 4], [s_ * 13, 1.2, 9]], 1.3, 0.6, pink, n=2)
         for i in range(1, len(pts) - 1):  # bone spikes standing out of the whip, alternating sides
@@ -1379,15 +1393,12 @@ def madara(m, form):
         m.box("body", [-4.6, 6.0, 2.3], [9.2, 6.6, 0.6], layered(armour, [plates]))
         m.box("body", [-4.6, 11.4, -2.7], [9.2, 1.4, 5.4], solid((150, 110, 70)))                  # obi
         # the gunbai war fan in his right hand, with its black chain
-        gun, ink = SC.swatch((196, 110, 52)), SC.swatch((20, 18, 22))
-        SC.tube(m, "rightArm", [[6, 11.5, -1.0], [6, 11.6, -6.5]], [0.45, 0.45], SC.swatch((60, 40, 30)), knuckles=False)
-        SC.blob(m, "rightArm", [6, 11.8, -10.0], [0.45, 3.6, 3.6], gun, slices=4, axis="z")
-        SC.blob(m, "rightArm", [5.5, 11.8, -10.0], [0.2, 1.2, 1.2], ink, slices=2, axis="z")
-        for i in range(8):
-            SC.obox(m, "rightArm", [6.3, 11.0 - i * 0.6, -1.2 + i * 0.5], [0.5, 0.5, 0.5], ink, (0, 1, 0), 45)
+        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 0.1, -1), (0, 1, 0), 5.0, 13.0, 7.6, WP.gunbai_shape(13.0, 7.6),
+                 lambda u: (70, 46, 30) if u < 0.38 else (150, 100, 56), grip=2.8, t=0.3)
+        WP.chain(m, "rightArm", (6, 12.9, 2.4), (0, -1, 0.3), 5.0, (40, 38, 44), width=0.6)          # its chain
         # the kama (sickle) across his back
-        SC.tube(m, "body", [[-3.6, 9.5, 2.9], [3.2, 21, 2.9]], [0.35, 0.35], SC.swatch((60, 40, 30)), knuckles=False)
-        SC.blade(m, "body", [3.2, 21, 2.9], [-1, 0.25, 0], 4.2, 1.2, 0.35, SC.swatch((200, 206, 216)), width_dir=[0, 1, 0])
+        WP.sprite_sheet(m, "body", [-3.6, 9.5, 2.95], [0.5, 1, 0], [0, 0, -1], 13.0, 4.4, WP.kama_shape(13.0, 4.4, 3.8))
+        WP.sprite_sheet(m, "body", [-3.6, 9.5, 2.95], [0.5, 1, 0], [-1, 0.5, 0], 13.0, 4.4, WP.kama_shape(13.0, 4.4, 3.8))
     else:
         robe = (240, 238, 232)
 
@@ -1673,7 +1684,7 @@ def face32_new5(px, W, H, spec, hair, iris, skin):
         dark_ = (150, 52, 30) if "chainsaw_black" not in marks else (16, 14, 18)
         for y in range(32):
             for x in range(32):
-                put(x, y, base if (x * 3 + y * 5) % 13 else dark_)
+                put(x, y, base)
         for cx in (9, 22):  # round empty eye sockets with pinpoint pupils
             for y in range(15, 21):
                 for x in range(cx - 3, cx + 3):
@@ -1828,12 +1839,12 @@ DEN_HAIR = (232, 200, 96)
 
 
 def chainsaw_blade(m, bone, base, d, length, width, metal, teeth):
-    """A chainsaw bar sticking out of the body: the steel bar with a row of teeth along its edge."""
-    SC.blade(m, bone, base, d, length, width, 0.7, metal, taper=False, width_dir=[1, 0, 0] if abs(d[0]) < 0.5 else [0, 0, 1])
-    dn = SC.norm(d)
-    for i in range(int(length / 1.2)):
-        p = [base[j] + dn[j] * (0.8 + i * 1.2) for j in range(3)]
-        SC.obox(m, bone, [p[0], p[1], p[2]], [0.5, 0.5, 0.5], teeth, d, 45)
+    """A chainsaw bar bursting out of the body: an extruded sprite of the steel bar, the chain of hooked teeth round both
+    edges and the rounded nose; its flat side faces sideways."""
+    bar = metal.swatch[0] if getattr(metal, "swatch", None) else metal
+    ch = teeth.swatch[0] if getattr(teeth, "swatch", None) else teeth
+    up = (0, 1, 0) if abs(d[1]) < 0.8 else (0, 0, -1)
+    WP.extruded(m, bone, base, d, up, length, width, WP.chainsaw_shape(bar, ch, length, width), dark(bar, 0.7), t=0.35)
 
 
 def denji(m, form):
@@ -1867,11 +1878,8 @@ def denji(m, form):
         hc = (226, 96, 50) if not black else (40, 38, 42)
         hd = dark(hc, 0.78)
 
-        def grain(face, px, w, h, b):
-            for y in range(h):
-                for x in range(w):
-                    if (x * 3 + y * 5) % 13 == 0:
-                        _put(px, w, h, x, y, hd)
+        def grain(face, px, w, h, b):  # a clean darker seam round the edge of the devil's head, no speckles
+            return
         head_skin = layered(hc, [grain])
         m.cubes = [c for c in m.cubes if not (c["bone"] == "head" and c["size"] == [0.75, 2.25, 1.5])]  # no human ears on the devil's head
         m.box("head", [-4.25, 24.0, 3.9], [8.5, 8.25, 0.35], head_skin)          # back
@@ -1879,10 +1887,10 @@ def denji(m, form):
         for x0 in (3.9, -4.25):
             m.box("head", [x0, 24.0, -4.25], [0.35, 8.25, 8.5], head_skin)       # sides
         # the chainsaw bar out of his forehead and one out of each forearm
-        chainsaw_blade(m, "head", [0, 30.0, -4.2], [0, 0.55, -1], 9.0, 2.0, metal, teeth)
+        chainsaw_blade(m, "head", [0, 29.6, -4.0], [0, 0.55, -1], 9.0, 2.2, metal, teeth)
         SC.box_at(m, "head", [0, 30.0, -4.4], [2.6, 2.4, 1.2], SC.swatch((60, 60, 66)))
         for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
-            chainsaw_blade(m, arm_, [s_ * 6.0, 13.0, -2.2], [0, -0.35, -1], 10.0, 1.8, metal, teeth)
+            chainsaw_blade(m, arm_, [s_ * 6.0, 13.2, -1.6], [0, -0.3, -1], 10.0, 2.0, metal, teeth)
             SC.box_at(m, arm_, [s_ * 6.0, 13.6, -2.2], [2.2, 2.2, 1.4], SC.swatch((60, 60, 66)))
         if black:  # the true form: ragged scarf of guts and a darker body
             SC.curve_tube(m, "body", [[0, 23.5, 2.6], [1.5, 20, 4.8], [3, 14, 5.5]], 1.2, 0.5, SC.swatch((140, 30, 36)), n=2, flat=0.4, width=[1, 0, 0])
@@ -1946,9 +1954,10 @@ def rengoku(m, form):
     for x0 in (-4.6, 2.2):
         m.box("body", [x0, 4.5, -2.6], [2.4, 19.7, 0.5], haori)
     both_arms(m, [3.5, 13.6, -2.7], [5.0, 10.6, 5.4], haori)
-    flame_st = dict(NICHIRIN, wrap=(30, 30, 40), diamond=(220, 60, 30), metal=(214, 92, 36), blade=(220, 100, 40), edge=(255, 200, 120))
+    flame_st = dict(NICHIRIN, **FLAME_TSUBA, wrap=(176, 30, 26), diamond=(240, 232, 214), blade=(196, 44, 22), spine=(120, 20, 12),
+                    edge=(255, 236, 160), hamon=None, kind="flame", kanji=(40, 10, 8), habaki=(214, 176, 80))
     M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, flame_st)
-    M.sheath(m, (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, flame_st)
+    WP.saya(m, "body", (-4.6, 12.4, -1.6), (0.05, -0.55, 1), 12, flame_st)
     rengoku_hair(m)
     if ninth:  # flames rising round his shoulders
         fl = SC.swatch((255, 140, 40), 210)
@@ -2005,7 +2014,8 @@ def ace(m, form):
     leg = layered((26, 26, 30), [region((0, 0.6, 1, 0.68), (40, 40, 46)), region((0, 0.68, 1, 1), (20, 20, 24))])
     base_body(m, torso, arm, leg, head)
     m.box("body", [-4.4, 11.4, -2.4], [8.8, 1.6, 4.8], layered((236, 140, 40), [region((0.4, 0.1, 0.6, 0.9), (250, 210, 80), faces=("north",))]))  # belt + A buckle
-    m.box("body", [3.6, 9.0, -1.2], [1.0, 3.6, 1.2], solid((90, 60, 40)))  # dagger at his hip
+    for wd in ((0, 0, 1), (1, 0, 0)):  # his knife in its sheath at the right hip
+        WP.sprite_sheet(m, "body", [4.3, 12.4, -0.4], [0.12, -1, 0.1], wd, 5.0, 1.4, WP.dagger_shape(5.0, 1.4))
     for i in range(10):  # the red bead necklace
         a = math.pi * (0.15 + 0.7 * i / 9)
         SC.box_at(m, "body", [math.cos(a) * 3.6, 22.2 - math.sin(a) * 2.4, -2.3], [0.9, 0.9, 0.9], SC.swatch((200, 30, 30)))
@@ -2348,9 +2358,17 @@ def bakugo(m, form):
     # the grenade gauntlets: big hand-grenade bracers with a pin ring
     glow = (255, 160, 50) if cluster else (240, 210, 70)
     for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
-        m.box(arm_, [s_ * 6.2 - 3.0, 12.0, -3.0], [6.0, 6.6, 6.0], layered((52, 52, 58), [region((0, 0.0, 1, 0.14), (30, 30, 34)), region((0, 0.86, 1, 1), (30, 30, 34)),
-                                                                                       region((0, 0.42, 1, 0.56), (240, 130, 30)), lines((SIDES, [[(0.5, 0), (0.5, 0.4)]]), (80, 80, 88))]))
-        m.box(arm_, [s_ * 6.2 - 0.8, 18.4, -0.8], [1.6, 1.2, 1.6], solid(glow))  # the pin
+        shell_ = layered((52, 52, 58), [region((0, 0.0, 1, 0.12), (30, 30, 34)), region((0, 0.88, 1, 1), (30, 30, 34)),
+                                        region((0, 0.44, 1, 0.56), (240, 130, 30)),
+                                        lines((SIDES, [[(0.33, 0.12), (0.33, 0.44)], [(0.67, 0.12), (0.67, 0.44)], [(0.33, 0.56), (0.33, 0.88)],
+                                                       [(0.67, 0.56), (0.67, 0.88)], [(0, 0.28), (1, 0.28)], [(0, 0.72), (1, 0.72)]]), (34, 34, 40))])
+        m.box(arm_, [s_ * 6.2 - 3.0, 12.0, -2.2], [6.0, 6.6, 4.4], shell_)                    # the grenade body, rounded:
+        m.box(arm_, [s_ * 6.2 - 2.2, 12.0, -3.0], [4.4, 6.6, 6.0], shell_)                    # two crossed blocks
+        m.box(arm_, [s_ * 6.2 - 1.8, 18.6, -1.8], [3.6, 0.8, 3.6], solid((70, 70, 78)))      # the fuse cap
+        m.box(arm_, [s_ * 6.2 + s_ * 2.9 - 0.4, 13.0, -0.6], [0.8, 6.4, 1.2], solid((160, 160, 170)))  # the safety lever
+        m.box(arm_, [s_ * 6.2 - 0.5, 19.2, -0.5], [1.0, 1.0, 1.0], solid(glow))               # the pin
+        ring = lambda xf, u: ((214, 214, 224) if xf < 0.5 else (170, 170, 182)) if 0.3 < math.hypot(xf - 0.5, u - 0.5) < 0.5 else None
+        WP.sprite_sheet(m, arm_, [s_ * 6.2 + s_ * 0.4, 19.6, -1.2], [0, 1, -0.4], [0, 0, 1] if s_ > 0 else [0, 0, -1], 2.2, 2.2, ring)
         m.box(arm_, [s_ * 6.2 - 2.4, 10.5, -2.4], [4.8, 1.6, 4.8], solid(SKIN))
     bakugo_hair(m)
     if cluster:  # explosions sparking from his palms
@@ -2449,7 +2467,8 @@ def gon(m, form):
         leg = layered(green, [region((0, 0.36, 1, 0.66), SKIN), region((0, 0.66, 1, 0.8), (240, 240, 236)), region((0, 0.8, 1, 1), (60, 120, 60))])
         base_body(m, torso, arm, leg, head)
         m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((100, 70, 40)))
-        m.strand([-2.5, 4, 2.6], [0.25, 1, 0.05], 22, 0.7, solid((160, 120, 70)), bone="body", segs=2)  # fishing rod
+        for wd in ((0, 0, 1), (1, -0.25, 0)):  # his fishing rod slung across his back
+            WP.sprite_sheet(m, "body", [-2.6, 3.4, 2.75], [0.25, 1, 0.0], wd, 22.0, 2.0, WP.rod_shape(22.0, 2.0))
         if jaja:  # the Rock: a fist of blazing yellow nen
             nen = SC.swatch((255, 230, 90), 200)
             SC.blob(m, "rightArm", [6.2, 10.6, 0], [2.6, 2.6, 2.6], nen)
@@ -2876,8 +2895,8 @@ def aizen(m, form):
         for x0 in (-4.6, 2.6):
             m.box("body", [x0, 3.0, -2.6], [2.0, 9.0, 0.5], solid(coat))
         m.box("body", [-4.2, 22.4, -2.6], [8.4, 1.6, 5.2], solid(coat))                        # high collar
-        kyoka = dict(wrap=(60, 90, 70), diamond=(200, 190, 140), tsuba="round", metal=(150, 140, 90),
-                     blade=(206, 214, 226), edge=(248, 250, 255), hamon=None, saya=(40, 60, 50), saya_band=(200, 190, 140))
+        kyoka = dict(wrap=(60, 90, 70), diamond=(200, 190, 140), tsuba="oval", metal=(170, 150, 90), hamon=(232, 236, 244),
+                     blade=(206, 214, 226), edge=(248, 250, 255), saya=(40, 60, 50), saya_band=(200, 190, 140))
         M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, kyoka)
     if hog:
         SC.blob(m, "body", [0, 20.4, -2.2], [0.8, 0.8, 0.45], SC.swatch(core, 235))              # the Hogyoku
@@ -2919,8 +2938,11 @@ def byakuya(m, form):
     both_arms(m, [3.5, 14.0, -2.7], [5.0, 10.2, 5.4], haori)
     m.box("body", [-4.4, 21.6, -2.8], [8.8, 2.4, 5.6], solid((214, 220, 210)))                  # the pale scarf
     m.strand([-1.5, 22, 2.8], [-0.1, -1, 0.35], 9, 2.0, solid((214, 220, 210)), bone="body", segs=3)
-    senbon = dict(wrap=(50, 40, 70), diamond=(220, 200, 230), tsuba="cross", metal=(180, 170, 200),
-                  blade=(220, 200, 214) if bankai else (206, 214, 226), edge=(255, 230, 240), hamon=(240, 160, 200), saya=(30, 30, 36), saya_band=(200, 200, 200))
+    # Senbonzakura: a rounded-square guard; in Shikai the blade scatters into cherry petals from halfway up, in Bankai
+    # only the hilt is left and the petals stream from it
+    senbon = dict(wrap=(50, 40, 70), diamond=(220, 200, 230), tsuba="square", metal=(196, 172, 104),
+                  blade=(206, 214, 226), edge=(250, 252, 255), hamon=(232, 236, 244), petals=0.02 if bankai else 0.5,
+                  saya=(30, 30, 36), saya_band=(200, 200, 200))
     M.katana2(m, "rightArm", (6, 12.2, -1.2), (0, 0.1, -1), 14, senbon)
     byakuya_hair(m)
     if bankai:  # a swirl of pink petals
@@ -2969,9 +2991,12 @@ def power(m, form):
         m.box("body", [x0, 11.6, -2.6], [2.0, 12.6, 5.2], layered(jacket, [lines((SIDES, [[(0, 0.5), (1, 0.5)]]), dark(jacket, 0.75))]))
     m.box("body", [-4.6, 11.6, 2.1], [9.2, 12.6, 0.5], solid(jacket))
     m.box("body", [-4.3, 11.4, -2.3], [8.6, 1.0, 4.6], solid((40, 26, 34)))
-    if devil:
-        bl = SC.swatch((180, 20, 28))
-        SC.blade(m, "rightArm", [6.2, 10.0, -2.0], [0, -0.1, -1], 9, 2.6, 1.0, bl)               # a blood blade in her hand
+    if devil:  # her blood made into a great scythe
+        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 0.5, -1), (0, 1, 0.5), 3.0, 17.0, 7.0, WP.blood_scythe_shape(17.0, 7.0),
+                 (110, 10, 20), grip=0.2, shift=0.0, t=0.3)
+    else:  # her blood made into a hammer
+        WP.broad(m, "rightArm", (6, 13.1, -0.4), (0, 0.5, -1), (0, 1, 0.5), 2.4, 14.0, 5.2, WP.blood_hammer_shape(14.0, 5.2, 4.6),
+                 (110, 10, 20), grip=0.2, t=0.3)
     power_hair(m, devil)
 
 
@@ -3167,6 +3192,10 @@ def hisoka(m, form):
     m.box("body", [-4.4, 11.6, -2.5], [8.8, 1.2, 5.0], solid((90, 60, 140)))
     for leg_, x in (("rightLeg", 1.9), ("leftLeg", -1.9)):  # pointed jester toes curling up
         m.box(leg_, [x - 0.6, 0.2, -3.6], [1.2, 1.0, 1.8], solid((60, 40, 80)), rot=[-30, 0, 0], pivot=[x, 0.4, -2.2])
+    for k, suit in enumerate(("spade", "heart", "diamond")):  # three cards fanned between the fingers of his right hand
+        a = math.radians(-24 + 24 * k)
+        WP.sprite_sheet(m, "rightArm", [6.0 + math.sin(a) * 0.6, 12.4, -2.15 - k * 0.04], [math.sin(a), -math.cos(a), -0.12],
+                        [math.cos(a), math.sin(a), 0], 3.4, 2.4, WP.card_shape(suit))
     if serious:
         gum = SC.swatch((255, 120, 200), 190)
         for s_, arm_ in ((1, "rightArm"), (-1, "leftArm")):
@@ -3195,9 +3224,12 @@ def kurapika(m, form):
     base_body(m, layered(white, [tab]), arm_paint(white, sleeve_to=0.86), layered(white, [region((0, 0.86, 1, 1), (60, 50, 40))]), head)
     m.box("body", [-3.0, 2.0, -2.4], [6.0, 10.0, 0.4], layered(blue, [region((0, 0, 0.08, 1), gold), region((0.92, 0, 1, 1), gold)]))  # the tabard's front panel
     m.box("body", [-3.0, 2.0, 2.0], [6.0, 10.0, 0.4], layered(blue, [region((0, 0, 0.08, 1), gold), region((0.92, 0, 1, 1), gold)]))
-    ch = SC.swatch((200, 200, 210) if not scarlet else (255, 120, 140), 230)
-    for k in range(5):  # the five chains hanging from his right fingers
-        SC.curve_tube(m, "rightArm", [[5.0 + k * 0.5, 12, -1.2], [5.2 + k * 0.6, 8, -2.2], [5.0 + k * 0.7, 5 - k * 0.4, -1.5]], 0.22, 0.2, [ch, ch], n=2)
+    ch = (206, 208, 220) if not scarlet else (236, 214, 222)
+    tips = (WP.tip_cross, WP.tip_syringe, WP.tip_hook, WP.tip_ball, WP.tip_blade)   # thumb .. little finger
+    for k in range(5):  # the five chains hanging from the fingers of his right hand, each with its weapon
+        x = 4.5 + k * 0.75
+        WP.chain(m, "rightArm", (x, 12.2, -1.6), (0.04 * (k - 2), -1, -0.12), 5.2 - abs(k - 2) * 0.5, ch, width=0.55,
+                 tip=tips[k](ch), tip_len=1.6, tip_w=1.4)
     kurapika_hair(m)
 
 
